@@ -18,6 +18,3 @@ requires:
 - configs:
   - jobs_service
   path: ./components/jobs_service
-- configs:
-  - restful_service
-  path: ./components/restful_service
