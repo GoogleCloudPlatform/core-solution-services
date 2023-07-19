@@ -1,0 +1,16 @@
+# Changes here will be overwritten by Copier
+_src_path: /Users/jonchen/workspace/solutions-template/solutions_template/cli/../template_root
+advanced_settings: false
+create_vpc_network: false
+folder_name: cloud-core-services
+gcp_region: us-central1
+ip_cidr_range: 10.0.0.0/16
+master_ipv4_cidr_block: 172.16.0.0/28
+project_id: cloud-core-services
+project_name: cloud-core-services
+project_number: '154174783533'
+secondary_pod_ip_cidr_range: 10.1.0.0/16
+secondary_service_ip_cidr_range: 10.2.0.0/16
+terraform_backend_gcs: true
+vpc_network: default-vpc
+vpc_subnetwork: default-vpc-subnet
