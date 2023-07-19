@@ -1,9 +1,23 @@
-# Master Skaffold
 apiVersion: skaffold/v4beta1
 kind: Config
 metadata:
   name: all-services
 requires:
-  - configs:
-      - common
-    path: ./components/common
+- configs:
+  - common
+  path: ./components/common
+- configs:
+  - authentication
+  path: ./components/authentication
+- configs:
+  - user_management
+  path: ./components/user_management
+- configs:
+  - llm_service
+  path: ./components/llm_service
+- configs:
+  - jobs_service
+  path: ./components/jobs_service
+- configs:
+  - restful_service
+  path: ./components/restful_service
