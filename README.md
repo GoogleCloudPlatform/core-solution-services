@@ -1,4 +1,4 @@
-# cloud-core-services
+# Core Solution Services
 
 > This codebase is generated from https://github.com/GoogleCloudPlatform/solutions-template
 
@@ -26,6 +26,18 @@ Please refer to [INSTALLATION.md](docs/INSTALLATION.md) for more details.
 ### Install Solutions Template package
 ```
 pip install -U solutions-template
+```
+
+### Replace GCP project ID
+
+```
+export PROJECT_ID=<my-project-id>
+
+# On MacOS:
+find . -type f \( -name '*.yaml' -o -name '*.sh' -o -name '*.env' -o -name '*.tfvars' \) -print0 | xargs -0 sed -i "" "s/cloud-core-services/$PROJECT_ID/g"
+
+# On Unix/Linux:
+find ./ -type f -exec sed -i "s/cloud-core-services/$PROJECT_ID/" {} \;
 ```
 
 ### First time setup
