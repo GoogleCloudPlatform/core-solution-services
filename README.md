@@ -23,6 +23,11 @@ Please refer to [INSTALLATION.md](docs/INSTALLATION.md) for more details.
 
 ## Deployment
 
+### Install Solutions Template package
+```
+pip install -U solutions-template
+```
+
 ### First time setup
 
 ```

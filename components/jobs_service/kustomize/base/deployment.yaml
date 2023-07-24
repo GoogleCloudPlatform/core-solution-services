@@ -27,6 +27,7 @@ spec:
         app: jobs-service
     spec:
       serviceAccountName: gke-sa
+      automountServiceAccountToken: true
       containers:
       - name: jobs-service
         image: jobs-service

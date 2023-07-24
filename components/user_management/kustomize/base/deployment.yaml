@@ -12,6 +12,8 @@ spec:
       labels:
         app: user-management
     spec:
+      serviceAccountName: gke-sa
+      automountServiceAccountToken: true
       containers:
       - name: user-management
         image: user-management

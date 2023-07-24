@@ -7,7 +7,7 @@ variable "firestore_region" {
 variable "existing_firestore_name" {
   type        = string
   description = "Does this project has existing firestore?"
-  default     = ""
+  default     = "projects/cloud-core-services/databases/(default)"
 }
 
 module "firebase" {

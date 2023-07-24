@@ -28,7 +28,7 @@ from langchain.llms import Cohere
 secrets = secretmanager.SecretManagerServiceClient()
 
 PORT = os.environ["PORT"] if os.environ.get("PORT") is not None else 80
-PROJECT_ID = os.environ.get("PROJECT_ID", "cloud-learning-services-dev")
+PROJECT_ID = os.environ["PROJECT_ID"]
 os.environ["GOOGLE_CLOUD_PROJECT"] = PROJECT_ID
 DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
 
@@ -80,11 +80,14 @@ ENABLE_COHERE_LLM = get_environ_flag("ENABLE_COHERE_LLM", True)
 
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY_SECRET_PATH = "projects/" + PROJECT_ID + "/secrets/openai-api-key/versions/latest"
+
+print(f"OPENAI_API_KEY_SECRET_PATH = {OPENAI_API_KEY_SECRET_PATH}")
+
 if OPENAI_API_KEY is None:
   OPENAI_API_KEY = secrets.access_secret_version(
       request={
-          "name": "projects/" + PROJECT_ID +
-                  "/secrets/openai-api-key/versions/latest"
+          "name": OPENAI_API_KEY_SECRET_PATH
       }).payload.data.decode("utf-8")
   OPENAI_API_KEY = OPENAI_API_KEY.strip()
 

@@ -27,6 +27,7 @@ spec:
         app: authentication
     spec:
       serviceAccountName: gke-sa
+      automountServiceAccountToken: true
       containers:
       - name: authentication
         image: authentication
