@@ -4,6 +4,7 @@ advanced_settings: false
 create_vpc_network: false
 folder_name: core-solution-services
 gcp_region: us-central1
+has_common: false
 ip_cidr_range: 10.0.0.0/16
 master_ipv4_cidr_block: 172.16.0.0/28
 project_id: cloud-core-services
