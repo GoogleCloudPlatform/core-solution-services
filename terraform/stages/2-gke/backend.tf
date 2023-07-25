@@ -17,7 +17,7 @@
 
 terraform {
   backend "gcs" {
-    bucket = "cloud-core-services-tfstate"
+    bucket = "core-solution-services-develop-tfstate"
     prefix = "stage/2-gke"
   }
 }

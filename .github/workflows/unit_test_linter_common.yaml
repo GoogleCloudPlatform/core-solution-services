@@ -13,9 +13,9 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: cloud-core-services
+  PROJECT_ID: core-solution-services-develop
 
-# copoier:raw 
+# copoier:raw
 jobs:
   unit-test:
     runs-on: ubuntu-latest
@@ -95,4 +95,4 @@ jobs:
           cd ${{ matrix.target-folder }}/src
           python -m pylint $(git ls-files '*.py') --rcfile=$BASE_DIR/.pylintrc
 
-# copoier:endraw 
+# copoier:endraw

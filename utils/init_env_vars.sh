@@ -17,7 +17,7 @@
 # the Solutions template and set up all components to a brand-new Google Cloud
 # project.
 
-export PROJECT_ID="cloud-core-services"
+export PROJECT_ID="core-solution-services-develop"
 export REGION="us-central1"
 
 

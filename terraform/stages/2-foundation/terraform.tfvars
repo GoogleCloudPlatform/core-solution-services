@@ -1,4 +1,4 @@
-project_id             = "cloud-core-services"
+project_id             = "core-solution-services-develop"
 project_number         = "154174783533"
 region                 = "us-central1"
 storage_multiregion    = "US"

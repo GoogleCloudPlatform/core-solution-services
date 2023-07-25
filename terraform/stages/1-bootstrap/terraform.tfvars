@@ -1,2 +1,2 @@
-project_id          = "cloud-core-services"
+project_id          = "core-solution-services-develop"
 storage_multiregion = "US"

@@ -12,16 +12,16 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: cloud-core-services
-  SKAFFOLD_DEFAULT_REPO: gcr.io/cloud-core-services
+  PROJECT_ID: core-solution-services-develop
+  SKAFFOLD_DEFAULT_REPO: gcr.io/core-solution-services-develop
   SKAFFOLD_NAMESPACE: default
   GKE_CLUSTER: main-cluster
   GKE_REGION: us-central1
   KUSTOMIZE_VERSION: 4.1.3
   SKAFFOLD_VERSION: 2.0.3
-  SKAFFOLD_CACHE_GCS: gs://cloud-core-services.appspot.com/skaffold/cache
+  SKAFFOLD_CACHE_GCS: gs://core-solution-services-develop.appspot.com/skaffold/cache
 
-# copoier:raw 
+# copoier:raw
 jobs:
   deploy_backends:
     name: Deploy microservices to GKE cluster
@@ -82,4 +82,4 @@ jobs:
         run: |
           gsutil cp ~/.skaffold/cache $SKAFFOLD_CACHE_GCS
 
-# copoier:endraw 
+# copoier:endraw

@@ -18,7 +18,7 @@
 terraform {
   backend "gcs" {
     # Uncomment below and specify a GCS bucket for TF state.
-    bucket = "cloud-core-services-tfstate"
+    bucket = "core-solution-services-develop-tfstate"
     prefix = "stage/2-foundation"
   }
 }
