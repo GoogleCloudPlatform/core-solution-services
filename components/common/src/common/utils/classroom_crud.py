@@ -1,3 +1,19 @@
+"""
+Copyright 2023 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 """ Helper functions for classroom crud API """
 import requests
 from asyncio.log import logger
@@ -94,14 +110,14 @@ def get_course_by_id(course_id):
 
 
 def drive_copy(file_id, target_folder_id, name):
-  """copy the file in the target_folder 
-  Args: 
+  """copy the file in the target_folder
+  Args:
   file_id : (str) google drive file _id
   target_folder_id:(str) folder_id of destination folder
   name:(str) file name of the copied file
   Returns:
     new created file details dictionary with name,mimeType,WebViewLink
-    id of file 
+    id of file
   """
 
   copied_file = {"name": name, "parents": [target_folder_id]}
@@ -113,13 +129,13 @@ def drive_copy(file_id, target_folder_id, name):
 
 
 def copy_material(drive_file_dict, target_folder_id):
-  """copy the file in the target_folder 
-  Args: 
+  """copy the file in the target_folder
+  Args:
   drive_file_dict : (str) drive file details dictionary given by get
-      coursework API 
-  target_folder_id:(str) folder_id of destination folder 
+      coursework API
+  target_folder_id:(str) folder_id of destination folder
   Returns:
-    new created drive_file_dict with new copied file id in target folder 
+    new created drive_file_dict with new copied file id in target folder
   """
   file_id = drive_file_dict["driveFile"]["driveFile"]["id"]
   if "title" not in drive_file_dict["driveFile"]["driveFile"].keys():

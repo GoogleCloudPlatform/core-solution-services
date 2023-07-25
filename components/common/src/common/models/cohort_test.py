@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,4 +48,3 @@ def test_delete_cohort(clean_firestore):
   Cohort.soft_delete_by_id(new_cohort.id)
   with pytest.raises(ResourceNotFoundException):
     Cohort.soft_delete_by_id(new_cohort.id)
-  
