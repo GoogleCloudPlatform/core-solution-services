@@ -28,24 +28,18 @@ Please refer to [INSTALLATION.md](docs/INSTALLATION.md) for more details.
 pip install -U solutions-template
 ```
 
-### Replace GCP project ID
-
-```
-export PROJECT_ID=<my-project-id>
-
-# On MacOS:
-find . -type f \( -name '*.yaml' -o -name '*.sh' -o -name '*.env' -o -name '*.tfvars' \) -print0 | xargs -0 sed -i "" "s/cloud-core-services/$PROJECT_ID/g"
-
-# On Unix/Linux:
-find ./ -type f -exec sed -i "s/cloud-core-services/$PROJECT_ID/" {} \;
-```
-
 ### First time setup
 
 ```
+export PROJECT_ID=<my-project-id>
 gcloud auth login
 gcloud auth application-default login
 gcloud config set project $PROJECT_ID
+```
+
+Initialize the Cloud infra:
+```
+st set project-id $PROJECT_ID
 st infra init
 ```
 
