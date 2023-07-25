@@ -1,0 +1,15 @@
+# Changes here will be overwritten by Copier
+_src_path: /Users/jonchen/workspace/solutions-template/solutions_template/cli/../modules/terraform_gke_ingress
+advanced_settings: false
+cert_issuer_email: admin@cloudpssolutions.com
+cluster_external_endpoint: ""
+cluster_name: main-cluster
+component_name: terraform_gke_ingress
+cors_allow_origins: http://localhost:4200,http://localhost:3000
+domains: ""
+frontend_config_name: default-frontend-config
+gcp_region: us-central1
+kubernetes_services: authentication,jobs-service,llm-service,user-management
+loadbalancer_name: httplb-gke
+managed_cert_name: managed-cert
+resource_name: gke-ingress

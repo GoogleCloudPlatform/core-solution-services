@@ -13,23 +13,18 @@
 | Kustomize              | &gt;= v5.0.0  | https://kubectl.docs.kubernetes.io/installation/kustomize/ |
 | solutions-template CLI | &gt;= v1.13.0 | https://github.com/GoogleCloudPlatform/solutions-template |
 
-## Setting up Google Cloud project
+## Setup
 
-There are two options to set up your Google Cloud project.
-- [Setting up Google Cloud Project](docs/INSTALLATION.md#SettingupGoogleCloudProject)
-- [Setting up Google Cloud Project (Manual Steps)](#SettingupGoogleCloudProjectManualSteps)
+### Create a new Google Cloud project
 
-Please refer to [INSTALLATION.md](docs/INSTALLATION.md) for more details.
-
-## Deployment
+We'd recommend starting from a brand new GCP project. Create a new GCP project at [https://console.cloud.google.com/projectcreate]
 
 ### Install Solutions Template package
 ```
 pip install -U solutions-template
 ```
 
-### First time setup
-
+### Set up gcloud CLI
 ```
 export PROJECT_ID=<my-project-id>
 gcloud auth login
@@ -43,23 +38,41 @@ st set project-id $PROJECT_ID
 st infra init
 ```
 
-### Set up GKE cluster
+Set up GKE cluster
 
 ```
 st infra apply 2-gke
 ```
 
-### Deploy microservices to GKE cluster
+### (Optional) Add a HTTP Load balancer with DNS domain
+```
+st components update terraform_gke_ingress
+```
 
+Update the following questions in the promopt:
+```
+🎤 Cluster external endpoint IP address?
+   x.x.x.x
+🎤 Kubernetes service names in ingress? (comma-separated string)
+   authentication,jobs-service,llm-service,user-management
+🎤 DNS domains (comma-separated string)?
+   my.domain.com
+```
+
+Apply terraform for GKE ingress:
+```
+st infra apply 3-gke-ingress
+```
+## Deploy
+
+### Set up each microservice:
+- LLM Service: [components/llm_service/README.md]
+
+### Deploy all microservices (optionally with Ingress) to GKE cluster:
 ```
 st deploy
 ```
 
-## Development
+### Verify deployed APIs
 
-Please refer to [DEVELOPMENT.md](docs/DEVELOPMENT.md) for more details on development and code submission.
-
-## Troubleshoot
-
-Please refer to [TROUBLESHOOT.md](docs/DEVELOPMENT.md) for more details on development and code submission.
-
+TBD
