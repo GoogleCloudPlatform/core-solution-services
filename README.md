@@ -46,7 +46,7 @@ sb infra apply 2-gke
 
 ### (Optional) Add a HTTP Load balancer with DNS domain
 ```
-sb components update terraform_gke_ingress
+sb components add terraform_gke_ingress
 ```
 
 Update the following questions in the promopt:
