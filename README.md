@@ -59,7 +59,7 @@ Update the following questions in the promopt:
    my.domain.com
 ```
 
-Add an A record to yoru DNS:
+Add an A record to your DNS:
 ![Alt text](.github/assets/dns_a_record.png)
 
 Apply terraform for GKE ingress:
