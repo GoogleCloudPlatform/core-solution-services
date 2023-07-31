@@ -59,6 +59,9 @@ Update the following questions in the promopt:
    my.domain.com
 ```
 
+Add an A record to yoru DNS:
+![Alt text](.github/assets/dns_a_record.png)
+
 Apply terraform for GKE ingress:
 ```
 sb infra apply 3-gke-ingress
@@ -67,7 +70,7 @@ sb infra apply 3-gke-ingress
 ## Deploy
 
 ### Set up each microservice:
-- LLM Service: [components/llm_service/README.md]
+- LLM Service: [components/llm_service/README.md](./components/llm_service/README.md)
 
 ### Deploy all microservices (optionally with Ingress) to GKE cluster:
 ```
