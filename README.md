@@ -56,7 +56,7 @@ Update the following questions in the promopt:
 🎤 Kubernetes service names in ingress? (comma-separated string)
    authentication,jobs-service,llm-service,user-management
 🎤 DNS domains (comma-separated string)?
-   my.domain.com
+   css-dev.domain.com
 ```
 
 Add an A record to your DNS:
