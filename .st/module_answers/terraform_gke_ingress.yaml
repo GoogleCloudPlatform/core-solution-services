@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_src_path: /Users/jonchen/workspace/solutions-template/solutions_template/cli/../modules/terraform_gke_ingress
+_src_path: /path/to/src
 advanced_settings: false
 cert_issuer_email: admin@cloudpssolutions.com
 cluster_external_endpoint: ""

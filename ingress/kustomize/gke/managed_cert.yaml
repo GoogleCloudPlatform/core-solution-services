@@ -4,5 +4,5 @@ metadata:
   name: default-managed-cert
 spec:
   domains: 
-    - core-solution-services-dev.cloudpssolutions.com
+    - css-dev.cloudpssolutions.com
   
