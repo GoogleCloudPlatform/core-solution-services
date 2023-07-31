@@ -1,6 +1,6 @@
 # Core Solution Services
 
-> This codebase is generated from https://github.com/GoogleCloudPlatform/solutions-template
+> This codebase is generated from https://github.com/GoogleCloudPlatform/solutions-builder
 
 ## Prerequisite
 
@@ -11,7 +11,7 @@
 | Terraform              | &gt;= v1.3.7  | https://developer.hashicorp.com/terraform/downloads |
 | Skaffold               | &gt;= v2.4.0  | https://skaffold.dev/docs/install/ |
 | Kustomize              | &gt;= v5.0.0  | https://kubectl.docs.kubernetes.io/installation/kustomize/ |
-| solutions-template CLI | &gt;= v1.13.0 | https://github.com/GoogleCloudPlatform/solutions-template |
+| solutions-builder CLI | &gt;= v1.13.0 | https://github.com/GoogleCloudPlatform/solutions-builder |
 
 ## Setup
 
@@ -19,9 +19,9 @@
 
 We'd recommend starting from a brand new GCP project. Create a new GCP project at [https://console.cloud.google.com/projectcreate]
 
-### Install Solutions Template package
+### Install Solutions Builder package
 ```
-pip install -U solutions-template
+pip install -U solutions-builder
 ```
 
 ### Set up gcloud CLI
@@ -34,19 +34,19 @@ gcloud config set project $PROJECT_ID
 
 Initialize the Cloud infra:
 ```
-st set project-id $PROJECT_ID
-st infra init
+sb set project-id $PROJECT_ID
+sb infra init
 ```
 
 Set up GKE cluster
 
 ```
-st infra apply 2-gke
+sb infra apply 2-gke
 ```
 
 ### (Optional) Add a HTTP Load balancer with DNS domain
 ```
-st components update terraform_gke_ingress
+sb components update terraform_gke_ingress
 ```
 
 Update the following questions in the promopt:
@@ -61,8 +61,9 @@ Update the following questions in the promopt:
 
 Apply terraform for GKE ingress:
 ```
-st infra apply 3-gke-ingress
+sb infra apply 3-gke-ingress
 ```
+
 ## Deploy
 
 ### Set up each microservice:
@@ -70,7 +71,7 @@ st infra apply 3-gke-ingress
 
 ### Deploy all microservices (optionally with Ingress) to GKE cluster:
 ```
-st deploy
+sb deploy
 ```
 
 ### Verify deployed APIs
