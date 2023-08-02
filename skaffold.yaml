@@ -19,5 +19,5 @@ requires:
   - jobs_service
   path: ./components/jobs_service
 - configs:
-  - gke_ingress
+  - ingress
   path: ./ingress
