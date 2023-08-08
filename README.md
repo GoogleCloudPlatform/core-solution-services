@@ -44,7 +44,7 @@ Set up GKE cluster
 sb infra apply 2-gke
 ```
 
-### (Optional) Add a HTTP Load balancer with DNS domain
+### Add a HTTP Load balancer with DNS domain
 ```
 sb components add terraform_gke_ingress
 ```
@@ -56,16 +56,18 @@ Update the following questions in the promopt:
 🎤 Kubernetes service names in ingress? (comma-separated string)
    authentication,jobs-service,llm-service,user-management
 🎤 DNS domains (comma-separated string)?
-   css-dev.domain.com
+   example.domain.com
 ```
-
-Add an A record to your DNS:
-![Alt text](.github/assets/dns_a_record.png)
+- Note: You can leave the DNS domains as empty if you don't have any custom domains. If so, you'd use IP address to connect to API endpoints later on.
 
 Apply terraform for GKE ingress:
 ```
 sb infra apply 3-gke-ingress
 ```
+
+(Optional) Add an A record to your DNS:
+![Alt text](.github/assets/dns_a_record.png)
+- Set the IP address to the external IP address in the ingress.
 
 ## Deploy
 
@@ -76,6 +78,14 @@ sb infra apply 3-gke-ingress
 ```
 sb deploy
 ```
+
+### Set up admin user
+
+In the source code:
+```
+bash components/user_management/src/utils/setup.sh
+```
+- This will add the `admin` user to the Firestore (`users` collection) using the current email that logged in to `gcloud` command.
 
 ### Verify deployed APIs
 
