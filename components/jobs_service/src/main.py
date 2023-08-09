@@ -50,8 +50,8 @@ def health_check():
 api = FastAPI(
     title="Jobs Service API's",
     version="latest",
-    docs_url=None,
-    redoc_url=None,
+    # docs_url=None,
+    # redoc_url=None,
     dependencies=[Depends(validate_token)]
     )
 
