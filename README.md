@@ -89,13 +89,18 @@ sb deploy
 
 In the source code:
 ```
-bash components/user_management/src/utils/setup.sh
+PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py create_admin
+
+# Input the base URL for the deployed API endpoint:
+Provide the base url for the API endpoint (e.g.  http://127.0.0.1/): https://your.domain.com/
 ```
-- This will add the `admin` user to the Firestore (`users` collection) using the current email that logged in to `gcloud` command.
+
+- This will add the `admin` user to the Firestore (`users` collection).
 
 ### Verify deployed APIs
 
 Once deployed, check out the API docs with the following links:
+- https://<cluster-ip-address>/authentication/api/v1/docs
 - https://<cluster-ip-address>/user-management/api/v1/docs
 - https://<cluster-ip-address>/jobs-service/api/v1/docs
 - https://<cluster-ip-address>/llm-service/api/v1/docs
