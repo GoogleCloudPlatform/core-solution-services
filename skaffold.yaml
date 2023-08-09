@@ -19,5 +19,8 @@ requires:
   - jobs_service
   path: ./components/jobs_service
 - configs:
+  - redis
+  path: ./components/redis
+- configs:
   - ingress
   path: ./ingress
