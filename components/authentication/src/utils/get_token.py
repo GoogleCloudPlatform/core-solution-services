@@ -14,15 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import firebase
+import firebase_admin
+from firebase_admin import auth
 
-# Get the firebase app
-app = firebase.initialize_app()
+app = firebase_admin.initialize_app()
 
-# Get the auth service
-auth = app.auth()
-
-# Get an OAuth token
-token = auth.get_oauth_token()
+token = auth.create_custom_token('testing')
 
 print(token)
