@@ -35,12 +35,18 @@ gcloud config set project $PROJECT_ID
 Initialize the Cloud infra:
 ```
 sb set project-id $PROJECT_ID
-sb infra init
+sb infra apply 1-bootstrap
 ```
 
-Set up GKE cluster
+Log in to the bastion host.
+```
+# TBD
+```
+
+Set up Cloud foundation and GKE cluster
 
 ```
+sb infra apply-2-foundation
 sb infra apply 2-gke
 ```
 
@@ -89,4 +95,7 @@ bash components/user_management/src/utils/setup.sh
 
 ### Verify deployed APIs
 
-TBD
+Once deployed, check out the API docs with the following links:
+- https://<cluster-ip-address>/user-management/api/v1/docs
+- https://<cluster-ip-address>/jobs-service/api/v1/docs
+- https://<cluster-ip-address>/llm-service/api/v1/docs

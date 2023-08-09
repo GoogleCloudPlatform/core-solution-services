@@ -22,7 +22,7 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d "{
     \"fields\": {
-        \"name\": {
+        \"user_id\": {
             stringValue: \"admin\"
         },
         \"email\": {
