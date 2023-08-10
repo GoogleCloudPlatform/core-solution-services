@@ -85,21 +85,25 @@ sb infra apply 3-gke-ingress
 sb deploy
 ```
 
-### Set up admin user
+### Set up Identity Platform and admin user
 
-In the source code:
-```
-PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py create_admin --base-url=https://your.domain.com/
-```
-- You can use the IP address, e.g. https://127.0.0.1/
-- This will add the `admin` user to the Firestore (`users` collection).
+- Enable [Identity Platform on GCP Console](https://console.cloud.google.com/customer-identity?project=core-solution-services-develop).
+- Add a [Email/Password provider](https://console.cloud.google.com/customer-identity/provider?project=core-solution-services-develop) to the Identity Platform.
+  ![Alt text](.github/assets/idp_add_provider.png)
+- In the project folder, run the command below:
+   ```
+   PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py create_admin --base-url=https://your.domain.com/
+   ```
+   - You can use the `--base-url` as an IP address, e.g. https://127.0.0.1/
+   - This will add the `admin` user to the Firestore (`users` collection).
 
-Once complete, it will show the ID token in the output. E.g.:
-```
-User 'admin@my.domain.com' created successfully. ID Token:
+- Once complete, it will show the ID token in the output. E.g.:
+   ```
+   User 'user@my.domain.com' created successfully. ID Token:
 
-<my-id-token...>
-```
+   <my-id-token...>
+   ```
+   - Note: You will use this ID Token as the bearer token to access API endpoints of microservices.
 
 ### Verify deployed APIs
 
