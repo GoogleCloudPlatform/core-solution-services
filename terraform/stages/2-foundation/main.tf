@@ -18,6 +18,7 @@
 # project-specific locals
 locals {
   services = [
+    "apikeys.googleapis.com",              # API Keys
     "appengine.googleapis.com",            # AppEngine
     "artifactregistry.googleapis.com",     # Artifact Registry
     "bigquery.googleapis.com",             # BigQuery
