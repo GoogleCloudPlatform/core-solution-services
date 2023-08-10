@@ -43,18 +43,8 @@ def execute_command(command):
                                    text=True)
   return output.strip()
 
-def create_admin(base_url="http://authentication") -> None:
-  user_email = execute_command(
-    "gcloud config list account --format 'value(core.account)' | head -n 1")
-  print(f"User email: {user_email}")
-  user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
-  confirm_password = getpass.getpass(prompt="Confirm password: ")
-  assert user_password == confirm_password, "Passwords don't match."
 
-  print()
-  user_login(user_email, user_password, base_url=base_url)
-
-def user_login(user_email, user_password, base_url=None) -> None:
+def create_user(user_email, user_password, base_url=None) -> None:
   """
   Function to do firebase login
   """
@@ -85,22 +75,48 @@ def user_login(user_email, user_password, base_url=None) -> None:
   elif sign_up_req.status_code == 422 and sign_up_res.get(
     "message") == "EMAIL_EXISTS":
     print(f"User with {user_email} already exists. Trying log in")
-    url = f"{base_url}/{AUTH_API_PATH}/sign-in/credentials"
-    url = re.sub(r"(?<!:)\/+", "/", url)
-    sign_in_req = requests.post(url, json=req_body, verify=False)
-
-    sign_in_res = sign_in_req.json()
-    if sign_in_res is None or sign_in_res["data"] is None:
-      print("User signed in fail", sign_in_req.text)
-      raise Exception("User sign-in failed")
-
-    print(f"Signed in with existing user '{user_email}'. ID Token:\n")
-    print(sign_in_res["data"]["idToken"])
-    print()
+    login_user(user_email, user_password, base_url=base_url)
 
   else:
     print(f"Sign up error. Status: {sign_up_req.status_code}")
     print(sign_up_res)
+
+def login_user(user_email, user_password, base_url=None) -> None:
+  req_body = {
+    "email": user_email,
+    "password": user_password
+  }
+  url = f"{base_url}/{AUTH_API_PATH}/sign-in/credentials"
+  url = re.sub(r"(?<!:)\/+", "/", url)
+  sign_in_req = requests.post(url, json=req_body, verify=False)
+
+  sign_in_res = sign_in_req.json()
+  if sign_in_res is None or sign_in_res["data"] is None:
+    print("User signed in fail", sign_in_req.text)
+    raise Exception("User sign-in failed")
+
+  print(f"Signed in with existing user '{user_email}'. ID Token:\n")
+  print(sign_in_res["data"]["idToken"])
+  print()
+
+
+def create_admin(base_url="http://authentication") -> None:
+  user_email = execute_command(
+    "gcloud config list account --format 'value(core.account)' | head -n 1")
+  print(f"User email: {user_email}")
+  user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
+  confirm_password = getpass.getpass(prompt="Confirm password: ")
+  assert user_password == confirm_password, "Passwords don't match."
+
+  print()
+  create_user(user_email, user_password, base_url=base_url)
+
+
+def get_token(base_url="http://authentication"):
+  user_email = input("User email: ")
+  user_password = getpass.getpass(prompt="Password: ")
+  print()
+  login_user(user_email, user_password, base_url=base_url)
 
 
 def main():
@@ -109,15 +125,18 @@ def main():
   parser.add_argument("--base-url", type=str, help="API base URL")
   args = parser.parse_args()
 
-  if args.action == "create_admin":
-    if not args.base_url:
-      base_url = input("Provide API base URL (e.g.  http://127.0.0.1/): ")
-    else:
-      base_url = args.base_url
-      print(f"API base URL: {base_url}")
+  if not args.base_url:
+    base_url = input("Provide API base URL (e.g.  http://127.0.0.1/): ")
+  else:
+    base_url = args.base_url
+    print(f"API base URL: {base_url}")
+  assert base_url, "base_url is empty."
 
-    assert base_url, "base_url is empty."
+  if args.action == "create_admin":
     create_admin(base_url=base_url)
+
+  elif args.action == "get_token":
+    get_token(base_url=base_url)
 
   else:
     print(f"Action {args.action} not supported. Available actions:")
