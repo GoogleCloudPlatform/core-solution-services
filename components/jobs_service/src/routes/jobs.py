@@ -17,18 +17,20 @@
 """ Service to monitor batch jobs """
 import traceback
 from fastapi import APIRouter
-from enum import Enum
 from common.utils.batch_jobs import (get_all_jobs, get_job_status,
                                      delete_batch_job,
                                      remove_job_and_update_status)
+from common.utils.config import JobTypes
 from common.utils.logging_handler import Logger
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError, ResourceNotFound
 from schemas.error_schema import NotFoundErrorResponseModel
-from config import ERROR_RESPONSES, JOB_TYPES
+from schemas.jobs_schema import (JobGetStatusResponse,
+                                 AllJobsGetStatusResponse,
+                                 JobDeleteResponse)
+from config import ERROR_RESPONSES
 # pylint: disable = broad-except
 
-JobTypes = Enum("JobTypes", JOB_TYPES)
 
 router = APIRouter(
     prefix="/jobs",
@@ -36,22 +38,24 @@ router = APIRouter(
     responses=ERROR_RESPONSES)
 
 @router.get(
-    "/{job_type}/{job_name}",
+    "/{job_type_const}/{job_name}",
     responses={404: {
         "model": NotFoundErrorResponseModel
-    }})
-def get_batch_job_status(job_type: JobTypes, job_name: str):
+    }},
+    response_model=JobGetStatusResponse)
+def get_batch_job_status(job_type_const: JobTypes, job_name: str):
   """ Get status of job by type and name """
+  job_type = job_type_const.value
   try:
-    if job_name:
-      data = get_job_status(job_type, job_name)
-      response = {
-          "success": True,
-          "message": "Successfully fetched the batch job",
-          "data": data
-      }
-      return response
+    data = get_job_status(job_type, job_name)
+    response = {
+        "success": True,
+        "message": "Successfully retrieved batch job",
+        "data": data
+    }
+    return response
   except ResourceNotFoundException as e:
+    Logger.error(e)
     raise ResourceNotFound(str(e)) from e
   except Exception as e:
     Logger.error(e)
@@ -59,9 +63,10 @@ def get_batch_job_status(job_type: JobTypes, job_name: str):
     raise InternalServerError(str(e)) from e
 
 
-@router.get("/{job_type}")
-def get_all_job_status(job_type: JobTypes):
+@router.get("/{job_type_const}", response_model=AllJobsGetStatusResponse)
+def get_all_job_status(job_type_const: JobTypes):
   """ Get status of all jobs by type """
+  job_type = job_type_const.value
   try:
     data = get_all_jobs(job_type)
     response = {
@@ -80,22 +85,26 @@ def get_all_job_status(job_type: JobTypes):
 
 
 @router.delete(
-    "/{job_type}/{job_name}",
+    "/{job_type_const}/{job_name}",
     responses={404: {
         "model": NotFoundErrorResponseModel
-    }})
-def delete_batch_job_status(job_type: JobTypes, job_name: str):
-  """ Delete job by type and name """
+    }},
+    response_model=JobDeleteResponse)
+def delete_batch_job_model(job_type_const: JobTypes, job_name: str):
+  """ Delete batch job model by type and name.  Note this does
+      not delete the Kubernetes Job. """
+  job_type = job_type_const.value
   try:
     delete_batch_job(job_type, job_name)
     response = {
         "success": True,
         "message": "Successfully deleted the batch job",
-        "data": {}
+        "data": None
     }
     return response
 
   except ResourceNotFoundException as e:
+    Logger.error(e)
     raise ResourceNotFound(str(e)) from e
   except Exception as e:
     Logger.error(e)
@@ -104,14 +113,22 @@ def delete_batch_job_status(job_type: JobTypes, job_name: str):
 
 
 @router.put(
-    "/{job_type}/{job_name}",
+    "/{job_type_const}/{job_name}",
     responses={404: {
         "model": NotFoundErrorResponseModel
-    }})
-def update_batch_job_status(job_type: JobTypes, job_name: str):
+    }},
+    response_model=JobDeleteResponse)
+def remove_batch_job(job_type_const: JobTypes, job_name: str):
   """ Remove job and update status by type and name """
+  job_type = job_type_const.value
   try:
-    return remove_job_and_update_status(job_type, job_name)
+    remove_job_and_update_status(job_type, job_name)
+    response = {
+        "success": True,
+        "message": "Successfully removed the batch job",
+        "data": None
+    }
+    return response
   except ResourceNotFoundException as e:
     raise ResourceNotFound(str(e)) from e
   except Exception as e:
