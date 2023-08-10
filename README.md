@@ -107,7 +107,7 @@ User 'admin@my.domain.com' created successfully. ID Token:
 ### Verify deployed APIs
 
 Once deployed, check out the API docs with the following links:
-- https://<cluster-ip-address>/authentication/api/v1/docs
-- https://<cluster-ip-address>/user-management/api/v1/docs
-- https://<cluster-ip-address>/jobs-service/api/v1/docs
-- https://<cluster-ip-address>/llm-service/api/v1/docs
+- https://$CLUSTER_IP_ADDRESS/authentication/api/v1/docs
+- https://$CLUSTER_IP_ADDRESS/user-management/api/v1/docs
+- https://$CLUSTER_IP_ADDRESS/jobs-service/api/v1/docs
+- https://$CLUSTER_IP_ADDRESS/llm-service/api/v1/docs
