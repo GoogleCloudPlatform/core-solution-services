@@ -17,7 +17,7 @@ module "firebase" {
   firebase_init    = var.existing_firestore_name == "" ? true : false
 }
 
-resource "google_apikeys_key" "maps" {
+resource "google_apikeys_key" "idp_api_key" {
   name         = "idp-api-key"
   display_name = "API Key for Identity Platform"
 
