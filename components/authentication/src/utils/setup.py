@@ -44,7 +44,7 @@ def execute_command(command):
 def create_admin(base_url="http://authentication") -> None:
   user_email = execute_command(
     "gcloud config list account --format 'value(core.account)' | head -n 1")
-  user_password = "admin"
+  user_password = "password"
   user_login(user_email, user_password, base_url=base_url)
 
 def user_login(user_email, user_password, base_url=None) -> None:
@@ -71,8 +71,9 @@ def user_login(user_email, user_password, base_url=None) -> None:
 
   # If returns 200, the user was created successfully. Print the token then.
   if sign_up_req.status_code == 200:
-    print(f"User '{user_email}' created successfully. ID Token:")
+    print(f"User '{user_email}' created successfully. ID Token:\n")
     print(sign_up_res["data"]["idToken"])
+    print()
 
   # If the user already exists, sign in the user and get the token.
   elif sign_up_req.status_code == 422 and sign_up_res.get(
@@ -88,8 +89,9 @@ def user_login(user_email, user_password, base_url=None) -> None:
       print("User signed in fail", sign_in_req.text)
       raise Exception("User sign-in failed")
 
-    print(f"Signed in with existing user '{user_email}'. ID Token:")
+    print(f"Signed in with existing user '{user_email}'. ID Token:\n")
     print(sign_in_res["data"]["idToken"])
+    print()
 
   else:
     print(f"Sign up error. Status: {sign_up_req.status_code}")

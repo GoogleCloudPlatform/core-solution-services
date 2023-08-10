@@ -31,6 +31,7 @@ locals {
     "firebase.googleapis.com",             # Firebase
     "firestore.googleapis.com",            # Firestore
     "iam.googleapis.com",                  # Cloud IAM
+    "identitytoolkit.googleapis.com",      # Identity Toolkit
     "logging.googleapis.com",              # Cloud Logging
     "monitoring.googleapis.com",           # Cloud Operations Suite
     "pubsub.googleapis.com",               # Pub/Sub
