@@ -18,6 +18,7 @@ import subprocess
 import re
 import requests
 import argparse
+import getpass
 
 from common.models import User
 
@@ -34,6 +35,7 @@ USER_DATA = {
     "access_api_docs": True,
     "gaia_id": "fake-gaia-id",
 }
+requests.packages.urllib3.disable_warnings()
 
 def execute_command(command):
   output = subprocess.check_output(command,
@@ -44,7 +46,12 @@ def execute_command(command):
 def create_admin(base_url="http://authentication") -> None:
   user_email = execute_command(
     "gcloud config list account --format 'value(core.account)' | head -n 1")
-  user_password = "password"
+  print(f"User email: {user_email}")
+  user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
+  confirm_password = getpass.getpass(prompt="Confirm password: ")
+  assert user_password == confirm_password, "Passwords don't match."
+
+  print()
   user_login(user_email, user_password, base_url=base_url)
 
 def user_login(user_email, user_password, base_url=None) -> None:
@@ -65,8 +72,7 @@ def user_login(user_email, user_password, base_url=None) -> None:
   }
   url = f"{base_url}/{AUTH_API_PATH}/sign-up/credentials"
   url = re.sub(r"(?<!:)\/+", "/", url)
-  print(f"URL: {url}")
-  sign_up_req = requests.post(url, json=req_body)
+  sign_up_req = requests.post(url, json=req_body, verify=False)
   sign_up_res = sign_up_req.json()
 
   # If returns 200, the user was created successfully. Print the token then.
@@ -81,8 +87,7 @@ def user_login(user_email, user_password, base_url=None) -> None:
     print(f"User with {user_email} already exists. Trying log in")
     url = f"{base_url}/{AUTH_API_PATH}/sign-in/credentials"
     url = re.sub(r"(?<!:)\/+", "/", url)
-    print(f"URL: {url}")
-    sign_in_req = requests.post(url, json=req_body)
+    sign_in_req = requests.post(url, json=req_body, verify=False)
 
     sign_in_res = sign_in_req.json()
     if sign_in_res is None or sign_in_res["data"] is None:
@@ -95,16 +100,22 @@ def user_login(user_email, user_password, base_url=None) -> None:
 
   else:
     print(f"Sign up error. Status: {sign_up_req.status_code}")
-    print(sign_up_res["data"])
+    print(sign_up_res)
 
 
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("action", type=str, help="Main action")
+  parser.add_argument("--base-url", type=str, help="API base URL")
   args = parser.parse_args()
 
   if args.action == "create_admin":
-    base_url = input("Provide the base url for the API endpoint (e.g.  http://127.0.0.1/): ")
+    if not args.base_url:
+      base_url = input("Provide API base URL (e.g.  http://127.0.0.1/): ")
+    else:
+      base_url = args.base_url
+      print(f"API base URL: {base_url}")
+
     assert base_url, "base_url is empty."
     create_admin(base_url=base_url)
 

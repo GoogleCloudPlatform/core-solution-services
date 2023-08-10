@@ -89,13 +89,17 @@ sb deploy
 
 In the source code:
 ```
-PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py create_admin
-
-# Input the base URL for the deployed API endpoint:
-Provide the base url for the API endpoint (e.g.  http://127.0.0.1/): https://your.domain.com/
+PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py create_admin --base-url=https://your.domain.com/
 ```
-
+- You can use the IP address, e.g. https://127.0.0.1/
 - This will add the `admin` user to the Firestore (`users` collection).
+
+Once complete, it will show the ID token in the output. E.g.:
+```
+User 'admin@my.domain.com' created successfully. ID Token:
+
+<my-id-token...>
+```
 
 ### Verify deployed APIs
 
