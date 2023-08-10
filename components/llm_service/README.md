@@ -17,11 +17,3 @@ echo $OPENAI_API_KEY | gcloud secrets versions add "openai-api-key" --data-file=
 export COHERE_API_KEY=<Your API key>
 echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=-
 ```
-
-## Deploy
-
-To deploy this specific service to remote GKE cluster:
-
-```
-st deploy --component=llm_service
-```
