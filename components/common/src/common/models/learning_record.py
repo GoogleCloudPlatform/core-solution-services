@@ -21,6 +21,13 @@ from common.models import NodeItem, BaseModel
 from common.utils.errors import ResourceNotFoundException
 
 
+def check_object_type(field_val):
+  """validator method for object type field"""
+  if field_val in ["agent", "group"]:
+    return True
+  return (False, "Object Type must be one of " +
+          ",".join("'" + i + "'" for i in ["agent", "group"]))
+
 class LearningRecord(NodeItem):
   """Learning Record Class"""
   # schema for learning record
@@ -72,13 +79,13 @@ class Agent(NodeItem):
   """Agent Class"""
   # schema for agent
   uuid = TextField(required=True)
-  object_type = TextField(required=True)
+  object_type = TextField(required=True, validator=check_object_type)
   name = TextField(required=True)
   mbox = TextField()
   mbox_sha1sum = TextField()
   open_id = TextField()
   account_homepage = TextField()
-  account_name = TextField(required=True)
+  account_name = TextField()
   members = ListField()
   user_id = TextField(required=True)
   is_deleted = BooleanField(default=False)
@@ -117,7 +124,7 @@ class Verb(NodeItem):
   # schema for verb
   uuid = TextField(required=True)
   name = TextField(required=True)
-  url = TextField(default="")
+  url = TextField()
   canonical_data = MapField(default={})
 
   class Meta:
@@ -143,7 +150,7 @@ class Activity(NodeItem):
   uuid = TextField(required=True)
   name = TextField(required=True)
   canonical_data = MapField(default={})
-  authority = TextField(default="")
+  authority = TextField()
 
   class Meta:
     collection_name = BaseModel.DATABASE_PREFIX + "activities"

@@ -15,14 +15,24 @@ limitations under the License.
 """
 
 """FireO model for batch jobs"""
+
+from enum import Enum
 from fireo.fields import TextField, MapField, IDField
 from common.models import GCSPathField
 from common.models import BaseModel
-from common.utils.errors import ResourceNotFoundException
+
+class JobStatus(Enum):
+  """ Enum class for JobStatus """
+  JOB_STATUS_PENDING = "pending"
+  JOB_STATUS_ACTIVE = "active"
+  JOB_STATUS_SUCCEEDED = "succeeded"
+  JOB_STATUS_FAILED = "failed"
+  JOB_STATUS_ABORTED = "aborted"
+
 
 class BatchJobModel(BaseModel):
   """Model class for batch job"""
-  id_ = IDField()
+  id = IDField()
   name = TextField(required=True, default="")
   input_data = TextField()
   type = TextField(required=True)
@@ -33,6 +43,7 @@ class BatchJobModel(BaseModel):
   errors = MapField(default={})
   job_logs = MapField(default={})
   metadata = MapField(default={})
+  result_data = MapField(default={})
   uuid = TextField()
 
   class Meta:
@@ -42,15 +53,14 @@ class BatchJobModel(BaseModel):
   @classmethod
   def find_by_name(cls, name):
     job = cls.collection.filter("name", "==", name).get()
-    if job:
-      return job
-    else:
-      raise ResourceNotFoundException(f"Invalid {cls.__name__} name: {name}")
+    return job
 
   @classmethod
   def find_by_uuid(cls, name):
     job = cls.collection.filter("uuid", "==", name).get()
-    if job:
-      return job
-    else:
-      raise ResourceNotFoundException(f"Invalid {cls.__name__} name: {name}")
+    return job
+
+  @classmethod
+  def find_by_job_type(cls, job_type):
+    jobs = cls.collection.filter("type", "==", job_type).fetch()
+    return jobs
