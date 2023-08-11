@@ -13,7 +13,7 @@ on:
       - "e2e/requirements.txt"
       - "e2e/utils/**"
       - "utils/**"
-      - ".github/workflows/e2e_gke_api_test.yaml"
+      - ".github/workflows/e2e_gke_api_tesb.yaml"
   workflow_dispatch:
 env:
   PROJECT_ID: core-solution-services-develop
@@ -25,7 +25,7 @@ env:
   SKAFFOLD_VERSION: 2.0.3
   SKAFFOLD_CACHE_GCS: gs://core-solution-services-develop.appspot.com/skaffold/cache
 
-# copoier:raw
+# copoier:raw 
 jobs:
   deploy:
     name: Deploy all microservices in PR namespace
@@ -228,4 +228,4 @@ jobs:
           skaffold delete --namespace $NAMESPACE
           kubectl delete namespace $NAMESPACE
 
-# copoier:endraw
+# copoier:endraw 

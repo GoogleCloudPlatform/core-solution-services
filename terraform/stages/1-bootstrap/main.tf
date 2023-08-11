@@ -1,33 +1,12 @@
 locals {
   services = [
-    "anthosconfigmanagement.googleapis.com", # Anthos Config Management API
-    "appengine.googleapis.com",              # App Engine API
-    "artifactregistry.googleapis.com",       # Artifact Registry
-    "bigquery.googleapis.com",               # BigQuery
-    "bigquerydatatransfer.googleapis.com",   # BigQuery Data Transfer
-    "cloudbuild.googleapis.com",             # Cloud Build
-    "cloudresourcemanager.googleapis.com",   # Cloud Resource manager
-    "compute.googleapis.com",                # Load Balancers, Cloud Armor
-    "container.googleapis.com",              # Google Kubernetes Engine
-    "containerregistry.googleapis.com",      # Google Container Registry
-    "dataflow.googleapis.com",               # Cloud Dataflow
-    "dns.googleapis.com",                    # Cloud DNS
-    "firebase.googleapis.com",               # Firebase
-    "firebaseextensions.googleapis.com",     # Firebase Extension API
-    "firebasehosting.googleapis.com",        # Firebase Hosting
-    "firestore.googleapis.com",              # Firestore
-    "gkehub.googleapis.com",                 # GKE HUB API
-    "iam.googleapis.com",                    # Cloud IAM
-    "iap.googleapis.com",                    # Cloud IAP
-    "kgsearch.googleapis.com",               # Knowledge Graph Search API
-    "language.googleapis.com",               # Natural Language API
-    "logging.googleapis.com",                # Cloud Logging
-    "monitoring.googleapis.com",             # Cloud Operations Suite
-    "run.googleapis.com",                    # Cloud Run
-    "secretmanager.googleapis.com",          # Secret Manager
-    "servicenetworking.googleapis.com",      # Service Networking API
-    "serviceusage.googleapis.com",           # Service Usage
-    "storage.googleapis.com",                # Cloud Storage
+    "appengine.googleapis.com",            # App Engine
+    "cloudresourcemanager.googleapis.com", # Cloud Resource Manager
+    "cloudbilling.googleapis.com",         # Cloud Billing
+    "cloudbuild.googleapis.com",           # Cloud Build
+    "serviceusage.googleapis.com",         # Service Usage
+    "storage.googleapis.com",              # Storage Usage
+    "iam.googleapis.com",                  # IAM service
   ]
 }
 

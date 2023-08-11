@@ -13,15 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script automates all the setup steps after creating code skeleton using
-# the Solutions template and set up all components to a brand-new Google Cloud
-# project.
+#!/bin/bash
 
-export PROJECT_ID="core-solution-services-develop"
-export REGION="us-central1"
+set -f
 
+# Hardcoded the project ID for all local development.
+declare -a EnvVars=(
+  "SA_EMAIL"
+)
+for variable in "${EnvVars[@]}"; do
+  if [[ -z "${!variable}" ]]; then
+    printf "$variable is not set.\n"
+    exit 1
+  fi
+done
 
+mkdir -p .tmp
+gcloud iam service-accounts keys create .tmp/sa-key.json --iam-account=$SA_EMAIL
 
-# # Terraform impersonate service account
-# export TF_RUNNER_SA_EMAIL="terraform-runner@$PROJECT_ID.iam.gserviceaccount.com"
-# export GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=$TF_RUNNER_SA_EMAIL
+gcloud auth activate-service-account --key-file=.tmp/sa-key.json

@@ -1,7 +1,8 @@
 # Changes here will be overwritten by Copier
-_src_path: /Users/jonchen/workspace/solutions-template/solutions_template/cli/../template_root
-advanced_settings: false
-create_vpc_network: false
+_src_path: /Users/jonchen/workspace/solutions-builder/solutions_builder/cli/../template_root
+advanced_settings: true
+create_vpc_network: true
+existing_firestore_name: projects/core-solution-services-develop/databases/(default)
 folder_name: core-solution-services-develop
 gcp_region: us-central1
 has_common: false
