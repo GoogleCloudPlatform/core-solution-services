@@ -135,6 +135,11 @@ def main():
   if args.action == "create_admin":
     create_admin(base_url=base_url)
 
+  elif args.action == "create_user":
+    user_email = input("User email: ")
+    user_password = getpass.getpass(prompt="Password: ")
+    create_user(user_email, user_password, base_url=base_url)
+
   elif args.action == "get_token":
     get_token(base_url=base_url)
 
