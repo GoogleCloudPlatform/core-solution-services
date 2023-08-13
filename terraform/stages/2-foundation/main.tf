@@ -18,6 +18,7 @@
 # project-specific locals
 locals {
   services = [
+    "aiplatform.googleapis.com",           # Vertex AI
     "apikeys.googleapis.com",              # API Keys
     "appengine.googleapis.com",            # AppEngine
     "artifactregistry.googleapis.com",     # Artifact Registry
@@ -31,6 +32,7 @@ locals {
     "eventarc.googleapis.com",             # Event Arc
     "firebase.googleapis.com",             # Firebase
     "firestore.googleapis.com",            # Firestore
+    "generativelanguage.googleapis.com",   # GenAI
     "iam.googleapis.com",                  # Cloud IAM
     "identitytoolkit.googleapis.com",      # Identity Toolkit
     "logging.googleapis.com",              # Cloud Logging
