@@ -25,10 +25,10 @@ from common.models import User
 AUTH_API_PATH = "/authentication/api/v1"
 
 USER_DATA = {
-    "first_name": "admin",
-    "last_name": "admin",
+    "first_name": "test",
+    "last_name": "test",
     "status": "active",
-    "user_type": "admin",
+    "user_type": "user",
     "user_groups": [],
     "is_registered": True,
     "failed_login_attempts_count": 0,
