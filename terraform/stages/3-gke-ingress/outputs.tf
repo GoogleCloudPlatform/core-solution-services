@@ -16,5 +16,5 @@
  */
 
 output "ingress_ip_address" {
-  value = resource.google_compute_global_address.ingress_ip_address
+  value = module.ingress_gce.ingress_ip_address
 }
