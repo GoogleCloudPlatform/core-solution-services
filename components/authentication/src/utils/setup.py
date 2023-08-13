@@ -28,7 +28,7 @@ USER_DATA = {
     "first_name": "test",
     "last_name": "test",
     "status": "active",
-    "user_type": "user",
+    "user_type": "learner",
     "user_groups": [],
     "is_registered": True,
     "failed_login_attempts_count": 0,
