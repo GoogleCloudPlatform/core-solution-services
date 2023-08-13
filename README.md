@@ -46,7 +46,7 @@ Log in to the bastion host.
 Set up Cloud foundation and GKE cluster
 
 ```
-sb infra apply-2-foundation
+sb infra apply 2-foundation
 sb infra apply 2-gke
 ```
 
