@@ -100,18 +100,6 @@ def login_user(user_email, user_password, base_url=None) -> None:
   print()
 
 
-def create_admin(base_url="http://authentication") -> None:
-  user_email = execute_command(
-    "gcloud config list account --format 'value(core.account)' | head -n 1")
-  print(f"User email: {user_email}")
-  user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
-  confirm_password = getpass.getpass(prompt="Confirm password: ")
-  assert user_password == confirm_password, "Passwords don't match."
-
-  print()
-  create_user(user_email, user_password, base_url=base_url)
-
-
 def get_token(base_url="http://authentication"):
   user_email = input("User email: ")
   user_password = getpass.getpass(prompt="Password: ")
@@ -133,11 +121,20 @@ def main():
   assert base_url, "base_url is empty."
 
   if args.action == "create_admin":
-    create_admin(base_url=base_url)
+    user_email = execute_command(
+      "gcloud config list account --format 'value(core.account)' | head -n 1")
+    print(f"User email: {user_email}")
+
+    user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
+    confirm_password = getpass.getpass(prompt="Confirm password: ")
+    assert user_password == confirm_password, "Passwords don't match."
+    create_user(user_email, user_password, base_url=base_url)
 
   elif args.action == "create_user":
     user_email = input("User email: ")
-    user_password = getpass.getpass(prompt="Password: ")
+    user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
+    confirm_password = getpass.getpass(prompt="Confirm password: ")
+    assert user_password == confirm_password, "Passwords don't match."
     create_user(user_email, user_password, base_url=base_url)
 
   elif args.action == "get_token":
