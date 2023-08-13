@@ -32,7 +32,6 @@ locals {
     "eventarc.googleapis.com",             # Event Arc
     "firebase.googleapis.com",             # Firebase
     "firestore.googleapis.com",            # Firestore
-    # "generativelanguage.googleapis.com",   # GenAI
     "iam.googleapis.com",                  # Cloud IAM
     "identitytoolkit.googleapis.com",      # Identity Toolkit
     "logging.googleapis.com",              # Cloud Logging
