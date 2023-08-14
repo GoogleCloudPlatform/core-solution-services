@@ -183,7 +183,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   is_public = request_body.get("is_public")
   llm_type = request_body.get("llm_type")
 
-  Logger.info(f"Starting batch job for {query_engine} job id {job.id_}")
+  Logger.info(f"Starting batch job for {query_engine} job id {job.id}")
 
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url, query_engine, user_id, is_public, llm_type)
