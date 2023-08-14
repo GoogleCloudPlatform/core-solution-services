@@ -214,7 +214,8 @@ def kube_create_job_object(name,
   template.template.spec = client.V1PodSpec(
       containers=[container],
       restart_policy="Never",
-      service_account_name=GKE_SERVICE_ACCOUNT_NAME)
+      service_account_name=GKE_SERVICE_ACCOUNT_NAME,
+      automount_service_account_token=True)
   # And finally we can create our V1JobSpec!
   body.spec = client.V1JobSpec(
       backoff_limit=0,
