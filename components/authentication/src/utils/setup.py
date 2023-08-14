@@ -96,7 +96,8 @@ def login_user(user_email, user_password, base_url=None) -> None:
     raise Exception("User sign-in failed")
 
   print(f"Signed in with existing user '{user_email}'. ID Token:\n")
-  print(sign_in_res["data"]["idToken"])
+  id_token = sign_in_res["data"]["idToken"]
+  print(id_token)
   print()
 
 

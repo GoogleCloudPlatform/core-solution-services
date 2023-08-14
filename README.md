@@ -88,18 +88,19 @@ Follow README files of each microservice to setup:
 sb deploy
 ```
 
-### Set up admin user
+### Set up users
 
-In the source code:
+In the source code folder:
 ```
-PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py create_admin --base-url=https://your.domain.com/
+BASE_URL=https://your.domain.com/
+PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py create_user --base-url=$BASE_URL
 ```
-- You can use the IP address, e.g. https://127.0.0.1/
-- This will add the `admin` user to the Firestore (`users` collection).
+- You can use the IP address, e.g. http://127.0.0.1/
+- This will register the user to Identity Platform and a user record in Firestore (in `users` collection).
 
 Once complete, it will show the ID token in the output. E.g.:
 ```
-User 'admin@my.domain.com' created successfully. ID Token:
+User 'user@my.domain.com' created successfully. ID Token:
 
 <my-id-token...>
 ```
