@@ -32,6 +32,7 @@ CLOUD_LOGGING_ENABLED=bool(
   os.getenv("CLOUD_LOGGING_ENABLED","true").lower() in ("true",))
 
 BQ_REGION= os.getenv("BQ_REGION", "US")
+GKE_SERVICE_ACCOUNT_NAME = os.getenv("GKE_SERVICE_ACCOUNT_NAME", "gke-sa")
 
 SERVICES = {
   "user-management": {

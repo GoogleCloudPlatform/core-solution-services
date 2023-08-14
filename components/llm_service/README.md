@@ -73,3 +73,19 @@ Once deployed, it will print logs from the microservice, e.g.
 [llm-service] INFO:     10.1.1.1:55346 - "GET /ping HTTP/1.1" 200 OK
 [llm-service] INFO:     10.1.1.1:55348 - "GET /ping HTTP/1.1" 200 OK
 ```
+
+### Troubleshooting LLM Service - building a query engine
+
+#### Received 403 error in LLM service
+
+When sending the API call to https://$YOUR_DOMAIN/llm-service/api/v1/query/engine but received a 403 error. It could be one of the following reasons:
+
+- The Kubenetes Role and Role Binding are not set correctly.
+  - Check out the `components/llm_service/kustomize/base` folder, you will see role.yaml and role_binding.yaml. Make sure they exist.
+  - Check the `kustomization.yaml` file and make sure the role.yaml and role_binding.yaml are in `resources` list. Orders don't matter.
+  - Check out `role_binding.yaml` and ensure the Service Account name is exact `gke-sa`. This is defined in the `/terraform/stages/2-gke/main.tf`
+
+#### Batch job created but no pod created.
+
+If a batch job is created succesfully,
+

@@ -34,6 +34,9 @@ from common.utils.config import (JOB_TYPES_WITH_PREDETERMINED_TITLES,
                                  BATCH_JOB_FETCH_TIME,
                                  BATCH_JOB_PENDING_TIME_THRESHOLD,
                                  GCLOUD_LOG_URL)
+
+from common.config import GKE_SERVICE_ACCOUNT_NAME
+
 #pylint: disable=dangerous-default-value
 #pylint: disable=logging-not-lazy
 #pylint: disable=consider-using-f-string
@@ -211,7 +214,7 @@ def kube_create_job_object(name,
   template.template.spec = client.V1PodSpec(
       containers=[container],
       restart_policy="Never",
-      service_account_name="ksa")
+      service_account_name=GKE_SERVICE_ACCOUNT_NAME)
   # And finally we can create our V1JobSpec!
   body.spec = client.V1JobSpec(
       backoff_limit=0,
