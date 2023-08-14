@@ -4,7 +4,7 @@ metadata:
   name: batch-job
 subjects:
 - kind: ServiceAccount
-  name: ksa # Name of the ServiceAccount
+  name: gke-sa # Name of the ServiceAccount
 roleRef:
   kind: Role # This must be Role or ClusterRole
   name: batch-job # This must match the name of the Role or ClusterRole you wish to bind to

@@ -88,7 +88,7 @@ Follow README files of each microservice to setup:
 sb deploy
 ```
 
-### Set up users
+### Create users
 
 In the source code folder:
 ```
@@ -104,6 +104,15 @@ User 'user@my.domain.com' created successfully. ID Token:
 
 <my-id-token...>
 ```
+
+### Get ID Access Token
+
+Get the access token for a particular user:
+```
+BASE_URL=https://your.domain.com/
+PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py get_token --base-url=$BASE_URL
+```
+- This will print out the token in the terminal.
 
 ### Verify deployed APIs
 
