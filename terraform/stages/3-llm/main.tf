@@ -16,7 +16,64 @@
  */
 
 resource "google_storage_bucket" "llm_doc_storage" {
-  name          = "${var.project_id}-llm-docs"
-  location      = var.project_id
-  force_destroy = true
+  project                     = var.project_id
+  name                        = "${var.project_id}-llm-docs"
+  location                    = "US"
+  storage_class               = "STANDARD"
+  uniform_bucket_level_access = true
+  force_destroy               = true
+}
+
+# Upload an sample PDF to the newly created bucket.
+resource "google_storage_bucket_object" "default" {
+  depends_on = [ google_storage_bucket.llm_doc_storage ]
+
+  name         = "genai-sample-doc.pdf"
+  source       = "genai-sample-doc.pdf"
+  content_type = "application/pdf"
+  bucket       = google_storage_bucket.llm_doc_storage.id
+}
+
+resource "google_firestore_index" "user_chats_composite" {
+  project = var.project_id
+  collection = "user_chats"
+
+  fields {
+    field_path = "deleted_at_timestamp"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "user_id"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "created_time"
+    order      = "DESCENDING"
+  }
+  fields {
+    field_path = "__name__"
+    order      = "DESCENDING"
+  }
+}
+
+resource "google_firestore_index" "batch_jobs_composite" {
+  project = var.project_id
+  collection = "batch_jobs"
+
+  fields {
+    field_path = "status"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "type"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "created_time"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "__name__"
+    order      = "ASCENDING"
+  }
 }
