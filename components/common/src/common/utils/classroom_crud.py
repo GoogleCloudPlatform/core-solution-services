@@ -16,18 +16,21 @@ limitations under the License.
 
 """ Helper functions for classroom crud API """
 import requests
+import traceback
 from asyncio.log import logger
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from common.utils.jwt_creds import JwtCredentials
-from common.utils.errors import InvalidTokenError, UserManagementServiceError, ResourceNotFoundException
+from common.utils.errors import InvalidTokenError, UserManagementServiceError, \
+  ResourceNotFoundException,ValidationError
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
+from common.utils.secrets import get_secret
 from common.models import Section
-
-from common.config import CLASSROOM_ADMIN_EMAIL, USER_MANAGEMENT_BASE_URL, PUB_SUB_PROJECT_ID, DATABASE_PREFIX
-# pylint: disable=line-too-long
+from common.config import (CLASSROOM_ADMIN_EMAIL, USER_MANAGEMENT_BASE_URL,
+                           PUB_SUB_PROJECT_ID, DATABASE_PREFIX)
+# pylint: disable=line-too-long, redefined-outer-name, broad-exception-caught
 
 SUCCESS_RESPONSE = {"status": "Success"}
 FAILED_RESPONSE = {"status": "Failed"}
@@ -35,6 +38,26 @@ FEED_TYPE_DICT = {
     "COURSE_WORK_CHANGES": "courseWorkChangesInfo",
     "COURSE_ROSTER_CHANGES": "courseRosterChangesInfo"
 }
+
+try:
+  COPY_COURSE_API_KEY = get_secret("copy-course-api-key")
+except Exception as e:
+  COPY_COURSE_API_KEY = ""
+  Logger.info(f"Failed to fetch copy course api key secret with error - {e}")
+
+try:
+  COPY_COURSE_API_LABEL = get_secret("copy-course-api-label")
+except Exception as e:
+  COPY_COURSE_API_LABEL = ""
+  Logger.info(f"Failed to fetch copy course api label secret with error - {e}")
+
+try:
+  COPY_COURSE_API_VERSION = get_secret("copy-course-api-version")
+except Exception as e:
+  COPY_COURSE_API_VERSION = ""
+  Logger.info(f"Failed to fetch copy course api version secret with error - {e}")
+
+DISCOVERY_SERVICE_URL = f"https://classroom.googleapis.com/$discovery/rest?labels={COPY_COURSE_API_LABEL}&key={COPY_COURSE_API_KEY}"
 
 SCOPES = [
     "https://www.googleapis.com/auth/classroom.courses",
@@ -256,7 +279,7 @@ def create_topics(course_id, topics):
   return topic_id_map
 
 
-def get_coursework_list(course_id):
+def get_coursework_list(course_id,coursework_state="PUBLISHED"):
   """Get  list of coursework from classroom
 
   Args: course_id
@@ -265,11 +288,16 @@ def get_coursework_list(course_id):
   """
 
   service = build("classroom", "v1", credentials=get_credentials())
+  page_token = None
+  coursework_list=[]
   try:
-    coursework_list = service.courses().courseWork().list(
-        courseId=course_id).execute()
-    if coursework_list:
-      coursework_list = coursework_list["courseWork"]
+    while True:
+      response = service.courses().courseWork().list(
+          courseId=course_id,pageToken=page_token,courseWorkStates=coursework_state).execute()
+      coursework_list.extend(response.get("courseWork", []))
+      page_token = response.get("nextPageToken", None)
+      if not page_token:
+        break
     return coursework_list
   except HttpError as error:
     logger.error(error)
@@ -324,21 +352,26 @@ def patch_student_submission(course_id, coursework_id, student_submission_id,
   return patch_result
 
 
-def get_coursework_material_list(course_id):
+def get_coursework_material_list(course_id,coursework_material_state="PUBLISHED"):
   """Get  list of coursework from classroom
 
   Args: course_id
   Returns:
     returns list of coursework of given course in classroom
   """
-
   service = build("classroom", "v1", credentials=get_credentials())
+  page_token = None
+  coursework_material_list=[]
   try:
-    coursework_list = service.courses().courseWorkMaterials().list(
-        courseId=course_id).execute()
-    if coursework_list:
-      coursework_list = coursework_list["courseWorkMaterial"]
-    return coursework_list
+    while True:
+      response = service.courses().courseWorkMaterials().list(
+       courseId=course_id,pageToken=page_token,
+       courseWorkMaterialStates=coursework_material_state).execute()
+      coursework_material_list.extend(response.get("courseWorkMaterial", []))
+      page_token = response.get("nextPageToken", None)
+      if not page_token:
+        break
+    return coursework_material_list
   except HttpError as error:
     logger.error(error)
     return None
@@ -361,7 +394,60 @@ def create_coursework(course_id, coursework):
   return data
 
 
-def create_coursework_material(course_id, coursework_material_list):
+def patch_coursework_alpha(course_id, coursework_id, update_mask, updated_data):
+  """Update a coursework in a classroom course
+
+  Args:
+    course_id: ID of the classroom course
+    coursework_id: ID of the coursework in the classroom
+    update_mask: update mask contains the fields to be updated
+    updated_data: Data that needs to be updated in the coursework
+  Returns:
+    returns success
+  """
+  service = build(
+      "classroom",
+      "v1",
+      credentials=get_credentials(),
+      static_discovery=False,
+      discoveryServiceUrl=DISCOVERY_SERVICE_URL)
+  data = service.courses().courseWork().patch(
+      courseId=course_id,
+      id=coursework_id,
+      updateMask=update_mask,
+      previewVersion=COPY_COURSE_API_VERSION,
+      body=updated_data).execute()
+  return data
+
+
+def patch_coursework_material_alpha(course_id, coursework_material_id,
+                                    update_mask, updated_data):
+  """Update a coursework in a classroom course
+
+  Args:
+    course_id: ID of the classroom course
+    coursework_material_id: ID of the coursework material in the classroom
+    update_mask: update mask contains the fields to be updated
+    updated_data: Data that needs to be updated in the coursework material
+  Returns:
+    returns success
+  """
+  service = build(
+      "classroom",
+      "v1",
+      credentials=get_credentials(),
+      static_discovery=False,
+      discoveryServiceUrl=DISCOVERY_SERVICE_URL)
+  data = service.courses().courseWorkMaterials().patch(
+      courseId=course_id,
+      id=coursework_material_id,
+      updateMask=update_mask,
+      previewVersion=COPY_COURSE_API_VERSION,
+      body=updated_data).execute()
+  return data
+
+
+def create_coursework_material(course_id, coursework_material):
   """create coursework in a classroom course
 
   Args:
@@ -372,11 +458,11 @@ def create_coursework_material(course_id, coursework_material_list):
   """
   Logger.info("In Create coursework Material")
   service = build("classroom", "v1", credentials=get_credentials())
-  for coursework_item in coursework_material_list:
-    _ = service.courses().courseWorkMaterials().create(
-        courseId=course_id, body=coursework_item).execute()
+
+  data = service.courses().courseWorkMaterials().create(courseId=course_id,
+                                               body=coursework_material).execute()
   Logger.info("Create coursework Material worked")
-  return "success"
+  return data
 
 
 def delete_course_by_id(course_id):
@@ -563,25 +649,33 @@ def enroll_student(headers, access_token, course_id, student_email,
   Logger.info(
       f"Enroll{student_email},classroom_id {course_id},classroom_code {course_code}{access_token_details.json()}"
   )
+  try:
+    # Get the gaia ID, first name, last_name of the student
+    # Call_people api function
+    profile = get_person_information(access_token)
+    gaia_id = profile["metadata"]["sources"][0]["id"]
+    # Call user API
+    data = {
+        "first_name": profile["names"][0]["givenName"],
+        "last_name": profile["names"][0]["familyName"],
+        "email": student_email,
+        "user_type": "learner",
+        "user_groups": [],
+        "status": "active",
+        "is_registered": True,
+        "failed_login_attempts_count": 0,
+        "access_api_docs": False,
+        "gaia_id": gaia_id,
+        "photo_url": profile["photos"][0]["url"]
+    }
+  except Exception as e:
+    err= traceback.format_exc().replace("\n", " ")
+    Logger.error(e)
+    Logger.error(err)
+    raise ValidationError(
+  "Please set first name and last name in your google profile or check access token is valid"
+  ) from e
   create_student_in_course(access_token, student_email, course_id, course_code)
-  # Get the gaia ID, first name, last_name of the student
-  # Call_people api function
-  profile = get_person_information(access_token)
-  gaia_id = profile["metadata"]["sources"][0]["id"]
-  # Call user API
-  data = {
-      "first_name": profile["names"][0]["givenName"],
-      "last_name": profile["names"][0]["familyName"],
-      "email": student_email,
-      "user_type": "learner",
-      "user_groups": [],
-      "status": "active",
-      "is_registered": True,
-      "failed_login_attempts_count": 0,
-      "access_api_docs": False,
-      "gaia_id": gaia_id,
-      "photo_url": profile["photos"][0]["url"]
-  }
   # Check if searched user is [] ,i.e student is enrolling for first time
   # then call create user user-management API and return user data else
   # return searched user data
@@ -814,9 +908,10 @@ def get_course_work(course_id, course_work_id):
     dict: _description_
   """
   service = service = build("classroom", "v1", credentials=get_credentials())
-  return service.courses().courseWork().get(courseId=course_id,
-                                            id=course_work_id).execute()
 
+  response =  service.courses().courseWork().get(courseId=course_id,
+                                            id=course_work_id).execute()
+  return response
 
 def delete_course_work(course_id, course_work_id):
   """delete course work by course id and course work id
@@ -831,6 +926,21 @@ def delete_course_work(course_id, course_work_id):
                                                id=course_work_id).execute()
   Logger.info(
       f"Deleted course work - {course_work_id} in course - {course_id}")
+  return data
+
+def delete_course_work_material(course_id, course_work_material_id):
+  """delete course work by course id and course work id
+  Args:
+    course_id (str): Id of the course
+    course_work_material_id (str): Id of the course work material to be deleted
+  Returns:
+    dict: empty dict if success
+  """
+  service = service = build("classroom", "v1", credentials=get_credentials())
+  data = service.courses().courseWorkMaterials().delete(courseId=course_id,
+                                               id=course_work_material_id).execute()
+  Logger.info(
+      f"Deleted course work  material- {course_work_material_id} in course - {course_id}")
   return data
 
 
@@ -852,6 +962,27 @@ def update_course_work(course_id, course_work_id, update_mask, updated_body):
       updateMask=update_mask).execute()
   Logger.info(
       f"Updated course work - {course_work_id} in course - {course_id}")
+  return data
+
+
+def update_course_work_material(course_id, course_work_material_id, update_mask,
+                                updated_body):
+  """update course work material by course id and course work id
+  Args:
+    course_id (str): Id of the course
+    course_work_material_id (str): Id of the course work to be deleted
+    update_mask (str): Fields(Concat multiple fields if any) to be updated in the coursework
+    updated_body(dict): Updated field object data
+  Returns:
+    dict: empty dict if success
+  """
+  service = service = build("classroom", "v1", credentials=get_credentials())
+  data = service.courses().courseWorkMaterials().patch(
+      courseId=course_id,
+      id=course_work_material_id,
+      body=updated_body,
+      updateMask=update_mask).execute()
+  Logger.info(f"Updated course work material - {course_work_material_id} in course - {course_id}")
   return data
 
 
@@ -896,3 +1027,51 @@ def delete_drive_folder(folder_id):
   service= build("drive", "v3", credentials=get_credentials())
   result=service.files().delete(fileId=folder_id).execute()
   return result
+
+def list_coursework_submissions(course_id, coursework_id):
+  """Get  list of coursework from classroom
+
+  Args: course_id: classroom course_id
+  coursework_id: coursework_id of claaassroom coursework
+  Returns:
+    returns list of coursework submissions for a coursework
+    """ ""
+
+  service = build("classroom", "v1", credentials=get_credentials())
+  submissions = []
+  page_token = None
+  while True:
+    coursework = service.courses().courseWork()
+    response = coursework.studentSubmissions().list(pageToken=page_token,
+                                                    courseId=course_id,
+                                                    courseWorkId=coursework_id).execute()
+    submissions.extend(response.get("studentSubmissions", []))
+    page_token = response.get("nextPageToken", None)
+    if not page_token:
+      break
+  return submissions
+
+def copy_classroom_course(source_classroom_id, name):
+  """Copy classroom course from given classroom id
+  Args:
+      source_classroom_id: Unique ID of the source classroom
+      name: Title of the copied classroom
+  Returns:
+      dict: Output response of the classroom course
+  """
+  alpha_service = build(
+      "classroom",
+      "v1",
+      credentials=get_credentials(),
+      static_discovery=False,
+      discoveryServiceUrl=DISCOVERY_SERVICE_URL)
+
+  input_data = {
+      "sourceCourseId": source_classroom_id,
+      "title": name,
+      "previewVersion": COPY_COURSE_API_VERSION
+  }
+
+  data = alpha_service.courses().duplicateCourseAlpha(body=input_data).execute()
+
+  return data
