@@ -3,6 +3,5 @@ kind: ManagedCertificate
 metadata:
   name: default-managed-cert
 spec:
-  domains: 
-    - css-dev.cloudpssolutions.com
-  
+  domains:
+    - # Fill in your Domain name
