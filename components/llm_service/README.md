@@ -87,5 +87,80 @@ When sending the API call to https://$YOUR_DOMAIN/llm-service/api/v1/query/engin
 
 #### Batch job created but no pod created.
 
-If a batch job is created succesfully,
+If a batch job is created succesfully, but there's an error about creating a pod, run the following to triage kubernetes resources:
+
+```
+$ kubectl get jobs
+NAME                                   COMPLETIONS   DURATION   AGE
+d49bb762-4c0e-4972-abf9-5d284bd74597   0/1           3m57s      3m57s
+
+$ kubectl describe job d49bb762-4c0e-4972-abf9-5d284bd74597
+
+Pod Template:
+  Labels:           batch.kubernetes.io/controller-uid=4107c701-3461-489a-8bc3-f52cb48a39e5
+                    batch.kubernetes.io/job-name=d49bb762-4c0e-4972-abf9-5d284bd74597
+                    controller-uid=4107c701-3461-489a-8bc3-f52cb48a39e5
+                    job-name=d49bb762-4c0e-4972-abf9-5d284bd74597
+  Service Account:  gke-sa
+  Containers:
+   jobcontainer:
+    Image:      gcr.io/jonchen-css-0813/llm-service:1fd3ca9-dirty
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      python
+      run_batch_job.py
+    Args:
+      --container_name
+      d49bb762-4c0e-4972-abf9-5d284bd74597
+    Limits:
+      cpu:     3
+      memory:  7000Mi
+    Requests:
+      cpu:     2
+      memory:  5000Mi
+    Environment:
+      DATABASE_PREFIX:
+      PROJECT_ID:         jonchen-css-0813
+      ENABLE_OPENAI_LLM:  True
+      ENABLE_COHERE_LLM:  True
+      GCP_PROJECT:        jonchen-css-0813
+    Mounts:               <none>
+  Volumes:                <none>
+Events:
+  Type     Reason                Age    From            Message
+  ----     ------                ----   ----            -------
+  Normal   SuccessfulCreate      4m17s  job-controller  Created pod: d49bb762-4c0e-4972-abf9-5d284bd74597-l87wf
+  Warning  BackoffLimitExceeded  4m8s   job-controller  Job has reached the specified backoff limit
+```
+
+Then describe the pod and see what's going on.
+```
+$ kubectl describe pod d49bb762-4c0e-4972-abf9-5d284bd74597-l87wf
+
+...
+Containers:
+  jobcontainer:
+    Container ID:  containerd://60eb1dde2b50c80515b0a0b6ff717beb970add98f9e3529f2bc34cb868159772
+    Image:         gcr.io/jonchen-css-0813/llm-service:1fd3ca9-dirty
+    Image ID:      gcr.io/jonchen-css-0813/llm-service@sha256:4b243b37d0457f2464161015b23dad48fe50937b3d509f627ac22668035319a5
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      python
+      run_batch_job.py
+    Args:
+      --container_name
+      d49bb762-4c0e-4972-abf9-5d284bd74597
+    State:          Terminated
+      Reason:       Error
+      Exit Code:    1
+      Started:      Mon, 14 Aug 2023 14:15:24 -0400
+      Finished:     Mon, 14 Aug 2023 14:15:24 -0400
+```
+
+Now the pod seems get some error, run the following to checkout logs (Or see logs in Stackdriver.)
+```
+kubectl logs d49bb762-4c0e-4972-abf9-5d284bd74597-l87wf
+```
 
