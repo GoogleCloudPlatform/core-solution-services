@@ -34,7 +34,7 @@ resource "google_storage_bucket_object" "default" {
   bucket       = google_storage_bucket.llm_doc_storage.id
 }
 
-resource "google_firestore_index" "user_chats_composite" {
+resource "google_firestore_index" "user_chats_index" {
   project = var.project_id
   collection = "user_chats"
 
@@ -56,7 +56,7 @@ resource "google_firestore_index" "user_chats_composite" {
   }
 }
 
-resource "google_firestore_index" "batch_jobs_composite" {
+resource "google_firestore_index" "batch_jobs_index" {
   project = var.project_id
   collection = "batch_jobs"
 
