@@ -13,4 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py create_user
+PYTHONPATH=components/common/src/ python user_tool.py create_user
