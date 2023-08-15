@@ -69,6 +69,9 @@ Apply terraform for GKE ingress and LLM service:
 sb infra apply 3-gke-ingress
 sb infra apply 3-llm
 ```
+- This will create a GCE load balancer with ingress.
+- This will create a `$PROJECT_ID-llm-docs` bucket and upload a `llm-sample-doc.pdf`.
+- It will add required Firestore indexes.
 
 (Optional) Add an A record to your DNS:
 ![Alt text](.github/assets/dns_a_record.png)

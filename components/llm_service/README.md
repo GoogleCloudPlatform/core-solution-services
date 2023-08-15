@@ -16,9 +16,7 @@ echo $OPENAI_API_KEY | gcloud secrets versions add "openai-api-key" --data-file=
 echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=-
 ```
 
-## After Deployment
-
-### Create a Query Engine
+## Apply terraform infra for LLM service
 
 Set up Cloud Storage with one sample PDF file for Query Engine to use later:
 ```
@@ -27,10 +25,13 @@ sb infra apply 3-llm
 - This will create a `$PROJECT_ID-llm-docs` bucket and upload a `llm-sample-doc.pdf`.
 - It will add required Firestore indexes.
 
+## After Deployment
+
+### Create a Query Engine
+
 Get the access token for a particular user:
 ```
-BASE_URL=https://your.domain.com/
-PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py get_token --base-url=$BASE_URL
+PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py get_token
 ```
 - This will print out the token in the terminal.
 
