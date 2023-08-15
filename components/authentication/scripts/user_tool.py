@@ -47,7 +47,7 @@ def execute_command(command):
 def get_input(prompt):
   input_value = None
   while not input_value:
-    input_value = get_input(prompt)
+    input_value = input(prompt)
   return input_value
 
 def create_user(user_email, user_password, base_url=None) -> None:
