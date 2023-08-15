@@ -64,9 +64,10 @@ Update the following questions in the promopt:
   - (Your DNS domain)
   > Note: You can leave a dummy DNS domain if you don't have any custom domains. If so, you'd use IP address to connect to API endpoints later on.
 
-Apply terraform for GKE ingress:
+Apply terraform for GKE ingress and LLM service:
 ```
 sb infra apply 3-gke-ingress
+sb infra apply 3-llm
 ```
 
 (Optional) Add an A record to your DNS:

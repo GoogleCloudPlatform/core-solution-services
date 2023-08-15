@@ -44,6 +44,12 @@ def execute_command(command):
   return output.strip()
 
 
+def get_input(prompt):
+  input_value = None
+  while not input_value:
+    input_value = get_input(prompt)
+  return input_value
+
 def create_user(user_email, user_password, base_url=None) -> None:
   """
   Function to do firebase login
@@ -102,7 +108,7 @@ def login_user(user_email, user_password, base_url=None) -> None:
 
 
 def get_token(base_url="http://authentication"):
-  user_email = input("User email: ")
+  user_email = get_input("User email: ")
   user_password = getpass.getpass(prompt="Password: ")
   print()
   login_user(user_email, user_password, base_url=base_url)
@@ -115,7 +121,7 @@ def main():
   args = parser.parse_args()
 
   if not args.base_url:
-    base_url = input("Provide API base URL (e.g.  http://127.0.0.1/): ")
+    base_url = get_input("Provide API base URL (e.g.  http://127.0.0.1/): ")
   else:
     base_url = args.base_url
     print(f"API base URL: {base_url}")
@@ -132,7 +138,7 @@ def main():
     create_user(user_email, user_password, base_url=base_url)
 
   elif args.action == "create_user":
-    user_email = input("User email: ")
+    user_email = get_input("User email: ")
     user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
     confirm_password = getpass.getpass(prompt="Confirm password: ")
     assert user_password == confirm_password, "Passwords don't match."

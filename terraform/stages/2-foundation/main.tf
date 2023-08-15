@@ -39,6 +39,7 @@ locals {
     "pubsub.googleapis.com",               # Pub/Sub
     "run.googleapis.com",                  # Cloud Run
     "secretmanager.googleapis.com",        # Secret Manager
+    "servicenetworking.googleapis.com",    # Service Networking for VertexAI
     "storage.googleapis.com",              # Cloud Storage
   ]
 

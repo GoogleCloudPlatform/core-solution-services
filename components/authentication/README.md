@@ -2,6 +2,8 @@
 
 ## Setup
 
+### Enable Identity Platform
+
 - Go to GCP console and [enable the Identity Platform](https://console.cloud.google.com/customer-identity).
   ![Enable IDP](../../.github/assets/idp_enable.png)
 
@@ -22,7 +24,7 @@
 In the source code folder:
 ```
 BASE_URL=https://your.domain.com/
-PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py create_user --base-url=$BASE_URL
+PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py create_user --base-url=$BASE_URL
 ```
 - You can use the IP address, e.g. http://127.0.0.1/
 - This will register the user to Identity Platform and a user record in Firestore (in `users` collection).
@@ -39,6 +41,6 @@ User 'user@my.domain.com' created successfully. ID Token:
 Get the access token for a particular user:
 ```
 BASE_URL=https://your.domain.com/
-PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py get_token --base-url=$BASE_URL
+PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py get_token --base-url=$BASE_URL
 ```
 - This will print out the token in the terminal.
