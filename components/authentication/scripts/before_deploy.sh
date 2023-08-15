@@ -17,4 +17,4 @@
 
 KEY_NAME=$(gcloud alpha services api-keys list --filter="displayName='API Key for Identity Platform'" --format="value(name)")
 export FIREBASE_API_KEY=$(gcloud alpha services api-keys get-key-string ${KEY_NAME} --format="value(keyString)")
-echo $FIREBASE_API_KEY
+echo "FIREBASE_API_KEY=${FIREBASE_API_KEY}"
