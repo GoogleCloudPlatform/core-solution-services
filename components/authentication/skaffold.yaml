@@ -74,8 +74,8 @@ profiles:
     hooks:
       before:
       - host:
-          dir: ./
-          command: ["sh", "-c", "source scripts/before_deploy.sh"]
+          dir: ./scripts
+          command: ["sh", "-c", "source before_deploy.sh"]
       - host:
           dir: ./kustomize/base
           command: ["sh", "-c",
@@ -85,8 +85,8 @@ profiles:
           dir: ./kustomize/base
           command: ["sh", "-c", "rm *.rendered.env"]
       - host:
-          dir: ./
-          command: ["sh", "-c", "source scripts/after_deploy.sh"]
+          dir: ./scripts
+          command: ["sh", "-c", "source after_deploy.sh"]
   # Simple deployment using kubectl.
   deploy:
     kubectl: {}
