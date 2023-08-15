@@ -2,8 +2,6 @@
 
 ## Setup
 
-### Before Deployment
-
 Set API Keys to environment variables:
 ```
 export OPENAI_API_KEY="<Your API key>"
@@ -18,7 +16,9 @@ echo $OPENAI_API_KEY | gcloud secrets versions add "openai-api-key" --data-file=
 echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=-
 ```
 
-### After Deployment
+## After Deployment
+
+### Create a Query Engine
 
 Set up Cloud Storage with one sample PDF file for Query Engine to use later:
 ```
@@ -41,12 +41,21 @@ curl --location "https://css-test.cloudpssolutions.com/llm-service/api/v1/query/
 --header "Content-Type: application/json" \
 --header "Authorization: Bearer $ID_TOKEN" \
 --data '{
-    "doc_url": "gs://jonchen-css-0813-llm-docs/genai-sample-doc.pdf",
+    "doc_url": "gs://$PROJECT_ID-llm-docs/genai-sample-doc.pdf",
     "query_engine": "query-engine-test",
     "llm_type": "VertexAI-Chat",
     "is_public": true
 }'
 ```
+
+This will create a Vertex AI Matching Engine Index. You can check out the progress on https://console.cloud.google.com/vertex-ai/matching-engine/indexes?referrer=search&project=$PROJECT_ID.
+> Note: It may take 10+ minutes to create a Matching Engine Index.
+
+Once finished, you shall see the folloing artifacts:
+- A record in `query_engines` collection in Firestore, representing the new Query engine.
+- A corresponding document metadata in `query_documents` collection in Firestore.
+- A record in `query_document_chunk` collection in Firestore.
+- A Vertex AI Matching Engine.
 
 ## Troubleshoot
 
@@ -104,7 +113,7 @@ Pod Template:
   Service Account:  gke-sa
   Containers:
    jobcontainer:
-    Image:      gcr.io/jonchen-css-0813/llm-service:1fd3ca9-dirty
+    Image:      gcr.io/$PROJECT_ID/llm-service:1fd3ca9-dirty
     Port:       <none>
     Host Port:  <none>
     Command:
@@ -121,10 +130,10 @@ Pod Template:
       memory:  5000Mi
     Environment:
       DATABASE_PREFIX:
-      PROJECT_ID:         jonchen-css-0813
+      PROJECT_ID:         $PROJECT_ID
       ENABLE_OPENAI_LLM:  True
       ENABLE_COHERE_LLM:  True
-      GCP_PROJECT:        jonchen-css-0813
+      GCP_PROJECT:        $PROJECT_ID
     Mounts:               <none>
   Volumes:                <none>
 Events:
@@ -142,8 +151,8 @@ $ kubectl describe pod d49bb762-4c0e-4972-abf9-5d284bd74597-l87wf
 Containers:
   jobcontainer:
     Container ID:  containerd://60eb1dde2b50c80515b0a0b6ff717beb970add98f9e3529f2bc34cb868159772
-    Image:         gcr.io/jonchen-css-0813/llm-service:1fd3ca9-dirty
-    Image ID:      gcr.io/jonchen-css-0813/llm-service@sha256:4b243b37d0457f2464161015b23dad48fe50937b3d509f627ac22668035319a5
+    Image:         gcr.io/$PROJECT_ID/llm-service:1fd3ca9-dirty
+    Image ID:      gcr.io/$PROJECT_ID/llm-service@sha256:4b243b37d0457f2464161015b23dad48fe50937b3d509f627ac22668035319a5
     Port:          <none>
     Host Port:     <none>
     Command:

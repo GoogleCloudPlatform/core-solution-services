@@ -56,15 +56,13 @@ sb components add terraform_gke_ingress
 ```
 
 Update the following questions in the promopt:
-```
-🎤 Cluster external endpoint IP address?
-   x.x.x.x
-🎤 Kubernetes service names in ingress? (comma-separated string)
-   authentication,jobs-service,llm-service,user-management
-🎤 DNS domains (comma-separated string)?
-   example.domain.com
-```
-- Note: You can leave the DNS domains as empty if you don't have any custom domains. If so, you'd use IP address to connect to API endpoints later on.
+- Cluster external endpoint IP address?
+  - (The IP address will be automatically retrieved)
+- Kubernetes service names in ingress? (comma-separated string)
+  - **authentication,jobs-service,llm-service,user-management**
+- DNS domains (comma-separated string)?
+  - (Your DNS domain)
+  > Note: You can leave a dummy DNS domain if you don't have any custom domains. If so, you'd use IP address to connect to API endpoints later on.
 
 Apply terraform for GKE ingress:
 ```
@@ -77,42 +75,22 @@ sb infra apply 3-gke-ingress
 
 ## Deploy
 
-### Set up each microservice:
+### Before Deploy
 
 Follow README files of each microservice to setup:
-- Authentication: [components/authentication/README.md](./components/authentication/README.md)
-- LLM Service: [components/llm_service/README.md](./components/llm_service/README.md)
+- Authentication: [components/authentication/README.md](./components/authentication/README.md#setup)
+- LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup)
 
-### Deploy all microservices (optionally with Ingress) to GKE cluster:
+### Deploy all microservices and ingress to GKE cluster:
 ```
 sb deploy
 ```
 
-### Create users
+### After deployment
 
-In the source code folder:
-```
-BASE_URL=https://your.domain.com/
-PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py create_user --base-url=$BASE_URL
-```
-- You can use the IP address, e.g. http://127.0.0.1/
-- This will register the user to Identity Platform and a user record in Firestore (in `users` collection).
+- Follow [components/authentication/README.md#create-users](./components/authentication/README.md#create-users) to create the first user.
+- Follow [components/llm_service/README.md](./components/llm_service/README.md#after-deployment) to create a Query Engine.
 
-Once complete, it will show the ID token in the output. E.g.:
-```
-User 'user@my.domain.com' created successfully. ID Token:
-
-<my-id-token...>
-```
-
-### Get ID Access Token
-
-Get the access token for a particular user:
-```
-BASE_URL=https://your.domain.com/
-PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py get_token --base-url=$BASE_URL
-```
-- This will print out the token in the terminal.
 
 ### Verify deployed APIs
 

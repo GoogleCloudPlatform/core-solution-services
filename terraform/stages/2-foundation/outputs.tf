@@ -38,3 +38,7 @@ output "secondary_ranges_pods" {
 output "secondary_ranges_services" {
   value = var.secondary_ranges_services
 }
+
+output "firebase_api_key" {
+  value = resource.google_apikeys_key.idp_api_key
+}

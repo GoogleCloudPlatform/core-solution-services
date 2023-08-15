@@ -15,6 +15,15 @@
  *
  */
 
+resource "google_identity_platform_project_default_config" "default" {
+  sign_in {
+    email {
+      enabled           = true
+      password_required = false
+    }
+  }
+}
+
 resource "google_apikeys_key" "idp_api_key" {
   name         = "idp-api-key"
   display_name = "API Key for Identity Platform"
