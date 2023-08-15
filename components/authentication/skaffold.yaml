@@ -75,7 +75,7 @@ profiles:
       before:
       - host:
           dir: ./scripts
-          command: ["source", "before_deploy.sh"]
+          command: ["sh", "-c", "before_deploy.sh"]
       - host:
           dir: ./kustomize/base
           command: ["sh", "-c",
@@ -86,7 +86,7 @@ profiles:
           command: ["sh", "-c", "rm *.rendered.env"]
       - host:
           dir: ./scripts
-          command: ["source", "after_deploy.sh"]
+          command: ["sh", "-c", "after_deploy.sh"]
   # Simple deployment using kubectl.
   deploy:
     kubectl: {}
