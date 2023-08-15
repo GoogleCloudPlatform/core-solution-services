@@ -79,7 +79,6 @@ sb infra apply 3-llm
 ### Before Deploy
 
 Follow README files of each microservice to setup:
-- Authentication: [components/authentication/README.md](./components/authentication/README.md#setup)
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup)
 
 ### Deploy all microservices and ingress to GKE cluster:
@@ -90,13 +89,17 @@ sb deploy
 ### After deployment
 
 - Follow [components/authentication/README.md#create-users](./components/authentication/README.md#create-users) to create the first user.
+  - You will need the output ID Token for the next step.
 - Follow [components/llm_service/README.md](./components/llm_service/README.md#after-deployment) to create a Query Engine.
 
-
-### Verify deployed APIs
+### Verify deployment
 
 Once deployed, check out the API docs with the following links:
 - https://$CLUSTER_IP_ADDRESS/authentication/api/v1/docs
 - https://$CLUSTER_IP_ADDRESS/user-management/api/v1/docs
 - https://$CLUSTER_IP_ADDRESS/jobs-service/api/v1/docs
 - https://$CLUSTER_IP_ADDRESS/llm-service/api/v1/docs
+
+In the GCP Console, check the following
+- A query engine
+- A vertex AI endpoint to the query engine
