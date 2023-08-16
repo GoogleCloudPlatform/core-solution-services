@@ -35,11 +35,16 @@ User 'user@my.domain.com' created successfully. ID Token:
 <my-id-token...>
 ```
 
-### (Optional) Get ID Access Token
+### Get ID Access Token
 
 Get the access token for a particular user:
 ```
-BASE_URL=https://your.domain.com/
-PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py get_token --base-url=$BASE_URL
+PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py get_token
 ```
 - This will print out the token in the terminal.
+
+```
+Signed in with existing user 'user@my.domain.com'. ID Token:
+
+<my-id-token...>
+```

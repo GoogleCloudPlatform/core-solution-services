@@ -106,3 +106,14 @@ Once deployed, check out the API docs with the following links:
 In the GCP Console, check the following
 - A query engine
 - A vertex AI endpoint to the query engine
+
+### Deploy GenAI FlutterFlow app
+
+Follow the steps below to clone a FlutterFlow UI app:
+- Go to https://app.flutterflow.io/project/google-genie-1w4ejx and click [Clone] to make a copy of the FlutterFlow app.
+  - You may need to register a new FlutterFlow account to proceed.
+- Once cloned, on the left panel menu, go to [API Calls] page.
+- In each section (Authentication, Chats, Query), change the `API base URL` to your API base URL.
+  ![Alt text](.github/assets/ff_api_base_url.png)
+- Publish the app by clicking "Publish" from the top-right Thundar menu.
+  ![Alt text](.github/assets/ff_publish.png)
