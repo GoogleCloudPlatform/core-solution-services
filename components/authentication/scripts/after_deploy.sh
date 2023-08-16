@@ -13,4 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PYTHONPATH=../../common/src/ python user_tool.py create_user
+# (TODO: Skaffold is unable to run with input prompt. Currently this
+# Can only be done manually.)
+# PYTHONPATH=../../common/src/ python user_tool.py create_user
