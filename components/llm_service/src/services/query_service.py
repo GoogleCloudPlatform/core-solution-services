@@ -281,7 +281,7 @@ def build_doc_index(doc_url:str, query_engine: str) -> \
     storage_client = storage.Client(project=PROJECT_ID)
 
     # create bucket for ME index data
-    bucket_name = f"{query_engine}-me-data"
+    bucket_name = f"{PROJECT_ID}-{query_engine}-data"
     try:
       bucket = storage_client.create_bucket(bucket_name, location=REGION)
     except Conflict:

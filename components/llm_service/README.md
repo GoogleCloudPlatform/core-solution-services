@@ -31,22 +31,25 @@ sb infra apply 3-llm
 
 Get the access token for a particular user:
 ```
-PYTHONPATH=components/common/src/ python components/authentication/src/utils/setup.py get_token
+# Setting BASE_URL Without trailing slash.
+BASE_URL=https://your.domain.com
+PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py get_token --base-url=$BASE_URL
 ```
 - This will print out the token in the terminal.
 
 Run the following to build a Query engine:
 ```
 ID_TOKEN=<the token printed above>
-curl --location "https://css-test.cloudpssolutions.com/llm-service/api/v1/query/engine" \
+QUERY_ENGINE_NAME="qe1"
+curl --location "$BASE_URL/llm-service/api/v1/query/engine" \
 --header "Content-Type: application/json" \
 --header "Authorization: Bearer $ID_TOKEN" \
---data '{
-    "doc_url": "gs://$PROJECT_ID-llm-docs/genai-sample-doc.pdf",
-    "query_engine": "query-engine-test",
-    "llm_type": "VertexAI-Chat",
-    "is_public": true
-}'
+--data "{
+    \"doc_url\": \"gs://$PROJECT_ID-llm-docs/genai-sample-doc.pdf\",
+    \"query_engine\": \"$QUERY_ENGINE_NAME\",
+    \"llm_type\": \"VertexAI-Chat\",
+    \"is_public\": true
+}"
 ```
 
 This will create a Vertex AI Matching Engine Index. You can check out the progress on https://console.cloud.google.com/vertex-ai/matching-engine/indexes?referrer=search&project=$PROJECT_ID.
@@ -88,6 +91,56 @@ Once deployed, it will print logs from the microservice, e.g.
 
 ### Troubleshooting LLM Service - building a query engine
 
+#### Montior the batch job in Kubernetes Workloads
+
+Once sending the API call to https://$YOUR_DOMAIN/llm-service/api/v1/query/engine, it will create a Kubernetes Job and a corresponding Firestore record in `batch_jobs` collections.
+- Check the batch_job object in https://console.cloud.google.com/firestore/databases/-default-/data/panel/batch_jobs
+- Check the Kubernetes Job in the Kubernetes Workload: https://console.cloud.google.com/kubernetes/workload/overview
+
+In the Kubernetes Workload view, you'll see workloads with "Job" type.
+- If the job is created and running succesfully, the status shall be "OK" or "Running".
+- If you are seeing the status as "Error" or something else like "BackoffLimitExceeded", this means the Job failed.
+
+Run the following to describe the job in the terminal:
+```
+kubectl describe job atestjob-1eab-4f55-9075-895ed6e86c24
+```
+- You'd see something like:
+  ```
+  Events:
+  Type     Reason                Age   From            Message
+  ----     ------                ----  ----            -------
+  Normal   SuccessfulCreate      47m   job-controller  Created pod: atestjob-1eab-4f55-9075-895ed6e86c24-dtdlh
+  Warning  BackoffLimitExceeded  47m   job-controller  Job has reached the specified backoff limit
+  ```
+
+Run the following to triage the logs from the failed pod:
+```
+kubectl logs atestjob-1eab-4f55-9075-895ed6e86c24-dtdlh
+```
+
+For example, it would print logs with error messages like below:
+```
+Traceback (most recent call last):
+  File "/opt/run_batch_job.py", line 62, in <module>
+    app.run(main)
+  File "/usr/local/lib/python3.9/site-packages/absl/app.py", line 308, in run
+    _run_main(main, args)
+  File "/usr/local/lib/python3.9/site-packages/absl/app.py", line 254, in _run_main
+    sys.exit(main(argv))
+  File "/opt/run_batch_job.py", line 57, in main
+    raise e
+  File "/opt/run_batch_job.py", line 43, in main
+    _ = batch_build_query_engine(request_body, job)
+  File "/opt/services/query_service.py", line 189, in batch_build_query_engine
+    query_engine_build(doc_url, query_engine, user_id, is_public, llm_type)
+  File "/opt/services/query_service.py", line 255, in query_engine_build
+    raise InternalServerError(e) from e
+common.utils.http_exceptions.InternalServerError: 403 GET https://storage.googleapis.com/storage/v1/b/query-engine-test-me-data/o?maxResults=257&projection=noAcl&prettyPrint=false: gke-sa@test-project.iam.gserviceaccount.com does not have storage.objects.list access to the Google Cloud Storage bucket. Permission 'storage.objects.list' denied on resource (or it may not exist).
+```
+- In this example, it appeared to be the IAM permissions problem for the `gke-sa` service account.
+
+
 #### Received 403 error in LLM service
 
 When sending the API call to https://$YOUR_DOMAIN/llm-service/api/v1/query/engine but received a 403 error. It could be one of the following reasons:
@@ -97,7 +150,7 @@ When sending the API call to https://$YOUR_DOMAIN/llm-service/api/v1/query/engin
   - Check the `kustomization.yaml` file and make sure the role.yaml and role_binding.yaml are in `resources` list. Orders don't matter.
   - Check out `role_binding.yaml` and ensure the Service Account name is exact `gke-sa`. This is defined in the `/terraform/stages/2-gke/main.tf`
 
-#### Batch job created but no pod created.
+#### Batch job created but failed.
 
 If a batch job is created succesfully, but there's an error about creating a pod, run the following to triage kubernetes resources:
 
