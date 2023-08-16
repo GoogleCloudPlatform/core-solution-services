@@ -16,6 +16,7 @@
  */
 
 resource "google_identity_platform_project_default_config" "default" {
+  depends_on   = [module.project_services]
   sign_in {
     email {
       enabled           = true
@@ -25,6 +26,7 @@ resource "google_identity_platform_project_default_config" "default" {
 }
 
 resource "google_apikeys_key" "idp_api_key" {
+  depends_on   = [module.project_services]
   name         = "idp-api-key"
   display_name = "API Key for Identity Platform"
 
