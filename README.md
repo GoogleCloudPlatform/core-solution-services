@@ -72,7 +72,7 @@ sb infra apply 3-gke-ingress
 sb infra apply 3-llm
 ```
 - This will create a GCE load balancer with ingress.
-- This will create a `$PROJECT_ID-llm-docs` bucket and upload a `llm-sample-doc.pdf`.
+- This will create a `$PROJECT_ID-llm-docs` bucket and upload the sample doc `llm-sample-doc.pdf` to it.
 - It will add required Firestore indexes.
 
 (Optional) Add an A record to your DNS:
