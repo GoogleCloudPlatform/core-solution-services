@@ -38,13 +38,15 @@ sb set project-id $PROJECT_ID
 sb infra apply 1-bootstrap
 ```
 
+Enable Cloud Identity Platform (For Authentication)
+- https://console.cloud.google.com/marketplace/details/google-cloud-platform/customer-identity
+
 Log in to the bastion host.
 ```
 # TBD
 ```
 
 Set up Cloud foundation and GKE cluster
-
 ```
 sb infra apply 2-foundation
 sb infra apply 2-gke
