@@ -54,7 +54,7 @@ curl --location "$BASE_URL/llm-service/api/v1/query/engine" \
 
 This will create a Vertex AI Matching Engine Index. You can check out the progress on https://console.cloud.google.com/vertex-ai/matching-engine/indexes?referrer=search&project=$PROJECT_ID.
 > Note: It may take 15+ minutes to create a Matching Engine Index.
-> The API call may time out, but the creation process will still be executed in the background
+> The Kubernetes Job may show time out while creating the Matching Engine and Endpoint in its logs, but the creation process will still be executed in the background.
 > You will see the Endpoint created soon later.
 
 Once finished, you shall see the folloing artifacts:
