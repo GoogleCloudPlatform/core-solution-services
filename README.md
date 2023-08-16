@@ -84,7 +84,7 @@ sb infra apply 3-llm
 ### Before Deploy
 
 Follow README files of each microservice to setup:
-- LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup)
+- LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
 
 ### Deploy all microservices and ingress to GKE cluster:
 ```
@@ -100,10 +100,12 @@ sb deploy
 ### Verify deployment
 
 Once deployed, check out the API docs with the following links:
-- https://$CLUSTER_IP_ADDRESS/authentication/api/v1/docs
-- https://$CLUSTER_IP_ADDRESS/user-management/api/v1/docs
-- https://$CLUSTER_IP_ADDRESS/jobs-service/api/v1/docs
-- https://$CLUSTER_IP_ADDRESS/llm-service/api/v1/docs
+- https://$YOUR_DNS_DOMAIN/authentication/api/v1/docs
+- https://$YOUR_DNS_DOMAIN/user-management/api/v1/docs
+- https://$YOUR_DNS_DOMAIN/jobs-service/api/v1/docs
+- https://$YOUR_DNS_DOMAIN/llm-service/api/v1/docs
+
+> Alternative you can link with IP address e.g. http://x.x.x.x/authentication/api/v1/docs to verify API endpoints.
 
 In the GCP Console, check the following
 - A query engine
