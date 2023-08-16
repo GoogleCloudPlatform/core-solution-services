@@ -21,9 +21,14 @@
 
 ### Create users
 
+Get the IP address for the GKE ingress endpoint:
+```
+BASE_URL=$(gcloud compute addresses describe gke-ingress-ip --global --format='value(address)')
+```
+
 In the source code folder:
 ```
-PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py create_user
+PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py create_user --base-url="http://$BASE_URL/"
 ```
 - You can use the IP address, e.g. http://127.0.0.1/
 - This will register the user to Identity Platform and a user record in Firestore (in `users` collection).
