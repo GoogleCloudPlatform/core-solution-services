@@ -2,6 +2,25 @@
 
 > This codebase is generated from https://github.com/GoogleCloudPlatform/solutions-builder
 
+Core Solution Services is a group of foundetional services and features to support broader
+use cases for multilpe sectors as an accelerator to build applications on it.
+
+## Use Cases
+
+We're focusing on the first use case with GenAI for Enterprise, and there will be more use
+cases to come soon.
+
+### GenAI for Enterprise
+
+We are building core services used for GenAI and Enterprise Search use cases, with built-in
+flexibility to leverage a number of LLMs like VertexAI, ChatGPT 3.5/4, Cohere, and more to come.
+
+Highlighted features:
+- Enable any enterprise to leverage a chatbot to answer any questions based on their selected
+  content such as a list of documents, databases, etc.
+- Easy to switch over to any LLM models available in the market.
+- Provies a ready-to-deploy frontend app to showcase the E2E workflow.
+
 ## Prerequisite
 
 | Tool | Required Version | Installation |
