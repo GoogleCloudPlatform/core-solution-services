@@ -103,6 +103,7 @@ sb infra apply 3-llm
 ### Before Deploy
 
 Follow README files of each microservice to setup:
+- Authenication [components/authentication/README.md](./components/authentication/README.md#retrieve-firebase-api-key) to retrieve Firebase API key
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
 
 ### Deploy all microservices and ingress to GKE cluster:
