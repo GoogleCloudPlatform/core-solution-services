@@ -19,6 +19,9 @@ import re
 import requests
 import argparse
 import getpass
+import sys
+
+sys.path.append("components/common/src/")
 
 from common.models import User
 

@@ -32,6 +32,8 @@ BASE_URL="http://$IP_ADDRESS"
 
 In the source code folder:
 ```
+pip install -r components/common/requirements.txt
+pip install -r components/authentication/requirements.txt
 PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py create_user --base-url=$BASE_URL
 ```
 - You can use the IP address, e.g. http://127.0.0.1/
