@@ -19,11 +19,6 @@ import re
 import requests
 import argparse
 import getpass
-import sys
-
-sys.path.append("components/common/src/")
-
-from common.models import User
 
 AUTH_API_PATH = "/authentication/api/v1"
 
@@ -57,14 +52,6 @@ def create_user(user_email, user_password, base_url=None) -> None:
   """
   Function to do firebase login
   """
-  input_user = {**USER_DATA, "email": user_email}
-  user = User.from_dict(input_user)
-  user.user_id = ""
-  user.user_type_ref = ""
-  user.save()
-  user.user_id = user.id
-  user.update()
-
   req_body = {
     "email": user_email,
     "password": user_password
