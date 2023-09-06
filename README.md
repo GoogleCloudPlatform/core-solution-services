@@ -134,7 +134,7 @@ In the GCP Console, check the following
 ### Deploy GenAI FlutterFlow app (WIP)
 
 Follow the steps below to clone a FlutterFlow UI app:
-- Register a FlutterFlow free tier account:
+- Register a FlutterFlow free tier account: https://app.flutterflow.io/create-account
 - Go to the [Demo FlutterFlow app](https://app.flutterflow.io/project/google-genie-public-xwz8vb) and click **[Clone]** on the top-right to make a copy of the FlutterFlow app to your account.
   ![Alt text](.github/assets/ff_clone.png)
 - Once cloned, on the left panel menu, go to [API Calls] page.
