@@ -2,15 +2,20 @@
 
 > This codebase is generated from https://github.com/GoogleCloudPlatform/solutions-builder
 
-Core Solution Services is a group of foundetional services and features to support broader
-use cases for multilpe sectors as an accelerator to build applications on it.
+Core Solution Services (CSS) is a group of foundational microservices, data models and other features, 
+implemented in Python and running on Kubernetes. It supports common functionality needed by solutions 
+built for different industries, like authentication, user management, data storage, and job management, 
+and includes CI/CD and e2e testing.  CSS may be used as a stand-alone platform, or as an foundational layer 
+to accelerate the building of specific applications.  It also includes a generic capability for GenAI 
+use cases.  To date the microservices in CSS have been deployed in production for a variety of customers 
+in the Public Sector division of Google Cloud.
 
 ## Use Cases
 
-We're focusing on the first use case with GenAI for Enterprise, and there will be more use
+We have built an initial use case to support GenAI for Enterprise, and there will be more use
 cases to come soon.
 
-### GenAI for Enterprise
+### GenAI for Enterprise (GENIE)
 
 We are building core services used for GenAI and Enterprise Search use cases, with built-in
 flexibility to leverage a number of LLMs like VertexAI, ChatGPT 3.5/4, Cohere, and more to come.
@@ -18,10 +23,10 @@ flexibility to leverage a number of LLMs like VertexAI, ChatGPT 3.5/4, Cohere, a
 Highlighted features:
 - Enable any enterprise to leverage a chatbot to answer any questions based on their selected
   content such as a list of documents, databases, etc.
-- Easy to switch over to any LLM models available in the market.
-- Provies a ready-to-deploy frontend app to showcase the E2E workflow.
+- Easy to plug in and use any LLM models available in the market, leveraging Langchain.
+- Provides a ready-to-deploy frontend app to showcase the E2E user workflow.
 
-## Prerequisite
+## Prerequisites
 
 | Tool | Required Version | Installation |
 |---|---|---|
@@ -36,7 +41,7 @@ Highlighted features:
 
 ### Create a new Google Cloud project
 
-We'd recommend starting from a brand new GCP project. Create a new GCP project at [https://console.cloud.google.com/projectcreate]
+We recommend starting from a brand new GCP project. Create a new GCP project at [https://console.cloud.google.com/projectcreate]
 
 ### Install Solutions Builder package
 ```
