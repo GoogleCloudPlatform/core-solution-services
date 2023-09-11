@@ -30,7 +30,7 @@ Highlighted features:
 
 | Tool | Required Version | Installation |
 |---|---|---|
-| Python                 | &gt;= 3.9     | |
+| Python                 | &gt;= 3.9     | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
 | gcloud CLI             | Latest        | https://cloud.google.com/sdk/docs/install |
 | Terraform              | &gt;= v1.3.7  | https://developer.hashicorp.com/terraform/downloads |
 | Skaffold               | &gt;= v2.4.0  | https://skaffold.dev/docs/install/ |
@@ -42,6 +42,17 @@ Highlighted features:
 ### Create a new Google Cloud project
 
 We recommend starting from a brand new GCP project. Create a new GCP project at [https://console.cloud.google.com/projectcreate]
+
+### Verify your Python version and create a virtual env
+Make sure you have Python version 3.9 or greater.
+```
+python3 --version
+```
+Create a virtual environment and activate it.
+```
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
 ### Install Solutions Builder package
 ```
