@@ -2,12 +2,12 @@
 
 > This codebase is generated from https://github.com/GoogleCloudPlatform/solutions-builder
 
-Core Solution Services (CSS) is a group of foundational microservices, data models and other features, 
-implemented in Python and running on Kubernetes. It supports common functionality needed by solutions 
-built for different industries, like authentication, user management, data storage, and job management, 
-and includes CI/CD and e2e testing.  CSS may be used as a stand-alone platform, or as an foundational layer 
-to accelerate the building of specific applications.  It also includes a generic capability for GenAI 
-use cases.  To date the microservices in CSS have been deployed in production for a variety of customers 
+Core Solution Services (CSS) is a group of foundational microservices, data models and other features,
+implemented in Python and running on Kubernetes. It supports common functionality needed by solutions
+built for different industries, like authentication, user management, data storage, and job management,
+and includes CI/CD and e2e testing.  CSS may be used as a stand-alone platform, or as an foundational layer
+to accelerate the building of specific applications.  It also includes a generic capability for GenAI
+use cases.  To date the microservices in CSS have been deployed in production for a variety of customers
 in the Public Sector division of Google Cloud.
 
 ## Use Cases
@@ -30,21 +30,24 @@ Highlighted features:
 
 | Tool | Required Version | Installation |
 |---|---|---|
-| Python                 | &gt;= 3.9     | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
-| gcloud CLI             | Latest        | https://cloud.google.com/sdk/docs/install |
-| Terraform              | &gt;= v1.3.7  | https://developer.hashicorp.com/terraform/downloads |
-| Skaffold               | &gt;= v2.4.0  | https://skaffold.dev/docs/install/ |
-| Kustomize              | &gt;= v5.0.0  | https://kubectl.docs.kubernetes.io/installation/kustomize/ |
-| solutions-builder CLI | &gt;= v1.13.0 | https://github.com/GoogleCloudPlatform/solutions-builder |
+| Python            | &gt;= 3.8     | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
+| gcloud CLI        | Latest        | https://cloud.google.com/sdk/docs/install |
+| Terraform         | &gt;= v1.3.7  | https://developer.hashicorp.com/terraform/downloads |
+| solutions-builder | &gt;= v1.17.0 | https://pypi.org/project/solutions-builder/ |
+| Skaffold          | &gt;= v2.4.0  | https://skaffold.dev/docs/install/ |
+| Kustomize         | &gt;= v5.0.0  | https://kubectl.docs.kubernetes.io/installation/kustomize/ |
 
 ## Setup
 
-### Create a new Google Cloud project
+### Set up the GCP Project
 
-We recommend starting from a brand new GCP project. Create a new GCP project at [https://console.cloud.google.com/projectcreate]
+We recommend starting from a brand new GCP project. Create a new GCP project at https://console.cloud.google.com/projectcreate
+
+Enable Cloud Identity Platform (For Authentication)
+- https://console.cloud.google.com/marketplace/details/google-cloud-platform/customer-identity
 
 ### Verify your Python version and create a virtual env
-Make sure you have Python version 3.9 or greater.
+Make sure you have Python version 3.8 or greater.
 ```
 python3 --version
 ```
@@ -57,6 +60,9 @@ source .venv/bin/activate
 ### Install Solutions Builder package
 ```
 pip install -U solutions-builder
+
+# Verify Solution Builder CLI tool with version >= v1.17.0
+sb version
 ```
 
 ### Set up gcloud CLI
@@ -67,22 +73,41 @@ gcloud auth application-default login
 gcloud config set project $PROJECT_ID
 ```
 
-Initialize the Cloud infra:
+### Update Project ID
 ```
 sb set project-id $PROJECT_ID
+```
+
+### Set up a Jump Host
+
+> If you choose to run this setup in your local machine, you can skip this section. However we recommend using a jump host to keep a consistant experience.
+
+Run the following to create a Compute Engine VM as the jump host.
+```
+sb infra apply 0-jumphost
+```
+- Please note that this may take 10-15 minutes to install depedencies in the VM.
+
+Log into the jump host and check the depedencies setup status.
+```
+gcloud compute ssh jump-host --zone=${ZONE} --tunnel-through-iap --project=${PROJECT_ID}
+ls -la /tmp/jumphost-ready
+```
+- If the file `jumphost-ready` exists, it means the dependencies setup is ready.
+
+Check out the code in the jump host:
+```
+git clone https://github.com/GoogleCloudPlatform/core-solution-services
+```
+
+Update the project ID in the source code:
+```
+sb set project-id $PROJECT_ID
+```
+
+### Initialize the Cloud infra
+```
 sb infra apply 1-bootstrap
-```
-
-Enable Cloud Identity Platform (For Authentication)
-- https://console.cloud.google.com/marketplace/details/google-cloud-platform/customer-identity
-
-Log in to the bastion host.
-```
-# TBD
-```
-
-Set up Cloud foundation and GKE cluster
-```
 sb infra apply 2-foundation
 sb infra apply 2-gke
 ```
@@ -126,6 +151,7 @@ Follow README files of each microservice to setup:
 ```
 sb deploy
 ```
+- This will run `skaffold` commands to deploy all microservices and ingress to the GKE cluster.
 
 ### After deployment
 
