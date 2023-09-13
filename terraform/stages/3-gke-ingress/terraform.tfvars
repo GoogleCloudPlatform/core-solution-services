@@ -1,4 +1,4 @@
-project_id                = "core-solution-services-develop"
+project_id                = "your-project-id"
 region                    = "us-central1"
 cluster_name              = "main-cluster"
 cluster_external_endpoint = ""

@@ -24,13 +24,13 @@ components:
   terraform_gke_ingress:
     advanced_settings: false
     cert_issuer_email: admin@cloudpssolutions.com
-    cluster_external_endpoint: 34.28.126.249
+    cluster_external_endpoint: 10.0.0.0
     cluster_name: main-cluster
     component_name: terraform_gke_ingress
     component_template: terraform_gke_ingress
     cors_allow_origins: http://localhost:4200,http://localhost:3000
     destination_path: .
-    domains: # Fill in your Domain name
+    domains: null
     frontend_config_name: default-frontend-config
     gcp_region: us-central1
     kubernetes_services: authentication,jobs-service,llm-service,user-management
@@ -42,6 +42,6 @@ components:
     init_script_path: ./components/user_management/src/utils/init.py
 created_at: 2023-Jul-19 19:00:45 UTC
 modified_at: 2023-Jul-19 19:00:45 UTC
-project_id: core-solution-services-develop
-project_name: core-solution-services-develop
-project_number: '967157640491'
+project_id: your-project-id
+project_name: core-solution-services
+project_number: your-project-number

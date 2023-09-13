@@ -25,7 +25,6 @@ locals {
     "bigquery.googleapis.com",             # BigQuery
     "bigquerydatatransfer.googleapis.com", # BigQuery Data Transfer
     "cloudbuild.googleapis.com",           # Cloud Build
-    "compute.googleapis.com",              # Compute Engine
     "container.googleapis.com",            # Google Kubernetes Engine
     "containerregistry.googleapis.com",    # Google Container Registry
     "dataflow.googleapis.com",             # Cloud Dataflow
@@ -39,7 +38,6 @@ locals {
     "pubsub.googleapis.com",               # Pub/Sub
     "run.googleapis.com",                  # Cloud Run
     "secretmanager.googleapis.com",        # Secret Manager
-    "servicenetworking.googleapis.com",    # Service Networking for VertexAI
     "storage.googleapis.com",              # Cloud Storage
   ]
 
