@@ -30,7 +30,7 @@ Highlighted features:
 
 | Tool | Required Version | Installation |
 |---|---|---|
-| Python            | &gt;= 3.8     | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
+| Python            | &gt;= 3.9     | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
 | gcloud CLI        | Latest        | https://cloud.google.com/sdk/docs/install |
 | Terraform         | &gt;= v1.3.7  | https://developer.hashicorp.com/terraform/downloads |
 | solutions-builder | &gt;= v1.17.0 | https://pypi.org/project/solutions-builder/ |
@@ -47,7 +47,7 @@ Enable Cloud Identity Platform (For Authentication)
 - https://console.cloud.google.com/marketplace/details/google-cloud-platform/customer-identity
 
 ### Verify your Python version and create a virtual env
-Make sure you have Python version 3.8 or greater.
+Make sure you have Python version 3.9 or greater.
 ```
 python3 --version
 ```
