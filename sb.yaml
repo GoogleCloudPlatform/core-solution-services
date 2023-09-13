@@ -24,7 +24,7 @@ components:
   terraform_gke_ingress:
     advanced_settings: false
     cert_issuer_email: admin@cloudpssolutions.com
-    cluster_external_endpoint: 34.28.126.249
+    cluster_external_endpoint: 10.0.0.0
     cluster_name: main-cluster
     component_name: terraform_gke_ingress
     component_template: terraform_gke_ingress
