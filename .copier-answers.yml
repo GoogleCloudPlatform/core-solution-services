@@ -1,3 +1,4 @@
+# Changes here will be overwritten by Copier
 _src_path: /Users/jonchen/workspace/solutions-builder/solutions_builder/cli/../template_root
 advanced_settings: true
 create_vpc_network: true

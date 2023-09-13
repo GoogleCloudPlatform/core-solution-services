@@ -1,5 +1,5 @@
 project_id              = "your-project-id"
-project_number          = "303717801229"
+project_number          = "your-project-number"
 region                  = "us-central1"
 storage_multiregion     = "US"
 vpc_network             = "default-vpc"
