@@ -48,9 +48,10 @@ Enable Cloud Identity Platform (For Authentication)
 
 ### Check out this repo
 
-Clone this repo to your local machine to start. Optionally you can use Cloud Shell.
+Clone this repo to your local machine to start. Optionally you can use Cloud Shell.  Run the rest of the commands inside the repo folder. 
 ```
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
+cd core-solution-services
 ```
 
 ### Verify your Python version and create a virtual env
