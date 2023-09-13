@@ -46,6 +46,13 @@ We recommend starting from a brand new GCP project. Create a new GCP project at 
 Enable Cloud Identity Platform (For Authentication)
 - https://console.cloud.google.com/marketplace/details/google-cloud-platform/customer-identity
 
+### Check out this repo
+
+Clone this repo to your local machine to start. Optionally you can use Cloud Shell.
+```
+git clone https://github.com/GoogleCloudPlatform/core-solution-services
+```
+
 ### Verify your Python version and create a virtual env
 Make sure you have Python version 3.9 or greater.
 ```
@@ -86,7 +93,7 @@ Run the following to create a Compute Engine VM as the jump host.
 ```
 sb infra apply 0-jumphost
 ```
-- Please note that this may take 10-15 minutes to install depedencies in the VM.
+- Please note that this may take 5-10 minutes to install depedencies in the VM.
 
 Log into the jump host and check the depedencies setup status.
 ```
@@ -100,8 +107,16 @@ Check out the code in the jump host:
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
 ```
 
-Update the project ID in the source code:
+Initialize the jump host and set Project ID:
 ```
+gcloud auth login
+gcloud auth application-default login
+
+# Set PROJECT_ID
+export PROJECT_ID=$(gcloud config get project)
+echo PROJECT_ID=$PROJECT_ID
+
+# Update all project_id value in the source code.
 sb set project-id $PROJECT_ID
 ```
 
