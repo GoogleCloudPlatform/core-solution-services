@@ -94,7 +94,7 @@ Run the following to create a Compute Engine VM as the jump host.
 ```
 sb infra apply 0-jumphost
 ```
-- Please note that this may take 5-10 minutes to install depedencies in the VM.
+- Please note it may take 5-10 minutes to install dependencies in the VM.
 
 Log into the jump host and check the depedencies setup status.
 ```
@@ -133,7 +133,7 @@ sb infra apply 2-gke
 sb components add terraform_gke_ingress
 ```
 
-Update the following questions in the promopt:
+Update the following questions in the prompt:
 - Cluster external endpoint IP address?
   - (The IP address will be automatically retrieved)
 - Kubernetes service names in ingress? (comma-separated string)
@@ -160,7 +160,7 @@ sb infra apply 3-llm
 ### Before Deploy
 
 Follow README files of each microservice to setup:
-- Authenication [components/authentication/README.md](./components/authentication/README.md#retrieve-firebase-api-key) to retrieve Firebase API key
+- Authentication [components/authentication/README.md](./components/authentication/README.md#retrieve-firebase-api-key) to retrieve Firebase API key
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
 
 ### Deploy all microservices and ingress to GKE cluster:
@@ -183,9 +183,9 @@ Once deployed, check out the API docs with the following links:
 - https://$YOUR_DNS_DOMAIN/jobs-service/api/v1/docs
 - https://$YOUR_DNS_DOMAIN/llm-service/api/v1/docs
 
-> Alternative you can link with IP address e.g. http://x.x.x.x/authentication/api/v1/docs to verify API endpoints.
+> Alternatively you can link with IP address e.g. http://x.x.x.x/authentication/api/v1/docs to verify API endpoints.
 
-In the GCP Console, check the following
+In the GCP Console, check the following:
 - A query engine
 - A vertex AI endpoint to the query engine
 
