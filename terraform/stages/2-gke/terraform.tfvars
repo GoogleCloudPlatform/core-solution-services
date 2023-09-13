@@ -1,4 +1,4 @@
-project_id           = "core-solution-services-develop"
+project_id           = "your-project-id"
 region               = "us-central1"
 kubernetes_version   = "latest"
 node_machine_type    = "n1-standard-4"

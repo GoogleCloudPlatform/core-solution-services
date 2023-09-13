@@ -17,7 +17,7 @@
 
 terraform {
   backend "gcs" {
-    bucket = "core-solution-services-develop-tfstate"
+    bucket = "your-project-id-tfstate"
     prefix = "stage/2-gke"
   }
 }

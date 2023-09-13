@@ -1,2 +1,2 @@
-project_id = "core-solution-services-develop"
-tfstate-bucket = "core-solution-services-develop-tfstate"
+project_id = "your-project-id"
+tfstate-bucket = "your-project-id-tfstate"
