@@ -1,6 +1,6 @@
 # Changes here will be overwritten by Copier
 _src_path: /Users/jonchen/workspace/solutions-builder/solutions_builder/cli/../template_root
-advanced_settings: true
+advanced_settings: false
 create_vpc_network: true
 existing_firestore_name: projects/your-project-id/databases/(default)
 folder_name: your-project-id
