@@ -82,13 +82,14 @@ gcloud config set project $PROJECT_ID
 ```
 
 ### Update Project ID
+Run this command to update the project id in config files of your local repo.
 ```
 sb set project-id $PROJECT_ID
 ```
 
 ### Set up a Jump Host
 
-> If you choose to run this setup in your local machine, you can skip this section. However we recommend using a jump host to keep a consistant experience.
+> If you choose to run this setup in your local machine, you can skip this section. However we recommend using a jump host to ensure a consistent install environment.
 
 Run the following to create a Compute Engine VM as the jump host.
 ```
@@ -96,12 +97,16 @@ sb infra apply 0-jumphost
 ```
 - Please note it may take 5-10 minutes to install dependencies in the VM.
 
-Log into the jump host and check the depedencies setup status.
+Log into the jump host:
 ```
 gcloud compute ssh jump-host --zone=${ZONE} --tunnel-through-iap --project=${PROJECT_ID}
-ls -la /tmp/jumphost-ready
 ```
-- If the file `jumphost-ready` exists, it means the dependencies setup is ready.
+
+Check the status of the install:
+```
+ls -la /tmp/jumphost_ready
+```
+- If the file `jumphost_ready` exists, it means the jumphost is ready to deploy the rest of the resources.  If not, we recommend starting over with a new project.  You should also start with a clean copy of the repository.
 
 Check out the code in the jump host:
 ```
@@ -118,6 +123,7 @@ export PROJECT_ID=$(gcloud config get project)
 echo PROJECT_ID=$PROJECT_ID
 
 # Update all project_id value in the source code.
+cd core-solution-services
 sb set project-id $PROJECT_ID
 ```
 
