@@ -46,6 +46,13 @@ We recommend starting from a brand new GCP project. Create a new GCP project at 
 Enable Cloud Identity Platform (For Authentication)
 - https://console.cloud.google.com/marketplace/details/google-cloud-platform/customer-identity
 
+### Check Org policies (Optional)
+
+Make sure that policies are not enforced (`enforce: false` or `NOT_FOUND`). You must be an organization policy administrator to set a constraint.
+https://console.cloud.google.com/iam-admin/orgpolicies/compute-requireShieldedVm?project=$PROJECT_ID
+https://console.cloud.google.com/iam-admin/orgpolicies/requireOsLogin?project=$PROJECT_ID
+
+
 ### Check out this repo
 
 Clone this repo to your local machine to start. Optionally you can use Cloud Shell.  Run the rest of the commands inside the repo folder. 
@@ -69,7 +76,7 @@ source .venv/bin/activate
 ```
 pip install -U solutions-builder
 
-# Verify Solution Builder CLI tool with version >= v1.17.0
+# Verify Solution Builder CLI tool with version >= v1.17.12
 sb version
 ```
 
@@ -89,7 +96,7 @@ sb set project-id $PROJECT_ID
 
 ### Set up a Jump Host
 
-> If you choose to run this setup in your local machine, you can skip this section. However we recommend using a jump host to ensure a consistent install environment.
+> If you choose to run this setup in your local machine, you can skip this section. However, we recommend using a jump host to ensure a consistent install environment.
 
 Run the following to create a Compute Engine VM as the jump host.
 ```

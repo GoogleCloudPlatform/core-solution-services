@@ -32,22 +32,8 @@ provider "google" {
 locals {
   services = [
     "compute.googleapis.com",
+    "orgpolicy.googleapis.com"
   ]
-
-  org_policies_disabled = [
-    "compute.requireShieldedVm",
-    "compute.requireOsLogin",
-  ]
-}
-
-resource "google_project_organization_policy" "disable_org_policies" {
-  for_each   = toset(local.org_policies_disabled)
-  constraint = each.value
-  project    = var.project_id
-
-  boolean_policy {
-    enforced = false
-  }
 }
 
 resource "google_project_service" "project-apis" {
@@ -101,9 +87,9 @@ resource "google_compute_firewall" "allow_ssh" {
 module "cloud-nat" {
   source            = "terraform-google-modules/cloud-nat/google"
   version           = "~> 1.2"
-  name              = format("%s-%s-jumphost-nat", var.project_id, var.region)
+  name              = format("%s-%s-jump-nat", var.project_id, var.region)
   create_router     = true
-  router            = format("%s-%s-jumphost-router", var.project_id, var.region)
+  router            = format("%s-%s-jump-router", var.project_id, var.region)
   project_id        = var.project_id
   region            = var.region
   network           = google_compute_network.vpc.self_link
@@ -116,7 +102,6 @@ data "template_file" "startup_script" {
 }
 
 resource "google_compute_instance" "jump_host" {
-  depends_on                = [google_project_organization_policy.disable_org_policies]
   project                   = var.project_id
   zone                      = var.zone
   name                      = "jump-host"
