@@ -212,3 +212,8 @@ Follow the steps below to clone a FlutterFlow UI app:
 - In each section (Authentication, Chats, Query), change the `API base URL` to your API base URL.
   ![Alt text](.github/assets/ff_api_base_url.png)
 - Publish the app by clicking "Thunder" icon at the top-right menu.
+
+### Troubleshooting
+
+Please refer to [TROUBLESHOOTING.md](https://github.com/GoogleCloudPlatform/solutions-builder/blob/main/docs/TROUBLESHOOTING.md) for any Terraform errors
+
