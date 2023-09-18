@@ -138,7 +138,7 @@ sb set project-id $PROJECT_ID
 ```
 sb infra apply 1-bootstrap
 sb infra apply 2-foundation
-sb infra apply 2-gke
+sb infra apply 3-gke
 ```
 
 ### Add a HTTP Load balancer with DNS domain
@@ -158,7 +158,7 @@ Update the following questions in the prompt:
 Apply terraform for GKE ingress and LLM service:
 ```
 sb infra apply 3-gke-ingress
-sb infra apply 3-llm
+sb infra apply 4-llm
 ```
 - This will create a GCE load balancer with ingress.
 - This will create a `$PROJECT_ID-llm-docs` bucket and upload the sample doc `llm-sample-doc.pdf` to it.
