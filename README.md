@@ -106,16 +106,17 @@ sb infra apply 0-jumphost
 
 Log into the jump host:
 ```
-export ZONE=$(gcloud compute instances list --format="value(zone)")
-echo Jump host zone is $ZONE
-gcloud compute ssh jump-host --zone=${ZONE} --tunnel-through-iap --project=${PROJECT_ID}
+export JUMP_HOST_ZONE=$(gcloud compute instances list --format="value(zone)")
+echo Jump host zone is ${JUMP_HOST_ZONE}
+gcloud compute ssh jump-host --zone=${JUMP_HOST_ZONE} --tunnel-through-iap --project=${PROJECT_ID}
 ```
 
 Check the status of the install:
 ```
 ls -la /tmp/jumphost_ready
 ```
-- If the file `jumphost_ready` exists, it means the jumphost is ready to deploy the rest of the resources.  If not, we recommend starting over with a new project.  You should also start with a clean copy of the repository.
+- If the file `jumphost_ready` exists, it means the jumphost is ready to deploy the rest of the resources.  If not, please wait for a few minutes.
+- You should start with a clean copy of the repository.
 
 Check out the code in the jump host:
 ```
