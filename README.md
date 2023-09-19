@@ -106,6 +106,8 @@ sb infra apply 0-jumphost
 
 Log into the jump host:
 ```
+export ZONE=$(gcloud compute instances list --format="value(zone)")
+echo Jump host zone is $ZONE
 gcloud compute ssh jump-host --zone=${ZONE} --tunnel-through-iap --project=${PROJECT_ID}
 ```
 
