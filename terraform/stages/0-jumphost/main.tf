@@ -52,12 +52,12 @@ resource "time_sleep" "wait_60_seconds" {
 resource "google_compute_network" "vpc" {
   depends_on              = [time_sleep.wait_60_seconds]
   project                 = var.project_id
-  name                    = "jumphost-vpc"
+  name                    = "jump-vpc"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "subnet" {
-  name          = "jumphost-vpc-subnet"
+  name          = "jump-vpc-subnet"
   region        = var.region
   network       = google_compute_network.vpc.name
   ip_cidr_range = "10.0.0.0/24"
@@ -67,7 +67,7 @@ resource "google_compute_disk" "default" {
   depends_on = [time_sleep.wait_60_seconds]
   name       = "disk-data"
   type       = "pd-balanced"
-  zone       = var.zone
+  zone       = var.jump_host_zone
   size       = var.disk_size_gb
 }
 
@@ -103,7 +103,7 @@ data "template_file" "startup_script" {
 
 resource "google_compute_instance" "jump_host" {
   project                   = var.project_id
-  zone                      = var.zone
+  zone                      = var.jump_host_zone
   name                      = "jump-host"
   machine_type              = var.machine_type
   deletion_protection       = true

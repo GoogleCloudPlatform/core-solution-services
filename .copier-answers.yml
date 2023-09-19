@@ -5,6 +5,8 @@ create_vpc_network: true
 existing_firestore_name: projects/your-project-id/databases/(default)
 folder_name: your-project-id
 gcp_region: us-central1
+use_jump_host: true
+jump_host_zone: us-central1-a
 has_common: false
 ip_cidr_range: 10.0.0.0/16
 master_ipv4_cidr_block: 172.16.0.0/28
