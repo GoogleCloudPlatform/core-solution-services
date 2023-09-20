@@ -156,10 +156,10 @@ Update the following questions in the prompt:
 - Kubernetes service names in ingress? (comma-separated string)
   - **authentication,jobs-service,llm-service,user-management**
 - DNS domains (comma-separated string)?
-  - (Your DNS domain)
-  > Note: You can leave a dummy DNS domain if you don't have any custom domains. If so, you'd use IP address to connect to API endpoints later on.
+  - (Your DNS domain for SSL cert, e.g. `css-backend.example.com`)
+  > Note: You may leave the DNS domain as blank if you don't have any custom domains. If so, the backend IP address must be used to connect to API endpoints later on.
 
-Apply terraform for GKE ingress and LLM service:
+Apply infra/terraform for GKE ingress as well as LLM service:
 ```
 sb infra apply 3-gke-ingress
 sb infra apply 4-llm
@@ -172,13 +172,31 @@ sb infra apply 4-llm
 ![Alt text](.github/assets/dns_a_record.png)
 - Set the IP address to the external IP address in the ingress.
 
-## Deploy
+## Deploy Backend Microservices
 
 ### Before Deploy
 
-Follow README files of each microservice to setup:
-- Authentication [components/authentication/README.md](./components/authentication/README.md#retrieve-firebase-api-key) to retrieve Firebase API key
+Follow README files for each microservice to setup:
+- Authentication Service: [components/authentication/README.md](./components/authentication/README.md#retrieve-firebase-api-key) to retrieve Firebase API key
+  ```
+  # Retrieve the default API key generated from the Terraform stage `2-foundation` automatically.
+
+  KEY_NAME=$(gcloud alpha services api-keys list --filter="displayName='API Key for Identity Platform'" --format="value(name)")
+  export FIREBASE_API_KEY=$(gcloud alpha services api-keys get-key-string ${KEY_NAME} --format="value(keyString)")
+  ```
+
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
+  ```
+  # Set API Keys to environment variables
+  export OPENAI_API_KEY="<Your API key>"
+  export COHERE_API_KEY="<Your API key>"
+
+  # Update API Keys to Cloud Secret
+  gcloud secrets create "openai-api-key"
+  gcloud secrets create "cohere-api-key"
+  echo $OPENAI_API_KEY | gcloud secrets versions add "openai-api-key" --data-file=-
+  echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=-
+  ```
 
 ### Deploy all microservices and ingress to GKE cluster:
 ```
