@@ -21,10 +21,11 @@ We are building core services used for GenAI and Enterprise Search use cases, wi
 flexibility to leverage a number of LLMs like VertexAI, ChatGPT 3.5/4, Cohere, and more to come.
 
 Highlighted features:
+
 - Enable any enterprise to leverage a chatbot to answer any questions based on their selected
   content such as a list of documents, databases, etc.
 - Easy to plug in and use any LLM models available in the market, leveraging Langchain.
-- Provides a ready-to-deploy frontend app to showcase the E2E user workflow.
+- Cross platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows and seamless digital experience on Android, iOS, web, and desktop platforms.
 
 ## Prerequisites
 
@@ -55,7 +56,7 @@ https://console.cloud.google.com/iam-admin/orgpolicies/requireOsLogin?project=$P
 
 ### Check out this repo
 
-Clone this repo to your local machine to start. Optionally you can use Cloud Shell.  Run the rest of the commands inside the repo folder. 
+Clone this repo to your local machine to start. Optionally you can use Cloud Shell.  Run the rest of the commands inside the repo folder.
 ```
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
 cd core-solution-services
@@ -205,16 +206,19 @@ In the GCP Console, check the following:
 - A query engine
 - A vertex AI endpoint to the query engine
 
-### Deploy GenAI FlutterFlow app (WIP)
+### Clone GENIE FlutterFlow app
 
 Follow the steps below to clone a FlutterFlow UI app:
-- Register a FlutterFlow free tier account: https://app.flutterflow.io/create-account
-- Go to the [Demo FlutterFlow app](https://app.flutterflow.io/project/google-genie-public-xwz8vb) and click **[Clone]** on the top-right to make a copy of the FlutterFlow app to your account.
+
+- [Register for a FlutterFlow account](https://app.flutterflow.io/create-account)
+- Navigate to [GENIE FlutterFlow app template](https://app.flutterflow.io/project/google-genie-public-xwz8vb) and click **[Clone]** on the top-right to make a copy of the FlutterFlow app to your account.
   ![Alt text](.github/assets/ff_clone.png)
 - Once cloned, on the left panel menu, go to [API Calls] page.
-- In each section (Authentication, Chats, Query), change the `API base URL` to your API base URL.
+- In each API group (i.e. Authentication, Chats, Query), change the `API Base URL` to your API base URL.
   ![Alt text](.github/assets/ff_api_base_url.png)
-- Publish the app by clicking "Thunder" icon at the top-right menu.
+- Run your app by clicking the "Lightning" icon on the top-right menu.
+
+> To learn more about FlutterFlow, visit https://flutterflow.io/enterprise.
 
 ### Troubleshooting
 
