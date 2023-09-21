@@ -34,8 +34,23 @@ resource "google_storage_bucket_object" "default" {
   bucket       = google_storage_bucket.llm_doc_storage.id
 }
 
+
+resource "null_resource" "create_dummy_collection" {
+  provisioner "local-exec" {
+    command = "python3 dummy_collection_create.py"
+  }
+}
+
+resource "null_resource" "delete_dummy_collection" {
+  depends_on = [ google_firestore_index.user_chats_index, google_firestore_index.batch_jobs_index ]
+  provisioner "local-exec" {
+    command = "python3 dummy_collection_delete.py"
+  }
+}
+
 resource "google_firestore_index" "user_chats_index" {
-  project = var.project_id
+  depends_on = [ null_resource.create_dummy_collection ]
+  project    = var.project_id
   collection = "user_chats"
 
   fields {
@@ -57,7 +72,8 @@ resource "google_firestore_index" "user_chats_index" {
 }
 
 resource "google_firestore_index" "batch_jobs_index" {
-  project = var.project_id
+  depends_on = [ null_resource.create_dummy_collection ]
+  project    = var.project_id
   collection = "batch_jobs"
 
   fields {
