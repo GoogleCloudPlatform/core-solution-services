@@ -35,61 +35,8 @@ resource "google_storage_bucket_object" "default" {
 }
 
 
-resource "null_resource" "create_dummy_collection" {
+resource "null_resource" "firestore_indexing" {
   provisioner "local-exec" {
-    command = "python3 dummy_collection_create.py"
-  }
-}
-
-resource "null_resource" "delete_dummy_collection" {
-  depends_on = [ google_firestore_index.user_chats_index, google_firestore_index.batch_jobs_index ]
-  provisioner "local-exec" {
-    command = "python3 dummy_collection_delete.py"
-  }
-}
-
-resource "google_firestore_index" "user_chats_index" {
-  depends_on = [ null_resource.create_dummy_collection ]
-  project    = var.project_id
-  collection = "user_chats"
-
-  fields {
-    field_path = "deleted_at_timestamp"
-    order      = "ASCENDING"
-  }
-  fields {
-    field_path = "user_id"
-    order      = "ASCENDING"
-  }
-  fields {
-    field_path = "created_time"
-    order      = "DESCENDING"
-  }
-  fields {
-    field_path = "__name__"
-    order      = "DESCENDING"
-  }
-}
-
-resource "google_firestore_index" "batch_jobs_index" {
-  depends_on = [ null_resource.create_dummy_collection ]
-  project    = var.project_id
-  collection = "batch_jobs"
-
-  fields {
-    field_path = "status"
-    order      = "ASCENDING"
-  }
-  fields {
-    field_path = "type"
-    order      = "ASCENDING"
-  }
-  fields {
-    field_path = "created_time"
-    order      = "ASCENDING"
-  }
-  fields {
-    field_path = "__name__"
-    order      = "ASCENDING"
+    command = "python3 firestore_indexing_setup.py"
   }
 }
