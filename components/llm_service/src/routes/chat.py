@@ -271,7 +271,7 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   llm_type = user_chat.llm_type
 
   try:
-    response = await llm_chat(prompt, llm_type, user_chat)
+    response = await llm_chat(prompt, llm_type)
 
     # save chat history
     user_chat.update_history(prompt, response)
