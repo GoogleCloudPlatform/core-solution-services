@@ -176,8 +176,7 @@ sb infra apply 4-llm
 
 ### Before Deploy
 
-Follow README files for each microservice to setup:
-- Authentication Service: [components/authentication/README.md](./components/authentication/README.md#retrieve-firebase-api-key) to retrieve Firebase API key
+- Retrieve Firebase API key
   ```
   # Retrieve the default API key generated from the Terraform stage `2-foundation` automatically.
 
@@ -185,18 +184,8 @@ Follow README files for each microservice to setup:
   export FIREBASE_API_KEY=$(gcloud alpha services api-keys get-key-string ${KEY_NAME} --format="value(keyString)")
   ```
 
+Follow README files for each microservice to setup:
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
-  ```
-  # Set API Keys to environment variables
-  export OPENAI_API_KEY="<Your API key>"
-  export COHERE_API_KEY="<Your API key>"
-
-  # Update API Keys to Cloud Secret
-  gcloud secrets create "openai-api-key"
-  gcloud secrets create "cohere-api-key"
-  echo $OPENAI_API_KEY | gcloud secrets versions add "openai-api-key" --data-file=-
-  echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=-
-  ```
 
 ### Deploy all microservices and ingress to GKE cluster:
 ```
