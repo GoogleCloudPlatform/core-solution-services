@@ -34,22 +34,25 @@ resource "google_storage_bucket_object" "default" {
   bucket       = google_storage_bucket.llm_doc_storage.id
 }
 
-
-resource "null_resource" "create_dummy_collection" {
+resource "null_resource" "dummy_collections_create" {
   provisioner "local-exec" {
-    command = "python3 dummy_collection_create.py"
+    command = "python3 dummy_collections_create.py"
   }
 }
 
-resource "null_resource" "delete_dummy_collection" {
-  depends_on = [ google_firestore_index.user_chats_index, google_firestore_index.batch_jobs_index ]
+resource "null_resource" "dummy_collections_delete" {
+  depends_on = [
+    google_firestore_index.user_chats_index,
+    google_firestore_index.user_queries_index,
+    google_firestore_index.batch_jobs_index
+  ]
   provisioner "local-exec" {
-    command = "python3 dummy_collection_delete.py"
+    command = "python3 dummy_collections_delete.py"
   }
 }
 
 resource "google_firestore_index" "user_chats_index" {
-  depends_on = [ null_resource.create_dummy_collection ]
+  depends_on = [ null_resource.dummy_collections_create ]
   project    = var.project_id
   collection = "user_chats"
 
@@ -71,8 +74,31 @@ resource "google_firestore_index" "user_chats_index" {
   }
 }
 
+resource "google_firestore_index" "user_queries_index" {
+  depends_on = [ null_resource.dummy_collections_create ]
+  project    = var.project_id
+  collection = "user_queries"
+
+  fields {
+    field_path = "deleted_at_timestamp"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "user_id"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "created_time"
+    order      = "DESCENDING"
+  }
+  fields {
+    field_path = "__name__"
+    order      = "DESCENDING"
+  }
+}
+
 resource "google_firestore_index" "batch_jobs_index" {
-  depends_on = [ null_resource.create_dummy_collection ]
+  depends_on = [ null_resource.dummy_collections_create ]
   project    = var.project_id
   collection = "batch_jobs"
 
