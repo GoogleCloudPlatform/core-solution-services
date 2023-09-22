@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-  Delete dummy firestore collections created earlier
+  Create dummy firestore collections for indexes
 """
 import firebase_admin
 from firebase_admin import firestore
@@ -21,5 +21,7 @@ from firebase_admin import firestore
 app = firebase_admin.initialize_app()
 db = firestore.client()
 
-db.collection("user_chats").document("user_chats_dummy").delete()
-db.collection("batch_jobs").document("batch_jobs_dummy").delete()
+data = {"name": "Dummy"}
+db.collection("batch_jobs").document("batch_jobs_dummy").set(data)
+db.collection("user_chats").document("user_chats_dummy").set(data)
+db.collection("user_queries").document("user_queries_dummy").set(data)
