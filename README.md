@@ -1,6 +1,6 @@
 # Core Solution Services
 
-> This codebase is generated from https://github.com/GoogleCloudPlatform/solutions-builder
+> The codebase is generated from https://github.com/GoogleCloudPlatform/solutions-builder
 
 Core Solution Services (CSS) is a group of foundational microservices, data models and other features,
 implemented in Python and running on Kubernetes. It supports common functionality needed by solutions
@@ -44,8 +44,10 @@ Highlighted features:
 
 We recommend starting from a brand new GCP project. Create a new GCP project at https://console.cloud.google.com/projectcreate
 
-Enable Cloud Identity Platform (For Authentication)
-- https://console.cloud.google.com/marketplace/details/google-cloud-platform/customer-identity
+### Eanble Cloud Identity Platform
+
+Follow the steps below to enable Cloud Identity Platform and add Email/Password provider: (For Authentication)
+- [components/authentication/README.md#enable-identity-platform](./components/authentication/README.md#enable-identity-platform)
 
 ### Check Org policies (Optional)
 
