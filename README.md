@@ -1,6 +1,6 @@
 # Core Solution Services
 
-> The codebase is generated from https://github.com/GoogleCloudPlatform/solutions-builder
+> This codebase is generated from https://github.com/GoogleCloudPlatform/solutions-builder
 
 Core Solution Services (CSS) is a group of foundational microservices, data models and other features,
 implemented in Python and running on Kubernetes. It supports common functionality needed by solutions
