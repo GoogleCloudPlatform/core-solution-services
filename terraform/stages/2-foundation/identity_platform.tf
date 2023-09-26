@@ -15,7 +15,7 @@
  *
  */
 
-# add timer to avoid errors on new project creation and API enables
+# add timer to avoid errors on API enablement
 resource "time_sleep" "wait_60_seconds" {
   depends_on      = [module.project_services]
   create_duration = "60s"

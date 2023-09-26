@@ -2,13 +2,11 @@
 _src_path: /Users/jonchen/workspace/solutions-builder/solutions_builder/cli/../template_root
 advanced_settings: false
 create_vpc_network: true
-existing_firestore_name: projects/your-project-id/databases/(default)
 folder_name: your-project-id
 gcp_region: us-central1
-use_jump_host: true
-jump_host_zone: us-central1-a
 has_common: false
 ip_cidr_range: 10.0.0.0/16
+jump_host_zone: us-central1-a
 master_ipv4_cidr_block: 172.16.0.0/28
 project_id: your-project-id
 project_name: Core Solution Services
@@ -16,5 +14,6 @@ project_number: your-project-number
 secondary_pod_ip_cidr_range: 10.1.0.0/16
 secondary_service_ip_cidr_range: 10.2.0.0/16
 terraform_backend_gcs: true
+use_jump_host: true
 vpc_network: default-vpc
 vpc_subnetwork: default-vpc-subnet
