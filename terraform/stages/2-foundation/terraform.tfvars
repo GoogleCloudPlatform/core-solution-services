@@ -1,6 +1,6 @@
 project_id              = "your-project-id"     # sb-var:project_id
 project_number          = "your-project-number" # sb-var:project_number
-region                  = "us-central1"     # sb-var:gcp_region
+region                  = "us-central1"         # sb-var:gcp_region
 storage_multiregion     = "US"
 vpc_network             = "default-vpc"
 vpc_subnetwork          = "default-vpc-subnet"
