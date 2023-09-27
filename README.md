@@ -5,7 +5,7 @@
 Core Solution Services (CSS) is a group of foundational microservices, data models and other features,
 implemented in Python and running on Kubernetes. It supports common functionality needed by solutions
 built for different industries, like authentication, user management, data storage, and job management,
-and includes CI/CD and e2e testing.  CSS may be used as a stand-alone platform, or as an foundational layer
+and includes CI/CD and e2e testing.  CSS may be used as a stand-alone platform, or as a foundational layer
 to accelerate the building of specific applications.  It also includes a generic capability for GenAI
 use cases.  To date the microservices in CSS have been deployed in production for a variety of customers
 in the Public Sector division of Google Cloud.
@@ -25,18 +25,18 @@ Highlighted features:
 - Enable any enterprise to leverage a chatbot to answer any questions based on their selected
   content such as a list of documents, databases, etc.
 - Easy to plug in and use any LLM models available in the market, leveraging Langchain.
-- Cross platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows and seamless digital experience on Android, iOS, web, and desktop platforms.
+- Cross-platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows and seamless digital experience on Android, iOS, web, and desktop platforms.
 
 ## Prerequisites
 
-| Tool | Required Version | Installation |
-|---|---|---|
-| Python            | &gt;= 3.9     | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
-| gcloud CLI        | Latest        | https://cloud.google.com/sdk/docs/install |
-| Terraform         | &gt;= v1.3.7  | https://developer.hashicorp.com/terraform/downloads |
-| solutions-builder | &gt;= v1.17.0 | https://pypi.org/project/solutions-builder/ |
-| Skaffold          | &gt;= v2.4.0  | https://skaffold.dev/docs/install/ |
-| Kustomize         | &gt;= v5.0.0  | https://kubectl.docs.kubernetes.io/installation/kustomize/ |
+| Tool              | Required Version | Installation                                                                                                                                                                                        |
+|-------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Python            | &gt;= 3.9        | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
+| gcloud CLI        | Latest           | https://cloud.google.com/sdk/docs/install                                                                                                                                                           |
+| Terraform         | &gt;= v1.3.7     | https://developer.hashicorp.com/terraform/downloads                                                                                                                                                 |
+| solutions-builder | &gt;= v1.17.0    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
+| Skaffold          | &gt;= v2.4.0     | https://skaffold.dev/docs/install/                                                                                                                                                                  |
+| Kustomize         | &gt;= v5.0.0     | https://kubectl.docs.kubernetes.io/installation/kustomize/                                                                                                                                          |
 
 ## Setup
 
@@ -44,7 +44,7 @@ Highlighted features:
 
 We recommend starting from a brand new GCP project. Create a new GCP project at https://console.cloud.google.com/projectcreate
 
-### Eanble Cloud Identity Platform
+### Enable Cloud Identity Platform
 
 Follow the steps below to enable Cloud Identity Platform and add Email/Password provider: (For Authentication)
 - [components/authentication/README.md#enable-identity-platform](./components/authentication/README.md#enable-identity-platform)
@@ -114,7 +114,7 @@ echo Jump host zone is ${JUMP_HOST_ZONE}
 gcloud compute ssh jump-host --zone=${JUMP_HOST_ZONE} --tunnel-through-iap --project=${PROJECT_ID}
 ```
 
-Check the status of the install:
+Check the status of the installation:
 ```
 ls -la /tmp/jumphost_ready
 ```
@@ -147,7 +147,7 @@ sb infra apply 2-foundation
 sb infra apply 3-gke
 ```
 
-### Add a HTTP Load balancer with DNS domain
+### Add an HTTP Load balancer with DNS domain
 ```
 sb components add terraform_gke_ingress
 ```
@@ -186,7 +186,7 @@ sb infra apply 4-llm
   export FIREBASE_API_KEY=$(gcloud alpha services api-keys get-key-string ${KEY_NAME} --format="value(keyString)")
   ```
 
-Follow README files for each microservice to setup:
+Follow README files for each microservice to set up:
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
 
 ### Deploy all microservices and ingress to GKE cluster:
@@ -209,7 +209,10 @@ Once deployed, check out the API docs with the following links:
 - https://$YOUR_DNS_DOMAIN/jobs-service/api/v1/docs
 - https://$YOUR_DNS_DOMAIN/llm-service/api/v1/docs
 
-> Alternatively you can link with IP address e.g. http://x.x.x.x/authentication/api/v1/docs to verify API endpoints.
+> Alternatively, you may use the IP address e.g. `http://$BASE_IP_ADDRESS/authentication/api/v1/docs` to verify API endpoints
+```
+BASE_IP_ADDRESS=$(gcloud compute addresses list --global --format="value(address)")
+```
 
 In the GCP Console, check the following:
 - A query engine
