@@ -20,12 +20,13 @@ import requests
 import argparse
 import getpass
 import sys
+import warnings
 
 sys.path.append("components/common/src/")
 
 from common.models import User
 
-AUTH_API_PATH = "/authentication/api/v1"
+AUTH_API_PATH = "authentication/api/v1"
 
 USER_DATA = {
     "first_name": "test",
@@ -38,7 +39,7 @@ USER_DATA = {
     "access_api_docs": True,
     "gaia_id": "fake-gaia-id",
 }
-requests.packages.urllib3.disable_warnings()
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 def execute_command(command):
   output = subprocess.check_output(command,
@@ -70,7 +71,7 @@ def create_user(user_email, user_password, base_url=None) -> None:
     "password": user_password
   }
   url = f"{base_url}/{AUTH_API_PATH}/sign-up/credentials"
-  url = re.sub(r"(?<!:)\/+", "/", url)
+  url = re.sub(r"(?<!:)/+", "/", url)
   sign_up_req = requests.post(url, json=req_body, verify=False)
   sign_up_res = sign_up_req.json()
 
@@ -96,7 +97,7 @@ def login_user(user_email, user_password, base_url=None) -> None:
     "password": user_password
   }
   url = f"{base_url}/{AUTH_API_PATH}/sign-in/credentials"
-  url = re.sub(r"(?<!:)\/+", "/", url)
+  url = re.sub(r"(?<!:)/+", "/", url)
   sign_in_req = requests.post(url, json=req_body, verify=False)
 
   sign_in_res = sign_in_req.json()
@@ -119,7 +120,7 @@ def get_token(base_url="http://authentication"):
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument("action", type=str, help="Main action")
+  parser.add_argument("action", type=str, help="Main action: [create_user|get_token]")
   parser.add_argument("--base-url", type=str, help="API base URL")
   args = parser.parse_args()
 
@@ -155,6 +156,7 @@ def main():
     available_actions = ["create_admin"]
     for action in available_actions:
       print(f" - {action}")
+
 
 if __name__ == "__main__":
   main()
