@@ -45,7 +45,7 @@ curl --location "$BASE_URL/llm-service/api/v1/query/engine" \
 --header "Content-Type: application/json" \
 --header "Authorization: Bearer $ID_TOKEN" \
 --data "{
-    \"doc_url\": \"gs://$PROJECT_ID-llm-docs/genai-sample-doc.pdf\",
+    \"doc_url\": \"gs://$PROJECT_ID-llm-docs\",
     \"query_engine\": \"$QUERY_ENGINE_NAME\",
     \"llm_type\": \"VertexAI-Chat\",
     \"is_public\": true
