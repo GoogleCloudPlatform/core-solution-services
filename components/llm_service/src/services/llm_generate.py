@@ -26,8 +26,7 @@ from config import (LANGCHAIN_LLM, GOOGLE_LLM,
 from vertexai.preview.language_models import (ChatModel,
     TextGenerationModel)
 
-async def llm_generate(prompt: str, llm_type: str,
-                       user_chat: Optional[UserChat] = None) -> str:
+async def llm_generate(prompt: str, llm_type: str) -> str:
   """
   Generate text with an LLM given a prompt.
 
@@ -35,8 +34,6 @@ async def llm_generate(prompt: str, llm_type: str,
     prompt: the text prompt to pass to the LLM
 
     llm_type: the type of LLM to use (default to openai)
-
-    user_chat (optional): a user chat to use for context
 
   Returns:
     the text response: str
@@ -48,7 +45,7 @@ async def llm_generate(prompt: str, llm_type: str,
   Logger.info(f"generating text with llm_type {llm_type}")
   try:
     if llm_type in LANGCHAIN_LLM.keys():
-      response = await langchain_llm_generate(prompt, llm_type, user_chat)
+      response = await langchain_llm_generate(prompt, llm_type)
     elif llm_type in GOOGLE_LLM.keys():
       google_llm = GOOGLE_LLM.get(llm_type, VERTEX_LLM_TYPE_BISON_TEXT)
       is_chat = llm_type in CHAT_LLM_TYPES
@@ -60,14 +57,15 @@ async def llm_generate(prompt: str, llm_type: str,
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-async def llm_chat(prompt: str, llm_type: str) -> str:
+async def llm_chat(prompt: str, llm_type: str,
+                   user_chat: Optional[UserChat] = None) -> str:
   """
   Send a prompt to a chat model and return response.
 
   Args:
     prompt: the text prompt to pass to the LLM
     llm_type: the type of LLM to use (default to openai)
-
+    user_chat (optional): a user chat to use for context
 
   Returns:
     the text response: str
@@ -78,11 +76,12 @@ async def llm_chat(prompt: str, llm_type: str) -> str:
 
   try:
     if llm_type in LANGCHAIN_LLM.keys():
-      response = await langchain_llm_generate(prompt, llm_type)
+      response = await langchain_llm_generate(prompt, llm_type, user_chat)
     elif llm_type in GOOGLE_LLM.keys():
       google_llm = GOOGLE_LLM.get(llm_type)
       is_chat = True
-      response = await google_llm_predict(prompt, is_chat, google_llm)
+      response = await google_llm_predict(prompt, is_chat,
+                                          google_llm, user_chat)
     return response
   except Exception as e:
     raise InternalServerError(str(e)) from e

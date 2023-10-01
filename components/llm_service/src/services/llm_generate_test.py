@@ -72,10 +72,18 @@ async def test_llm_generate(clean_firestore):
   assert response == FAKE_GENERATE_RESPONSE
 
 @pytest.mark.asyncio
-async def test_llm_chat(clean_firestore, test_chat):
+async def test_llm_chat(clean_firestore):
   with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
                   return_value = FAKE_CHAT_RESULT):
     response = await llm_chat(FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5)
+
+  assert response == FAKE_GENERATE_RESPONSE
+
+@pytest.mark.asyncio
+async def test_llm_chat_resume(clean_firestore, test_chat):
+  with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
+                  return_value = FAKE_CHAT_RESULT):
+    response = await llm_chat(FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5, test_chat)
 
   assert response == FAKE_GENERATE_RESPONSE
 
@@ -89,9 +97,17 @@ async def test_llm_generate_google(clean_firestore):
   assert response == FAKE_GENERATE_RESPONSE
 
 @pytest.mark.asyncio
-async def test_llm_chat_google(clean_firestore, test_chat):
+async def test_llm_chat_google(clean_firestore):
   with mock.patch("vertexai.preview.language_models.ChatSession.send_message",
                   return_value = FAKE_GOOGLE_RESPONSE):
     response = await llm_chat(FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT)
+
+  assert response == FAKE_GENERATE_RESPONSE
+
+@pytest.mark.asyncio
+async def test_llm_chat_google_resume(clean_firestore, test_chat):
+  with mock.patch("vertexai.preview.language_models.ChatSession.send_message",
+                  return_value = FAKE_GOOGLE_RESPONSE):
+    response = await llm_chat(FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT, test_chat)
 
   assert response == FAKE_GENERATE_RESPONSE
