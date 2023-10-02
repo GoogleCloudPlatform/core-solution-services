@@ -23,8 +23,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
 from testing.test_config import API_URL, TESTING_FOLDER_PATH
-from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
-                                     USER_EXAMPLE)
 from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
@@ -32,10 +30,9 @@ from common.utils.auth_service import validate_token
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
 with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient",
-    side_effect=mock.MagicMock()) as mok:
-  with mock.patch("langchain.chat_models.ChatOpenAI"):
-    with mock.patch("langchain.llms.Cohere"):
+    "google.cloud.secretmanager.SecretManagerServiceClient"):
+  with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
+    with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
       from config import LLM_TYPES
 
 # assigning url
@@ -49,8 +46,7 @@ os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
 with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient",
-    side_effect=mock.MagicMock()) as mok:
+    "google.cloud.secretmanager.SecretManagerServiceClient"):
   from routes.llm import router
 
 app = FastAPI()
