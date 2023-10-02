@@ -2,13 +2,13 @@
 
 Table of Content
 <!-- vscode-markdown-toc -->
-* 1. [Project Requirements](#ProjectRequirements)
-* 2. [Code Submission Process](#CodeSubmissionProcess)
-* 3. [Local Environment Setup](#LocalEnvironmentSetup)
-* 4. [Develop and Test on a GKE cluster](#DevelopandTestonaGKEcluster)
-* 5. [Advanced Skaffold commands](#AdvancedSkaffoldcommands)
-* 6. [Debugging](#Debugging)
-* 7. [Testing](#Testing)
+1. [Project Requirements](#ProjectRequirements)
+2. [Code Submission Process](#CodeSubmissionProcess)
+3. [Local Environment Setup](#LocalEnvironmentSetup)
+4. [Develop and Test on a GKE cluster](#DevelopandTestonaGKEcluster)
+5. [Advanced Skaffold commands](#AdvancedSkaffoldcommands)
+6. [Debugging](#Debugging)
+7. [Testing](#Testing)
 
 <!-- vscode-markdown-toc-config
 	numbering=true
