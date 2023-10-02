@@ -1,15 +1,14 @@
-# (DRAFT) Development
+# Development
 
+Table of Content
 <!-- vscode-markdown-toc -->
 1. [Project Requirements](#ProjectRequirements)
 2. [Code Submission Process](#CodeSubmissionProcess)
-3. [Local IDE Development (VS Code)](#LocalIDEDevelopmentVSCode)
-4. [Local Development (minikube)](#LocalDevelopmentminikube)
-5. [Development with Kubernetes (GKE)](#DevelopmentwithKubernetesGKE)
-6. [Advanced Skaffold features (minikube or GKE)](#AdvancedSkaffoldfeaturesminikubeorGKE)
-7. [Deploying Common CSS Services (Authentication)](#DeployingCommonCSSServicesAuthentication)
-8. [Debugging](#Debugging)
-9. [Unit tests - microservices](#Unittests-microservices)
+3. [Local Environment Setup](#LocalEnvironmentSetup)
+4. [Develop and Test on a GKE cluster](#DevelopandTestonaGKEcluster)
+5. [Advanced Skaffold commands](#AdvancedSkaffoldcommands)
+6. [Debugging](#Debugging)
+7. [Testing](#Testing)
 
 <!-- vscode-markdown-toc-config
 	numbering=true
@@ -21,7 +20,7 @@ This doc explains the development workflow, so you can get started contributing 
 
 ##  1. <a name='ProjectRequirements'></a>Project Requirements
 
-Install the following based on [the versions for this project](./README.md#Prerequisites)
+Install the following based on the [README.md#Prerequisites](../README.md#Prerequisites)
 * `skaffold`
 * `kustomize`
 * `kubectx`
@@ -34,21 +33,21 @@ Install the following based on [the versions for this project](./README.md#Prere
 * Choose your own GitHub profile to create this fork under your name.
 * Clone the repo to your local computer.
   ```
-  export GITHUB_ID=<your-github-id>
+  export YOUR_GITHUB_ID=<your-github-id>
   cd ~/workspace
-  git clone https://github.com/$GITHUB_ID/core-solution-services.git
+  git clone https://github.com/$YOUR_GITHUB_ID/core-solution-services.git
   cd core-solution-services
   ```
 * Verify if the local git copy has the right remote endpoint.
   ```
   git remote -v
   # This will display the detailed remote list like below.
-  origin  https://github.com/$GITHUB_ID/core-solution-services.git (fetch)
-  origin  https://github.com/$GITHUB_ID/core-solution-services.git (push)
+  origin  https://github.com/$YOUR_GITHUB_ID/core-solution-services.git (fetch)
+  origin  https://github.com/$YOUR_GITHUB_ID/core-solution-services.git (push)
   ```
   - If for some reason your local git copy does not have the correct remotes, run the following:
     ```
-    git remote add origin https://github.com/$GITHUB_ID/core-solution-services.git
+    git remote add origin https://github.com/$YOUR_GITHUB_ID/core-solution-services.git
     # Or, to reset the URL if origin remote exists
     git remote set-url origin https://github.com/<your-github-id>/core-solution-services.git
     ```
@@ -94,18 +93,18 @@ Install the following based on [the versions for this project](./README.md#Prere
   - If all tests passed, you will need to wait for the reviewers’ approval.
 * Once the request has been approved, the reviewer or Repo Admin will merge the pull request back to the upstream `main` branch.
 
-###  2.3. <a name='ForRepoAdminsReviewingaPullRequest'></a>(For Repo Admins) Reviewing a Pull Request
+###  2.3. <a name='2.3.ForRepoAdminsReviewingaPullRequest'></a> 2.3. (For Repo Admins) Reviewing a Pull Request
 For code reviewers, go to the Pull Requests page of the origin repo on GitHub.
 * Go to the specific pull request, review and comment on the request.
 branch.
 * Alternatively, you can use GitHub CLI `gh` to check out a PR and run the codes locally: https://cli.github.com/manual/gh_pr_checkout
 * If all goes well with tests passed, click Merge pull request to merge the changes to `main`.
 
-##  3. <a name='LocalIDEDevelopmentVSCode'></a>Local IDE Development (VS Code)
+##  3. <a name='LocalEnvironmentSetup'></a>Local Environment Setup
 
-Here are settings and tips to set up your local IDE for development and testing of the code. These instructions are for VS Code.
+###  3.1. <a name='VSCodeSetup'></a>VS Code Setup
 
-As a shortcut, here is a sample `settings.json` for VS Code you will want to start with
+Copy the following and paste to the `settings.json` of your VS Code:
 ```json
 {
   "python.linting.enabled": true,
@@ -131,286 +130,215 @@ You may need to reload VS Code for these to take effect:
 * CMD + SHIFT + P
 * __Developer: Reload Window__
 
-###  3.1. <a name='Commoncontainersetup'></a>`Common` container setup
-The `common` container houses any common libraries, modules, data objects (ORM) etc. that might be needed by other microservices. It can serve as the base container for builds in other microservices as shown in this [Dockerfile](./components/authentication/Dockerfile)
 
-Additional setup is required in a Python development environment so libraries added here are included in your IDE's code completion, etc.
+> If VS Code asks you to install tools like `pylint`, etc. go ahead and do so.
 
-###  3.2. <a name='DevelopingjustCommoncontainerVSCode'></a>Developing just `Common` container (VSCode)
-* Set up VENV just for common
+###  3.2. <a name='SetupVirtualEnvforcomponentsmicroservice_folder'></a>Set up VirtualEnv for `components/<microservice_folder>`
+
+Each component folder (non-common) in `./components` represents a standalone Docker container and has its own Python dependencies defined in `requirements.txt`.
+
+These microservice components also depend on the `./components/common`, hence it requires additional setup for IDE's code-completion to register the common modules.
+
+* Make sure you aren't in a VirtualEnv
+  ```
+  deactivate
+  ```
+
+* Set up VirtualEnv just for this microservice component
+  ```
+  cd components/<component_name>
+
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install --upgrade pip
+
+  # install requirements from common
+  pip install -r ../common/requirements.txt
+
+  # install microservice requirements
+  pip install -r requirements.txt
+  ```
+* (For VS Code only) Set up Python interpreter:
+  * Open Command Palette (CMD + SHIFT + P)
+  * Type `Python: Select Interpreter`
+  * Choose your new interpreter
+    * will look something like `./common/.venv/bin/python3`
+
+* (For VS Code Only) Add the following to the `settings.json` in VS Code. The modules should load when you run from command line, and you should see code completion hints.
+  ```json
+  {
+    "terminal.integrated.env.osx": {
+      "PYTHONPATH": "${workspaceFolder}/common/src/"
+    },
+    "python.analysis.extraPaths": [
+      "${workspaceFolder}/common/src/"
+    ]
+  }
+  ```
+
+* You should now be able to load modules and test them locally:
+  ```
+  cd components/<component_name>/src
+  python main.py
+  ```
+
+* Once you finish development for this component, run the following to exit the
+VirtualEnv:
+  ```
+  deactivate
+  ```
+
+###  3.3. <a name='SetupVirtualEnvforcomponentscommon'></a>Set up VirtualEnv for `components/common`
+
+Follow the steps below to create a new VirtualEnv for `components/common` and install required python packages defined in the `requirements.txt`.
+
+* Create a VirtualEnv for a specific component
 ```
-cd common
+cd components/<component_name> # e.g. llm_service
 
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
-* Open Command Palette (CMD + SHIFT + P)
-* Type `Python: Select Interpreter`
-* Choose your new interpreter
-  * will look something like `./common/.venv/bin/python3`
+* (For VSCode only) Set up Python interpreter:
+  * Open Command Palette (CMD + SHIFT + P)
+  * Type `Python: Select Interpreter`
+  * Choose your new interpreter
+    * will look something like `./common/.venv/bin/python3`
 
-You should now be able to load modules and test them locally:
-```
-cd src
-python
-```
-* In REPL:
-```python
-from common.models import User
-user = User()
-```
-* Exit the VENV
-```
-deactivate
-```
-
-###  3.3. <a name='Microservicecontainersetup'></a>Microservice container setup
-Any microservice containers that use common will follow the same setup, but will also require additional setup for your IDE's code-completion to register the common modules:
-* Set up `venv` just for microservice
-
-Make sure you aren't in a VENV
-```
-deactivate
-```
-```
-cd components/llm_service
-
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-
-# install requirements from common
-pip install -r ../common/requirements.txt
-
-# install microservice requirements
-pip install -r requirements.txt
-```
-* Open Command Palette (CMD + SHIFT + P)
-* Type "Python: Select Interpreter"
-* Choose your new interpreter
-  * will look something like `./components/llm_service/.venv/bin/python3`
-
-If you added the following to your VS Code `settings.json` file like mentioned before, the modules should load when you run from command line, and you should see code completion hints.
-```json
-{
-  "terminal.integrated.env.osx": {
-    "PYTHONPATH": "${workspaceFolder}/common/src/"
-  },
-  "python.analysis.extraPaths": [
-    "${workspaceFolder}/common/src/"
-  ]
-}
-```
-You should now be able to load modules and test them locally:
-```
-cd components/llm_service/src
-
-# run web server
-python main.py
-```
-* Exit the VENV
-```
-deactivate
-```
-
-###  3.4. <a name='OtherIDESetup'></a>Other IDE Setup
-
-* If VS Code asks you to install tools like `pylint`, etc. go ahead and do so.
-
-##  4. <a name='LocalDevelopmentminikube'></a>Local Development (`minikube`)
-
-Minikube can be used to provide an easy local Kubernetes environment for fast prototyping and debugging
-* Install Minikube:
-```
-# For MacOS:
-brew install minikube
-
-# For Windows:
-choco install -y minikube
-```
-* Simple local run
-
-Make sure the Docker daemon is running locally. To start minikube:
-```
-# This will reset the kubectl context to the local minikube.
-minikube start
-
-# Build and run locally with hot reload:
-skaffold dev
-```
-* `minikube` runs with ENV variables that are captured in `kustomize`, for example [here](./components/llm_service/kustomize/base/properties.env)
-```
-# if PROJECT_ID variable is used in your containers
-export PROJECT_ID=<your-project>
-
-skaffold dev
-```
-
-###  4.1. <a name='ADVANCED:RunonminikubewithyourGCPcredentials'></a>ADVANCED: Run on minikube with your GCP credentials
-This will mount your GCP credentials to every pod created in minikube. See [this guide](https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/) for more info.
-
-The addon normally uses the [Google Application Default Credentials](https://google.aip.dev/auth/4110) as configured with `gcloud auth application-default login`. If you already have a json credentials file you want to specify, such as to use a service account, set the GOOGLE_APPLICATION_CREDENTIALS environment variable to point to that file.
-* User credentials
-```
-gcloud auth application-default login
-minikube addons enable gcp-auth
-```
-* File based credentials
-```
-# Download a service accouunt credential file
-export GOOGLE_APPLICATION_CREDENTIALS=<creds-path>.json
-minikube addons enable gcp-auth
-```
-
-##  5. <a name='DevelopmentwithKubernetesGKE'></a>Development with Kubernetes (GKE)
-
-###  5.1. <a name='InitialsetupforGKEdevelopment'></a> Initial setup for GKE development
-After cloning the repo, please set up for local development.
-
-* Export GCP project id and the namespace based on your GitHub handle (i.e. user ID)
+* You should now be able to load modules and test them locally:
   ```
-  export PROJECT_ID=core-solution-services-dev
-  export REGION=us-central1
-  export SKAFFOLD_NAMESPACE=$GITHUB_ID
-  echo $PROJECT_ID $SKAFFOLD_NAMESPACE
+  # In ./components/<component_name>
+  cd src
+  python
   ```
-* Run the following to create skaffold namespace, and use the default cluster name as `default_cluster`:
+  In REPL (Copy and paste the code)
+  ```python
+  from common.models import User
+  user = User()
   ```
-  ./setup/setup_local.sh
+
+* Once you finish development for this component, run the following to exit the VirtualEnv:
   ```
+  deactivate
+  ```
+
+##  4. <a name='DevelopandTestonaGKEcluster'></a>Develop and Test on a GKE cluster
+
+###  4.1. <a name='Doublecheckthecurrentgcloudconfig'></a>Double check the current `gcloud` config
+
+* Please make sure the `gcloud` command set to the current project.
+  ```
+  export PROJECT_ID=<your-dev-project-id>
+  gcloud config set project $PROJECT_ID
+  ```
+
+###  4.2. <a name='SetupWorkloadIdentityUser'></a>Set up Workload Identity User
+
 * Run the following to set up the Kubernetes Service Account (ksa) in your namespace:
   ```
-  export NAMESPACE=$SKAFFOLD_NAMESPACE
-  bash ./setup/setup_ksa.sh
+  export PROJECT_ID=<your-dev-project-id>
+  export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
+  export GSA_NAME="gke-sa"
+  export KSA_NAME="gke-sa"
+  bash ./tools/bind_ksa.sh
   ```
 
-###  5.2. <a name='BuildandrunallmicroservicesinthedefaultGKEclusterwithlivereload'></a>Build and run all microservices in the default GKE cluster with live reload
-> **_NOTE:_**  By default, skaffold builds with CloudBuild and runs in kubernetes cluster set in your local `kubeconfig`, using the namespace set above in `SKAFFOLD_NAMESPACE`. If it is set to your GKE cluster, it will deploy to the cluster. If it's set to `minikube`, it will deploy there.
-```
-# check your current kubeconfig
-kubectx
+###  4.3. <a name='BuildanddeployallmicroservicesUsingSolutionsBuilderCLI'></a>Build and deploy all microservices (Using Solutions Builder CLI)
 
-skaffold dev
-```
-- Please note that any change in the code locally will rerun the build process.
+> Solutions Builder CLI runs `skaffold` commands behind the scene. It will print out the actual command before running it.
 
-###  5.3. <a name='DeploytoaspecificGKEcluster'></a>Deploy to a specific GKE cluster
-> **IMPORTANT**: Please change gcloud project and kubectl context before running skaffold.
+To build and deploy:
 ```
-export PROJECT_ID=core-solution-services-dev
+export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
 
-# Switch to a specific project.
-gcloud config set project $PROJECT_ID
+# In the solution folder:
+sb deploy
 
-# Assuming the default cluster name is "default_cluster".
-gcloud container clusters get-credentials default_cluster --zone us-central1-a --project $PROJECT_ID
-```
-Run with skaffold:
-```
-skaffold run -p custom --default-repo=gcr.io/$PROJECT_ID
-
-# Or run with hot reload and live logs:
-skaffold dev -p custom --default-repo=gcr.io/$PROJECT_ID
+# Or, to build and deploy with livereload:
+sb deploy --dev
 ```
 
-##  6. <a name='AdvancedSkaffoldfeaturesminikubeorGKE'></a>Advanced Skaffold features (minikube or GKE)
+Press Enter in the prompt:
+```
+This will build and deploy all services using the command below:
+- gcloud container clusters get-credentials main-cluster --region us-central1 --project your-project-id
+- skaffold run -p default-deploy  --default-repo="gcr.io/your-project-id"
 
-###  6.1. <a name='Buildandrunwithspecificmicroservices'></a>Build and run with specific microservice(s)
+This may take a few minutes. Continue? [Y/n]:
+```
+
+###  4.4. <a name='OptionalBuildanddeployallmicroservicesUsingskaffolddirectly'></a>[Optional] Build and deploy all microservices (Using skaffold directly)
+
+####  4.4.1. <a name='Switchtothedefaultcluster'></a>Switch to the default cluster
+
+* By default, skaffold builds with CloudBuild and runs in kubernetes cluster set in your local `kubeconfig`, using the namespace set above in `SKAFFOLD_NAMESPACE`. If it is set to your GKE cluster, it will deploy to the cluster.
+  ```
+  export CLUSTER_NAME=default_cluster
+  gcloud container clusters get-credentials $CLUSTER_NAME --zone us-central1-a --project $PROJECT_ID
+  ```
+
+* Check your current context to verify which GKE cluster it points to:
+  ```
+  kubectl config current-context
+
+  # Or you can use kubectx tool:
+  kubectx
+  ```
+
+####  4.4.2. <a name='DeploytotheGKEcluster'></a>Deploy to the GKE cluster
+
+* Run with skaffold:
+  ```
+  skaffold run -p gke --default-repo=gcr.io/$PROJECT_ID
+
+  # Or run with hot reload and live logs:
+  skaffold dev -p gke --default-repo=gcr.io/$PROJECT_ID
+  ```
+
+##  5. <a name='AdvancedSkaffoldcommands'></a>Advanced Skaffold commands
+
+####  5.1. <a name='Buildandrunwithspecificmicroservices'></a>Build and run with specific microservice(s)
 ```
 skaffold dev -m <service1>,<service2>
 ```
 
-###  6.2. <a name='BuildandrunmicroserviceswithacustomSourceRepositorypath'></a>Build and run microservices with a custom Source Repository path
+####  5.2. <a name='BuildandrunmicroserviceswithacustomSourceRepositorypath'></a>Build and run microservices with a custom Source Repository path
 ```
 skaffold dev --default-repo=gcr.io/$PROJECT_ID
 ```
 
-###  6.3. <a name='BuildandrunmicroserviceswithadifferentSkaffoldprofile'></a>Build and run microservices with a different Skaffold profile
+####  5.3. <a name='BuildandrunmicroserviceswithadifferentSkaffoldprofile'></a>Build and run microservices with a different Skaffold profile
 ```
-# Using hpa profile
-skaffold dev -p hpa
+# Using HPA (Horizontal Pod Autoscaler) profile
+skaffold dev -p gke,gke-hpa
 ```
 
-###  6.4. <a name='Skaffoldprofiles'></a>Skaffold profiles
+####  5.4. <a name='Skaffoldprofiles'></a>Skaffold profiles
 By default, the Skaffold YAML contains the following pre-defined profiles ready to use.
-- **base** - This is the default profile for local development, which will be activated automatically with the `kubectl` context set to the default cluster of this GCP project.
-- **hpa** - This is the profile for building and deploying to the Prod environment, e.g. to a customer's Prod environment. Adds Horizontal Pod Autoscaler (HPA)
+- **gke** - This is the default profile for local development, which will be activated automatically with the `kubectl` context set to the default cluster of this GCP project.
+  - The corresponding kustomize YAML is in the `./components/<component_name>/kustomize/base` folder.
+- **gke-hpa** - This is the profile for building and deploying to the Prod environment, e.g. to a customer's Prod environment. Adds Horizontal Pod Autoscaler (HPA)
+  - The corresponding kustomize YAML is in the `./components/<component_name>/kustomize/hpa` folder.
 
-###  6.5. <a name='SwitchingfromlocalminikubetoGKEdevelopment'></a>Switching from local (`minikube`) to GKE development
-Use the `kubectx` tool to change KubeConfig contexts, which are used by skaffold to target the appropriate cluster.
-* Switching to minikube
-```
-# if minikube is already started
-kubectx minikube
 
-# if minikube is not started
-# running this will also change the KubeConfig context
-minikube start
+##  6. <a name='Debugging'></a>Debugging
 
-skaffold dev
-```
-* Switching to GKE
-```
-# see available KubeContexts
-kubectx
+###  6.1. <a name='Debugginglocally'></a>Debugging locally
 
-# choose your cluster
-kubectx <YOUR_CLUSTER_NAMAE>
-
-skaffold dev
-```
-
-##  7. <a name='DeployingCommonCSSServicesAuthentication'></a>Deploying Common CSS Services (Authentication)
-
-If you are deploying common Core Solution Services from another repo into your dev setup, perform the following steps. Target the same cluster and namespace from a separate tab, since you will need to run this `skaffold` command in parallel with the local `skaffold` command.
-
-Clone the repo:
-```
-git glone https://github.com/$GITHUB_ID/core-solution-services.git
-cd core-solution-services
-```
-Run a skaffold dev command to build / deploy the microservice:
-```
-GCP_PROJECT=<YOUR_PROJECT>
-export FIREBASE_API_KEY=<FIREBASE_API_KEY>
-
-GCP_PROJECT=$GCP_PROJECT skaffold dev -m authentication,redis -p custom --default-repo=gcr.io/$GCP_PROJECT
-```
-
-##  8. <a name='Debugging'></a>Debugging
-
-###  8.1. <a name='LocalDebugging-Common'></a>Local Debugging - Common
-By default, VS Code will use the Python interpreter you've selected with the Python extensions (CMD + SHIFT + P -> __Select Interpreter__) so clicking __Debug__ and running without a configuration should work, so long as you have shifted the interpreter over and activated the "Common" VENV.
+####  6.1.1. <a name='Debuggingcomponentscommon'></a>Debugging `components/common`
+By default, VS Code will use the Python interpreter you've selected with the Python extensions (CMD + SHIFT + P -> __Select Interpreter__) so clicking __Debug__ and running without a configuration should work, so long as you have shifted the interpreter over and activated the "Common" VirtualEnv.
 
 Mileage will vary - you may need to create a "Debug Current File" Debug configuration in VS Code, particularly if you are in a multi-folder Workspace.
 
-###  8.2. <a name='LocalDebugging-Microservice'></a>Local Debugging - Microservice
-This should also just work, so long as you have selected the right interpreter, are in the microservice folder, and have entered your VENV.
+####  6.1.2. <a name='Debuggingcomponentscomponent_name'></a>Debugging `components/<component_name>`
+This should also just work, so long as you have selected the right interpreter, are in the microservice folder, and have entered your VirtualEnv.
 
 Mileage will vary - you may need to create a "Debug Current File" Debug configuration in VS Code, particularly if you are in a multi-folder Workspace.
 
-###  8.3. <a name='MinikubeMicroserviceDebuggingwSkaffoldCloudCodeVSCode'></a>Minikube Microservice Debugging w/ Skaffold + Cloud Code (VS Code)
-You don't need a VENV for this option.
-
-First, install [Cloud Code](https://marketplace.visualstudio.com/items?itemName=GoogleCloudTools.cloudcode)
-
-```bash
-minikube start
-# if minikube is started: kubectx minikube
-```
-
-* From Command Palette (CMD + SHIFT + P): __Cloud Code: Debug on Kubernetes__
-* Select the root `skaffold.yaml`
-* Run __All dependencies__ or the module that you want
-* Select a profile (Default for minikube)
-* Select context (minikube)
-
-If minikube isn't starting, you may need to disable "Enable Minikube Gcp Auth Plugin" in the Cloud Code Settings.
-
-###  8.4. <a name='GKEMicroserviceDebuggingwSkaffoldCloudCodeVSCode'></a>GKE Microservice Debugging w/ Skaffold + Cloud Code (VS Code)
-You don't need a VENV for this option.
+###  6.2. <a name='DebuggingwithSkaffoldCloudCodeonGKEcluster'></a>5.2. Debugging with Skaffold + Cloud Code (on GKE cluster)
+> NOTE: You don't need a VirtualEnv for this option.
 
 First, install [Cloud Code](https://marketplace.visualstudio.com/items?itemName=GoogleCloudTools.cloudcode)
 
@@ -423,37 +351,52 @@ First, install [Cloud Code](https://marketplace.visualstudio.com/items?itemName=
 
 When you're done, make sure to fully disconnect the debugger, so it removes the running services.
 
-##  9. <a name='Unittests-microservices'></a>Unit tests - microservices
+##  7. <a name='Testing'></a>Testing
 
-Install Firebase CLI:
-```
-curl -sL https://firebase.tools | bash
-```
-Install Virtualenv and pip requirements
-```
-# Start in the root folder
-export BASE_DIR=$(pwd)
+###  7.1. <a name='Unittesting'></a>Unit testing
 
-# Go to a specific microservice folder:
-cd components/llm_service
-virtualenv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install -r requirements-test.txt
-```
-Run unit tests locally:
-```
-PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/common/src python -m pytest
-```
+* Install Firebase CLI:
+  ```
+  curl -sL https://firebase.tools | bash
+  ```
+* Install Virtualenv and pip requirements
+  ```
+  # Start in the root folder
+  export BASE_DIR=$(pwd)
 
-####  9.1. <a name='Runlinterlocally:'></a>Run linter locally:
-```
-python -m pylint $(git ls-files '*.py') --rcfile=$BASE_DIR/.pylintrc
-```
+  # Go to a specific microservice folder:
+  cd components/<component_name>
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+  pip install -r requirements-test.txt
 
-####  9.2. <a name='Unittestfileformat:'></a>Unit test file format:
+  # If this component depends on the common folder:
+  pip install -r ../common/requirements.txt
+  ```
+* Run unit tests locally:
+  ```
+  PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/<component_name>/src python -m pytest
+  ```
+
+###  7.2. <a name='Testfilenameconventionandformat'></a>Test filename convention and format
+
 All unit test files follow the filename format:
 
 - Python:
   ```
   <original_filename>_test.py
+  ```
+
+- Typescript/Javascript:
+  ```
+  <original_filename>.spec.ts
+  <original_filename>.spec.js
+  ```
+
+###  7.3. <a name='Codestyleandlinter'></a>Code style and linter
+
+Run linter locally:
+```
+python -m pylint $(git ls-files '*.py') --rcfile=$BASE_DIR/.pylintrc
+```
