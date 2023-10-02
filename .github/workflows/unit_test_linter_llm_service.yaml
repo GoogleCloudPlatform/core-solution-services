@@ -8,7 +8,8 @@ on:
       - main
     paths:
       - "components/common/**"
-      - ".github/workflows/unit_test_linter_common.yaml"
+      - "components/llm_service/**"
+      - ".github/workflows/unit_test_linterllm_service.yaml"
       - ".pylintrc"
   workflow_dispatch:
 
@@ -23,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.9]
-        target-folder: [components/common]
+        target-folder: [components/llm_service]
     steps:
       - uses: actions/checkout@v3
 
@@ -56,16 +57,20 @@ jobs:
       - name: Install dependencies
         run: |
           BASE_DIR=$(pwd)
-          cd ${{ matrix.target-folder }}
           python -m pip install --upgrade pip
+          if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
+          if [ -f $BASE_DIR/components/common/requirements-test.txt ]; then pip install -r $BASE_DIR/components/common/requirements-test.txt; fi
+          cd ${{ matrix.target-folder }}
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
       - name: Run pytest with coverage
+        # We run tests separately for routes and services in the LLM service due to mocking conflicts
         run: |
           BASE_DIR=$(pwd)
           cd ${{ matrix.target-folder }}/src
-          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/common/src python -m pytest
+          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest routes/*_test.py
+          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest services/*_test.py
 
   linter:
     runs-on: ubuntu-latest
@@ -83,7 +88,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd ${{ matrix.target-folder }}
           python -m pip install --upgrade pip
           python -m pip install pylint
 
