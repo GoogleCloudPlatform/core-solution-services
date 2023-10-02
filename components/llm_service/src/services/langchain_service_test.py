@@ -71,6 +71,8 @@ async def test_langchain_llm_generate():
     response = await langchain_llm_generate(prompt, COHERE_LLM_TYPE)
     assert response == FAKE_GENERATE_RESPONSE, "generated LLM response"
 
+  assert 1 == 0
+
 @pytest.mark.asyncio
 async def test_langchain_llm_generate_chat(create_user, test_chat):
   prompt = "test prompt"
