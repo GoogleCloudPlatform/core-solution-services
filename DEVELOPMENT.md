@@ -1,4 +1,21 @@
-# Development
+# (DRAFT) Development
+
+<!-- vscode-markdown-toc -->
+1. [Project Requirements](#ProjectRequirements)
+2. [Code Submission Process](#CodeSubmissionProcess)
+3. [Local IDE Development (VS Code)](#LocalIDEDevelopmentVSCode)
+4. [Local Development (minikube)](#LocalDevelopmentminikube)
+5. [Development with Kubernetes (GKE)](#DevelopmentwithKubernetesGKE)
+6. [Advanced Skaffold features (minikube or GKE)](#AdvancedSkaffoldfeaturesminikubeorGKE)
+7. [Deploying Common CSS Services (Authentication)](#DeployingCommonCSSServicesAuthentication)
+8. [Debugging](#Debugging)
+9. [Unit tests - microservices](#Unittests-microservices)
+
+<!-- vscode-markdown-toc-config
+	numbering=true
+	autoSave=true
+	/vscode-markdown-toc-config -->
+<!-- /vscode-markdown-toc -->
 
 This doc explains the development workflow, so you can get started contributing code to Core Solution Services
 
