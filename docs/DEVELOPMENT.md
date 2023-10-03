@@ -93,7 +93,7 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
   - If all tests passed, you will need to wait for the reviewers’ approval.
 * Once the request has been approved, the reviewer or Repo Admin will merge the pull request back to the upstream `main` branch.
 
-###  2.3. <a name='2.3.ForRepoAdminsReviewingaPullRequest'></a> 2.3. (For Repo Admins) Reviewing a Pull Request
+###  2.3. <a name='2.3.ForRepoAdminsReviewingaPullRequest'></a>(For Repo Admins) Reviewing a Pull Request
 For code reviewers, go to the Pull Requests page of the origin repo on GitHub.
 * Go to the specific pull request, review and comment on the request.
 branch.
@@ -116,13 +116,13 @@ Copy the following and paste to the `settings.json` of your VS Code:
   ],
   "python.linting.pylintEnabled": true,
   "terminal.integrated.env.osx": {
-    "PYTHONPATH": "${workspaceFolder}/common/src/"
+    "PYTHONPATH": "${workspaceFolder}/components/common/src/"
   },
   "python.analysis.extraPaths": [
-    "${workspaceFolder}/common/src/"
+    "${workspaceFolder}/components/common/src/"
   ],
   "python.autoComplete.extraPaths": [
-    "${workspaceFolder}/common/src/"
+    "${workspaceFolder}/components/common/src/"
   ]
 }
 ```
@@ -168,10 +168,10 @@ These microservice components also depend on the `./components/common`, hence it
   ```json
   {
     "terminal.integrated.env.osx": {
-      "PYTHONPATH": "${workspaceFolder}/common/src/"
+      "PYTHONPATH": "${workspaceFolder}/components/common/src/"
     },
     "python.analysis.extraPaths": [
-      "${workspaceFolder}/common/src/"
+      "${workspaceFolder}/components/common/src/"
     ]
   }
   ```
@@ -325,19 +325,19 @@ By default, the Skaffold YAML contains the following pre-defined profiles ready 
 
 ##  6. <a name='Debugging'></a>Debugging
 
-###  6.1. <a name='Debugginglocally'></a>Debugging locally
+###  6.1. <a name='Debugginglocally'></a>Debugging locally (VS Code)
+
+Mileage will vary - you may need to create a "Debug Current File" Debug configuration in VS Code, particularly if you are in a multi-folder Workspace.
 
 ####  6.1.1. <a name='Debuggingcomponentscommon'></a>Debugging `components/common`
 By default, VS Code will use the Python interpreter you've selected with the Python extensions (CMD + SHIFT + P -> __Select Interpreter__) so clicking __Debug__ and running without a configuration should work, so long as you have shifted the interpreter over and activated the "Common" VirtualEnv.
-
-Mileage will vary - you may need to create a "Debug Current File" Debug configuration in VS Code, particularly if you are in a multi-folder Workspace.
 
 ####  6.1.2. <a name='Debuggingcomponentscomponent_name'></a>Debugging `components/<component_name>`
 This should also just work, so long as you have selected the right interpreter, are in the microservice folder, and have entered your VirtualEnv.
 
 Mileage will vary - you may need to create a "Debug Current File" Debug configuration in VS Code, particularly if you are in a multi-folder Workspace.
 
-###  6.2. <a name='DebuggingwithSkaffoldCloudCodeonGKEcluster'></a>5.2. Debugging with Skaffold + Cloud Code (on GKE cluster)
+###  6.2. <a name='DebuggingwithSkaffoldCloudCodeonGKEcluster'></a>Debugging with Skaffold + Cloud Code (on GKE cluster)
 > NOTE: You don't need a VirtualEnv for this option.
 
 First, install [Cloud Code](https://marketplace.visualstudio.com/items?itemName=GoogleCloudTools.cloudcode)
