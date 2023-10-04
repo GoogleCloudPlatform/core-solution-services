@@ -14,6 +14,8 @@
 
 """ Langchain service """
 
+print("testing...")
+
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
