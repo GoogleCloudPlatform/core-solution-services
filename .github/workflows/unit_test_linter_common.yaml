@@ -18,6 +18,7 @@ env:
 # copier:raw
 jobs:
   unit-test:
+    environment: dev
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -70,6 +71,7 @@ jobs:
           PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/common/src python -m pytest
 
   linter:
+    environment: dev
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
