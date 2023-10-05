@@ -20,35 +20,34 @@
 import os
 import pytest
 from unittest import mock
-from services.langchain_service import langchain_llm_generate
 from common.models import User, UserChat
 from schemas.schema_examples import (CHAT_EXAMPLE, USER_EXAMPLE)
+from testing.test_config import (FAKE_GENERATE_RESPONSE,
+                                 FAKE_GENERATE_RESULT,
+                                 FAKE_CHAT_RESULT,
+                                 FAKE_CHAT_RESPONSE)
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
-from langchain.schema import (Generation, ChatGeneration, LLMResult)
+from langchain.schema import Generation
 from langchain.schema.messages import AIMessage
 
-with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient",
-    side_effect=mock.MagicMock()) as mok:
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   with mock.patch("langchain.chat_models.ChatOpenAI"):
     with mock.patch("langchain.llms.Cohere"):
-      from config import OPENAI_LLM_TYPE_GPT3_5, COHERE_LLM_TYPE
+      from config import (COHERE_LLM_TYPE,
+                          OPENAI_LLM_TYPE_GPT3_5)
+
+with mock.patch("langchain.llms.Cohere.agenerate",
+                return_value = FAKE_GENERATE_RESULT):
+  with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
+                  return_value = FAKE_CHAT_RESPONSE):
+    from services.langchain_service import langchain_llm_generate
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
-FAKE_GENERATE_RESPONSE = "test generation"
-
 FAKE_LANGCHAIN_GENERATION = Generation(text=FAKE_GENERATE_RESPONSE)
-
-FAKE_CHAT_RESPONSE = ChatGeneration(message=AIMessage(
-                                    content=FAKE_GENERATE_RESPONSE))
-
-FAKE_GENERATE_RESULT = LLMResult(generations=[[FAKE_LANGCHAIN_GENERATION]])
-
-FAKE_CHAT_RESULT = LLMResult(generations=[[FAKE_CHAT_RESPONSE]])
 
 @pytest.fixture
 def create_user(clean_firestore):

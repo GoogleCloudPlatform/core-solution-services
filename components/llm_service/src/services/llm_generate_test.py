@@ -30,25 +30,26 @@ from testing.test_config import (FAKE_GENERATE_RESPONSE,
                                  FAKE_CHAT_RESULT,
                                  FAKE_CHAT_RESPONSE)
 
-with mock.patch("langchain.llms.Cohere.agenerate",
-                return_value = FAKE_GENERATE_RESULT):
-  with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
-                  return_value = FAKE_CHAT_RESPONSE):
-    from services.langchain_service import langchain_llm_generate
-    from services.llm_generate import llm_generate, llm_chat
-
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
-with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient", new=mock.AsyncMock()):
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient", 
+    new=mock.AsyncMock()):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere"):
       from config import (COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
                           VERTEX_LLM_TYPE_BISON_CHAT)
+
+with mock.patch("langchain.llms.Cohere.agenerate",
+                return_value = FAKE_GENERATE_RESULT):
+  with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
+                  return_value = FAKE_CHAT_RESPONSE):
+    from services.langchain_service import langchain_llm_generate
+    from services.llm_generate import llm_generate, llm_chat
 
 FAKE_GOOGLE_RESPONSE = TextGenerationResponse(text=FAKE_GENERATE_RESPONSE,
                                               _prediction_response={})
