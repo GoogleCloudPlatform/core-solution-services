@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: {{ secrets.PROJECT_ID }}
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
 
 # copoier:raw 
 jobs:
