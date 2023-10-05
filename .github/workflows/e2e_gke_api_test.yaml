@@ -21,11 +21,11 @@ env:
   SKAFFOLD_NAMESPACE: default
   GKE_CLUSTER: main-cluster
   GKE_ZONE: us-central1
-  KUSTOMIZE_VERSION: 4.1.3
-  SKAFFOLD_VERSION: 2.0.3
+  KUSTOMIZE_VERSION: 5.0.0
+  SKAFFOLD_VERSION: 2.4.0
   SKAFFOLD_CACHE_GCS: gs://core-solution-services-develop.appspot.com/skaffold/cache
 
-# copoier:raw 
+# copier:raw
 jobs:
   deploy:
     name: Deploy all microservices in PR namespace
@@ -76,7 +76,7 @@ jobs:
           NAMESPACE=e2e-pr-$PR_NUMBER
           export DATABASE_PREFIX=e2e_pr${PR_NUMBER}_
           skaffold run \
-          --profile dev \
+          --profile gke \
           --namespace $NAMESPACE \
           -l commit=$GITHUB_SHA \
           --tag PR${{ github.event.pull_request.number }}
@@ -228,4 +228,4 @@ jobs:
           skaffold delete --namespace $NAMESPACE
           kubectl delete namespace $NAMESPACE
 
-# copoier:endraw 
+# copier:endraw

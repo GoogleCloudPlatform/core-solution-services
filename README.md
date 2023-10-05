@@ -52,13 +52,13 @@ Follow the steps below to enable Cloud Identity Platform and add Email/Password 
 ### Check Org policies (Optional)
 
 Make sure that policies are not enforced (`enforce: false` or `NOT_FOUND`). You must be an organization policy administrator to set a constraint.
-https://console.cloud.google.com/iam-admin/orgpolicies/compute-requireShieldedVm?project=$PROJECT_ID
-https://console.cloud.google.com/iam-admin/orgpolicies/requireOsLogin?project=$PROJECT_ID
+- https://console.cloud.google.com/iam-admin/orgpolicies/compute-requireShieldedVm?project=$PROJECT_ID
+- https://console.cloud.google.com/iam-admin/orgpolicies/requireOsLogin?project=$PROJECT_ID
 
 
 ### Check out this repo
 
-Clone this repo to your local machine to start. Optionally you can use Cloud Shell.  Run the rest of the commands inside the repo folder.
+Clone this repo to your local machine to start. Optionally you can use Cloud Shell. Run the rest of the commands inside the repo folder.
 ```
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
 cd core-solution-services
@@ -83,7 +83,7 @@ pip install -U solutions-builder
 sb version
 ```
 
-### Set up gcloud CLI
+### Set up `gcloud` CLI
 ```
 export PROJECT_ID=<my-project-id>
 gcloud auth login
@@ -109,7 +109,7 @@ sb infra apply 0-jumphost
 
 Log into the jump host:
 ```
-export JUMP_HOST_ZONE=$(gcloud compute instances list --format="value(zone)")
+export JUMP_HOST_ZONE=$(gcloud compute instances list --filter="name=(jump-host)" --format="value(zone)")
 echo Jump host zone is ${JUMP_HOST_ZONE}
 gcloud compute ssh jump-host --zone=${JUMP_HOST_ZONE} --tunnel-through-iap --project=${PROJECT_ID}
 ```

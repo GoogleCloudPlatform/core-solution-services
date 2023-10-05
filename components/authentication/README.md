@@ -2,17 +2,6 @@
 
 ## Setup
 
-### Enable Identity Platform
-
-- Go to GCP console and [enable the Identity Platform](https://console.cloud.google.com/customer-identity).
-  ![Enable IDP](../../.github/assets/idp_enable.png)
-
-- Add a Email/Password provider [in Identity Platform page](https://console.cloud.google.com/customer-identity/providers):
-  ![Add IDP provider](../../.github/assets/idp_add_provider.png)
-
-- Make sure to enable the Email/Password provider as the screenshot below:
-  ![Alt text](../../.github/assets/idp_emailpass.png)
-
 ### Retrieve Firebase API key
 
 - Run the command below to set the environment variable `FIREBASE_API_KEY`, this will be passed into the Authentication microservice pod when deploying.
@@ -25,7 +14,20 @@
 
 > This variable will be passed into the GKE pod for Authentication microservice.
 
+### Enable Identity Platform
+
+- Go to GCP console and [enable the Identity Platform](https://console.cloud.google.com/customer-identity).
+  ![Enable IDP](../../.github/assets/idp_enable.png)
+
+- Add an Email/Password provider [in Identity Platform page](https://console.cloud.google.com/customer-identity/providers):
+  ![Add IDP provider](../../.github/assets/idp_add_provider.png)
+
+- Make sure to enable the Email/Password provider as the screenshot below:
+  ![Alt text](../../.github/assets/idp_emailpass.png)
+
 ### Create users
+
+Please verify that email/password provider is enabled.
 
 Get the IP address for the GKE ingress endpoint:
 ```

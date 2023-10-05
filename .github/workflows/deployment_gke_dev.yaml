@@ -17,11 +17,11 @@ env:
   SKAFFOLD_NAMESPACE: default
   GKE_CLUSTER: main-cluster
   GKE_REGION: us-central1
-  KUSTOMIZE_VERSION: 4.1.3
-  SKAFFOLD_VERSION: 2.0.3
+  KUSTOMIZE_VERSION: 5.0.0
+  SKAFFOLD_VERSION: 2.4.0
   SKAFFOLD_CACHE_GCS: gs://core-solution-services-develop.appspot.com/skaffold/cache
 
-# copoier:raw 
+# copier:raw
 jobs:
   deploy_backends:
     name: Deploy microservices to GKE cluster
@@ -72,7 +72,7 @@ jobs:
       - name: Build and deploy to cluster
         run: |
           skaffold run \
-          --profile dev \
+          --profile gke \
           -l commit=$GITHUB_SHA \
           --tag latest \
           --add-skaffold-labels=false
@@ -82,4 +82,4 @@ jobs:
         run: |
           gsutil cp ~/.skaffold/cache $SKAFFOLD_CACHE_GCS
 
-# copoier:endraw 
+# copier:endraw
