@@ -1,18 +1,16 @@
-"""
-Copyright 2023 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """helper functions for Inspace operations"""
 import os
@@ -27,7 +25,7 @@ from common.utils.config import STAFF_USERS, EXTERNAL_USER_PROPERTY_PREFIX
 from common.utils.logging_handler import Logger
 from common.utils.jwt_token_generator import TokenGenerator
 
-# pylint: disable = broad-exception-raised,broad-exception-caught
+# pylint: disable=broad-exception-raised,broad-exception-caught
 
 secrets = secretmanager.SecretManagerServiceClient()
 
