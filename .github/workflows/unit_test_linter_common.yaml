@@ -32,9 +32,9 @@ jobs:
         name: Auth with Service Account
         uses: "google-github-actions/auth@v1"
         with:
-          # credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
-          workload_identity_provider: "${{ secrets.WI_PROVIDER }}"
-          service_account: "deployment@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+          # workload_identity_provider: "${{ secrets.WI_PROVIDER }}"
+          # service_account: "deployment@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
 
       - name: Set up Cloud SDK
         uses: "google-github-actions/setup-gcloud@v1"
