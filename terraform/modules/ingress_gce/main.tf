@@ -44,6 +44,7 @@ resource "google_compute_global_address" "ingress_ip_address" {
 }
 
 resource "google_compute_managed_ssl_certificate" "managed_certificate" {
+  count = ((length(var.domains) == 1) && (var.domains[0] == "None")) ? 0 : 1
   provider = google-beta
 
   name = var.managed_cert_name
