@@ -50,6 +50,6 @@ gcloud iam service-accounts add-iam-policy-binding \
 printf "\nConnecting ksa with Service Account ...\n"
 kubectl annotate serviceaccount \
   --overwrite \
-  --SKAFFOLD_NAMESPACE ${SKAFFOLD_NAMESPACE} \
+  --namespace ${SKAFFOLD_NAMESPACE} \
   ${KSA_NAME} \
   iam.gke.io/gcp-service-account=${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
