@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: core-solution-services-develop
+  PROJECT_ID: {{ secrets.PROJECT_ID }}
 
 # copoier:raw 
 jobs:
@@ -33,10 +33,9 @@ jobs:
         name: Auth with Service Account
         uses: "google-github-actions/auth@v1"
         with:
-          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
-          # FIXME: Use workload identity instead of service account key.
-          # workload_identity_provider: ''
-          # service_account: 'deployment-dev@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
+          #credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+          workload_identity_provider: ${{ secrets.WI_PROVIDER }}
+          service_account: 'deployment@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
 
       - name: Set up Cloud SDK
         uses: "google-github-actions/setup-gcloud@v1"
