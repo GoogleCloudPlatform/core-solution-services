@@ -48,7 +48,7 @@ class BaseModel(Model):
            no_return=False):
     """overrides default method to save items with timestamp
     Args:
-      provided_timestamp (_type_, optional): _description_. Defaults to None.
+      input_datetime (_type_, optional): _description_. Defaults to None.
       transaction (_type_, optional): _description_. Defaults to None.
       batch (_type_, optional): _description_. Defaults to None.
       merge (_type_, optional): _description_. Defaults to None.
@@ -71,7 +71,7 @@ class BaseModel(Model):
              batch=None):
     """overrides default method to update items with timestamp
     Args:
-      provided_timestamp (_type_, optional): _description_. Defaults to None.
+      input_datetime (_type_, optional): _description_. Defaults to None.
       key (_type_, optional): _description_. Defaults to None.
       transaction (_type_, optional): _description_. Defaults to None.
       batch (_type_, optional): _description_. Defaults to None.
@@ -110,7 +110,7 @@ class BaseModel(Model):
        (not key)
         An interface, intended to be subclassed.
         Args:
-            doc_id (string): the document id without collection_name
+            object_id (string): the document id without collection_name
             (i.e. not the key)
         Returns:
             [any]: an instance of object returned by the database, type is
@@ -140,9 +140,10 @@ class BaseModel(Model):
 
   @classmethod
   def soft_delete_by_id(cls, object_id, by_user=None):
-    """Soft delete a object by id
+    """Soft delete an object by id
       Args:
-          id (str): unique id
+          object_id (str): unique id
+          by_user
       Raises:
           ResourceNotFoundException: If the object does not exist
       """
@@ -161,7 +162,8 @@ class BaseModel(Model):
   def archive_by_id(cls, object_id, by_user=None):
     """_summary_
     Args:
-      id (str): unique id
+      object_id (str): unique id
+      by_user
     """
     obj = cls.collection.filter("id", "in",
                                 [object_id]).filter("deleted_at_timestamp",
@@ -230,5 +232,5 @@ class BaseModel(Model):
       doc.is_archived = archive
       doc.update()
     else:
-      raise ResourceNotFoundException\
-        (f"{cls.__name__} with uuid {uuid} not found")
+      raise (ResourceNotFoundException(
+        f"{cls.__name__} with uuid {uuid} not found"))
