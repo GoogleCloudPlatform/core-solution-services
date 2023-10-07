@@ -46,12 +46,20 @@ class WebDataSourceSpider(scrapy.Spider):
     """
     # Save the content to the specified filepath
     if self.filepath:
-      with open(os.path.join(self.filepath, 
-                             response.url.split("/")[-1] + ".html"), "w") as f:
+      doc_filename = response.url.split("/")[-1] + ".html"
+      doc_filepath = os.path.join(self.filepath, doc_filename)
+      with open(doc_filepath, "w") as f:
         f.write(response.text)
     
-    # Yield the document as a Document object
-    yield Document(url=response.url, content=response.text)
+    # Yield the document as a langchain Document object
+    doc_metadata = {
+      url: response.url,
+      filename: doc_filename,
+      filepath: doc_filepath
+    }
+    langchain_doc = Document(page_content=response.text, metadata=doc_metadata)
+    yield langchain_doc
+
 
 class WebDataSource(BaseLoader):
   """Document loader that uses Scrapy to download webpages."""
