@@ -26,11 +26,8 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from pathlib import Path
 from common.utils.logging_handler import Logger
-from common.models import (UserQuery, QueryResult,
-                          QueryEngine, QueryDocument,
-                          QueryReference,
-                          QueryDocumentChunk,
-                          BatchJobModel)
+from common.models import (UserQuery, QueryResult, QueryEngine, QueryDocument,
+                           QueryReference, QueryDocumentChunk, BatchJobModel)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -57,7 +54,7 @@ NUM_MATCH_RESULTS = 5
 CHUNK_SIZE = 1000
 
 # Create a rate limit of 300 requests per minute.
-API_CALLS_PER_SECOND = 300 / 60
+API_CALLS_PER_SECOND = int(300 / 60)
 
 # According to the docs, each request can process 5 instances per request
 ITEMS_PER_REQUEST = 5
@@ -77,11 +74,8 @@ async def query_generate(
 
   Args:
     prompt: the text prompt to pass to the query engine
-
-    query_engine: the name of the query engine to use
-
+    q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
-
     user_query (optional): an existing user query for context
 
   Returns:
@@ -103,10 +97,10 @@ async def query_generate(
   query_ref_ids = []
   for ref in query_references:
     query_reference = QueryReference(
-      query_engine_id = q_engine.id,
+      query_engine_id=q_engine.id,
       query_engine=q_engine.name,
-      document_id = ref["document_id"],
-      chunk_id = ref["chunk_id"]
+      document_id=ref["document_id"],
+      chunk_id=ref["chunk_id"]
     )
     query_reference.save()
     query_ref_ids.append(query_reference.id)
@@ -212,13 +206,9 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
 
   Args:
     doc_url: the URL to the set of documents to be indexed
-
     query_engine: the name of the query engine to create
-
     user_id: user id of engine creator
-
     is_public: is query engine publically usable?
-
     llm_type: LLM used for query embeddings (currently not used)
 
   Returns:
@@ -352,7 +342,7 @@ def _create_me_index_and_endpoint(index_name: str, bucket_uri: str,
   # deploy index endpoint
   try:
     # this seems to consistently time out, throwing an error, but
-    # actually sucessfully deploys the endpoint
+    # actually successfully deploys the endpoint
     index_endpoint.deploy_index(
         index=tree_ah_index, deployed_index_id=q_engine.deployed_index_name
     )
@@ -429,23 +419,22 @@ def _process_documents(doc_url: str, bucket_name: str,
       os.remove(doc_filepath)
 
       # store QueryDocument and QueryDocumentChunk models
-      query_doc = QueryDocument(query_engine_id = q_engine.id,
-                                query_engine = q_engine.name,
-                                doc_url = doc_url,
-                                index_start = index_base,
-                                index_end = new_index_base)
+      query_doc = QueryDocument(query_engine_id=q_engine.id,
+                                query_engine=q_engine.name,
+                                doc_url=doc_url,
+                                index_start=index_base,
+                                index_end=new_index_base)
       query_doc.save()
 
       for i in range(0, len(text_chunks)):
         query_doc_chunk = QueryDocumentChunk(
-                                  query_engine_id = q_engine.id,
-                                  query_document_id = query_doc.id,
-                                  index = i + index_base,
-                                  text = text_chunks[i])
+                                  query_engine_id=q_engine.id,
+                                  query_document_id=query_doc.id,
+                                  index=i+index_base,
+                                  text=text_chunks[i])
         query_doc_chunk.save()
 
       index_base = new_index_base
-
       docs_processed.append(query_doc)
 
   return docs_processed, docs_not_processed
@@ -456,6 +445,7 @@ def _download_files_to_local(storage_client, local_dir, doc_url: str) -> \
   """ Download files from GCS to a local tmp directory """
   docs = []
   bucket_name = doc_url.split("gs://")[1].split("/")[0]
+  Logger.info(f"downloading {doc_url} from bucket {bucket_name}")
   for blob in storage_client.list_blobs(bucket_name):
     # Download the file to the tmp folder flattening all directories
     file_name = Path(blob.name).name
@@ -523,7 +513,7 @@ def _generate_batches(text_chunks: List[str], batch_size: int
 def _get_embedding_batched(
     text_chunks: List[str], api_calls_per_second: int = 10, batch_size: int = 5
 ) -> Tuple[List[bool], np.ndarray]:
-  """ get embbedings for a list of text strings """
+  """ get embeddings for a list of text strings """
 
   embeddings_list: List[List[float]] = []
 
@@ -559,6 +549,7 @@ def _generate_index_data(doc_name: str, text_chunks: List[str],
 
   chunk_index = 0
   num_chunks = len(text_chunks)
+  embeddings_dir = None
 
   # create a list of chunks to process
   while chunk_index < num_chunks:
@@ -567,10 +558,10 @@ def _generate_index_data(doc_name: str, text_chunks: List[str],
     end_chunk_index = chunk_index + chunk_size
     process_chunks = text_chunks[chunk_index:end_chunk_index]
 
-    Logger.info(f"processing {chunk_size} chunks for file {doc_name} " \
-        f"remaining chunks {remaining_chunks}")
+    Logger.info(f"processing {chunk_size} chunks for file {doc_name} "
+                f"remaining chunks {remaining_chunks}")
 
-    # generate an np array of chunk IDs starting from index base
+    # generate np array of chunk IDs starting from index base
     ids = np.arange(index_base, index_base + len(process_chunks))
 
     # Create temporary folder to write embeddings to
@@ -583,8 +574,8 @@ def _generate_index_data(doc_name: str, text_chunks: List[str],
         batch_size=ITEMS_PER_REQUEST,
     )
 
-    Logger.info(f"generated embeddings for chunks" \
-        f" {chunk_index} to {end_chunk_index}")
+    Logger.info(f"generated embeddings for chunks"
+                f" {chunk_index} to {end_chunk_index}")
 
     # create JSON
     embeddings_formatted = [
@@ -607,8 +598,8 @@ def _generate_index_data(doc_name: str, text_chunks: List[str],
     with open(chunk_path, "w", encoding="utf-8") as f:
       f.writelines(embeddings_formatted)
 
-    Logger.info(f"wrote embeddings file for chunks {chunk_index} " \
-        f"to {end_chunk_index}")
+    Logger.info(f"wrote embeddings file for chunks {chunk_index} "
+                f"to {end_chunk_index}")
 
     # clean up any large data structures
     gc.collect()
