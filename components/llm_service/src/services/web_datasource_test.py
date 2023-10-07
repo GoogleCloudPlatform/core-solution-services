@@ -20,45 +20,45 @@ from services.web_datasource import WebDataSource, WebDataSourceSpider
 
 class TestWebDataSource(unittest.TestCase):
 
-    def setUp(self):
-        # List of test URLs
-        self.urls = ["https://example.com"]
-        
-        # Test filepath to save downloaded webpages
-        self.filepath = "test_downloads"
+  def setUp(self):
+    # List of test URLs
+    self.urls = ["https://example.com"]
+    
+    # Test filepath to save downloaded webpages
+    self.filepath = "test_downloads"
 
-        # Mock content
-        self.mock_url_content = "<html><body>Test Content</body></html>"
+    # Mock content
+    self.mock_url_content = "<html><body>Test Content</body></html>"
 
-    def test_load(self):
-        # Create an instance of WebDataSource with test URLs and filepath
-        data_source = WebDataSource(self.urls, self.filepath)
-        
-        # Mock the response using Scrapy's TextResponse
-        url = self.urls[0]
-        request = WebDataSourceSpider(start_urls=self.urls).make_requests_from_url(url)
-        response = TextResponse(url=url, request=request, body=self.mock_url_content, encoding='utf-8')
-        
-        # Simulate the parse method with the mocked response
-        results = list(WebDataSourceSpider(start_urls=self.urls, filepath=self.filepath).parse(response))
-        
-        # Check if the documents are parsed correctly
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["url"], url)
-        self.assertEqual(results[0]["content"], self.mock_url_content)
-        
-        # Check if the webpages are saved to the specified filepath
-        filename = os.path.join(self.filepath, url.split("/")[-1] + ".html")
-        self.assertTrue(os.path.exists(filename))
-        with open(filename, "r") as f:
-            content = f.read()
-            self.assertEqual(content, self.mock_url_content)
+  def test_load(self):
+    # Create an instance of WebDataSource with test URLs and filepath
+    data_source = WebDataSource(self.urls, self.filepath)
+    
+    # Mock the response using Scrapy's TextResponse
+    url = self.urls[0]
+    request = WebDataSourceSpider(start_urls=self.urls).make_requests_from_url(url)
+    response = TextResponse(url=url, request=request, body=self.mock_url_content, encoding='utf-8')
+    
+    # Simulate the parse method with the mocked response
+    results = list(WebDataSourceSpider(start_urls=self.urls, filepath=self.filepath).parse(response))
+    
+    # Check if the documents are parsed correctly
+    self.assertEqual(len(results), 1)
+    self.assertEqual(results[0]["url"], url)
+    self.assertEqual(results[0]["content"], self.mock_url_content)
+    
+    # Check if the webpages are saved to the specified filepath
+    filename = os.path.join(self.filepath, url.split("/")[-1] + ".html")
+    self.assertTrue(os.path.exists(filename))
+    with open(filename, "r") as f:
+      content = f.read()
+      self.assertEqual(content, self.mock_url_content)
 
-    def tearDown(self):
-        # Cleanup: Remove the test_downloads directory and its contents
-        for filename in os.listdir(self.filepath):
-            os.remove(os.path.join(self.filepath, filename))
-        os.rmdir(self.filepath)
+  def tearDown(self):
+    # Cleanup: Remove the test_downloads directory and its contents
+    for filename in os.listdir(self.filepath):
+      os.remove(os.path.join(self.filepath, filename))
+    os.rmdir(self.filepath)
 
 if __name__ == "__main__":
-    unittest.main()
+  unittest.main()
