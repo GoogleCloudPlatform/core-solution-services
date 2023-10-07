@@ -28,7 +28,7 @@ class TestWebDataSource(unittest.TestCase):
     self.filepath = "test_downloads"
 
     # Mock content
-    self.mock_url_content = "<html><body>Test Content</body></html>"
+    self.mock_url_content = ("<html><body>Test Content</body></html>")
 
   def test_load(self):
     # Create an instance of WebDataSource with test URLs and filepath
@@ -37,10 +37,12 @@ class TestWebDataSource(unittest.TestCase):
     # Mock the response using Scrapy's TextResponse
     url = self.urls[0]
     request = WebDataSourceSpider(start_urls=self.urls).make_requests_from_url(url)
-    response = TextResponse(url=url, request=request, body=self.mock_url_content, encoding='utf-8')
+    response = TextResponse(url=url, request=request,
+                            body=self.mock_url_content, encoding='utf-8')
     
     # Simulate the parse method with the mocked response
-    results = list(WebDataSourceSpider(start_urls=self.urls, filepath=self.filepath).parse(response))
+    spider = WebDataSourceSpider(start_urls=self.urls, filepath=self.filepath)
+    results = list(spider.parse(response))
     
     # Check if the documents are parsed correctly
     self.assertEqual(len(results), 1)
