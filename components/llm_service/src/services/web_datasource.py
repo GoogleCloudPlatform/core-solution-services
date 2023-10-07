@@ -53,9 +53,9 @@ class WebDataSourceSpider(scrapy.Spider):
     
     # Yield the document as a langchain Document object
     doc_metadata = {
-      url: response.url,
-      filename: doc_filename,
-      filepath: doc_filepath
+      "url": response.url,
+      "filename": doc_filename,
+      "filepath": doc_filepath
     }
     langchain_doc = Document(page_content=response.text, metadata=doc_metadata)
     yield langchain_doc

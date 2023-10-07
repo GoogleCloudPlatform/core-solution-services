@@ -47,8 +47,8 @@ class TestWebDataSource(unittest.TestCase):
     
     # Check if the documents are parsed correctly
     self.assertEqual(len(results), 1)
-    self.assertEqual(results[0]["url"], url)
-    self.assertEqual(results[0]["content"], self.mock_url_content)
+    self.assertEqual(results[0].metadata["url"], url)
+    self.assertEqual(results[0].page_content, self.mock_url_content)
     
     # Check if the webpages are saved to the specified filepath
     filename = os.path.join(self.filepath, url.split("/")[-1] + ".html")
