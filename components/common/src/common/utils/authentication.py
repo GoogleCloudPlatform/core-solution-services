@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utility method to validate user based on Id Token"""
+"""Utility method to validate user based on ID Token"""
 import re
 
 from fastapi import Request
@@ -38,7 +38,7 @@ def get_user_identity(req: Request) -> dict:
         user_id = data["data"]["user_id"]
         user_email = data["data"]["email"]
         return {"success": True, "user_id": user_id,
-                "user_email": user_email, "token":token}
+                "user_email": user_email, "token": token}
       if data["success"] is False:
         raise InvalidTokenError(data["message"])
     else:
@@ -50,6 +50,6 @@ def get_user_identity(req: Request) -> dict:
         "message": re.split(",", e.error)[0],
         "data": None
     }
-  except Exception as e: # pylint: disable = broad-except
+  except Exception as e:  # pylint: disable = broad-except
     Logger.error("Token error: %s" % e)
     return {"success": False, "message": "Internal Server Error", "data": None}

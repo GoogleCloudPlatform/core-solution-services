@@ -21,9 +21,9 @@ r = redis.Redis(host="redis-master", port=6379, db=0)
 
 def json_serial(obj):
   """JSON serializer for objects not serializable by default json code"""
-  if isinstance(obj, (datetime.datetime, datetime.date,datetime.time)):
+  if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
     return obj.isoformat()
-  raise TypeError (f"Type {type(obj)} not serializable")
+  raise TypeError(f"Type {type(obj)} not serializable")
 
 def set_key(key, value, expiry_time=3600):
   """
@@ -31,11 +31,11 @@ def set_key(key, value, expiry_time=3600):
         Args:
             key: String
             value: String or Dict or Number
-            exp: Number(Expiry time in Secs, default 3600)
+            expiry_time: Number(Expiry time in Secs, default 3600)
         Returns:
             True or False
     """
-  value = json.dumps(value,default=json_serial)
+  value = json.dumps(value, default=json_serial)
   return r.set(key, value, ex=expiry_time)
 
 
@@ -63,7 +63,7 @@ def set_key_normal(key, value, expiry_time=3600):
         Args:
             key: String
             value: String or Dict or Number
-            exp: Number(Expiry time in Secs, default 3600)
+            expiry_time: Number(Expiry time in Secs, default 3600)
         Returns:
             True or False
     """

@@ -71,6 +71,7 @@ def validate_user_type_and_token(accepted_user_types: list,
   """_summary_
 
   Args:
+      accepted_user_types
       token (auth_scheme, optional): _description_. Defaults to Depends().
 
   Raises:

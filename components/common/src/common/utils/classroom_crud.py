@@ -21,7 +21,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from common.utils.jwt_creds import JwtCredentials
 from common.utils.errors import InvalidTokenError, UserManagementServiceError, \
-  ResourceNotFoundException,ValidationError
+  ResourceNotFoundException, ValidationError
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
@@ -242,7 +242,7 @@ def get_topics(course_id):
     while True:
       response = service.courses().topics().list(pageToken=page_token,
                                                  courseId=course_id).execute()
-      topics = topics.extend(response.get("topic", []))
+      topics.extend(response.get("topic", []))
       page_token = response.get("nextPageToken", None)
       if not page_token:
         break
@@ -587,8 +587,8 @@ def get_person_information(access_token):
   Return:
     profile: dictionary of users personal information
   """
-  people_service = build("people", "v1",\
-     credentials=get_oauth_credentials(access_token))
+  people_service = build("people", "v1",
+                         credentials=get_oauth_credentials(access_token))
   profile = people_service.people().get(
       resourceName="people/me",
       personFields="metadata,photos,names").execute()

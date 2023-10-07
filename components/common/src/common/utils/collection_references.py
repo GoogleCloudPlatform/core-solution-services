@@ -20,7 +20,7 @@ from common.models import (
     KnowledgeServiceLearningObjective, KnowledgeServiceLearningUnit, Skill,
     SkillServiceCompetency, Category, Domain, SubDomain, Achievement,
     Assessment, SubmittedAssessment, User, UserGroup, Action, Permission,
-    Module, Application, Activity, Agent, Rubric,RubricCriterion)
+    Module, Application, Activity, Agent, Rubric, RubricCriterion)
 
 collection_references = {
     # Assessment Service

@@ -130,7 +130,7 @@ class UserManagementServiceError(Exception):
 
 
 class CronJobException(Exception):
-  """Error class to be raised when issue in executin gCronjob"""
+  """Error class to be raised when issue in executing gCronjob"""
 
   def __init__(self, message="Cronjob Error"):
     self.message = message

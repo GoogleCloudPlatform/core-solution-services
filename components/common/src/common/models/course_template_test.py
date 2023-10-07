@@ -34,7 +34,7 @@ def test_new_course(clean_firestore):
 
 
 def test_delete_course_template(clean_firestore):
-  '''test for soft delete method'''
+  """test for soft delete method"""
   new_course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
   new_course_template.save()
   assert CourseTemplate.find_by_id(new_course_template.id) is not None

@@ -79,9 +79,6 @@ def firestore_emulator():
 @pytest.fixture
 def clean_firestore():
   """Fixture to clean data
-
-  Args:
-      firestore_emulator (func): Fixture
   """
   requests.delete(
       "http://localhost:8080/emulator/v1/projects/fake-project/databases/(default)/documents",

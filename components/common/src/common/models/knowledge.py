@@ -39,7 +39,7 @@ class KnowledgeServiceLearningContent(NodeItem):
     return self.children_nodes
 
   def __init__(self, *args, **kwargs):
-    #pylint: disable=useless-super-delegation
+    # pylint: disable=useless-super-delegation
     super().__init__(*args, **kwargs)
     self.children_nodes = []
 

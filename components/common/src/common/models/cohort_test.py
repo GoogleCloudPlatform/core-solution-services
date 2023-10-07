@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''
+"""
 Unit test for cohort.py
-'''
+"""
 # disabling these rules, as they cause issues with pytest fixtures
 # pylint: disable=unused-import
 # pylint: disable=unused-argument,redefined-outer-name
@@ -38,7 +38,7 @@ def test_new_cohort(clean_firestore):
 
 
 def test_delete_cohort(clean_firestore):
-  '''test for soft delete method'''
+  """test for soft delete method"""
   new_cohort = Cohort.from_dict(TEST_COHORT)
   course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
   course_template.save()

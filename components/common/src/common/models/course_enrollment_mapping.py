@@ -59,7 +59,7 @@ class CourseEnrollmentMapping(BaseModel):
         user_object
     """
     user_key = f"{User.collection_name}/{user_id}"
-    result = CourseEnrollmentMapping.collection.filter("user","==",user_key).\
+    result = CourseEnrollmentMapping.collection.filter("user", "==", user_key).\
       filter(
         "status", "==","active").fetch()
     return list(result)
@@ -74,16 +74,13 @@ class CourseEnrollmentMapping(BaseModel):
 
     Args:
         section_key (str): section unique key to filter data
-        skip (int, optional): number of sections to be skip.
-        order_by(str, optional): order list according to order_by field.
-        limit (int, optional): limit till sections to be fetched.
 
     Returns:
         list: list of sections
     """
     objects = CourseEnrollmentMapping.collection.\
       filter("section", "==", section_key).filter(
-        "status", "in",["active","invited"]).filter("role", "==",role).fetch()
+        "status", "in", ["active", "invited"]).filter("role", "==", role).fetch()
     return list(objects)
 
   @classmethod
@@ -118,7 +115,7 @@ class CourseEnrollmentMapping(BaseModel):
         course_enrollment object
     """
     user_key = f"{User.collection_name}/{user_id}"
-    return CourseEnrollmentMapping.collection.filter("user","==",user_key).\
+    return CourseEnrollmentMapping.collection.filter("user","==", user_key).\
     filter("status", "in",["active","invited"]).\
     filter("section","==",section_key).filter("role","==",role).get()
 

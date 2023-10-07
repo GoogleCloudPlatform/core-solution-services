@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"class for checking empty string and spaces"
+"""class for checking empty string and spaces"""
 from pydantic import BaseModel
 
 class BaseConfigModel(BaseModel):
@@ -20,9 +20,9 @@ class BaseConfigModel(BaseModel):
 
   class Config:
     anystr_strip_whitespace = True
-    min_anystr_length =1
+    min_anystr_length = 1
     error_msg_templates = {
             "value_error.any_str.min_length":
-              "String length must be at least {limit_value}",
+            "String length must be at least {limit_value}",
             "validation_failed": "String is empty or has only spaces"
         }

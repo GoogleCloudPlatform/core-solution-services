@@ -24,7 +24,7 @@ class GCSPathField(Field):
     return full URI when retrieved"""
 
   def db_value(self, val):
-    """Storing modfied val to DB"""
+    """Storing modified val to DB"""
     if val:
       try:
         blob_name = "/".join(val.split("gs://")[1].split("/")[1:])

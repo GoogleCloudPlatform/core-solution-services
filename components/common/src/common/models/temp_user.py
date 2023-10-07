@@ -20,7 +20,7 @@ from datetime import datetime
 import fireo
 from fireo.models import Model
 from fireo.fields import DateTime, TextField, NumberField, ListField, \
-  BooleanField,MapField
+  BooleanField, MapField
 from common.utils.errors import ResourceNotFoundException
 
 DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")

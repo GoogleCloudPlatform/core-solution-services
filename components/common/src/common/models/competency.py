@@ -112,6 +112,7 @@ class LearningUnit(NodeItem):
   child_type = "Triple"
   type = TextField(required=False, default="learning_unit")
   coref_text = TextField(required=False, default="")
+
   @property
   def triples(self):
     return self.children_nodes

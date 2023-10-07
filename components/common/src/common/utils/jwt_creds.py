@@ -58,8 +58,8 @@ class JwtCredentials(service_account.Credentials):
 
     default_creds, _ = google.auth.default()
     authed_session = AuthorizedSession(default_creds)
-    iam_url = "https://iamcredentials.googleapis.com/v1/projects/-"\
-    "/serviceAccounts/"+self._service_account_email + ":signJwt"
+    iam_url = ("https://iamcredentials.googleapis.com/v1/projects/-"
+               "/serviceAccounts/"+self._service_account_email + ":signJwt")
     response = authed_session.request("POST",
                                       url=iam_url,
                                       data=json.dumps(iam_payload))
@@ -74,4 +74,3 @@ class JwtCredentials(service_account.Credentials):
                 token_uri=token_uri,
                 subject=subject,
                 scopes=scopes)
-

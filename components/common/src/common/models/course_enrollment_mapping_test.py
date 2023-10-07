@@ -27,7 +27,7 @@ from common.testing.firestore_emulator import clean_firestore, firestore_emulato
 
 
 def test_course_enrollment(clean_firestore):
-  '''test for creating and loading a new section'''
+  """test for creating and loading a new section"""
   new_section = Section.from_dict(TEST_SECTION)
   course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
   course_template.save()

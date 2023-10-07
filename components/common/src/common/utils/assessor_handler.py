@@ -23,7 +23,7 @@ from typing import Optional
 def get_last_submitted_assessement_of_assessments(assessment_ids, assessor_id):
   """Returns last submitted assessment whose assessor
     is not equal to assessor_id and
-    related to assessments of aand repl discipline"""
+    related to assessments of and repl discipline"""
   collection_manager = SubmittedAssessment.collection
   if len(assessment_ids) <= 30:
     last_submitted_assessments = collection_manager.filter(
@@ -44,7 +44,7 @@ def get_last_submitted_assessement_of_assessments(assessment_ids, assessor_id):
 def get_assessors_of_dag(dag_id):
   """Function to get assessors tagged to Discipline Association Groups"""
   group = AssociationGroup.find_by_uuid(dag_id)
-  group = group.get_fields(reformat_datetime = True)
+  group = group.get_fields(reformat_datetime=True)
 
   users_list = group["users"]
   assessors_list = []
@@ -57,7 +57,7 @@ def get_assessors_of_dag(dag_id):
   return assessors_list
 
 def remove_assessor_for_submitted_assessments(submitted_assessments):
-  """Unassigns assessor of submitted assessments"""
+  """Un-assigns assessor of submitted assessments"""
   for sub_assessment in submitted_assessments:
     # FIXME: Assign None for the assessor.
     # fireo=1.4.1 is not supporting none value while updating
@@ -69,7 +69,7 @@ def replace_assessor_of_submitted_assessments(
     dag_id,
     submitted_assessments,
     assessment_ids,
-    exclude_user_id: Optional[str] = None):
+        exclude_user_id: Optional[str] = None):
   """Replaces assessor of submitted assessments"""
   assessor_list = get_assessors_of_dag(dag_id)
   if not assessor_list:
@@ -98,8 +98,8 @@ def replace_assessor_of_submitted_assessments(
         if last_submitted_assessment["assessor_id"] not in assessor_list:
           index = 0
         else:
-          index = (assessor_list.index(last_submitted_assessment\
-                      ["assessor_id"]) + 1) %len(assessor_list)
+          index = (assessor_list.index(last_submitted_assessment
+                                       ["assessor_id"]) + 1) % len(assessor_list)
     else:
       index = 0
     for sub_assessment in submitted_assessments:
@@ -111,15 +111,15 @@ def replace_assessor_of_submitted_assessments(
     remove_assessor_for_submitted_assessments(submitted_assessments)
 
 def filter_submitted_assessments(assessment_ids,
-                        assessor_id: Optional[str] = None):
+                                 assessor_id: Optional[str] = None):
   """Filters non_evaluated submitted assessments based on assessment_ids and
    assessor_id"""
   collection_manager = collection_references["submitted_assessments"].collection
   collection_manager = collection_manager.filter("status", "==",
-                                            "evaluation_pending")
+                                                 "evaluation_pending")
   if assessor_id:
     collection_manager = collection_manager.filter("assessor_id", "==",
-                            assessor_id)
+                                                   assessor_id)
   if len(assessment_ids) <= 30:
     collection_manager = collection_manager.filter("assessment_id", "in",
                                                    assessment_ids).fetch()
@@ -140,12 +140,12 @@ def get_all_assessments_of_a_discipline(discipline_id, collection_type,
   if node.get("child_nodes"):
     for cp_unit in node.get("child_nodes").get(child_collection_type, []):
       if collection_type == "curriculum_pathways" and node.get(
-          "alias") == "discipline":
+              "alias") == "discipline":
         get_all_assessments_of_a_discipline(cp_unit, child_collection_type,
                                             "learning_experiences",
                                             assessment_ids)
       elif collection_type == "curriculum_pathways" and node.get(
-          "alias") == "unit":
+              "alias") == "unit":
         get_all_assessments_of_a_discipline(cp_unit, child_collection_type,
                                             "learning_objects", assessment_ids)
       elif collection_type == "learning_experiences":
@@ -155,24 +155,24 @@ def get_all_assessments_of_a_discipline(discipline_id, collection_type,
         assessment_ids.append(cp_unit)
   return assessment_ids
 
-def traverse_down(uuid,level,child_level,res):
+def traverse_down(uuid, level, child_level, res):
   """This function is to traverse from curriculum_pathway with
   alias discipline to assessments and returns assessment ids"""
   node = collection_references[level].find_by_uuid(uuid)
   node = node.get_fields(reformat_datetime=True)
-  child_nodes =  node.get("child_nodes")
+  child_nodes = node.get("child_nodes")
   if child_nodes:
     for child_node in node.get("child_nodes"):
       if child_node == child_level:
-        res +=child_nodes[child_node]
-      for cp_unit in child_nodes.get(child_node,[]):
-        traverse_down(cp_unit,child_node,child_level,res)
+        res += child_nodes[child_node]
+      for cp_unit in child_nodes.get(child_node, []):
+        traverse_down(cp_unit, child_node, child_level, res)
   return res
 
 def update_assessor_of_submitted_assessments_of_a_discipline(
   dag_id: str,
   discipline_id: str,
-  input_assessor = None
+  input_assessor=None
 ):
   """Function to update assessor for submitted assessments of discipline"""
   assessor_id = None
@@ -180,27 +180,27 @@ def update_assessor_of_submitted_assessments_of_a_discipline(
     assessor_id = input_assessor.get("user")
   assessment_ids = []
   assessment_ids = traverse_down(
-      discipline_id, "curriculum_pathways", "assessments",assessment_ids)
+      discipline_id, "curriculum_pathways", "assessments", assessment_ids)
   assessment_ids = list(set(assessment_ids))
 
   task_status = 0
 
-  response_msg= "No assessments found for discipline "\
-        f"with uuid {discipline_id}"
+  response_msg = "No assessments found for discipline "\
+                 f"with uuid {discipline_id}"
   if assessment_ids:
     submitted_assessments = filter_submitted_assessments(
                                         assessment_ids, assessor_id)
     if assessor_id:
       replace_assessor_of_submitted_assessments(
-                  dag_id,submitted_assessments,
-                  assessment_ids,assessor_id)
+                  dag_id, submitted_assessments,
+                  assessment_ids, assessor_id)
       task_status = 1
       response_msg = f"Successfully replaced assessor {assessor_id} "\
-        f"for submitted assessments of discipline with uuid {discipline_id}."
+                     f"for submitted assessments of discipline with uuid {discipline_id}."
     else:
       remove_assessor_for_submitted_assessments(submitted_assessments)
       task_status = 1
       response_msg = "Successfully unassigned assessor for all evaluation "\
-      f"pending submitted assessments of discipline with uuid {discipline_id}"
+                     f"pending submitted assessments of discipline with uuid {discipline_id}"
 
   return task_status, response_msg

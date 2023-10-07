@@ -125,8 +125,8 @@ class ParentChildNodesHandler():
             child_document_fields, collection_name, learner_profile,
             is_progress_updated = True)
         elif collection_name in ["learning_experiences", "learning_objects"]:
-          if not (collection_name == "learning_experiences" and \
-              child_document_fields.get("status") == "not_attempted"):
+          if not (collection_name == "learning_experiences" and
+                  child_document_fields.get("status") == "not_attempted"):
             child_document_fields = cls.load_hierarchy_progress(
             child_document_fields, collection_name, learner_profile,
             is_progress_updated = True)

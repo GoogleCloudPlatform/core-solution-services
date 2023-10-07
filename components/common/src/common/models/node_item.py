@@ -18,7 +18,7 @@ import sys
 from common.models import BaseModel
 
 
-#pylint:disable=dangerous-default-value
+# pylint:disable=dangerous-default-value
 class NodeItem(BaseModel):
   """Node Item Class"""
 
@@ -48,7 +48,7 @@ class NodeItem(BaseModel):
     return child
 
   # TODO: remove this?
-  #pylint: disable=redefined-builtin
+  # pylint: disable=redefined-builtin
   def add_child_from_dict(self, dict):
     """adds child from a dict"""
     child_object = getattr(sys.modules[self.module], self.child_type)
@@ -71,10 +71,10 @@ class NodeItem(BaseModel):
     """loads child nodes"""
     # test to see if leaf node
     if self.child_type is not None:
-      # TODO: ensure modules always avilable
+      # TODO: ensure modules always available
       # TODO: order?
       child_object = getattr(sys.modules[self.module],
-                           self.child_type)
+                             self.child_type)
       if hasattr(self, "uuid"):
         if isinstance(self.parent_node, list) or self.parent_node is None:
           children = child_object.collection.filter(
@@ -120,9 +120,9 @@ class NodeItem(BaseModel):
       child.upsert_tree(*args, **kwargs)
 
   @classmethod
-  def find_by_title(cls, title, is_deleted = False):
+  def find_by_title(cls, title, is_deleted=False):
     return cls.collection.filter("title", "==",
-      title).filter("is_deleted", "==", is_deleted).get()
+               title).filter("is_deleted", "==", is_deleted).get()
 
   @classmethod
   def find_by_name(cls, name):

@@ -26,7 +26,7 @@ def validate_name(name):
   if regex.fullmatch(r"[\D\p{L}\p{N}\s]+$", name):
     return True
   else:
-    return (False, "Invalid name format")
+    return False, "Invalid name format"
 
 
 def validate_name_for_non_required(name):
@@ -34,7 +34,7 @@ def validate_name_for_non_required(name):
   if name == "" or name is None or regex.fullmatch(r"[\D\p{L}\p{N}\s]+$", name):
     return True
   else:
-    return (False, "Invalid name format")
+    return False, "Invalid name format"
 
 
 def validate_email(email):
@@ -42,7 +42,7 @@ def validate_email(email):
   if re.match(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b", email):
     return True
   else:
-    return (False, "Invalid email")
+    return False, "Invalid email"
 
 
 def validate_email_for_non_required(email):
@@ -51,7 +51,7 @@ def validate_email_for_non_required(email):
     r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b", email):
     return True
   else:
-    return (False, "Invalid email")
+    return False, "Invalid email"
 
 
 class Availability(BaseModel):
@@ -67,7 +67,7 @@ class Staff(BaseModel):
   first_name = TextField(required=True, max_length=60, validator=validate_name)
   last_name = TextField(required=True, max_length=60, validator=validate_name)
   preferred_name = TextField(validator=validate_name_for_non_required)
-  bio = TextField(max_length = 500)
+  bio = TextField(max_length=500)
   pronoun = TextField()
   email = TextField(required=True, validator=validate_email, to_lowercase=True)
   phone_number = TextField()
@@ -87,6 +87,7 @@ class Staff(BaseModel):
     """Find the staff using uuid
     Args:
         uuid (string): uuid of staff member
+        is_deleted
     Returns:
         staff Object
     """

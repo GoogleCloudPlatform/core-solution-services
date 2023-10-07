@@ -329,7 +329,7 @@ def test_replace_assessor_with_new_assessor_for_submitted_assessments(
 
   task_status, _ = update_assessor_of_submitted_assessments_of_a_discipline(
     "random_dag_id",
-    discipline_id,{
+    discipline_id, {
         "user": assessor_user.user_id
     })
   assert task_status == 1
