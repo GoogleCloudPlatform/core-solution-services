@@ -18,16 +18,22 @@ from typing import List, Iterator
 from langchain.document_loaders.blob_loaders import Blob
 from langchain.schema import Document
 from langchain.document_loaders.base import BaseLoader
+import os
 
 class WebDataSourceSpider(scrapy.Spider):
   name = "web_data_source_spider"
   
-  def __init__(self, start_urls=None, *args, **kwargs):
+  def __init__(self, start_urls=None, filepath=None, *args, **kwargs):
     super(WebDataSourceSpider, self).__init__(*args, **kwargs)
     self.start_urls = start_urls or []
+    self.filepath = filepath
 
   def parse(self, response):
-    # This method will be called for each URL in start_urls
+    # Save the content to the specified filepath
+    if self.filepath:
+      with open(os.path.join(self.filepath, response.url.split("/")[-1] + ".html"), "w") as f:
+        f.write(response.text)
+    
     # Extract data and save or process it
     yield {
       "url": response.url,
@@ -36,8 +42,9 @@ class WebDataSourceSpider(scrapy.Spider):
 
 class WebDataSource(BaseLoader):
 
-  def __init__(self, urls):
+  def __init__(self, urls, filepath=None):
     self.urls = urls
+    self.filepath = filepath
     self.documents = []
 
   def load(self) -> List[Document]:
@@ -51,7 +58,7 @@ class WebDataSource(BaseLoader):
 
     # Start the Scrapy process
     process = CrawlerProcess(settings=settings)
-    process.crawl(WebDataSourceSpider, start_urls=self.urls)
+    process.crawl(WebDataSourceSpider, start_urls=self.urls, filepath=self.filepath)
     process.start()
 
     # Convert crawled data to Document objects
