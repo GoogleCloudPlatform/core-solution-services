@@ -15,7 +15,7 @@
 import scrapy
 from scrapy.crawler import CrawlerProcess
 from typing import List, Iterator
-from langchain.document_loaders.blob_loaders import Blob
+from scrapy import signals
 from langchain.schema import Document
 from langchain.document_loaders.base import BaseLoader
 import os
@@ -50,11 +50,8 @@ class WebDataSourceSpider(scrapy.Spider):
                              response.url.split("/")[-1] + ".html"), "w") as f:
         f.write(response.text)
     
-    # Extract data and save or process it
-    yield {
-      "url": response.url,
-      "content": response.text
-    }
+    # Yield the document as a Document object
+    yield Document(url=response.url, content=response.text)
 
 class WebDataSource(BaseLoader):
   """Document loader that uses Scrapy to download webpages."""
@@ -70,6 +67,10 @@ class WebDataSource(BaseLoader):
     self.urls = urls
     self.filepath = filepath
     self.documents = []
+
+  def _item_scraped(self, item, response, spider):
+    """Handler for the item_scraped signal."""
+    self.documents.append(item)
 
   def load(self) -> List[Document]:
     """
@@ -88,12 +89,15 @@ class WebDataSource(BaseLoader):
 
     # Start the Scrapy process
     process = CrawlerProcess(settings=settings)
-    process.crawl(WebDataSourceSpider, start_urls=self.urls, filepath=self.filepath)
+    process.crawl(WebDataSourceSpider, start_urls=self.urls, 
+                  filepath=self.filepath)
+    
+    # Connect the item_scraped signal to the handler
+    process.signals.connect(self._item_scraped, signals.item_scraped)
+    
     process.start()
 
-    # Convert crawled data to Document objects
-    for data in self.documents:
-      yield Document(url=data["url"], content=data["content"])
+    return self.documents
 
   def lazy_load(self) -> Iterator[Document]:
     """
