@@ -14,7 +14,7 @@
 
 import unittest
 import os
-from scrapy.http import TextResponse
+from scrapy.http import TextResponse, Request
 from langchain.schema import Document
 from services.web_datasource import WebDataSource, WebDataSourceSpider
 
@@ -25,7 +25,8 @@ class TestWebDataSource(unittest.TestCase):
     self.urls = ["https://example.com"]
     
     # Test filepath to save downloaded webpages
-    self.filepath = "test_downloads"
+    self.filepath = "/tmp/test_downloads"
+    os.makedirs(self.filepath)
 
     # Mock content
     self.mock_url_content = ("<html><body>Test Content</body></html>")
@@ -36,7 +37,7 @@ class TestWebDataSource(unittest.TestCase):
     
     # Mock the response using Scrapy's TextResponse
     url = self.urls[0]
-    request = WebDataSourceSpider(start_urls=self.urls).make_requests_from_url(url)
+    request = Request(url)  # Create a Request object directly
     response = TextResponse(url=url, request=request,
                             body=self.mock_url_content, encoding='utf-8')
     
