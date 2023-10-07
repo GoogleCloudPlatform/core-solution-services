@@ -43,6 +43,7 @@ from langchain.document_loaders import CSVLoader
 from pypdf import PdfReader
 from services import llm_generate
 from services import query_prompts
+from services.web_datasource import WebDataSource
 
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL, GOOGLE_LLM, REGION)
@@ -211,7 +212,8 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
    TextEmbeddingModel for embeddings.
 
   Args:
-    doc_url: the URL to the set of documents to be indexed
+    doc_url: the URL to the set of documents to be indexed. Currently
+             support gs:// and http(s):// URLs.
 
     query_engine: the name of the query engine to create
 
@@ -263,10 +265,10 @@ def build_doc_index(doc_url:str, query_engine: str) -> \
         Tuple[List[QueryDocument], List[str]]:
   """
   Build the document index.
-  Supports only GCS URLs initially, containing PDF files.
+  Supports only GCS containing PDF files and HTTP URLs.
 
   Args:
-    doc_url: URL pointing to folder of documents
+    doc_url: URL pointing to GCS bucket/folder or website containing documents
     query_engine: the query engine to
 
   Returns:
@@ -453,15 +455,38 @@ def _process_documents(doc_url: str, bucket_name: str,
 
 def _download_files_to_local(storage_client, local_dir, doc_url: str) -> \
     List[Tuple[str, str, str]]:
-  """ Download files from GCS to a local tmp directory """
+  """ 
+    Download files from GCS to a local tmp directory
+    
+    Args:
+      storage_client: GCS storage client
+      local_dir: local directory to save downloaded files
+      doc_url: URL to document file folder or site
+    
+    Returns:
+      List of (doc_name, doc_filename, doc_filepath)
+    
+  """
   docs = []
-  bucket_name = doc_url.split("gs://")[1].split("/")[0]
-  for blob in storage_client.list_blobs(bucket_name):
-    # Download the file to the tmp folder flattening all directories
-    file_name = Path(blob.name).name
-    file_path = os.path.join(local_dir, file_name)
-    blob.download_to_filename(file_path)
-    docs.append((blob.name, blob.path, file_path))
+
+  if doc_url.startswith("gs://"):
+    # download doc files from GCS
+    bucket_name = doc_url.split("gs://")[1].split("/")[0]
+    for blob in storage_client.list_blobs(bucket_name):
+      # Download the file to the tmp folder flattening all directories
+      file_name = Path(blob.name).name
+      file_path = os.path.join(local_dir, file_name)
+      blob.download_to_filename(file_path)
+      docs.append((blob.name, blob.path, file_path))
+  elif (doc_url.startswith("http://") or doc_url.startswith("https://")):
+    # download doc files from web
+    web_source = WebDataSource([doc_url], file_path)
+    web_docs = web_source.load()
+    docs = [(doc.metadata.get("url"),
+             doc.metadata.get("filename"),
+             doc.metadata.get("filepath")) for doc in web_docs]
+  else:
+    raise InternalServerError(f"invalid doc_url: {doc_url}")
   return docs
 
 
