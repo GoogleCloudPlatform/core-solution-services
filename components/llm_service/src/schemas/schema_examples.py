@@ -62,10 +62,14 @@ USER_QUERY_EXAMPLE = {
 }
 
 QUERY_ENGINE_EXAMPLE = {
-  "doc_url": "gs://jonchen-css-0813-llm-docs/genai-sample-doc.pdf",
-  "query_engine": "query-engine-test",
+  "id": "asd98798as7dhjgkjsdfh",
+  "name": "query-engine-test",
   "llm_type": "VertexAI-Chat",
-  "is_public": True
+  "created_by": "fake-user-id",
+  "is_public": True,
+  "index_id": "projects/83285581741/locations/us-central1/indexes/682347240495461171",
+  "index_name": "query_engine_test_MEindex",
+  "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840435"
 }
 
 QUERY_RESULT_EXAMPLE = {

@@ -1,35 +1,30 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Unit test & linter
+name: Unit test & lint for LLM Service
 on:
   pull_request:
     branches:
       - main
     paths:
       - "components/common/**"
-      - ".github/workflows/unit_test_linter_common.yaml"
+      - "components/llm_service/**"
+      - ".github/workflows/unit_test_linterllm_service.yaml"
       - ".pylintrc"
   workflow_dispatch:
 
 env:
   PROJECT_ID: "${{ secrets.PROJECT_ID }}"
 
-# copier:raw
+# copoier:raw 
 jobs:
   unit-test:
-    environment: dev
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: [3.9]
-        target-folder: [
-          components/common,
-          components/authentication,
-          components/user_management,
-          components/jobs_service,
-        ]
+        target-folder: [components/llm_service]
     steps:
       - uses: actions/checkout@v3
 
@@ -61,31 +56,28 @@ jobs:
       - name: Install dependencies
         run: |
           BASE_DIR=$(pwd)
-          cd ${{ matrix.target-folder }}
           python -m pip install --upgrade pip
+          if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
+          if [ -f $BASE_DIR/components/common/requirements-test.txt ]; then pip install -r $BASE_DIR/components/common/requirements-test.txt; fi
+          cd ${{ matrix.target-folder }}
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
-          if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
 
       - name: Run pytest with coverage
+        # We run tests separately for routes and services in the LLM service due to mocking conflicts
         run: |
           BASE_DIR=$(pwd)
           cd ${{ matrix.target-folder }}/src
-          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest
+          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest routes/*_test.py
+          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest services/*_test.py
 
   linter:
-    environment: dev
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: [3.9]
-        target-folder: [
-          components/common,
-          components/authentication,
-          components/user_management,
-          components/jobs_service,
-        ]
+        target-folder: [components/llm_service]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -95,7 +87,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd ${{ matrix.target-folder }}
           python -m pip install --upgrade pip
           python -m pip install pylint
 
@@ -105,4 +96,4 @@ jobs:
           cd ${{ matrix.target-folder }}/src
           python -m pylint $(git ls-files '*.py') --rcfile=$BASE_DIR/.pylintrc
 
-# copier:endraw
+# copoier:endraw 
