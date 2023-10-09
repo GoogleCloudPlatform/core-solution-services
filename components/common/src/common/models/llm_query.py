@@ -215,7 +215,7 @@ class QueryDocumentChunk(BaseModel):
 
     Args:
         query_engine_id (str): Query engine id
-        index (str): QueryDocumentChunk index
+        index (int): QueryDocumentChunk index
 
     Returns:
         QueryDocumentChunk: query engine object
