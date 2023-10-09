@@ -29,7 +29,6 @@ jobs:
           components/authentication,
           components/user_management,
           components/jobs_service,
-          components/llm_service,
         ]
     steps:
       - uses: actions/checkout@v3
@@ -86,7 +85,6 @@ jobs:
           components/authentication,
           components/user_management,
           components/jobs_service,
-          components/llm_service,
         ]
     steps:
       - uses: actions/checkout@v3
