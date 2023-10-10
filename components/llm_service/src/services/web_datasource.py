@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import os
+from typing import List, Iterator
+from bs4 import BeautifulSoup
 from langchain.schema import Document
 from langchain.document_loaders.base import BaseLoader
 import scrapy
 from scrapy.crawler import CrawlerProcess
 from scrapy import signals as scrapy_signals
-from typing import List, Iterator
 
 class WebDataSourceSpider(scrapy.Spider):
   """Scrapy spider to crawl and download webpages."""
@@ -44,12 +45,15 @@ class WebDataSourceSpider(scrapy.Spider):
     Args:
       response: The response object containing webpage data.
     """
+    cleaned_text = self.clean_html(response.text)
+    
     # Save the content to the specified filepath
+    doc_filename = response.url.split("/")[-1] + ".html"
+    doc_filepath = None
     if self.filepath:
-      doc_filename = response.url.split("/")[-1] + ".html"
       doc_filepath = os.path.join(self.filepath, doc_filename)
       with open(doc_filepath, "w") as f:
-        f.write(response.text)
+        f.write(cleaned_text)
     
     # Yield the document as a langchain Document object
     doc_metadata = {
@@ -57,8 +61,37 @@ class WebDataSourceSpider(scrapy.Spider):
       "filename": doc_filename,
       "filepath": doc_filepath
     }
-    langchain_doc = Document(page_content=response.text, metadata=doc_metadata)
+    langchain_doc = Document(page_content=cleaned_text, metadata=doc_metadata)
     yield langchain_doc
+
+  def clean_html(self, html_content: str) -> str:
+    """
+    Remove all <script> tags and their content from the given HTML content.
+    Remove all <style> tags and <link> tags that reference stylesheets 
+    from the given HTML content.
+
+    Args:
+        html_content (str): The HTML content.
+
+    Returns:
+        str: The HTML content without <script> tags and
+             CSS references.
+    """
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # Find and remove all <script> tags
+    for script_tag in soup.find_all('script'):
+      script_tag.decompose()
+
+    # Remove all <style> tags
+    for style_tag in soup.find_all('style'):
+        style_tag.decompose()
+
+    # Remove all <link> tags that reference stylesheets
+    for link_tag in soup.find_all('link', {'rel': 'stylesheet'}):
+        link_tag.decompose()
+
+    return str(soup)
 
 
 class WebDataSource(BaseLoader):
