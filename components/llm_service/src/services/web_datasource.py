@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import scrapy
-from scrapy.crawler import CrawlerProcess
-from typing import List, Iterator
-from scrapy import signals
+import os
 from langchain.schema import Document
 from langchain.document_loaders.base import BaseLoader
-import os
+import scrapy
+from scrapy.crawler import CrawlerProcess
+from scrapy import signals as scrapy_signals
+from typing import List, Iterator
 
 class WebDataSourceSpider(scrapy.Spider):
   """Scrapy spider to crawl and download webpages."""
@@ -97,12 +97,12 @@ class WebDataSource(BaseLoader):
 
     # Start the Scrapy process
     process = CrawlerProcess(settings=settings)
-    process.crawl(WebDataSourceSpider, start_urls=self.urls, 
-                  filepath=self.filepath)
+    crawler = process.create_crawler(WebDataSourceSpider)
     
-    # Connect the item_scraped signal to the handler
-    process.signals.connect(self._item_scraped, signals.item_scraped)
+    # Connect the item_scraped signal to the handler using the crawler's signals
+    crawler.signals.connect(self._item_scraped, signal=scrapy.signals.item_scraped)
     
+    process.crawl(crawler, start_urls=self.urls, filepath=self.filepath)
     process.start()
 
     return self.documents

@@ -480,7 +480,7 @@ def _download_files_to_local(storage_client, local_dir, doc_url: str) -> \
       docs.append((blob.name, blob.path, file_path))
   elif (doc_url.startswith("http://") or doc_url.startswith("https://")):
     # download doc files from web
-    web_source = WebDataSource([doc_url], file_path)
+    web_source = WebDataSource([doc_url], local_dir)
     web_docs = web_source.load()
     docs = [(doc.metadata.get("url"),
              doc.metadata.get("filename"),
