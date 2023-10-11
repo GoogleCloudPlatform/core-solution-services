@@ -20,7 +20,7 @@ echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=
 
 Set up Cloud Storage with one sample PDF file for Query Engine to use later:
 ```
-sb infra apply 3-llm
+sb infra apply 4-llm
 ```
 - This will create a `$PROJECT_ID-llm-docs` bucket and upload a `llm-sample-doc.pdf`.
 - It will add required Firestore indexes.
