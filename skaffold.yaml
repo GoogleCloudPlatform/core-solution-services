@@ -22,5 +22,8 @@ requires:
   - redis
   path: ./components/redis
 - configs:
+  - rules_engine
+  path: ./components/rules_engine
+- configs:
   - ingress
   path: ./ingress

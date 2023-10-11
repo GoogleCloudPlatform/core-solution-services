@@ -1,0 +1,15 @@
+# Changes here will be overwritten by Copier
+_src_path: /Users/jonchen/workspace/solutions-builder/solutions_builder/cli/../modules/restful_service
+cloudrun_neg: true
+component_name: rules_engine
+data_model: rule
+data_model_plural: rules
+default_deploy: gke
+depend_on_common: true
+deploy_cloudrun: false
+deploy_gke: true
+gcp_region: us-central1
+local_port: '9002'
+resource_name: rules-engine
+service_path: rules-engine
+use_github_action: true
