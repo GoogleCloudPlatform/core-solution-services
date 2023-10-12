@@ -1,18 +1,16 @@
-"""
-Copyright 2023 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Generate JWT credentials"""
 import datetime
@@ -60,20 +58,19 @@ class JwtCredentials(service_account.Credentials):
 
     default_creds, _ = google.auth.default()
     authed_session = AuthorizedSession(default_creds)
-    iam_url = "https://iamcredentials.googleapis.com/v1/projects/-"\
-    "/serviceAccounts/"+self._service_account_email + ":signJwt"
+    iam_url = ("https://iamcredentials.googleapis.com/v1/projects/-"
+               "/serviceAccounts/"+self._service_account_email + ":signJwt")
     response = authed_session.request("POST",
                                       url=iam_url,
                                       data=json.dumps(iam_payload))
     return response.json()["signedJwt"]
 
   @classmethod
-  def from_default_with_subject(self, subject, service_account_email,
+  def from_default_with_subject(cls, subject, service_account_email,
                                 token_uri, scopes):
     """returns the JWT credentials object"""
-    return self(signer=None,
-                service_account_email=service_account_email,
-                token_uri=token_uri,
-                subject=subject,
-                scopes=scopes)
-
+    return cls(signer=None,
+               service_account_email=service_account_email,
+               token_uri=token_uri,
+               subject=subject,
+               scopes=scopes)

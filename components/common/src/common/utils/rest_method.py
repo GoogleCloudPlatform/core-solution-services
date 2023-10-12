@@ -1,18 +1,16 @@
-"""
-Copyright 2023 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Rest Methods
@@ -48,7 +46,8 @@ def post_method(url: str,
       data=data,
       files=files,
       headers={"Authorization": token},
-  )
+      timeout=10
+  ).json()
 
 
 def get_method(url: str, query_params=None, token=None) -> dict:
@@ -68,7 +67,9 @@ def get_method(url: str, query_params=None, token=None) -> dict:
       url=f"{url}",
       params=query_params,
       headers={"Authorization": token},
-      allow_redirects=False)
+      allow_redirects=False,
+      timeout=10
+  ).json()
 
 
 def put_method(url: str,
@@ -92,7 +93,9 @@ def put_method(url: str,
       url=f"{url}",
       json=request_body,
       params=query_params,
-      headers={"Authorization": token})
+      headers={"Authorization": token},
+      timeout=10
+  ).json()
 
 
 def delete_method(url: str, query_params=None, token=None) -> dict:
@@ -109,4 +112,8 @@ def delete_method(url: str, query_params=None, token=None) -> dict:
     """
 
   return requests.delete(
-      url=f"{url}", params=query_params, headers={"Authorization": token})
+      url=f"{url}",
+      params=query_params,
+      headers={"Authorization": token},
+      timeout=10
+  ).json()

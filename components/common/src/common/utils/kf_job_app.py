@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utiliy functions for kubernetes job related operations"""
+"""Utility functions for kubernetes job related operations"""
 
 import os
 import logging
@@ -28,8 +28,7 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from common.utils.errors import BatchJobError
 from common.models.batch_job import BatchJobModel
-from common.utils.config import (DEFAULT_JOB_LIMITS,
-  DEFAULT_JOB_REQUESTS)
+from common.utils.config import (DEFAULT_JOB_LIMITS, DEFAULT_JOB_REQUESTS)
 from common.utils.config import (JOB_TYPES_WITH_PREDETERMINED_TITLES,
                                  BATCH_JOB_FETCH_TIME,
                                  BATCH_JOB_PENDING_TIME_THRESHOLD,
@@ -37,11 +36,11 @@ from common.utils.config import (JOB_TYPES_WITH_PREDETERMINED_TITLES,
 
 from common.config import GKE_SERVICE_ACCOUNT_NAME
 
-#pylint: disable=dangerous-default-value
-#pylint: disable=logging-not-lazy
-#pylint: disable=consider-using-f-string
-#pylint: disable=logging-format-interpolation
-#pylint: disable=broad-exception-raised
+# pylint: disable=dangerous-default-value
+# pylint: disable=logging-not-lazy
+# pylint: disable=consider-using-f-string
+# pylint: disable=logging-format-interpolation
+# pylint: disable=broad-exception-raised
 # Set logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
@@ -111,8 +110,8 @@ def kube_namespace_job_status(namespace="default"):
         jobstatus = "succeeded"
       elif jobstatus is None and job.status.active == 1:
         jobstatus = "active"
-      elif jobstatus and jobstatus[-1].type == "Failed" and \
-          jobstatus[-1].status:
+      elif (jobstatus and jobstatus[-1].type == "Failed"
+            and jobstatus[-1].status):
         jobstatus = "failed"
       else:
         jobstatus = "unknown"
@@ -139,8 +138,8 @@ def kube_cleanup_finished_jobs(namespace="default"):
       jobstatus = job.status.conditions
       if job.status.succeeded == 1:
         # Clean up Job
-        logging.info("Cleaning up Job: %s. Finished at: %s" % \
-            (jobname, job.status.completion_time))
+        logging.info("Cleaning up Job: %s. Finished at: %s" %
+                     (jobname, job.status.completion_time))
         try:
           # Setting Grace Period to 0 means delete ASAP.
           # Propagation policy makes the Garbage cleaning Async
@@ -166,7 +165,7 @@ def kube_cleanup_finished_jobs(namespace="default"):
     logging.error("Exception when calling BatchV1Api->list_namespaced_job")
 
 
-#pylint: disable=dangerous-default-value
+# pylint: disable=dangerous-default-value
 def kube_create_job_object(name,
                            container_image,
                            limits,
@@ -249,8 +248,8 @@ def get_cloud_link(microservice_name):
   # Fetching the current time in GMT
   tz = timezone("GMT")
   init_timestamp = datetime.now(tz)
-  final_timestamp = (init_timestamp + \
-    timedelta(hours=-1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+  final_timestamp = (init_timestamp +
+                     timedelta(hours=-1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
   init_timestamp = init_timestamp.strftime("%Y-%m-%dT%H:%M:%S.000Z")
   # Replacing the values to get the correct URL
   url = url.replace("{GCP_PROJECT}", gcp_project)
@@ -284,7 +283,7 @@ def kube_create_job(job_specs, namespace="default", env_vars={}):
     container_image = job_specs["container_image"]
     limits = job_specs.get("limits", DEFAULT_JOB_LIMITS)
     requests = job_specs.get("requests", DEFAULT_JOB_REQUESTS)
-    name = str(uuid.uuid4())  #job name
+    name = str(uuid.uuid4())  # job name
 
     # creating a job entry in firestore
     job_model = BatchJobModel()
@@ -293,10 +292,10 @@ def kube_create_job(job_specs, namespace="default", env_vars={}):
     job_model.status = "pending"
     job_model.uuid = name
     job_model.save()
-    logging.info("Batch Job {}: Started with job type " \
-        "{}".format(job_model.name,job_model.type))
-    logging.info("Batch Job {}: Updated Batch Job Status " \
-        "to pending in firestore".format(job_model.name))
+    logging.info("Batch Job {}: Started with job type "
+                 "{}".format(job_model.name, job_model.type))
+    logging.info("Batch Job {}: Updated Batch Job Status "
+                 "to pending in firestore".format(job_model.name))
 
     if job_specs["type"] in JOB_TYPES_WITH_PREDETERMINED_TITLES:
       job_model.input_data = job_specs[
@@ -307,20 +306,21 @@ def kube_create_job(job_specs, namespace="default", env_vars={}):
         except JSONDecodeError as e:
           logging.info("Unable to convert job_specs['input_data'] to dict,\
             \nError: {}".format(e))
-      if isinstance(job_specs["input_data"], dict) and \
-        "title" in job_specs["input_data"].keys():
+      if (isinstance(job_specs["input_data"], dict) and
+              "title" in job_specs["input_data"].keys()):
         job_model.name = job_specs["input_data"]["title"]
       else:
         job_model.name = name
     else:
       created_time = job_model.created_time
-      job_name_suffix = str(created_time.year)+"-"+\
-        str(created_time.month)+"-"+str(
-        created_time.day)+"-"+str(created_time.hour)+"-"+\
-        str(created_time.minute)+"-"+str(created_time.second)
+      job_name_suffix = (str(created_time.year) + "-" +
+                         str(created_time.month) + "-" +
+                         str(created_time.day) + "-" +
+                         str(created_time.hour) + "-" +
+                         str(created_time.minute) + "-" +
+                         str(created_time.second))
       input_data = json.loads(job_specs["input_data"])
-      input_data["title"] = input_data["title"] + "-" +\
-        job_name_suffix
+      input_data["title"] = input_data["title"] + "-" + job_name_suffix
       job_specs["input_data"] = json.dumps(input_data)
       job_model.name = input_data["title"]
       job_model.input_data = job_specs[
@@ -344,11 +344,11 @@ def kube_create_job(job_specs, namespace="default", env_vars={}):
 
     job_model.save(merge=True)
 
-    logging.info("Batch Job {}:  " \
-        "model updated in firestore".format(job_model.name))
+    logging.info("Batch Job {}:  "
+                 "model updated in firestore".format(job_model.name))
 
-    logging.info("Batch Job {}:  " \
-        "creating kube job object".format(job_model.name))
+    logging.info("Batch Job {}:  "
+                 "creating kube job object".format(job_model.name))
     body = kube_create_job_object(
       name=name,
       container_image=container_image,
@@ -357,8 +357,8 @@ def kube_create_job(job_specs, namespace="default", env_vars={}):
       limits=limits,
       requests=requests)
 
-    logging.info("Batch Job {}:  " \
-        "kube job body created".format(job_model.name))
+    logging.info("Batch Job {}:  "
+                 "kube job body created".format(job_model.name))
 
     # call kube batch API to create job
     job = api_instance.create_namespaced_job(namespace, body, pretty=True)
@@ -379,8 +379,8 @@ def kube_create_job(job_specs, namespace="default", env_vars={}):
     raise BatchJobError(str(e)) from e
 
 
-def kube_get_namespaced_deployment_image_path(deployment_name,container_name,
-                                                      namespace,gcp_project):
+def kube_get_namespaced_deployment_image_path(deployment_name, container_name,
+                                              namespace, gcp_project):
   """
     This function returns the image path for given deployment and container name
     args:
@@ -391,12 +391,12 @@ def kube_get_namespaced_deployment_image_path(deployment_name,container_name,
     returns:
       image_path: (str)- container image path
   """
-  image_path = "gcr.io/{}/{}:latest".format(gcp_project,container_name)
+  image_path = "gcr.io/{}/{}:latest".format(gcp_project, container_name)
   try:
     apis_api = client.AppsV1Api()
-    resp = apis_api.read_namespaced_deployment(deployment_name,namespace)
+    resp = apis_api.read_namespaced_deployment(deployment_name, namespace)
     for container in resp.spec.template.spec.containers:
-      if container_name==container.name:
+      if container_name == container.name:
         image_path = container.image.split("@")[0]
         break
   except ApiException as e:
@@ -440,11 +440,12 @@ def find_duplicate_jobs(job_type, request_body=None):
 
     if status == "pending":
       if created_time >= time_now_minus_10:
-        if (request_body and
-            request_body == input_data) or request_body is None:
+        if ((request_body and request_body == input_data)
+                or request_body is None):
           return failed_msg
     elif status == "active":
-      if (request_body and request_body == input_data) or request_body is None:
+      if ((request_body and request_body == input_data)
+              or request_body is None):
         return failed_msg
 
   # return empty if no duplicate jobs

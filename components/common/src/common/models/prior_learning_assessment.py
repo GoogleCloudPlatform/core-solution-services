@@ -1,18 +1,16 @@
-"""
-Copyright 2023 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Prior Learning Assessment Data Models"""
 from fireo.fields import (TextField, ListField, MapField, DateTime,
@@ -100,9 +98,9 @@ class PLARecord(BaseModel):
         PLARecord: PLA Record Object
     """
     User.find_by_uuid(user_id)
-    pla_record = PLARecord.collection.filter("user_id", "==",\
-       user_id).filter("type", "==", "draft").get()
-    if  pla_record is None:
+    pla_record = PLARecord.collection.filter(
+      "user_id", "==", user_id).filter("type", "==", "draft").get()
+    if pla_record is None:
       raise ResourceNotFoundException(
           f"PLA record with user id {user_id} not found")
     return pla_record
@@ -137,6 +135,6 @@ class ApprovedExperience(BaseModel):
 
   @classmethod
   def find_by_title(cls, title):
-    approved_expereiences = ApprovedExperience.collection.filter("title", "==",
-                                                                  title).fetch()
-    return approved_expereiences
+    approved_experiences = ApprovedExperience.collection.filter(
+      "title", "==", title).fetch()
+    return approved_experiences

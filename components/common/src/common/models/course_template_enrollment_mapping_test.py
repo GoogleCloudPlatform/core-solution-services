@@ -17,16 +17,14 @@ Unit test for course template enrollment
 # disabling these rules, as they cause issues with pytest fixtures
 # pylint: disable=unused-import
 # pylint: disable=unused-argument,redefined-outer-name
-import pytest
 from common.models import (CourseTemplate,
                            CourseTemplateEnrollmentMapping, User)
-from common.utils.errors import ResourceNotFoundException
 from common.testing.example_objects import (TEST_COURSE_TEMPLATE, TEST_USER)
 from common.testing.firestore_emulator import clean_firestore, firestore_emulator
 
 
 def test_course_template_enrollment(clean_firestore):
-  '''test for enrolling faculty in course template enrollment mapping '''
+  """test for enrolling faculty in course template enrollment mapping """
   course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
   course_template.save()
   course_enrollment = CourseTemplateEnrollmentMapping()

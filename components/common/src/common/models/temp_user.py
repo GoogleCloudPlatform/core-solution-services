@@ -20,7 +20,7 @@ from datetime import datetime
 import fireo
 from fireo.models import Model
 from fireo.fields import DateTime, TextField, NumberField, ListField, \
-  BooleanField,MapField
+  BooleanField, MapField
 from common.utils.errors import ResourceNotFoundException
 
 DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
@@ -30,8 +30,8 @@ PROJECT_ID = os.environ.get("PROJECT_ID", "")
 def check_user_type(field_val):
   """validator method for user type field"""
   user_types = ["learner", "faculty", "robot",
-            "assessor", "admin", "coach", "instructor",
-              "lxe", "curriculum_designer"]
+                "assessor", "admin", "coach", "instructor",
+                "lxe", "curriculum_designer"]
   if field_val.lower() in user_types:
     return True
   return (False, "User Type must be one of " +
@@ -165,8 +165,8 @@ class TempBaseModel(Model):
       doc.is_archived = archive
       doc.update()
     else:
-      raise ResourceNotFoundException\
-        (f"{cls.__name__} with uuid {uuid} not found")
+      raise (ResourceNotFoundException
+             (f"{cls.__name__} with uuid {uuid} not found"))
 
 
 class TempUser(TempBaseModel):

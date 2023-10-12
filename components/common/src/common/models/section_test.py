@@ -25,7 +25,7 @@ from common.testing.firestore_emulator import clean_firestore, firestore_emulato
 
 
 def test_new_section(clean_firestore):
-  '''test for creating and loading a new section'''
+  """test for creating and loading a new section"""
   new_section = Section.from_dict(TEST_SECTION)
   course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
   course_template.save()
@@ -41,7 +41,7 @@ def test_new_section(clean_firestore):
 
 
 def test_delete_section(clean_firestore):
-  '''test for soft delete method'''
+  """test for soft delete method"""
   new_section = Section.from_dict(TEST_SECTION)
   course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
   course_template.save()

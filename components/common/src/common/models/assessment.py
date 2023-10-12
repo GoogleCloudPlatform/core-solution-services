@@ -1,18 +1,16 @@
-"""
-Copyright 2023 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Assessment Service Data Models"""
 
@@ -22,15 +20,16 @@ from fireo.fields import TextField, ListField, MapField, NumberField, BooleanFie
 
 
 ASSESSMENT_LITERALS = {
-  "assessments":{
-    "type" : ["practice", "project", "pretest", "srl", "static_srl",
-                "cognitive_wrapper"],
-    "alias" : ["assessment"]
+  "assessments": {
+    "type": ["practice", "project", "pretest", "srl", "static_srl",
+             "cognitive_wrapper"],
+    "alias": ["assessment"]
   }
 }
 
 def check_type(level):
   allowed_types = ASSESSMENT_LITERALS[level]["type"]
+
   def _check_type(field_val):
     """validator method for type field"""
     if field_val.lower() in allowed_types:
@@ -41,6 +40,7 @@ def check_type(level):
 
 def check_alias(level):
   allowed_aliases = ASSESSMENT_LITERALS[level]["alias"]
+
   def _check_alias(field_val):
     """validator method for alias field"""
     if field_val.lower() in allowed_aliases:
@@ -159,6 +159,7 @@ class AssessmentItem(NodeItem):
     """Find the assessment item using name
     Args:
         name (string): node item name
+        is_deleted
     Returns:
         AssessmentItem: Assessment Item Object
     """
@@ -217,6 +218,7 @@ class Assessment(NodeItem):
     """Find the assessment item using name
     Args:
         name (string): node item name
+        is_deleted
     Returns:
         Assessment: Assessment Object
     """
@@ -272,6 +274,7 @@ class SubmittedAssessment(NodeItem):
     """Find the submitted assessment using name
     Args:
         name (string): node item name
+        is_deleted
     Returns:
         SubmittedAssessment: Submitted Assessment Object
     """

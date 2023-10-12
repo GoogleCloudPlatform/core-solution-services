@@ -27,7 +27,7 @@ from config import (DEPLOYMENT_NAME, CONTAINER_NAME, JOB_NAMESPACE, GCP_PROJECT)
 def initiate_batch_job(request_body, job_type, env_vars={}):
   """Triggers a batch job
     Args:
-      req_body: dict - dictionary containing metadata for running batch job
+      request_body: dict - dictionary containing metadata for running batch job
       job_type: "type of job"
       env_vars: environment variables
     Returns:
@@ -47,8 +47,8 @@ def initiate_batch_job(request_body, job_type, env_vars={}):
   if job_status.get("status"):
     response = {
         "success": True,
-        "message": f"Successfully initiated the job with type '{job_type}'. "\
-              "Please use the job name to track the job status",
+        "message": f"Successfully initiated the job with type '{job_type}'. "
+                   f"Please use the job name to track the job status",
         "data": {
           "job_name": job_status.get("job_name"),
           "status": job_status.get("status")

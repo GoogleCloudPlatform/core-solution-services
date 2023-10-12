@@ -4,8 +4,7 @@ on:
     branches:
       - main
     paths:
-      - "microservices/**"
-      - "common/**"
+      - "components/**"
       - "e2e/**"
       - "utils/**"
       - ".github/workflows/deployment_gke_dev.yaml"

@@ -30,12 +30,13 @@ class BatchJobModel(BaseModel):
   message: str
   data: Optional[Data]
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {
             "success": True,
-            "message": "Successfully initiated the job with type 'emsi_ingestion'. Please use the job name to track the job status",
+            "message": "Successfully initiated the job with type 'emsi_ingestion'."
+                       " Please use the job name to track the job status",
             "data": {
                 "job_name": "abcd-ajdf-sdfk-sdff",
                 "status": "active"

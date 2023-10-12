@@ -44,6 +44,8 @@ from services import query_prompts
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL, GOOGLE_LLM, REGION)
 
+# pylint: disable=broad-exception-caught
+
 # number of text chunks to process into an embeddings file
 MAX_NUM_TEXT_CHUNK_PROCESS = 1000
 
@@ -73,6 +75,7 @@ async def query_generate(
   Execute a query over a query engine
 
   Args:
+    user_id:
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
@@ -208,7 +211,7 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
     doc_url: the URL to the set of documents to be indexed
     query_engine: the name of the query engine to create
     user_id: user id of engine creator
-    is_public: is query engine publically usable?
+    is_public: is query engine publicly usable?
     llm_type: LLM used for query embeddings (currently not used)
 
   Returns:
@@ -249,7 +252,7 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
   return q_engine, docs_processed, docs_not_processed
 
 
-def build_doc_index(doc_url:str, query_engine: str) -> \
+def build_doc_index(doc_url: str, query_engine: str) -> \
         Tuple[List[QueryDocument], List[str]]:
   """
   Build the document index.
@@ -282,9 +285,8 @@ def build_doc_index(doc_url:str, query_engine: str) -> \
     bucket_uri = f"gs://{bucket.name}"
 
     # process docs at url and upload embeddings to GCS for indexing
-    docs_processed, docs_not_processed = _process_documents(doc_url,
-                                            bucket_name,
-                                            q_engine, storage_client)
+    docs_processed, docs_not_processed = _process_documents(
+      doc_url, bucket_name, q_engine, storage_client)
 
     # make sure we actually processed some docs
     if len(docs_processed) == 0:
@@ -310,8 +312,8 @@ def _create_me_index_and_endpoint(index_name: str, bucket_uri: str,
   # create ME index
   Logger.info(f"creating matching engine index {index_name}")
 
-  index_description = \
-    "Matching Engine index for LLM Service query engine: " + q_engine.name
+  index_description = (
+      "Matching Engine index for LLM Service query engine: " + q_engine.name)
 
   tree_ah_index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
       display_name=index_name,
@@ -440,8 +442,8 @@ def _process_documents(doc_url: str, bucket_name: str,
   return docs_processed, docs_not_processed
 
 
-def _download_files_to_local(storage_client, local_dir, doc_url: str) -> \
-    List[Tuple[str, str, str]]:
+def _download_files_to_local(storage_client, local_dir,
+                             doc_url: str) -> List[Tuple[str, str, str]]:
   """ Download files from GCS to a local tmp directory """
   docs = []
   bucket_name = doc_url.split("gs://")[1].split("/")[0]
@@ -455,7 +457,7 @@ def _download_files_to_local(storage_client, local_dir, doc_url: str) -> \
   return docs
 
 
-def _read_doc(doc_name:str, doc_filepath: str) -> List[str]:
+def _read_doc(doc_name: str, doc_filepath: str) -> List[str]:
   """ Read document and return content as a list of strings """
   doc_extension = doc_name.split(".")[-1]
   doc_extension = doc_extension.lower()
@@ -491,7 +493,7 @@ def _read_doc(doc_name:str, doc_filepath: str) -> List[str]:
   return doc_text_list
 
 def _encode_texts_to_embeddings(
-    sentence_list: List[str]) -> List[Optional[List[float]]]:
+        sentence_list: List[str]) -> List[Optional[List[float]]]:
   """ encode text using Vertex AI embedding model """
   model = TextEmbeddingModel.from_pretrained(
       GOOGLE_LLM.get(DEFAULT_QUERY_EMBEDDING_MODEL))
@@ -503,11 +505,11 @@ def _encode_texts_to_embeddings(
 
 
 # Generator function to yield batches of text_chunks
-def _generate_batches(text_chunks: List[str], batch_size: int
-    ) -> Generator[List[str], None, None]:
+def _generate_batches(text_chunks: List[str],
+                      batch_size: int) -> Generator[List[str], None, None]:
   """ generate batches of text_chunks """
   for i in range(0, len(text_chunks), batch_size):
-    yield text_chunks[i : i + batch_size]
+    yield text_chunks[i: i + batch_size]
 
 
 def _get_embedding_batched(

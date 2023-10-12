@@ -1,18 +1,16 @@
-"""
-Copyright 2023 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Common functionalities for various data models"""
 from common.utils.parent_child_nodes_handler import ParentChildNodesHandler
@@ -25,8 +23,8 @@ class CommonAPIHandler:
     """Updates the document with given uuid"""
     existing_doc_object = collection.find_by_uuid(uuid)
     existing_doc_object_dict = existing_doc_object.get_fields()
-    update_fields = [key for key in existing_doc_object_dict.keys()\
-       if isinstance(existing_doc_object_dict[key], dict)]
+    update_fields = [key for key in existing_doc_object_dict.keys()
+                     if isinstance(existing_doc_object_dict[key], dict)]
     for field in update_fields:
       if request_body[field] is None:
         request_body[field] = existing_doc_object_dict[field]
@@ -34,7 +32,7 @@ class CommonAPIHandler:
         for key, val in request_body[field].items():
           if val is None:
             request_body[field][key] = \
-              existing_doc_object_dict[field].get(key,[])
+              existing_doc_object_dict[field].get(key, [])
     ParentChildNodesHandler.compare_and_update_nodes_references(
         request_body, existing_doc_object_dict, collection)
     for key, value in request_body.items():
@@ -55,8 +53,8 @@ class CommonAPIHandler:
     """
     existing_doc_object = collection.find_by_uuid(uuid)
     existing_doc_object_dict = existing_doc_object.get_fields()
-    update_fields = [key for key in existing_doc_object_dict.keys()\
-       if isinstance(existing_doc_object_dict[key], dict)]
+    update_fields = [key for key in existing_doc_object_dict.keys()
+                     if isinstance(existing_doc_object_dict[key], dict)]
     for field in update_fields:
       if request_body[field] is None:
         request_body[field] = existing_doc_object_dict[field]
@@ -75,8 +73,8 @@ class CommonAPIHandler:
         "root_version_uuid", "==",
         existing_doc_object.root_version_uuid)
     documents = collection_manager.order("-version").fetch(1)
-    latest_document = [i.get_fields(reformat_datetime=True) for i in documents
-                      ][0]
+    latest_document = [i.get_fields(reformat_datetime=True)
+                       for i in documents][0]
     versioned_doc.version = latest_document["version"] + 1
     versioned_doc.parent_version_uuid = uuid
 
@@ -97,10 +95,9 @@ class CommonAPIHandler:
 
   @classmethod
   def create_copy(cls, collection, uuid):
-    """Function to create COPY of a documnent"""
+    """Function to create COPY of a document"""
     doc = collection.find_by_uuid(uuid)
-    doc_dict = doc.get_fields\
-      (reformat_datetime=True)
+    doc_dict = doc.get_fields(reformat_datetime=True)
     del doc_dict["uuid"]
     del doc_dict["created_time"]
     del doc_dict["last_modified_time"]
@@ -116,8 +113,7 @@ class CommonAPIHandler:
 
     copy_doc.save()
     copy_doc.uuid = copy_doc.id
-    copy_doc.root_version_uuid = \
-      copy_doc.id
+    copy_doc.root_version_uuid = copy_doc.id
     copy_doc.update()
     copy_doc_fields = copy_doc.get_fields(reformat_datetime=True)
     ParentChildNodesHandler.update_child_references(
@@ -147,8 +143,8 @@ class CommonAPIHandler:
     existing_doc_object = collection.find_by_uuid(uuid)
     existing_doc_object_dict = existing_doc_object.get_fields()
 
-    update_fields = [key for key in existing_doc_object_dict.keys()\
-       if isinstance(existing_doc_object_dict[key], dict)]
+    update_fields = [key for key in existing_doc_object_dict.keys()
+                     if isinstance(existing_doc_object_dict[key], dict)]
     for field in update_fields:
       if request_body.get(field) is None:
         request_body[field] = existing_doc_object_dict[field]
@@ -168,8 +164,8 @@ class CommonAPIHandler:
         "root_version_uuid", "==",
         existing_doc_object.root_version_uuid)
     documents = collection_manager.order("-version").fetch(1)
-    latest_document = [i.get_fields(reformat_datetime=True) for i in documents
-                      ][0]
+    latest_document = [i.get_fields(reformat_datetime=True)
+                       for i in documents][0]
     versioned_doc.version = latest_document["version"] + 1
     versioned_doc.parent_version_uuid = uuid
     for key, value in request_body.items():

@@ -21,7 +21,7 @@ from common.models import BaseModel, CourseTemplate
 def check_non_zero_number(field_val):
   """validator method for max_student field"""
   if field_val == 0:
-    return (False,"Max student value in cohort cannot be zero")
+    return False, "Max student value in cohort cannot be zero"
   else:
     return True
 
@@ -36,13 +36,14 @@ class Cohort(BaseModel):
   end_date = DateTime(required=True)
   registration_start_date = DateTime(required=True)
   registration_end_date = DateTime(required=True)
-  max_students = NumberField(required=True,validator=check_non_zero_number)
+  max_students = NumberField(required=True, validator=check_non_zero_number)
   enrolled_students_count = NumberField(default=0)
   course_template = ReferenceField(CourseTemplate, required=True)
 
   class Meta:
     ignore_none_field = False
     collection_name = BaseModel.DATABASE_PREFIX + "cohorts"
+
   @classmethod
   def fetch_all_by_course_template(cls,
                                    course_template_key,
@@ -53,7 +54,7 @@ class Cohort(BaseModel):
 
     Args:
         course_template_key (str): course_template unique key to filter data.
-        skip (int, optional): number of cohorts to be skip.
+        skip (int, optional): number of cohorts to skip.
         order_by (str, optional): order list according to order_by field.
         limit (int, optional): limit till cohorts to be fetched.
 

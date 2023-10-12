@@ -1,20 +1,18 @@
-"""
-Copyright 2023 Google LLC
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
-
-"""Utility method to validate user based on Id Token"""
+"""Utility method to validate user based on ID Token"""
 import re
 
 from fastapi import Request
@@ -40,7 +38,7 @@ def get_user_identity(req: Request) -> dict:
         user_id = data["data"]["user_id"]
         user_email = data["data"]["email"]
         return {"success": True, "user_id": user_id,
-                "user_email": user_email, "token":token}
+                "user_email": user_email, "token": token}
       if data["success"] is False:
         raise InvalidTokenError(data["message"])
     else:
@@ -52,6 +50,6 @@ def get_user_identity(req: Request) -> dict:
         "message": re.split(",", e.error)[0],
         "data": None
     }
-  except Exception as e: # pylint: disable = broad-except
+  except Exception as e:  # pylint: disable = broad-except
     Logger.error("Token error: %s" % e)
     return {"success": False, "message": "Internal Server Error", "data": None}

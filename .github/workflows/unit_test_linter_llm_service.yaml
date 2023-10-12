@@ -9,7 +9,7 @@ on:
     paths:
       - "components/common/**"
       - "components/llm_service/**"
-      - ".github/workflows/unit_test_linterllm_service.yaml"
+      - ".github/workflows/unit_test_linter_llm_service.yaml"
       - ".pylintrc"
   workflow_dispatch:
 
@@ -88,7 +88,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pylint
+          python -m pip install pylint==2.17.6
 
       - name: Lint with pylint
         run: |

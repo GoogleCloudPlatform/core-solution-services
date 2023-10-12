@@ -52,16 +52,15 @@ class CourseEnrollmentMapping(BaseModel):
 
   @classmethod
   def find_by_user(cls, user_id):
-    """Find user using using user_id
+    """Find user using user_id
     Args:
         user_id (string): node item name
     Returns:
         user_object
     """
     user_key = f"{User.collection_name}/{user_id}"
-    result = CourseEnrollmentMapping.collection.filter("user","==",user_key).\
-      filter(
-        "status", "==","active").fetch()
+    result = (CourseEnrollmentMapping.collection.filter("user", "==", user_key).
+              filter("status", "==", "active").fetch())
     return list(result)
 
   @classmethod
@@ -74,22 +73,20 @@ class CourseEnrollmentMapping(BaseModel):
 
     Args:
         section_key (str): section unique key to filter data
-        skip (int, optional): number of sections to be skip.
-        order_by(str, optional): order list according to order_by field.
-        limit (int, optional): limit till sections to be fetched.
-
+        role
     Returns:
         list: list of sections
     """
-    objects = CourseEnrollmentMapping.collection.\
-      filter("section", "==", section_key).filter(
-        "status", "in",["active","invited"]).filter("role", "==",role).fetch()
+    objects = (CourseEnrollmentMapping.collection.
+               filter("section", "==", section_key).
+               filter("status", "in", ["active", "invited"]).
+               filter("role", "==", role).fetch())
     return list(objects)
 
   @classmethod
   def fetch_users_by_section(
-      cls,
-      section_key):
+          cls,
+          section_key):
     """_summary_
 
     Args:
@@ -97,8 +94,8 @@ class CourseEnrollmentMapping(BaseModel):
     Returns:
       list: list of sections
     """
-    objects = CourseEnrollmentMapping.collection.\
-      filter("section", "==", section_key).fetch()
+    objects = (CourseEnrollmentMapping.collection.
+               filter("section", "==", section_key).fetch())
     return list(objects)
 
   @classmethod
@@ -113,14 +110,15 @@ class CourseEnrollmentMapping(BaseModel):
     Args:
         section_key (str): section unique key to filter data
         user_id(str, optional): user_id from user collection
-
+        role
     Returns:
         course_enrollment object
     """
     user_key = f"{User.collection_name}/{user_id}"
-    return CourseEnrollmentMapping.collection.filter("user","==",user_key).\
-    filter("status", "in",["active","invited"]).\
-    filter("section","==",section_key).filter("role","==",role).get()
+    return (CourseEnrollmentMapping.collection.filter("user", "==", user_key).
+            filter("status", "in", ["active", "invited"]).
+            filter("section", "==", section_key).
+            filter("role", "==", role).get())
 
   @classmethod
   def find_active_enrolled_student_record(
@@ -138,9 +136,9 @@ class CourseEnrollmentMapping(BaseModel):
         course_enrollment object
     """
     user_key = f"{User.collection_name}/{user_id}"
-    return CourseEnrollmentMapping.collection.filter("user","==",user_key).\
-    filter("status", "==","active").filter("role","==","learner").\
-      filter("section","==",section_key).get()
+    return (CourseEnrollmentMapping.collection.filter("user", "==", user_key).
+            filter("status", "==", "active").filter("role", "==", "learner").
+            filter("section", "==", section_key).get())
 
   @classmethod
   def find_active_enrolled_teacher_record(
@@ -158,14 +156,15 @@ class CourseEnrollmentMapping(BaseModel):
         course_enrollment object
     """
     user_key = f"{User.collection_name}/{user_id}"
-    return CourseEnrollmentMapping.collection.filter("user","==",user_key).\
-    filter("status", "==","active").filter("role","==","faculty").\
-      filter("section","==",section_key).get()
+    return (CourseEnrollmentMapping.collection.filter("user", "==", user_key).
+            filter("status", "==", "active").filter("role", "==", "faculty").
+            filter("section", "==", section_key).get())
 
   @classmethod
-  def check_enrollment_exists_section(cls,
-      section_key,
-      user_id):
+  def check_enrollment_exists_section(
+          cls,
+          section_key,
+          user_id):
     """check if any enrollment exists for a section by user id
 
     Args:
@@ -176,6 +175,6 @@ class CourseEnrollmentMapping(BaseModel):
         CourseEnrollmentMapping: returns a object.
     """
     user_key = f"{User.collection_name}/{user_id}"
-    return CourseEnrollmentMapping.collection.filter("user","==",user_key).\
-    filter("status", "in",["active","invited"]).\
-      filter("section","==",section_key).get()
+    return (CourseEnrollmentMapping.collection.filter("user", "==", user_key).
+            filter("status", "in", ["active", "invited"]).
+            filter("section", "==", section_key).get())

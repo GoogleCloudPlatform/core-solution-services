@@ -18,15 +18,17 @@ Bigquery helper Service
 
 from google.cloud import bigquery
 from common.utils.logging_handler import Logger
-from common.config import PROJECT_ID,BQ_REGION
+from common.config import PROJECT_ID, BQ_REGION
 
 bq_client = bigquery.Client(location=BQ_REGION)
 
-def insert_rows_to_bq(rows,dataset,table_name):
+def insert_rows_to_bq(rows, dataset, table_name):
   """Insert rows to BQ
 
   Args:
     rows (list): _description_
+    dataset
+    table_name
 
   Returns:
     Bool: _description_

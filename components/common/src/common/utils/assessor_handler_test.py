@@ -1,18 +1,16 @@
-"""
-Copyright 2023 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Unit test for assessor handler"""
 # disabling pylint rules that conflict with pytest fixtures
@@ -20,7 +18,7 @@ limitations under the License.
 from unittest import mock
 with mock.patch(
     "google.cloud.logging.Client",
-    side_effect=mock.MagicMock()) as mok:
+        side_effect=mock.MagicMock()) as mok:
   from common.models import (
       User,
       Learner,
@@ -299,7 +297,7 @@ def create_submitted_assessment(input_submitted_assessment):
 # -----------------------------------------------------------------------------
 
 def test_replace_assessor_with_new_assessor_for_submitted_assessments(
-    mocker, clean_firestore):
+        mocker, clean_firestore):
 
   assessor_user = create_single_user()
   assessor_user.user_type = "assessor"
@@ -331,7 +329,7 @@ def test_replace_assessor_with_new_assessor_for_submitted_assessments(
 
   task_status, _ = update_assessor_of_submitted_assessments_of_a_discipline(
     "random_dag_id",
-    discipline_id,{
+    discipline_id, {
         "user": assessor_user.user_id
     })
   assert task_status == 1
@@ -341,7 +339,7 @@ def test_replace_assessor_with_new_assessor_for_submitted_assessments(
   assert get_submitted_assessment_1.assessor_id == new_assessor_user.user_id
 
 def test_remove_assessor_for_submitted_assessments_of_discipline(
-    mocker, clean_firestore):
+        mocker, clean_firestore):
 
   assessor_user = create_single_user()
   assessor_user.user_type = "assessor"
@@ -380,29 +378,28 @@ def test_remove_assessor_for_submitted_assessments_of_discipline(
   assert get_submitted_assessment_1.assessor_id == ""
 
 def test_replace_assessor_with_new_assessor_for_submitted_assessments_negative(
-    mocker, clean_firestore):
+        mocker, clean_firestore):
 
   discipline_id = "test_discipline_id"
   # get created assessment object
 
-  submitted_assessement_1 = create_submitted_assessment(
+  submitted_assessment_1 = create_submitted_assessment(
       {**submitted_assessment_response})
 
   mocker.patch(
       "common.utils.assessor_handler.get_assessors_of_dag",
       return_value=[{
-          "user": submitted_assessement_1.assessor_id
+          "user": submitted_assessment_1.assessor_id
       }])
 
   submitted_assessments = filter_submitted_assessments(
-      [submitted_assessement_1.assessment_id],
-      submitted_assessement_1.assessor_id)
+      [submitted_assessment_1.assessment_id],
+      submitted_assessment_1.assessor_id)
   replace_assessor_of_submitted_assessments(
                                     discipline_id,
                                     submitted_assessments,
-                                    [submitted_assessement_1.assessment_id],
-                                    submitted_assessement_1.assessor_id)
+                                    [submitted_assessment_1.assessment_id],
+                                    submitted_assessment_1.assessor_id)
   get_submitted_assessment_1 = SubmittedAssessment.find_by_uuid(
-      submitted_assessement_1.uuid)
+      submitted_assessment_1.uuid)
   assert get_submitted_assessment_1.assessor_id == ""
-

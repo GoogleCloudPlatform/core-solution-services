@@ -23,13 +23,12 @@ if CLOUD_LOGGING_ENABLED:
   client.setup_logging()
 
   logging.basicConfig(
-        format='%(asctime)s:%(levelname)s:%(message)s',level=logging.INFO)
+        format='%(asctime)s:%(levelname)s:%(message)s', level=logging.INFO)
 else:
   logging.basicConfig(level=logging.INFO)
 
 
-
-class Logger():
+class Logger:
   """class def handling logs."""
 
   @staticmethod

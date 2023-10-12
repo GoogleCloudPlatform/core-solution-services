@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-  Pytest Fixture for getting testclient from fastapi
+  Pytest Fixture for getting test client from fastapi
 
   NOTE: this assumes you are executing this in a FastAPI service
-  where you can run run `from main import app`
+  where you can run `from main import app`
 """
 
 # disabling pylint rules that conflict with pytest fixtures

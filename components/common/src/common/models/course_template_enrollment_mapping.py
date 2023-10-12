@@ -53,7 +53,7 @@ class CourseTemplateEnrollmentMapping(BaseModel):
 
   @classmethod
   def find_by_user(cls, user_id):
-    """Find user using using user_id
+    """Find user using user_id
     Args:
         user_id (string): node item name
     Returns:
@@ -76,7 +76,7 @@ class CourseTemplateEnrollmentMapping(BaseModel):
     """
     objects = CourseTemplateEnrollmentMapping.collection.\
       filter("course_template", "==", course_template).filter(
-        "status", "in",["active","invited"]).fetch()
+        "status", "in", ["active", "invited"]).fetch()
     return list(objects)
 
   @classmethod
@@ -103,7 +103,7 @@ class CourseTemplateEnrollmentMapping(BaseModel):
     """Find enrolled active records by course template and user id.
 
     Args:
-        course_template (str): course template unique key to filter data
+        course_template_key (str): course template unique key to filter data
         user_id(str): user_id from user collection
 
     Returns:

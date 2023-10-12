@@ -35,8 +35,8 @@ os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
-with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient", 
-    new=mock.AsyncMock()):
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient",
+                new=mock.AsyncMock()):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere"):
       from config import (COHERE_LLM_TYPE,
@@ -45,9 +45,9 @@ with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient",
                           VERTEX_LLM_TYPE_BISON_CHAT)
 
 with mock.patch("langchain.llms.Cohere.agenerate",
-                return_value = FAKE_GENERATE_RESULT):
+                return_value=FAKE_GENERATE_RESULT):
   with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
-                  return_value = FAKE_CHAT_RESPONSE):
+                  return_value=FAKE_CHAT_RESPONSE):
     from services.langchain_service import langchain_llm_generate
     from services.llm_generate import llm_generate, llm_chat
 
@@ -72,7 +72,7 @@ def test_chat(clean_firestore):
 @pytest.mark.asyncio
 async def test_llm_generate(clean_firestore):
   with mock.patch("langchain.llms.Cohere.agenerate",
-                  return_value = FAKE_GENERATE_RESULT):
+                  return_value=FAKE_GENERATE_RESULT):
     response = await llm_generate(FAKE_PROMPT, COHERE_LLM_TYPE)
 
   assert response == FAKE_GENERATE_RESPONSE
@@ -80,7 +80,7 @@ async def test_llm_generate(clean_firestore):
 @pytest.mark.asyncio
 async def test_llm_chat(clean_firestore):
   with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
-                  return_value = FAKE_CHAT_RESULT):
+                  return_value=FAKE_CHAT_RESULT):
     response = await llm_chat(FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5)
 
   assert response == FAKE_GENERATE_RESPONSE
@@ -88,8 +88,9 @@ async def test_llm_chat(clean_firestore):
 @pytest.mark.asyncio
 async def test_llm_chat_resume(clean_firestore, test_chat):
   with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
-                  return_value = FAKE_CHAT_RESULT):
-    response = await llm_chat(FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5, test_chat)
+                  return_value=FAKE_CHAT_RESULT):
+    response = await llm_chat(
+      FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5, test_chat)
 
   assert response == FAKE_GENERATE_RESPONSE
 
@@ -97,23 +98,28 @@ async def test_llm_chat_resume(clean_firestore, test_chat):
 async def test_llm_generate_google(clean_firestore):
   with mock.patch(
       "vertexai.preview.language_models.TextGenerationModel.predict",
-      return_value = FAKE_GOOGLE_RESPONSE):
-    response = await llm_generate(FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_TEXT)
+          return_value=FAKE_GOOGLE_RESPONSE):
+    response = await llm_generate(
+      FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_TEXT)
 
   assert response == FAKE_GENERATE_RESPONSE
 
 @pytest.mark.asyncio
 async def test_llm_chat_google(clean_firestore, test_chat):
-  with mock.patch("vertexai.preview.language_models.ChatSession.send_message",
-                  return_value = FAKE_GOOGLE_RESPONSE):
-    response = await llm_chat(FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT)
+  with mock.patch(
+          "vertexai.preview.language_models.ChatSession.send_message",
+          return_value=FAKE_GOOGLE_RESPONSE):
+    response = await llm_chat(
+      FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT)
 
   assert response == FAKE_GENERATE_RESPONSE
 
 @pytest.mark.asyncio
 async def test_llm_chat_google_resume(clean_firestore, test_chat):
-  with mock.patch("vertexai.preview.language_models.ChatSession.send_message",
-                  return_value = FAKE_GOOGLE_RESPONSE):
-    response = await llm_chat(FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT, test_chat)
+  with mock.patch(
+          "vertexai.preview.language_models.ChatSession.send_message",
+          return_value=FAKE_GOOGLE_RESPONSE):
+    response = await llm_chat(
+      FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT, test_chat)
 
   assert response == FAKE_GENERATE_RESPONSE

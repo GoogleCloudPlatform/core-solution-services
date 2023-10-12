@@ -1,18 +1,16 @@
-"""
-Copyright 2023 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Unit test cases for get child and parent nodes functions"""
 import pytest
@@ -27,7 +25,6 @@ from common.testing.example_objects import (PARENT_LEARNING_OBJECT,
 from common.testing.firestore_emulator import (clean_firestore,
                                                firestore_emulator)
 from common.utils.parent_child_nodes_handler import ParentChildNodesHandler
-from common.utils.collection_references import collection_references
 from common.utils.errors import ResourceNotFoundException
 
 
@@ -65,12 +62,12 @@ def test_insert_data_to_db():
   new_independent_lo.update()
 
   yield parent_lo, child_ids, child_lo, new_independent_lo
-  #teardown part
+  # teardown part
   for each_id in ids:
     LearningObject.delete_by_id(each_id)
 
-@pytest.fixture(name="insert_cirriculum_data_to_db")
-def test_insert_cirriculum_data_to_db():
+@pytest.fixture(name="insert_curriculum_data_to_db")
+def test_insert_curriculum_data_to_db():
   child_ids = []
   ids = []
 
@@ -97,7 +94,7 @@ def test_insert_cirriculum_data_to_db():
   parent_cp.update()
 
   yield parent_cp, child_ids, child_cp
-  #teardown part
+  # teardown part
   for each_id in ids:
     CurriculumPathway.delete_by_id(each_id)
 
@@ -214,7 +211,7 @@ def test_update_child_references_remove_add(clean_firestore, insert_data_to_db):
     assert child_document_fields["parent_nodes"]["learning_objects"] != []
 
 
-def test_update_parent_references_remove_add(clean_firestore, insert_data_to_db): # pylint: disable=line-too-long
+def test_update_parent_references_remove_add(clean_firestore, insert_data_to_db):  # pylint: disable=line-too-long
   document = insert_data_to_db[0]
   document_dict = document.to_dict()
   parent_id = document_dict["uuid"]
@@ -242,7 +239,7 @@ def test_return_child_nodes_data(clean_firestore, insert_data_to_db):
   func_output = ParentChildNodesHandler.return_child_nodes_data(document_dict)
   assert func_output != []
 
-def test_compare_and_update_child_nodes_references(clean_firestore, insert_data_to_db): # pylint: disable=line-too-long
+def test_compare_and_update_child_nodes_references(clean_firestore, insert_data_to_db):  # pylint: disable=line-too-long
   document = insert_data_to_db[0]
   base_doc_dict = document.to_dict()
   child_nodes = insert_data_to_db[1]
@@ -256,7 +253,8 @@ def test_compare_and_update_child_nodes_references(clean_firestore, insert_data_
   assert child_document_fields["parent_nodes"]["learning_objects"] == []
 
 
-def test_compare_and_update_parent_nodes_references(clean_firestore, insert_data_to_db):   # pylint: disable=line-too-long
+def test_compare_and_update_parent_nodes_references(
+        clean_firestore, insert_data_to_db):  # pylint: disable=line-too-long
   document = insert_data_to_db[0]
   base_doc_dict = document.to_dict()
   child_document = insert_data_to_db[2]
@@ -264,7 +262,7 @@ def test_compare_and_update_parent_nodes_references(clean_firestore, insert_data
   doc_dict = copy.deepcopy(child_document_dict)
   doc_dict["parent_nodes"]["learning_objects"] = []
 
-  ParentChildNodesHandler.compare_and_update_parent_nodes_references( # pylint: disable=line-too-long
+  ParentChildNodesHandler.compare_and_update_parent_nodes_references(  # pylint: disable=line-too-long
     child_document_dict, doc_dict, LearningObject, operation="remove")
   parent_document = LearningObject.find_by_id(base_doc_dict["uuid"])
   parent_document_fields = parent_document.get_fields(
@@ -272,14 +270,16 @@ def test_compare_and_update_parent_nodes_references(clean_firestore, insert_data
   assert child_document_dict["uuid"] not in parent_document_fields[
     "child_nodes"]["learning_objects"]
 
-def test_load_nodes_data(clean_firestore, insert_cirriculum_data_to_db):
-  document = insert_cirriculum_data_to_db[0]
+def test_load_nodes_data(clean_firestore, insert_curriculum_data_to_db):
+  document = insert_curriculum_data_to_db[0]
   base_doc_dict = document.to_dict()
   learner_profile = None
   expansion_map = ["child_nodes"]
   expansion_list = []
-  func_output = ParentChildNodesHandler.load_nodes_data(base_doc_dict,
-                "curriculum_pathways", learner_profile, expansion_map,
-                expansion_list)
+  func_output = ParentChildNodesHandler.load_nodes_data(
+    base_doc_dict,
+    "curriculum_pathways",
+    learner_profile,
+    expansion_map,
+    expansion_list)
   assert func_output != {}
-

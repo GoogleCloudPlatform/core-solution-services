@@ -1,18 +1,16 @@
-"""
-Copyright 2023 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Functions to get and update child and parent nodes data"""
 from typing_extensions import Literal
@@ -20,8 +18,8 @@ from common.utils.collection_references import collection_references, LOS_COLLEC
 import copy
 from concurrent.futures import ThreadPoolExecutor
 from itertools import repeat
-#pylint: disable=dangerous-default-value
-class ParentChildNodesHandler():
+# pylint: disable=dangerous-default-value
+class ParentChildNodesHandler:
   """ Class to handle parent child node relationship operations """
 
   @classmethod
@@ -88,17 +86,17 @@ class ParentChildNodesHandler():
 
   @classmethod
   def load_hierarchy_progress(cls, document_fields, coll_name, learner_profile,
-    is_progress_updated = False):
+                              is_progress_updated=False):
     """To fetch learner progress for a given learning node
     Args:
       document_fields: dict - dictionary of fields of given learning node
       coll_name: str - collection name / hierarchy level of the learning node
       learner_profile: dict - learner profile dictionary
-      is_progress_updated - whether progress is already updated
+      is_progress_updated: - whether progress is already updated
     Returns:
       dict - nested dictionary containing learner progress
     """
-    all_child_nodes = document_fields.get("child_nodes",{})
+    all_child_nodes = document_fields.get("child_nodes", {})
     if not is_progress_updated:
       document_fields = cls.update_hierarchy_with_profile_data(
         learner_profile, document_fields, coll_name, document_fields["uuid"])
@@ -110,37 +108,38 @@ class ParentChildNodesHandler():
         learning_objects_counts = len(document_id_list)
       collection_class = collection_references[collection_name]
       keys = [f"{collection_class.collection_name}/{id}"
-      for id in document_id_list]
+              for id in document_id_list]
       all_child_docs = [node.get_fields(reformat_datetime=True)
-      for node in collection_class.collection.get_all(keys)]
+                        for node in collection_class.collection.get_all(keys)]
       child_count = len(document_id_list)
       # map the arguments to the function using threads in the thread pool
       with ThreadPoolExecutor(max_workers=child_count) as executor:
         all_child_docs = list(
           executor.map(cls.update_hierarchy_with_profile_data,
-        repeat(learner_profile),all_child_docs,repeat(collection_name),
-        document_id_list,repeat(document_fields["uuid"])))
+                       repeat(learner_profile), all_child_docs,
+                       repeat(collection_name), document_id_list,
+                       repeat(document_fields["uuid"])))
 
       for list_index, child_document_fields in enumerate(all_child_docs):
         if collection_name == "curriculum_pathways":
           document_id_list[list_index] = cls.load_hierarchy_progress(
             child_document_fields, collection_name, learner_profile,
-            is_progress_updated = True)
+            is_progress_updated=True)
         elif collection_name in ["learning_experiences", "learning_objects"]:
-          if not (collection_name == "learning_experiences" and \
-              child_document_fields.get("status") == "not_attempted"):
+          if not (collection_name == "learning_experiences" and
+                  child_document_fields.get("status") == "not_attempted"):
             child_document_fields = cls.load_hierarchy_progress(
-            child_document_fields, collection_name, learner_profile,
-            is_progress_updated = True)
+              child_document_fields, collection_name,
+              learner_profile, is_progress_updated=True)
           else:
             child_document_fields["recent_child_node"] = {}
           del child_document_fields["child_nodes"]
           document_id_list[list_index] = child_document_fields
-        elif (coll_name=="learning_objects" and
-        collection_name=="assessments"
-        and not child_document_fields.get("is_autogradable")):
-          child_document_fields = \
-          cls.load_child_nodes_data(child_document_fields)
+        elif (coll_name == "learning_objects" and
+              collection_name == "assessments" and
+              not child_document_fields.get("is_autogradable")):
+          child_document_fields = (
+            cls.load_child_nodes_data(child_document_fields))
           document_id_list[list_index] = child_document_fields
         else:
           document_id_list[list_index] = child_document_fields
@@ -164,7 +163,7 @@ class ParentChildNodesHandler():
       for current_order in range(len(nodes)):
         if nodes[given_order]["uuid"] in nodes[
           current_order]["prerequisites"].get(
-          "learning_objects",[]) and nodes[given_order][
+          "learning_objects", []) and nodes[given_order][
           "uuid"] != nodes[current_order]["uuid"]:
           nodes[current_order]["order"] = nodes[given_order][
             "order"]+1
@@ -177,9 +176,9 @@ class ParentChildNodesHandler():
     attempted_nodes = []
     unattempted_nodes = []
     for node in nodes:
-      if node.get("parent_node") == parent_node and \
-        node.get("status") not in ["completed", "skipped"] and \
-          node.get("is_hidden") is False:
+      if (node.get("parent_node") == parent_node and
+              node.get("status") not in ["completed", "skipped"] and
+              node.get("is_hidden") is False):
         if node.get("last_attempted") != "" and \
           node.get("status") != "not_attempted":
           attempted_nodes.append(node)
@@ -187,8 +186,8 @@ class ParentChildNodesHandler():
           unattempted_nodes.append(node)
     # Sort nodes first based on is_optional in ASC order
     # Then sort by last_attempted time in DESC order
-    attempted_nodes = sorted(attempted_nodes, key=lambda x:
-        (-x["is_optional"], x["last_attempted"]), reverse=True)
+    attempted_nodes = sorted(attempted_nodes,
+        key=lambda x: (-x["is_optional"], x["last_attempted"]), reverse=True)
     if not attempted_nodes:
       # Sort nodes first based on is_optional in ASC order
       # Then sort by order key in ASC order
@@ -201,7 +200,7 @@ class ParentChildNodesHandler():
       return {}
 
   @classmethod
-  #pylint: disable = unused-argument
+  # pylint: disable = unused-argument
   def sort_nodes_by_recent_activity(cls, nodes, coll_name,
                                     learning_objects_counts):
     """Sorts the passed nodes based on the recent activity with
@@ -218,7 +217,9 @@ class ParentChildNodesHandler():
     # per node type
     if coll_name == "curriculum_pathways":
       node_dict = {"active": [],
-      "completed": [], "locked": [], "not_attempted": []}
+                   "completed": [],
+                   "locked": [],
+                   "not_attempted": []}
       for node in nodes:
         if node.get("is_locked"):
           node_dict["locked"].append(node)
@@ -232,14 +233,14 @@ class ParentChildNodesHandler():
       sorted_nodes = (
         sorted(
           node_dict["active"],
-          key=lambda node: node["last_attempted"],reverse=True) +
+          key=lambda node: node["last_attempted"], reverse=True) +
         sorted(
           node_dict["not_attempted"],
           key=lambda node: node["order"], reverse=True) +
         sorted(node_dict["locked"], key=lambda node: node["order"]) +
         sorted(
           node_dict["completed"],
-          key=lambda node: node["last_attempted"],  reverse=True))
+          key=lambda node: node["last_attempted"], reverse=True))
     else:
       sorted_nodes = sorted(nodes, key=lambda x: x["order"])
       if len(sorted_nodes) == learning_objects_counts:
@@ -250,8 +251,7 @@ class ParentChildNodesHandler():
   def return_child_nodes_data(cls, document_dict):
     """To fetch the data of the child nodes for a given document
         and their subsequent ones"""
-    #child_nodes_dict = cls.get_child_nodes(document_fields)
-
+    child_nodes_dict = None
     document_fields = copy.deepcopy(document_dict)
 
     if "child_nodes" in document_fields:
@@ -319,14 +319,14 @@ class ParentChildNodesHandler():
         child_document = collection.find_by_uuid(each_document_id)
 
         if operation == "add":
-          if document_fields.get(
-              "uuid") not in child_document.parent_nodes[collection_name]:
+          if (document_fields.get("uuid") not in
+                  child_document.parent_nodes[collection_name]):
             child_document.parent_nodes[collection_name].append(
                 document_fields.get("uuid"))
 
         if operation == "remove":
-          if document_fields.get(
-              "uuid") in child_document.parent_nodes[collection_name]:
+          if (document_fields.get("uuid") in
+                  child_document.parent_nodes[collection_name]):
             child_document.parent_nodes[collection_name].remove(
                 document_fields.get("uuid"))
         child_document.update()
@@ -344,13 +344,13 @@ class ParentChildNodesHandler():
         collection = collection_references[collection_type]
         parent_document = collection.find_by_uuid(each_document_id)
         if operation == "add":
-          if document_fields.get(
-              "uuid") not in parent_document.child_nodes[collection_name]:
+          if (document_fields.get("uuid")
+                  not in parent_document.child_nodes[collection_name]):
             parent_document.child_nodes[collection_name].append(
                 document_fields.get("uuid"))
         if operation == "remove":
-          if document_fields.get(
-              "uuid") in parent_document.child_nodes[collection_name]:
+          if (document_fields.get("uuid")
+                  in parent_document.child_nodes[collection_name]):
             parent_document.child_nodes[collection_name].remove(
                 document_fields.get("uuid"))
         parent_document.update()
@@ -379,19 +379,18 @@ class ParentChildNodesHandler():
           child_document = collection.find_by_uuid(each_document_id)
 
           if operation == "add":
-            if doc_dict.get(
-                "uuid") not in child_document.parent_nodes.get(
-              collection_name,[]):
+            if doc_dict.get("uuid") not in child_document.parent_nodes.get(
+              collection_name, []):
               if isinstance(child_document.parent_nodes.get(
-                collection_name),list):
+                collection_name), list):
                 child_document.parent_nodes[collection_name].append(
                   doc_dict.get("uuid"))
               else:
                 child_document.parent_nodes[collection_name] = \
                   [doc_dict.get("uuid")]
           if operation == "remove":
-            if base_doc_dict.get(
-                "uuid") in child_document.parent_nodes[collection_name]:
+            if (base_doc_dict.get("uuid")
+                    in child_document.parent_nodes[collection_name]):
               child_document.parent_nodes[collection_name].remove(
                   base_doc_dict.get("uuid"))
           child_document.update()
@@ -419,13 +418,13 @@ class ParentChildNodesHandler():
           parent_document = collection.find_by_uuid(each_document_id)
 
           if operation == "add":
-            if doc_dict.get(
-                "uuid") not in parent_document.child_nodes[collection_name]:
+            if (doc_dict.get("uuid") not in
+                    parent_document.child_nodes[collection_name]):
               parent_document.child_nodes[collection_name].append(
                   doc_dict.get("uuid"))
           if operation == "remove":
-            if base_doc_dict.get(
-                "uuid") in parent_document.child_nodes[collection_name]:
+            if (base_doc_dict.get("uuid") in
+                    parent_document.child_nodes[collection_name]):
               parent_document.child_nodes[collection_name].remove(
                   base_doc_dict.get("uuid"))
           parent_document.update()
@@ -522,13 +521,13 @@ class ParentChildNodesHandler():
     LearnerProfile and update it in the hierarchy"""
     # Logic to check if the item is locked/unlocked
     # Update the is_locked flag and progress flag from LearnerProfile
-    if learner_profile is not None and learner_profile.progress is not None\
-        and collection_type in LOS_COLLECTIONS:
+    if (learner_profile is not None and learner_profile.progress is not None
+            and collection_type in LOS_COLLECTIONS):
 
       is_hidden = learner_profile.progress.get(
             collection_type, {}).get(doc_id,
-                                    {}).get("is_hidden",
-                                            node_dict.get("is_hidden"))
+                                     {}).get("is_hidden",
+                                             node_dict.get("is_hidden"))
       is_locked = learner_profile.progress.get(
           collection_type, {}).get(doc_id,
                                    {}).get("is_locked",
@@ -541,7 +540,7 @@ class ParentChildNodesHandler():
           collection_type, {}).get(doc_id,
                                    {}).get("instruction_completed",
                                            node_dict.get(
-                                          "instruction_completed"))
+                                             "instruction_completed"))
       progress_parent = learner_profile.progress.get(
         collection_type, {}).get(doc_id, {}).get("parent_node", "")
       if not progress_parent:
@@ -552,8 +551,8 @@ class ParentChildNodesHandler():
       # Ticket 4928
       if collection_type == "learning_resources" and node_dict["order"] == 1:
         node = collection_references["learning_resources"].find_by_uuid(doc_id)
-        module = collection_references["learning_objects"]\
-          .find_by_uuid(node.parent_nodes["learning_objects"][0])
+        module = (collection_references["learning_objects"].
+                  find_by_uuid(node.parent_nodes["learning_objects"][0]))
         if module.type == "project":
           cw_is_locked = True
           unit = collection_references["learning_experiences"].find_by_uuid(
@@ -564,8 +563,9 @@ class ParentChildNodesHandler():
               neighbor = collection_references["learning_objects"].find_by_uuid(
                 module_id)
               if neighbor.type == "cognitive_wrapper":
-                cw_is_locked = learner_profile.progress.get("learning_objects",
-                        {}).get(neighbor.id, {}).get("is_locked", True)
+                cw_is_locked = learner_profile.progress.get(
+                  "learning_objects", {}).get(
+                  neighbor.id, {}).get("is_locked", True)
                 break
           node_dict["ungate"] = not cw_is_locked
 
@@ -577,7 +577,7 @@ class ParentChildNodesHandler():
         node_dict["instruction_completed"] = instruction_completed
         if collection_type == "assessments":
           node_dict["num_attempts"] = learner_profile.progress.get(
-        collection_type, {}).get(doc_id, {}).get("num_attempts", 0)
+            collection_type, {}).get(doc_id, {}).get("num_attempts", 0)
       node_dict["progress"] = learner_profile.progress.get(
           collection_type, {}).get(doc_id, {}).get("progress", 0)
       node_dict["status"] = learner_profile.progress.get(
@@ -586,18 +586,18 @@ class ParentChildNodesHandler():
         collection_type, {}).get(doc_id, {}).get("last_attempted", "")
       node_dict["parent_node"] = learner_profile.progress.get(
         collection_type, {}).get(doc_id, {}).get("parent_node", "")
-      child_count =learner_profile.progress.get(
+      child_count = learner_profile.progress.get(
         collection_type, {}).get(doc_id, {}).get("child_count", 0)
       if child_count == 0 and node_dict.get("child_nodes"):
         child_count = sum(len(node_dict.get(
-          "child_nodes",{}).get(child_type,[]))
-         for child_type in node_dict.get("child_nodes",{}))
+          "child_nodes", {}).get(child_type, []))
+         for child_type in node_dict.get("child_nodes", {}))
       node_dict["child_count"] = child_count
       node_dict["completed_child_count"] = learner_profile.progress.get(
         collection_type, {}).get(doc_id, {}).get("completed_child_count", 0)
 
-    if learner_profile is not None and learner_profile.achievements is not None\
-         and collection_type == "curriculum_pathways":
+    if (learner_profile is not None and learner_profile.achievements is not None
+            and collection_type == "curriculum_pathways"):
       achievement_intersection = list(
           set(learner_profile.achievements)
           & set(node_dict.get("achievements", [])))
@@ -608,21 +608,24 @@ class ParentChildNodesHandler():
     # Logic block to ungate assessments of type project
     # This is used to show the Mark as Complete button on the Intro LR of
     # the project module
-    if learner_profile is not None and \
-      node_dict["type"] == "project" and collection_type == "assessments":
+    if (learner_profile is not None and
+            node_dict["type"] == "project" and
+            collection_type == "assessments"):
       prereqs = node_dict.get("prerequisites", {})
       if prereqs:
         for k, v in prereqs.items():
           if k != "learning_resources":
             for id_ in v:
-              if learner_profile.progress and \
-                isinstance(learner_profile.progress, dict) and \
-                learner_profile.progress.get(k, {}).get(id_, {}).get("status") \
-                  == "completed" or \
-                learner_profile.progress.get(k, {}).get(id_, {}).get("ungate") \
-                  or (not learner_profile.progress.get(k, {}).get(id_, {}).get(
-                "is_locked") and learner_profile.progress.get(k, {}).get(
-                id_, {}).get("is_hidden")):
+              if (learner_profile.progress and
+                      isinstance(learner_profile.progress, dict) and
+                      learner_profile.progress.get(k, {}).get(
+                        id_, {}).get("status") == "completed" or
+                      learner_profile.progress.get(k, {}).get(
+                        id_, {}).get("ungate") or
+                      (not learner_profile.progress.get(k, {}).get(
+                        id_, {}).get("is_locked") and
+                       learner_profile.progress.get(k, {}).get(
+                        id_, {}).get("is_hidden"))):
                 node_dict["ungate"] = True
               else:
                 node_dict["ungate"] = False
