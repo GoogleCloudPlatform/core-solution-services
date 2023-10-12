@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """ User endpoints """
+# pylint: disable = broad-exception-raised
 import re
 import traceback
 import math

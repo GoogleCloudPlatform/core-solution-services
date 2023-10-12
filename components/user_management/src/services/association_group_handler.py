@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Functions to fetch data from association groups"""
+# pylint: disable = broad-exception-raised
 from services.collection_handler import CollectionHandler
 from common.models import AssociationGroup
 from concurrent.futures import ThreadPoolExecutor
