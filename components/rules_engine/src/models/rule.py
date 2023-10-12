@@ -47,7 +47,7 @@ class Rule(BaseModel):
   @classmethod
   def find_by_id(cls, id):
     try:
-      rule = Rule.collection.get("rules/"+id)
+      rule = Rule.collection.get(f"rules/{id}")
     except ReferenceDocNotExist:
       return None
 
