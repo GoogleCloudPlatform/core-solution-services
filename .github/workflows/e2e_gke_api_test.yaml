@@ -16,14 +16,14 @@ on:
       - ".github/workflows/e2e_gke_api_test.yaml"
   workflow_dispatch:
 env:
-  PROJECT_ID: core-solution-services-develop
-  SKAFFOLD_DEFAULT_REPO: gcr.io/core-solution-services-develop
+  PROJECT_ID: "${{ vars.PROJECT_ID }}"
+  SKAFFOLD_DEFAULT_REPO: gcr.io/gcp-mira-demo
   SKAFFOLD_NAMESPACE: default
   GKE_CLUSTER: main-cluster
   GKE_ZONE: us-central1
   KUSTOMIZE_VERSION: 5.0.0
   SKAFFOLD_VERSION: 2.4.0
-  SKAFFOLD_CACHE_GCS: gs://core-solution-services-develop.appspot.com/skaffold/cache
+  SKAFFOLD_CACHE_GCS: gs://artifacts.gcp-mira-demo.appspot.com/skaffold/cache
 
 # copier:raw
 jobs:
@@ -34,12 +34,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v3
 
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.DEPLOYMENT_SA_KEY }}
+
       - name: Install gcloud
         uses: google-github-actions/setup-gcloud@v1
         with:
-          project_id: ${{env.PROJECT_ID}}
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-          export_default_credentials: true
+          install_components: gke-gcloud-auth-plugin
 
       - name: Connect to cluster
         run: |

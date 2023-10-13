@@ -21,7 +21,7 @@ from copy import deepcopy
 # pylint: disable=unused-argument,redefined-outer-name,unused-import
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from src.routes.association_group import router
+from routes.association_group import router
 from testing.test_config import API_URL
 from schemas.schema_examples import ( BASIC_ASSOCIATION_GROUP_EXAMPLE,
                                      ASSOCIATION_GROUP_EXAMPLE,

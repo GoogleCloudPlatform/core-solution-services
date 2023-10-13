@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: "${{ secrets.PROJECT_ID }}"
+  PROJECT_ID: "${{ vars.PROJECT_ID }}"
 
 # copier:raw
 jobs:
@@ -33,24 +33,20 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # https://github.com/google-github-actions/auth
-      - id: "auth"
+      - id: auth
         name: Auth with Service Account
-        uses: "google-github-actions/auth@v1"
+        uses: google-github-actions/auth@v1
         with:
           credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
-          # workload_identity_provider: "${{ secrets.WI_PROVIDER }}"
-          # service_account: "deployment@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
 
       - name: Set up Cloud SDK
-        uses: "google-github-actions/setup-gcloud@v1"
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: gke-gcloud-auth-plugin
 
-      - name: Install Firebase CLI
+      - name: Install Firebase CLI and emulator
         run: |
           curl -sL https://firebase.tools | bash
-
-      - name: Download Firestore emulator
-        run: |
           firebase setup:emulators:firestore
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -61,11 +57,11 @@ jobs:
       - name: Install dependencies
         run: |
           BASE_DIR=$(pwd)
-          cd ${{ matrix.target-folder }}
           python -m pip install --upgrade pip
+          if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
+          cd ${{ matrix.target-folder }}
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
-          if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
 
       - name: Run pytest with coverage
         run: |
