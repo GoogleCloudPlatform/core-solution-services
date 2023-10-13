@@ -20,7 +20,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from google.cloud.firestore import Client
 
-from routes import rules
+from routes import rules, rulesets
 
 # Basic API config
 service_title = "Rules RESTful API"
@@ -47,6 +47,7 @@ api = FastAPI(title=service_title, version=version)
 
 # Append Rules CRUD APIs to the app.
 api.include_router(rules.router)
+api.include_router(rulesets.router)
 
 app.mount(f"/{service_path}", api)
 
