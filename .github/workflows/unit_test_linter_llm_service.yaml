@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: "${{ vars.PROJECT_ID }}"
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
 
 # copier:raw
 jobs:
@@ -36,7 +36,7 @@ jobs:
         name: Auth with Service Account
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1

@@ -17,7 +17,7 @@ on:
       - "!components/rules_engine/**.md"
   workflow_dispatch:
 env:
-  PROJECT_ID: "${{ vars.PROJECT_ID }}"
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
 
 jobs:
   unit-test:

@@ -26,7 +26,7 @@ for variable in "${EnvVars[@]}"; do
   fi
 done
 
-GSA_NAME="gke-pod-sa"
+GSA_NAME="gke-sa"
 KSA_NAME="ksa"
 
 echo
@@ -47,8 +47,6 @@ gcloud iam service-accounts add-iam-policy-binding \
   ${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
 
 printf "\nConnecting ksa with Service Account ...\n"
-kubectl annotate serviceaccount \
-  --overwrite \
-  --namespace ${NAMESPACE} \
-  ${KSA_NAME} \
+kubectl annotate serviceaccount --overwrite \
+  --namespace ${NAMESPACE} ${KSA_NAME} \
   iam.gke.io/gcp-service-account=${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com

@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 env:
-  PROJECT_ID: "${{ vars.PROJECT_ID }}"
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
 
 # copier:raw
 jobs:
@@ -29,9 +29,6 @@ jobs:
         python-version: [3.9]
         target-folder: [
           components/common,
-          components/authentication,
-          components/user_management,
-          components/jobs_service,
         ]
     steps:
       - uses: actions/checkout@v3
@@ -40,7 +37,7 @@ jobs:
         name: Auth with Service Account
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
@@ -61,7 +58,6 @@ jobs:
         run: |
           BASE_DIR=$(pwd)
           python -m pip install --upgrade pip
-          if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
           cd ${{ matrix.target-folder }}
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
@@ -81,9 +77,6 @@ jobs:
         python-version: [3.9]
         target-folder: [
           components/common,
-          components/authentication,
-          components/user_management,
-          components/jobs_service,
         ]
     steps:
       - uses: actions/checkout@v3

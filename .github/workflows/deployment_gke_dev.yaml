@@ -5,15 +5,14 @@ on:
       - main
     paths:
       - "components/**"
-      - "e2e/**"
       - "utils/**"
       - ".github/workflows/deployment_gke_dev.yaml"
   workflow_dispatch:
 
 env:
-  PROJECT_ID: "${{ vars.PROJECT_ID }}"
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
   SKAFFOLD_DEFAULT_REPO: gcr.io/gcp-mira-demo
-  SKAFFOLD_NAMESPACE: default
+  SKAFFOLD_NAMESPACE: ${{ vars.GKE_NAMESPACE }}
   GKE_CLUSTER: main-cluster
   GKE_REGION: us-central1
   KUSTOMIZE_VERSION: 5.0.0
@@ -33,10 +32,9 @@ jobs:
         name: Auth with Service Account
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
           # FIXME: Use workload identity instead of service account key.
           # workload_identity_provider: ''
-          # service_account: 'deployment-dev@${{ env.PROJECT_ID }}.iam.gserviceaccount.com'
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
@@ -74,6 +72,7 @@ jobs:
           skaffold run \
           --profile gke \
           -l commit=$GITHUB_SHA \
+          --namespace $SKAFFOLD_NAMESPACE \
           --tag latest \
           --add-skaffold-labels=false
 

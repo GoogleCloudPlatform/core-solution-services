@@ -7,16 +7,12 @@ on:
     branches:
       - main
     paths:
-      - "microservices/**"
-      - "common/**"
-      - "e2e/gke_api_tests/**"
-      - "e2e/requirements.txt"
-      - "e2e/utils/**"
+      - "components/**"
       - "utils/**"
       - ".github/workflows/e2e_gke_api_test.yaml"
   workflow_dispatch:
 env:
-  PROJECT_ID: "${{ vars.PROJECT_ID }}"
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
   SKAFFOLD_DEFAULT_REPO: gcr.io/gcp-mira-demo
   SKAFFOLD_NAMESPACE: default
   GKE_CLUSTER: main-cluster
@@ -104,9 +100,7 @@ jobs:
       - name: Install gcloud
         uses: google-github-actions/setup-gcloud@v1
         with:
-          project_id: ${{env.PROJECT_ID}}
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
-          export_default_credentials: true
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
