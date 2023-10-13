@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Unit test & lint for LLM Service
+name: Unit test & linter for Common
 on:
   push:
     branches:
@@ -10,11 +10,9 @@ on:
     branches:
       - main
     paths:
-      - "components/common/**"
-      - "components/llm_service/**"
-      - ".github/workflows/unit_test_linter_llm_service.yaml"
+      - "components/common/src/**.py"
+      - ".github/workflows/unit_test_linter_common.yaml"
       - ".pylintrc"
-      - "!components/llm_service/**.md"
   workflow_dispatch:
 
 env:
@@ -23,12 +21,18 @@ env:
 # copier:raw
 jobs:
   unit-test:
+    environment: dev
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: [3.9]
-        target-folder: [components/llm_service]
+        target-folder: [
+          components/common,
+          components/authentication,
+          components/user_management,
+          components/jobs_service,
+        ]
     steps:
       - uses: actions/checkout@v3
 
@@ -58,26 +62,29 @@ jobs:
           BASE_DIR=$(pwd)
           python -m pip install --upgrade pip
           if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
-          if [ -f $BASE_DIR/components/common/requirements-test.txt ]; then pip install -r $BASE_DIR/components/common/requirements-test.txt; fi
           cd ${{ matrix.target-folder }}
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
       - name: Run pytest with coverage
-        # We run tests separately for routes and services in the LLM service due to mocking conflicts
         run: |
           BASE_DIR=$(pwd)
           cd ${{ matrix.target-folder }}/src
-          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest routes/*_test.py
-          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest services/*_test.py
+          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest
 
   linter:
+    environment: dev
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: [3.9]
-        target-folder: [components/llm_service]
+        target-folder: [
+          components/common,
+          components/authentication,
+          components/user_management,
+          components/jobs_service,
+        ]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -87,6 +94,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          cd ${{ matrix.target-folder }}
           python -m pip install --upgrade pip
           python -m pip install pylint==2.17.6
 

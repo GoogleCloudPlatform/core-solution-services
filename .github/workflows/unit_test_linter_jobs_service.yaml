@@ -1,52 +1,55 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Unit test & linter
+name: Unit test & lint for Jobs Service
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
     paths:
       - "components/common/**"
-      - ".github/workflows/unit_test_linter_common.yaml"
+      - "components/jobs_service/**"
+      - ".github/workflows/unit_test_linter_jobs_service.yaml"
       - ".pylintrc"
+      - "!components/jobs_service/**.md"
   workflow_dispatch:
 
 env:
-  PROJECT_ID: "${{ vars.PROJECT_ID }}"
+  PROJECT_ID: "${{ secrets.PROJECT_ID }}"
 
-# copier:raw
+# copoier:raw 
 jobs:
   unit-test:
-    environment: dev
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: [3.9]
-        target-folder: [
-          components/common,
-          components/authentication,
-          components/user_management,
-          components/jobs_service,
-        ]
+        target-folder: [components/jobs_service]
     steps:
       - uses: actions/checkout@v3
 
-      - id: auth
+      # https://github.com/google-github-actions/auth
+      - id: "auth"
         name: Auth with Service Account
-        uses: google-github-actions/auth@v1
+        uses: "google-github-actions/auth@v1"
         with:
           credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+          # workload_identity_provider: "${{ secrets.WI_PROVIDER }}"
+          # service_account: "deployment@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-        with:
-          install_components: gke-gcloud-auth-plugin
+        uses: "google-github-actions/setup-gcloud@v1"
 
-      - name: Install Firebase CLI and emulator
+      - name: Install Firebase CLI
         run: |
           curl -sL https://firebase.tools | bash
+
+      - name: Download Firestore emulator
+        run: |
           firebase setup:emulators:firestore
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -59,29 +62,26 @@ jobs:
           BASE_DIR=$(pwd)
           python -m pip install --upgrade pip
           if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
+          if [ -f $BASE_DIR/components/common/requirements-test.txt ]; then pip install -r $BASE_DIR/components/common/requirements-test.txt; fi
           cd ${{ matrix.target-folder }}
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
       - name: Run pytest with coverage
+        # We run tests separately for routes and services in the LLM service due to mocking conflicts
         run: |
           BASE_DIR=$(pwd)
           cd ${{ matrix.target-folder }}/src
-          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest
+          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest routes/*_test.py
+          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest services/*_test.py
 
   linter:
-    environment: dev
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: [3.9]
-        target-folder: [
-          components/common,
-          components/authentication,
-          components/user_management,
-          components/jobs_service,
-        ]
+        target-folder: [components/llm_service]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -91,9 +91,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd ${{ matrix.target-folder }}
           python -m pip install --upgrade pip
-          python -m pip install pylint==2.17.6
+          python -m pip install pylint
 
       - name: Lint with pylint
         run: |
@@ -101,4 +100,4 @@ jobs:
           cd ${{ matrix.target-folder }}/src
           python -m pylint $(git ls-files '*.py') --rcfile=$BASE_DIR/.pylintrc
 
-# copier:endraw
+# copoier:endraw 

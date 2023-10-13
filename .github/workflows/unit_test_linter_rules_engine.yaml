@@ -1,15 +1,20 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Unit test & lint for rules_engine
+name: Unit test & lint for Rules Engine
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
     paths:
+      - "components/common/**"
       - "components/rules_engine"
       - ".github/workflows/unit_test_rules_engine.yaml"
       - ".pylintrc"
+      - "!components/rules_engine/**.md"
   workflow_dispatch:
 env:
   PROJECT_ID: "${{ vars.PROJECT_ID }}"
@@ -22,7 +27,6 @@ jobs:
       matrix:
         python-version: [3.9]
         target-folder: [
-            # TODO: Add all microservice folders below.
             components/rules_engine,
           ]
 # copier:raw 
