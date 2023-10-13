@@ -111,6 +111,18 @@ async def get(id: str):
 
 @router.get("/{id}/fields")
 async def get_fields(id: str):
+  """Get all fields in a RuleSet
+
+  Args:
+    id (str): unique id of the ruleset
+
+  Raises:
+    HTTPException: 404 Not Found if ruleset doesn't exist for the given id
+    HTTPException: 500 Internal Server Error if something fails
+
+  Returns:
+    ruleset: an array of field names in a RuleSet
+  """
 
   fields = {}
   for rule in MOCK_RULESET["rules"]:
