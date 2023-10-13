@@ -683,7 +683,7 @@ def create_user_and_group(user_group_name, user_type):
   user_dict.update()
   user_id2 = user_dict.user_id
 
-  group_example = {"name": user_group_name, "users": [user_id1, user_id2]}
+  group_example = {"name": user_group_name, "users": [user_id1, user_id2], "description" : "example group"}
 
   group_dict = UserGroup.from_dict(group_example)
   group_dict.uuid = ""
