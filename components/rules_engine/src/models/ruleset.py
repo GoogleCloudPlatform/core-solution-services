@@ -32,7 +32,7 @@ DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
 
 # Firebase data model in "rules" collection.
 class RuleSet(BaseModel):
-  """Rule ORM class"""
+  """RuleSet ORM class"""
 
   class Meta:
     ignore_none_field = False

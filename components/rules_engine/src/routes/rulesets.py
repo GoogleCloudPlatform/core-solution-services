@@ -97,10 +97,10 @@ async def get(id: str):
   """Get a Ruleset
 
   Args:
-    id (str): unique id of the ruleset
+    id (str): unique id of the RuleSet
 
   Raises:
-    HTTPException: 404 Not Found if ruleset doesn't exist for the given id
+    HTTPException: 404 Not Found if RuleSet doesn't exist for the given id
     HTTPException: 500 Internal Server Error if something fails
 
   Returns:
