@@ -30,8 +30,11 @@ from common.testing.firestore_emulator import firestore_emulator, clean_firestor
 from langchain.schema import Generation
 from langchain.schema.messages import AIMessage
 
-with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
-  with mock.patch("langchain.chat_models.ChatOpenAI"):
+os.environ["OPENAI_API_KEY"] = "fake-key"
+os.environ["COHERE_API_KEY"] = "fake-key"
+
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient", new=mock.AsyncMock()):
+  with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere"):
       from config import (COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5)
@@ -41,11 +44,6 @@ with mock.patch("langchain.llms.Cohere.agenerate",
   with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
                   return_value = FAKE_CHAT_RESPONSE):
     from services.langchain_service import langchain_llm_generate
-
-os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
-os.environ["OPENAI_API_KEY"] = "fake-key"
-os.environ["COHERE_API_KEY"] = "fake-key"
 
 FAKE_LANGCHAIN_GENERATION = Generation(text=FAKE_GENERATE_RESPONSE)
 
