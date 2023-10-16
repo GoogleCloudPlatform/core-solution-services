@@ -10,7 +10,7 @@ metadata:
 spec:
   rules:
     - http:
-        paths: 
+        paths:
           - path: /authentication/
             pathType: Prefix
             backend:
@@ -18,7 +18,7 @@ spec:
                 name: authentication
                 port:
                   number: 80
-          
+
           - path: /jobs-service/
             pathType: Prefix
             backend:
@@ -26,7 +26,7 @@ spec:
                 name: jobs-service
                 port:
                   number: 80
-          
+
           - path: /llm-service/
             pathType: Prefix
             backend:
@@ -34,7 +34,7 @@ spec:
                 name: llm-service
                 port:
                   number: 80
-          
+
           - path: /user-management/
             pathType: Prefix
             backend:
@@ -42,4 +42,11 @@ spec:
                 name: user-management
                 port:
                   number: 80
-          
+
+          - path: /rules-engine/
+            pathType: Prefix
+            backend:
+              service:
+                name: rules-engine
+                port:
+                  number: 80
