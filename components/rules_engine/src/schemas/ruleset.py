@@ -32,8 +32,8 @@ class RulesetFieldsSchema(BaseModel):
     schema_extra = {
       "example": {
         "fields": {
-          "field-1": str,
-          "field-2": int,
+          "field-1": "str",
+          "field-2": "int",
         }
       }
     }
