@@ -21,6 +21,7 @@ from fireo.fields import IDField, TextField, BooleanField, DateTime, ListField
 from fireo.queries.errors import ReferenceDocNotExist
 from datetime import datetime
 from common.models.base_model import BaseModel
+from rule import Rule
 
 # GCP project_id from system's environment variable.
 PROJECT_ID = os.environ.get("PROJECT_ID", "")
@@ -30,27 +31,26 @@ DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
 
 
 # Firebase data model in "rules" collection.
-class Rule(BaseModel):
-  """Rule ORM class"""
+class RuleSet(BaseModel):
+  """RuleSet ORM class"""
 
   class Meta:
     ignore_none_field = False
-    collection_name = DATABASE_PREFIX + "rules"
+    collection_name = DATABASE_PREFIX + "rulesets"
 
   id = IDField()
-  title = TextField()
+  name = TextField()
+  labels = ListField(str)
+  rules = ListField()
   description = TextField()
-  type = TextField()
-  fields = ListField()
-  sql_query = TextField()
   created_at = DateTime()
   modified_at = DateTime()
 
   @classmethod
   def find_by_doc_id(cls, id):
     try:
-      rule = Rule.collection.get(f"rules/{id}")
+      ruleset = RuleSet.collection.get(f"rulesets/{id}")
     except ReferenceDocNotExist:
       return None
 
-    return rule
+    return ruleset

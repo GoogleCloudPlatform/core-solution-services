@@ -39,7 +39,7 @@ async def get(id: str):
   Returns:
     [rule]: rule object for the provided rule id
   """
-  rule = Rule.find_by_id(id)
+  rule = Rule.find_by_doc_id(id)
 
   if rule is None:
     raise HTTPException(status_code=404, detail=f"Rule {id} not found.")
@@ -60,7 +60,7 @@ async def post(data: RuleSchema):
     [JSON]: rule ID of the rule if the rule is successfully created
   """
   id = data.id
-  existing_rule = Rule.find_by_id(id)
+  existing_rule = Rule.find_by_doc_id(id)
 
   if existing_rule:
     raise HTTPException(status_code=409,
@@ -89,7 +89,7 @@ async def put(data: RuleSchema):
     [JSON]: {'status': 'Succeed'} if the rule is updated
   """
   id = data.id
-  rule = Rule.find_by_id(id)
+  rule = Rule.find_by_doc_id(id)
 
   if rule:
     rule = rule.from_dict({**data.dict()})
@@ -116,7 +116,7 @@ async def delete(id: str):
     [JSON]: {'status': 'Succeed'} if the rule is deleted
   """
 
-  rule = Rule.find_by_id(id)
+  rule = Rule.find_by_doc_id(id)
   if rule is None:
     raise HTTPException(status_code=404, detail=f"Rule {id} not found.")
 
