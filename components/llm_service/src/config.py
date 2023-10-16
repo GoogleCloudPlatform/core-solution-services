@@ -181,7 +181,7 @@ USER_MANAGEMENT_BASE_URL = f"http://{SERVICES['user-management']['host']}:" \
                   f"{SERVICES['user-management']['port']}" \
                   f"/user-management/api/v1"
 
-RULES_ENGINE_BASE_URL =  f"http://{SERVICES['rules-engine']['host']}:" \
+RULES_ENGINE_BASE_URL = f"http://{SERVICES['rules-engine']['host']}:" \
                   f"{SERVICES['rules-engine']['port']}" \
                   f"/rules-engine/api/v1"
 
