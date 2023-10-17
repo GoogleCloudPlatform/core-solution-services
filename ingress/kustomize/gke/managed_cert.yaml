@@ -4,4 +4,4 @@ metadata:
   name: default-managed-cert
 spec:
   domains:
-    - # Fill in your Domain name
+    - example.com # sb-var:domain_name
