@@ -23,7 +23,7 @@ class LLMAgentGetAllResponse(BaseModel):
   """Agent Get all model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved agents"
-  data: Optional[list[str]] = []
+  data: Optional[list[dict]] = []
 
   class Config():
     orm_mode = True

@@ -17,18 +17,30 @@
 from typing import Optional, Union, Any
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
-from config import (LANGCHAIN_LLM, GOOGLE_LLM, CHAT_LLM_TYPES)
+from config import LANGCHAIN_LLM
 from langchain.agents import (Agent, AgentOutputParser,
                               AgentExecutor, ConversationalAgent)
 from langchain.schema import AgentAction, AgentFinish, OutputParserException
-from langchain.chains import LLMChain
 from services.agent_prompts import PREFIX
 from services.agent_tools import medicaid_eligibility_requirements
+
+def get_all_agents() -> List[dict]:
+  """
+  Return list of available agents, where each agent is represented
+  as a dict of:
+    agent_type: agent_id
+  """
+  agent_list = [{
+    "MediKate": "fake-id"
+  }]
+  return agent_list
+
 
 class MediKateAgent:
 
   llm_type = None
   agent = None
+  name = "MediKate"
 
   def __init__(self, llm_type: str):
     self.llm_type = llm_type
@@ -37,7 +49,7 @@ class MediKateAgent:
     """ load this agent and return an instance of langchain Agent"""
     tools = self.get_tools()
 
-    llm = CHAT_LLM_TYPES.get(self.llm_type)
+    llm = LANGCHAIN_LLM.get(self.llm_type)
     if llm is None:
       raise InternalServerError(
           f"MediKateAgent: cannot find LLM type {self.llm_type}")

@@ -27,7 +27,6 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentRunModel,
                                  LLMAgentGetAllResponse)
-
 from services.agent_service import MediKateAgent
 from langchain.agents import AgentExecutor
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, 
@@ -47,11 +46,13 @@ def get_agents():
   Returns:
       LLMGetAgentResponse
   """
+  agents = get_all_agents()
+  
   try:
     return {
       "success": True,
       "message": "Successfully retrieved agents",
-      "data": {}
+      "data": agents
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -87,14 +88,18 @@ async def run_agent(run_config: LLMAgentRunModel):
   agent = medikate_agent.load_agent()
   
   agent_executor = AgentExecutor.from_agent_and_tools(
-      agent=agent, tools=tools, verbose=True)
-
+      agent=agent, tools=tools)
+  
+  agent_executor.run()
+  
+  output = agent.return_values[0]
+  
   try:
 
     return {
         "success": True,
-        "message": "Successfully generated text",
-        "content": result
+        "message": "Successfully ran agent",
+        "content": output
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
