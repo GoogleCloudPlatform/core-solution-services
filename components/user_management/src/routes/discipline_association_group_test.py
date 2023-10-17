@@ -24,11 +24,11 @@ from fastapi.testclient import TestClient
 from routes.discipline_association_group import router
 from testing.test_config import API_URL
 from schemas.schema_examples import (BASIC_ASSOCIATION_GROUP_EXAMPLE,
-                                      BASIC_USER_MODEL_EXAMPLE,
-                                      TEST_CURRICULUM_PATHWAY,
-                                      FULL_DISCIPLINE_ASSOCIATION_GROUP_EXAMPLE,
-                                      FULL_USER_MODEL_EXAMPLE,
-                                      BASIC_CURRICULUM_PATHWAY_EXAMPLE)
+                                     BASIC_USER_MODEL_EXAMPLE,
+                                     TEST_CURRICULUM_PATHWAY,
+                                     FULL_DISCIPLINE_ASSOCIATION_GROUP_EXAMPLE,
+                                     FULL_USER_MODEL_EXAMPLE,
+                                     BASIC_CURRICULUM_PATHWAY_EXAMPLE)
 from common.models import AssociationGroup, UserGroup, User, CurriculumPathway
 from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
@@ -62,11 +62,11 @@ def test_get_association_group(clean_firestore):
   json_response = resp.json()
 
   assert resp.status_code == 200, "Status 200"
-  assert json_response["data"]["association_type"] == \
-          association_group_dict["association_type"]
+  assert (json_response["data"]["association_type"] ==
+          association_group_dict["association_type"])
   assert json_response["data"]["name"] == association_group_dict["name"]
-  assert json_response["data"]["description"] == \
-          association_group_dict["description"]
+  assert (json_response["data"]["description"] ==
+          association_group_dict["description"])
 
 
 def test_get_association_group_negative(clean_firestore):
@@ -198,8 +198,9 @@ def test_post_association_group_negative(clean_firestore):
 
   assert post_resp_json.get("success") is False, "Success not False"
   assert post_resp.status_code == 409
-  assert post_resp_json.get("message") == \
-    "AssociationGroup with the given name: Association Group1 already exists"
+  assert (post_resp_json.get("message") ==
+          "AssociationGroup with the given name: "
+          "Association Group1 already exists")
 
 
 def test_update_association_group(clean_firestore):
@@ -221,8 +222,8 @@ def test_update_association_group(clean_firestore):
   update_response = resp.json()
 
   assert update_response.get("success") is True, "Success not true"
-  assert update_response["message"] == \
-                "Successfully updated the association group"
+  assert (update_response["message"] ==
+          "Successfully updated the association group")
   assert update_response["data"]["name"] == "new group name"
   assert update_response["data"]["description"] == "new group description"
 
@@ -257,8 +258,9 @@ def test_update_association_group_negative_1(clean_firestore):
 
   assert update_response.get("success") is False, "Success not False"
   assert resp.status_code == 409
-  assert update_response.get("message") == \
-    "AssociationGroup with the given name: Association Group already exists"
+  assert (update_response.get("message") ==
+          "AssociationGroup with the given name: "
+          "Association Group already exists")
 
 
 def test_update_association_group_negative_2(clean_firestore):
@@ -318,7 +320,6 @@ def test_delete_association_group(clean_firestore):
   association_group.uuid = association_group.id
   association_group.update()
 
-
   learner_association_group_dict = {
       **BASIC_ASSOCIATION_GROUP_EXAMPLE, "association_type": "learner"
   }
@@ -350,7 +351,7 @@ def test_delete_association_group(clean_firestore):
   assert resp.status_code == 200, "Status code not 200"
   assert del_json_response == expected_data, "Expected response not same"
 
-  get_learner_association_group =  AssociationGroup.find_by_uuid(
+  get_learner_association_group = AssociationGroup.find_by_uuid(
                                   learner_association_group_uuid)
   assert get_learner_association_group.associations["instructors"] == []
 
@@ -405,7 +406,7 @@ def test_add_discipline_to_discipline_association_group(clean_firestore):
   # test for ResourceNotFound
   url = f"{api_url}/wrong_id/discipline/add"
   resp = client_with_emulator.post(url, json=request_body)
-  json_response = resp.json()["data"]
+  _ = resp.json()["data"]
   assert resp.status_code == 404, f"Status Code = {resp.status_code}"
 
   # test for ValidationError
@@ -446,13 +447,13 @@ def test_remove_discipline_from_discipline_association_group(clean_firestore):
   resp = client_with_emulator.post(url, json=request_body)
   json_response = resp.json()["data"]
   assert resp.status_code == 200, f"Status {resp.status_code}"
-  assert json_response["associations"]["curriculum_pathways"] == [], \
-  "Associations not same"
+  assert (json_response["associations"]["curriculum_pathways"] ==
+          []), "Associations not same"
 
   # test for ResourceNotFound
   url = f"{api_url}/wrong_id/discipline/remove"
   resp = client_with_emulator.post(url, json=request_body)
-  json_response = resp.json()["data"]
+  _ = resp.json()["data"]
   assert resp.status_code == 404, f"Status Code = {resp.status_code}"
 
   # test for ValidationError
@@ -488,7 +489,9 @@ def create_user_and_group(user_group_name, user_type):
   user_dict.update()
   user_id2 = user_dict.user_id
 
-  GROUP_EXAMPLE = {"name": user_group_name, "users": [user_id1, user_id2], "description" : "example group"}
+  GROUP_EXAMPLE = {"name": user_group_name,
+                   "users": [user_id1, user_id2],
+                   "description": "example group"}
 
   group_dict = UserGroup.from_dict({**GROUP_EXAMPLE})
   group_dict.uuid = ""
@@ -540,7 +543,7 @@ def test_remove_user_from_discipline_association_group(clean_firestore):
   assert len(post_resp_json.get("data").get("users")) == 2
   assert post_resp_json["data"]["users"][0]["user"] in add_users["users"]
 
-  # Remove user from the assication group
+  # Remove user from the association group
   url = api_url + f"/{uuid}/user/remove"
   remove_user = {"user": add_users["users"][0]}
   post_resp = client_with_emulator.post(url, json=remove_user)
@@ -594,8 +597,8 @@ def test_update_association_status(clean_firestore):
   update_response = resp.json()
 
   assert update_response.get("success") is True, "Success not true"
-  assert update_response["message"] == \
-                "Successfully updated the association group"
+  assert (update_response["message"] ==
+          "Successfully updated the association group")
   assert update_response["data"]["users"][0]["status"] == "inactive"
 
 
@@ -641,8 +644,9 @@ def test_update_association_status_negative_1(clean_firestore):
   update_response = resp.json()
 
   assert update_response.get("success") is False, "Success not False"
-  assert update_response["message"] == \
-    "User for given user_id is not present in the discipline association group"
+  assert (update_response["message"] ==
+          "User for given user_id is not present "
+          "in the discipline association group")
 
 
 def test_update_association_status_negative_2(clean_firestore):
@@ -701,7 +705,7 @@ def test_get_instructors_associated_to_discipline(clean_firestore):
     user.update()
 
     users.append({"user": user.user_id, "status": "active"})
-    users[i]["user_type"] = "assessor" if i%2 == 0 else "instructor"
+    users[i]["user_type"] = "assessor" if i % 2 == 0 else "instructor"
 
   curriculum_pathway_dict = deepcopy(BASIC_CURRICULUM_PATHWAY_EXAMPLE)
   curriculum_pathway = CurriculumPathway.from_dict(curriculum_pathway_dict)
@@ -743,7 +747,7 @@ def test_add_user_to_discipline_association_group_negative(clean_firestore):
   add_users = {"users": add_users, "status": "active"}
   url = api_url + f"/{uuid}/users/add"
   post_resp = client_with_emulator.post(url, json=add_users)
-  post_resp_json = post_resp.json()
+  _ = post_resp.json()
   assert post_resp.status_code == 200, "Status 200"
 
   url = api_url + f"/{uuid}/users/add"

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Functions to fetch data from association groups"""
-# pylint: disable = broad-exception-raised
+# pylint: disable=broad-exception-raised,broad-exception-caught
 from services.collection_handler import CollectionHandler
 from common.models import AssociationGroup
 from concurrent.futures import ThreadPoolExecutor
@@ -46,14 +46,14 @@ def check_instructor_discipline_association(instructor_id,
       if instructor_id == user_dict["user"] and \
         user_dict["status"] == "active":
         for curriculum_pathway_dict in group.get("associations").get(
-            "curriculum_pathways"):
+                "curriculum_pathways"):
           if curriculum_pathway_id == curriculum_pathway_dict["curriculum_pathway_id"] \
             and curriculum_pathway_dict["status"] == "active":
             is_instructor_active = True
   return is_instructor_active
 
 
-def fetch_firestore_doc(data: dict, collection: str=None, key_name: str=None):
+def fetch_firestore_doc(data: dict, collection: str = None, key_name: str = None):
   doc_fields = CollectionHandler.get_document_from_collection(
             collection, data.get(key_name))
   if key_name == "instructor":
@@ -67,6 +67,7 @@ def fetch_firestore_doc(data: dict, collection: str=None, key_name: str=None):
 def load_learner_group_field_data(association_group_fields):
   """Fetches entire documents from respective collections for fields in
   association group of learner type"""
+  child_count = 0
   if association_group_fields.get("users"):
     user_details = []
 
@@ -104,8 +105,8 @@ def load_learner_group_field_data(association_group_fields):
     if curriculum_pathway_id:
       curriculum_pathway_fields = CollectionHandler.get_document_from_collection(
           "curriculum_pathways", curriculum_pathway_id)
-      association_group_fields["associations"]["curriculum_pathway_id"] = \
-        curriculum_pathway_fields
+      association_group_fields["associations"]["curriculum_pathway_id"] = (
+        curriculum_pathway_fields)
 
   return association_group_fields
 
@@ -113,6 +114,7 @@ def load_learner_group_field_data(association_group_fields):
 def load_discipline_group_field_data(association_group_fields):
   """Fetches entire documents from respective collections for fields in
   association group of discipline type"""
+  child_count = 0
   if association_group_fields["users"]:
     user_details = []
 
@@ -132,8 +134,8 @@ def load_discipline_group_field_data(association_group_fields):
       user_details = list(
         executor.map(fetch_firestore_doc,
                      curriculum_pathway_list, "curriculum_pathways", "curriculum_pathway_id"))
-    association_group_fields["associations"]["curriculum_pathways"] = \
-      curriculum_pathway_details
+    association_group_fields["associations"]["curriculum_pathways"] = (
+      curriculum_pathway_details)
 
   return association_group_fields
 
@@ -141,7 +143,7 @@ def load_discipline_group_field_data(association_group_fields):
 def instructor_exists_in_lag(association_grp, instructor_uuid):
   """
       This function checks if an instructor belongs to a
-      learner assoication group
+      learner association group
       ---------------------------------------------------
       Args:
         association_grp: Association Group firestore document
@@ -151,7 +153,7 @@ def instructor_exists_in_lag(association_grp, instructor_uuid):
         True: If the instructor exists
         False: Otherwise
     """
-  instructor_list = association_grp.associations.get("instructors",[])
+  instructor_list = association_grp.associations.get("instructors", [])
   for instructor in instructor_list:
     if instructor["instructor"] == instructor_uuid:
       return True
@@ -287,7 +289,7 @@ def update_refs_for_user_by_type(user_doc):
   """
         Update the references for the User in all Association Groups.
         The function checks the type of the user and updates the
-        references appropraitely using the following
+        references appropriately using the following
         user_type and association_grp type mapping.
 
         1. learner: learner_association_grp
@@ -306,9 +308,9 @@ def update_refs_for_user_by_type(user_doc):
     remove_instructor_from_dag(user_doc.user_id, "inactive")
   else:
     remove_user_from_association_group(user_doc.user_id, user_doc.user_type,
-                                      "active")
+                                       "active")
     remove_user_from_association_group(user_doc.user_id, user_doc.user_type,
-                                     "inactive")
+                                       "inactive")
 
 def remove_discipline_from_learner_association_group(discipline_id):
   """Function to remove discipline from learner association groups"""
@@ -319,13 +321,13 @@ def remove_discipline_from_learner_association_group(discipline_id):
   # Find Learner Association Group in which discipline to remove exists
   # & remove instructor linked to given discipline (curriculum_pathway_id)
   for group in learner_group_fields:
-    for instructor_dict in group.get("associations",{}).get("instructors",[]):
-      if discipline_id == \
-          instructor_dict.get("curriculum_pathway_id"):
+    for instructor_dict in group.get("associations", {}).get("instructors", []):
+      if (discipline_id ==
+              instructor_dict.get("curriculum_pathway_id")):
         group.get("associations").get("instructors")[:] = [
-          instructor for instructor in group.get("associations").get(
-          "instructors") if instructor.get("curriculum_pathway_id") != \
-            discipline_id]
+          instructor for instructor in
+          group.get("associations").get("instructors")
+          if instructor.get("curriculum_pathway_id") != discipline_id]
         learner_association_group_object = AssociationGroup.find_by_uuid(
           group["uuid"])
         for key, value in group.items():
