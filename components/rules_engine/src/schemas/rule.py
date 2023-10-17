@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Pydantic Model for Rule API's
+"""Pydantic Model for Rule API's"""
 
 from typing import Optional
 from pydantic import BaseModel
@@ -32,13 +32,13 @@ class RuleSchema(BaseModel):
   created_at: Optional[datetime]
   modified_at: Optional[datetime]
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
       "example": {
         "id": "1234",
-        "title": "Title",
-        "description": "Description",
+        "title": "Rule Title",
+        "description": "Rule Description",
         "status": "New"
       }
     }

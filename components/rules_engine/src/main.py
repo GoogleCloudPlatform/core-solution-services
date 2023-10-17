@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Rules RESTful Microservice
+"""Rules RESTful Microservice"""
 
 import uvicorn
 import config
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from google.cloud.firestore import Client
 from common.utils.http_exceptions import add_exception_handlers
 
 from routes import rules, rulesets

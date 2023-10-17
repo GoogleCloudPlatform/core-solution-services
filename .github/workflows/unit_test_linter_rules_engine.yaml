@@ -11,8 +11,8 @@ on:
       - main
     paths:
       - "components/common/**"
-      - "components/rules_engine"
-      - ".github/workflows/unit_test_rules_engine.yaml"
+      - "components/rules_engine/**"
+      - ".github/workflows/unit_test_linter_rules_engine.yaml"
       - ".pylintrc"
       - "!components/rules_engine/**.md"
   workflow_dispatch:
@@ -26,9 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.9]
-        target-folder: [
-            components/rules_engine,
-          ]
+        target-folder: [components/rules_engine]
 # copier:raw 
     steps:
       - uses: actions/checkout@v3
@@ -62,7 +60,7 @@ jobs:
           BASE_DIR=$(pwd)
           python -m pip install --upgrade pip
           python -m pip install pytest pytest-custom_exit_code pytest-cov pylint pytest-mock mock
-          if [ -f $BASE_DIR/common/requirements.txt ]; then pip install -r $BASE_DIR/common/requirements.txt; fi
+          if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
           cd ${{ matrix.target-folder }}
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
@@ -71,7 +69,7 @@ jobs:
         run: |
           BASE_DIR=$(pwd)
           cd ${{ matrix.target-folder }}/src
-          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/common/src python -m pytest
+          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest
 
   linter:
     runs-on: ubuntu-latest
@@ -79,7 +77,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.9]
-        target-folder: [common]
+        target-folder: [components/rules_engine]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}

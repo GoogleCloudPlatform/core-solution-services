@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from fastapi import APIRouter, HTTPException
-from models.rule import Rule
-from schemas.ruleset import RulesetFieldsSchema
-import datetime
+""" Ruleset endpoints """
 
-# disabling for linting to pass
-# pylint: disable = broad-except
+from fastapi import APIRouter
+from schemas.ruleset import RulesetFieldsSchema
+
 
 router = APIRouter(prefix="/ruleset", tags=["ruleset"])
 
@@ -31,7 +29,9 @@ MOCK_RULESET = {
   "name": "Financial eligibility",
   "rules": [
     {
-      "description": "Income must be below the Federal Poverty Level (FPL). The FPL for 2023 is $14,580 for an individual and $30,000 for a family of four",
+      "description": "Income must be below the Federal Poverty Level (FPL). "
+                     "The FPL for 2023 is $14,580 for an individual and "
+                     "$30,000 for a family of four",
       "fields": {
         "Individual Income": "int",
         "Family Income": "int",
@@ -39,28 +39,38 @@ MOCK_RULESET = {
       "sql_query": "",
     },
     {
-      "description": "Citizenship or immigration status: Must be a U.S. citizen, a qualified non-citizen, or a qualified immigrant",
+      "description": "Citizenship or immigration status: Must be a U.S. "
+                     "citizen, a qualified non-citizen, or a qualified "
+                     "immigrant",
       "fields": {
         "Citizenship or immigration status": "str"
       },
       "sql_query": "",
     },
     {
-      "description": "Medicaid beneficiaries must be residents of the state in which they are applying",
+      "description": "Medicaid beneficiaries must be residents of the state "
+                     "in which they are applying",
       "fields": {
         "Resident state": "str"
       },
       "sql_query": "",
     },
     {
-      "description": "Medicaid is available to all children under age 19, regardless of their family's income; Medicaid is available to people who are 65 years old or older and meet certain income and asset requirements.",
+      "description": "Medicaid is available to all children under age 19, "
+                     "regardless of their family's income; Medicaid is "
+                     "available to people who are 65 years old or older "
+                     "and meet certain income and asset requirements.",
       "fields": {
         "Age": "int"
       },
       "sql_query": "",
     },
     {
-      "description": "Disability status: People with disabilities may be eligible for Medicaid if they meet certain criteria. The criteria vary from state to state, but they typically involve having a physical or mental impairment that limits major life activities.",
+      "description": "Disability status: People with disabilities may be "
+                     "eligible for Medicaid if they meet certain criteria. "
+                     "The criteria vary from state to state, but they "
+                     "typically involve having a physical or mental "
+                     "impairment that limits major life activities.",
       "fields": {
         "Disability status": "str"
       },
@@ -74,14 +84,20 @@ MOCK_RULESET = {
       "sql_query": "",
     },
     {
-      "description": "Nursing home residency: People who live in nursing homes may be eligible for Medicaid if they meet certain income and asset requirements",
+      "description": "Nursing home residency: People who live in nursing "
+                     "homes may be eligible for Medicaid if they meet "
+                     "certain income and asset requirements",
       "fields": {
         "Nursing home residency": "str"
       },
       "sql_query": "",
     },
     {
-      "description": "HCBS eligibility: People who receive HCBS may be eligible for Medicaid if they meet certain income and asset requirements. HCBS are waiver services that are provided outside of a nursing home or other institution.",
+      "description": "HCBS eligibility: People who receive HCBS may be "
+                     "eligible for Medicaid if they meet certain income "
+                     "and asset requirements. HCBS are waiver services that "
+                     "are provided outside of a nursing home or other "
+                     "institution.",
       "fields": {
         "HCBS status": "str"
       },
@@ -91,13 +107,12 @@ MOCK_RULESET = {
 }
 
 
-
-@router.get("/{id}")
-async def get(id: str):
+@router.get("/{ruleset_id}")
+async def get(ruleset_id: str):
   """Get a Ruleset
 
   Args:
-    id (str): unique id of the RuleSet
+    ruleset_id (str): unique id of the RuleSet
 
   Raises:
     HTTPException: 404 Not Found if RuleSet doesn't exist for the given id
@@ -107,15 +122,16 @@ async def get(id: str):
     ruleset: a ruleset object that contains a list of rules.
   """
 
+  print(ruleset_id)
   return MOCK_RULESET
 
 
-@router.get("/{id}/fields", response_model=RulesetFieldsSchema)
-async def get_fields(id: str):
+@router.get("/{ruleset_id}/fields", response_model=RulesetFieldsSchema)
+async def get_fields(ruleset_id: str):
   """Get all fields in a RuleSet
 
   Args:
-    id (str): unique id of the ruleset
+    ruleset_id (str): unique id of the ruleset
 
   Raises:
     HTTPException: 404 Not Found if ruleset doesn't exist for the given id
@@ -125,6 +141,7 @@ async def get_fields(id: str):
     ruleset: an array of field names in a RuleSet
   """
 
+  print(ruleset_id)
   fields = {}
 
   for rule in MOCK_RULESET["rules"]:
