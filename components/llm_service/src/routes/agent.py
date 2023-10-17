@@ -24,12 +24,14 @@ from common.utils.errors import (ResourceNotFoundException,
                                  PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound, PayloadTooLarge)
-from schemas.llm_schema import (LLMGenerateModel,
-                                LLMGetTypesResponse,
-                                LLMGenerateResponse)
+from schemas.llm_schema import (LLMAgentRunResponse,
+                                LLMAgentRunModel,
+                                LLMAgentGetAllResponse)
 
-from services.llm_generate import llm_generate
-from config import PAYLOAD_FILE_SIZE, ERROR_RESPONSES
+from services.agent_service import MediKateAgent
+from langchain.agents import AgentExecutor
+from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, 
+                    VERTEX_LLM_TYPE_BISON_CHAT)
 
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
 
@@ -37,7 +39,7 @@ router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
 @router.get(
     "",
     name="Get all Agents",
-    response_model=LLMGetTypesResponse)
+    response_model=LLMAgentGetAllResponse)
 def get_agents():
   """
   Get all agents defined in the LLM Service
@@ -56,22 +58,22 @@ def get_agents():
 
 
 @router.post(
-    "/generate",
-    name="Generate text from LLM",
-    response_model=LLMGenerateResponse)
-async def generate(gen_config: LLMGenerateModel):
+    "/run/{agent_id}",
+    name="Run agent on user input",
+    response_model=LLMAgentRunResponse)
+async def run_agent(run_config: LLMAgentRunModel):
   """
-  Generate text with an LLM
+  Run agent on user input
 
   Args:
-      prompt(str): Input prompt for model
+      prompt(str): Input prompt for agent
 
   Returns:
-      LLMGenerateResponse
+      LLMAgentRunResponse
   """
-  genconfig_dict = {**gen_config.dict()}
+  runconfig_dict = {**run_config.dict()}
 
-  prompt = genconfig_dict.get("prompt")
+  prompt = runconfig_dict.get("prompt")
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
 
@@ -79,10 +81,15 @@ async def generate(gen_config: LLMGenerateModel):
     return PayloadTooLargeError(
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
-  llm_type = genconfig_dict.get("llm_type")
+  medikate_agent = MediKateAgent(VERTEX_LLM_TYPE_BISON_CHAT)
+
+  tools = medikate_agent.get_tools()
+  agent = medikate_agent.load_agent()
+  
+  agent_executor = AgentExecutor.from_agent_and_tools(
+      agent=agent, tools=tools, verbose=True)
 
   try:
-    result = await llm_generate(prompt, llm_type)
 
     return {
         "success": True,
