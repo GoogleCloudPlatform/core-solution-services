@@ -26,6 +26,8 @@ class RuleSchema(BaseModel):
   id: str
   title: str
   description: str
+  type: str
+  fields: list
   status: str
   created_at: Optional[datetime]
   modified_at: Optional[datetime]

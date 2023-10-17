@@ -42,7 +42,6 @@ class Rule(BaseModel):
   description = TextField()
   type = TextField()
   fields = ListField()
-  sql_query = TextField()
   created_at = DateTime()
   modified_at = DateTime()
 

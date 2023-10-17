@@ -19,16 +19,17 @@ import config
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from google.cloud.firestore import Client
+from common.utils.http_exceptions import add_exception_handlers
 
 from routes import rules, rulesets
 
 # Basic API config
-service_title = "Rules RESTful API"
+service_title = "Rules Engine"
 service_path = "rules-engine"
 version = "v1"
 
 # Init FastAPI app
-app = FastAPI(title=service_title)
+app = FastAPI()
 
 
 @app.get("/ping")
@@ -40,7 +41,10 @@ def health_check():
 @app.get(f"/{service_path}", response_class=HTMLResponse)
 @app.get(f"/{service_path}/", response_class=HTMLResponse)
 def hello():
-  return f"You've reached the {service_title}: See <a href='/{service_path}/docs'>API docs</a>"
+  return f"""
+  You've reached the {service_title}. <br>
+  See <a href='/{service_path}/api/{version}/docs'>API docs</a>
+  """
 
 
 api = FastAPI(title=service_title, version=version)
@@ -49,7 +53,9 @@ api = FastAPI(title=service_title, version=version)
 api.include_router(rules.router)
 api.include_router(rulesets.router)
 
-app.mount(f"/{service_path}", api)
+add_exception_handlers(app)
+add_exception_handlers(api)
+app.mount(f"/{service_path}/api/{version}", api)
 
 if __name__ == "__main__":
   uvicorn.run("main:app",
