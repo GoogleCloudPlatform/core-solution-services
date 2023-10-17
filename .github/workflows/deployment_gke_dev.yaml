@@ -39,7 +39,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          install_components: gke-gcloud-auth-plugin
+          install_components: gke-gcloud-auth-plugin, alpha
 
       - name: Connect to cluster
         run: |
@@ -64,7 +64,7 @@ jobs:
 
       - name: Retrieve Firebase API key
         run: |
-          KEY_NAME=$(gcloud services api-keys list --filter="displayName='API Key for Identity Platform'" --format="value(name)")
+          KEY_NAME=$(gcloud alpha services api-keys list --filter="displayName='API Key for Identity Platform'" --format="value(name)")
           export FIREBASE_API_KEY=$(gcloud alpha services api-keys get-key-string ${KEY_NAME} --format="value(keyString)")
           echo "FIREBASE_API_KEY = $FIREBASE_API_KEY"
 
@@ -83,7 +83,7 @@ jobs:
 
       - name: Build and deploy to cluster
         run: |
-          sb deploy
+          sb deploy --yes
 
       - name: Upload Skaffold cache
         if: always()
