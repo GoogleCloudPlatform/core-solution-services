@@ -73,8 +73,7 @@ jobs:
           --profile gke \
           -l commit=$GITHUB_SHA \
           --namespace $SKAFFOLD_NAMESPACE \
-          --tag latest \
-          --add-skaffold-labels=false
+          --tag latest
 
       - name: Upload Skaffold cache
         if: always()
