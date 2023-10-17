@@ -24,9 +24,9 @@ from common.utils.errors import (ResourceNotFoundException,
                                  PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound, PayloadTooLarge)
-from schemas.llm_schema import (LLMAgentRunResponse,
-                                LLMAgentRunModel,
-                                LLMAgentGetAllResponse)
+from schemas.agent_schema import (LLMAgentRunResponse,
+                                 LLMAgentRunModel,
+                                 LLMAgentGetAllResponse)
 
 from services.agent_service import MediKateAgent
 from langchain.agents import AgentExecutor
