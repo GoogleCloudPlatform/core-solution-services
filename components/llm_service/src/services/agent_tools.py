@@ -41,7 +41,7 @@ def rules_engine_get_record_fields(record_name: str):
   return record_fields
 
 @tool(infer_schema=False)
-def medicaid_eligibility_requirements():
+def medicaid_eligibility_requirements(record: str):
   """
   Get the required pieces of information and documents to apply for Medicaid
   benefits.
