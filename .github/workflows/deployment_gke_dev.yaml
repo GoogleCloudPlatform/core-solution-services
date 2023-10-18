@@ -1,3 +1,5 @@
+# copier:raw
+
 name: GKE - Deploy microservices to dev
 on:
   push:
@@ -19,7 +21,6 @@ env:
   SKAFFOLD_VERSION: 2.4.0
   SKAFFOLD_CACHE_GCS: gs://artifacts.gcp-mira-demo.appspot.com/skaffold/cache
 
-# copier:raw
 jobs:
   deploy_backends:
     name: Deploy microservices to GKE cluster
@@ -39,7 +40,7 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
-          install_components: gke-gcloud-auth-plugin
+          install_components: gke-gcloud-auth-plugin, alpha
 
       - name: Connect to cluster
         run: |
@@ -53,6 +54,20 @@ jobs:
         run: |
           wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v$KUSTOMIZE_VERSION/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
           sudo tar -xvf kustomize.tar.gz -C /usr/local/bin/
+
+      - name: Install Solutions Builder
+        run: |
+          pip install -U solutions-builder
+
+      - name: Update the project id in config files
+        run: |
+          sb set project-id $PROJECT_ID --yes
+
+      - name: Retrieve Firebase API key
+        run: |
+          KEY_NAME=$(gcloud alpha services api-keys list --filter="displayName='API Key for Identity Platform'" --format="value(name)")
+          export FIREBASE_API_KEY=$(gcloud alpha services api-keys get-key-string ${KEY_NAME} --format="value(keyString)")
+          echo "FIREBASE_API_KEY = $FIREBASE_API_KEY"
 
       - name: Install Skaffold release binary
         run: |
@@ -69,11 +84,7 @@ jobs:
 
       - name: Build and deploy to cluster
         run: |
-          skaffold run \
-          --profile gke \
-          -l commit=$GITHUB_SHA \
-          --namespace $SKAFFOLD_NAMESPACE \
-          --tag latest
+          sb deploy --yes
 
       - name: Upload Skaffold cache
         if: always()
