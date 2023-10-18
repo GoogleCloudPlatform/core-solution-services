@@ -15,7 +15,7 @@
 """
   LLM Service config file
 """
-# pylint: disable=unspecified-encoding,line-too-long
+# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 import os
 import logging
 from common.utils.logging_handler import Logger
@@ -82,30 +82,38 @@ def get_environ_flag(env_flag_str, default=True):
   Logger.info(f"{env_flag_str} = {evn_flag}")
   return evn_flag
 
-ENABLE_OPENAI_LLM = get_environ_flag("ENABLE_OPENAI_LLM", True)
-
+# VertexAI models are enabled by default
 ENABLE_GOOGLE_LLM = get_environ_flag("ENABLE_GOOGLE_LLM", True)
 
+# 3rd party models are enabled if the flag is set AND the API key is defined
+ENABLE_OPENAI_LLM = get_environ_flag("ENABLE_OPENAI_LLM", True)
 ENABLE_COHERE_LLM = get_environ_flag("ENABLE_COHERE_LLM", True)
-
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if OPENAI_API_KEY is None:
-  OPENAI_API_KEY = secrets.access_secret_version(
-      request={
-          "name": "projects/" + PROJECT_ID +
-                  "/secrets/openai-api-key/versions/latest"
-      }).payload.data.decode("utf-8")
-  OPENAI_API_KEY = OPENAI_API_KEY.strip()
+  try:
+    OPENAI_API_KEY = secrets.access_secret_version(
+        request={
+            "name": "projects/" + PROJECT_ID +
+                    "/secrets/openai-api-key/versions/latest"
+        }).payload.data.decode("utf-8")
+    OPENAI_API_KEY = OPENAI_API_KEY.strip()
+  except Exception:
+    OPENAI_API_KEY = None
+ENABLE_OPENAI_LLM = ENABLE_OPENAI_LLM and (OPENAI_API_KEY is not None)
 
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 if COHERE_API_KEY is None:
-  COHERE_API_KEY = secrets.access_secret_version(
-      request={
-          "name": "projects/" + PROJECT_ID +
-                  "/secrets/cohere-api-key/versions/latest"
-      }).payload.data.decode("utf-8")
-  COHERE_API_KEY = COHERE_API_KEY.strip()
+  try:
+    COHERE_API_KEY = secrets.access_secret_version(
+        request={
+            "name": "projects/" + PROJECT_ID +
+                    "/secrets/cohere-api-key/versions/latest"
+        }).payload.data.decode("utf-8")
+    COHERE_API_KEY = COHERE_API_KEY.strip()
+  except Exception:
+    COHERE_API_KEY = None
+ENABLE_COHERE_LLM = ENABLE_COHERE_LLM and (COHERE_API_KEY is not None)
 
 OPENAI_LLM_TYPE_GPT3_5 = "OpenAI-GPT3.5"
 OPENAI_LLM_TYPE_GPT4 = "OpenAI-GPT4"
@@ -116,7 +124,6 @@ VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
 
 LLM_TYPES = []
 OPENAI_LLM_TYPES = [OPENAI_LLM_TYPE_GPT3_5, OPENAI_LLM_TYPE_GPT4]
-#OPENAI_LLM_TYPES = [OPENAI_LLM_TYPE_GPT3_5]
 COHERE_LLM_TYPES = [COHERE_LLM_TYPE]
 GOOGLE_LLM_TYPES = [VERTEX_LLM_TYPE_BISON_TEXT, VERTEX_LLM_TYPE_BISON_CHAT]
 

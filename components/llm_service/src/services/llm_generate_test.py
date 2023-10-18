@@ -30,8 +30,6 @@ from testing.test_config import (FAKE_GENERATE_RESPONSE,
                                  FAKE_CHAT_RESULT,
                                  FAKE_CHAT_RESPONSE)
 
-os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
