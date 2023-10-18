@@ -13,13 +13,14 @@ on:
 
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
-  SKAFFOLD_DEFAULT_REPO: gcr.io/gcp-mira-demo
+  SKAFFOLD_DEFAULT_REPO: gcr.io/${{ vars.PROJECT_ID }}
   SKAFFOLD_NAMESPACE: ${{ vars.GKE_NAMESPACE }}
+  DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
   GKE_CLUSTER: main-cluster
   GKE_REGION: us-central1
   KUSTOMIZE_VERSION: 5.0.0
   SKAFFOLD_VERSION: 2.4.0
-  SKAFFOLD_CACHE_GCS: gs://artifacts.gcp-mira-demo.appspot.com/skaffold/cache
+  SKAFFOLD_CACHE_GCS: gs://artifacts.${{ vars.PROJECT_ID }}.appspot.com/skaffold/cache
 
 jobs:
   deploy_backends:
@@ -62,6 +63,7 @@ jobs:
       - name: Update the project id in config files
         run: |
           sb set project-id $PROJECT_ID --yes
+          sb vars set domain_name $DOMAIN_NAME
 
       - name: Retrieve Firebase API key
         run: |
