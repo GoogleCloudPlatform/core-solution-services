@@ -90,7 +90,12 @@ async def run_agent(run_config: LLMAgentRunModel):
   agent_executor = AgentExecutor.from_agent_and_tools(
       agent=agent, tools=tools)
   
-  await agent_executor.arun()
+  agent_inputs = {
+    "input": prompt,
+    "chat_history": []
+  }
+  
+  await agent_executor.arun(agent_inputs)
   
   output = agent.return_values[0]
   
