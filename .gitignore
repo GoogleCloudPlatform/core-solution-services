@@ -1,6 +1,8 @@
 __pycache__
+.pytest_cache
 keys
 test
+.iml
 .vscode
 .venv
 .tmp
