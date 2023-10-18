@@ -17,11 +17,11 @@
 import re
 from typing import Union, List
 from common.utils.http_exceptions import InternalServerError
-from common.utils.logging_handler import Logger
 from config import LANGCHAIN_LLM
 from langchain.agents import (Agent, AgentOutputParser,
-                              AgentExecutor, ConversationalAgent)
+                              ConversationalAgent)
 from langchain.schema import AgentAction, AgentFinish, OutputParserException
+from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from services.agent_prompts import PREFIX
 from services.agent_tools import medicaid_eligibility_requirements
 
@@ -38,13 +38,23 @@ def get_all_agents() -> List[dict]:
 
 
 class MediKateAgent:
+  """
+  MediKate Agent
+  """
+  
+  llm_type:str = None
+  """ the LLM Service llm type used to power the agent """
 
-  llm_type = None
-  agent = None
-  name = "MediKate"
+  agent: ConversationalAgent = None
+  """ the langchain agent instance """
 
+  name:str = "MediKate"
+  """ The name of the agent """
+  
   def __init__(self, llm_type: str):
     self.llm_type = llm_type
+    self.agent = None
+    self.name = "MediKate"
 
   def load_agent(self) -> Agent:
     """ load this agent and return an instance of langchain Agent"""
@@ -87,25 +97,31 @@ class MediKateConvoOutputParser(AgentOutputParser):
     regex = r"Action: (.*?)[\n]*Action Input: (.*)"
     match = re.search(regex, text)
     if not match:
-      #raise OutputParserException(f"MIRA: Could not parse LLM output: `{text}`")
+      # TODO: undo this temporary fix to make the v1 agent terminate
+      #raise OutputParserException(
+      #    f"MIRA: Could not parse LLM output: `{text}`")
       return AgentFinish(
           {"output": text.split(f"{self.ai_prefix}:")[-1].strip()}, text
       )
     action = match.group(1)
     action_input = match.group(2)
-    return AgentAction(action.strip(), action_input.strip(" ").strip('"'), text)
+    return AgentAction(action.strip(),
+                       action_input.strip(" ").strip('"'), text)
 
   @property
   def _type(self) -> str:
     return "conversational"
 
 class MediKateOutputParser(AgentOutputParser):
+  """Output parser for custom agent."""
 
-  def parse(self, llm_output: str) -> Union[AgentAction, AgentFinish]:
+  def parse(self, text: str) -> Union[AgentAction, AgentFinish]:
+    llm_output = text
     # Check if agent should finish
     if "Final Answer:" in llm_output:
       return AgentFinish(
-        # Return values is generally always a dictionary with a single `output` key
+        # Return values is generally always a dictionary with a
+        # single `output` key
         # It is not recommended to try anything else at the moment :)
         return_values={"output": llm_output.split("Final Answer:")[-1].strip()},
         log=llm_output,
@@ -119,5 +135,7 @@ class MediKateOutputParser(AgentOutputParser):
     action_input = match.group(2)
 
     # Return the action and action input
-    return AgentAction(tool=action, tool_input=action_input.strip(" ").strip('"'), log=llm_output)
+    return AgentAction(tool=action,
+                       tool_input=action_input.strip(" ").strip('"'),
+                       log=llm_output)
   
