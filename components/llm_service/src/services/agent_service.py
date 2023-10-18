@@ -14,7 +14,7 @@
 
 """ Agent service """
 
-from typing import Optional, Union, Any
+from typing import Union, List
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from config import LANGCHAIN_LLM
@@ -62,7 +62,7 @@ class MediKateAgent:
         output_parser=output_parser,
         prefix=PREFIX
     )
-    return agent
+    return self.agent
 
   def get_tools(self):
     tools = [medicaid_eligibility_requirements]

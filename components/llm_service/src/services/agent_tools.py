@@ -40,7 +40,7 @@ def rules_engine_get_record_fields(record_name: str):
                              auth_client=auth_client)
   return record_fields
 
-@tool
+@tool(infer_schema=False)
 def medicaid_eligibility_requirements():
   """
   Get the required pieces of information and documents to apply for Medicaid
