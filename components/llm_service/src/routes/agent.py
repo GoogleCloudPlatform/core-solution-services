@@ -95,9 +95,7 @@ async def run_agent(run_config: LLMAgentRunModel):
     "chat_history": []
   }
 
-  await agent_executor.arun(agent_inputs)
-
-  output = agent.return_values[0]
+  output = await agent_executor.arun(agent_inputs)
 
   try:
 
