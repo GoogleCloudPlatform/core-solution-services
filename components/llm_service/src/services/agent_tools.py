@@ -36,7 +36,7 @@ def rules_engine_get_record_fields(record_name: str):
   Call the rules engine to get the fields for a record
   """
   record_url = f"{RULES_ENGINE_BASE_URL}/records/fields/{record_name}"
-  record_fields = get_method(url=record_url,   
+  record_fields = get_method(url=record_url,
                              auth_client=auth_client)
   return record_fields
 

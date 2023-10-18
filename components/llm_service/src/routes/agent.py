@@ -29,7 +29,7 @@ from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentGetAllResponse)
 from services.agent_service import get_all_agents, MediKateAgent
 from langchain.agents import AgentExecutor
-from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, 
+from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
                     VERTEX_LLM_TYPE_BISON_CHAT)
 
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
@@ -47,7 +47,7 @@ def get_agents():
       LLMGetAgentResponse
   """
   agents = get_all_agents()
-  
+
   try:
     return {
       "success": True,
@@ -86,19 +86,19 @@ async def run_agent(run_config: LLMAgentRunModel):
 
   tools = medikate_agent.get_tools()
   agent = medikate_agent.load_agent()
-  
+
   agent_executor = AgentExecutor.from_agent_and_tools(
       agent=agent, tools=tools)
-  
+
   agent_inputs = {
     "input": prompt,
     "chat_history": []
   }
-  
+
   await agent_executor.arun(agent_inputs)
-  
+
   output = agent.return_values[0]
-  
+
   try:
 
     return {
