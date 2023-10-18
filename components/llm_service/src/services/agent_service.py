@@ -41,7 +41,7 @@ class MediKateAgent:
   """
   MediKate Agent
   """
-  
+
   llm_type:str = None
   """ the LLM Service llm type used to power the agent """
 
@@ -50,7 +50,7 @@ class MediKateAgent:
 
   name:str = "MediKate"
   """ The name of the agent """
-  
+
   def __init__(self, llm_type: str):
     self.llm_type = llm_type
     self.agent = None
