@@ -110,3 +110,11 @@ USER_EXAMPLE = {
     "user_type": "learner",
     "status": "active"
 }
+
+AGENT_RUN_EXAMPLE = {
+  "prompt": "hello"
+}
+
+AGENT_RUN_RESPONSE_EXAMPLE = {
+  "output": "hello"
+}

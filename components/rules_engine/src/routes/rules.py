@@ -12,25 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+""" Rule endpoints """
+
 from fastapi import APIRouter, HTTPException
 from models.rule import Rule
 from schemas.rule import RuleSchema
 import datetime
-
-# disabling for linting to pass
-# pylint: disable = broad-except
 
 router = APIRouter(prefix="/rule", tags=["rule"])
 
 SUCCESS_RESPONSE = {"status": "Success"}
 
 
-@router.get("/{id}", response_model=RuleSchema)
-async def get(id: str):
+@router.get("/{rule_id}", response_model=RuleSchema)
+async def get(rule_id: str):
   """Get a Rule
 
   Args:
-    id (str): unique id of the rule
+    rule_id (str): unique id of the rule
 
   Raises:
     HTTPException: 404 Not Found if rule doesn't exist for the given rule id
@@ -39,10 +38,10 @@ async def get(id: str):
   Returns:
     [rule]: rule object for the provided rule id
   """
-  rule = Rule.find_by_doc_id(id)
+  rule = Rule.find_by_doc_id(rule_id)
 
   if rule is None:
-    raise HTTPException(status_code=404, detail=f"Rule {id} not found.")
+    raise HTTPException(status_code=404, detail=f"Rule {rule_id} not found.")
   return rule
 
 
@@ -59,12 +58,12 @@ async def post(data: RuleSchema):
   Returns:
     [JSON]: rule ID of the rule if the rule is successfully created
   """
-  id = data.id
-  existing_rule = Rule.find_by_doc_id(id)
+  rule_id = data.id
+  existing_rule = Rule.find_by_doc_id(rule_id)
 
   if existing_rule:
     raise HTTPException(status_code=409,
-                        detail=f"Rule {id} already exists.")
+                        detail=f"Rule {rule_id} already exists.")
 
   new_rule = Rule()
   new_rule = new_rule.from_dict({**data.dict()})
@@ -88,8 +87,8 @@ async def put(data: RuleSchema):
   Returns:
     [JSON]: {'status': 'Succeed'} if the rule is updated
   """
-  id = data.id
-  rule = Rule.find_by_doc_id(id)
+  rule_id = data.id
+  rule = Rule.find_by_doc_id(rule_id)
 
   if rule:
     rule = rule.from_dict({**data.dict()})
@@ -97,17 +96,17 @@ async def put(data: RuleSchema):
     rule.save()
 
   else:
-    raise HTTPException(status_code=404, detail=f"Rule {id} not found.")
+    raise HTTPException(status_code=404, detail=f"Rule {rule_id} not found.")
 
   return SUCCESS_RESPONSE
 
 
-@router.delete("/{id}")
-async def delete(id: str):
+@router.delete("/{rule_id}")
+async def delete(rule_id: str):
   """Delete a Rule
 
   Args:
-    id (str): unique id of the rule
+    rule_id (str): unique id of the rule
 
   Raises:
     HTTPException: 500 Internal Server Error if something fails
@@ -116,9 +115,9 @@ async def delete(id: str):
     [JSON]: {'status': 'Succeed'} if the rule is deleted
   """
 
-  rule = Rule.find_by_doc_id(id)
+  rule = Rule.find_by_doc_id(rule_id)
   if rule is None:
-    raise HTTPException(status_code=404, detail=f"Rule {id} not found.")
+    raise HTTPException(status_code=404, detail=f"Rule {rule_id} not found.")
 
   Rule.collection.delete(rule.key)
 

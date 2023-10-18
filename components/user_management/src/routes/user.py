@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """ User endpoints """
-# pylint: disable = broad-exception-raised
+# pylint: disable=broad-exception-raised,broad-exception-caught
 import re
 import traceback
 import math
@@ -340,9 +340,9 @@ def create_user(input_user: UserModel, request: Request,
     "model": NotFoundErrorResponseModel
   }})
 def update_user(user_id: str,
-                  input_user: UpdateUserModel,
-                  request: Request,
-                  update_inspace_user: Optional[bool] = False):
+                input_user: UpdateUserModel,
+                request: Request,
+                update_inspace_user: Optional[bool] = False):
   """Update a user with the user_id passed in the request body
 
   ### Args:
@@ -387,11 +387,12 @@ def update_user(user_id: str,
     if input_user_dict.get("user_groups"):
       for uuid in input_user_dict["user_groups"]:
         user_group = UserGroup.find_by_uuid(uuid)
-        if user_group.is_immutable and \
-          user_fields["user_type"] != user_group.name:
-          raise ValidationError((f"User of user type {user_fields['user_type']}"
-                                 f" cannot be assigned to User Group "
-                                 f"{user_group.name} with uuid {uuid}"))
+        if (user_group.is_immutable and
+                user_fields["user_type"] != user_group.name):
+          raise ValidationError(
+            (f"User of user type {user_fields['user_type']}"
+             f" cannot be assigned to User Group "
+             f"{user_group.name} with uuid {uuid}"))
 
     if first_name:
       update_dict["first_name"] = first_name
@@ -479,8 +480,8 @@ def update_user(user_id: str,
     "model": NotFoundErrorResponseModel
   }})
 def delete_user(user_id: str,
-                  request: Request,
-                  delete_inspace_user: Optional[bool]=False):
+                request: Request,
+                delete_inspace_user: Optional[bool] = False):
   """Delete a user with the given user_id from firestore
 
   ### Args:
@@ -723,7 +724,7 @@ def create_inspace_user_account(user_id: str):
                             f" of type {user.user_type}")
 
     if (user.inspace_user is None or
-        user.inspace_user.get("is_inspace_user") is False):
+            user.inspace_user.get("is_inspace_user") is False):
       inspace_mapping = {
         "is_inspace_user": True,
         "inspace_user_id": ""
@@ -779,7 +780,8 @@ def create_inspace_user_account(user_id: str):
 
 
 @router.post("/non-exist/inspace/user", include_in_schema=False)
-def update_inspace_user_field(skip: Optional[int]=0, limit: Optional[int]=100):
+def update_inspace_user_field(skip: Optional[int] = 0,
+                              limit: Optional[int] = 100):
   """
   Update Inspace User Field Value
   """
@@ -826,7 +828,7 @@ def update_inspace_user_field(skip: Optional[int]=0, limit: Optional[int]=100):
             non_modified_users.append(user.user_id)
 
           elif (user.inspace_user.get("is_inspace_user") is True
-            and user.inspace_user.get("inspace_user_id") == ""):
+                and user.inspace_user.get("inspace_user_id") == ""):
             # ---- Inspace User creation ----
             response_message = create_inspace_user_helper(user)
             if response_message:
@@ -882,8 +884,8 @@ def update_user_documents():
 
     # total count of all user records
     user_count = 0
-    for i in enumerate(users):
-      user_count+=1
+    for _ in enumerate(users):
+      user_count += 1
 
     # calculate number of workers required (100 docs per worker)
     workers = math.ceil(user_count / 100)

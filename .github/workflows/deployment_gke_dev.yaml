@@ -1,3 +1,5 @@
+# copier:raw
+
 name: GKE - Deploy microservices to dev
 on:
   push:
@@ -19,7 +21,6 @@ env:
   SKAFFOLD_VERSION: 2.4.0
   SKAFFOLD_CACHE_GCS: gs://artifacts.gcp-mira-demo.appspot.com/skaffold/cache
 
-# copier:raw
 jobs:
   deploy_backends:
     name: Deploy microservices to GKE cluster

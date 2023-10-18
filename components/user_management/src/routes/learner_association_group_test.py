@@ -177,10 +177,10 @@ def test_post_association_group(clean_firestore):
 
 def test_post_association_group_negative(clean_firestore):
   # Create learner association group:
-  active_cp=create_curriculum_pathway(
+  active_cp = create_curriculum_pathway(
     payload={**BASIC_CURRICULUM_PATHWAY_EXAMPLE,
              "is_active": True, "alias": "program",
-              "is_deleted": False})
+             "is_deleted": False})
   input_group = {**BASIC_ASSOCIATION_GROUP_EXAMPLE, "name": "Learner Group1"}
   url = api_url
   post_resp = client_with_emulator.post(url, json=input_group)
@@ -437,7 +437,7 @@ def test_update_association_status_2(clean_firestore):
   discipline_group.users = [{"user": user_2.user_id, "status": "active"}]
   discipline_group.associations = {
     "curriculum_pathways": [{
-    "curriculum_pathway_id": curriculum_pathway_id, "status": "active"
+      "curriculum_pathway_id": curriculum_pathway_id, "status": "active"
     }]
   }
   discipline_group.update()
@@ -468,7 +468,7 @@ def test_update_association_status_2(clean_firestore):
   url = f"{api_url}/{association_group_uuid}/user-association/status"
   request_body = {
     "instructor": {"instructor_id": user_2.user_id,
-                   "curriculum_pathway_id":curriculum_pathway_id,
+                   "curriculum_pathway_id": curriculum_pathway_id,
                    "status": "active"}
   }
 
@@ -615,7 +615,7 @@ def test_update_association_status_negative_3(clean_firestore):
   discipline_group.users = [{"user": user_2.user_id, "status": "inactive"}]
   discipline_group.associations = {
     "curriculum_pathways": [{
-    "curriculum_pathway_id": curriculum_pathway_id, "status": "active"
+      "curriculum_pathway_id": curriculum_pathway_id, "status": "active"
     }]
   }
   discipline_group.update()
@@ -646,7 +646,7 @@ def test_update_association_status_negative_3(clean_firestore):
   url = f"{api_url}/{association_group_uuid}/user-association/status"
   request_body = {
     "instructor": {"instructor_id": user_2.user_id,
-                   "curriculum_pathway_id":curriculum_pathway_id,
+                   "curriculum_pathway_id": curriculum_pathway_id,
                    "status": "active"}
   }
 
@@ -683,7 +683,9 @@ def create_user_and_group(user_group_name, user_type):
   user_dict.update()
   user_id2 = user_dict.user_id
 
-  group_example = {"name": user_group_name, "users": [user_id1, user_id2], "description" : "example group"}
+  group_example = {"name": user_group_name,
+                   "users": [user_id1, user_id2],
+                   "description": "example group"}
 
   group_dict = UserGroup.from_dict(group_example)
   group_dict.uuid = ""
@@ -894,6 +896,7 @@ def create_learner_association_group(payload: dict,
   Parameters
   ----------
   payload: dict
+  program_id: str
 
   Returns
   -------
@@ -942,7 +945,7 @@ def test_add_instructor_positive_1(mocker, clean_firestore):
   }]
   discipline_assoc.associations = {
     "curriculum_pathways": [
-    {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
+      {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
     ]
   }
   discipline_assoc.update()
@@ -973,12 +976,12 @@ def test_add_instructor_positive_2(mocker, clean_firestore):
   Add Instructor for various curriculum pathway
   """
   # Create curriculum pathway
-  pathway_id, pathway_id_1, pathway_id_2, program_id = \
-    create_disciplines_and_programs()
+  pathway_id, pathway_id_1, pathway_id_2, program_id = (
+    create_disciplines_and_programs())
 
   mocker.patch(
       "routes.learner_association_group.get_all_discipline_for_given_program",
-      return_value=[pathway_id,pathway_id_1, pathway_id_2])
+      return_value=[pathway_id, pathway_id_1, pathway_id_2])
 
   # Create User as type faculty
   user = {**BASIC_USER_MODEL_EXAMPLE, "user_type": "instructor"}
@@ -1000,7 +1003,7 @@ def test_add_instructor_positive_2(mocker, clean_firestore):
   }]
   discipline_assoc.associations = {
     "curriculum_pathways": [
-    {"curriculum_pathway_id": pathway_id, "status": "active"}
+      {"curriculum_pathway_id": pathway_id, "status": "active"}
     ]
   }
   discipline_assoc.update()
@@ -1041,8 +1044,8 @@ def test_add_instructor_positive_3(mocker, clean_firestore):
   Add Instructor for existing removed instructor curriculum pathway
   """
   # Create curriculum pathway
-  curriculum_pathway_id, _, pathway_id_2, program_id = \
-    create_disciplines_and_programs()
+  curriculum_pathway_id, _, pathway_id_2, program_id = (
+    create_disciplines_and_programs())
 
   mocker.patch(
       "routes.learner_association_group.get_all_discipline_for_given_program",
@@ -1068,7 +1071,7 @@ def test_add_instructor_positive_3(mocker, clean_firestore):
   }]
   discipline_assoc.associations = {
     "curriculum_pathways": [
-    {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
+      {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
     ]
   }
   discipline_assoc.update()
@@ -1215,8 +1218,8 @@ def test_add_instructor_negative_6(mocker, clean_firestore):
   """
 
   # Create curriculum pathway
-  curriculum_pathway_id, _, pathway_id_2, program_id = \
-    create_disciplines_and_programs()
+  curriculum_pathway_id, _, pathway_id_2, program_id = (
+    create_disciplines_and_programs())
 
   mocker.patch(
       "routes.learner_association_group.get_all_discipline_for_given_program",
@@ -1242,7 +1245,7 @@ def test_add_instructor_negative_6(mocker, clean_firestore):
   }]
   discipline_assoc.associations = {
     "curriculum_pathways": [
-    {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
+      {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
     ]
   }
   discipline_assoc.update()
@@ -1270,8 +1273,8 @@ def test_remove_instructor_positive_1(mocker, clean_firestore):
   Remove Instructor with correct payload
   """
   # Create curriculum pathway
-  curriculum_pathway_id, _, pathway_id_2, program_id = \
-    create_disciplines_and_programs()
+  curriculum_pathway_id, _, pathway_id_2, program_id = (
+    create_disciplines_and_programs())
 
   mocker.patch(
       "routes.learner_association_group.get_all_discipline_for_given_program",
@@ -1297,7 +1300,7 @@ def test_remove_instructor_positive_1(mocker, clean_firestore):
   }]
   discipline_assoc.associations = {
     "curriculum_pathways": [
-    {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
+      {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
     ]
   }
   discipline_assoc.update()
@@ -1328,8 +1331,8 @@ def test_remove_instructor_positive_2(mocker, clean_firestore):
   Remove Instructor from multiple instructors
   """
   # Create curriculum pathway
-  pathway_id, pathway_id_1, pathway_id_2, program_id = \
-    create_disciplines_and_programs()
+  pathway_id, pathway_id_1, pathway_id_2, program_id = (
+    create_disciplines_and_programs())
 
   mocker.patch(
       "routes.learner_association_group.get_all_discipline_for_given_program",
@@ -1355,7 +1358,7 @@ def test_remove_instructor_positive_2(mocker, clean_firestore):
   }]
   discipline_assoc.associations = {
     "curriculum_pathways": [
-    {"curriculum_pathway_id": pathway_id_1, "status": "active"}
+      {"curriculum_pathway_id": pathway_id_1, "status": "active"}
     ]
   }
   discipline_assoc.update()
@@ -1522,7 +1525,7 @@ def test_remove_instructor_negative_6(mocker, clean_firestore):
   }]
   discipline_assoc.associations = {
     "curriculum_pathways": [
-    {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
+      {"curriculum_pathway_id": curriculum_pathway_id, "status": "active"}
     ]
   }
   discipline_assoc.update()
@@ -1589,8 +1592,8 @@ def test_remove_instructor_negative_8(mocker, clean_firestore):
   """
   Remove instructor wrong curriculum pathway ID
   """
-  curriculum_pathway_id, pathway_id_1, pathway_2, program_id = \
-    create_disciplines_and_programs()
+  curriculum_pathway_id, pathway_id_1, pathway_2, program_id = (
+    create_disciplines_and_programs())
 
   mocker.patch(
       "routes.learner_association_group.get_all_discipline_for_given_program",
@@ -1687,8 +1690,8 @@ def test_get_all_the_learner_for_instructor(clean_firestore):
   res_data = res.json()
   assert res.status_code == 200
   assert res_data["success"] is True
-  assert res_data["message"] == "Successfully fetched the learners "\
-        "for the given instructor"
+  assert (res_data["message"] == "Successfully fetched the learners "
+                                 "for the given instructor")
   assert user_1.user_id in res_data["data"]
 
 def test_get_all_the_learner_for_coach(clean_firestore):
@@ -1730,8 +1733,8 @@ def test_get_all_the_learner_for_coach(clean_firestore):
   res_data = res.json()
   assert res.status_code == 200
   assert res_data["success"] is True
-  assert res_data["message"] == "Successfully fetched the learners "\
-        "for the given coach"
+  assert (res_data["message"] ==
+          "Successfully fetched the learners for the given coach")
   assert user_1.user_id in res_data["data"]
 
 def test_get_all_the_learner_for_coach_and_instructor_negative(clean_firestore):

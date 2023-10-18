@@ -12,13 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Pydantic Model for Rule API's
+"""Pydantic Model for RuleSet API's"""
 
-from typing import Optional
-from pydantic import BaseModel
-from datetime import datetime
-
-from typing import List, Optional
 from pydantic import BaseModel
 
 class RulesetFieldsSchema(BaseModel):
@@ -27,13 +22,13 @@ class RulesetFieldsSchema(BaseModel):
   # This is the reference API spec for Rule data model.
   fields: dict = {}
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
       "example": {
         "fields": {
-          "field-1": str,
-          "field-2": int,
+          "field-1": "str",
+          "field-2": "int",
         }
       }
     }
