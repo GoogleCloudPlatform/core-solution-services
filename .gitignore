@@ -15,6 +15,7 @@ firestore-debug.log
 ui-debug.log
 dist
 node_modules
+.ipynb_checkpoints
 
 # macOS file
 .DS_Store
