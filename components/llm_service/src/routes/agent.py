@@ -27,7 +27,7 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentRunModel,
                                  LLMAgentGetAllResponse)
-from services.agent_service import MediKateAgent
+from services.agent_service import get_all_agents, MediKateAgent
 from langchain.agents import AgentExecutor
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, 
                     VERTEX_LLM_TYPE_BISON_CHAT)
