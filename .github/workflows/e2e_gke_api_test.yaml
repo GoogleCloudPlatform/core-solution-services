@@ -1,6 +1,8 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
+# copier:raw
+
 name: E2E API Tests on GKE Microservices
 on:
   pull_request:
@@ -21,7 +23,6 @@ env:
   SKAFFOLD_VERSION: 2.4.0
   SKAFFOLD_CACHE_GCS: gs://artifacts.gcp-mira-demo.appspot.com/skaffold/cache
 
-# copier:raw
 jobs:
   deploy:
     name: Deploy all microservices in PR namespace

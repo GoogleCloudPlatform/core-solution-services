@@ -1,6 +1,8 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
+# copier:raw
+
 name: Unit test & lint for Rules Engine
 on:
   push:
@@ -27,7 +29,6 @@ jobs:
       matrix:
         python-version: [3.9]
         target-folder: [components/rules_engine]
-# copier:raw 
     steps:
       - uses: actions/checkout@v3
 
@@ -97,4 +98,4 @@ jobs:
           cd ${{ matrix.target-folder }}/src
           python -m pylint $(git ls-files '*.py') --rcfile=$BASE_DIR/.pylintrc
 
-# copier:endraw 
+# copier:endraw
