@@ -14,7 +14,7 @@
 """
 Pydantic Model for LLM Agent API's
 """
-from typing import List, Optional
+from typing import Optional
 from pydantic import BaseModel
 from schemas.schema_examples import (AGENT_RUN_EXAMPLE,
                                      AGENT_RUN_RESPONSE_EXAMPLE)

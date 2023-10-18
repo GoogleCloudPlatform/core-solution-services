@@ -14,6 +14,8 @@
 
 """ Agent tools """
 
+# pylint: disable=unused-argument,unused-import
+
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
