@@ -16,7 +16,7 @@
 import traceback
 import time
 import requests
-from logging_handler import Logger
+from common.utils.logging_handler import Logger
 # pylint: disable=line-too-long,broad-exception-raised,broad-exception-caught,cyclic-import
 
 

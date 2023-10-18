@@ -23,8 +23,9 @@ from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
 from google.cloud import secretmanager
-from langchain.chat_models import ChatOpenAI
-from langchain.llms import Cohere
+from langchain.chat_models import ChatOpenAI, ChatVertexAI
+from langchain.llms import Cohere, VertexAI
+from common.utils.token_handler import UserCredentials
 
 # overridde default logging format
 logging.basicConfig(
@@ -157,8 +158,58 @@ if ENABLE_GOOGLE_LLM:
     VERTEX_LLM_TYPE_BISON_CHAT: "chat-bison@001",
     VERTEX_LLM_TYPE_GECKO_EMBEDDING: "textembedding-gecko@001"
   }
+  LANGCHAIN_LLM.update({
+    VERTEX_LLM_TYPE_BISON_TEXT: VertexAI(
+        model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_TEXT], project=PROJECT_ID),
+    VERTEX_LLM_TYPE_BISON_CHAT: ChatVertexAI(
+        model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_CHAT], project=PROJECT_ID)
+  })  
 
 Logger.info(f"LLM types loaded {LLM_TYPES}")
 
 DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
+
+# services config
+
+SERVICES = {
+  "user-management": {
+    "host": "user-management",
+    "port": 80
+  },
+  "rules-engine": {
+    "host": "rules-engine",
+    "port": 80
+  }
+}
+
+USER_MANAGEMENT_BASE_URL = f"http://{SERVICES['user-management']['host']}:" \
+                  f"{SERVICES['user-management']['port']}" \
+                  f"/user-management/api/v1"
+
+RULES_ENGINE_BASE_URL = f"http://{SERVICES['rules-engine']['host']}:" \
+                  f"{SERVICES['rules-engine']['port']}" \
+                  f"/rules-engine/api/v1"
+
+try:
+  LLM_BACKEND_ROBOT_USERNAME = secrets.access_secret_version(
+      request={
+          "name":
+              f"projects/{PROJECT_ID}" +
+               "/secrets/llm-backend-robot-username/versions/latest"
+      }).payload.data.decode("utf-8")
+except Exception as e:
+  LLM_BACKEND_ROBOT_USERNAME = None
+
+try:
+  LLM_BACKEND_ROBOT_PASSWORD = secrets.access_secret_version(
+      request={
+          "name":
+              f"projects/{PROJECT_ID}" +
+               "/secrets/llm-backend-robot-password/versions/latest"
+      }).payload.data.decode("utf-8")
+except Exception as e:
+  LLM_BACKEND_ROBOT_PASSWORD = None
+
+auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
+                              LLM_BACKEND_ROBOT_PASSWORD)
