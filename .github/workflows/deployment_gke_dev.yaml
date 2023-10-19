@@ -47,6 +47,10 @@ jobs:
         run: |
           gcloud container clusters get-credentials "$GKE_CLUSTER" --region $GKE_REGION --project $PROJECT_ID
 
+      - name: Create namespace if it does not exist
+        run: |
+          kubectl get ns ${SKAFFOLD_NAMESPACE} || kubectl create ns ${SKAFFOLD_NAMESPACE}
+
       - name: Set up Service Account
         run: |
           NAMESPACE=${SKAFFOLD_NAMESPACE} bash setup/setup_ksa.sh
