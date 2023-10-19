@@ -34,8 +34,13 @@ from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
-with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient"):
+os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+os.environ["PROJECT_ID"] = "fake-project"
+os.environ["GCP_PROJECT"] = "fake-project"
+os.environ["OPENAI_API_KEY"] = "fake-key"
+os.environ["COHERE_API_KEY"] = "fake-key"
+
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
       from config import DEFAULT_QUERY_CHAT_MODEL
@@ -43,14 +48,7 @@ with mock.patch(
 # assigning url
 api_url = f"{API_URL}/query"
 
-os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
-os.environ["GCP_PROJECT"] = "fake-project"
-os.environ["OPENAI_API_KEY"] = "fake-key"
-os.environ["COHERE_API_KEY"] = "fake-key"
-
-with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient"):
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   with mock.patch("kubernetes.config.load_incluster_config"):
     from routes.query import router
 
@@ -111,17 +109,20 @@ def create_user(client_with_emulator):
   user = User.from_dict(user_dict)
   user.save()
 
+
 @pytest.fixture
 def create_engine(client_with_emulator):
   query_engine_dict = QUERY_ENGINE_EXAMPLE
   q_engine = QueryEngine.from_dict(query_engine_dict)
   q_engine.save()
 
+
 @pytest.fixture
 def create_user_query(client_with_emulator):
   query_dict = USER_QUERY_EXAMPLE
   query = UserQuery.from_dict(query_dict)
   query.save()
+
 
 @pytest.fixture
 def create_query_result(client_with_emulator):
@@ -195,8 +196,8 @@ def test_query_generate(create_user, create_engine, create_user_query,
 
 def test_get_query(create_user, create_engine, create_user_query,
                    client_with_emulator):
-  queryid = USER_QUERY_EXAMPLE["id"]
-  url = f"{api_url}/{queryid}"
+  query_id = USER_QUERY_EXAMPLE["id"]
+  url = f"{api_url}/{query_id}"
   resp = client_with_emulator.get(url)
   json_response = resp.json()
 

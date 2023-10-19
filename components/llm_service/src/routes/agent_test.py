@@ -18,19 +18,19 @@
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
 import os
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
 from testing.test_config import API_URL, TESTING_FOLDER_PATH
-from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
-from common.utils.auth_service import validate_user
-from common.utils.auth_service import validate_token
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
-with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient"):
+os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+os.environ["PROJECT_ID"] = "fake-project"
+os.environ["OPENAI_API_KEY"] = "fake-key"
+os.environ["COHERE_API_KEY"] = "fake-key"
+
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
       from config import LLM_TYPES
@@ -40,17 +40,12 @@ AGENT_LIST = [{
   }]
 
 # assigning url
-api_url = f"{API_URL}/llm"
+api_url = f"{API_URL}/agent"
 LLM_TESTDATA_FILENAME = os.path.join(TESTING_FOLDER_PATH,
                                         "llm_generate.json")
 
-os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
-os.environ["OPENAI_API_KEY"] = "fake-key"
-os.environ["COHERE_API_KEY"] = "fake-key"
 
-with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient"):
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   from routes.agent import router
 
 app = FastAPI()
@@ -58,6 +53,7 @@ add_exception_handlers(app)
 app.include_router(router, prefix="/llm-service/api/v1")
 
 client_with_emulator = TestClient(app)
+
 
 def test_get_agent_list(clean_firestore):
   url = f"{api_url}"

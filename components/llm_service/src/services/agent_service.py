@@ -42,7 +42,7 @@ class MediKateAgent:
   MediKate Agent
   """
 
-  llm_type:str = None
+  llm_type: str = None
   """ the LLM Service llm type used to power the agent """
 
   agent: ConversationalAgent = None

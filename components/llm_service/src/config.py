@@ -28,7 +28,7 @@ from langchain.chat_models import ChatOpenAI, ChatVertexAI
 from langchain.llms.cohere import Cohere
 from langchain.llms.vertexai import VertexAI
 
-# overridde default logging format
+# override default logging format
 logging.basicConfig(
       format="%(asctime)s:%(levelname)s:%(message)s",level=logging.INFO)
 
@@ -42,7 +42,7 @@ DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
 REGION = os.getenv("REGION", "us-central1")
 
 try:
-  with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace","r",
+  with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r",
             encoding="utf-8",errors="ignore") as \
     ns_file:
     namespace = ns_file.readline()

@@ -32,8 +32,12 @@ from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
-with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient"):
+os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+os.environ["PROJECT_ID"] = "fake-project"
+os.environ["OPENAI_API_KEY"] = "fake-key"
+os.environ["COHERE_API_KEY"] = "fake-key"
+
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
       from config import LLM_TYPES
@@ -41,13 +45,7 @@ with mock.patch(
 # assigning url
 api_url = f"{API_URL}/chat"
 
-os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
-os.environ["OPENAI_API_KEY"] = "fake-key"
-os.environ["COHERE_API_KEY"] = "fake-key"
-
-with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient"):
+with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   from routes.chat import router
 
 app = FastAPI()
@@ -91,11 +89,13 @@ def create_user(client_with_emulator):
   user = User.from_dict(user_dict)
   user.save()
 
+
 @pytest.fixture
 def create_chat(client_with_emulator):
   chat_dict = CHAT_EXAMPLE
   chat = UserChat.from_dict(chat_dict)
   chat.save()
+
 
 def test_get_chats(create_user, create_chat, client_with_emulator):
   params = {"skip": 0, "limit": "30"}
@@ -139,7 +139,7 @@ def test_create_chat(create_user, client_with_emulator):
     "returned chat data generated text"
 
   user_chats = UserChat.find_by_user(userid)
-  assert len(user_chats) == 1, "retreieved new user chat"
+  assert len(user_chats) == 1, "retrieved new user chat"
   user_chat = user_chats[0]
   assert user_chat.history[0] == \
     {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
@@ -187,7 +187,7 @@ def test_chat_generate(create_chat, client_with_emulator):
   url = f"{api_url}/{chatid}/generate"
 
   with mock.patch("routes.chat.llm_chat",
-                  return_value = FAKE_GENERATE_RESPONSE):
+                  return_value=FAKE_GENERATE_RESPONSE):
     resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
 
   json_response = resp.json()

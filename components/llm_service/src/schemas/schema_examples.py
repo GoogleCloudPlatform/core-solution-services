@@ -31,7 +31,7 @@ USER_QUERY_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "user_id": "fake-user-id",
   "title": "Test query",
-  "llm_type": "VertexAI-Chat",
+#  "llm_type": "VertexAI-Chat",
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "history": [
     {"HumanQuestion": "test input 1"},
@@ -104,9 +104,9 @@ USER_EXAMPLE = {
     "first_name": "Test",
     "last_name": "Tester",
     "user_id": "fake-user-id",
-    "auth_id": "fake-user-id",
+#    "auth_id": "fake-user-id",
     "email": "user@gmail.com",
-    "role": "Admin",
+#    "role": "Admin",
     "user_type": "learner",
     "status": "active"
 }
