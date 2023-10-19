@@ -243,7 +243,7 @@ pip install -r requirements.txt
   export REGION=<your cluster region>
   export CLUSTER_NAME=main_cluster
   ```
-  
+
 * Create a kubernetes context for your cluster.
   ```
   gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
@@ -263,7 +263,7 @@ pip install -r requirements.txt
   ```
   export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
   kubectl create ns $SKAFFOLD_NAMESPACE
-```
+  ```
 
 * Set the kubernetes context to your namespace
   ```
@@ -273,10 +273,11 @@ pip install -r requirements.txt
 * Run the following to create a Kubernetes Service Account (ksa) in your namespace and bind it to the GCP service account used for GKE:
   ```
   export PROJECT_ID=<your-dev-project-id>
-  export GSA_NAME="gke-sa"
-  export KSA_NAME="ksa"
   bash ./tools/setup_ksa.sh
   ```
+  - This will create a service account in the GKE cluster.
+  - It will also bind the GKE service account with the regular GCP service account named "gke-sa".
+  - You can verify it on the GCP Console > Service Accounts > "gke-sa" service account > Permissions.
 
 ###  4.4. <a name='BuildanddeployallmicroservicesUsingSolutionsBuilderCLI'></a>Build and deploy all microservices (Using Solutions Builder CLI)
 
@@ -296,8 +297,8 @@ sb deploy --dev
 Press Enter in the prompt:
 ```
 This will build and deploy all services using the command below:
-- gcloud container clusters get-credentials main-cluster --region us-central1 --project your-project-id
-- skaffold run -p default-deploy  --default-repo="gcr.io/your-project-id"
+- gcloud container clusters get-credentials main-cluster --region us-central1 --project gcp-mira-demo
+- skaffold run -p default-deploy  --default-repo="gcr.io/gcp-mira-demo"
 
 This may take a few minutes. Continue? [Y/n]:
 ```
