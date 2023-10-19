@@ -42,28 +42,28 @@ if [[ "$EXISTING_KSA" = "" ]]; then
   kubectl create serviceaccount -n ${SKAFFOLD_NAMESPACE} "${KSA_NAME}"
 fi
 
-declare KSA_KEY="$KSA_NAME-sa-key"
-printf "\nAdding Service Account key '$KSA_KEY' to cluster:\n"
-
+#declare KSA_KEY="$KSA_NAME-sa-key"
+#printf "\nAdding Service Account key '$KSA_KEY' to cluster:\n"
+#
 # add service account key
-declare EXISTING_SECRET=`kubectl get secrets -n $SKAFFOLD_NAMESPACE | grep "$KSA_NAME-sa-key"`
-if [[ "$EXISTING_SECRET" != "" ]]; then
-  printf "... Removing previous created secret '$KSA_NAME-sa-key' in namespace $SKAFFOLD_NAMESPACE.\n"
-  kubectl delete secret $KSA_KEY -n $SKAFFOLD_NAMESPACE
-fi
-
-printf "\n... Retrieving latest '$KSA_KEY' from Secret Manager\n"
-mkdir -p .tmp
-gcloud secrets versions access latest --secret "$KSA_KEY" > ./.tmp/$PROJECT_ID-$KSA_KEY.json
-
-printf "\n... Adding Service Account key as '$KSA_KEY' to cluster, namespace=$SKAFFOLD_NAMESPACE\n"
-kubectl create secret generic $KSA_KEY --from-file=./.tmp/${PROJECT_ID}-$KSA_KEY.json --namespace=$SKAFFOLD_NAMESPACE
-
-printf "\n\Service Account key added as '$KSA_KEY' in cluster, namespace=$SKAFFOLD_NAMESPACE\n"
-printf "Please make sure the key content is greater than 0 byte:\n"
-kubectl describe secrets $KSA_KEY -n $SKAFFOLD_NAMESPACE | grep bytes
-
-rm ./.tmp/$PROJECT_ID-$KSA_KEY.json
+#declare EXISTING_SECRET=`kubectl get secrets -n $SKAFFOLD_NAMESPACE | grep "$KSA_NAME-sa-key"`
+#if [[ "$EXISTING_SECRET" != "" ]]; then
+#  printf "... Removing previous created secret '$KSA_NAME-sa-key' in namespace $SKAFFOLD_NAMESPACE.\n"
+#  kubectl delete secret $KSA_KEY -n $SKAFFOLD_NAMESPACE
+#fi
+#
+#printf "\n... Retrieving latest '$KSA_KEY' from Secret Manager\n"
+#mkdir -p .tmp
+#gcloud secrets versions access latest --secret "$KSA_KEY" > ./.tmp/$PROJECT_ID-$KSA_KEY.json
+#
+#printf "\n... Adding Service Account key as '$KSA_KEY' to cluster, namespace=$SKAFFOLD_NAMESPACE\n"
+#kubectl create secret generic $KSA_KEY --from-file=./.tmp/${PROJECT_ID}-$KSA_KEY.json --namespace=$SKAFFOLD_NAMESPACE
+#
+#printf "\n\Service Account key added as '$KSA_KEY' in cluster, namespace=$SKAFFOLD_NAMESPACE\n"
+#printf "Please make sure the key content is greater than 0 byte:\n"
+#kubectl describe secrets $KSA_KEY -n $SKAFFOLD_NAMESPACE | grep bytes
+#
+#rm ./.tmp/$PROJECT_ID-$KSA_KEY.json
 
 # bind KSA service account to GCP service account
 printf "\nAdding Service Account IAM policy ...\n"
