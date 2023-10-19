@@ -212,12 +212,5 @@ try:
 except Exception as e:
   LLM_BACKEND_ROBOT_PASSWORD = None
 
-
-print(f"LLM_BACKEND_ROBOT_USERNAME = {LLM_BACKEND_ROBOT_USERNAME}")
-print(f"LLM_BACKEND_ROBOT_PASSWORD = {LLM_BACKEND_ROBOT_PASSWORD}")
-
-
 auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
                               LLM_BACKEND_ROBOT_PASSWORD)
-
-print(auth_client)
