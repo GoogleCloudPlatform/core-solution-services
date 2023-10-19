@@ -62,12 +62,13 @@ def get_agents():
     "/run/{agent_id}",
     name="Run agent on user input",
     response_model=LLMAgentRunResponse)
-async def run_agent(run_config: LLMAgentRunModel):
+async def run_agent(agent_id: str, run_config: LLMAgentRunModel):
   """
   Run agent on user input
 
   Args:
-      prompt(str): Input prompt for agent
+      agent_id(str): Agent ID
+      run_config(LLMAgentRunModel)
 
   Returns:
       LLMAgentRunResponse
