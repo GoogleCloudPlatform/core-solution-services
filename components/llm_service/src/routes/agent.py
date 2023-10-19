@@ -68,7 +68,7 @@ async def run_agent(agent_id: str, run_config: LLMAgentRunModel):
 
   Args:
       agent_id(str): Agent ID
-      run_config(LLMAgentRunModel)
+      run_config(LLMAgentRunModel): the config of the Agent model.
 
   Returns:
       LLMAgentRunResponse
