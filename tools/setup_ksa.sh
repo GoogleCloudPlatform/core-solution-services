@@ -17,9 +17,10 @@ set -e
 declare -a EnvVars=(
   "SKAFFOLD_NAMESPACE"
   "PROJECT_ID"
-  "GSA_NAME"
-  "KSA_NAME"
 )
+
+# Harcoded the GCP sevice account bined to GKE.
+SA_NAME="gke-sa"
 
 for variable in "${EnvVars[@]}"; do
   if [[ -z "${!variable}" ]]; then
@@ -31,27 +32,26 @@ done
 echo
 echo "SKAFFOLD_NAMESPACE=${SKAFFOLD_NAMESPACE}"
 echo "PROJECT_ID=${PROJECT_ID}"
-echo "GSA_NAME=${GSA_NAME}"
-echo "KSA_NAME=${KSA_NAME}"
+echo "SA_NAME=${SA_NAME}"
 echo
 
 # create kubernetes service account if it doesn't exist
-declare EXISTING_KSA=$(kubectl get sa -n ${SKAFFOLD_NAMESPACE} | egrep -i "^${KSA_NAME} ")
+declare EXISTING_KSA=$(kubectl get sa -n ${SKAFFOLD_NAMESPACE} | egrep -i "^${SA_NAME} ")
 printf "\nCreating kubernetes service account on the cluster ...\n"
 if [[ "$EXISTING_KSA" = "" ]]; then
-  kubectl create serviceaccount -n ${SKAFFOLD_NAMESPACE} "${KSA_NAME}"
+  kubectl create serviceaccount -n ${SKAFFOLD_NAMESPACE} "${SA_NAME}"
 fi
 
 # bind KSA service account to GCP service account
 printf "\nAdding Service Account IAM policy ...\n"
 gcloud iam service-accounts add-iam-policy-binding \
   --role roles/iam.workloadIdentityUser \
-  --member "serviceAccount:${PROJECT_ID}.svc.id.goog[${SKAFFOLD_NAMESPACE}/${KSA_NAME}]" \
-  ${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+  --member "serviceAccount:${PROJECT_ID}.svc.id.goog[${SKAFFOLD_NAMESPACE}/${SA_NAME}]" \
+  ${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
 
 printf "\nConnecting ksa with Service Account ...\n"
 kubectl annotate serviceaccount \
   --overwrite \
   --namespace ${SKAFFOLD_NAMESPACE} \
-  ${KSA_NAME} \
-  iam.gke.io/gcp-service-account=${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+  ${SA_NAME} \
+  iam.gke.io/gcp-service-account=${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
