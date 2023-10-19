@@ -22,25 +22,29 @@ from common.utils.request_handler import get_method, post_method
 from langchain.tools import tool
 from config import RULES_ENGINE_BASE_URL, auth_client
 
+MEDICAID_RULESET = "medicaid"
 
-MEDICAID_RECORD = "medicaid"
-
-EXAMPLE_MEDICAID_RECORD = {
-  "first_name": "str",
-  "last_name": "str",
-  "household_income": "int",
-  "home_address": "str"
+EXAMPLE_MEDICAID_FIELDS = {
+  "Individual Income": "int",
+  "Family Income": "int",
+  "Citizenship or immigration status": "str",
+  "Resident state": "str",
+  "Age": "int",
+  "Disability status": "str",
+  "Pregnancy status": "str",
+  "Nursing home residency": "str",
 }
 
 
-def rules_engine_get_record_fields(record_name: str):
+def rules_engine_get_ruleset_fields(ruleset_name: str):
   """
   Call the rules engine to get the fields for a record
   """
-  record_url = f"{RULES_ENGINE_BASE_URL}/records/fields/{record_name}"
-  record_fields = get_method(url=record_url,
-                             auth_client=auth_client)
-  return record_fields
+  api_url = f"{RULES_ENGINE_BASE_URL}/ruleset/{ruleset_name}/fields"
+  response = get_method(url=api_url,
+                        auth_client=auth_client)
+  fields = response.json().get("fields", {})
+  return fields
 
 @tool(infer_schema=False)
 def medicaid_eligibility_requirements(record: str):
@@ -48,8 +52,7 @@ def medicaid_eligibility_requirements(record: str):
   Get the required pieces of information and documents to apply for Medicaid
   benefits.
   """
-  #record_fields = rules_engine_get_record_fields(MEDICAID_RECORD)
+  # fields = rules_engine_get_ruleset_fields(MEDICAID_RULESET)
+  fields = EXAMPLE_MEDICAID_FIELDS
 
-  record_fields = EXAMPLE_MEDICAID_RECORD
-
-  return record_fields
+  return fields
