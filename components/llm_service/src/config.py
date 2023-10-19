@@ -19,13 +19,14 @@
 import os
 import logging
 from common.utils.logging_handler import Logger
+from common.utils.token_handler import UserCredentials
 from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
 from google.cloud import secretmanager
 from langchain.chat_models import ChatOpenAI, ChatVertexAI
-from langchain.llms import Cohere, VertexAI
-from common.utils.token_handler import UserCredentials
+from langchain.llms.cohere import Cohere
+from langchain.llms.vertexai import VertexAI
 
 # overridde default logging format
 logging.basicConfig(
@@ -163,7 +164,7 @@ if ENABLE_GOOGLE_LLM:
         model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_TEXT], project=PROJECT_ID),
     VERTEX_LLM_TYPE_BISON_CHAT: ChatVertexAI(
         model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_CHAT], project=PROJECT_ID)
-  })  
+  })
 
 Logger.info(f"LLM types loaded {LLM_TYPES}")
 
