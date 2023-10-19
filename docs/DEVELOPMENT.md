@@ -297,8 +297,8 @@ sb deploy --dev
 Press Enter in the prompt:
 ```
 This will build and deploy all services using the command below:
-- gcloud container clusters get-credentials main-cluster --region us-central1 --project gcp-mira-demo
-- skaffold run -p default-deploy  --default-repo="gcr.io/gcp-mira-demo"
+- gcloud container clusters get-credentials main-cluster --region us-central1 --project my-project-id
+- skaffold run -p default-deploy  --default-repo="gcr.io/my-project-id"
 
 This may take a few minutes. Continue? [Y/n]:
 ```
