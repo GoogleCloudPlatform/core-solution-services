@@ -115,7 +115,7 @@ module "deployment_service_account" {
     "roles/firebase.admin",
     "roles/iam.serviceAccountTokenCreator",
     "roles/iam.serviceAccountUser",
-    "iam.serviceAccountAdmin",
+    "roles/iam.serviceAccountAdmin",
     "roles/iam.workloadIdentityUser",
     "roles/logging.admin",
     "roles/logging.viewer",
