@@ -83,7 +83,7 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
   - The source branch is your custom branch. (e.g. `feature_xyz` in the example above)
   - You may also pick specific reviewers for this pull request.
 * Once the pull request is created, it will appear on the Pull Request list of the upstream origin repository, which will automatically run basic tests and checks via the CI/CD.
-* If any tests failed, fix the codes in your local branch, re-commit and push the changes to the same custom branch.
+* If any tests failed, fix the code in your local branch, re-commit and push the changes to the same custom branch.
   ```
   # after fixing the code…
   git commit -a -m 'another fix'
@@ -95,10 +95,10 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
 
 ###  2.3. <a name='2.3.ForRepoAdminsReviewingaPullRequest'></a>(For Repo Admins) Reviewing a Pull Request
 For code reviewers, go to the Pull Requests page of the origin repo on GitHub.
-* Go to the specific pull request, review and comment on the request.
+* Go to the specific pull request, review and comment on the request
 branch.
-* Alternatively, you can use GitHub CLI `gh` to check out a PR and run the codes locally: https://cli.github.com/manual/gh_pr_checkout
-* If all goes well with tests passed, click Merge pull request to merge the changes to `main`.
+* Alternatively, you can use GitHub CLI `gh` to check out a PR and run the code locally: https://cli.github.com/manual/gh_pr_checkout
+* If all goes well with tests passed, click "Merge pull request" to merge the changes to `main`.
 
 ##  3. <a name='LocalEnvironmentSetup'></a>Local Environment Setup
 
@@ -137,7 +137,7 @@ You may need to reload VS Code for these to take effect:
 
 Each component folder (non-common) in `./components` represents a standalone Docker container and has its own Python dependencies defined in `requirements.txt`.
 
-These microservice components also depend on the `./components/common`, hence it requires additional setup for IDE's code-completion to register the common modules.
+These microservice components also depend on `./components/common`, so additional setup is required for the IDE's code-completion to register the common modules.
 
 * Make sure you aren't in a VirtualEnv
   ```
@@ -234,18 +234,51 @@ pip install -r requirements.txt
   gcloud config set project $PROJECT_ID
   ```
 
-###  4.2. <a name='SetupWorkloadIdentityUser'></a>Set up Workload Identity User
+###  4.2. <a name='Setupclustercontext'></a>Setup a context for your cluster
 
-* Run the following to set up the Kubernetes Service Account (ksa) in your namespace:
+* By default, skaffold builds with CloudBuild and runs in kubernetes cluster set in your local `kubeconfig`, using the namespace set in `SKAFFOLD_NAMESPACE`. If it is set to your GKE cluster, it will deploy to the cluster.
+
+* Set the following variables to your kubernetes cluster name and region. If you are not sure of your cluster name or region check the [GCP cloud console](https://console.cloud.google.com/kubernetes/list/overview).
+  ```
+  export REGION=<your cluster region>
+  export CLUSTER_NAME=main_cluster
+  ```
+  
+* Create a kubernetes context for your cluster.
+  ```
+  gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
+  ```
+
+* Check your current context to verify that is it pointing to the GKE cluster you will use for development:
+  ```
+  kubectl config current-context
+
+  # Or you can use kubectx tool:
+  kubectx
+  ```
+
+### 4.3. <a name='SetupKubernetesNamespace'></a>Set up Kubernetes Namespace
+
+* Run the following to create a Kubernetes namespace for your development
+  ```
+  export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
+  kubectl create ns $SKAFFOLD_NAMESPACE
+```
+
+* Set the kubernetes context to your namespace
+  ```
+  kubectl config set-context --current --namespace=$SKAFFOLD_NAMESPACE
+  ```
+
+* Run the following to create a Kubernetes Service Account (ksa) in your namespace and bind it to the GCP service account used for GKE:
   ```
   export PROJECT_ID=<your-dev-project-id>
-  export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
   export GSA_NAME="gke-sa"
-  export KSA_NAME="gke-sa"
-  bash ./tools/bind_ksa.sh
+  export KSA_NAME="ksa"
+  bash ./tools/setup_ksa.sh
   ```
 
-###  4.3. <a name='BuildanddeployallmicroservicesUsingSolutionsBuilderCLI'></a>Build and deploy all microservices (Using Solutions Builder CLI)
+###  4.4. <a name='BuildanddeployallmicroservicesUsingSolutionsBuilderCLI'></a>Build and deploy all microservices (Using Solutions Builder CLI)
 
 > Solutions Builder CLI runs `skaffold` commands behind the scene. It will print out the actual command before running it.
 
@@ -269,25 +302,7 @@ This will build and deploy all services using the command below:
 This may take a few minutes. Continue? [Y/n]:
 ```
 
-###  4.4. <a name='OptionalBuildanddeployallmicroservicesUsingskaffolddirectly'></a>[Optional] Build and deploy all microservices (Using skaffold directly)
-
-####  4.4.1. <a name='Switchtothedefaultcluster'></a>Switch to the default cluster
-
-* By default, skaffold builds with CloudBuild and runs in kubernetes cluster set in your local `kubeconfig`, using the namespace set above in `SKAFFOLD_NAMESPACE`. If it is set to your GKE cluster, it will deploy to the cluster.
-  ```
-  export CLUSTER_NAME=default_cluster
-  gcloud container clusters get-credentials $CLUSTER_NAME --zone us-central1-a --project $PROJECT_ID
-  ```
-
-* Check your current context to verify which GKE cluster it points to:
-  ```
-  kubectl config current-context
-
-  # Or you can use kubectx tool:
-  kubectx
-  ```
-
-####  4.4.2. <a name='DeploytotheGKEcluster'></a>Deploy to the GKE cluster
+###  4.5. <a name='OptionalBuildanddeployallmicroservicesUsingskaffolddirectly'></a>[Optional] Build and deploy all microservices (Using skaffold directly)
 
 * Run with skaffold:
   ```

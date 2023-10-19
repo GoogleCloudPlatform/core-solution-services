@@ -31,16 +31,18 @@ done
 echo
 echo "SKAFFOLD_NAMESPACE=${SKAFFOLD_NAMESPACE}"
 echo "PROJECT_ID=${PROJECT_ID}"
-echo "GSA_NAME=${PROJECT_ID}"
-echo "KSA_NAME=${PROJECT_ID}"
+echo "GSA_NAME=${GSA_NAME}"
+echo "KSA_NAME=${KSA_NAME}"
 echo
 
+# create kubernetes service account if it doesn't exist
 declare EXISTING_KSA=$(kubectl get sa -n ${SKAFFOLD_NAMESPACE} | egrep -i "^${KSA_NAME} ")
 printf "\nCreating kubernetes service account on the cluster ...\n"
 if [[ "$EXISTING_KSA" = "" ]]; then
-  kubectl create serviceaccount -n ${SKAFFOLD_NAMESPACE} ${KSA_NAME}
+  kubectl create serviceaccount -n ${SKAFFOLD_NAMESPACE} "${KSA_NAME}"
 fi
 
+# bind KSA service account to GCP service account
 printf "\nAdding Service Account IAM policy ...\n"
 gcloud iam service-accounts add-iam-policy-binding \
   --role roles/iam.workloadIdentityUser \
