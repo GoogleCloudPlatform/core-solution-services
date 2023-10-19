@@ -45,7 +45,7 @@ jobs:
 
       - name: Connect to cluster
         run: |
-          gcloud container clusters get-credentials "$GKE_CLUSTER" --region $GKE_REGION --project $PROJECT_ID
+          gcloud container clusters get-credentials "${GKE_CLUSTER}" --region ${GKE_REGION} --project ${PROJECT_ID}
 
       - name: Create namespace if it does not exist
         run: |
@@ -57,7 +57,7 @@ jobs:
 
       - name: Install Kustomize
         run: |
-          wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v$KUSTOMIZE_VERSION/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
+          wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
           sudo tar -xvf kustomize.tar.gz -C /usr/local/bin/
 
       - name: Install Solutions Builder
@@ -66,35 +66,37 @@ jobs:
 
       - name: Update the project id in config files
         run: |
-          sb set project-id $PROJECT_ID --yes
-          sb vars set domain_name $DOMAIN_NAME
+          sb set project-id ${PROJECT_ID} --yes
+          sb vars set domain_name ${DOMAIN_NAME}
 
       - name: Retrieve Firebase API key
         run: |
           KEY_NAME=$(gcloud alpha services api-keys list --filter="displayName='API Key for Identity Platform'" --format="value(name)")
           export FIREBASE_API_KEY=$(gcloud alpha services api-keys get-key-string ${KEY_NAME} --format="value(keyString)")
-          echo "FIREBASE_API_KEY = $FIREBASE_API_KEY"
+          echo "FIREBASE_API_KEY = ${FIREBASE_API_KEY}"
 
       - name: Install Skaffold release binary
         run: |
-          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v$SKAFFOLD_VERSION/skaffold-linux-amd64
+          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v${SKAFFOLD_VERSION}/skaffold-linux-amd64
           sudo install skaffold /usr/local/bin/skaffold
 
       - name: Set default repo for Skaffold
         run: |
-          skaffold config set default-repo "$SKAFFOLD_DEFAULT_REPO"
+          skaffold config set default-repo "${SKAFFOLD_DEFAULT_REPO}"
 
       - name: Download Skaffold cache if exists
         run: |
-          gsutil cp $SKAFFOLD_CACHE_GCS ~/.skaffold/ || true
+          gsutil cp ${SKAFFOLD_CACHE_GCS} ~/.skaffold/ || true
 
       - name: Build and deploy to cluster
         run: |
+          echo "FIREBASE_API_KEY = ${FIREBASE_API_KEY}"
+          echo "SKAFFOLD_NAMESPACE = ${SKAFFOLD_NAMESPACE}"
           sb deploy --yes
 
       - name: Upload Skaffold cache
         if: always()
         run: |
-          gsutil cp ~/.skaffold/cache $SKAFFOLD_CACHE_GCS
+          gsutil cp ~/.skaffold/cache ${SKAFFOLD_CACHE_GCS}
 
 # copier:endraw

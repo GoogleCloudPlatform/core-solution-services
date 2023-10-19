@@ -6,7 +6,6 @@ test
 .vscode
 .venv
 .tmp
-.pytest_cache
 .coverage*
 pytest-coverage.txt
 .python-version
