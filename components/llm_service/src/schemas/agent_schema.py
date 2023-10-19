@@ -48,7 +48,9 @@ class LLMAgentRunModel(BaseModel):
 
 class LLMAgentRunResponse(BaseModel):
   """LLM Agent run response model"""
-  output: str
+  success: str
+  message: str
+  content: str
 
   class Config():
     orm_mode = True

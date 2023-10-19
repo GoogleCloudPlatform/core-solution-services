@@ -62,12 +62,13 @@ def get_agents():
     "/run/{agent_id}",
     name="Run agent on user input",
     response_model=LLMAgentRunResponse)
-async def run_agent(run_config: LLMAgentRunModel):
+def run_agent(agent_id: str, run_config: LLMAgentRunModel):
   """
   Run agent on user input
 
   Args:
-      prompt(str): Input prompt for agent
+      agent_id(str): Agent ID
+      run_config(LLMAgentRunModel): the config of the Agent model.
 
   Returns:
       LLMAgentRunResponse
@@ -95,7 +96,7 @@ async def run_agent(run_config: LLMAgentRunModel):
     "chat_history": []
   }
 
-  output = await agent_executor.arun(agent_inputs)
+  output = agent_executor.run(agent_inputs)
 
   try:
 
