@@ -74,6 +74,8 @@ def run_agent(agent_id: str, run_config: LLMAgentRunModel):
       LLMAgentRunResponse
   """
   runconfig_dict = {**run_config.dict()}
+  
+  agent_model = Agent.find_by_id(agent_id)
 
   prompt = runconfig_dict.get("prompt")
   if prompt is None or prompt == "":
