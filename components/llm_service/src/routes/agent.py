@@ -76,8 +76,12 @@ def run_agent(agent_id: str, run_config: LLMAgentRunModel):
   """
   runconfig_dict = {**run_config.dict()}
 
-  agent_model = Agent.find_by_id(agent_id)
-  Logger.info(f"retrieved agent {agent_model}")
+  try:
+    agent_model = Agent.find_by_id(agent_id)
+    Logger.info(f"retrieved agent {agent_model}")
+  except ResourceNotFoundException:
+    # agent is hardcoded for now
+    pass
 
   prompt = runconfig_dict.get("prompt")
   if prompt is None or prompt == "":
