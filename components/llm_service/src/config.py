@@ -179,8 +179,8 @@ SERVICES = {
     "port": 80
   },
   "rules-engine": {
-    "host": "localhost",
-    "port": 9002
+    "host": "rules-engine",
+    "port": 80
   }
 }
 
@@ -215,5 +215,6 @@ except Exception as e:
   LLM_BACKEND_ROBOT_PASSWORD = None
 
 auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
-                              LLM_BACKEND_ROBOT_PASSWORD,
-                              "localhost:9004")
+                              LLM_BACKEND_ROBOT_PASSWORD)
+# pass URL to auth client for local routes to auth
+#                              "localhost:9004")
