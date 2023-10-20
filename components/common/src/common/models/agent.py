@@ -14,8 +14,7 @@
 """
 Models for Agents
 """
-from typing import List
-from fireo.fields import TextField, ListField, IDField
+from fireo.fields import TextField, IDField
 from common.models import BaseModel
 
 class Agent(BaseModel):
