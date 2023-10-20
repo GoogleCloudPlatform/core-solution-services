@@ -18,6 +18,7 @@
 import traceback
 from typing import Optional
 from fastapi import APIRouter
+from common.models import Agent
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
@@ -75,6 +76,13 @@ def run_agent(agent_id: str, run_config: LLMAgentRunModel):
   """
   runconfig_dict = {**run_config.dict()}
 
+  try:
+    agent_model = Agent.find_by_id(agent_id)
+    Logger.info(f"retrieved agent {agent_model}")
+  except ResourceNotFoundException:
+    # agent is hardcoded for now
+    pass
+
   prompt = runconfig_dict.get("prompt")
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
@@ -96,7 +104,6 @@ def run_agent(agent_id: str, run_config: LLMAgentRunModel):
     "chat_history": []
   }
 
-  print(agent_id)
   output = agent_executor.run(agent_inputs)
 
   try:
@@ -108,5 +115,3 @@ def run_agent(agent_id: str, run_config: LLMAgentRunModel):
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
-
-
