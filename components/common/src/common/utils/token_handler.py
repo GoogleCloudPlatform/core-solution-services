@@ -23,11 +23,14 @@ from common.utils.logging_handler import Logger
 class UserCredentials:
   """Class to fetch token for user account"""
 
-  def __init__(self, email, password):
+  def __init__(self, email, password, base_auth_url=None):
+    self.base_auth_url = base_auth_url or "authentication"
     self.email = email
     self.password = password
-    self.sign_in_url = "http://authentication/authentication/api/v1/sign-in/credentials"
-    self.refresh_url = "http://authentication/authentication/api/v1/generate"
+    self.sign_in_url = \
+      f"http://{self.base_auth_url}/authentication/api/v1/sign-in/credentials"
+    self.refresh_url = \
+      f"http://{self.base_auth_url}/authentication/api/v1/generate"
     self.token = None
     self.refresh_token = None
     self.token_expiry = None

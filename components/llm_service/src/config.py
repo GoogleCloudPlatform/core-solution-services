@@ -179,8 +179,8 @@ SERVICES = {
     "port": 80
   },
   "rules-engine": {
-    "host": "rules-engine",
-    "port": 80
+    "host": "localhost",
+    "port": 9002
   }
 }
 
@@ -199,6 +199,7 @@ try:
               f"projects/{PROJECT_ID}" +
                "/secrets/llm-backend-robot-username/versions/latest"
       }).payload.data.decode("utf-8")
+  LLM_BACKEND_ROBOT_USERNAME = LLM_BACKEND_ROBOT_USERNAME.strip()
 except Exception as e:
   LLM_BACKEND_ROBOT_USERNAME = None
 
@@ -209,8 +210,10 @@ try:
               f"projects/{PROJECT_ID}" +
                "/secrets/llm-backend-robot-password/versions/latest"
       }).payload.data.decode("utf-8")
+  LLM_BACKEND_ROBOT_PASSWORD = LLM_BACKEND_ROBOT_PASSWORD.strip()
 except Exception as e:
   LLM_BACKEND_ROBOT_PASSWORD = None
 
 auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
-                              LLM_BACKEND_ROBOT_PASSWORD)
+                              LLM_BACKEND_ROBOT_PASSWORD,
+                              "localhost:9004")
