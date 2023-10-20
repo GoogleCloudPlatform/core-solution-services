@@ -96,7 +96,6 @@ def run_agent(agent_id: str, run_config: LLMAgentRunModel):
     "chat_history": []
   }
 
-  print(agent_id)
   output = agent_executor.run(agent_inputs)
 
   try:
@@ -108,5 +107,3 @@ def run_agent(agent_id: str, run_config: LLMAgentRunModel):
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
-
-

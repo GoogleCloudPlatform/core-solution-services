@@ -24,7 +24,7 @@ from config import RULES_ENGINE_BASE_URL, auth_client
 
 MEDICAID_RULESET = "medicaid"
 
-EXAMPLE_MEDICAID_FIELDS = {
+EXAMPLE_MEDICAID_FIELDS_1 = {
   "Individual Income": "int",
   "Family Income": "int",
   "Citizenship or immigration status": "str",
@@ -33,6 +33,13 @@ EXAMPLE_MEDICAID_FIELDS = {
   "Disability status": "str",
   "Pregnancy status": "str",
   "Nursing home residency": "str",
+}
+
+EXAMPLE_MEDICAID_FIELDS_2 = {
+  "first_name": "str",
+  "last_name": "str",
+  "household_income": "int",
+  "home_address": "str"
 }
 
 
@@ -52,7 +59,7 @@ def medicaid_eligibility_requirements(record: str):
   Get the required pieces of information and documents to apply for Medicaid
   benefits.
   """
-  # fields = rules_engine_get_ruleset_fields(MEDICAID_RULESET)
-  fields = EXAMPLE_MEDICAID_FIELDS
+  fields = rules_engine_get_ruleset_fields(MEDICAID_RULESET)
+  #fields = EXAMPLE_MEDICAID_FIELDS_2
 
   return fields
