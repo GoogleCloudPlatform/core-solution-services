@@ -18,6 +18,7 @@
 import traceback
 from typing import Optional
 from fastapi import APIRouter
+from common.models import Agent
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
@@ -74,8 +75,9 @@ def run_agent(agent_id: str, run_config: LLMAgentRunModel):
       LLMAgentRunResponse
   """
   runconfig_dict = {**run_config.dict()}
-  
+
   agent_model = Agent.find_by_id(agent_id)
+  Logger.info(f"retrieved agent {agent_model}")
 
   prompt = runconfig_dict.get("prompt")
   if prompt is None or prompt == "":
