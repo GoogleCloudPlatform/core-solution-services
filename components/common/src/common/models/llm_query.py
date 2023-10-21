@@ -24,6 +24,7 @@ QUERY_HUMAN = "HumanQuestion"
 QUERY_AI_RESPONSE = "AIResponse"
 QUERY_AI_REFERENCES = "AIReferences"
 
+
 class UserQuery(BaseModel):
   """
   UserQuery ORM class
@@ -75,6 +76,7 @@ class UserQuery(BaseModel):
       }
     )
     self.update()
+
 
 class QueryEngine(BaseModel):
   """

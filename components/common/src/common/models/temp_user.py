@@ -14,7 +14,6 @@
 """
 User object in the ORM
 """
-
 import os
 from datetime import datetime
 import fireo

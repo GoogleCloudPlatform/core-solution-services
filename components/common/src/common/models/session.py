@@ -54,8 +54,8 @@ class Session(BaseModel):
     Returns:
         Session: Session Object
     """
-    sessions = Session.collection.filter("user_id", "==",\
-       user_id).fetch()
+    sessions = Session.collection.filter(
+      "user_id", "==", user_id).fetch()
     return sessions
 
   @classmethod
@@ -66,6 +66,6 @@ class Session(BaseModel):
     Returns:
         Session: Session Object
     """
-    sessions = Session.collection.filter("session_data.node_id", "==",\
-       node_id).fetch()
+    sessions = Session.collection.filter(
+      "session_data.node_id", "==", node_id).fetch()
     return sessions

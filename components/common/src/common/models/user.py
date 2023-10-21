@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""User Data Model"""
+"""
+User Data Model
+"""
 import regex
 from common.models import BaseModel, NodeItem, LearningUnit
 from common.utils.errors import ResourceNotFoundException
@@ -20,14 +21,16 @@ from fireo.fields import (ReferenceField, TextField, NumberField, MapField,
                           ListField, BooleanField)
 
 USER_TYPES = ["learner", "faculty", "assessor", "admin", "coach", "instructor",
-              "lxe", "curriculum_designer","robot"]
+              "lxe", "curriculum_designer", "robot"]
+
 
 def validate_name(name):
   """Validator method to validate name"""
   if regex.fullmatch(r"[\D\p{L}\p{N}\s]+$", name):
     return True
   else:
-    return (False, "Invalid name format")
+    return False, "Invalid name format"
+
 
 def check_user_type(field_val):
   """validator method for user type field"""
@@ -53,6 +56,7 @@ def check_association_type(field_val):
     return True
   return (False, "Association Type must be one of " +
           ",".join("'" + i + "'" for i in association_types))
+
 
 class User(BaseModel):
   """User base Class"""
@@ -81,6 +85,7 @@ class User(BaseModel):
     """Find the user using user_id
     Args:
         user_id (string): user_id of user
+        is_deleted (boolean): is deleted
     Returns:
         user Object
     """
@@ -96,6 +101,7 @@ class User(BaseModel):
     """Find the user using user_id
     Args:
         user_id (string): user_id of user
+        is_deleted (boolean): is deleted
     Returns:
         user Object
     """
@@ -134,6 +140,7 @@ class User(BaseModel):
     """Find the user using gaia id
     Args:
         gaia_id (string): user's gaia_id
+        is_deleted (boolean): is deleted
     Returns:
         User: User Object
     """
@@ -149,6 +156,7 @@ class User(BaseModel):
     """Find the user using user_type_ref/learner_id
     Args:
       user_type_ref (string): User's user_type_ref
+      is_deleted (boolean): is deleted
     Returns:
       User: User Object
     """
@@ -337,6 +345,7 @@ class Action(BaseModel):
         Action: Action Object
     """
     return cls.collection.filter("name", "==", name).get()
+
 
 class Module(BaseModel):
   """Module Class"""

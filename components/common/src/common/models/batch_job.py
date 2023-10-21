@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""FireO model for batch jobs"""
-
+"""
+FireO model for batch jobs
+"""
 from enum import Enum
 from fireo.fields import TextField, MapField, IDField
 from common.models import GCSPathField
 from common.models import BaseModel
+
 
 class JobStatus(Enum):
   """ Enum class for JobStatus """

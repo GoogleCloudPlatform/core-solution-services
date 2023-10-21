@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module to add jobs in FireO"""
+"""
+Module to add jobs in FireO
+"""
 from fireo.fields import TextField, MapField, IDField, DateTime
 from common.models import BaseModel
 

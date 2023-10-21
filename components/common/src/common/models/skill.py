@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Skill Service Data Models"""
-
+"""
+Skill Service Data Models
+"""
 from fireo.fields import TextField, ListField, MapField
 from common.models import NodeItem, BaseModel
 from common.utils.errors import ResourceNotFoundException
@@ -86,8 +86,8 @@ class Skill(NodeItem):
   def find_by_reference_id(cls, reference_id):
     skill = Skill.collection.filter("reference_id", "==", reference_id).get()
     if skill is None:
-      raise ResourceNotFoundException \
-      (f"Skill with reference_id {reference_id} not found")
+      raise ResourceNotFoundException(
+        f"Skill with reference_id {reference_id} not found")
     return skill
 
 
@@ -131,8 +131,8 @@ class SkillServiceCompetency(NodeItem):
     competency = SkillServiceCompetency.collection.filter(
         "reference_id", "==", reference_id).get()
     if competency is None:
-      raise ResourceNotFoundException\
-        (f"Competency with reference_id {reference_id} not found")
+      raise ResourceNotFoundException(
+        f"Competency with reference_id {reference_id} not found")
     return competency
 
   @classmethod
@@ -175,8 +175,8 @@ class Category(NodeItem):
     category = Category.collection\
       .filter("reference_id", "==", reference_id).get()
     if category is None:
-      raise ResourceNotFoundException\
-        (f"Category with reference_id {reference_id} not found")
+      raise ResourceNotFoundException(
+        f"Category with reference_id {reference_id} not found")
     return category
 
   @classmethod
@@ -215,11 +215,11 @@ class SubDomain(NodeItem):
 
   @classmethod
   def find_by_reference_id(cls, reference_id):
-    subdomain = SubDomain.collection\
-      .filter("reference_id", "==", reference_id).get()
+    subdomain = SubDomain.collection.filter(
+      "reference_id", "==", reference_id).get()
     if subdomain is None:
-      raise ResourceNotFoundException\
-        (f"Subdomain with reference_id {reference_id} not found")
+      raise ResourceNotFoundException(
+        f"Subdomain with reference_id {reference_id} not found")
     return subdomain
 
   @classmethod
@@ -259,8 +259,8 @@ class Domain(NodeItem):
   def find_by_reference_id(cls, reference_id):
     domain = Domain.collection.filter("reference_id", "==", reference_id).get()
     if domain is None:
-      raise ResourceNotFoundException\
-        (f"Domain with reference_id {reference_id} not found")
+      raise ResourceNotFoundException(
+        f"Domain with reference_id {reference_id} not found")
     return domain
 
   @classmethod

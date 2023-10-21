@@ -36,6 +36,7 @@ FAKE_USER_DATA = {
     "role": "Admin"
 }
 
+
 @pytest.fixture
 def client_with_emulator(clean_firestore, scope="module"):
   """ Create FastAPI test client with clean firestore emulator """

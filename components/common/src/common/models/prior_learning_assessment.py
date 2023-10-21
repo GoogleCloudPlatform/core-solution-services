@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Prior Learning Assessment Data Models"""
+"""
+Prior Learning Assessment Data Models
+"""
 from fireo.fields import (TextField, ListField, MapField, DateTime,
                           BooleanField, NumberField)
 from common.models import BaseModel, User

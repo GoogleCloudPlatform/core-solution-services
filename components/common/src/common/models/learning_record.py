@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Learning Record Service Data Models"""
-
+"""
+Learning Record Service Data Models
+"""
 from fireo.fields import TextField, ListField, MapField, BooleanField
 from common.models import NodeItem, BaseModel
 from common.utils.errors import ResourceNotFoundException
@@ -25,6 +25,7 @@ def check_object_type(field_val):
     return True
   return (False, "Object Type must be one of " +
           ",".join("'" + i + "'" for i in ["agent", "group"]))
+
 
 class LearningRecord(NodeItem):
   """Learning Record Class"""
@@ -72,6 +73,7 @@ class ActivityState(NodeItem):
       raise ResourceNotFoundException(
         f"Activity State with uuid {uuid} not found")
     return activity_state
+
 
 class Agent(NodeItem):
   """Agent Class"""
@@ -141,6 +143,7 @@ class Verb(NodeItem):
   def find_by_name(cls, name):
     verb = Verb.collection.filter("name", "==", name).get()
     return verb
+
 
 class Activity(NodeItem):
   """Activity Class"""

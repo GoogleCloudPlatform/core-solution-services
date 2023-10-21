@@ -22,6 +22,7 @@ from common.models import BaseModel
 CHAT_HUMAN = "HumanInput"
 CHAT_AI = "AIOutput"
 
+
 class UserChat(BaseModel):
   """
   UserChat ORM class
@@ -64,13 +65,7 @@ class UserChat(BaseModel):
   @classmethod
   def get_history_entry(cls, prompt: str, response: str) -> List[dict]:
     """ Get history entry for query and response """
-    entry = []
-    entry.append(
-      {CHAT_HUMAN: prompt}
-    )
-    entry.append(
-      {CHAT_AI: response}
-    )
+    entry = [{CHAT_HUMAN: prompt}, {CHAT_AI: response}]
     return entry
 
   def update_history(self, prompt: str, response: str):

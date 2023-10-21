@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module to add common helper methods to all FireO objects"""
+"""
+Module to add common helper methods to all FireO objects
+"""
 from fireo.fields import TextField, ListField, BooleanField, MapField, NumberField, IDField
 from common.utils.errors import ResourceNotFoundException
 from common.models import BaseModel
@@ -110,7 +112,7 @@ class LTIContentItem(BaseModel):
 
   @classmethod
   def filter_with_context_id_and_tool_id(cls, tool_id, context_id):
-    lti_content_items = cls.collection.filter("tool_id", "==",tool_id)\
+    lti_content_items = cls.collection.filter("tool_id", "==", tool_id)\
       .filter("context_id", "==", context_id)\
       .filter("deleted_at_timestamp", "==", None)\
       .fetch()

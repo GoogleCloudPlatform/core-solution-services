@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Module to add FAQ Content in FireO"""
+"""
+Module to add FAQ Content in FireO
+"""
 from common.models import BaseModel
 from common.utils.errors import ResourceNotFoundException
 from fireo.fields import TextField, BooleanField
+
 
 # TODO: Use this function to validate the FAQ Type
 def check_faq_type(field_val):
@@ -24,6 +26,7 @@ def check_faq_type(field_val):
     return True
   return (False, "FAQ Type must be one of " +
           ",".join("'" + i + "'" for i in faq_types))
+
 
 class FAQContent(BaseModel):
   """FAQContent Class"""

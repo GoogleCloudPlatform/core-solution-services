@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Assessment Service Data Models"""
-
+"""
+Assessment Service Data Models
+"""
 from common.models import NodeItem, BaseModel
 from common.utils.errors import ResourceNotFoundException
 from fireo.fields import TextField, ListField, MapField, NumberField, BooleanField, DateTime
@@ -27,6 +27,7 @@ ASSESSMENT_LITERALS = {
   }
 }
 
+
 def check_type(level):
   allowed_types = ASSESSMENT_LITERALS[level]["type"]
 
@@ -37,6 +38,7 @@ def check_type(level):
     return (False, level + " Type must be one of " +
             ",".join("'" + i + "'" for i in allowed_types))
   return _check_type
+
 
 def check_alias(level):
   allowed_aliases = ASSESSMENT_LITERALS[level]["alias"]

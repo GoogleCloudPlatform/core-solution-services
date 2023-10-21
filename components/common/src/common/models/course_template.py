@@ -14,7 +14,6 @@
 """
 Module to add course in Fireo
 """
-
 from fireo.fields import TextField, IDField
 from common.models import BaseModel
 

@@ -11,23 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Base class for Node items"""
-
+"""
+Base class for Node items
+"""
 import sys
 from common.models import BaseModel
 
 
-# pylint:disable=dangerous-default-value
+# pylint:disable=dangerous-default-value,unused-argument
 class NodeItem(BaseModel):
   """Node Item Class"""
 
-  def __init__(self, **kwargs):
+  def __init__(self, *args, **kwargs):
     super().__init__(**kwargs)
     # "parent" is protected keyword in FireO
     self.parent_node = None
     self.parent_learning_content = None
     self.children_nodes = []
+    self.child_type = None
 
   # def __eq__(self, other):
   #     # TODO: double check this picks up porper class
@@ -40,7 +41,7 @@ class NodeItem(BaseModel):
   def add_child(self, *args, **kwargs):
     """ looks up the object type of the child, needs to be imported"""
     # TODO: better way to do this introspection?
-    child_object = getattr(sys.modules[self.module], self.child_type)
+    child_object = getattr(sys.modules[__name__], self.child_type)
     child = child_object(*args, **kwargs)
     self.children_nodes.append(child)
     child.parent_node = self
@@ -49,10 +50,10 @@ class NodeItem(BaseModel):
 
   # TODO: remove this?
   # pylint: disable=redefined-builtin
-  def add_child_from_dict(self, dict):
+  def add_child_from_dict(self, child_dict):
     """adds child from a dict"""
-    child_object = getattr(sys.modules[self.module], self.child_type)
-    child = child_object.from_dict(dict)
+    child_object = getattr(sys.modules[__name__], self.child_type)
+    child = child_object.from_dict(child_dict)
 
     self.children_nodes.append(child)
     child.parent_node = self
@@ -70,11 +71,11 @@ class NodeItem(BaseModel):
   def load_children(self):
     """loads child nodes"""
     # test to see if leaf node
+    children = None
     if self.child_type is not None:
       # TODO: ensure modules always available
       # TODO: order?
-      child_object = getattr(sys.modules[self.module],
-                             self.child_type)
+      child_object = getattr(sys.modules[__name__], self.child_type)
       if hasattr(self, "uuid"):
         if isinstance(self.parent_node, list) or self.parent_node is None:
           children = child_object.collection.filter(
@@ -121,8 +122,8 @@ class NodeItem(BaseModel):
 
   @classmethod
   def find_by_title(cls, title, is_deleted=False):
-    return cls.collection.filter("title", "==",
-               title).filter("is_deleted", "==", is_deleted).get()
+    return cls.collection.filter(
+      "title", "==", title).filter("is_deleted", "==", is_deleted).get()
 
   @classmethod
   def find_by_name(cls, name):

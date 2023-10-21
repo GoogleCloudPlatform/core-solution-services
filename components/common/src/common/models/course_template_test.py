@@ -15,8 +15,7 @@
 Unit test for course_template.py
 """
 # disabling these rules, as they cause issues with pytest fixtures
-# pylint: disable=unused-import
-# pylint: disable=unused-argument,redefined-outer-name
+# pylint: disable=unused-import,unused-argument,redefined-outer-name
 import pytest
 from common.models import CourseTemplate
 from common.utils.errors import ResourceNotFoundException
@@ -24,7 +23,7 @@ from common.testing.example_objects import TEST_COURSE_TEMPLATE
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
 
-def test_new_course(clean_firestore):
+def test_new_course(firestore_emulator, clean_firestore):
   """Test for creating and loading a new course"""
   new_course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
   new_course_template.save()
@@ -33,7 +32,7 @@ def test_new_course(clean_firestore):
   assert course_template.description == TEST_COURSE_TEMPLATE["description"]
 
 
-def test_delete_course_template(clean_firestore):
+def test_delete_course_template(firestore_emulator, clean_firestore):
   """test for soft delete method"""
   new_course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
   new_course_template.save()

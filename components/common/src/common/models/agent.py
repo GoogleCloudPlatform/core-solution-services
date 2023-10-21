@@ -17,6 +17,7 @@ Models for Agents
 from fireo.fields import TextField, IDField
 from common.models import BaseModel
 
+
 class Agent(BaseModel):
   """
   Agent ORM class

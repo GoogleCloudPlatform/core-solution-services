@@ -16,23 +16,22 @@
 Unit test for cohort.py
 """
 # disabling these rules, as they cause issues with pytest fixtures
-# pylint: disable=unused-import
-# pylint: disable=unused-argument,redefined-outer-name
+# pylint: disable=unused-import,disable=unused-argument,redefined-outer-name
 import pytest
 from common.models import Cohort, CourseTemplate
 from common.utils.errors import ResourceNotFoundException
-from common.testing.example_objects import TEST_COHORT,TEST_COURSE_TEMPLATE
-from common.testing.firestore_emulator import  firestore_emulator, clean_firestore
+from common.testing.example_objects import TEST_COHORT, TEST_COURSE_TEMPLATE
+from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
 
-def test_new_cohort(clean_firestore):
+def test_new_cohort(firestore_emulator, clean_firestore):
   """Test for creating and loading of a new cohort"""
   new_cohort = Cohort.from_dict(TEST_COHORT)
   course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
   course_template.save()
-  new_cohort.course_template=course_template
+  new_cohort.course_template = course_template
   new_cohort.save()
-  cohort=Cohort.find_by_id(new_cohort.id)
+  cohort = Cohort.find_by_id(new_cohort.id)
   assert cohort.name == TEST_COHORT["name"]
   assert cohort.max_students == TEST_COHORT["max_students"]
 

@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Credential and Pathway Service Data Models"""
-
+"""
+Credential and Pathway Service Data Models
+"""
 from fireo.fields import TextField
 from common.models import NodeItem, BaseModel
 from common.utils.errors import ResourceNotFoundException

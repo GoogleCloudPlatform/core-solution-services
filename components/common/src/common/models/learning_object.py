@@ -36,9 +36,10 @@ LOS_LITERALS = {
   "learning_resources": {
     "alias": ["lesson"],
     "type": ["pdf", "image", "html_package", "html",
-                "video", "scorm", "docx",""]
+                "video", "scorm", "docx", ""]
   }
 }
+
 
 def check_type(level):
   """Function to check type"""
@@ -146,6 +147,7 @@ class CurriculumPathway(NodeItem):
       "is_deleted", "==", is_deleted).filter(
       "is_active", "==", True).get()
     return curriculum_pathway
+
 
 class LearningExperience(NodeItem):
   """Learning Experience Class"""

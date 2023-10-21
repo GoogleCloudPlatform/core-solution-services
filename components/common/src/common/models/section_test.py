@@ -15,8 +15,7 @@
 Unit test for section.py
 """
 # disabling these rules, as they cause issues with pytest fixtures
-# pylint: disable=unused-import
-# pylint: disable=unused-argument,redefined-outer-name
+# pylint: disable=unused-import,unused-argument,redefined-outer-name
 import pytest
 from common.models import Section, CourseTemplate, Cohort
 from common.utils.errors import ResourceNotFoundException
@@ -24,7 +23,7 @@ from common.testing.example_objects import TEST_SECTION, TEST_COURSE_TEMPLATE, T
 from common.testing.firestore_emulator import clean_firestore, firestore_emulator
 
 
-def test_new_section(clean_firestore):
+def test_new_section(firestore_emulator, clean_firestore):
   """test for creating and loading a new section"""
   new_section = Section.from_dict(TEST_SECTION)
   course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)
@@ -40,7 +39,7 @@ def test_new_section(clean_firestore):
   assert section.section == TEST_SECTION["section"]
 
 
-def test_delete_section(clean_firestore):
+def test_delete_section(firestore_emulator, clean_firestore):
   """test for soft delete method"""
   new_section = Section.from_dict(TEST_SECTION)
   course_template = CourseTemplate.from_dict(TEST_COURSE_TEMPLATE)

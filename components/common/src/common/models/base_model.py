@@ -14,7 +14,6 @@
 """
 FireO BaseModel to be inherited by all other objects in ORM
 """
-
 import datetime
 import fireo
 from fireo.models import Model

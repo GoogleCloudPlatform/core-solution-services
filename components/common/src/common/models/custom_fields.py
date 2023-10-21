@@ -11,13 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Custom Fields for Fireo"""
+"""
+Custom Fields for Fireo
+"""
 from fireo.fields import Field
 import os
 # pylint: disable=broad-exception-raised
 
 GCS_BUCKET = os.environ.get("PROJECT_ID")
+
 
 class GCSPathField(Field):
   """Custom field to save only GCS file path to firestore and

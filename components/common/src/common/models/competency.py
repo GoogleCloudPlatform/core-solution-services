@@ -17,6 +17,7 @@ learning objective and learning unit to firestore collections"""
 from common.models import NodeItem, BaseModel
 from fireo.fields import ReferenceField, TextField, NumberField, BooleanField
 
+
 class Competency(NodeItem):
   """Competency Class"""
   # schema for object
