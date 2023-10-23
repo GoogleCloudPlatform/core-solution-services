@@ -15,14 +15,16 @@
 """Runner implementation for GoRules engine. (gorules.io)"""
 
 from base_runner import BaseRulesRunner
-from ..models.ruleset import RuleSet
+from models.rule import Rule
+from models.ruleset import RuleSet
 
 class GoRules(BaseRulesRunner):
   def __init__(self):
     pass
 
   def load_rules_from_json(self, data: dict, ruleset_id: str):
-    # TODO: Implement logic to load a JSON into a specific RuleSet
+    # TODO: Implement logic to load a JSON into a specific RuleSet and
+    # Rules data models.
     pass
 
   def evaluate(self) -> bool:

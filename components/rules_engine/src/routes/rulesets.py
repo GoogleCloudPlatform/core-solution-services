@@ -17,7 +17,7 @@
 from fastapi import APIRouter
 from schemas.ruleset import RulesetFieldsSchema
 from schemas.evaluation_result import EvaluationResultSchema
-from ..rules_runners.gorules import GoRules
+from rules_runners.gorules import GoRules
 
 router = APIRouter(prefix="/ruleset", tags=["ruleset"])
 
