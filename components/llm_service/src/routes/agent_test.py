@@ -29,6 +29,7 @@ from common.models.llm import CHAT_HUMAN, CHAT_AI
 from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+from common.testing.client_with_emulator import client_with_emulator
 from services.agent_service import get_all_agents
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
@@ -55,7 +56,6 @@ app = FastAPI()
 add_exception_handlers(app)
 app.include_router(router, prefix="/llm-service/api/v1")
 
-client_with_emulator = TestClient(app)
 
 @pytest.fixture
 def create_user(clean_firestore):
@@ -70,7 +70,7 @@ def create_chat(clean_firestore):
   chat.save()
 
 
-def test_get_agent_list(clean_firestore):
+def test_get_agent_list(clean_firestore, client_with_emulator):
   url = f"{api_url}"
   resp = client_with_emulator.get(url)
   json_response = resp.json()
@@ -79,9 +79,9 @@ def test_get_agent_list(clean_firestore):
   assert json_response.get("data") == agent_list
 
 
-def test_run_agent(create_user):
+def test_run_agent(create_user, client_with_emulator):
   userid = CHAT_EXAMPLE["user_id"]
-  url = f"{api_url}/run/medikate"
+  url = f"{api_url}/run/MediKate"
 
   with mock.patch("routes.agent.run_agent",
                   return_value = FAKE_GENERATE_RESPONSE):
@@ -108,10 +108,10 @@ def test_run_agent(create_user):
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "retrieved user chat response"
 
-def test_run_agent_chat(create_user, create_chat):
+def test_run_agent_chat(create_user, create_chat, client_with_emulator):
   chatid = CHAT_EXAMPLE["id"]
 
-  url = f"{api_url}/run/medikate/{chatid}"
+  url = f"{api_url}/run/MediKate/{chatid}"
 
   with mock.patch("routes.agent.run_agent",
                   return_value=FAKE_GENERATE_RESPONSE):
