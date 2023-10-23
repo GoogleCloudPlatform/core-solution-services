@@ -50,8 +50,7 @@ class LLMAgentRunResponse(BaseModel):
   """LLM Agent run response model"""
   success: str
   message: str
-  content: str
-  chat_data: dict = {}
+  data: dict = {}
 
   class Config():
     orm_mode = True
