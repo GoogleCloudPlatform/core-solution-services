@@ -17,7 +17,7 @@
 """ Agent endpoints """
 import traceback
 from typing import Optional
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from common.models import User, UserChat
 from common.utils.auth_service import validate_token
 from common.utils.logging_handler import Logger
@@ -29,11 +29,9 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentRunModel,
                                  LLMAgentGetAllResponse)
-from services.agent_service import (get_all_agents, run_agent, 
+from services.agent_service import (get_all_agents, run_agent,
                                     get_llm_type_for_agent)
-from langchain.agents import AgentExecutor
-from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
-                    VERTEX_LLM_TYPE_BISON_CHAT)
+from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
 
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
 
@@ -90,7 +88,7 @@ def run_agent(agent_name: str, run_config: LLMAgentRunModel,
   try:
     user = User.find_by_email(user_data.get("email"))
     llm_type = get_llm_type_for_agent(agent_name)
-    
+
     output = run_agent(agent_name, prompt)
 
     # create new chat for user
@@ -102,7 +100,7 @@ def run_agent(agent_name: str, run_config: LLMAgentRunModel,
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
-    
+
     response = {
       "content": output,
       "chat": chat_data
@@ -122,7 +120,7 @@ def run_agent(agent_name: str, run_config: LLMAgentRunModel,
     "/run/{agent_name}/{chat_id}",
     name="Run agent on user input with chat history",
     response_model=LLMAgentRunResponse)
-def run_agent_chat(agent_name: str, chat_id: str, 
+def run_agent_chat(agent_name: str, chat_id: str,
                    run_config: LLMAgentRunModel):
   """
   Run agent on user input with prior chat history

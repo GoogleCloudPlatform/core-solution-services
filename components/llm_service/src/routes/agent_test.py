@@ -24,6 +24,8 @@ from unittest import mock
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
                                      USER_EXAMPLE)
 from testing.test_config import API_URL
+from common.models.llm import CHAT_HUMAN, CHAT_AI
+from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
@@ -36,6 +38,14 @@ with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
       from config import LLM_TYPES
+
+
+FAKE_AGENT_RUN_PARAMS = {
+    "llm_type": "VertexAI-Chat",
+    "prompt": "test prompt"
+  }
+
+FAKE_GENERATE_RESPONSE = "test generation"
 
 AGENT_LIST = [{
     "MediKate": "fake-id"
@@ -74,14 +84,14 @@ def test_run_agent(create_user, client_with_emulator):
 
   with mock.patch("routes.agent.run_agent",
                   return_value = FAKE_GENERATE_RESPONSE):
-    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+    resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
   response_data = json_response.get("data")
   chat_data = response_data.get("chat")
   assert chat_data["history"][0] == \
-    {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
+    {CHAT_HUMAN: FAKE_AGENT_RUN_PARAMS["prompt"]}, \
     "returned chat data prompt"
   assert chat_data["history"][1] == \
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
@@ -91,7 +101,7 @@ def test_run_agent(create_user, client_with_emulator):
   assert len(user_chats) == 1, "retrieved new user chat"
   user_chat = user_chats[0]
   assert user_chat.history[0] == \
-    {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
+    {CHAT_HUMAN: FAKE_AGENT_RUN_PARAMS["prompt"]}, \
     "retrieved user chat prompt"
   assert user_chat.history[1] == \
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
@@ -104,7 +114,7 @@ def test_run_agent_chat(create_chat, client_with_emulator):
 
   with mock.patch("routes.agent.run_agent",
                   return_value=FAKE_GENERATE_RESPONSE):
-    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+    resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
@@ -115,7 +125,7 @@ def test_run_agent_chat(create_chat, client_with_emulator):
   assert chat_data["history"][1] == CHAT_EXAMPLE["history"][1], \
     "returned chat history 1"
   assert chat_data["history"][-2] == \
-    {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
+    {CHAT_HUMAN: FAKE_AGENT_RUN_PARAMS["prompt"]}, \
     "returned chat data prompt"
   assert chat_data["history"][-1] == \
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
@@ -126,7 +136,7 @@ def test_run_agent_chat(create_chat, client_with_emulator):
   assert len(user_chat.history) == len(CHAT_EXAMPLE["history"]) + 2, \
     "user chat history updated"
   assert user_chat.history[-2] == \
-    {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
+    {CHAT_HUMAN: FAKE_AGENT_RUN_PARAMS["prompt"]}, \
     "retrieved user chat prompt"
   assert user_chat.history[-1] == \
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \

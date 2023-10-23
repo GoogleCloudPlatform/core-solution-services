@@ -19,9 +19,9 @@ from typing import Union, List
 from common.models.agent import Agent, AgentType
 from common.utils.http_exceptions import InternalServerError
 from common.utils.errors import ResourceNotFoundException
-from config import LANGCHAIN_LLM
-from langchain.agents import (Agent, AgentOutputParser,
-                              ConversationalAgent)
+from config import LANGCHAIN_LLM, VERTEX_LLM_TYPE_BISON_CHAT
+from langchain.agents import (Agent as LangChainAgent, AgentOutputParser,
+                              ConversationalAgent, AgentExecutor)
 from langchain.schema import AgentAction, AgentFinish, OutputParserException
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from services.agent_prompts import PREFIX
@@ -43,7 +43,7 @@ def get_all_agents() -> List[dict]:
     agent_type: llm_type
   """
   agent_list = [
-    {agent: values["llm_type"]}      
+    {agent: values["llm_type"]}
     for agent, values in AGENTS.items()
   ]
   return agent_list
@@ -75,7 +75,7 @@ def run_agent(agent_name:str, prompt:str, chat_history:List=[]) -> str:
   }
 
   output = agent_executor.run(agent_inputs)
-  
+
   return output
 
 
@@ -115,7 +115,7 @@ class MediKateAgent:
     self.agent = None
     self.name = "MediKate"
 
-  def load_agent(self) -> Agent:
+  def load_agent(self) -> LangChainAgent:
     """ load this agent and return an instance of langchain Agent"""
     tools = self.get_tools()
 
