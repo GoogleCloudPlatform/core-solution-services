@@ -156,10 +156,42 @@ async def get_fields(ruleset_id: str):
     "fields": fields
   }
 
+
+@router.post("/{ruleset_id}/import_rules")
+async def import_rules(
+  ruleset_id: str, json_data: dict, rules_runner: str="gorules"):
+  """Import and parse JSON into a RuleSet and corresponding Rules.
+
+  Args:
+    ruleset_id (str): unique id of the ruleset
+    json_data (str): A JSON string data.
+
+  Raises:
+    HTTPException: 404 Not Found if ruleset doesn't exist for the given id
+    HTTPException: 500 Internal Server Error if something fails
+
+  Returns:
+    ruleset_id: The ID of a newly imported RuleSet.
+  """
+
+  runner = RULES_RUNNERS.get(rules_runner)
+
+  if not runner:
+    return {
+      "rules_runner": rules_runner,
+      "status": "Error",
+      "message": f"Rules_runner '{rules_runner}' is not defined."
+    }
+
+  # TODO: Implement the rules importing logic.
+  # result = runner.load_rules_from_json(json_data, ruleset_id)
+  pass
+
+
 # TODO: Replace record (dict) with actual Record data model.
 @router.post("/{ruleset_id}/evaluate", response_model=EvaluationResultSchema)
 async def evaluate(
-    ruleset_id: str, record: dict, rules_runner: str):
+    ruleset_id: str, record: dict, rules_runner: str="gorules"):
   """Execute a ruleset against a particular record.
 
   Args:
@@ -184,8 +216,7 @@ async def evaluate(
       "message": f"Rules_runner '{rules_runner}' is not defined."
     }
 
-  if runner == "gorules":
-    result = runner.evaluate(record, ruleset_id)
+  result = runner.evaluate(record, ruleset_id)
 
   return {
     "rules_runner": rules_runner,
