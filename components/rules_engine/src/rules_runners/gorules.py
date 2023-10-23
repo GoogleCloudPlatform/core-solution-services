@@ -14,11 +14,17 @@
 
 """Runner implementation for GoRules engine. (gorules.io)"""
 
-from base_runner import BaseRulesRunner
+from rules_runners.base_runner import BaseRulesRunner
 from models.rule import Rule
 from models.ruleset import RuleSet
 
 class GoRules(BaseRulesRunner):
+  """GoRules Rules Runner implementation.
+
+  Args:
+      BaseRulesRunner: RulesRunner base class with required functions.
+  """
+
   def __init__(self):
     pass
 
