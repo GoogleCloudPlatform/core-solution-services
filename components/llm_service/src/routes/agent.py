@@ -65,7 +65,7 @@ def get_agents():
     name="Run agent on user input",
     response_model=LLMAgentRunResponse)
 def agent_run(agent_name: str, run_config: LLMAgentRunModel,
-            user_data: dict = Depends(validate_token)):
+              user_data: dict = Depends(validate_token)):
   """
   Run agent on user input. Store history in new UserChat. 
 
