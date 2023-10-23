@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """ Agent service """
+# pylint: disable=consider-using-dict-items,consider-iterating-dictionary
 
 from typing import List
 from common.models.agent import AgentType
