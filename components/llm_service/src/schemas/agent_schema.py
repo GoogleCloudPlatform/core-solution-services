@@ -51,6 +51,7 @@ class LLMAgentRunResponse(BaseModel):
   success: str
   message: str
   content: str
+  chat_data: dict = {}
 
   class Config():
     orm_mode = True

@@ -19,7 +19,7 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from typing import Optional, Any
 from common.models import UserChat
-from langchain.schema import HumanMessage, AIMessage
+from langchain.schema import HumanMessage
 
 from config import LANGCHAIN_LLM, CHAT_LLM_TYPES
 
@@ -51,16 +51,11 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
     if llm_type in CHAT_LLM_TYPES:
       # use langchain chat interface for openai
 
-      # create msg history for user chat if it exists
-      msg = []
+      # create msg history for user chat if it exists      
       if user_chat is not None:
-        history = user_chat.history
-        for entry in history:
-          content = UserChat.entry_content(entry)
-          if UserChat.is_human(entry):
-            msg.append(HumanMessage(content=content))
-          elif UserChat.is_ai(entry):
-            msg.append(AIMessage(content=content))
+        msg = user_chat.langchain_chat_history
+      else:
+        msg = []
       msg.append(HumanMessage(content=prompt))
 
       Logger.info(f"generating text for [{prompt}]")

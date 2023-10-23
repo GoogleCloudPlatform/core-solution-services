@@ -17,6 +17,7 @@ Models for LLM generation and chat
 from typing import List
 from fireo.fields import TextField, ListField, IDField
 from common.models import BaseModel
+from langchain.schema import HumanMessage, AIMessage
 
 # constants used as tags for chat history
 CHAT_HUMAN = "HumanInput"
@@ -31,6 +32,7 @@ class UserChat(BaseModel):
   user_id = TextField(required=True)
   title = TextField(required=False)
   llm_type = TextField(required=True)
+  agent_name = TextField(required=False)
   history = ListField(default=[])
 
   class Meta:
@@ -62,6 +64,17 @@ class UserChat(BaseModel):
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
 
+  @property
+  def langchain_chat_history(self):
+    langchain_history = []
+    for entry in self.history:
+      content = UserChat.entry_content(entry)
+      if self.is_human(entry):
+        langchain_history.append(HumanMessage(content=content))
+      elif self.is_ai(entry):
+        langchain_history.append(AIMessage(content=content))
+    return langchain_history
+    
   @classmethod
   def get_history_entry(cls, prompt: str, response: str) -> List[dict]:
     """ Get history entry for query and response """

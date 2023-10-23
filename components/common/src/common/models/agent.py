@@ -48,6 +48,7 @@ class Agent(BaseModel):
   Agent ORM class
   """
   id = IDField()
+  name = TextField(required=True)
   user_id = TextField(required=True)
   agent_type = TextField(required=True)
   llm_type = TextField(required=True)
@@ -81,4 +82,3 @@ class Agent(BaseModel):
             "deleted_at_timestamp", "==",
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
-  
