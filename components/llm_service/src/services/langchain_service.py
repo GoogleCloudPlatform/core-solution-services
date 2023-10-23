@@ -19,8 +19,9 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from typing import Optional, Any
 from common.models import UserChat
+from common.models.agent import AgentType
+import langchain.agents as langchain_agents
 from langchain.schema import HumanMessage
-
 from config import LANGCHAIN_LLM, CHAT_LLM_TYPES
 
 async def langchain_llm_generate(prompt: str, llm_type: str,
@@ -78,5 +79,13 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
 def get_model(llm_type: str) -> Any:
   """ return a lanchain model given type """
   llm = LANGCHAIN_LLM.get(llm_type)
-
   return llm
+
+
+def langchain_class_from_agent_type(cls, agent_type: AgentType):
+  """ get langchain agent class object from agent type """
+  agent_class_name = agent_type.value.split("langchain_")[1] + "Agent"
+  agent_classes = inspect.getmembers(langchain_agents, inspect.isclass)
+  agent_class = [cpair[1] for cpair in agent_classes
+                    if cpair[0] == agent_class_name][0]
+  return agent_class

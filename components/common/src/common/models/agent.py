@@ -19,7 +19,6 @@ import inspect
 from enum import Enum
 from fireo.fields import TextField, IDField, ListField
 from common.models import BaseModel
-import langchain.agents as langchain_agents
 
 
 class AgentType(str, Enum):
@@ -31,15 +30,6 @@ class AgentType(str, Enum):
   @classmethod
   def is_langchain(cls, agent_type: AgentType):
     return agent_type.value.startswith("langchain")
-
-  @classmethod
-  def langchain_class_from_agent_type(cls, agent_type: AgentType):
-    """ get langchain agent class object from agent type """
-    agent_class_name = agent_type.value.split("langchain_")[1] + "Agent"
-    agent_classes = inspect.getmembers(langchain_agents, inspect.isclass)
-    agent_class = [cpair[1] for cpair in agent_classes
-                      if cpair[0] == agent_class_name][0]
-    return agent_class
 
 
 class Agent(BaseModel):
