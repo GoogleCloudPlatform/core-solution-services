@@ -18,6 +18,7 @@
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
 import os
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock

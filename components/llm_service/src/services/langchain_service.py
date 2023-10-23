@@ -51,7 +51,7 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
     if llm_type in CHAT_LLM_TYPES:
       # use langchain chat interface for openai
 
-      # create msg history for user chat if it exists      
+      # create msg history for user chat if it exists
       if user_chat is not None:
         msg = user_chat.langchain_chat_history
       else:

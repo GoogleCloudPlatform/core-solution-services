@@ -74,7 +74,7 @@ class UserChat(BaseModel):
       elif self.is_ai(entry):
         langchain_history.append(AIMessage(content=content))
     return langchain_history
-    
+
   @classmethod
   def get_history_entry(cls, prompt: str, response: str) -> List[dict]:
     """ Get history entry for query and response """

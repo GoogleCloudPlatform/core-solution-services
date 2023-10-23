@@ -37,10 +37,9 @@ class AgentType(str, Enum):
     """ get langchain agent class object from agent type """
     agent_class_name = agent_type.value.split("langchain_")[1] + "Agent"
     agent_classes = inspect.getmembers(langchain_agents, inspect.isclass)
-    agent_class = [cpair[1] for cpair in agent_classes 
+    agent_class = [cpair[1] for cpair in agent_classes
                       if cpair[0] == agent_class_name][0]
     return agent_class
-
 
 
 class Agent(BaseModel):

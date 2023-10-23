@@ -63,8 +63,8 @@ def get_agents():
     "/run/{agent_name}",
     name="Run agent on user input",
     response_model=LLMAgentRunResponse)
-def run_agent(agent_name: str, run_config: LLMAgentRunModel,
-              user_data: dict = Depends(validate_token)):
+def agent_run(agent_name: str, run_config: LLMAgentRunModel,
+            user_data: dict = Depends(validate_token)):
   """
   Run agent on user input. Store history in new UserChat. 
 
@@ -120,7 +120,7 @@ def run_agent(agent_name: str, run_config: LLMAgentRunModel,
     "/run/{agent_name}/{chat_id}",
     name="Run agent on user input with chat history",
     response_model=LLMAgentRunResponse)
-def run_agent_chat(agent_name: str, chat_id: str,
+def agent_run_chat(agent_name: str, chat_id: str,
                    run_config: LLMAgentRunModel):
   """
   Run agent on user input with prior chat history
