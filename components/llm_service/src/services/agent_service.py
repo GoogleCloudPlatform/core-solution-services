@@ -84,8 +84,8 @@ def get_llm_type_for_agent(agent_name: str) -> str:
   Raises:
     ResourceNotFoundException if agent_name not found
   """
-  for agent in AGENTS:
-    if agent_name == agent["agent_name"]:
-      return agent["llm_type"]
+  for agent in AGENTS.keys():
+    if agent_name == agent:
+      return AGENTS[agent]["llm_type"]
   raise ResourceNotFoundException(f"can't find agent name {agent_name}")
   
