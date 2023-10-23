@@ -41,10 +41,9 @@ def generate_token(req_body):
 def get_id_token(payload):
   """
     Calls Google API using refresh_token as payload to generate
-    new Id Token
+    new ID Token
     Args:
         payload: Dict(Object)
-        API_KEY: String
     Returns:
         Token Credentials: Dict(Object)
   """

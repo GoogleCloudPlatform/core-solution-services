@@ -20,7 +20,7 @@ from fastapi.security import HTTPBearer
 # TODO: Replace TempUser with User once user management is available
 from common.models import TempUser
 from common.utils.http_exceptions import (InternalServerError,
-                              ResourceNotFound, BadRequest)
+                                          ResourceNotFound, BadRequest)
 from common.utils.errors import ResourceNotFoundException, TokenNotFoundError
 from common.utils.inspace import (create_inspace_user_helper,
                                   get_inspace_token, get_inspace_user_helper,

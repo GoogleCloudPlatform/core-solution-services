@@ -22,13 +22,14 @@ from schemas.schema_examples import (
     SIGN_IN_WITH_CREDENTIALS_API_RESPONSE_EXAMPLE,
     SIGN_IN_WITH_TOKEN_RESPONSE_EXAMPLE)
 
+
 # pylint: disable=invalid-name
 class SignInWithCredentialsModel(BaseModel):
   """Sign In with Credentials Input Pydantic Model"""
   email: str
   password: str
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {"example": SIGN_IN_WITH_CREDENTIALS_API_INPUT_EXAMPLE}
     extra = "forbid"
@@ -54,7 +55,7 @@ class SignInWithCredentialsResponseModel(BaseModel):
   message: Optional[str] = "Successfully signed in"
   data: IDPSignInWithCredentialsResponseModel
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {
@@ -93,7 +94,7 @@ class SignInWithTokenResponseModel(BaseModel):
   message: Optional[str] = "Successfully signed in"
   data: IDPSignInWithTokenResponse
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {

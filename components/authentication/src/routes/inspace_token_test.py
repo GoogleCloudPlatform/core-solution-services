@@ -109,6 +109,7 @@ def test_get_inspace_token_without_inspace_user(mock_validate_token,
   assert json_response["data"]["token"] == "evbjguynkmjkj"
   assert json_response["message"] == "Successfully fetched the inspace token"
 
+
 @mock.patch("routes.inspace_token.validate_token", return_value=True)
 def test_get_inspace_token_with_inspace_user_false(mock_validate_token,
                                                    clean_firestore):

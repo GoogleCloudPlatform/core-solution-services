@@ -104,23 +104,23 @@ class BaseModel(Model):
     abstract = True
 
   @classmethod
-  def find_by_id(cls, object_id):
+  def find_by_id(cls, doc_id):
     """Looks up in the Database and returns an object of this type by id
        (not key)
         An interface, intended to be subclassed.
         Args:
-            object_id (string): the document id without collection_name
+            doc_id (string): the document id without collection_name
             (i.e. not the key)
         Returns:
             [any]: an instance of object returned by the database, type is
             the subclassed Model
         """
     obj = cls.collection.filter("id", "in",
-                                [object_id]).filter("deleted_at_timestamp",
+                                [doc_id]).filter("deleted_at_timestamp",
                                                     "==", None).get()
     if obj is None:
       raise ResourceNotFoundException(
-          f"{cls.collection_name} with id {object_id} is not found")
+          f"{cls.collection_name} with id {doc_id} is not found")
     return obj
 
   @classmethod

@@ -46,7 +46,7 @@ class ResponseModel(BaseModel):
   firebase: FirebaseModel
   uid: str
   access_api_docs: bool
-  user_type:str
+  user_type: str
 
 
 class ValidateTokenResponseModel(BaseModel):
@@ -55,7 +55,7 @@ class ValidateTokenResponseModel(BaseModel):
   success: bool = True
   data: ResponseModel
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {

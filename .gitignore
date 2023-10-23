@@ -2,7 +2,8 @@ __pycache__
 .pytest_cache
 keys
 test
-.iml
+*.iml
+.idea
 .vscode
 .venv
 .tmp

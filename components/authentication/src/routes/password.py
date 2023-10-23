@@ -46,6 +46,7 @@ router = APIRouter(tags=["Password"], responses=ERROR_RESPONSE_DICT)
 
 auth_scheme = HTTPBearer(auto_error=False)
 
+
 @router.post(
   "/send-password-reset-email",
   response_model=SendPasswordResetEmailResponseModel,
@@ -84,7 +85,7 @@ def send_password_reset_email(
       raise UnauthorizedUserError("Unauthorized")
 
     input_data = {"requestType": "PASSWORD_RESET", "email": email}
-    resp = requests.post(url=url, json=input_data,timeout=60)
+    resp = requests.post(url=url, json=input_data, timeout=60)
 
     if resp.status_code == 200:
       json_response = resp.json()
@@ -122,7 +123,7 @@ def reset_password(input_reset_password: ResetPasswordModel):
     input_reset_password_dict = {**input_reset_password.dict()}
     url = f"{IDP_URL}:resetPassword?key={FIREBASE_API_KEY}"
 
-    resp = requests.post(url=url, json=input_reset_password_dict,timeout=60)
+    resp = requests.post(url=url, json=input_reset_password_dict, timeout=60)
 
     if resp.status_code == 200:
       json_response = resp.json()
@@ -183,7 +184,7 @@ def change_password(input_password_change: ChangePasswordModel,
       "returnSecureToken": True,
       **input_password_change_dict
     }
-    resp = requests.post(url=url, json=input_data,timeout=60)
+    resp = requests.post(url=url, json=input_data, timeout=60)
     if resp.status_code == 200:
       json_response = resp.json()
       return {

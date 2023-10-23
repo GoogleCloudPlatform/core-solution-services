@@ -24,7 +24,7 @@ class NotFoundErrorResponseModel(BaseModel):
   message: Optional[str] = None
   data: Optional[dict] = {}
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {
@@ -40,7 +40,7 @@ class InternalServerErrorResponseModel(BaseModel):
   message: Optional[str] = "Internal Server Error"
   data: Optional[dict] = {}
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {
@@ -56,7 +56,7 @@ class ValidationErrorResponseModel(BaseModel):
   message: Optional[str] = "Validation Failed"
   data: Optional[dict] = {}
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {
@@ -66,12 +66,13 @@ class ValidationErrorResponseModel(BaseModel):
         }
     }
 
+
 class UnauthorizedUserErrorResponseModel(BaseModel):
   success: bool = False
   message: Optional[str] = "User is not authorized"
   data: Optional[dict] = {}
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {
@@ -81,12 +82,13 @@ class UnauthorizedUserErrorResponseModel(BaseModel):
         }
     }
 
+
 class ConnectionTimeoutErrorResponseModel(BaseModel):
   success: bool = False
   message: Optional[str] = "Request Timed-out"
   data: Optional[dict] = {}
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {
@@ -102,7 +104,7 @@ class ConnectionErrorResponseModel(BaseModel):
   message: Optional[str] = "Connection Error"
   data: Optional[dict] = {}
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {

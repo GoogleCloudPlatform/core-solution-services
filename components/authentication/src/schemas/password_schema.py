@@ -25,11 +25,12 @@ from schemas.schema_examples import (
 
 # pylint: disable=invalid-name
 
+
 class SendPasswordResetEmailModel(BaseModel):
   """Send Password Reset Email Pydantic Model"""
   email: str
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {"example": SEND_PASSWORD_RESET_EMAIL_EXAMPLE}
 
@@ -46,7 +47,7 @@ class SendPasswordResetEmailResponseModel(BaseModel):
   message: Optional[str] = "Data fetched successfully"
   data: IDPSendPasswordResetEmailResponseModel
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {"example": IDP_SEND_PASSWORD_RESET_EMAIL_RESPONSE_EXAMPLE}
 
@@ -56,7 +57,7 @@ class ResetPasswordModel(BaseModel):
   oobCode: str
   newPassword: str
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {"example": RESET_PASSWORD_EXAMPLE}
 
@@ -74,7 +75,7 @@ class ResetPasswordResponseModel(BaseModel):
   message: Optional[str] = "Data fetched successfully"
   data: IDPResetPasswordResponseModel
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {"example": RESET_PASSWORD_RESPONSE_EXAMPLE}
 
@@ -83,7 +84,7 @@ class ChangePasswordModel(BaseModel):
   """Reset Password Pydantic Model"""
   password: str
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {"example": CHANGE_PASSWORD_EXAMPLE}
 
@@ -103,6 +104,6 @@ class ChangePasswordResponseModel(BaseModel):
   message: Optional[str] = "Data fetched successfully"
   data: IDPChangePasswordResponseModel
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {"example": CHANGE_PASSWORD_RESPONSE_EXAMPLE}

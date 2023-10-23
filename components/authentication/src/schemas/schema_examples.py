@@ -17,7 +17,7 @@ Sample objects for the schema
 """
 # pylint: disable=line-too-long
 
-### Validate token response example
+# Validate token response example
 BASIC_VALIDATE_TOKEN_RESPONSE_EXAMPLE = {
     "name": "Test User",
     "picture": "https://lh3.googleusercontent.com/photo.jpg",
@@ -41,7 +41,7 @@ BASIC_VALIDATE_TOKEN_RESPONSE_EXAMPLE = {
     "user_type": "others"
 }
 
-### Generate response example
+# Generate response example
 BASIC_GENERATE_TOKEN_RESPONSE_EXAMPLE = {
     "access_token": "eyJhbGciOi.........p21BIQiipxCaStyNvpjq8Q",
     "expires_in": 3600,

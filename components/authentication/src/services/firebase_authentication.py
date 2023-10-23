@@ -24,7 +24,7 @@ def verify_token(token):
     Verifies id token issued to user, Return user authentication
     details is token is valid, else Returns token expired as error
     Args:
-        Id Token: String
+        ID Token: String
     Returns:
         User auth details: Dict
   """

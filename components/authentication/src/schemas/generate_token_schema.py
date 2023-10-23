@@ -20,7 +20,6 @@ from typing import Optional
 from schemas.schema_examples import (BASIC_GENERATE_TOKEN_RESPONSE_EXAMPLE)
 
 
-
 class ResponseModel(BaseModel):
   access_token: str
   expires_in: str
@@ -37,7 +36,7 @@ class GenerateTokenResponseModel(BaseModel):
   message: Optional[str]
   data: ResponseModel
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {
         "example": {
@@ -51,6 +50,6 @@ class GenerateTokenResponseModel(BaseModel):
 class GenerateTokenRequestModel(BaseModel):
   refresh_token: str
 
-  class Config():
+  class Config:
     orm_mode = True
     schema_extra = {"example": {"refresh_token": "Afhfhh...........frtyhgjh"}}

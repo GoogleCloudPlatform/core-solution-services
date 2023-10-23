@@ -86,7 +86,7 @@ def sign_in_with_token(token: auth_scheme = Depends()):
       "returnSecureToken": True,
       "postBody": post_body
     }
-    resp = requests.post(url, data,timeout=60)
+    resp = requests.post(url, data, timeout=60)
     Logger.info(f"Response from IDP for sign-in: {resp.json()}")
 
     if resp.status_code == 200:
@@ -146,7 +146,7 @@ def sign_in_with_credentials(credentials: SignInWithCredentialsModel):
       "password": credentials.password,
       "returnSecureToken": True
     }
-    resp = requests.post(url, data,timeout=60)
+    resp = requests.post(url, data, timeout=60)
     if resp.status_code == 200:
       res = resp.json()
       res["user_id"] = user_data.user_id

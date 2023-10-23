@@ -40,11 +40,10 @@ def health_check():
     "data": {}
   }
 
+
 api = FastAPI(
   title="Authentication APIs",
   version="latest")
-  # docs_url=None,
-  # redoc_url=None)
 
 api.include_router(sign_up.router)
 api.include_router(sign_in.router)

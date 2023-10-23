@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-""" conftest.py: Consist of fixtures"""
+""" conftest: Consist of fixtures"""
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable= unused-import
 import pytest
@@ -35,6 +35,7 @@ BASIC_USER_MODEL_EXAMPLE = {
     "access_api_docs": False,
     "gaia_id": "F2GGRg5etyty"
 }
+
 
 @pytest.fixture(name="create_user")
 def create_user():
