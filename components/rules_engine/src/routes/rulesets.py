@@ -157,10 +157,9 @@ async def get_fields(ruleset_id: str):
   }
 
 # TODO: Replace record (dict) with actual Record data model.
-@router.post("/{ruleset_id}/evaluate")
+@router.post("/{ruleset_id}/evaluate", response_model=EvaluationResultSchema)
 async def evaluate(
-    ruleset_id: str, record: dict, rules_runner: str,
-    response_model=EvaluationResultSchema):
+    ruleset_id: str, record: dict, rules_runner: str):
   """Execute a ruleset against a particular record.
 
   Args:

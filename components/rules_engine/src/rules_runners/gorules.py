@@ -15,8 +15,8 @@
 """Runner implementation for GoRules engine. (gorules.io)"""
 
 from rules_runners.base_runner import BaseRulesRunner
-from models.rule import Rule
-from models.ruleset import RuleSet
+# from models.rule import Rule
+# from models.ruleset import RuleSet
 
 class GoRules(BaseRulesRunner):
   """GoRules Rules Runner implementation.
