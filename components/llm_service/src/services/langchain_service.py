@@ -14,13 +14,15 @@
 
 """ Langchain service """
 
+import inspect
+from typing import Optional, Any, List
+from common.models import UserChat
+from common.models.agent import AgentType
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
-from typing import Optional, Any
-from common.models import UserChat
+import langchain.agents as langchain_agents
 from langchain.schema import HumanMessage, AIMessage
-
 from config import LANGCHAIN_LLM, CHAT_LLM_TYPES
 
 async def langchain_llm_generate(prompt: str, llm_type: str,
@@ -52,15 +54,10 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
       # use langchain chat interface for openai
 
       # create msg history for user chat if it exists
-      msg = []
       if user_chat is not None:
-        history = user_chat.history
-        for entry in history:
-          content = UserChat.entry_content(entry)
-          if UserChat.is_human(entry):
-            msg.append(HumanMessage(content=content))
-          elif UserChat.is_ai(entry):
-            msg.append(AIMessage(content=content))
+        msg = langchain_chat_history(user_chat)
+      else:
+        msg = []
       msg.append(HumanMessage(content=prompt))
 
       Logger.info(f"generating text for [{prompt}]")
@@ -83,5 +80,25 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
 def get_model(llm_type: str) -> Any:
   """ return a lanchain model given type """
   llm = LANGCHAIN_LLM.get(llm_type)
-
   return llm
+
+
+def langchain_class_from_agent_type(agent_type: AgentType):
+  """ get langchain agent class object from agent type """
+  agent_class_name = agent_type.value.split("langchain_")[1] + "Agent"
+  agent_classes = inspect.getmembers(langchain_agents, inspect.isclass)
+  agent_class = [cpair[1] for cpair in agent_classes
+                    if cpair[0] == agent_class_name][0]
+  return agent_class
+
+
+def langchain_chat_history(user_chat: UserChat) -> List:
+  """ get langchain message history from UserChat """
+  langchain_history = []
+  for entry in user_chat.history:
+    content = UserChat.entry_content(entry)
+    if user_chat.is_human(entry):
+      langchain_history.append(HumanMessage(content=content))
+    elif user_chat.is_ai(entry):
+      langchain_history.append(AIMessage(content=content))
+  return langchain_history

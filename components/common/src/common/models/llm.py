@@ -31,6 +31,7 @@ class UserChat(BaseModel):
   user_id = TextField(required=True)
   title = TextField(required=False)
   llm_type = TextField(required=True)
+  agent_name = TextField(required=False)
   history = ListField(default=[])
 
   class Meta:

@@ -14,8 +14,21 @@
 """
 Models for Agents
 """
-from fireo.fields import TextField, IDField
+from __future__ import annotations
+from enum import Enum
+from fireo.fields import TextField, IDField, ListField
 from common.models import BaseModel
+
+
+class AgentType(str, Enum):
+  """ Enum class for Agent types """
+  LANGCHAIN_CONVERSATIONAL = "langchain_Conversational"
+  LANGCHAIN_ZERO_SHOT = "langchain_ZeroShot"
+  LANGCHAIN_CONVERSATIONAL_CHAT = "langchain_ConversationalChat"
+
+  @classmethod
+  def is_langchain(cls, agent_type: AgentType):
+    return agent_type.value.startswith("langchain")
 
 
 class Agent(BaseModel):
@@ -23,8 +36,11 @@ class Agent(BaseModel):
   Agent ORM class
   """
   id = IDField()
+  name = TextField(required=True)
   user_id = TextField(required=True)
   agent_type = TextField(required=True)
+  llm_type = TextField(required=True)
+  tools = ListField()
 
   class Meta:
     ignore_none_field = False
@@ -54,4 +70,3 @@ class Agent(BaseModel):
             "deleted_at_timestamp", "==",
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
-  
