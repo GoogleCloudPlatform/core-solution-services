@@ -17,11 +17,11 @@
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
-from typing import Optional, Any
+from typing import Optional, Any, List
 from common.models import UserChat
 from common.models.agent import AgentType
 import langchain.agents as langchain_agents
-from langchain.schema import HumanMessage
+from langchain.schema import HumanMessage, AIMessage
 from config import LANGCHAIN_LLM, CHAT_LLM_TYPES
 
 async def langchain_llm_generate(prompt: str, llm_type: str,
@@ -54,7 +54,7 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
 
       # create msg history for user chat if it exists
       if user_chat is not None:
-        msg = user_chat.langchain_chat_history
+        msg = langchain_chat_history(user_chat)
       else:
         msg = []
       msg.append(HumanMessage(content=prompt))
@@ -89,3 +89,15 @@ def langchain_class_from_agent_type(cls, agent_type: AgentType):
   agent_class = [cpair[1] for cpair in agent_classes
                     if cpair[0] == agent_class_name][0]
   return agent_class
+
+
+def langchain_chat_history(user_chat: UserChat) -> List:
+  """ get langchain message history from UserChat """
+  langchain_history = []
+  for entry in user_chat.history:
+    content = UserChat.entry_content(entry)
+    if user_chat.is_human(entry):
+      langchain_history.append(HumanMessage(content=content))
+    elif user_chat.is_ai(entry):
+      langchain_history.append(AIMessage(content=content))
+  return langchain_history

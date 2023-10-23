@@ -31,6 +31,7 @@ from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentGetAllResponse)
 from services.agent_service import (get_all_agents, run_agent,
                                     get_llm_type_for_agent)
+from services.langchain_service import langchain_chat_history
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
 
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
@@ -149,7 +150,8 @@ def agent_run_chat(agent_name: str, chat_id: str,
 
   try:
     # run agent to get output
-    output = run_agent(agent_name, prompt, user_chat.langchain_chat_history)
+    chat_history = langchain_chat_history(user_chat)
+    output = run_agent(agent_name, prompt, chat_history)
 
     # save chat history
     user_chat.update_history(prompt, output)
