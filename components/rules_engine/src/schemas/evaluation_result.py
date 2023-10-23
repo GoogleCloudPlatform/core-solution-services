@@ -31,7 +31,7 @@ class EvaluationResultSchema(BaseModel):
     schema_extra = {
       "example": {
         "rules_runner": "gorules",
-        "message": "Rules evaluation finished."
+        "message": "Rules evaluation finished.",
         "status": "Success",
         "result": {
           "sample": "test"
