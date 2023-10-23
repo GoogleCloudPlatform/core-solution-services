@@ -16,9 +16,14 @@
 
 from fastapi import APIRouter
 from schemas.ruleset import RulesetFieldsSchema
-
+from schemas.evaluation_result import EvaluationResultSchema
+from ..rules_runners.gorules import GoRules
 
 router = APIRouter(prefix="/ruleset", tags=["ruleset"])
+
+RULES_RUNNERS = {
+  "gorules": GoRules()
+}
 
 SUCCESS_RESPONSE = {"status": "Success"}
 
@@ -149,4 +154,42 @@ async def get_fields(ruleset_id: str):
 
   return {
     "fields": fields
+  }
+
+# TODO: Replace record (dict) with actual Record data model.
+@router.post("/{ruleset_id}/evaluate")
+async def evaluate(
+    ruleset_id: str, record: dict, rules_runner: str,
+    response_model=EvaluationResultSchema):
+  """Execute a ruleset against a particular record.
+
+  Args:
+    ruleset_id (str): unique id of the ruleset
+    record (Record): a record object.
+
+  Raises:
+    HTTPException: 404 Not Found if ruleset doesn't exist for the given id
+    HTTPException: 500 Internal Server Error if something fails
+
+  Returns:
+    ruleset: an array of field names in a RuleSet
+  """
+
+  result = {}
+  runner = RULES_RUNNERS.get(rules_runner)
+
+  if not runner:
+    return {
+      "rules_runner": rules_runner,
+      "status": "Error",
+      "message": f"Rules_runner '{rules_runner}' is not defined."
+    }
+
+  if runner == "gorules":
+    result = runner.evaluate(record, ruleset_id)
+
+  return {
+    "rules_runner": rules_runner,
+    "status": "Success",
+    "result": result
   }
