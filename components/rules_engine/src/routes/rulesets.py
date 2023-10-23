@@ -184,8 +184,12 @@ async def import_rules(
     }
 
   # TODO: Implement the rules importing logic.
-  # result = runner.load_rules_from_json(json_data, ruleset_id)
-  pass
+  result = runner.load_rules_from_json(json_data, ruleset_id)
+
+  return {
+    "ruleset_id": ruleset_id,
+    "result": result
+  }
 
 
 # TODO: Replace record (dict) with actual Record data model.
