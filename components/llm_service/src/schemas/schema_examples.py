@@ -117,5 +117,5 @@ AGENT_RUN_EXAMPLE = {
 
 AGENT_RUN_RESPONSE_EXAMPLE = {
   "output": "hello",
-  "chat_data": CHAT_EXAMPLE
+  "chat": CHAT_EXAMPLE
 }

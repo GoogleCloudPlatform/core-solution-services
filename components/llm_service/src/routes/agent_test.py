@@ -21,7 +21,9 @@ import os
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
-from testing.test_config import API_URL, TESTING_FOLDER_PATH
+from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
+                                     USER_EXAMPLE)
+from testing.test_config import API_URL
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
@@ -41,9 +43,6 @@ AGENT_LIST = [{
 
 # assigning url
 api_url = f"{API_URL}/agent"
-LLM_TESTDATA_FILENAME = os.path.join(TESTING_FOLDER_PATH,
-                                        "llm_generate.json")
-
 
 with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   from routes.agent import router
@@ -54,6 +53,12 @@ app.include_router(router, prefix="/llm-service/api/v1")
 
 client_with_emulator = TestClient(app)
 
+@pytest.fixture
+def create_user(client_with_emulator):
+  user_dict = USER_EXAMPLE
+  user = User.from_dict(user_dict)
+  user.save()
+
 
 def test_get_agent_list(clean_firestore):
   url = f"{api_url}"
@@ -61,3 +66,69 @@ def test_get_agent_list(clean_firestore):
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
   assert json_response.get("data") == AGENT_LIST
+
+
+def test_run_agent(create_user, client_with_emulator):
+  userid = CHAT_EXAMPLE["user_id"]
+  url = f"{api_url}/run/medikate"
+
+  with mock.patch("routes.agent.run_agent",
+                  return_value = FAKE_GENERATE_RESPONSE):
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  response_data = json_response.get("data")
+  chat_data = response_data.get("chat")
+  assert chat_data["history"][0] == \
+    {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
+    "returned chat data prompt"
+  assert chat_data["history"][1] == \
+    {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
+    "returned chat data generated text"
+
+  user_chats = UserChat.find_by_user(userid)
+  assert len(user_chats) == 1, "retrieved new user chat"
+  user_chat = user_chats[0]
+  assert user_chat.history[0] == \
+    {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
+    "retrieved user chat prompt"
+  assert user_chat.history[1] == \
+    {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
+    "retrieved user chat response"
+
+def test_run_agent_chat(create_chat, client_with_emulator):
+  chatid = CHAT_EXAMPLE["id"]
+
+  url = f"{api_url}/run/medikate/{chatid}"
+
+  with mock.patch("routes.agent.run_agent",
+                  return_value=FAKE_GENERATE_RESPONSE):
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  response_data = json_response.get("data")
+  chat_data = response_data.get("chat")
+  assert chat_data["history"][0] == CHAT_EXAMPLE["history"][0], \
+    "returned chat history 0"
+  assert chat_data["history"][1] == CHAT_EXAMPLE["history"][1], \
+    "returned chat history 1"
+  assert chat_data["history"][-2] == \
+    {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
+    "returned chat data prompt"
+  assert chat_data["history"][-1] == \
+    {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
+    "returned chat data generated text"
+
+  user_chat = UserChat.find_by_id(chatid)
+  assert user_chat is not None, "retrieved user chat"
+  assert len(user_chat.history) == len(CHAT_EXAMPLE["history"]) + 2, \
+    "user chat history updated"
+  assert user_chat.history[-2] == \
+    {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
+    "retrieved user chat prompt"
+  assert user_chat.history[-1] == \
+    {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
+    "retrieved user chat response"
+
