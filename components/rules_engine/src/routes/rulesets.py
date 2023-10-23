@@ -16,9 +16,14 @@
 
 from fastapi import APIRouter
 from schemas.ruleset import RulesetFieldsSchema
-
+from schemas.evaluation_result import EvaluationResultSchema
+from rules_runners.gorules import GoRules
 
 router = APIRouter(prefix="/ruleset", tags=["ruleset"])
+
+RULES_RUNNERS = {
+  "gorules": GoRules()
+}
 
 SUCCESS_RESPONSE = {"status": "Success"}
 
@@ -149,4 +154,76 @@ async def get_fields(ruleset_id: str):
 
   return {
     "fields": fields
+  }
+
+
+@router.post("/{ruleset_id}/import_rules")
+async def import_rules(
+  ruleset_id: str, json_data: dict, rules_runner: str="gorules"):
+  """Import and parse JSON into a RuleSet and corresponding Rules.
+
+  Args:
+    ruleset_id (str): unique id of the ruleset
+    json_data (str): A JSON string data.
+
+  Raises:
+    HTTPException: 404 Not Found if ruleset doesn't exist for the given id
+    HTTPException: 500 Internal Server Error if something fails
+
+  Returns:
+    ruleset_id: The ID of a newly imported RuleSet.
+  """
+
+  runner = RULES_RUNNERS.get(rules_runner)
+
+  if not runner:
+    return {
+      "rules_runner": rules_runner,
+      "status": "Error",
+      "message": f"Rules_runner '{rules_runner}' is not defined."
+    }
+
+  # TODO: Implement the rules importing logic.
+  result = runner.load_rules_from_json(json_data, ruleset_id)
+
+  return {
+    "ruleset_id": ruleset_id,
+    "result": result
+  }
+
+
+# TODO: Replace record (dict) with actual Record data model.
+@router.post("/{ruleset_id}/evaluate", response_model=EvaluationResultSchema)
+async def evaluate(
+    ruleset_id: str, record: dict, rules_runner: str="gorules"):
+  """Execute a ruleset against a particular record.
+
+  Args:
+    ruleset_id (str): unique id of the ruleset
+    record (Record): a record object.
+
+  Raises:
+    HTTPException: 404 Not Found if ruleset doesn't exist for the given id
+    HTTPException: 500 Internal Server Error if something fails
+
+  Returns:
+    ruleset: an array of field names in a RuleSet
+  """
+
+  result = {}
+  runner = RULES_RUNNERS.get(rules_runner)
+
+  if not runner:
+    return {
+      "rules_runner": rules_runner,
+      "status": "Error",
+      "message": f"Rules_runner '{rules_runner}' is not defined."
+    }
+
+  result = runner.evaluate(record, ruleset_id)
+
+  return {
+    "rules_runner": rules_runner,
+    "status": "Success",
+    "result": result
   }
