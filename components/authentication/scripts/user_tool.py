@@ -15,14 +15,10 @@ limitations under the License.
 """
 
 import subprocess
-import re
 import requests
 import argparse
 import getpass
-import sys
 import warnings
-
-sys.path.append("components/common/src/")
 
 from common.models import User
 
@@ -41,10 +37,9 @@ USER_DATA = {
 }
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
+
 def execute_command(command):
-  output = subprocess.check_output(command,
-                                   shell=True,
-                                   text=True)
+  output = subprocess.check_output(command, shell=True, text=True)
   return output.strip()
 
 
@@ -54,6 +49,7 @@ def get_input(prompt):
     input_value = input(prompt)
   return input_value
 
+
 def create_user(user_email, user_password, base_url=None) -> None:
   """
   Function to do firebase login
@@ -61,17 +57,13 @@ def create_user(user_email, user_password, base_url=None) -> None:
   input_user = {**USER_DATA, "email": user_email}
   user = User.from_dict(input_user)
   user.user_id = ""
-  user.user_type_ref = ""
   user.save()
-  user.user_id = user.id
-  user.update()
 
   req_body = {
     "email": user_email,
     "password": user_password
   }
   url = f"{base_url}/{AUTH_API_PATH}/sign-up/credentials"
-  url = re.sub(r"(?<!:)/+", "/", url)
   sign_up_req = requests.post(url, json=req_body, verify=False)
   sign_up_res = sign_up_req.json()
 
@@ -82,8 +74,8 @@ def create_user(user_email, user_password, base_url=None) -> None:
     print()
 
   # If the user already exists, sign in the user and get the token.
-  elif sign_up_req.status_code == 422 and sign_up_res.get(
-    "message") == "EMAIL_EXISTS":
+  elif (sign_up_req.status_code == 422 and
+        sign_up_res.get("message") == "EMAIL_EXISTS"):
     print(f"User with {user_email} already exists. Trying log in")
     login_user(user_email, user_password, base_url=base_url)
 
@@ -91,13 +83,13 @@ def create_user(user_email, user_password, base_url=None) -> None:
     print(f"Sign up error. Status: {sign_up_req.status_code}")
     print(sign_up_res)
 
+
 def login_user(user_email, user_password, base_url=None) -> None:
   req_body = {
     "email": user_email,
     "password": user_password
   }
   url = f"{base_url}/{AUTH_API_PATH}/sign-in/credentials"
-  url = re.sub(r"(?<!:)/+", "/", url)
   sign_in_req = requests.post(url, json=req_body, verify=False)
 
   sign_in_res = sign_in_req.json()
@@ -109,13 +101,6 @@ def login_user(user_email, user_password, base_url=None) -> None:
   id_token = sign_in_res["data"]["idToken"]
   print(id_token)
   print()
-
-
-def get_token(base_url="http://authentication"):
-  user_email = get_input("User email: ")
-  user_password = getpass.getpass(prompt="Password: ")
-  print()
-  login_user(user_email, user_password, base_url=base_url)
 
 
 def main():
@@ -131,29 +116,31 @@ def main():
     print(f"API base URL: {base_url}")
   assert base_url, "base_url is empty."
 
-  if args.action == "create_admin":
-    user_email = execute_command(
-      "gcloud config list account --format 'value(core.account)' | head -n 1")
-    print(f"User email: {user_email}")
+  # get default user email
+  user_email = execute_command(
+    "gcloud config list account --format 'value(core.account)' | head -n 1")
 
-    user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
-    confirm_password = getpass.getpass(prompt="Confirm password: ")
-    assert user_password == confirm_password, "Passwords don't match."
-    create_user(user_email, user_password, base_url=base_url)
-
-  elif args.action == "create_user":
-    user_email = get_input("User email: ")
-    user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
-    confirm_password = getpass.getpass(prompt="Confirm password: ")
-    assert user_password == confirm_password, "Passwords don't match."
-    create_user(user_email, user_password, base_url=base_url)
+  if args.action == "create_user":
+    user_email = input(f"User email ({user_email}): ") or user_email
+    user = User.find_by_email(user_email)
+    if user is None:
+      # Create new user
+      user_password = getpass.getpass(prompt="Password (At least 6 alphanumeric): ")
+      confirm_password = getpass.getpass(prompt="Confirm password: ")
+      assert user_password == confirm_password, "Passwords don't match."
+      create_user(user_email, user_password, base_url=base_url)
+    else:
+      user_password = getpass.getpass(prompt="Password: ")
+      login_user(user_email, user_password, base_url=base_url)
 
   elif args.action == "get_token":
-    get_token(base_url=base_url)
+    user_password = getpass.getpass(prompt="Password: ")
+    print()
+    login_user(user_email, user_password, base_url=base_url)
 
   else:
     print(f"Action {args.action} not supported. Available actions:")
-    available_actions = ["create_admin"]
+    available_actions = ["create_user", "get_token"]
     for action in available_actions:
       print(f" - {action}")
 
