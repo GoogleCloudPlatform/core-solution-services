@@ -15,7 +15,6 @@
 Models for Agents
 """
 from __future__ import annotations
-import inspect
 from enum import Enum
 from fireo.fields import TextField, IDField, ListField
 from common.models import BaseModel

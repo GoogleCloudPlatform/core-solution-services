@@ -41,7 +41,7 @@ def get_all_agents() -> List[dict]:
   ]
   return agent_list
 
-def run_agent(agent_name:str, prompt:str, chat_history:List=[]) -> str:
+def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
   """
   Run an agent on user input
 
@@ -62,6 +62,7 @@ def run_agent(agent_name:str, prompt:str, chat_history:List=[]) -> str:
   agent_executor = AgentExecutor.from_agent_and_tools(
       agent=langchain_agent, tools=tools)
 
+  chat_history = chat_history or []
   agent_inputs = {
     "input": prompt,
     "chat_history": chat_history

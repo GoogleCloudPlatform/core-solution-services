@@ -14,12 +14,13 @@
 
 """ Langchain service """
 
-from common.utils.errors import ResourceNotFoundException
-from common.utils.http_exceptions import InternalServerError
-from common.utils.logging_handler import Logger
+import inspect
 from typing import Optional, Any, List
 from common.models import UserChat
 from common.models.agent import AgentType
+from common.utils.errors import ResourceNotFoundException
+from common.utils.http_exceptions import InternalServerError
+from common.utils.logging_handler import Logger
 import langchain.agents as langchain_agents
 from langchain.schema import HumanMessage, AIMessage
 from config import LANGCHAIN_LLM, CHAT_LLM_TYPES
@@ -82,7 +83,7 @@ def get_model(llm_type: str) -> Any:
   return llm
 
 
-def langchain_class_from_agent_type(cls, agent_type: AgentType):
+def langchain_class_from_agent_type(agent_type: AgentType):
   """ get langchain agent class object from agent type """
   agent_class_name = agent_type.value.split("langchain_")[1] + "Agent"
   agent_classes = inspect.getmembers(langchain_agents, inspect.isclass)
