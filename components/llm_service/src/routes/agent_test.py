@@ -29,16 +29,12 @@ from common.models.llm import CHAT_HUMAN, CHAT_AI
 from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+from services.agent_service import AGENTS
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
-
-with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
-  with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
-    with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
-      from config import LLM_TYPES
 
 
 FAKE_AGENT_RUN_PARAMS = {
@@ -48,9 +44,6 @@ FAKE_AGENT_RUN_PARAMS = {
 
 FAKE_GENERATE_RESPONSE = "test generation"
 
-AGENT_LIST = [{
-    "MediKate": "fake-id"
-  }]
 
 # assigning url
 api_url = f"{API_URL}/agent"
@@ -70,13 +63,19 @@ def create_user(client_with_emulator):
   user = User.from_dict(user_dict)
   user.save()
 
+@pytest.fixture
+def create_chat(client_with_emulator):
+  chat_dict = CHAT_EXAMPLE
+  chat = UserChat.from_dict(chat_dict)
+  chat.save()
+
 
 def test_get_agent_list(clean_firestore):
   url = f"{api_url}"
   resp = client_with_emulator.get(url)
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
-  assert json_response.get("data") == AGENT_LIST
+  assert json_response.get("data") == AGENTS
 
 
 def test_run_agent(create_user, client_with_emulator):
