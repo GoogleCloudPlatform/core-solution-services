@@ -13,8 +13,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Retrieve the default API key generated from the Terraform stage `2-foundation` automatically.
-
-KEY_NAME=$(gcloud alpha services api-keys list --filter="displayName='API Key for Identity Platform'" --format="value(name)")
-export FIREBASE_API_KEY=$(gcloud alpha services api-keys get-key-string ${KEY_NAME} --format="value(keyString)")
-echo "FIREBASE_API_KEY=${FIREBASE_API_KEY}"

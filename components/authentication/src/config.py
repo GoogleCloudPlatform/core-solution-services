@@ -15,7 +15,9 @@
 """
   Authentication service config file
 """
+# pylint: disable=line-too-long,broad-exception-caught
 import os
+from google.cloud import secretmanager
 from schemas.error_schema import (UnauthorizedUserErrorResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
@@ -33,7 +35,19 @@ SERVICE_NAME = os.getenv("SERVICE_NAME")
 
 REDIS_HOST = os.getenv("REDIS_HOST")
 
-FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
+secrets = secretmanager.SecretManagerServiceClient()
+
+try:
+  FIREBASE_API_KEY = secrets.access_secret_version(
+    request={
+      "name": "projects/" + PROJECT_ID +
+              "/secrets/firebase-api-key/versions/latest"
+    }).payload.data.decode("utf-8")
+  FIREBASE_API_KEY = FIREBASE_API_KEY.strip()
+except Exception as exc:
+  print(f"Exception while setting FIREBASE_API_KEY with "
+        f"secret [firebase-api-key], exc={exc}")
+  FIREBASE_API_KEY = None
 
 IDP_URL = "https://identitytoolkit.googleapis.com/v1/accounts"
 

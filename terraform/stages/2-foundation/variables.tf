@@ -113,3 +113,8 @@ variable "firestore_location_id" {
   description = "Firestore Dataset location. Available values: nam5 or eur3"
   default     = "nam5"
 }
+
+variable "firebase_api_secret_id" {
+  type    = string
+  default = "firebase-api-key"
+}

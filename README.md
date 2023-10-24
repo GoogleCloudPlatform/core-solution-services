@@ -156,7 +156,7 @@ Update the following questions in the prompt:
 - Cluster external endpoint IP address?
   - (The IP address will be automatically retrieved)
 - Kubernetes service names in ingress? (comma-separated string)
-  - **authentication,jobs-service,llm-service,user-management**
+  - **authentication,jobs-service,llm-service,user-management,rules-engine**
 - DNS domains (comma-separated string)?
   - (Your DNS domain for SSL cert, e.g. `css-backend.example.com`)
   > Note: You may leave the DNS domain as blank if you don't have any custom domains. If so, the backend IP address must be used to connect to API endpoints later on.
@@ -177,14 +177,6 @@ sb infra apply 4-llm
 ## Deploy Backend Microservices
 
 ### Before Deploy
-
-- Retrieve Firebase API key
-  ```
-  # Retrieve the default API key generated from the Terraform stage `2-foundation` automatically.
-
-  KEY_NAME=$(gcloud alpha services api-keys list --filter="displayName='API Key for Identity Platform'" --format="value(name)")
-  export FIREBASE_API_KEY=$(gcloud alpha services api-keys get-key-string ${KEY_NAME} --format="value(keyString)")
-  ```
 
 Follow README files for each microservice to set up:
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)

@@ -55,11 +55,6 @@ spec:
           value: users
         - name: REDIS_HOST
           value: redis-master
-        - name: FIREBASE_API_KEY # value to be added/removed later
-          valueFrom:
-            configMapKeyRef:
-              name: env-vars
-              key: FIREBASE_API_KEY
 
         ports:
         - containerPort: 80
