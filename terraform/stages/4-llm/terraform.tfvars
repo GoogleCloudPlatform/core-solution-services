@@ -1,2 +1,1 @@
-project_id       = "your-project-id"
-storage_location = "US"
+project_id       = "your-project-id" # sb-var:project_id

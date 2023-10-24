@@ -17,7 +17,7 @@
 
 terraform {
   backend "gcs" {
-    bucket = "your-project-id-tfstate"
+    bucket = "your-project-id-tfstate" # sb-var:project_id:{{project_id}}-tfstate
     prefix = "stage/3-gke-ingress"
   }
 }

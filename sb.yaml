@@ -45,7 +45,9 @@ global_variables:
   cluster_ca_certificate: ''
   cluster_external_endpoint: ''
   domain_name: example.com
+  project_id: your-project-id
+  project_number: your-project-number
 modified_at: 2023-Jul-19 19:00:45 UTC
 project_id: your-project-id
-project_name: core-solution-services
+project_name: your-project-id
 project_number: your-project-number

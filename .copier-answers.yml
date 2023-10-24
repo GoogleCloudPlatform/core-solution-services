@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_src_path: /Users/jonchen/workspace/solutions-builder/solutions_builder/cli/../template_root
+_src_path: src_path_to_solutions_builder_template
 advanced_settings: false
 create_vpc_network: true
 folder_name: your-project-id
