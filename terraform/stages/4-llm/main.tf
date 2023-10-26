@@ -26,7 +26,7 @@ resource "google_storage_bucket" "llm_doc_storage" {
 
 # Upload an sample PDF to the newly created bucket.
 resource "google_storage_bucket_object" "default" {
-  depends_on = [ google_storage_bucket.llm_doc_storage ]
+  depends_on = [google_storage_bucket.llm_doc_storage]
 
   name         = "genai-sample-doc.pdf"
   source       = "genai-sample-doc.pdf"
@@ -52,7 +52,7 @@ resource "null_resource" "dummy_collections_delete" {
 }
 
 resource "google_firestore_index" "user_chats_index" {
-  depends_on = [ null_resource.dummy_collections_create ]
+  depends_on = [null_resource.dummy_collections_create]
   project    = var.project_id
   collection = "user_chats"
 
@@ -75,7 +75,7 @@ resource "google_firestore_index" "user_chats_index" {
 }
 
 resource "google_firestore_index" "user_queries_index" {
-  depends_on = [ null_resource.dummy_collections_create ]
+  depends_on = [null_resource.dummy_collections_create]
   project    = var.project_id
   collection = "user_queries"
 
@@ -98,7 +98,7 @@ resource "google_firestore_index" "user_queries_index" {
 }
 
 resource "google_firestore_index" "batch_jobs_index" {
-  depends_on = [ null_resource.dummy_collections_create ]
+  depends_on = [null_resource.dummy_collections_create]
   project    = var.project_id
   collection = "batch_jobs"
 
@@ -117,5 +117,31 @@ resource "google_firestore_index" "batch_jobs_index" {
   fields {
     field_path = "__name__"
     order      = "ASCENDING"
+  }
+}
+
+resource "google_secret_manager_secret" "llm_backend_robot_username" {
+  secret_id = "llm-backend-robot-username"
+  project   = var.project_id
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+}
+
+resource "google_secret_manager_secret" "llm_backend_robot_password" {
+  secret_id = "llm-backend-robot-password"
+  project   = var.project_id
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
   }
 }

@@ -24,3 +24,8 @@ variable "project_id" {
     error_message = "The project_id value must be an non-empty string."
   }
 }
+
+variable "region" {
+  type        = string
+  description = "GCP region"
+}
