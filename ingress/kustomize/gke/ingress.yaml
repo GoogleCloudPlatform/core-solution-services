@@ -50,3 +50,11 @@ spec:
                 name: rules-engine
                 port:
                   number: 80
+
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-streamlit
+                port:
+                  number: 80

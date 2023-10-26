@@ -1,5 +1,5 @@
 # Changes here will be overwritten by Copier
-_src_path: /Users/jonchen/workspace/solutions-builder/solutions_builder/cli/../modules/restful_service
+_src_path: /path/to/src
 cloudrun_neg: true
 component_name: rules_engine
 data_model: rule

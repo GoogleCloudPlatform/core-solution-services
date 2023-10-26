@@ -25,5 +25,8 @@ requires:
   - rules_engine
   path: ./components/rules_engine
 - configs:
+  - frontend_streamlit
+  path: ./components/frontend_streamlit
+- configs:
   - ingress
   path: ./ingress

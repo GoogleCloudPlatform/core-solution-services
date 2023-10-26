@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-streamlit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-streamlit
+  template:
+    metadata:
+      labels:
+        app: frontend-streamlit
+    spec:
+      serviceAccountName: gke-sa
+      automountServiceAccountToken: true
+      containers:
+        - name: frontend-streamlit
+          image: frontend-streamlit
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-vars
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "100Mi"
+            limits:
+              memory: "5000Mi"
+              cpu: "2000m"
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /
+              port: 80
+              scheme: HTTP
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 10
+          readinessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /
+              port: 80
+              scheme: HTTP
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 10

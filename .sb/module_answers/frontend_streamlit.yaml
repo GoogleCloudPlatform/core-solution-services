@@ -1,0 +1,8 @@
+# Changes here will be overwritten by Copier
+_src_path: /path/to/src
+component_name: frontend_streamlit
+depend_on_common: false
+gcp_region: us-central1
+module_version: '1.0'
+resource_name: frontend-streamlit
+service_path: frontend-streamlit
