@@ -35,21 +35,21 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
   ```
   export YOUR_GITHUB_ID=<your-github-id>
   cd ~/workspace
-  git clone https://github.com/$YOUR_GITHUB_ID/core-solution-services.git
+  git clone https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git
   cd core-solution-services
   ```
 * Verify if the local git copy has the right remote endpoint.
   ```
   git remote -v
   # This will display the detailed remote list like below.
-  origin  https://github.com/$YOUR_GITHUB_ID/core-solution-services.git (fetch)
-  origin  https://github.com/$YOUR_GITHUB_ID/core-solution-services.git (push)
+  origin  https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git (fetch)
+  origin  https://github.com/${YOUR_GITHUB_ID}core-solution-services.git (push)
   ```
   - If for some reason your local git copy does not have the correct remotes, run the following:
     ```
-    git remote add origin https://github.com/$YOUR_GITHUB_ID/core-solution-services.git
+    git remote add origin https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git
     # Or, to reset the URL if origin remote exists
-    git remote set-url origin https://github.com/<your-github-id>/core-solution-services.git
+    git remote set-url origin https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git
     ```
 * Add the upstream repo to the remote list as **upstream**.
   ```
@@ -64,9 +64,10 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
   git checkout -f main
   git pull upstream main
   ```
-* Create a new local branch to start a new task (e.g. working on a feature or a bug fix):
+* Create a new local branch from `main` to start a new task (e.g. working on a feature or a bug fix):
   ```
   # This will create a new branch.
+  git branch # verify output as "* main"
   git checkout -b feature_xyz
   ```
 * After making changes, commit the local change to this custom branch and push to your fork repo on GitHub. Alternatively, you can use editors like VSCode to commit the changes easily.
@@ -231,7 +232,7 @@ pip install -r requirements.txt
 * Please make sure the `gcloud` command set to the current project.
   ```
   export PROJECT_ID=<your-dev-project-id>
-  gcloud config set project $PROJECT_ID
+  gcloud config set project ${PROJECT_ID}
   ```
 
 ###  4.2. <a name='Setupclustercontext'></a>Setup a context for your cluster
@@ -290,7 +291,7 @@ export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
 # In the solution folder:
 sb deploy
 
-# Or, to build and deploy with livereload:
+# Or, to build and deploy with live-reload:
 sb deploy --dev
 ```
 
@@ -298,7 +299,7 @@ Press Enter in the prompt:
 ```
 This will build and deploy all services using the command below:
 - gcloud container clusters get-credentials main-cluster --region us-central1 --project my-project-id
-- skaffold run -p default-deploy  --default-repo="gcr.io/my-project-id"
+- skaffold run -p default-deploy --default-repo="gcr.io/my-project-id"
 
 This may take a few minutes. Continue? [Y/n]:
 ```

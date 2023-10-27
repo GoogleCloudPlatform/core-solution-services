@@ -88,13 +88,13 @@ sb version
 export PROJECT_ID=<my-project-id>
 gcloud auth login
 gcloud auth application-default login
-gcloud config set project $PROJECT_ID
+gcloud config set project ${PROJECT_ID}
 ```
 
 ### Update Project ID
 Run this command to update the project id in config files of your local repo.
 ```
-sb set project-id $PROJECT_ID
+sb set project-id ${PROJECT_ID}
 ```
 
 ### Set up a Jump Host
@@ -133,11 +133,15 @@ gcloud auth application-default login
 
 # Set PROJECT_ID
 export PROJECT_ID=$(gcloud config get project)
-echo PROJECT_ID=$PROJECT_ID
+echo PROJECT_ID=${PROJECT_ID}
 
 # Update all project_id value in the source code.
 cd core-solution-services
-sb set project-id $PROJECT_ID
+sb set project-id ${PROJECT_ID}
+
+# Update domain name (for HTTPS)
+export DOMAIN_NAME=<my-domain-name> # e.g. css.example.com
+sb vars set domain_name ${DOMAIN_NAME}
 ```
 
 ### Initialize the Cloud infra
