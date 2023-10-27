@@ -175,20 +175,20 @@ DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 
 SERVICES = {
   "user-management": {
-    "host": "user-management",
+    "host": "http://user-management",
     "port": 80
   },
   "rules-engine": {
-    "host": "rules-engine",
+    "host": "http://rules-engine",
     "port": 80
   }
 }
 
-USER_MANAGEMENT_BASE_URL = f"http://{SERVICES['user-management']['host']}:" \
+USER_MANAGEMENT_BASE_URL = f"{SERVICES['user-management']['host']}:" \
                   f"{SERVICES['user-management']['port']}" \
                   f"/user-management/api/v1"
 
-RULES_ENGINE_BASE_URL = f"http://{SERVICES['rules-engine']['host']}:" \
+RULES_ENGINE_BASE_URL = f"{SERVICES['rules-engine']['host']}:" \
                   f"{SERVICES['rules-engine']['port']}" \
                   f"/rules-engine/api/v1"
 
@@ -214,7 +214,17 @@ try:
 except Exception as e:
   LLM_BACKEND_ROBOT_PASSWORD = None
 
+# Update this config for local development or notebook usage, by adding
+# an additional param to the UserCredentials class initializer, to
+# pass URL to auth client.
+#auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
+#                              LLM_BACKEND_ROBOT_PASSWORD,
+#                              "http://localhost:9004")
+# pass URL to auth client for external routes to auth.  Replace dev.domain with
+# the externally mapped domain for your dev server
+#auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
+#                              LLM_BACKEND_ROBOT_PASSWORD,
+#                              "https://[dev.domain]")
+
 auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
                               LLM_BACKEND_ROBOT_PASSWORD)
-# pass URL to auth client for local routes to auth
-#                              "localhost:9004")
