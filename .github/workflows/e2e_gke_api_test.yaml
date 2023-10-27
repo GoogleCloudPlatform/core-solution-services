@@ -15,13 +15,15 @@ on:
   workflow_dispatch:
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
-  SKAFFOLD_DEFAULT_REPO: gcr.io/gcp-mira-demo
-  SKAFFOLD_NAMESPACE: default
+  SKAFFOLD_DEFAULT_REPO: gcr.io/${{ vars.PROJECT_ID }}
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+  DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
   GKE_CLUSTER: main-cluster
-  GKE_ZONE: us-central1
+  GKE_REGION: us-central1
   KUSTOMIZE_VERSION: 5.0.0
   SKAFFOLD_VERSION: 2.4.0
-  SKAFFOLD_CACHE_GCS: gs://artifacts.gcp-mira-demo.appspot.com/skaffold/cache
+  SKAFFOLD_CACHE_GCS: gs://artifacts.${{ vars.PROJECT_ID }}.appspot.com/skaffold/cache
+
 
 jobs:
   deploy:
@@ -35,7 +37,7 @@ jobs:
         name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: ${{ secrets.DEPLOYMENT_SA_KEY }}
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Install gcloud
         uses: google-github-actions/setup-gcloud@v1
@@ -44,12 +46,31 @@ jobs:
 
       - name: Connect to cluster
         run: |
-          gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
+          gcloud container clusters get-credentials "${GKE_CLUSTER}" --region ${GKE_REGION} --project ${PROJECT_ID}
+
+      - name: Create namespace if it does not exist
+        run: |
+          SKAFFOLD_NAMESPACE=e2e-pr-${PR_NUMBER}
+          echo SKAFFOLD_NAMESPACE=$SKAFFOLD_NAMESPACE
+          kubectl get ns ${SKAFFOLD_NAMESPACE} || kubectl create ns ${SKAFFOLD_NAMESPACE}
+
+      - name: Set up Service Account
+        run: |
+          SKAFFOLD_NAMESPACE=e2e-pr-${PR_NUMBER} bash setup/setup_ksa.sh
 
       - name: Install Kustomize
         run: |
           wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v$KUSTOMIZE_VERSION/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
           sudo tar -xvf kustomize.tar.gz -C /usr/local/bin/
+
+      - name: Install Solutions Builder
+        run: |
+          pip install -U solutions-builder
+
+      - name: Update the project id in config files
+        run: |
+          sb set project-id ${PROJECT_ID} --yes
+          sb vars set domain_name ${DOMAIN_NAME}
 
       - name: Install Skaffold release binary
         run: |
@@ -64,28 +85,22 @@ jobs:
         run: |
           gsutil cp $SKAFFOLD_CACHE_GCS ~/.skaffold/ || true
 
-      - name: Set up Kubernetes namespace and Service Account
-        run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          NAMESPACE=e2e-pr-$PR_NUMBER
-          kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-          NAMESPACE=${NAMESPACE} bash setup/setup_ksa.sh
 
       - name: Build and deploy to cluster
         run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          NAMESPACE=e2e-pr-$PR_NUMBER
+          SKAFFOLD_NAMESPACE=e2e-pr-${PR_NUMBER}
           export DATABASE_PREFIX=e2e_pr${PR_NUMBER}_
-          skaffold run \
-          --profile gke \
-          --namespace $NAMESPACE \
-          -l commit=$GITHUB_SHA \
-          --tag PR${{ github.event.pull_request.number }}
+          sb deploy -n ${SKAFFOLD_NAMESPACE} --yes
+#          skaffold run \
+#          --profile default-deploy \
+#          --namespace $SKAFFOLD_NAMESPACE \
+#          -l commit=$GITHUB_SHA \
+#          --tag PR${{ github.event.pull_request.number }}
 
       - name: Upload Skaffold cache
         if: always()
         run: |
-          gsutil cp ~/.skaffold/cache $SKAFFOLD_CACHE_GCS
+          gsutil cp ~/.skaffold/cache ${SKAFFOLD_CACHE_GCS}
 
   e2e-api-test:
     runs-on: ubuntu-latest
@@ -93,7 +108,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7]
+        python-version: [3.9]
 
     steps:
       - uses: actions/checkout@v3
@@ -112,23 +127,33 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install pytest pytest-custom_exit_code pytest-cov pylint pytest-mock mock
-          python -m pip install -r e2e/requirements.txt
+          python -m pip install -r tests/e2e/requirements.txt
+
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Install gcloud
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: gke-gcloud-auth-plugin
 
       - name: Connect to cluster
         run: |
-          gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
+          gcloud container clusters get-credentials "${GKE_CLUSTER}" --region ${GKE_REGION} --project ${PROJECT_ID}
 
       - name: Set up port forwarding
         run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          NAMESPACE=e2e-pr-$PR_NUMBER
-          python e2e/utils/port_forward.py --namespace $NAMESPACE
+          SKAFFOLD_NAMESPACE=e2e-pr-${PR_NUMBER}
+          python -m pip install -r tests/e2e/requirements.txt
+          python tests/e2e/utils/port_forward.py --namespace $SKAFFOLD_NAMESPACE
 
       - name: Cleaning up database
         run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          cd e2e/utils
-          PYTHONPATH=../common/src DATABASE_PREFIX=e2e_pr${PR_NUMBER}_ python database_cleanup.py
+          cd tests/e2e/utils
+          PYTHONPATH=../../common/src DATABASE_PREFIX=e2e_pr${PR_NUMBER}_ python database_cleanup.py
 
       - name: Wait for 5s for database cleaning up
         run: sleep 5s
@@ -136,14 +161,12 @@ jobs:
 
       - name: Initialize database
         run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          cd e2e/utils
-          PYTHONPATH=../common/src DATABASE_PREFIX=e2e_pr${PR_NUMBER}_ python database_setup.py
+          cd tests/e2e/utils
+          PYTHONPATH=../../common/src DATABASE_PREFIX=e2e_pr${PR_NUMBER}_ python database_setup.py
 
-      - name: Run pytest
-        run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          PYTHONPATH=common/src DATABASE_PREFIX=e2e_pr${PR_NUMBER}_ python -m pytest e2e/gke_api_tests/
+#      - name: Run pytest
+#        run: |
+#          PYTHONPATH=../../common/src DATABASE_PREFIX=e2e_pr${PR_NUMBER}_ python -m pytest tests/e2e/
 
   dataset-cleanup:
     runs-on: ubuntu-latest
@@ -152,7 +175,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7]
+        python-version: [3.9]
 
     steps:
       - uses: actions/checkout@v3
@@ -179,13 +202,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install pytest pytest-custom_exit_code pytest-cov pylint pytest-mock mock
-          python -m pip install -r e2e/requirements.txt
+          python -m pip install -r tests/e2e/requirements.txt
 
       - name: Cleaning up database
         run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          cd e2e/utils
-          PYTHONPATH=../common/src DATABASE_PREFIX=e2e_pr${PR_NUMBER}_ python database_cleanup.py
+          cd tests/e2e/utils
+          PYTHONPATH=../../components/common/src DATABASE_PREFIX=e2e_pr${PR_NUMBER}_ python database_cleanup.py
 
   deployment-cleanup:
     name: Clean up deployment in PR namespace
@@ -202,9 +224,20 @@ jobs:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
           export_default_credentials: true
 
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Install gcloud
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: gke-gcloud-auth-plugin
+
       - name: Connect to cluster
         run: |
-          gcloud container clusters get-credentials "$GKE_CLUSTER" --zone "$GKE_ZONE"
+          gcloud container clusters get-credentials "${GKE_CLUSTER}" --region ${GKE_REGION} --project ${PROJECT_ID}
 
       - name: Install Kustomize
         run: |
@@ -222,9 +255,8 @@ jobs:
 
       - name: Delete all deployments and namespace
         run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          NAMESPACE=e2e-pr-$PR_NUMBER
-          skaffold delete --namespace $NAMESPACE
-          kubectl delete namespace $NAMESPACE
+          SKAFFOLD_NAMESPACE=e2e-pr-${PR_NUMBER}
+          skaffold delete --namespace $SKAFFOLD_NAMESPACE
+          kubectl delete namespace $SKAFFOLD_NAMESPACE
 
 # copier:endraw

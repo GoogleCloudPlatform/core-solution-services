@@ -1,0 +1,9 @@
+{
+  "localPort": {
+    "authentication": "9044",
+    "jobs-service": "9021",
+    "rules-engine": "9041",
+    "user-management": "9011",
+    "llm-service": "9003"
+  }
+}

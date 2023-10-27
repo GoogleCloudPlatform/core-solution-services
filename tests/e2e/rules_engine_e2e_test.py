@@ -31,6 +31,7 @@ def service_url():
 
 def test_api_ping(auth_token, service_url):
   headers = {"Authorization": f"Bearer {auth_token}"}
+  print(f"auth_token={auth_token}, service_url={service_url}")
   res = requests.get(service_url + "/ping", headers=headers)
   assert res.status_code == 200
 

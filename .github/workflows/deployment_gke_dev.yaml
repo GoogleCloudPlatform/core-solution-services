@@ -53,7 +53,7 @@ jobs:
 
       - name: Set up Service Account
         run: |
-          NAMESPACE=${SKAFFOLD_NAMESPACE} bash setup/setup_ksa.sh
+          SKAFFOLD_NAMESPACE=${SKAFFOLD_NAMESPACE} bash setup/setup_ksa.sh
 
       - name: Install Kustomize
         run: |
@@ -84,7 +84,7 @@ jobs:
 
       - name: Build and deploy to cluster
         run: |
-          sb deploy --yes
+          sb deploy -n ${SKAFFOLD_NAMESPACE} --yes
 
       - name: Upload Skaffold cache
         if: always()
