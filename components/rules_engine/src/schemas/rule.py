@@ -14,9 +14,7 @@
 
 """Pydantic Model for Rule API's"""
 
-from typing import Optional
 from pydantic import BaseModel
-from datetime import datetime
 
 
 class RuleSchema(BaseModel):
@@ -27,10 +25,8 @@ class RuleSchema(BaseModel):
   title: str
   description: str
   type: str
-  fields: list
+  fields: dict
   status: str
-  created_at: Optional[datetime]
-  modified_at: Optional[datetime]
 
   class Config:
     orm_mode = True

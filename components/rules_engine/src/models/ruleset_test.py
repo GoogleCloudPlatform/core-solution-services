@@ -17,30 +17,37 @@ Unit test for Rule.py
 """
 # disabling these rules, as they cause issues with pytest fixtures
 # pylint: disable=unused-import,unused-argument,redefined-outer-name
-from models.rule import Rule
+from models.ruleset import RuleSet
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 from datetime import datetime
 
 
-TEST_RULE = {
-  "name": "Rule name",
-  "title": "Rule Title",
-  "type": "Rule Type",
-  "description": "Rule Description",
-  "fields": {
-    "Foo": {},
-    "Bar": {},
-  },
-  "sql_query": "select employee_name from employee",
-  "created_at": datetime(year=2022, month=10, day=14),
-  "modified_at": datetime(year=2022, month=12, day=25)
+TEST_RULESET = {
+  "name": "RuleSet name",
+  "labels": ["foo", "bar"],
+  "rules": [
+    {
+      "rule_id": "rule-1",
+      "fields": {
+        "field-1": "int",
+        "field-2": "str",
+      }
+    },
+    {
+      "rule_id": "rule-2",
+      "fields": {
+        "field-1": "int",
+        "field-2": "str",
+      }
+    },
+  ]
 }
 
-def test_rule(clean_firestore):
+def test_ruleset(clean_firestore):
   """Test for creating, loading and deleting of a new rule"""
-  new_rule = Rule.from_dict(TEST_RULE)
-  new_rule.save()
-  rule = Rule.find_by_id(new_rule.id)
-  assert rule.title == TEST_RULE["title"]
-  assert rule.description == TEST_RULE["description"]
-  Rule.soft_delete_by_id(new_rule.id)
+  new_ruleset = RuleSet.from_dict(TEST_RULESET)
+  new_ruleset.save()
+  ruleset = RuleSet.find_by_id(new_ruleset.id)
+  assert ruleset.name == TEST_RULESET["name"]
+  assert ruleset.rules == TEST_RULESET["rules"]
+  RuleSet.soft_delete_by_id(new_ruleset.id)

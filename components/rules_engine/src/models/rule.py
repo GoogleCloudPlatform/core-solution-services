@@ -14,7 +14,7 @@
 
 """Data model for Rule. See https://octabyte.io/FireO/ for details."""
 
-from fireo.fields import IDField, TextField, DateTime, ListField
+from fireo.fields import IDField, TextField, Field
 from fireo.queries.errors import ReferenceDocNotExist
 from common.models.base_model import BaseModel
 
@@ -30,9 +30,7 @@ class Rule(BaseModel):
   title = TextField()
   description = TextField()
   type = TextField()
-  fields = ListField()
-  created_at = DateTime()
-  modified_at = DateTime()
+  fields = Field()
 
   @classmethod
   def find_by_doc_id(cls, doc_id):

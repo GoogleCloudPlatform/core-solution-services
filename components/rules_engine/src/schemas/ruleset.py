@@ -32,3 +32,14 @@ class RulesetFieldsSchema(BaseModel):
         }
       }
     }
+
+class RulesetRulesImportSchema(BaseModel):
+  rules_data: dict = {}
+
+  class Config:
+    orm_mode = True
+    schema_extra = {
+      "example": {
+        "rules_data": {}
+      }
+    }

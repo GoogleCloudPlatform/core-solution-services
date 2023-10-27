@@ -14,29 +14,37 @@
 
 """Firebase Data model for RuleSet"""
 
-from fireo.fields import IDField, TextField, DateTime, ListField
+from fireo.fields import IDField, TextField, ListField, Field
 from fireo.queries.errors import ReferenceDocNotExist
 from common.models.base_model import BaseModel
+
+COLLECTION_NAME = BaseModel.DATABASE_PREFIX + "rulesets"
 
 class RuleSet(BaseModel):
   """RuleSet ORM class"""
 
   class Meta:
     ignore_none_field = False
-    collection_name = BaseModel.DATABASE_PREFIX + "rulesets"
+    collection_name = COLLECTION_NAME
 
   id = IDField()
   name = TextField()
   labels = ListField(str)
   rules = ListField()
   description = TextField()
-  created_at = DateTime()
-  modified_at = DateTime()
+
+  # To store any runner-specific ruleset data. E.g.
+  # "runner_data": {
+  #   "gorules": {
+  #      ...
+  #   }
+  # }
+  runner_data = Field()
 
   @classmethod
   def find_by_doc_id(cls, doc_id):
     try:
-      ruleset = RuleSet.collection.get(f"rulesets/{doc_id}")
+      ruleset = RuleSet.collection.get(f"{COLLECTION_NAME}/{doc_id}")
     except ReferenceDocNotExist:
       return None
 

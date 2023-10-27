@@ -18,8 +18,8 @@ class BaseRulesRunner:
   def __init__(self):
     pass
 
-  def load_rules_from_json(self, data: dict, ruleset_id: str):
+  def load_rules_from_json(self, ruleset_id: str, data: dict):
     pass
 
-  def evaluate(self) -> bool:
-    return False
+  def evaluate(self, ruleset_id: str, content: dict):
+    pass
