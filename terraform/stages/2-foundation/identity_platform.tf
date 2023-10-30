@@ -34,7 +34,7 @@ resource "google_apikeys_key" "idp_api_key" {
 }
 
 
-resource "google_secret_manager_secret" "secret_key" {
+resource "google_secret_manager_secret" "firebase-api-key" {
   secret_id = var.firebase_api_secret_id
   replication {
     auto {}
@@ -42,6 +42,6 @@ resource "google_secret_manager_secret" "secret_key" {
 }
 
 resource "google_secret_manager_secret_version" "secret_api_key" {
-  secret = google_secret_manager_secret.secret_key.id
+  secret = google_secret_manager_secret.firebase-api-key.id
   secret_data = google_apikeys_key.idp_api_key.key_string
 }
