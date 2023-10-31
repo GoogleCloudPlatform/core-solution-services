@@ -12,27 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib
 import streamlit as st
+from streamlit_chat import message
+from streamlit.components.v1 import html
 
-login = importlib.import_module("pages.1_Login")
-landing = importlib.import_module("pages.2_Landing")
-
-
-def app():
-  st.set_page_config(
-      page_title="Mira Demo",
-      page_icon="💬",
-      layout="wide",
-      initial_sidebar_state="expanded",
-  )
-
-  if st.session_state.get("is_authenticated", False):
-    landing.landing_page()
-  else:
-    # TODO: Implement the actual authentication process via API call.
-    # Change this to False for testing with the login page.
-    login.login_page()
+def login_page():
+  st.title("Login")
 
 if __name__ == "__main__":
-  app()
+  # st.set_page_config(page_title="Login test")
+
+
+  login_page()

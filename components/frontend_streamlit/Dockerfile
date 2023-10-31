@@ -1,6 +1,5 @@
-
-FROM python:3.9-slim
-
+ARG COMMON_IMAGE
+FROM ${COMMON_IMAGE}
 
 WORKDIR /opt
 COPY requirements.txt service_requirements.txt
