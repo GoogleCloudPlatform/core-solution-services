@@ -232,3 +232,19 @@ Follow the steps below to clone a FlutterFlow UI app:
 
 Please refer to [TROUBLESHOOTING.md](https://github.com/GoogleCloudPlatform/solutions-builder/blob/main/docs/TROUBLESHOOTING.md) for any Terraform errors
 
+```commandline
+╷
+│ Error: Error creating Database: googleapi: Error 409: Database already exists. Please use another database_id
+│
+│   with google_firestore_database.database,
+│   on firestore_setup.tf line 42, in resource "google_firestore_database" "database":
+│   42: resource "google_firestore_database" "database" {
+│
+╵
+```
+Fix
+```commandline
+cd terraform/stages/2-foundation/
+terraform import google_firestore_database.database "(default)"
+cd -
+```
