@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Rules RESTful Microservice"""
 
 import uvicorn
 import config
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 from common.utils.http_exceptions import add_exception_handlers
+from common.utils.auth_service import validate_token
 
 from routes import rules, rulesets
 
@@ -46,7 +46,10 @@ def hello():
   """
 
 
-api = FastAPI(title=service_title, version=version)
+api = FastAPI(
+    title=service_title,
+    version=version,
+    dependencies=[Depends(validate_token)])
 
 # Append Rules CRUD APIs to the app.
 api.include_router(rules.router)
@@ -57,8 +60,9 @@ add_exception_handlers(api)
 app.mount(f"/{service_path}/api/{version}", api)
 
 if __name__ == "__main__":
-  uvicorn.run("main:app",
-              host="0.0.0.0",
-              port=int(config.PORT),
-              log_level="info",
-              reload=True)
+  uvicorn.run(
+      "main:app",
+      host="0.0.0.0",
+      port=int(config.PORT),
+      log_level="info",
+      reload=True)
