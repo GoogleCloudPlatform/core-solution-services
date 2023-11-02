@@ -65,12 +65,10 @@ jobs:
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
 
       - name: Run pytest with coverage
-        # We run tests separately for routes and services in the LLM service due to mocking conflicts
         run: |
           BASE_DIR=$(pwd)
           cd ${{ matrix.target-folder }}/src
-          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest routes/*_test.py
-          # PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest services/*_test.py
+          PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest
 
   linter:
     runs-on: ubuntu-latest
@@ -89,7 +87,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pylint==2.17.6
+          python -m pip install pylint
 
       - name: Lint with pylint
         run: |

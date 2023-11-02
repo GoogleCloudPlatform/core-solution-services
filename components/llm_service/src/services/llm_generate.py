@@ -129,10 +129,10 @@ async def google_llm_predict(prompt: str, is_chat: bool,
     if is_chat:
       chat_model = ChatModel.from_pretrained(google_llm)
       chat = chat_model.start_chat()
-      response = chat.send_message(context_prompt, **parameters)
+      response = await chat.send_message_async(context_prompt, **parameters)
     else:
       text_model = TextGenerationModel.from_pretrained(google_llm)
-      response = text_model.predict(
+      response = await text_model.predict_async(
           context_prompt,
           **parameters,
       )
