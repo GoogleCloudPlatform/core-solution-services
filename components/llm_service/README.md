@@ -57,7 +57,7 @@ This will create a Vertex AI Matching Engine Index. You can check out the progre
 > The Kubernetes Job may show time out while creating the Matching Engine and Endpoint in its logs, but the creation process will still be executed in the background.
 > You will see the Endpoint created soon later.
 
-Once finished, you shall see the folloing artifacts:
+Once finished, you shall see the following artifacts:
 - A record in `query_engines` collection in Firestore, representing the new Query engine.
 - A corresponding document metadata in `query_documents` collection in Firestore.
 - A record in `query_document_chunk` collection in Firestore.
@@ -158,7 +158,9 @@ If a batch job is created succesfully, but there's an error about creating a pod
 $ kubectl get jobs
 NAME                                   COMPLETIONS   DURATION   AGE
 d49bb762-4c0e-4972-abf9-5d284bd74597   0/1           3m57s      3m57s
+```
 
+```
 $ kubectl describe job d49bb762-4c0e-4972-abf9-5d284bd74597
 
 Pod Template:
@@ -199,7 +201,7 @@ Events:
   Warning  BackoffLimitExceeded  4m8s   job-controller  Job has reached the specified backoff limit
 ```
 
-Then describe the pod and see what's going on.
+Then describe the pod from the above output (listed in the Events at the end as `Created pod`) and see what's going on.
 ```
 $ kubectl describe pod d49bb762-4c0e-4972-abf9-5d284bd74597-l87wf
 
@@ -228,4 +230,3 @@ Now the pod seems get some error, run the following to checkout logs (Or see log
 ```
 kubectl logs d49bb762-4c0e-4972-abf9-5d284bd74597-l87wf
 ```
-

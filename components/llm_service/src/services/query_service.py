@@ -402,9 +402,19 @@ def _process_documents(doc_url: str, bucket_name: str,
       for text in doc_text_list:
         text_chunks.extend(text_splitter.split_text(text))
 
+      if all(element == "" for element in text_chunks):
+        Logger.warning(f"All extracted pages from {doc_name} are empty.")
+        docs_not_processed.append(doc_url)
+        continue
+
       # generate embedding data and store in local dir
       new_index_base, embeddings_dir = \
           _generate_index_data(doc_name, text_chunks, index_base)
+
+      if embeddings_dir is None:
+        Logger.warning(f"Could not index {doc_name}, skipping")
+        docs_not_processed.append(doc_url)
+        continue
 
       # copy data files up to bucket
       bucket = storage_client.get_bucket(bucket_name)
