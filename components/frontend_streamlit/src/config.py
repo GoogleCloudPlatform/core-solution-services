@@ -17,7 +17,14 @@
 """
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 
+import os
+from google.cloud import secretmanager
+from common.utils.token_handler import UserCredentials
+
+secrets = secretmanager.SecretManagerServiceClient()
+
 PROJECT_ID = os.environ.get("PROJECT_ID")
+API_BASE_URL = os.environ.get("BASE_URL")
 
 try:
   LLM_BACKEND_ROBOT_USERNAME = secrets.access_secret_version(
