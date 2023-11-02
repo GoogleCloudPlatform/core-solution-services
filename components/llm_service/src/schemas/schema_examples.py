@@ -119,6 +119,22 @@ USER_PLAN_EXAMPLE = {
   "plan_steps": ["fake-planstep-id-1", "fake-planstep-id-2"]
 }
 
+USER_PLAN_STEPS_EXAMPLE_1 = {
+  "id": "fake-planstep-id-1",
+  "user_id": "fake-user-id",
+  "plan_id": "fake-plan-id",
+  "description": "Use [fake tool] to [perform step description 1]",
+  "agent_name": "Casey"
+}
+
+USER_PLAN_STEPS_EXAMPLE_2 = {
+  "id": "fake-planstep-id-2",
+  "user_id": "fake-user-id",
+  "plan_id": "fake-plan-id",
+  "description": "Use [fake tool] to [perform step description 2]",
+  "agent_name": "Casey"
+}
+
 AGENT_RUN_EXAMPLE = {
   "prompt": "hello"
 }
@@ -135,7 +151,22 @@ AGENT_PLAN_EXAMPLE = {
 AGENT_PLAN_RESPONSE_EXAMPLE = {
   "output": "hello",
   "chat": CHAT_EXAMPLE,
-  "plan": USER_PLAN_EXAMPLE
+  "plan": {
+    "id": "fake-plan-id",
+    "name": "example plan",
+    "user_id": "fake-user-id",
+    "agent_name": "Casey",
+    "plan_steps": [
+      {
+        "id": "fake-planstep-id-1",
+        "description": "Use [fake tool] to [perform step description 1]",
+      },
+      {
+        "id": "fake-planstep-id-2",
+        "description": "Use [fake tool] to [perform step description 2]",
+      }
+    ]
+  }
 }
 
 USER_PLAN_RESPONSE_EXAMPLE = USER_PLAN_EXAMPLE

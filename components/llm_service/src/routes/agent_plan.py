@@ -18,7 +18,7 @@
 from datetime import datetime
 import traceback
 from fastapi import APIRouter, Depends
-from common.models import User, UserChat, UserPlan
+from common.models import User, UserChat, UserPlan, PlanStep
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
 from common.utils.config import JOB_TYPE_AGENT_PLAN_EXECUTE
@@ -121,6 +121,16 @@ def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
 
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
+
+    # return plan steps in summary form with plans and descriptions
+    plan_steps = []
+    for plan_step_id in plan_data["plan_steps"]:
+      plan_step = PlanStep.find_by_id(plan_step_id)
+      plan_steps.append({
+        "id": plan_step_id,
+        "description": plan_step.description
+      })
+    plan_data["plan_steps"] = plan_steps
 
     response = {
       "content": output,
