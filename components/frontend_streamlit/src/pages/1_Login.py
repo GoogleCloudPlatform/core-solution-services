@@ -13,14 +13,40 @@
 # limitations under the License.
 
 import streamlit as st
-from streamlit_chat import message
-from streamlit.components.v1 import html
+import importlib
+
+# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
+
+utils = importlib.import_module("utils")
+api = importlib.import_module("api") 
+placeholder = st.empty()
+      
+def login_clicked(username, password):
+    token = api.login_user(username, password)
+    if token:
+        st.session_state['loggedIn'] = True
+        st.session_state['auth_token']  = token
+        st.session_state['username'] = username
+        st.session_state['is_authenticated'] = True
+        utils.navigate_to("/Landing")
+    else:
+        st.session_state['loggedIn'] = False
+        st.error("Invalid username or password")
 
 def login_page():
-  st.title("Login")
+    if 'loggedIn' not in st.session_state:
+        st.session_state['loggedIn'] = False
+
+    if st.session_state['loggedIn'] == False:
+      st.warning('Please enter your username and password')
+      
+    with placeholder.form("login"):
+        st.title("Login")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submit = st.form_submit_button("Login")
+    if submit:
+        login_clicked(username, password)
 
 if __name__ == "__main__":
-  # st.set_page_config(page_title="Login test")
-
-
-  login_page()
+    login_page()

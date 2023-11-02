@@ -20,8 +20,10 @@ from common.models import Agent, UserChat
 from config import auth_client, API_BASE_URL
 from typing import List
 import streamlit as st
+import requests
 
 LLM_SERVICE_URL = API_BASE_URL.rstrip("/") + "/llm-service/api/v1"
+AUTH_API_URL = API_BASE_URL.rstrip("/") + "/authentication/api/v1"
 
 def get_auth_token():
   return st.session_state.get("auth_token", None)
@@ -102,3 +104,21 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
   json_response = resp.json()
   output = json_response["data"]
   return output
+
+def login_user(user_email, user_password, base_url=None) -> str:
+    req_body = {
+        "email": user_email,
+        "password": user_password
+    }
+    url = f"{AUTH_API_URL}/sign-in/credentials"
+    sign_in_req = requests.post(url, json=req_body, verify=False)
+
+    sign_in_res = sign_in_req.json()
+    if sign_in_res is None or sign_in_res["data"] is None:
+        print("User signed in fail", sign_in_req.text)
+    else:
+        print(f"Signed in with existing user '{user_email}'. ID Token:\n")
+        id_token = sign_in_res["data"]["idToken"]
+        st.session_state['loggedIn'] = True
+        st.session_state['is_authenticated'] = True 
+        return id_token
