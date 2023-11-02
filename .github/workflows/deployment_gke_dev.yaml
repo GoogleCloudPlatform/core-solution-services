@@ -85,6 +85,7 @@ jobs:
 
       - name: Build and deploy to cluster
         run: |
+          export API_BASE_URL=${API_BASE_URL}
           sb deploy -n ${SKAFFOLD_NAMESPACE} --yes
 
       - name: Upload Skaffold cache
