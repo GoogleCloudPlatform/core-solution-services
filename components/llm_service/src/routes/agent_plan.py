@@ -102,7 +102,7 @@ def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
     user = User.find_by_email(user_data.get("email"))
     llm_type = get_llm_type_for_agent(agent_name)
 
-    output, user_plan = agent_plan(agent_name, prompt)
+    output, user_plan = agent_plan(agent_name, prompt, user.id)
 
     # create default name for user plan
     now = datetime.now().strftime("%m-%d-%Y %H:%M")
