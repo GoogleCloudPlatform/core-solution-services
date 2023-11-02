@@ -17,7 +17,10 @@ Pydantic Model for LLM Agent API's
 from typing import Optional
 from pydantic import BaseModel
 from schemas.schema_examples import (AGENT_RUN_EXAMPLE,
-                                     AGENT_RUN_RESPONSE_EXAMPLE)
+                                     AGENT_RUN_RESPONSE_EXAMPLE,
+                                     AGENT_PLAN_EXAMPLE,
+                                     AGENT_PLAN_RESPONSE_EXAMPLE,
+                                     USER_PLAN_RESPONSE_EXAMPLE)
 
 class LLMAgentGetAllResponse(BaseModel):
   """Agent Get all model"""
@@ -56,4 +59,39 @@ class LLMAgentRunResponse(BaseModel):
     orm_mode = True
     schema_extra = {
         "example": AGENT_RUN_RESPONSE_EXAMPLE
+    }
+
+class LLMAgentPlanModel(BaseModel):
+  """LLM Agent plan model"""
+  prompt: str
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": AGENT_PLAN_EXAMPLE
+    }
+
+class LLMAgentPlanResponse(BaseModel):
+  """LLM Agent plan response model"""
+  success: str
+  message: str
+  data: dict = {}
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": AGENT_PLAN_RESPONSE_EXAMPLE
+    }
+
+
+class LLMUserPlanResponse(BaseModel):
+  """LLM User plan response model"""
+  success: str
+  message: str
+  data: dict = {}
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": USER_PLAN_RESPONSE_EXAMPLE
     }

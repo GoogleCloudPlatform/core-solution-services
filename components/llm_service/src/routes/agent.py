@@ -12,20 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable = broad-except,unused-import
+# pylint: disable = broad-except
 
 """ Agent endpoints """
 import traceback
-from typing import Optional
 from fastapi import APIRouter, Depends
 from common.models import User, UserChat
 from common.utils.auth_service import validate_token
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
-                                 ValidationError,
                                  PayloadTooLargeError)
-from common.utils.http_exceptions import (InternalServerError, BadRequest,
-                                          ResourceNotFound, PayloadTooLarge)
+from common.utils.http_exceptions import (InternalServerError, BadRequest)
 from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentRunModel,
                                  LLMAgentGetAllResponse)
@@ -67,7 +64,7 @@ def get_agents():
 def agent_run(agent_name: str, run_config: LLMAgentRunModel,
               user_data: dict = Depends(validate_token)):
   """
-  Run agent on user input. Store history in new UserChat. 
+  Run agent on user input. Store history in new UserChat.
 
   Args:
       agent_name(str): Agent name
@@ -91,6 +88,7 @@ def agent_run(agent_name: str, run_config: LLMAgentRunModel,
     llm_type = get_llm_type_for_agent(agent_name)
 
     output = run_agent(agent_name, prompt)
+    agent_thought = output
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
@@ -104,7 +102,8 @@ def agent_run(agent_name: str, run_config: LLMAgentRunModel,
 
     response = {
       "content": output,
-      "chat": chat_data
+      "chat": chat_data,
+      "agent_thought": agent_thought
     }
 
     return {
@@ -152,6 +151,7 @@ def agent_run_chat(agent_name: str, chat_id: str,
     # run agent to get output
     chat_history = langchain_chat_history(user_chat)
     output = run_agent(agent_name, prompt, chat_history)
+    agent_thought = output
 
     # save chat history
     user_chat.update_history(prompt, output)
@@ -159,15 +159,16 @@ def agent_run_chat(agent_name: str, chat_id: str,
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
 
-    response = {
+    response_data = {
       "content": output,
-      "chat": chat_data
+      "chat": chat_data,
+      "agent_thought": agent_thought
     }
 
     return {
         "success": True,
         "message": "Successfully ran agent",
-        "data": response
+        "data": response_data
     }
   except Exception as e:
     Logger.error(e)

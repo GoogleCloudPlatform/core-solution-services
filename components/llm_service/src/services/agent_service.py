@@ -13,22 +13,41 @@
 # limitations under the License.
 
 """ Agent service """
-# pylint: disable=consider-using-dict-items,consider-iterating-dictionary
+# pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-import
 
-from typing import List
-from common.models.agent import AgentType
+import re
+from typing import List, Tuple
+from common.models.agent import AgentType, UserPlan, PlanStep
 from common.utils.errors import ResourceNotFoundException
-from config import VERTEX_LLM_TYPE_BISON_CHAT
+from common.utils.http_exceptions import BadRequest
+from common.utils.logging_handler import Logger
+from config import (VERTEX_LLM_TYPE_BISON_CHAT,
+                    OPENAI_LLM_TYPE_GPT3_5,
+                    OPENAI_LLM_TYPE_GPT4)
 from langchain.agents import AgentExecutor
-from services.agents import MediKateAgent
+from services.agents import MediKateAgent, CaseyAgent, CaseyPlanAgent
 
 AGENTS = {
   "MediKate": {
     "llm_type": VERTEX_LLM_TYPE_BISON_CHAT,
     "agent_type": AgentType.LANGCHAIN_CONVERSATIONAL,
     "agent_class": MediKateAgent
+  },
+  "Casey": {
+    "llm_type": VERTEX_LLM_TYPE_BISON_CHAT,
+    "agent_type": AgentType.LANGCHAIN_CONVERSATIONAL,
+    "agent_class": CaseyAgent
+  },
+  "CaseyPlanner": {
+    "llm_type": OPENAI_LLM_TYPE_GPT4,
+    "agent_type": AgentType.LANGCHAIN_ZERO_SHOT,
+    "agent_class": CaseyPlanAgent
   }
 }
+
+PLANNING_AGENTS = [
+  "Casey"
+]
 
 def get_all_agents() -> List[dict]:
   """
@@ -53,6 +72,7 @@ def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
 
   Returns:
       output(str): the output of the agent on the user input
+      action_steps: the list of action steps take by the agent for the run
   """
   agent_params = AGENTS[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
@@ -74,10 +94,88 @@ def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
   return output
 
 
+def agent_plan(agent_name:str, prompt:str,
+               user_id:str, chat_history:List = None) -> Tuple[str, UserPlan]:
+  """
+  Run an agent on user input to generate a plan
+
+  Args:
+      agent_name(str): Agent name
+      prompt(str): the user input prompt
+      chat_history(List): any previous chat history for context
+
+  Returns:
+      output(str): the output of the agent on the user input
+      user_plan(str): user plan object created from agent plan
+  """
+  if not agent_name in PLANNING_AGENTS:
+    raise BadRequest(f"{agent_name} is not a planning agent.")
+
+  # get LLM service agent
+  agent_params = AGENTS[agent_name]
+  llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
+
+  plan_agent_name = llm_service_agent.get_planning_agent()
+
+  output = run_agent(plan_agent_name, prompt, chat_history)
+
+  raw_plan_steps = parse_plan(output)
+
+  # create user plan
+  user_plan = UserPlan(user_id=user_id, agent_name=agent_name)
+  user_plan.save()
+
+  # create PlanStep models
+  plan_steps = [
+      PlanStep(user_id=user_id,
+               plan_id=user_plan.id,
+               description=step_description,
+               agent_name=agent_name)
+      for step_description in raw_plan_steps]
+  plan_step_ids = []
+  for step in plan_steps:
+    step.save()
+    plan_step_ids.append(step.id)
+
+  # save plan steps
+  user_plan.plan_steps = plan_step_ids
+  user_plan.update()
+
+  return output, user_plan
+
+
+def parse_plan(text: str) -> List[str]:
+  """
+  Parse plan steps from agent output
+  """
+  Logger.info(f"agent plan output {text}")
+
+  # Regex pattern to match the steps after 'Plan:'
+  # We are using the re.DOTALL flag to match across newlines and
+  # re.MULTILINE to treat each line as a separate string
+  steps_regex = re.compile(
+      r"^\s*\d+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
+
+  # Find the part of the text after 'Plan:'
+  plan_part = re.split(r"Plan:", text, flags=re.IGNORECASE)[-1]
+
+  # Find all the steps within the 'Plan:' part
+  steps = steps_regex.findall(plan_part)
+
+  # strip whitespace
+  steps = [step.strip() for step in steps]
+
+  return steps
+
+
+def batch_execute_plan():
+  pass
+
+
 def get_llm_type_for_agent(agent_name: str) -> str:
   """
   Return agent llm_type given agent name
-  
+
   Args:
     agent_name: str
   Returns:

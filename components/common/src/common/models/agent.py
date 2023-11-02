@@ -70,3 +70,58 @@ class Agent(BaseModel):
             "deleted_at_timestamp", "==",
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
+
+
+class UserPlan(BaseModel):
+  """
+  User Plan ORM class
+  """
+  id = IDField()
+  name = TextField()
+  user_id = TextField(required=True)
+  agent_name = TextField(required=True)
+  plan_steps = ListField() # list of plan step ids
+
+  class Meta:
+    ignore_none_field = False
+    collection_name = BaseModel.DATABASE_PREFIX + "user_plans"
+
+  @classmethod
+  def find_by_user(cls,
+                   userid,
+                   skip=0,
+                   order_by="-created_time",
+                   limit=1000):
+    """
+    Fetch all plans for user
+
+    Args:
+        userid (str): User id
+        skip (int, optional): number of plans to skip.
+        order_by (str, optional): order list according to order_by field.
+        limit (int, optional): limit till cohorts to be fetched.
+
+    Returns:
+        List[UserPlan]: List of plans for user.
+
+    """
+    objects = cls.collection.filter(
+        "user_id", "==", userid).filter(
+            "deleted_at_timestamp", "==",
+            None).order(order_by).offset(skip).fetch(limit)
+    return list(objects)
+
+
+class PlanStep(BaseModel):
+  """
+  Plan Step ORM class
+  """
+  id = IDField()
+  user_id = TextField(required=True)
+  agent_name = TextField(required=True)
+  plan_id = TextField(required=True)
+  description = TextField(required=True)
+
+  class Meta:
+    ignore_none_field = False
+    collection_name = BaseModel.DATABASE_PREFIX + "plan_steps"

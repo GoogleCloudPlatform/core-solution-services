@@ -155,7 +155,7 @@ if ENABLE_OPENAI_LLM:
 GOOGLE_LLM = {}
 if ENABLE_GOOGLE_LLM:
   GOOGLE_LLM = {
-    VERTEX_LLM_TYPE_BISON_TEXT: "text-bison@001",
+    VERTEX_LLM_TYPE_BISON_TEXT: "text-bison",
     VERTEX_LLM_TYPE_BISON_CHAT: "chat-bison@001",
     VERTEX_LLM_TYPE_GECKO_EMBEDDING: "textembedding-gecko@001"
   }

@@ -26,7 +26,7 @@ os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 import config
 import uvicorn
 from fastapi import FastAPI, Depends
-from routes import llm, chat, query, agent
+from routes import llm, chat, query, agent, agent_plan
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_token
 
@@ -59,6 +59,7 @@ api.include_router(llm.router)
 api.include_router(chat.router)
 api.include_router(query.router)
 api.include_router(agent.router)
+api.include_router(agent_plan.router)
 
 add_exception_handlers(app)
 add_exception_handlers(api)

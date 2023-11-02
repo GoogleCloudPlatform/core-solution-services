@@ -111,6 +111,14 @@ USER_EXAMPLE = {
     "status": "active"
 }
 
+USER_PLAN_EXAMPLE = {
+  "id": "fake-plan-id",
+  "name": "example plan",
+  "user_id": "fake-user-id",
+  "agent_name": "Casey",
+  "plan_steps": ["fake-planstep-id-1", "fake-planstep-id-2"]
+}
+
 AGENT_RUN_EXAMPLE = {
   "prompt": "hello"
 }
@@ -119,3 +127,15 @@ AGENT_RUN_RESPONSE_EXAMPLE = {
   "output": "hello",
   "chat": CHAT_EXAMPLE
 }
+
+AGENT_PLAN_EXAMPLE = {
+  "prompt": "hello"
+}
+
+AGENT_PLAN_RESPONSE_EXAMPLE = {
+  "output": "hello",
+  "chat": CHAT_EXAMPLE,
+  "plan": USER_PLAN_EXAMPLE
+}
+
+USER_PLAN_RESPONSE_EXAMPLE = USER_PLAN_EXAMPLE

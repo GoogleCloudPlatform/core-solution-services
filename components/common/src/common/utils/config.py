@@ -48,6 +48,7 @@ JOB_TYPE_CREATE_KNOWLEDGE_GRAPH_EMBEDDING = "create_knowledge_graph_embedding"
 JOB_TYPE_DEEP_KNOWLEDGE_TRACING = "deep-knowledge-tracing"
 JOB_TYPE_VALIDATE_AND_UPLOAD_ZIP = "validate_and_upload_zip"
 JOB_TYPE_QUERY_ENGINE_BUILD = "query_engine_build"
+JOB_TYPE_AGENT_PLAN_EXECUTE = "agent_plan_execute"
 
 JOB_TYPES_WITH_PREDETERMINED_TITLES = [
     JOB_TYPE_UNIFIED_ALIGNMENT,

@@ -128,7 +128,7 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   try:
     if is_chat:
       chat_model = ChatModel.from_pretrained(google_llm)
-      chat = chat_model.start_chat()
+      chat = chat_model.start_chat(max_output_tokens=1024)
       response = await chat.send_message_async(context_prompt, **parameters)
     else:
       text_model = TextGenerationModel.from_pretrained(google_llm)
