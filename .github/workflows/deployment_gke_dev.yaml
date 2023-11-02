@@ -16,6 +16,7 @@ env:
   SKAFFOLD_DEFAULT_REPO: gcr.io/${{ vars.PROJECT_ID }}
   SKAFFOLD_NAMESPACE: ${{ vars.GKE_NAMESPACE }}
   DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
+  API_BASE_URL: ${{ vars.DOMAIN_NAME }}
   GKE_CLUSTER: main-cluster
   GKE_REGION: us-central1
   KUSTOMIZE_VERSION: 5.0.0
