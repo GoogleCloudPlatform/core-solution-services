@@ -24,20 +24,20 @@ placeholder = st.empty()
 def login_clicked(username, password):
     token = api.login_user(username, password)
     if token:
-        st.session_state['loggedIn'] = True
+        st.session_state['logged_in'] = True
         st.session_state['auth_token']  = token
         st.session_state['username'] = username
         st.session_state['is_authenticated'] = True
         utils.navigate_to("/Landing")
     else:
-        st.session_state['loggedIn'] = False
+        st.session_state['logged_in'] = False
         st.error("Invalid username or password")
 
 def login_page():
-    if 'loggedIn' not in st.session_state:
-        st.session_state['loggedIn'] = False
+    if 'logged_in' not in st.session_state:
+        st.session_state['logged_in'] = False
 
-    if st.session_state['loggedIn'] == False:
+    if st.session_state['logged_in'] == False:
       st.warning('Please enter your username and password')
       
     with placeholder.form("login"):
