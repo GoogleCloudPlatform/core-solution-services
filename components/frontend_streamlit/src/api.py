@@ -119,6 +119,6 @@ def login_user(user_email, user_password, base_url=None) -> str:
     else:
         print(f"Signed in with existing user '{user_email}'. ID Token:\n")
         id_token = sign_in_res["data"]["idToken"]
-        st.session_state['logged_in'] = True
-        st.session_state['is_authenticated'] = True 
+        st.session_state["logged_in"] = True
+        st.session_state["is_authenticated"] = True 
         return id_token
