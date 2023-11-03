@@ -16,7 +16,7 @@ import streamlit as st
 import utils
 
 params = st.experimental_get_query_params()
-auth_token = params.get("auth_token")[0]
+auth_token = params.get("auth_token", [None])[0]
 
 def landing_page():
   st.title("Welcome.")
