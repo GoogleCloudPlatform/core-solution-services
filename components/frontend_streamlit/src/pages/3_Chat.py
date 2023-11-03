@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import streamlit as st
-# from streamlit_chat import message
-from api import get_all_chats, get_chat, run_agent, run_agent_plan
+from api import get_chat, run_agent, run_agent_plan
+from components.chat_history import chat_history_panel
 import utils
 
 # For development purpose:
@@ -48,23 +48,6 @@ def on_input_change():
 
   # Clean up input field.
   st.session_state.user_input = ""
-
-
-def chat_list_panel():
-  # Retrieve chat history.
-  st.session_state.user_chats = get_all_chats(
-      auth_token=st.session_state.auth_token)
-
-  with st.sidebar:
-    st.header("My Chats")
-    for user_chat in (st.session_state.user_chats or []):
-      agent_name = user_chat["agent_name"]
-      chat_id = user_chat["id"]
-      with st.container():
-        st.link_button(
-            f"{agent_name} (id: {chat_id})",
-            f"/Chat?chat_id={chat_id}&auth_token={st.session_state.auth_token}",
-            use_container_width=True)
 
 
 def init_messages():
@@ -116,7 +99,7 @@ def chat_page():
   st.title(st.session_state.agent_name)
 
   # List all existing chats if any. (data model: UserChat)
-  chat_list_panel()
+  chat_history_panel()
 
   # Set up columns to mimic a right-side sidebar
   main_container = st.container()
