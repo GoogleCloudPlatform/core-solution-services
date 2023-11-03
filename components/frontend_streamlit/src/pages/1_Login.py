@@ -15,38 +15,38 @@
 import streamlit as st
 import importlib
 import utils
+import api
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 
-utils = importlib.import_module("utils")
-api = importlib.import_module("api")
-placeholder = st.empty()
 
 def login_clicked(username, password):
-    token = api.login_user(username, password)
-    if token:
-        st.session_state["logged_in"] = True
-        st.session_state["auth_token"]  = token
-        st.session_state["username"] = username
-        utils.navigate_to("/Landing")
-    else:
-        st.session_state["logged_in"] = False
-        st.error("Invalid username or password")
+  token = api.login_user(username, password)
+  if token:
+    st.session_state["logged_in"] = True
+    st.session_state["auth_token"] = token
+    st.session_state["username"] = username
+    utils.navigate_to(f"/Landing?auth_token={token}")
+  else:
+    st.session_state["logged_in"] = False
+    st.error("Invalid username or password")
 
 def login_page():
-    if "logged_in" not in st.session_state:
-        st.session_state["logged_in"] = False
+  placeholder = st.empty()
 
-    if st.session_state["logged_in"] == False:
-      st.warning("Please enter your username and password")
+  if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
 
-    with placeholder.form("login"):
-        st.title("Login")
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submit = st.form_submit_button("Login")
-    if submit:
-        login_clicked(username, password)
+  if st.session_state["logged_in"] == False:
+    st.warning("Please enter your username and password")
+
+  with placeholder.form("login"):
+    st.title("Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    submit = st.form_submit_button("Login")
+  if submit:
+    login_clicked(username, password)
 
 if __name__ == "__main__":
-    utils.init_api_base_url()
-    login_page()
+  utils.init_api_base_url()
+  login_page()
