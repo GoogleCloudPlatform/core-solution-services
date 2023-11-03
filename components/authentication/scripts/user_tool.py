@@ -14,15 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import os
 import subprocess
 import requests
 import argparse
 import getpass
 import warnings
+import secrets
 
 from common.models import User
+from google.cloud import secretmanager
 
+PROJECT_ID = os.environ.get("PROJECT_ID")
 AUTH_API_PATH = "authentication/api/v1"
+DEFAULT_BOT_USERNAME="mira-bot@google.com"
 
 USER_DATA = {
     "first_name": "test",
@@ -36,6 +41,7 @@ USER_DATA = {
     "gaia_id": "fake-gaia-id",
 }
 warnings.filterwarnings('ignore', message='Unverified HTTPS request')
+sm_secrets = secretmanager.SecretManagerServiceClient()
 
 
 def execute_command(command):
@@ -49,6 +55,26 @@ def get_input(prompt):
     input_value = input(prompt)
   return input_value
 
+def add_secret(secret_name, secret_value):
+  if PROJECT_ID is None:
+    assert PROJECT_ID, "PROJECT_ID is not set."  
+  parent = f"projects/{PROJECT_ID}/secrets/{secret_name}"
+  payload  = secret_value.encode('UTF-8')
+  response = sm_secrets.add_secret_version(parent=parent, 
+                              payload={
+                                  'data': payload
+                              })
+
+def get_secret_value(secret_name):
+  try:
+    secret_value = sm_secrets.access_secret_version(
+        request={
+            "name": f"projects/{PROJECT_ID}" +
+                f"/secrets/{secret_name}/versions/latest"
+        }).payload.data.decode("utf-8")
+    return secret_value.strip()
+  except Exception as e:
+    return None
 
 def create_user(user_email, user_password, base_url=None) -> None:
   """
@@ -105,7 +131,7 @@ def login_user(user_email, user_password, base_url=None) -> None:
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument("action", type=str, help="Main action: [create_user|get_token]")
+  parser.add_argument("action", type=str, help="Main action: [create_user|get_token|create_bot_account]")
   parser.add_argument("--base-url", type=str, help="API base URL")
   args = parser.parse_args()
 
@@ -138,9 +164,21 @@ def main():
     print()
     login_user(user_email, user_password, base_url=base_url)
 
+  elif args.action == "create_bot_account":
+    llm_backend_robot_username_value = get_secret_value("llm-backend-robot-username")
+    if llm_backend_robot_username_value is None:
+      add_secret("llm-backend-robot-username", DEFAULT_BOT_USERNAME)
+
+    llm_backend_robot_password_value = get_secret_value("llm-backend-robot-password")
+    if llm_backend_robot_password_value is None:
+      llm_backend_robot_password_value = secrets.token_urlsafe(16)
+      add_secret("llm-backend-robot-password", llm_backend_robot_password_values)
+
+    create_user(llm_backend_robot_username_value, llm_backend_robot_password_value, base_url=base_url)
+
   else:
     print(f"Action {args.action} not supported. Available actions:")
-    available_actions = ["create_user", "get_token"]
+    available_actions = ["create_user", "get_token", "create_bot_account"]
     for action in available_actions:
       print(f" - {action}")
 
