@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import streamlit as st
+from api import get_all_query_engines
 import utils
 
 params = st.experimental_get_query_params()
@@ -27,21 +28,30 @@ def landing_page():
     with st.container():
       "Start a Chat with"
       agent_name = st.selectbox(
-          'Select an agent',
+          'Agent:',
           ('MediKate', 'Casey'))
       chat_button=st.button("Start",key=2)
       if chat_button:
         utils.navigate_to(f"/Chat?agent_name={agent_name}&auth_token={auth_token}")
 
   with start_query:
+    # Get all query engines as a list
+    query_engine_list = get_all_query_engines(auth_token=auth_token)
+    query_engines = {}
+    for item in query_engine_list:
+      query_engines[item["name"]] = item
+
+    print(query_engines)
+
     with st.container():
       "Start a Query with"
-      query_engine = st.selectbox(
-          'Select a Query Engine',
-          ('qe1', 'qe2'))
-      query_button=st.button("Start",key=3)
+      qe_name = st.selectbox(
+          'Query Engine:',
+          tuple(query_engines.keys()))
+      query_button = st.button("Start",key=3)
+      query_engine_id = query_engines[qe_name]["id"]
       if query_button:
-          utils.navigate_to(f"/Query?query_engine={query_engine}&auth_token={auth_token}")
+          utils.navigate_to(f"/Query?query_engine_id={query_engine_id}&auth_token={auth_token}")
 
 if __name__ == "__main__":
   utils.init_api_base_url()

@@ -114,6 +114,51 @@ def run_agent_plan(agent_name: str, prompt: str,
   output = json_response["data"]
   return output
 
+def run_query(query_engine_id: str, prompt: str,
+              chat_id: str=None, auth_token=None):
+  """
+  Run Agent on human input, and return output
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/engine/{query_engine_id}"
+  request_body = {
+    "prompt": prompt,
+    "llm_type": "VertexAI-Chat"
+  }
+
+  print(api_url)
+  resp = post_method(api_url,
+                     request_body=request_body,
+                     token=auth_token)
+  handle_error(resp)
+  json_response = resp.json()
+
+  print(json_response)
+  output = json_response["data"]["query_result"]
+  return output
+
+def get_all_query_engines(auth_token=None):
+  """
+  Retrieve all chats of a specific user.
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query"
+  resp = get_method(api_url,
+                    token=auth_token)
+  json_response = resp.json()
+  print(resp)
+
+  print(json_response)
+
+  output = json_response["data"]
+  return output
+
 def get_all_chats(skip=0, limit=20, auth_token=None) -> List[UserChat]:
   """
   Retrieve all chats of a specific user.
