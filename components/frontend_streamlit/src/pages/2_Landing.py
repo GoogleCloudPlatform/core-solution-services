@@ -18,7 +18,8 @@ from components.chat_history import chat_history_panel
 import utils
 
 params = st.experimental_get_query_params()
-auth_token = params.get("auth_token", [None])[0]
+st.session_state.auth_token = params.get("auth_token", [None])[0]
+auth_token = st.session_state.auth_token
 
 def landing_page():
   st.title("Welcome.")
