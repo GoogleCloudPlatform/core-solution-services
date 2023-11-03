@@ -23,10 +23,12 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
-                                     USER_EXAMPLE, USER_PLAN_EXAMPLE)
+                                     USER_EXAMPLE, USER_PLAN_EXAMPLE,
+                                     USER_PLAN_STEPS_EXAMPLE_1,
+                                     USER_PLAN_STEPS_EXAMPLE_2)
 from testing.test_config import API_URL
 from common.models.llm import CHAT_HUMAN, CHAT_AI
-from common.models import UserChat, User, UserPlan
+from common.models import UserChat, User, UserPlan, PlanStep
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 from common.testing.client_with_emulator import client_with_emulator
@@ -74,6 +76,10 @@ def create_plan(clean_firestore):
   plan_dict = USER_PLAN_EXAMPLE
   plan = UserPlan.from_dict(plan_dict)
   plan.save()
+  plan_step = PlanStep.from_dict(USER_PLAN_STEPS_EXAMPLE_1)
+  plan_step.save()
+  plan_step = PlanStep.from_dict(USER_PLAN_STEPS_EXAMPLE_2)
+  plan_step.save()
   return plan
 
 
