@@ -14,20 +14,19 @@
 
 import streamlit as st
 import importlib
-
+import utils
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 
 utils = importlib.import_module("utils")
-api = importlib.import_module("api") 
+api = importlib.import_module("api")
 placeholder = st.empty()
-      
+
 def login_clicked(username, password):
     token = api.login_user(username, password)
     if token:
         st.session_state["logged_in"] = True
         st.session_state["auth_token"]  = token
         st.session_state["username"] = username
-        st.session_state["is_authenticated"] = True
         utils.navigate_to("/Landing")
     else:
         st.session_state["logged_in"] = False
@@ -39,7 +38,7 @@ def login_page():
 
     if st.session_state["logged_in"] == False:
       st.warning("Please enter your username and password")
-      
+
     with placeholder.form("login"):
         st.title("Login")
         username = st.text_input("Username")
@@ -49,4 +48,5 @@ def login_page():
         login_clicked(username, password)
 
 if __name__ == "__main__":
+    utils.init_api_base_url()
     login_page()

@@ -15,15 +15,16 @@
 """
 API interface for streamlit UX
 """
+import requests
+import re
 from common.utils.request_handler import get_method, post_method
 from common.models import Agent, UserChat
-from config import auth_client, API_BASE_URL
 from typing import List
 import streamlit as st
-import requests
 
-LLM_SERVICE_URL = API_BASE_URL.rstrip("/") + "/llm-service/api/v1"
-AUTH_API_URL = API_BASE_URL.rstrip("/") + "/authentication/api/v1"
+LLM_SERVICE_PATH = "/llm-service/api/v1"
+AUTH_SERVICE_PATH = "/authentication/api/v1"
+
 
 def get_auth_token():
   return st.session_state.get("auth_token", None)
@@ -39,7 +40,8 @@ def get_agents() -> List[Agent]:
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_url = f"{LLM_SERVICE_URL}/agent"
+  api_base_url = st.session_state.api_base_url
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent"
   resp = get_method(api_url,
                     auth_token=None)
   json_response = resp.json()
@@ -58,10 +60,11 @@ def run_agent(agent_name: str, prompt: str,
   if not auth_token:
     auth_token = get_auth_token()
 
+  api_base_url = st.session_state.api_base_url
   if chat_id:
-    api_url = f"{LLM_SERVICE_URL}/agent/run/{agent_name}/{chat_id}"
+    api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}/{chat_id}"
   else:
-    api_url = f"{LLM_SERVICE_URL}/agent/run/{agent_name}"
+    api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}"
   request_body = {
     "prompt": prompt
   }
@@ -84,7 +87,8 @@ def get_all_chats(skip=0, limit=20, auth_token=None) -> List[UserChat]:
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_url = f"{LLM_SERVICE_URL}/chat?skip={skip}&limit={limit}"
+  api_base_url = st.session_state.api_base_url
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/chat?skip={skip}&limit={limit}"
   resp = get_method(api_url,
                     token=auth_token)
   json_response = resp.json()
@@ -98,27 +102,33 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_url = f"{LLM_SERVICE_URL}/chat/{chat_id}"
+  api_base_url = st.session_state.api_base_url
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/chat/{chat_id}"
   resp = get_method(api_url,
                     token=auth_token)
   json_response = resp.json()
   output = json_response["data"]
   return output
 
-def login_user(user_email, user_password, base_url=None) -> str:
-    req_body = {
-        "email": user_email,
-        "password": user_password
-    }
-    url = f"{AUTH_API_URL}/sign-in/credentials"
-    sign_in_req = requests.post(url, json=req_body, verify=False)
+def login_user(user_email, user_password) -> str:
+  req_body = {
+    "email": user_email,
+    "password": user_password
+  }
+  api_base_url = st.session_state.api_base_url
+  url = f"{api_base_url}/{AUTH_SERVICE_PATH}/sign-in/credentials"
+  print(f"API url: {url}")
 
-    sign_in_res = sign_in_req.json()
-    if sign_in_res is None or sign_in_res["data"] is None:
-        print("User signed in fail", sign_in_req.text)
-    else:
-        print(f"Signed in with existing user '{user_email}'. ID Token:\n")
-        id_token = sign_in_res["data"]["idToken"]
-        st.session_state["logged_in"] = True
-        st.session_state["is_authenticated"] = True 
-        return id_token
+  sign_in_req = requests.post(url, json=req_body, verify=False)
+
+  sign_in_res = sign_in_req.json()
+  if sign_in_res is None or sign_in_res["data"] is None:
+    print("User signed in fail", sign_in_req.text)
+    return None
+
+  else:
+    print(f"Signed in with existing user '{user_email}'. ID Token:\n")
+    id_token = sign_in_res["data"]["idToken"]
+    st.session_state["logged_in"] = True
+    st.session_state["is_authenticated"] = True
+    return id_token

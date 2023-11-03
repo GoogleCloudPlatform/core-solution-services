@@ -17,6 +17,7 @@ from streamlit_chat import message
 from streamlit.components.v1 import html
 from common.models import Agent, UserChat
 from api import get_all_chats, get_chat, run_agent
+import utils
 
 # For development purpose:
 params = st.experimental_get_query_params()
@@ -26,13 +27,10 @@ st.session_state.chat_id = params.get("chat_id", [None])[0]
 st.session_state.agent_name = params.get("MediKate", ["Chat"])[0]
 assert st.session_state.auth_token, "The query parameter 'auth_token' is not set."
 
-# Retrieve chat history.
-st.session_state.user_chats = get_all_chats(
-    auth_token=st.session_state.auth_token)
-
 
 def on_input_change():
   user_input = st.session_state.user_input
+  agent_name = st.session_state.agent_name
   # Appending messages.
   st.session_state.messages.append({"HumanInput": user_input})
 
@@ -46,6 +44,10 @@ def on_input_change():
 
 
 def chat_list_panel():
+  # Retrieve chat history.
+  st.session_state.user_chats = get_all_chats(
+      auth_token=st.session_state.auth_token)
+
   with st.sidebar:
     st.header("My Chats")
     for user_chat in (st.session_state.user_chats or []):
@@ -119,4 +121,5 @@ def chat_page():
 
 
 if __name__ == "__main__":
+  utils.init_api_base_url()
   chat_page()

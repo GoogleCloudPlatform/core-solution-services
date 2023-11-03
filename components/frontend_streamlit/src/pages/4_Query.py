@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import streamlit as st
+import utils
 
 def query_page():
   st.title("Query")
 
 if __name__ == "__main__":
+  utils.init_api_base_url()
   query_page()

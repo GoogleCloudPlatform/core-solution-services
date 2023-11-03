@@ -18,7 +18,6 @@ import streamlit as st
 login = importlib.import_module("pages.1_Login")
 landing = importlib.import_module("pages.2_Landing")
 
-
 def app():
   st.set_page_config(
       page_title="Mira Demo",
@@ -27,7 +26,7 @@ def app():
       initial_sidebar_state="expanded",
   )
 
-  if st.session_state.get("is_authenticated", False):
+  if st.session_state.get("logged_in", False):
     landing.landing_page()
   else:
     # TODO: Implement the actual authentication process via API call.
