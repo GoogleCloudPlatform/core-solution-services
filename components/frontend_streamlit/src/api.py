@@ -137,7 +137,7 @@ def run_query(query_engine_id: str, prompt: str,
   json_response = resp.json()
 
   print(json_response)
-  output = json_response["data"]["query_result"]
+  output = json_response["data"]
   return output
 
 def get_all_query_engines(auth_token=None):

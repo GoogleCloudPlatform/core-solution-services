@@ -14,6 +14,7 @@
 
 import streamlit as st
 from api import get_all_query_engines
+from components.chat_history import chat_history_panel
 import utils
 
 params = st.experimental_get_query_params()
@@ -21,6 +22,7 @@ auth_token = params.get("auth_token", [None])[0]
 
 def landing_page():
   st.title("Welcome.")
+  chat_history_panel()
 
   start_chat, col2, start_query = st.columns((1,1,1))
 

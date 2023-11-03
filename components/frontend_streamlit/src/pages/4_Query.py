@@ -31,9 +31,15 @@ def on_input_change():
   st.session_state.messages.append({"HumanInput": user_input})
 
   # Send API to llm-service
-  query_result = run_query(query_engine_id, user_input, chat_id=st.session_state.chat_id)
+  response = run_query(query_engine_id, user_input, chat_id=st.session_state.chat_id)
+
+  query_result = response["query_result"]
+  query_references = response.get("query_references", None)
 
   st.session_state.messages.append({"AIOutput": query_result["response"]})
+
+  if query_references:
+    st.session_state.messages.append({"References": query_references})
 
   # Clean up input field.
   st.session_state.user_input = ""
@@ -71,15 +77,13 @@ def chat_content():
               is_table=False,  # TODO: Detect whether an output content type.
           )
 
-      if "plan" in item:
+      if "References" in item:
         with st.chat_message("ai"):
+          for reference in item["References"]:
+            document_url = reference["document_url"]
+            document_text = reference["document_text"]
+            st.text_area(f"Reference: {document_url}", document_text)
           st.divider()
-          index = 1
-          for step in item["plan"]["plan_steps"]:
-            st.text_area(f"Step {index}", step.get("description"))
-            index = index + 1
-
-      index = index + 1
 
   st.text_input("User Input:", on_change=on_input_change, key="user_input")
 
