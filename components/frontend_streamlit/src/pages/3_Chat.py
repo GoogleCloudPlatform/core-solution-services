@@ -102,8 +102,10 @@ def chat_content():
       if "plan" in item:
         with st.chat_message("ai"):
           st.divider()
+          index = 1
           for step in item["plan"]["plan_steps"]:
-            st.code(step.get("description"))
+            st.text_area(f"Step {index}", step.get("description"))
+            index = index + 1
 
       index = index + 1
 

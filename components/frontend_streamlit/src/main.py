@@ -26,6 +26,9 @@ def app():
       initial_sidebar_state="expanded",
   )
 
+  with st.sidebar:
+    st.title("Mira v1.0")
+
   if st.session_state.get("logged_in", False):
     landing.landing_page()
   else:
