@@ -24,9 +24,8 @@ from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
 from google.cloud import secretmanager
-from langchain.chat_models import ChatOpenAI, ChatVertexAI
+from langchain.chat_models import ChatOpenAI
 from langchain.llms.cohere import Cohere
-from langchain.llms.vertexai import VertexAI
 
 # override default logging format
 logging.basicConfig(
@@ -159,12 +158,6 @@ if ENABLE_GOOGLE_LLM:
     VERTEX_LLM_TYPE_BISON_CHAT: "chat-bison@001",
     VERTEX_LLM_TYPE_GECKO_EMBEDDING: "textembedding-gecko@001"
   }
-  LANGCHAIN_LLM.update({
-    VERTEX_LLM_TYPE_BISON_TEXT: VertexAI(
-        model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_TEXT], project=PROJECT_ID),
-    VERTEX_LLM_TYPE_BISON_CHAT: ChatVertexAI(
-        model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_CHAT], project=PROJECT_ID)
-  })
 
 Logger.info(f"LLM types loaded {LLM_TYPES}")
 
