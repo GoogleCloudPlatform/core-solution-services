@@ -12,11 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 import streamlit as st
 from streamlit.components.v1 import html
+from streamlit_javascript import st_javascript
+from config import API_BASE_URL
 
 def navigate_to(url):
-    nav_script = """
-        <meta http-equiv="refresh" content="0; url='%s'">
-    """ % (url)
-    st.write(nav_script, unsafe_allow_html=True)
+  nav_script = """
+      <meta http-equiv="refresh" content="0; url='%s'">
+  """ % (url)
+  st.write(nav_script, unsafe_allow_html=True)
+
+def init_api_base_url():
+  api_base_url = API_BASE_URL
+
+  if not API_BASE_URL:
+    url = st_javascript(
+        "await fetch('').then(r => window.parent.location.href)")
+    match = re.search("(https?://)?(www\\.)?([^/]+)", (url or ""))
+    if match:
+      api_base_url = match.group(1) + match.group(3)
+
+  st.session_state.api_base_url = api_base_url.rstrip("/")
+  print(f"st.session_state.api_base_url = {st.session_state.api_base_url}")

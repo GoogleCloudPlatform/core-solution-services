@@ -13,39 +13,48 @@
 # limitations under the License.
 
 import streamlit as st
-from streamlit_chat import message
-from streamlit.components.v1 import html
-from common.models import Agent, UserChat
-from api import get_all_chats, get_chat, run_agent
+# from streamlit_chat import message
+from api import get_all_chats, get_chat, run_agent, run_agent_plan
+import utils
 
 # For development purpose:
 params = st.experimental_get_query_params()
-if "auth_token" not in st.session_state:
-  st.session_state.auth_token = params.get("auth_token", [None])[0]
+st.session_state.auth_token = params.get("auth_token", [None])[0]
 st.session_state.chat_id = params.get("chat_id", [None])[0]
-st.session_state.agent_name = params.get("MediKate", ["Chat"])[0]
-assert st.session_state.auth_token, "The query parameter 'auth_token' is not set."
-
-# Retrieve chat history.
-st.session_state.user_chats = get_all_chats(
-    auth_token=st.session_state.auth_token)
+st.session_state.agent_name = params.get("agent_name", ["MediKate"])[0]
 
 
 def on_input_change():
   user_input = st.session_state.user_input
+  agent_name = st.session_state.agent_name
   # Appending messages.
   st.session_state.messages.append({"HumanInput": user_input})
 
   # Send API to llm-service
-  response = run_agent(agent_name, user_input, chat_id=st.session_state.chat_id)
+  if agent_name.lower() == "medikate":
+    with st.spinner('Sending prompt to Agent...'):
+      response = run_agent(agent_name, user_input, chat_id=st.session_state.chat_id)
+  elif agent_name.lower() == "casey":
+    with st.spinner('Sending prompt to Agent...'):
+      response = run_agent_plan(agent_name, user_input, chat_id=st.session_state.chat_id)
+  else:
+    raise ValueError(f"agent_name {agent_name} is not supported.")
+
   st.session_state.chat_id = response["chat"]["id"]
   st.session_state.messages.append({"AIOutput": response["content"]})
+
+  if "plan" in response:
+    st.session_state.messages.append({"plan": response["plan"]})
 
   # Clean up input field.
   st.session_state.user_input = ""
 
 
 def chat_list_panel():
+  # Retrieve chat history.
+  st.session_state.user_chats = get_all_chats(
+      auth_token=st.session_state.auth_token)
+
   with st.sidebar:
     st.header("My Chats")
     for user_chat in (st.session_state.user_chats or []):
@@ -56,13 +65,6 @@ def chat_list_panel():
             f"{agent_name} (id: {chat_id})",
             f"/Chat?chat_id={chat_id}&auth_token={st.session_state.auth_token}",
             use_container_width=True)
-
-
-def right_panel():
-  st.header("Plan")
-  items = ["Item 1", "Item 2", "Item 3"]
-  for item in items:
-    st.write(item)
 
 
 def init_messages():
@@ -85,15 +87,26 @@ def chat_content():
     index = 1
     for item in st.session_state.messages:
       if "HumanInput" in item:
-        message(item["HumanInput"], is_user=True, key=f"human_{index}")
+        with st.chat_message("user"):
+          st.write(item["HumanInput"], is_user=True, key=f"human_{index}")
 
       if "AIOutput" in item:
-        message(
-            item["AIOutput"],
-            key=f"ai_{index}",
-            allow_html=False,
-            is_table=False,  # TODO: Detect whether an output content type.
-        )
+        with st.chat_message("ai"):
+          st.write(
+              item["AIOutput"],
+              key=f"ai_{index}",
+              allow_html=False,
+              is_table=False,  # TODO: Detect whether an output content type.
+          )
+
+      if "plan" in item:
+        with st.chat_message("ai"):
+          st.divider()
+          index = 1
+          for step in item["plan"]["plan_steps"]:
+            st.text_area(f"Step {index}", step.get("description"))
+            index = index + 1
+
       index = index + 1
 
   st.text_input("User Input:", on_change=on_input_change, key="user_input")
@@ -108,15 +121,9 @@ def chat_page():
   # Set up columns to mimic a right-side sidebar
   main_container = st.container()
   with main_container:
-    main_area, right_sidebar = st.columns([9, 3], gap="large")
-
-    with main_area:
-      # Render chat messages.
-      chat_content()
-
-    with right_sidebar:
-      right_panel()
+    chat_content()
 
 
 if __name__ == "__main__":
+  utils.init_api_base_url()
   chat_page()
