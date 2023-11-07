@@ -14,8 +14,8 @@ Install virtualenv and dependencies
 ```
 python -m virtualenv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
 pip install -r ../common/requirements.txt
+pip install -r requirements.txt
 ```
 
 ```
