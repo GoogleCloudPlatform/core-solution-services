@@ -31,6 +31,14 @@ Deploy the microservice with livereload.
 sb deploy -n $NAMESPACE -m frontend_streamlit --dev
 ```
 
+Once deployed successfully, you will see the output like below:
+```
+Deployments stabilized in 32.744 seconds
+Port forwarding service/frontend-streamlit in namespace <namespace>, remote port 80 -> http://127.0.0.1:8080
+```
+
+At this point, the frontend app is ready and accessible at http://127.0.0.1:8080.
+
 ### Deploy to remote GKE cluster
 
 Deploy the microservice.
