@@ -142,6 +142,9 @@ sb set project-id ${PROJECT_ID}
 # Update domain name (for HTTPS load balancer and ingress)
 export DOMAIN_NAME=<my-domain-name> # e.g. css.example.com
 sb vars set domain_name ${DOMAIN_NAME}
+
+# Set up API_BASE_URL for the frontend app:
+export API_BASE_URL=https://${DOMAIN_NAME}
 ```
 
 ### Initialize the Cloud infra
@@ -212,20 +215,15 @@ In the GCP Console, check the following:
 ## Frontend application
 
 When running `sb deploy` like above, it automatically deploys a Streamlit-based frontend app
-altogether with all backend services deployment.
-- It deploys the frontend app in [components/frontend_streamlit]()
+altogether with all services deployment.
+- It deploys the frontend app in [components/frontend_streamlit](components/frontend_streamlit)
 - Once deployed, you can verify the frontend app at `https://$YOUR_DNS_DOMAIN` in a web browser.
 
 > [Streamlit](https://streamlit.io) is an open-source Python library that makes it easy to create custom web apps. It's a popular choice for data scientists and machine learning engineers who want to quickly create interactive dashboards and visualizations
 
-### Deploy the frontend app manually
+### Deploy or run the frontend app manually
 
-You can re-deploy the frontend app by the following:
-```
-sb deploy -m frontend_streamlit
-```
-
-See [components/frontend_streamlit/README.md]() for other options to run the frontend app.
+See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the frontend app.
 
 ### (Optional) Deploy a GENIE FlutterFlow app
 
@@ -235,7 +233,7 @@ Please follow [these steps](docs/flutterflow_app.md) to clone and deploy a Flutt
 
 > To learn more about FlutterFlow, visit https://flutterflow.io/enterprise.
 
-### Troubleshooting
+## Troubleshooting
 
 Please refer to [TROUBLESHOOTING.md](https://github.com/GoogleCloudPlatform/solutions-builder/blob/main/docs/TROUBLESHOOTING.md) for any Terraform errors
 
