@@ -44,12 +44,13 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
 
   Logger.info(f"generating text with llm_type {llm_type}")
   try:
-    if llm_type in LANGCHAIN_LLM.keys():
-      response = await langchain_llm_generate(prompt, llm_type)
-    elif llm_type in GOOGLE_LLM.keys():
+    # for google models, prioritize native client over langchain
+    if llm_type in GOOGLE_LLM.keys():
       google_llm = GOOGLE_LLM.get(llm_type, VERTEX_LLM_TYPE_BISON_TEXT)
       is_chat = llm_type in CHAT_LLM_TYPES
       response = await google_llm_predict(prompt, is_chat, google_llm)
+    elif llm_type in LANGCHAIN_LLM.keys():
+      response = await langchain_llm_generate(prompt, llm_type)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
