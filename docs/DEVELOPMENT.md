@@ -227,7 +227,7 @@ pip install -r requirements.txt
 
 ##  4. <a name='DevelopandTestonaGKEcluster'></a>Develop and Test on a GKE cluster
 
-###  4.1. <a name='Doublecheckthecurrentgcloudconfig'></a>Double check the current `gcloud` config
+###  4.1. <a name='Doublecheckthecurrentgcloudconfig'></a>Double-check the current `gcloud` config
 
 * Please make sure the `gcloud` command set to the current project.
   ```
@@ -295,7 +295,7 @@ sb deploy
 sb deploy --dev
 ```
 
-Press Enter in the prompt:
+Press `Enter` in the prompt:
 ```
 This will build and deploy all services using the command below:
 - gcloud container clusters get-credentials main-cluster --region us-central1 --project my-project-id

@@ -2,14 +2,14 @@
 
 ## Prerequisite
 
-| Tool | Required Version | Installation |
-|---|---|---|
-| Python                 | &gt;= 3.9     | |
-| gcloud CLI             | Latest        | https://cloud.google.com/sdk/docs/install |
-| Terraform              | &gt;= v1.3.7  | https://developer.hashicorp.com/terraform/downloads |
-| Skaffold               | &gt;= v2.4.0  | https://skaffold.dev/docs/install/ |
-| Kustomize              | &gt;= v5.0.0  | https://kubectl.docs.kubernetes.io/installation/kustomize/ |
-| solutions-builder CLI | &gt;= v1.13.0 | https://github.com/GoogleCloudPlatform/solutions-builder |
+| Tool                | Required Version | Installation                                                                                                                                                                                        |
+|---------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `python`            | `>= 3.9`         | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
+| `gcloud` CLI        | `Latest`         | https://cloud.google.com/sdk/docs/install                                                                                                                                                           |
+| `terraform`         | `>= v1.3.7`      | https://developer.hashicorp.com/terraform/downloads                                                                                                                                                 |
+| `solutions-builder` | `>= v1.17.0`     | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
+| `skaffold`          | `>= v2.4.0`      | https://skaffold.dev/docs/install/                                                                                                                                                                  |
+| `kustomize`         | `>= v5.0.0`      | https://kubectl.docs.kubernetes.io/installation/kustomize/                                                                                                                                          |
 
 ## Setup
 
@@ -43,7 +43,7 @@ Enable Cloud Identity Platform (For Authentication)
 Set up Cloud foundation and GKE cluster
 ```
 sb infra apply 2-foundation
-sb infra apply 2-gke
+sb infra apply 3-gke
 ```
 
 ### Add a HTTP Load balancer with DNS domain
@@ -51,7 +51,7 @@ sb infra apply 2-gke
 sb components add terraform_gke_ingress
 ```
 
-Update the following questions in the promopt:
+Update the following questions in the prompt:
 - Cluster external endpoint IP address?
   - (The IP address will be automatically retrieved)
 - Kubernetes service names in ingress? (comma-separated string)
@@ -69,7 +69,7 @@ sb infra apply 3-gke-ingress
 - It will add required Firestore indexes.
 
 (Optional) Add an A record to your DNS:
-![Alt text](.github/assets/dns_a_record.png)
+![Alt text](../.github/assets/dns_a_record.png)
 - Set the IP address to the external IP address in the ingress.
 
 ## Deploy
@@ -77,7 +77,7 @@ sb infra apply 3-gke-ingress
 ### Before Deploy
 
 Follow README files of each microservice to setup:
-- Authenication [components/authentication/README.md](./components/authentication/README.md#retrieve-firebase-api-key) to retrieve Firebase API key
+- Authentication [components/authentication/README.md](../components/authentication/README.md)
 
 ### Deploy all microservices and ingress to GKE cluster:
 ```
@@ -86,7 +86,7 @@ sb deploy
 
 ### After deployment
 
-- Follow [components/authentication/README.md#create-users](./components/authentication/README.md#create-users) to create the first user.
+- Follow [components/authentication/README.md#create-users](../components/authentication/README.md#create-users) to create the first user.
   - You will need the output ID Token for the next step.
 
 ### Verify deployment

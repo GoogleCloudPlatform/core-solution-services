@@ -30,14 +30,14 @@ Highlighted features:
 
 ## Prerequisites
 
-| Tool              | Required Version | Installation                                                                                                                                                                                        |
-|-------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Python            | &gt;= 3.9        | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
-| gcloud CLI        | Latest           | https://cloud.google.com/sdk/docs/install                                                                                                                                                           |
-| Terraform         | &gt;= v1.3.7     | https://developer.hashicorp.com/terraform/downloads                                                                                                                                                 |
-| solutions-builder | &gt;= v1.17.19    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
-| Skaffold          | &gt;= v2.4.0     | https://skaffold.dev/docs/install/                                                                                                                                                                  |
-| Kustomize         | &gt;= v5.0.0     | https://kubectl.docs.kubernetes.io/installation/kustomize/                                                                                                                                          |
+| Tool                | Required Version | Installation                                                                                                                                                                                        |
+|---------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `python`            | `>= 3.9`         | [Mac](https://www.python.org/ftp/python/3.9.18/python-3.9.18-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
+| `gcloud` CLI        | `Latest`         | https://cloud.google.com/sdk/docs/install                                                                                                                                                           |
+| `terraform`         | `>= v1.3.7`      | https://developer.hashicorp.com/terraform/downloads                                                                                                                                                 |
+| `solutions-builder` | `>= v1.17.19`    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
+| `skaffold`          | `>= v2.4.0`      | https://skaffold.dev/docs/install/                                                                                                                                                                  |
+| `kustomize`         | `>= v5.0.0`      | https://kubectl.docs.kubernetes.io/installation/kustomize/                                                                                                                                          |
 
 ## Setup
 
@@ -55,9 +55,13 @@ Follow the steps below to enable Cloud Identity Platform and add Email/Password 
 Make sure that policies are not enforced (`enforce: false` or `NOT_FOUND`). You must be an organization policy administrator to set a constraint.
 - https://console.cloud.google.com/iam-admin/orgpolicies/compute-requireShieldedVm?project=$PROJECT_ID
 - https://console.cloud.google.com/iam-admin/orgpolicies/requireOsLogin?project=$PROJECT_ID
+```
+gcloud resource-manager org-policies disable-enforce constraints/compute.requireOsLogin --project="${PROJECT_ID}"
+gcloud resource-manager org-policies delete constraints/compute.vmExternalIpAccess --project="${PROJECT_ID}"
+gcloud resource-manager org-policies delete constraints/iam.allowedPolicyMemberDomains --project="${PROJECT_ID}"
+```
 
-
-### Check out this repo
+### Clone repo
 
 Clone this repo to your local machine to start. Optionally you can use Cloud Shell. Run the rest of the commands inside the repo folder.
 ```
