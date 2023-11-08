@@ -25,7 +25,8 @@ Highlighted features:
 - Enable any enterprise to leverage a chatbot to answer any questions based on their selected
   content such as a list of documents, databases, etc.
 - Easy to plug in and use any LLM models available in the market, leveraging Langchain.
-- Cross-platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows and seamless digital experience on Android, iOS, web, and desktop platforms.
+- A built-in frontend app (using [Streamlit](https://streamlit.io/)) to showcase end-to-end user journeys.
+- (Optional) Cross-platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows and seamless digital experience on Android, iOS, web, and desktop platforms.
 
 ## Prerequisites
 
@@ -34,7 +35,7 @@ Highlighted features:
 | Python            | &gt;= 3.9        | [Mac](https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
 | gcloud CLI        | Latest           | https://cloud.google.com/sdk/docs/install                                                                                                                                                           |
 | Terraform         | &gt;= v1.3.7     | https://developer.hashicorp.com/terraform/downloads                                                                                                                                                 |
-| solutions-builder | &gt;= v1.17.0    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
+| solutions-builder | &gt;= v1.17.19    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
 | Skaffold          | &gt;= v2.4.0     | https://skaffold.dev/docs/install/                                                                                                                                                                  |
 | Kustomize         | &gt;= v5.0.0     | https://kubectl.docs.kubernetes.io/installation/kustomize/                                                                                                                                          |
 
@@ -79,7 +80,7 @@ source .venv/bin/activate
 ```
 pip install -U solutions-builder
 
-# Verify Solution Builder CLI tool with version >= v1.17.12
+# Verify Solution Builder CLI tool with version >= v1.17.19
 sb version
 ```
 
@@ -142,6 +143,9 @@ sb set project-id ${PROJECT_ID}
 # Update domain name (for HTTPS load balancer and ingress)
 export DOMAIN_NAME=<my-domain-name> # e.g. css.example.com
 sb vars set domain_name ${DOMAIN_NAME}
+
+# Set up API_BASE_URL for the frontend app:
+export API_BASE_URL=https://${DOMAIN_NAME}
 ```
 
 ### Initialize the Cloud infra
@@ -212,30 +216,25 @@ In the GCP Console, check the following:
 ## Frontend application
 
 When running `sb deploy` like above, it automatically deploys a Streamlit-based frontend app
-altogether with all backend services deployment.
-- It deploys the frontend app in [components/frontend_streamlit]()
+altogether with all services deployment.
+- It deploys the frontend app in [components/frontend_streamlit](components/frontend_streamlit)
 - Once deployed, you can verify the frontend app at `https://$YOUR_DNS_DOMAIN` in a web browser.
 
 > [Streamlit](https://streamlit.io) is an open-source Python library that makes it easy to create custom web apps. It's a popular choice for data scientists and machine learning engineers who want to quickly create interactive dashboards and visualizations
 
-### Deploy the frontend app manually
+### Deploy or run the frontend app manually
 
-You can re-deploy the frontend app by the following:
-```
-sb deploy -m frontend_streamlit
-```
+See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the frontend app.
 
-See [components/frontend_streamlit/README.md]() for other options to run the frontend app.
+### (Optional) Deploy a FlutterFlow app
 
-### (Optional) Deploy a GENIE FlutterFlow app
+In addition to the default Streamlit frontend app, you can choose to use the GENIE FlutterFlow UI app.
 
-In addition to the default Streamlit frontend app, you can choose to use the FlutterFlow UI app.
+Please follow [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
 
-Please follow [these steps](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
+> FlutterFlow is a low-code development platform that enables you to build native mobile and web applications without writing code. To learn more about FlutterFlow, visit https://flutterflow.io/enterprise.
 
-> To learn more about FlutterFlow, visit https://flutterflow.io/enterprise.
-
-### Troubleshooting
+## Troubleshooting
 
 Please refer to [TROUBLESHOOTING.md](https://github.com/GoogleCloudPlatform/solutions-builder/blob/main/docs/TROUBLESHOOTING.md) for any Terraform errors
 
