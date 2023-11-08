@@ -225,13 +225,13 @@ altogether with all services deployment.
 
 See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the frontend app.
 
-### (Optional) Deploy a GENIE FlutterFlow app
+### (Optional) Deploy a FlutterFlow app
 
-In addition to the default Streamlit frontend app, you can choose to use the FlutterFlow UI app.
+In addition to the default Streamlit frontend app, you can choose to use the GENIE FlutterFlow UI app.
 
-Please follow [these steps](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
+Please follow [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
 
-> To learn more about FlutterFlow, visit https://flutterflow.io/enterprise.
+> FlutterFlow is a low-code development platform that enables you to build native mobile and web applications without writing code. To learn more about FlutterFlow, visit https://flutterflow.io/enterprise.
 
 ## Troubleshooting
 
