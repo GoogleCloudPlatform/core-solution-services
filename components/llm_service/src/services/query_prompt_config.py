@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-""" Query prompt templates """
+"""
+Query prompt templates
+"""
 
 from langchain.prompts import PromptTemplate
 
@@ -30,4 +31,3 @@ Helpful Answer:"""
 QUESTION_PROMPT = PromptTemplate(
     template=prompt_template, input_variables=["context", "question"]
 )
-

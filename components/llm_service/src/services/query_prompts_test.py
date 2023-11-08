@@ -17,6 +17,7 @@
 from services.query_prompts import question_prompt
 from services.query_prompt_config import QUESTION_PROMPT
 
+
 def test_question_prompt():
 
   prompt = "What color is the sky?"
@@ -24,7 +25,7 @@ def test_question_prompt():
   expected_prompt = QUESTION_PROMPT.format(
     question=prompt, context=text_context)
   question = "What color is the sky?"
-  query_context = [{"document_text":"It is sunny outside, the sky is blue."}]
+  query_context = [{"document_text": "It is sunny outside, the sky is blue."}]
   actual_prompt = question_prompt(question, query_context)
   assert expected_prompt == actual_prompt, "Prompts don't match"
 
@@ -35,7 +36,7 @@ def test_question_prompt():
   expected_prompt = QUESTION_PROMPT.format(
     question=prompt, context=text_context)
   question = "What color is the sky?"
-  query_context = [{"document_text":"It is sunny outside, the sky is blue."},
-                   {"document_text":"And there are no clouds."}]
+  query_context = [{"document_text": "It is sunny outside, the sky is blue."},
+                   {"document_text": "And there are no clouds."}]
   actual_prompt = question_prompt(question, query_context)
   assert expected_prompt == actual_prompt, "Prompts don't match"

@@ -25,11 +25,12 @@ import langchain.agents as langchain_agents
 from langchain.schema import HumanMessage, AIMessage
 from config import LANGCHAIN_LLM, CHAT_LLM_TYPES
 
+
 async def langchain_llm_generate(prompt: str, llm_type: str,
                                  user_chat: Optional[UserChat] = None):
   """
   Use langchain to generate text with an LLM given a prompt.  This is
-    always done asychronously, and so must be used in a route defined with
+    always done asynchronously, and so must be used in a route defined with
     async def.
 
   Args:
@@ -49,7 +50,6 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
     if llm is None:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
-    response_text = ""
     if llm_type in CHAT_LLM_TYPES:
       # use langchain chat interface for openai
 
@@ -78,7 +78,7 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
 
 
 def get_model(llm_type: str) -> Any:
-  """ return a lanchain model given type """
+  """ return a langchain model given type """
   llm = LANGCHAIN_LLM.get(llm_type)
   return llm
 

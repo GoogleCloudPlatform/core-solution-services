@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
   Unit tests for Langchain Service endpoints
 """
@@ -48,18 +47,21 @@ FAKE_GOOGLE_RESPONSE = TextGenerationResponse(text=FAKE_GENERATE_RESPONSE,
 
 FAKE_PROMPT = "test prompt"
 
+
 @pytest.fixture
-def create_user(clean_firestore):
+def create_user(firestore_emulator, clean_firestore):
   user_dict = USER_EXAMPLE
   user = User.from_dict(user_dict)
   user.save()
 
+
 @pytest.fixture
-def test_chat(clean_firestore):
+def test_chat(firestore_emulator, clean_firestore):
   chat_dict = CHAT_EXAMPLE
   chat = UserChat.from_dict(chat_dict)
   chat.save()
   return chat
+
 
 @pytest.mark.asyncio
 async def test_llm_generate(clean_firestore):
@@ -69,6 +71,7 @@ async def test_llm_generate(clean_firestore):
 
   assert response == FAKE_GENERATE_RESPONSE
 
+
 @pytest.mark.asyncio
 async def test_llm_chat(clean_firestore):
   with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
@@ -76,6 +79,7 @@ async def test_llm_chat(clean_firestore):
     response = await llm_chat(FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5)
 
   assert response == FAKE_GENERATE_RESPONSE
+
 
 @pytest.mark.asyncio
 async def test_llm_chat_resume(clean_firestore, test_chat):
@@ -85,6 +89,7 @@ async def test_llm_chat_resume(clean_firestore, test_chat):
       FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5, test_chat)
 
   assert response == FAKE_GENERATE_RESPONSE
+
 
 @pytest.mark.asyncio
 async def test_llm_generate_google(clean_firestore):
@@ -96,6 +101,7 @@ async def test_llm_generate_google(clean_firestore):
 
   assert response == FAKE_GENERATE_RESPONSE
 
+
 @pytest.mark.asyncio
 async def test_llm_chat_google(clean_firestore, test_chat):
   with mock.patch(
@@ -105,6 +111,7 @@ async def test_llm_chat_google(clean_firestore, test_chat):
       FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT)
 
   assert response == FAKE_GENERATE_RESPONSE
+
 
 @pytest.mark.asyncio
 async def test_llm_chat_google_resume(clean_firestore, test_chat):

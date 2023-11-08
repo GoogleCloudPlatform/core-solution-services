@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-""" LLM Generation Service """
-
+"""
+LLM Generation Service
+"""
 from common.models import UserChat
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
@@ -23,8 +23,8 @@ from typing import Optional
 from config import (LANGCHAIN_LLM, GOOGLE_LLM,
                     OPENAI_LLM_TYPE_GPT3_5, VERTEX_LLM_TYPE_BISON_TEXT,
                     CHAT_LLM_TYPES)
-from vertexai.preview.language_models import (ChatModel,
-    TextGenerationModel)
+from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
+
 
 async def llm_generate(prompt: str, llm_type: str) -> str:
   """
@@ -58,6 +58,7 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
+
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None) -> str:
   """
@@ -76,6 +77,7 @@ async def llm_chat(prompt: str, llm_type: str,
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
   try:
+    response = None
     if llm_type in LANGCHAIN_LLM.keys():
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
     elif llm_type in GOOGLE_LLM.keys():
@@ -97,6 +99,7 @@ async def google_llm_predict(prompt: str, is_chat: bool,
     prompt: the text prompt to pass to the LLM
     is_chat: true if the model is a chat model
     google_llm: name of the vertex llm model
+    user_chat:
 
   Returns:
     the text response.

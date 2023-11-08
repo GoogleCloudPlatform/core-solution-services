@@ -11,12 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-""" Query prompt generator methods """
-
+"""
+Query prompt generator methods
+"""
 from typing import List
 
 from services.query_prompt_config import QUESTION_PROMPT
+
 
 def question_prompt(prompt: str, query_context: List[dict]) -> str:
   """ Create question prompt with context for LLM """

@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-""" Agent prompt templates """
+"""
+Agent prompt templates
+"""
 
 # flake8: noqa
 PREFIX = """Assistant is a large language model trained by Google.

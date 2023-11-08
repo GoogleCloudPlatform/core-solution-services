@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-""" Query Engine Service """
-
+"""
+Query Engine Service
+"""
 import functools
 import gc
 import json
@@ -164,6 +164,7 @@ async def _query_doc_matches(q_engine: QueryEngine,
 
   return query_references
 
+
 def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   """
   Handle a batch job request for query engine build.
@@ -198,6 +199,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"Completed batch job query engine build for {query_engine}")
 
   return result_data
+
 
 def query_engine_build(doc_url: str, query_engine: str, user_id: str,
                        is_public: Optional[bool] = True,

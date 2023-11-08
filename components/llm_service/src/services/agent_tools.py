@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-""" Agent tools """
-
+"""
+Agent tools
+"""
 # pylint: disable=unused-argument,unused-import
-
-from common.utils.http_exceptions import InternalServerError
+from typing import Sequence
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
 from langchain.tools import tool
+from langchain.tools.base import BaseTool
 from config import RULES_ENGINE_BASE_URL, auth_client
 
 MEDICAID_RULESET = "medicaid_ny"
@@ -66,6 +66,7 @@ def rules_engine_get_ruleset_fields(ruleset_name: str):
   fields = response.json().get("fields", {})
   return fields
 
+
 @tool(infer_schema=False)
 def medicaid_eligibility_requirements(record: str) -> str:
   """
@@ -73,7 +74,8 @@ def medicaid_eligibility_requirements(record: str) -> str:
   benefits.
   """
   fields = rules_engine_get_ruleset_fields(MEDICAID_RULESET)
-  #fields = EXAMPLE_MEDICAID_FIELDS_2
+  Logger.info(record)
+  # fields = EXAMPLE_MEDICAID_FIELDS_2
 
   return fields
 
