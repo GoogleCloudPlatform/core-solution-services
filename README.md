@@ -139,44 +139,33 @@ echo PROJECT_ID=${PROJECT_ID}
 cd core-solution-services
 sb set project-id ${PROJECT_ID}
 
-# Update domain name (for HTTPS)
+# Update domain name (for HTTPS load balancer and ingress)
 export DOMAIN_NAME=<my-domain-name> # e.g. css.example.com
 sb vars set domain_name ${DOMAIN_NAME}
 ```
 
 ### Initialize the Cloud infra
+
+Apply infra/terraform for the foundation and load balancer:
 ```
 sb infra apply 1-bootstrap
 sb infra apply 2-foundation
 sb infra apply 3-gke
-```
-
-### Add an HTTP Load balancer with DNS domain
-```
-sb components add terraform_gke_ingress
-```
-
-Update the following questions in the prompt:
-- Cluster external endpoint IP address?
-  - (The IP address will be automatically retrieved)
-- Kubernetes service names in ingress? (comma-separated string)
-  - **authentication,jobs-service,llm-service,user-management,rules-engine**
-- DNS domains (comma-separated string)?
-  - (Your DNS domain for SSL cert, e.g. `css-backend.example.com`)
-  > Note: You may leave the DNS domain as blank if you don't have any custom domains. If so, the backend IP address must be used to connect to API endpoints later on.
-
-Apply infra/terraform for GKE ingress as well as LLM service:
-```
 sb infra apply 3-gke-ingress
+```
+
+(Optional) Add an A record to your DNS:
+![Alt text](.github/assets/dns_a_record.png)
+- Set the IP address to the external IP address in the ingress.
+
+Apply infra/terraform for LLM service:
+```
 sb infra apply 4-llm
 ```
 - This will create a GCE load balancer with ingress.
 - This will create a `$PROJECT_ID-llm-docs` bucket and upload the sample doc `llm-sample-doc.pdf` to it.
 - It will add required Firestore indexes.
 
-(Optional) Add an A record to your DNS:
-![Alt text](.github/assets/dns_a_record.png)
-- Set the IP address to the external IP address in the ingress.
 
 ## Deploy Backend Microservices
 
@@ -200,31 +189,49 @@ sb deploy
 ### Verify deployment
 
 Once deployed, check out the API docs with the following links:
-- https://$YOUR_DNS_DOMAIN/authentication/api/v1/docs
-- https://$YOUR_DNS_DOMAIN/user-management/api/v1/docs
-- https://$YOUR_DNS_DOMAIN/jobs-service/api/v1/docs
-- https://$YOUR_DNS_DOMAIN/llm-service/api/v1/docs
 
-> Alternatively, you may use the IP address e.g. `http://$BASE_IP_ADDRESS/authentication/api/v1/docs` to verify API endpoints
+- Frontend Streamlit app:
+  - https://$YOUR_DNS_DOMAIN
+
+- Backend API documentations:
+  - https://$YOUR_DNS_DOMAIN/authentication/api/v1/docs
+  - https://$YOUR_DNS_DOMAIN/user-management/api/v1/docs
+  - https://$YOUR_DNS_DOMAIN/jobs-service/api/v1/docs
+  - https://$YOUR_DNS_DOMAIN/llm-service/api/v1/docs
+
+Alternatively, you can test with the IP address to verify API endpoints
 ```
 BASE_IP_ADDRESS=$(gcloud compute addresses list --global --format="value(address)")
 ```
+- Open up `http://$BASE_IP_ADDRESS/authentication/api/v1/docs` in a web browser.
 
 In the GCP Console, check the following:
 - A query engine
 - A vertex AI endpoint to the query engine
 
-### Clone GENIE FlutterFlow app
+## Frontend application
 
-Follow the steps below to clone a FlutterFlow UI app:
+When running `sb deploy` like above, it automatically deploys a Streamlit-based frontend app
+altogether with all backend services deployment.
+- It deploys the frontend app in [components/frontend_streamlit]()
+- Once deployed, you can verify the frontend app at `https://$YOUR_DNS_DOMAIN` in a web browser.
 
-- [Register for a FlutterFlow account](https://app.flutterflow.io/create-account)
-- Navigate to [GENIE FlutterFlow app template](https://app.flutterflow.io/project/google-genie-public-xwz8vb) and click **[Clone]** on the top-right to make a copy of the FlutterFlow app to your account.
-  ![Alt text](.github/assets/ff_clone.png)
-- Once cloned, on the left panel menu, go to [API Calls] page.
-- In each API group (i.e. Authentication, Chats, Query), change the `API Base URL` to your API base URL.
-  ![Alt text](.github/assets/ff_api_base_url.png)
-- Run your app by clicking the "Lightning" icon on the top-right menu.
+> [Streamlit](https://streamlit.io) is an open-source Python library that makes it easy to create custom web apps. It's a popular choice for data scientists and machine learning engineers who want to quickly create interactive dashboards and visualizations
+
+### Deploy the frontend app manually
+
+You can re-deploy the frontend app by the following:
+```
+sb deploy -m frontend_streamlit
+```
+
+See [components/frontend_streamlit/README.md]() for other options to run the frontend app.
+
+### (Optional) Deploy a GENIE FlutterFlow app
+
+In addition to the default Streamlit frontend app, you can choose to use the FlutterFlow UI app.
+
+Please follow [these steps](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
 
 > To learn more about FlutterFlow, visit https://flutterflow.io/enterprise.
 
