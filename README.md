@@ -195,7 +195,7 @@ sb deploy
 
 - Follow [components/authentication/README.md#create-users](./components/authentication/README.md#create-users) to create the first user.
   - You will need the output ID Token for the next step.
-- Follow [components/llm_service/README.md](./components/llm_service/README.md#after-deployment) to create a Query Engine.
+- Follow [components/llm_service/README.md](./components/llm_service/README.md#after-deployment) to create the BOT account and a Query Engine.
 
 ### Verify deployment
 
