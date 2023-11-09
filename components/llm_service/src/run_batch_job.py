@@ -21,7 +21,7 @@ from common.utils.config import (JOB_TYPE_QUERY_ENGINE_BUILD,
 from common.utils.logging_handler import Logger
 from common.utils.kf_job_app import kube_delete_job
 from common.models.batch_job import BatchJobModel
-from services.query_service import batch_build_query_engine
+from services.query.query_service import batch_build_query_engine
 from services.agent_service import batch_execute_plan
 from config import JOB_NAMESPACE
 

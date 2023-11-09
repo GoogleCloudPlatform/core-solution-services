@@ -38,7 +38,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMGetQueryEnginesResponse,
                                 LLMQueryResponse)
 
-from services.query_service import query_generate, query_engine_build
+from services.query.query_service import query_generate, query_engine_build
 from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, DEFAULT_QUERY_EMBEDDING_MODEL,
                     ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,

@@ -14,8 +14,8 @@
 """
   Unit tests for Query Prompts
 """
-from services.query_prompts import question_prompt
-from services.query_prompt_config import QUESTION_PROMPT
+from services.query.query_prompts import question_prompt
+from services.query.query_prompt_config import QUESTION_PROMPT
 
 
 def test_question_prompt():
