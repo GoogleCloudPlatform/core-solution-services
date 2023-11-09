@@ -63,10 +63,6 @@ class VectorStore:
                                                  location=REGION)
     self.bucket_uri = f"gs://{bucket.name}"
 
-  @property
-  def bucket_name(self) -> str:
-    return self.bucket_name
-
   def index_document(self, doc_name: str, text_chunks: List[str],
                           index_base: int) -> int:
     """
