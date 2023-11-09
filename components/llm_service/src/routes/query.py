@@ -44,7 +44,7 @@ from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
                     DEFAULT_QUERY_CHAT_MODEL)
 
-router = APIRouter(prefix="/query", tags=["LLMs"], responses=ERROR_RESPONSES)
+router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
 
 @router.get(
