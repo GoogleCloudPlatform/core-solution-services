@@ -33,6 +33,12 @@ ITEMS_PER_REQUEST = 5
 def get_embeddings(text_chunks: List[str]) -> Tuple[List[bool], np.ndarray]:
   """
   Get embeddings for a list of text strings.
+
+  Args:
+    text_chunks: list of text chunks to generate embeddings for
+  Returns:
+    Tuple of (list of booleans for chunk true if embeddings were generated,
+              numpy array of embeddings indexed by chunks)
   """
 
   embeddings_list: List[List[float]] = []
@@ -65,7 +71,7 @@ def get_embeddings(text_chunks: List[str]) -> Tuple[List[bool], np.ndarray]:
 # Generator function to yield batches of text_chunks
 def _generate_batches(text_chunks: List[str],
                       batch_size: int) -> Generator[List[str], None, None]:
-  """ 
+  """
   Generate batches of text_chunks
   """
   for i in range(0, len(text_chunks), batch_size):
@@ -73,8 +79,8 @@ def _generate_batches(text_chunks: List[str],
 
 def encode_texts_to_embeddings(
         sentence_list: List[str]) -> List[Optional[List[float]]]:
-  """ 
-  Encode list of strings using Vertex AI embedding model 
+  """
+  Encode list of strings using Vertex AI embedding model
   """
   model = TextEmbeddingModel.from_pretrained(
       GOOGLE_LLM.get(DEFAULT_QUERY_EMBEDDING_MODEL))
