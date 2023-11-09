@@ -20,8 +20,9 @@ from typing import List, Optional, Generator, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from vertexai.preview.language_models import TextEmbeddingModel
-
 from config import GOOGLE_LLM, DEFAULT_QUERY_EMBEDDING_MODEL
+
+# pylint: disable=broad-exception-caught
 
 # Create a rate limit of 300 requests per minute.
 API_CALLS_PER_SECOND = int(300 / 60)

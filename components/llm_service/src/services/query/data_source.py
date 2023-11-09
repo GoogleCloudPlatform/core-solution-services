@@ -23,6 +23,8 @@ from langchain.document_loaders import CSVLoader
 from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
 
+# pylint: disable=broad-exception-caught
+
 # text chunk size for embedding data
 CHUNK_SIZE = 1000
 
