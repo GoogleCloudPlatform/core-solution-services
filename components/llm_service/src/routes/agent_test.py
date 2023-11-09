@@ -30,7 +30,7 @@ from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 from common.testing.client_with_emulator import client_with_emulator
-from services.agent_service import get_all_agents
+from services.agents.agent_service import get_all_agents
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
@@ -81,7 +81,7 @@ def test_get_agent_list(clean_firestore, client_with_emulator):
 
 def test_run_agent(create_user, client_with_emulator):
   userid = CHAT_EXAMPLE["user_id"]
-  url = f"{api_url}/run/MediKate"
+  url = f"{api_url}/run/Chat"
 
   with mock.patch("routes.agent.run_agent",
                   return_value = FAKE_GENERATE_RESPONSE):
@@ -111,7 +111,7 @@ def test_run_agent(create_user, client_with_emulator):
 def test_run_agent_chat(create_user, create_chat, client_with_emulator):
   chatid = CHAT_EXAMPLE["id"]
 
-  url = f"{api_url}/run/MediKate/{chatid}"
+  url = f"{api_url}/run/Chat/{chatid}"
 
   with mock.patch("routes.agent.run_agent",
                   return_value=FAKE_GENERATE_RESPONSE):

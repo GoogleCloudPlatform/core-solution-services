@@ -21,7 +21,7 @@ import utils
 params = st.experimental_get_query_params()
 st.session_state.auth_token = params.get("auth_token", [None])[0]
 st.session_state.chat_id = params.get("chat_id", [None])[0]
-st.session_state.agent_name = params.get("agent_name", ["MediKate"])[0]
+st.session_state.agent_name = params.get("agent_name", ["Chat"])[0]
 
 
 def on_input_change():

@@ -26,8 +26,8 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest)
 from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentRunModel,
                                  LLMAgentGetAllResponse)
-from services.agent_service import (get_all_agents, run_agent,
-                                    get_llm_type_for_agent)
+from services.agents.agent_service import (get_all_agents, run_agent,
+                                           get_llm_type_for_agent)
 from services.langchain_service import langchain_chat_history
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
 

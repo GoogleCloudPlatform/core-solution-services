@@ -15,51 +15,78 @@
 """ Agent service """
 # pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-import
 
+import inspect
+import json
 import re
 from typing import List, Tuple
-from common.models.agent import AgentType, UserPlan, PlanStep
+from common.models.agent import (AgentType, AgentCapability,
+                                 UserPlan, PlanStep)
 from common.utils.errors import ResourceNotFoundException
-from common.utils.http_exceptions import BadRequest
+from common.utils.http_exceptions import BadRequest, InternalServerError
 from common.utils.logging_handler import Logger
-from config import (VERTEX_LLM_TYPE_BISON_CHAT,
-                    OPENAI_LLM_TYPE_GPT3_5,
-                    OPENAI_LLM_TYPE_GPT4)
+from config import AGENT_CONFIG_PATH
 from langchain.agents import AgentExecutor
-from services.agents import MediKateAgent, CaseyAgent, CaseyPlanAgent
+from services.agents.agents import BaseAgent
+from services.agents import agents
 
-AGENTS = {
-  "MediKate": {
-    "llm_type": VERTEX_LLM_TYPE_BISON_CHAT,
-    "agent_type": AgentType.LANGCHAIN_CONVERSATIONAL,
-    "agent_class": MediKateAgent
-  },
-  "Casey": {
-    "llm_type": VERTEX_LLM_TYPE_BISON_CHAT,
-    "agent_type": AgentType.LANGCHAIN_CONVERSATIONAL,
-    "agent_class": CaseyAgent
-  },
-  "CaseyPlanner": {
-    "llm_type": OPENAI_LLM_TYPE_GPT4,
-    "agent_type": AgentType.LANGCHAIN_ZERO_SHOT,
-    "agent_class": CaseyPlanAgent
+AGENTS = None
+
+def load_agents(agent_config_path: str):
+  global AGENTS
+  try:
+    agent_config = {}
+    with open(agent_config_path, "r", encoding="utf-8") as file:
+      agent_config = json.load(file)
+    agent_config = agent_config.get("Agents")
+
+    # add agent class and capabiities
+    agent_classes = {
+      k:klass for (k, klass) in inspect.getmembers(agents)
+      if isinstance(klass, type)
+    }
+    for values in agent_config.values():
+      agent_class = agent_classes.get(values["agent_class"])
+      values["agent_class"] = agent_class
+      values["capabilities"] = [c.value for c in agent_class.capabilities()]
+
+    AGENTS = agent_config
+  except Exception as e:
+    raise InternalServerError(f" Error loading agent config: {e}") from e
+
+def get_agent_config() -> dict:
+  if AGENTS is None:
+    load_agents(AGENT_CONFIG_PATH)
+  return AGENTS
+
+def get_task_agent_config() -> List[dict]:
+  agent_config = get_agent_config()
+  planning_agents = {
+      agent: agent_config for agent, agent_config in agent_config.items()
+      if AgentCapability.AGENT_PLAN_CAPABILITY.value \
+          in agent_config["capabilities"]
   }
-}
+  return planning_agents
 
-PLANNING_AGENTS = [
-  "Casey"
-]
 
 def get_all_agents() -> List[dict]:
   """
   Return list of available agents, where each agent is represented
   as a dict of:
-    agent_type: llm_type
+    agent_name: {"llm_type": <llm_type>, "capabilities": <capabilities>}
   """
+  agent_config = get_agent_config()
+  agent_config.update(get_task_agent_config())
   agent_list = [
-    {agent: values["llm_type"]}
-    for agent, values in AGENTS.items()
+    {
+      agent: {
+        "llm_type": values["llm_type"],
+        "capabilities": values["capabilities"],
+      }
+    }
+    for agent, values in agent_config.items()
   ]
   return agent_list
+
 
 def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
   """
@@ -74,7 +101,7 @@ def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
       output(str): the output of the agent on the user input
       action_steps: the list of action steps take by the agent for the run
   """
-  agent_params = AGENTS[agent_name]
+  agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
 
   tools = llm_service_agent.get_tools()
@@ -108,11 +135,12 @@ def agent_plan(agent_name:str, prompt:str,
       output(str): the output of the agent on the user input
       user_plan(str): user plan object created from agent plan
   """
-  if not agent_name in PLANNING_AGENTS:
+  planning_agents = get_task_agent_config()
+  if not agent_name in planning_agents.keys():
     raise BadRequest(f"{agent_name} is not a planning agent.")
 
   # get LLM service agent
-  agent_params = AGENTS[agent_name]
+  agent_params = planning_agents[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
 
   plan_agent_name = llm_service_agent.get_planning_agent()
@@ -183,8 +211,9 @@ def get_llm_type_for_agent(agent_name: str) -> str:
   Raises:
     ResourceNotFoundException if agent_name not found
   """
-  for agent in AGENTS.keys():
+  agent_config = get_agent_config()
+  for agent in agent_config.keys():
     if agent_name == agent:
-      return AGENTS[agent]["llm_type"]
+      return agent_config[agent]["llm_type"]
   raise ResourceNotFoundException(f"can't find agent name {agent_name}")
   

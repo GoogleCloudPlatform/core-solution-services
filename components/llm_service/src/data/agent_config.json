@@ -1,0 +1,20 @@
+{
+  "Agents":
+  {
+    "Chat": {
+      "llm_type": "VertexAI-Chat",
+      "agent_type": "langchain_Conversational",
+      "agent_class": "ChatAgent"
+    },
+    "Task": {
+      "llm_type": "VertexAI-Chat",
+      "agent_type": "langchain_Conversational",
+      "agent_class": "TaskAgent"
+    },
+    "Planning": {
+      "llm_type": "OpenAI-GPT4",
+      "agent_type": "langchain_ZeroShot",
+      "agent_class": "PlanningAgent"
+    }
+  }
+}

@@ -229,3 +229,6 @@ except Exception as e:
 
 auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
                               LLM_BACKEND_ROBOT_PASSWORD)
+
+# agent config
+AGENT_CONFIG_PATH = "./data/agent_config.json"
