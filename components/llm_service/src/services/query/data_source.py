@@ -41,16 +41,24 @@ class DataSource:
     return self.docs_not_processed
 
   def download_documents(self, doc_url: str,
-                         temp_dir: Path) -> List[str]:
-
-    # download files to local directory
-    doc_filepaths = self.download_files_to_local(temp_dir, doc_url)
+                         temp_dir: Path) -> List[Tuple[str, str, str]]:
+    """
+    Download files from doc_url source to a local tmp directory
+    """
+    doc_filepaths = []
+    bucket_name = doc_url.split("gs://")[1].split("/")[0]
+    Logger.info(f"downloading {doc_url} from bucket {bucket_name}")
+    for blob in self.storage_client.list_blobs(bucket_name):
+      # Download the file to the tmp folder flattening all directories
+      file_name = Path(blob.name).name
+      file_path = os.path.join(temp_dir, file_name)
+      blob.download_to_filename(file_path)
+      doc_filepaths.append((blob.name, blob.path, file_path))
 
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(
           f"No documents can be indexed at url {doc_url}")
     return doc_filepaths
-
 
   def chunk_document(self, doc_name: str, doc_url: str, doc_filepath: str) -> \
                       Tuple[List[QueryDocument], List[str]]:
@@ -93,24 +101,10 @@ class DataSource:
 
     return text_chunks
 
-
-  def download_files_to_local(self, local_dir,
-                              doc_url: str) -> List[Tuple[str, str, str]]:
-    """ Download files from GCS to a local tmp directory """
-    docs = []
-    bucket_name = doc_url.split("gs://")[1].split("/")[0]
-    Logger.info(f"downloading {doc_url} from bucket {bucket_name}")
-    for blob in self.storage_client.list_blobs(bucket_name):
-      # Download the file to the tmp folder flattening all directories
-      file_name = Path(blob.name).name
-      file_path = os.path.join(local_dir, file_name)
-      blob.download_to_filename(file_path)
-      docs.append((blob.name, blob.path, file_path))
-    return docs
-
-
   def read_doc(self, doc_name: str, doc_filepath: str) -> List[str]:
-    """ Read document and return content as a list of strings """
+    """
+    Read document and return content as a list of strings
+    """
     doc_extension = doc_name.split(".")[-1]
     doc_extension = doc_extension.lower()
     doc_text_list = None
