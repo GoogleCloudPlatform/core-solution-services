@@ -55,12 +55,14 @@ class VectorStore:
     # create bucket for ME index data
     self.bucket_name = f"{PROJECT_ID}-{query_engine}-data"
     try:
-      bucket = self.storage_client.create_bucket(self.bucket_name, location=REGION)
+      bucket = self.storage_client.create_bucket(self.bucket_name,
+                                                 location=REGION)
     except Conflict:
       # if bucket already exists, delete and recreate
       bucket = self.storage_client.bucket(self.bucket_name)
       bucket.delete(force=True)
-      bucket = self.storage_client.create_bucket(self.bucket_name, location=REGION)
+      bucket = self.storage_client.create_bucket(self.bucket_name,
+                                                 location=REGION)
     self.bucket_uri = f"gs://{bucket.name}"
 
   @property
@@ -196,7 +198,8 @@ class VectorStore:
       Logger.error(f"Error creating ME index or endpoint {e}")
 
   @classmethod
-  def retrieve_text_matches(cls, q_engine: QueryEngine, query_embeddings) -> List[int]:
+  def retrieve_text_matches(cls, q_engine: QueryEngine, query_embeddings) \
+        -> List[int]:
     # retrieve text matches for query
     index_endpoint = aiplatform.MatchingEngineIndexEndpoint(q_engine.endpoint)
 

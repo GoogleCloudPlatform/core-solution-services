@@ -105,7 +105,8 @@ async def _query_doc_matches(q_engine: QueryEngine,
   # generate embeddings for prompt
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
 
-  match_indexes_list = VectorStore.retrieve_text_matches(q_engine, query_embeddings)
+  match_indexes_list = VectorStore.retrieve_text_matches(q_engine,
+                                                         query_embeddings)
 
   # assemble document chunk matches from match indexes
   query_references = []
@@ -279,15 +280,19 @@ def process_documents(doc_url: str, vector_store: VectorStore,
     index_base = 0
 
     for doc_name, index_doc_url, doc_filepath in doc_filepaths:
-      text_chunks = data_source.chunk_document(doc_name, index_doc_url, doc_filepath)
+      text_chunks = data_source.chunk_document(doc_name,
+                                               index_doc_url,
+                                               doc_filepath)
 
       if text_chunks is None:
+        # unable to process this doc; skip
         continue
 
       # generate embedding data and store in local dir
       new_index_base = \
           vector_store.index_document(doc_name, text_chunks, index_base)
 
+      # cleanup temp local file
       os.remove(doc_filepath)
 
       # store QueryDocument and QueryDocumentChunk models
