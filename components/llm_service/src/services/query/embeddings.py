@@ -24,8 +24,8 @@ from vertexai.preview.language_models import TextEmbeddingModel
 from config import GOOGLE_LLM, DEFAULT_QUERY_EMBEDDING_MODEL
 
 def get_embedding_batched(
-    text_chunks: List[str], api_calls_per_second: int = 10, batch_size: int = 5
-) -> Tuple[List[bool], np.ndarray]:
+    text_chunks: List[str], api_calls_per_second: int=10, batch_size: int=5
+    ) -> Tuple[List[bool], np.ndarray]:
   """ get embeddings for a list of text strings """
 
   embeddings_list: List[List[float]] = []

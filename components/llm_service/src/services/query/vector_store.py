@@ -21,7 +21,7 @@ import shutil
 import tempfile
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from google.cloud import aiplatform, storage
@@ -47,13 +47,14 @@ ITEMS_PER_REQUEST = 5
 
 class VectorStore:
   """
-  Class for vector store db operations
+  Class for vector store db operations.  Currently assumes matching engine.
   """
-  def __init__(self, query_engine: str) -> None:
+  def __init__(self, q_engine: QueryEngine) -> None:
+    self.q_engine = q_engine
     self.storage_client = storage.Client(project=PROJECT_ID)
 
     # create bucket for ME index data
-    self.bucket_name = f"{PROJECT_ID}-{query_engine}-data"
+    self.bucket_name = f"{PROJECT_ID}-{q_engine.name}-data"
     try:
       bucket = self.storage_client.create_bucket(self.bucket_name,
                                                  location=REGION)
@@ -70,8 +71,10 @@ class VectorStore:
     return self.bucket_name
 
   def index_document(self, doc_name: str, text_chunks: List[str],
-                          index_base: int) -> Tuple[int, str]:
-    """ generate matching engine index data files in a local directory """
+                          index_base: int) -> int:
+    """
+    Generate matching engine index data files in a local directory
+    """
 
     chunk_index = 0
     num_chunks = len(text_chunks)
@@ -132,7 +135,6 @@ class VectorStore:
       index_base = index_base + len(process_chunks)
       chunk_index = chunk_index + len(process_chunks)
 
-
     # copy data files up to bucket
     bucket = self.storage_client.get_bucket(self.bucket_name)
     for root, _, files in os.walk(embeddings_dir):
@@ -148,17 +150,18 @@ class VectorStore:
 
     return index_base
 
-  def finalize(self, q_engine: QueryEngine):
+  def finalize(self):
     """ Create matching engine index and endpoint """
 
     # ME index name and description
-    index_name = q_engine.name.replace("-", "_") + "_MEindex"
+    index_name = self.q_engine.name.replace("-", "_") + "_MEindex"
 
     # create ME index
     Logger.info(f"creating matching engine index {index_name}")
 
     index_description = (
-        "Matching Engine index for LLM Service query engine: " + q_engine.name)
+        "Matching Engine index for LLM Service query engine: " + \
+        self.q_engine.name)
 
     tree_ah_index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
         display_name=index_name,
@@ -181,17 +184,18 @@ class VectorStore:
     Logger.info(f"Created matching engine endpoint for {index_name}")
 
     # store index in query engine model
-    q_engine.index_id = tree_ah_index.resource_name
-    q_engine.index_name = index_name
-    q_engine.endpoint = index_endpoint.resource_name
-    q_engine.update()
+    self.q_engine.index_id = tree_ah_index.resource_name
+    self.q_engine.index_name = index_name
+    self.q_engine.endpoint = index_endpoint.resource_name
+    self.q_engine.update()
 
     # deploy index endpoint
     try:
       # this seems to consistently time out, throwing an error, but
       # actually successfully deploys the endpoint
       index_endpoint.deploy_index(
-          index=tree_ah_index, deployed_index_id=q_engine.deployed_index_name
+          index=tree_ah_index,
+          deployed_index_id=self.q_engine.deployed_index_name
       )
       Logger.info(f"Deployed matching engine endpoint for {index_name}")
     except Exception as e:

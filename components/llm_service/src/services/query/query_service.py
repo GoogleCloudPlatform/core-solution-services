@@ -240,10 +240,10 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
 
   storage_client = storage.Client(project=PROJECT_ID)
 
-  vector_store = VectorStore(query_engine)
+  vector_store = VectorStore(q_engine)
 
   try:
-    # process docs at url and upload embeddings to GCS for indexing
+    # process docs at url and upload embeddings to vector store
     docs_processed, docs_not_processed = process_documents(
       doc_url, vector_store, q_engine, storage_client)
 
@@ -253,7 +253,7 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
           f"Failed to process any documents at url {doc_url}")
 
     # finalize vectore store (e.g. create endpoint)
-    vector_store.finalize(q_engine)
+    vector_store.finalize()
 
     return docs_processed, docs_not_processed
 
