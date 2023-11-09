@@ -196,9 +196,16 @@ class VectorStore:
       Logger.error(f"Error creating ME index or endpoint {e}")
 
   @classmethod
-  def find_neighbors(cls, q_engine: QueryEngine, query_embeddings) \
-        -> List[int]:
-    # retrieve text matches for query
+  def find_neighbors(cls, q_engine: QueryEngine, 
+                     query_embeddings: List[List[float]]) -> List[int]:
+    """
+    Retrieve text matches for query embeddings.
+    Args:
+      q_engine: QueryEngine model
+      query_embeddings: list of embedding arrays
+    Returns:
+      list of indexes that are matched of length NUM_MATCH_RESULTS
+    """
     index_endpoint = aiplatform.MatchingEngineIndexEndpoint(q_engine.endpoint)
 
     match_indexes_list = index_endpoint.find_neighbors(
