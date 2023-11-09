@@ -23,8 +23,7 @@ from typing import Optional
 from config import (LANGCHAIN_LLM, GOOGLE_LLM,
                     OPENAI_LLM_TYPE_GPT3_5, VERTEX_LLM_TYPE_BISON_TEXT,
                     CHAT_LLM_TYPES)
-from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-
+from vertexai.language_models import (ChatModel, TextGenerationModel)
 
 async def llm_generate(prompt: str, llm_type: str) -> str:
   """
@@ -73,18 +72,18 @@ async def llm_chat(prompt: str, llm_type: str,
     the text response: str
   """
   Logger.info(f"generating chat with llm_type {llm_type}")
-  if not llm_type in CHAT_LLM_TYPES:
+  if llm_type not in CHAT_LLM_TYPES:
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
   try:
     response = None
-    if llm_type in LANGCHAIN_LLM.keys():
-      response = await langchain_llm_generate(prompt, llm_type, user_chat)
-    elif llm_type in GOOGLE_LLM.keys():
+    if llm_type in GOOGLE_LLM.keys():
       google_llm = GOOGLE_LLM.get(llm_type)
       is_chat = True
       response = await google_llm_predict(prompt, is_chat,
                                           google_llm, user_chat)
+    elif llm_type in LANGCHAIN_LLM.keys():
+      response = await langchain_llm_generate(prompt, llm_type, user_chat)
     return response
   except Exception as e:
     raise InternalServerError(str(e)) from e
