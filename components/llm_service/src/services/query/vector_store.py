@@ -43,7 +43,8 @@ MAX_NUM_TEXT_CHUNK_PROCESS = 1000
 
 class VectorStore:
   """
-  Class for vector store db operations.  Currently assumes matching engine.
+  Class for vector store db operations.  Currently assumes
+  Vertex matching engine.
   """
   def __init__(self, q_engine: QueryEngine) -> None:
     self.q_engine = q_engine
@@ -196,7 +197,7 @@ class VectorStore:
       Logger.error(f"Error creating ME index or endpoint {e}")
 
   @classmethod
-  def find_neighbors(cls, q_engine: QueryEngine, 
+  def find_neighbors(cls, q_engine: QueryEngine,
                      query_embeddings: List[List[float]]) -> List[int]:
     """
     Retrieve text matches for query embeddings.
