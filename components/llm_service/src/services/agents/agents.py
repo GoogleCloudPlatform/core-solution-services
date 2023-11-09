@@ -20,17 +20,16 @@ import re
 from typing import Union, Type, Callable, List
 from config import LANGCHAIN_LLM
 from common.utils.http_exceptions import InternalServerError
+from common.models.agent import AgentCapability
 from langchain.agents import (Agent, AgentOutputParser,
                              ConversationalAgent, ZeroShotAgent)
 from langchain.schema import AgentAction, AgentFinish, OutputParserException
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
-from services.agent_prompts import (PREFIX, PLANNING_PREFIX,
+from services.agents.agent_prompts import (PREFIX, PLANNING_PREFIX,
                                     PLAN_FORMAT_INSTRUCTIONS)
-from services.agent_tools import (medicaid_eligibility_requirements,
-                                  medicaid_crm_retrieve,
-                                  medicaid_crm_update,
-                                  medicaid_policy_retrieve,
-                                  gmail_tool, docs_tool, calendar_tool)
+from services.agents.agent_tools import (gmail_tool, docs_tool,
+                                         calendar_tool, search_tool,
+                                         query_tool)
 
 class BaseAgent(ABC):
   """
@@ -68,6 +67,11 @@ class BaseAgent(ABC):
     raise NotImplementedError(
         "Derived classes should provide output_parser_class")
 
+  @classmethod
+  @abstractmethod
+  def capabilities(cls) -> List[str]:
+    """ return capabilities of this agent class """
+
   @abstractmethod
   def get_tools(self) -> List[Callable]:
     """ return tools used by this agent """
@@ -79,7 +83,7 @@ class BaseAgent(ABC):
     llm = LANGCHAIN_LLM.get(self.llm_type)
     if llm is None:
       raise InternalServerError(
-          f"MediKateAgent: cannot find LLM type {self.llm_type}")
+          f"Agent: cannot find LLM type {self.llm_type}")
 
     output_parser = self.output_parser_class()
 
@@ -93,35 +97,76 @@ class BaseAgent(ABC):
     return self.agent
 
 
-class MediKateAgent(BaseAgent):
+class ChatAgent(BaseAgent):
   """
-  MediKate Agent.  A constituent facing agent designed to assist
-  state residents with enrolling in Medicaid.
+  Chat Agent.  This is an agent configured for basic informational chat with a
+  human.  It includes search and query tools.
   """
-
   def __init__(self, llm_type: str):
     super().__init__(llm_type)
-    self.name = "MediKate"
+    self.name = "ChatAgent"
     self.agent_class = ConversationalAgent
 
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
     return ToolAgentOutputParser
 
+  @classmethod
+  def capabilities(cls) -> List[str]:
+    """ return capabilities of this agent class """
+    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
+                    AgentCapability.AGENT_QUERY_CAPABILITY]
+    return capabilities
+
+  def get_tools(self) -> List[Callable]:
+    """ return tools used by this agent """
+    return [search_tool, query_tool]
+
+
+class TaskAgent(BaseAgent):
+  """
+  Task Agent.  This is an agent configured to execute tasks on behalf of a
+  human.  Every task has a plan, consisting of plan steps.
+  Creation of the plan is done by a planning agent.
+  """
+
+  def __init__(self, llm_type: str):
+    super().__init__(llm_type)
+    self.name = "TaskAgent"
+    self.agent_class = ConversationalAgent
+
+  @property
+  def output_parser_class(self) -> Type[AgentOutputParser]:
+    return ToolAgentOutputParser
+
+  @classmethod
+  def capabilities(cls) -> List[str]:
+    """ return capabilities of this agent class """
+    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
+                    AgentCapability.AGENT_QUERY_CAPABILITY,
+                    AgentCapability.AGENT_TASK_CAPABILITY]
+    return capabilities
+
   def get_tools(self):
-    tools = [medicaid_eligibility_requirements]
+    tools = [gmail_tool, docs_tool, calendar_tool, search_tool, query_tool]
     return tools
 
+  def get_planning_agent(self) -> str:
+    """
+    This is the agent used by this agent to create plans for tasks.
+    """
+    return "PlanningAgent"
 
-class CaseyPlanAgent(BaseAgent):
+
+class PlanningAgent(BaseAgent):
   """
-  Casey Plan Agent.  This is an agent configured to make plans.
+  Plan Agent.  This is an agent configured to make plans.
   Plans will be executed using a different agent.
   """
 
   def __init__(self, llm_type: str):
     super().__init__(llm_type)
-    self.name = "CaseyPlanner"
+    self.name = "PlanningAgent"
     self.agent_class = ConversationalAgent
 
   @property
@@ -136,32 +181,14 @@ class CaseyPlanAgent(BaseAgent):
   def output_parser_class(self) -> Type[AgentOutputParser]:
     return PlanningAgentOutputParser
 
-  def get_tools(self):
-    tools = [medicaid_eligibility_requirements, medicaid_crm_retrieve,
-             medicaid_policy_retrieve, gmail_tool, docs_tool, calendar_tool]
-    return tools
-
-
-class CaseyAgent(BaseAgent):
-  """
-  Casey Agent. This is an agent configured to execute plans as well
-  as a general info retrieval agent.
-  """
-
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "Casey"
-    self.agent_class = ConversationalAgent
-
-  @property
-  def output_parser_class(self) -> Type[AgentOutputParser]:
-    return ToolAgentOutputParser
-
-  def get_planning_agent(self) -> str:
-    return "CaseyPlanner"
+  @classmethod
+  def capabilities(cls) -> List[str]:
+    """ return capabilities of this agent class """
+    capabilities = [AgentCapability.AGENT_PLAN_CAPABILITY]
+    return capabilities
 
   def get_tools(self):
-    tools = [medicaid_eligibility_requirements, medicaid_crm_update]
+    tools = [gmail_tool, docs_tool, calendar_tool, search_tool, query_tool]
     return tools
 
 
@@ -230,30 +257,3 @@ class ToolAgentOutputParser(AgentOutputParser):
   def _type(self) -> str:
     return "conversational"
 
-
-class MediKateOutputParser(AgentOutputParser):
-  """Output parser for custom agent."""
-
-  def parse(self, text: str) -> Union[AgentAction, AgentFinish]:
-    llm_output = text
-    # Check if agent should finish
-    if "Final Answer:" in llm_output:
-      return AgentFinish(
-        # Return values is generally always a dictionary with a
-        # single `output` key
-        # It is not recommended to try anything else at the moment :)
-        return_values={"output": llm_output.split("Final Answer:")[-1].strip()},
-        log=llm_output,
-      )
-    # Parse out the action and action input
-    regex = r"Action\s*\d*\s*:(.*?)\nAction\s*\d*\s*Input\s*\d*\s*:[\s]*(.*)"
-    match = re.search(regex, llm_output, re.DOTALL)
-    if not match:
-      raise OutputParserException(f"Could not parse LLM output: `{llm_output}`")
-    action = match.group(1).strip()
-    action_input = match.group(2)
-
-    # Return the action and action input
-    return AgentAction(tool=action,
-                       tool_input=action_input.strip(" ").strip('"'),
-                       log=llm_output)

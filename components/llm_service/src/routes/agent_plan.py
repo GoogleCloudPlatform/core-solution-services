@@ -32,8 +32,8 @@ from common.schemas.batch_job_schemas import BatchJobModel
 from schemas.agent_schema import (LLMAgentPlanModel,
                                   LLMAgentPlanResponse,
                                   LLMUserPlanResponse)
-from services.agent_service import (agent_plan,
-                                    get_llm_type_for_agent)
+from services.agents.agent_service import (agent_plan,
+                                           get_llm_type_for_agent)
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, PROJECT_ID)
 
 router = APIRouter(prefix="/agent/plan", tags=["Agent Plans"],

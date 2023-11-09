@@ -32,7 +32,7 @@ def landing_page():
       "Start a Chat with"
       agent_name = st.selectbox(
           'Agent:',
-          ('MediKate', 'Casey'))
+          ('Chat', 'Task'))
       chat_button=st.button("Start",key=2)
       if chat_button:
         utils.navigate_to(f"/Chat?agent_name={agent_name}&auth_token={auth_token}")

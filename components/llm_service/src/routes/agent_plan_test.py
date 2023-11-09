@@ -32,7 +32,7 @@ from common.models import UserChat, User, UserPlan, PlanStep
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 from common.testing.client_with_emulator import client_with_emulator
-from services.agent_service import get_all_agents
+from services.agents.agent_service import get_all_agents
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
@@ -91,7 +91,7 @@ def test_get_user_plan(create_plan, client_with_emulator):
 
 
 def test_agent_plan(create_user, create_plan, client_with_emulator):
-  url = f"{api_url}/Casey"
+  url = f"{api_url}/Task"
 
   with mock.patch("routes.agent_plan.agent_plan",
                   return_value = (FAKE_GENERATE_RESPONSE, create_plan)):

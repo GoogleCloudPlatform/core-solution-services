@@ -31,6 +31,14 @@ class AgentType(str, Enum):
     return agent_type.value.startswith("langchain")
 
 
+class AgentCapability(str, Enum):
+  """ Enum class for Agent capabilities """
+  AGENT_CHAT_CAPABILITY = "Chat"
+  AGENT_QUERY_CAPABILITY = "Query"
+  AGENT_TASK_CAPABILITY = "Task"
+  AGENT_PLAN_CAPABILITY = "Plan"
+
+
 class Agent(BaseModel):
   """
   Agent ORM class
@@ -40,6 +48,7 @@ class Agent(BaseModel):
   user_id = TextField(required=True)
   agent_type = TextField(required=True)
   llm_type = TextField(required=True)
+  capabilities = ListField()
   tools = ListField()
 
   class Meta:
