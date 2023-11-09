@@ -19,7 +19,6 @@ from typing import List, Tuple
 from pathlib import Path
 from common.models import QueryDocument
 from common.utils.logging_handler import Logger
-from google.cloud import storage
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import CSVLoader
 from pypdf import PdfReader
@@ -29,6 +28,9 @@ from utils.errors import NoDocumentsIndexedException
 CHUNK_SIZE = 1000
 
 class DataSource:
+  """
+  Class for query data sources
+  """
 
   def __init__(self, storage_client):
     self.storage_client = storage_client
@@ -42,7 +44,7 @@ class DataSource:
                          temp_dir: Path) -> List[str]:
 
     # download files to local directory
-    doc_filepaths = download_files_to_local(temp_dir, doc_url)
+    doc_filepaths = self.download_files_to_local(temp_dir, doc_url)
 
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(
@@ -71,14 +73,14 @@ class DataSource:
     # skip any file that can't be read or generates an error
     doc_text_list = None
     try:
-      doc_text_list = read_doc(doc_name, doc_filepath)
+      doc_text_list = self.read_doc(doc_name, doc_filepath)
       if doc_text_list is None:
         Logger.error(f"no content read from {doc_name}")
         self.docs_not_processed.append(doc_url)
     except Exception as e:
       Logger.error(f"error reading doc {doc_name}: {e}")
-      self.docs_not_processed.append(doc_url)  
-  
+      self.docs_not_processed.append(doc_url)
+
     if doc_text_list is not None:
       # split text into chunks
       text_chunks = []

@@ -74,5 +74,3 @@ def _generate_batches(text_chunks: List[str],
   """ generate batches of text_chunks """
   for i in range(0, len(text_chunks), batch_size):
     yield text_chunks[i: i + batch_size]
-
-

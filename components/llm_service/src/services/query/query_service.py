@@ -26,7 +26,7 @@ from common.utils.http_exceptions import InternalServerError
 from utils.errors import NoDocumentsIndexedException
 from google.cloud import storage
 from services import llm_generate
-from services.query import query_prompt, embeddings
+from services.query import query_prompts, embeddings
 from services.vector_store import VectorStore
 from services.data_source import DataSource
 
@@ -244,7 +244,7 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
   try:
     # process docs at url and upload embeddings to GCS for indexing
     docs_processed, docs_not_processed = process_documents(
-      doc_url, vector_store.bucket_name, q_engine, storage_client)
+      doc_url, vector_store, q_engine, storage_client)
 
     # make sure we actually processed some docs
     if len(docs_processed) == 0:
@@ -261,7 +261,7 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
     raise InternalServerError(str(e)) from e
 
 
-def process_documents(doc_url: str, bucket_name: str,
+def process_documents(doc_url: str, vector_store: VectorStore,
                        q_engine: QueryEngine, storage_client) -> \
                        Tuple[List[QueryDocument], List[str]]:
   """
@@ -278,12 +278,12 @@ def process_documents(doc_url: str, bucket_name: str,
     # counter for unique index ids
     index_base = 0
 
-    for doc_name, doc_url, doc_filepath in doc_filepaths:
-      text_chunks = data_source.chunk_document(doc_name, doc_url, doc_filepath)
+    for doc_name, index_doc_url, doc_filepath in doc_filepaths:
+      text_chunks = data_source.chunk_document(doc_name, index_doc_url, doc_filepath)
 
       if text_chunks is None:
         continue
-        
+
       # generate embedding data and store in local dir
       new_index_base = \
           vector_store.index_document(doc_name, text_chunks, index_base)
@@ -293,7 +293,7 @@ def process_documents(doc_url: str, bucket_name: str,
       # store QueryDocument and QueryDocumentChunk models
       query_doc = QueryDocument(query_engine_id=q_engine.id,
                                 query_engine=q_engine.name,
-                                doc_url=doc_url,
+                                doc_url=index_doc_url,
                                 index_start=index_base,
                                 index_end=new_index_base)
       query_doc.save()
@@ -308,7 +308,7 @@ def process_documents(doc_url: str, bucket_name: str,
 
       index_base = new_index_base
       docs_processed.append(query_doc)
-  
+
   return docs_processed, data_source.docs_not_processed
 
 
