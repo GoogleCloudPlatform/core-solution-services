@@ -105,8 +105,8 @@ async def _query_doc_matches(q_engine: QueryEngine,
   # generate embeddings for prompt
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
 
-  match_indexes_list = VectorStore.retrieve_text_matches(q_engine,
-                                                         query_embeddings)
+  match_indexes_list = VectorStore.find_neighbors(q_engine,
+                                                  query_embeddings)
 
   # assemble document chunk matches from match indexes
   query_references = []

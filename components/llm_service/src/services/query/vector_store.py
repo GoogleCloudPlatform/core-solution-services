@@ -38,12 +38,6 @@ NUM_MATCH_RESULTS = 5
 # number of text chunks to process into an embeddings file
 MAX_NUM_TEXT_CHUNK_PROCESS = 1000
 
-# Create a rate limit of 300 requests per minute.
-API_CALLS_PER_SECOND = int(300 / 60)
-
-# According to the docs, each request can process 5 instances per request
-ITEMS_PER_REQUEST = 5
-
 
 class VectorStore:
   """
@@ -96,10 +90,8 @@ class VectorStore:
       embeddings_dir = Path(tempfile.mkdtemp())
 
       # Convert chunks to embeddings in batches, to manage API throttling
-      is_successful, chunk_embeddings = embeddings.get_embedding_batched(
-          text_chunks=process_chunks,
-          api_calls_per_second=API_CALLS_PER_SECOND,
-          batch_size=ITEMS_PER_REQUEST,
+      is_successful, chunk_embeddings = embeddings.get_embeddings(
+          text_chunks=process_chunks
       )
 
       Logger.info(f"generated embeddings for chunks"
@@ -202,7 +194,7 @@ class VectorStore:
       Logger.error(f"Error creating ME index or endpoint {e}")
 
   @classmethod
-  def retrieve_text_matches(cls, q_engine: QueryEngine, query_embeddings) \
+  def find_neighbors(cls, q_engine: QueryEngine, query_embeddings) \
         -> List[int]:
     # retrieve text matches for query
     index_endpoint = aiplatform.MatchingEngineIndexEndpoint(q_engine.endpoint)

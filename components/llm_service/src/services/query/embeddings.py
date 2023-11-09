@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Query Embedddings
+Generate Query embedddings. Currently using Vertex TextEmbedding model.
 """
 import time
 import functools
@@ -23,17 +23,24 @@ from vertexai.preview.language_models import TextEmbeddingModel
 
 from config import GOOGLE_LLM, DEFAULT_QUERY_EMBEDDING_MODEL
 
-def get_embedding_batched(
-    text_chunks: List[str], api_calls_per_second: int=10, batch_size: int=5
-    ) -> Tuple[List[bool], np.ndarray]:
-  """ get embeddings for a list of text strings """
+# Create a rate limit of 300 requests per minute.
+API_CALLS_PER_SECOND = int(300 / 60)
+
+# According to the docs, each request can process 5 instances per request
+ITEMS_PER_REQUEST = 5
+
+
+def get_embeddings(text_chunks: List[str]) -> Tuple[List[bool], np.ndarray]:
+  """
+  Get embeddings for a list of text strings.
+  """
 
   embeddings_list: List[List[float]] = []
 
   # Prepare the batches using a generator
-  batches = _generate_batches(text_chunks, batch_size)
+  batches = _generate_batches(text_chunks, ITEMS_PER_REQUEST)
 
-  seconds_per_job = 1 / api_calls_per_second
+  seconds_per_job = 1 / API_CALLS_PER_SECOND
 
   with ThreadPoolExecutor() as executor:
     futures = []
@@ -55,10 +62,20 @@ def get_embedding_batched(
   )
   return is_successful, embeddings_list_successful
 
+# Generator function to yield batches of text_chunks
+def _generate_batches(text_chunks: List[str],
+                      batch_size: int) -> Generator[List[str], None, None]:
+  """ 
+  Generate batches of text_chunks
+  """
+  for i in range(0, len(text_chunks), batch_size):
+    yield text_chunks[i: i + batch_size]
 
 def encode_texts_to_embeddings(
         sentence_list: List[str]) -> List[Optional[List[float]]]:
-  """ encode text using Vertex AI embedding model """
+  """ 
+  Encode list of strings using Vertex AI embedding model 
+  """
   model = TextEmbeddingModel.from_pretrained(
       GOOGLE_LLM.get(DEFAULT_QUERY_EMBEDDING_MODEL))
   try:
@@ -68,9 +85,3 @@ def encode_texts_to_embeddings(
     return [None for _ in range(len(sentence_list))]
 
 
-# Generator function to yield batches of text_chunks
-def _generate_batches(text_chunks: List[str],
-                      batch_size: int) -> Generator[List[str], None, None]:
-  """ generate batches of text_chunks """
-  for i in range(0, len(text_chunks), batch_size):
-    yield text_chunks[i: i + batch_size]
