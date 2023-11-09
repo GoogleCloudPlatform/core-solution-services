@@ -17,7 +17,6 @@ Query Data Sources
 import os
 from typing import List, Tuple
 from pathlib import Path
-from common.models import QueryDocument
 from common.utils.logging_handler import Logger
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import CSVLoader
@@ -61,12 +60,11 @@ class DataSource:
     return doc_filepaths
 
   def chunk_document(self, doc_name: str, doc_url: str, doc_filepath: str) -> \
-                      Tuple[List[QueryDocument], List[str]]:
+                      List[str]:
     """
-    Process docs at url and upload embeddings to GCS for indexing.
+    Process doc into chunks for embeddings
     Returns:
-       Tuple of list of QueryDocument objects for docs processed,
-          list of doc urls of docs not processed
+       list of text chunks or None if the document could not be processed
     """
 
     text_chunks = None
