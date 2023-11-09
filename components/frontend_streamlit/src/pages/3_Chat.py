@@ -31,10 +31,10 @@ def on_input_change():
   st.session_state.messages.append({"HumanInput": user_input})
 
   # Send API to llm-service
-  if agent_name.lower() == "medikate":
+  if agent_name.lower() == "chat":
     with st.spinner('Sending prompt to Agent...'):
       response = run_agent(agent_name, user_input, chat_id=st.session_state.chat_id)
-  elif agent_name.lower() == "casey":
+  elif agent_name.lower() == "task":
     with st.spinner('Sending prompt to Agent...'):
       response = run_agent_plan(agent_name, user_input, chat_id=st.session_state.chat_id)
   else:
@@ -96,7 +96,7 @@ def chat_content():
 
 
 def chat_page():
-  st.title(st.session_state.agent_name)
+  st.title(st.session_state.agent_name + " Agent")
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
