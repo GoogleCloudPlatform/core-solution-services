@@ -39,14 +39,22 @@ class DataSource:
   def docs_not_processed(self) -> List[str]:
     return self.docs_not_processed
 
-  def download_documents(self, doc_url: str,
-                         temp_dir: Path) -> List[Tuple[str, str, str]]:
+  def download_documents(self, doc_url: str, temp_dir: Path) -> \
+        List[Tuple[str, str, str]]:
     """
     Download files from doc_url source to a local tmp directory
+
+    Args:
+        doc_url: url pointing to container of documents to be indexed
+        temp_dir: Path to temporary directory to download files to
+
+    Returns:
+        list of tuples (doc name, document url, local file path)
     """
     doc_filepaths = []
     bucket_name = doc_url.split("gs://")[1].split("/")[0]
     Logger.info(f"downloading {doc_url} from bucket {bucket_name}")
+
     for blob in self.storage_client.list_blobs(bucket_name):
       # Download the file to the tmp folder flattening all directories
       file_name = Path(blob.name).name
@@ -57,12 +65,18 @@ class DataSource:
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(
           f"No documents can be indexed at url {doc_url}")
+
     return doc_filepaths
 
   def chunk_document(self, doc_name: str, doc_url: str, doc_filepath: str) -> \
                       List[str]:
     """
     Process doc into chunks for embeddings
+
+    Args:
+       doc_name: file name of document
+       doc_url: remote url of document
+       doc_filepath: local file path of document
     Returns:
        list of text chunks or None if the document could not be processed
     """
@@ -102,6 +116,12 @@ class DataSource:
   def read_doc(self, doc_name: str, doc_filepath: str) -> List[str]:
     """
     Read document and return content as a list of strings
+
+    Args:
+      doc_name: name of document
+      doc_filepath: local file path
+    Returns:
+      doc content as a list of strings
     """
     doc_extension = doc_name.split(".")[-1]
     doc_extension = doc_extension.lower()
