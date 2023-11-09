@@ -15,7 +15,6 @@
 Query Engine Service
 """
 import tempfile
-import time
 import os
 from typing import List, Optional, Tuple, Dict
 from common.utils.logging_handler import Logger
@@ -27,11 +26,12 @@ from common.utils.http_exceptions import InternalServerError
 from utils.errors import NoDocumentsIndexedException
 from google.cloud import storage
 from services import llm_generate
-from services.query import query_prompts, data_source, embeddings
+from services.query import query_prompt, embeddings
 from services.vector_store import VectorStore
+from services.data_source import DataSource
 
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
-                    DEFAULT_QUERY_EMBEDDING_MODEL, GOOGLE_LLM)
+                    DEFAULT_QUERY_EMBEDDING_MODEL)
 
 # pylint: disable=broad-exception-caught
 
@@ -106,7 +106,7 @@ async def _query_doc_matches(q_engine: QueryEngine,
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
 
   match_indexes_list = VectorStore.retrieve_text_matches(q_engine, query_embeddings)
-  
+
   # assemble document chunk matches from match indexes
   query_references = []
   match_indexes = match_indexes_list[0]
@@ -238,10 +238,10 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
     raise ResourceNotFoundException(f"cant find query engine {query_engine}")
 
   storage_client = storage.Client(project=PROJECT_ID)
-  
+
   vector_store = VectorStore(query_engine)
 
-  try:    
+  try:
     # process docs at url and upload embeddings to GCS for indexing
     docs_processed, docs_not_processed = process_documents(
       doc_url, vector_store.bucket_name, q_engine, storage_client)
@@ -270,15 +270,20 @@ def process_documents(doc_url: str, bucket_name: str,
      Tuple of list of QueryDocument objects for docs processed,
         list of doc urls of docs not processed
   """
+  data_source = DataSource(storage_client)
+  docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
     doc_filepaths = data_source.download_documents(doc_url, temp_dir)
-  
+
     # counter for unique index ids
     index_base = 0
 
     for doc_name, doc_url, doc_filepath in doc_filepaths:
       text_chunks = data_source.chunk_document(doc_name, doc_url, doc_filepath)
 
+      if text_chunks is None:
+        continue
+        
       # generate embedding data and store in local dir
       new_index_base = \
           vector_store.index_document(doc_name, text_chunks, index_base)
@@ -303,7 +308,7 @@ def process_documents(doc_url: str, bucket_name: str,
 
       index_base = new_index_base
       docs_processed.append(query_doc)
-
-  return docs_processed, docs_not_processed
+  
+  return docs_processed, data_source.docs_not_processed
 
 

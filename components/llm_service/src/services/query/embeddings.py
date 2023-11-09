@@ -14,18 +14,14 @@
 """
 Query Embedddings
 """
+import time
 import functools
 from typing import List, Optional, Generator, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from vertexai.preview.language_models import TextEmbeddingModel
 
-# Create a rate limit of 300 requests per minute.
-API_CALLS_PER_SECOND = int(300 / 60)
-
-# According to the docs, each request can process 5 instances per request
-ITEMS_PER_REQUEST = 5
-
+from config import GOOGLE_LLM, DEFAULT_QUERY_EMBEDDING_MODEL
 
 def get_embedding_batched(
     text_chunks: List[str], api_calls_per_second: int = 10, batch_size: int = 5

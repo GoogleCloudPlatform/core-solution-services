@@ -16,8 +16,13 @@ Query Vector Store
 """
 import json
 import gc
+import os
 import shutil
 import tempfile
+import numpy as np
+from pathlib import Path
+from typing import List, Tuple
+from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from google.cloud import aiplatform, storage
 from google.cloud.exceptions import Conflict
@@ -31,6 +36,13 @@ NUM_MATCH_RESULTS = 5
 
 # number of text chunks to process into an embeddings file
 MAX_NUM_TEXT_CHUNK_PROCESS = 1000
+
+# Create a rate limit of 300 requests per minute.
+API_CALLS_PER_SECOND = int(300 / 60)
+
+# According to the docs, each request can process 5 instances per request
+ITEMS_PER_REQUEST = 5
+
 
 class VectorStore:
 
@@ -46,7 +58,7 @@ class VectorStore:
       bucket = self.storage_client.bucket(self.bucket_name)
       bucket.delete(force=True)
       bucket = self.storage_client.create_bucket(self.bucket_name, location=REGION)
-    self.bucket_uri = f"gs://{bucket.name}"    
+    self.bucket_uri = f"gs://{bucket.name}"
 
   @property
   def bucket_name(self) -> str:
@@ -186,7 +198,7 @@ class VectorStore:
       Logger.error(f"Error creating ME index or endpoint {e}")
 
   @classmethod
-  def retrieve_text_matches(cls, q_engine: QueryEngine, query_embeddings) -> List[]
+  def retrieve_text_matches(cls, q_engine: QueryEngine, query_embeddings) -> List[int]:
     # retrieve text matches for query
     index_endpoint = aiplatform.MatchingEngineIndexEndpoint(q_engine.endpoint)
 
