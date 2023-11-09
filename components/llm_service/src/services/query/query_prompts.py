@@ -16,7 +16,7 @@ Query prompt generator methods
 """
 from typing import List
 
-from services.query_prompt_config import QUESTION_PROMPT
+from services.query.query_prompt_config import QUESTION_PROMPT
 
 
 def question_prompt(prompt: str, query_context: List[dict]) -> str:

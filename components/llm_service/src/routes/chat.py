@@ -34,7 +34,7 @@ from schemas.llm_schema import (ChatModel, ChatUpdateModel,
 from services.llm_generate import llm_chat
 from config import PAYLOAD_FILE_SIZE, ERROR_RESPONSES, LLM_TYPES
 
-router = APIRouter(prefix="/chat", tags=["LLMs"], responses=ERROR_RESPONSES)
+router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
 
 
 @router.get(
