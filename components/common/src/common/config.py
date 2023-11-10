@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Config module to setup common environment
 """
@@ -23,8 +22,8 @@ PROJECT_ID = os.environ.get("PROJECT_ID",
 API_BASE_URL = os.getenv("API_BASE_URL")
 BQ_REGION = os.getenv("BQ_REGION", "US")
 CLASSROOM_ADMIN_EMAIL = os.getenv("CLASSROOM_ADMIN_EMAIL")
-CLOUD_LOGGING_ENABLED = bool(os.getenv("CLOUD_LOGGING_ENABLED", "true")
-                             .lower() in ("true",))
+CLOUD_LOGGING_ENABLED = bool(
+    os.getenv("CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))
 CONTAINER_NAME = os.getenv("CONTAINER_NAME")
 DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
 DEPLOYMENT_NAME = os.getenv("DEPLOYMENT_NAME")
@@ -32,11 +31,20 @@ GKE_SERVICE_ACCOUNT_NAME = os.getenv("GKE_SERVICE_ACCOUNT_NAME", "gke-sa")
 PUB_SUB_PROJECT_ID = os.getenv("PUB_SUB_PROJECT_ID", PROJECT_ID)
 SERVICE_NAME = os.getenv("SERVICE_NAME")
 SERVICES = {
-  "user-management": {
-    "host": "user-management",
-    "port": 80
-  }
+    # TODO: Remove old authentication service once migrated to auth_service.
+    "authentication": {
+        "host": "authentication",
+        "port": 80
+    },
+    "auth-service": {
+        "host": "auth-service",
+        "port": 80
+    },
+    "user-management": {
+        "host": "user-management",
+        "port": 80
+    }
 }
-USER_MANAGEMENT_BASE_URL = f"http://{SERVICES['user-management']['host']}:" \
-                           f"{SERVICES['user-management']['port']}" \
-                           f"/user-management/api/v1"
+
+# Define custom user types as a list below.
+USER_TYPES = ["user", "admin", "robot"]
