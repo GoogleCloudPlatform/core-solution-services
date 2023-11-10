@@ -107,7 +107,7 @@ USER_EXAMPLE = {
 #    "auth_id": "fake-user-id",
     "email": "user@gmail.com",
 #    "role": "Admin",
-    "user_type": "learner",
+    "user_type": "user",
     "status": "active"
 }
 
