@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Helper functions to handle user related operations."""
 from common.models import User
 
 

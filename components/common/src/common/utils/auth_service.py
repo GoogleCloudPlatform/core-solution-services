@@ -21,9 +21,8 @@ from fastapi import Depends
 from fastapi.security import HTTPBearer
 from common.utils.errors import InvalidTokenError
 from common.config import SERVICES
-from common.utils.errors import TokenNotFoundError, UnauthorizedUserError
-from common.utils.http_exceptions import (BadRequest, InvalidToken,
-                                          InternalServerError, Unauthenticated)
+from common.utils.errors import TokenNotFoundError
+from common.utils.http_exceptions import (InternalServerError, Unauthenticated)
 
 auth_scheme = HTTPBearer(auto_error=False)
 AUTH_SERVICE_NAME = SERVICES["auth-service"]["host"]
@@ -48,7 +47,8 @@ def validate_oauth_token(token: auth_scheme = Depends()):
   token_dict = dict(token)
 
   if token_dict["credentials"]:
-    api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/api/v1/authenticate"
+    api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
+        "api/v1/authenticate"
     res = requests.get(
         url=api_endpoint,
         headers={
@@ -98,7 +98,8 @@ def validate_user_type_and_token(accepted_user_types: list,
       raise InvalidTokenError("Unauthorized: token is empty.")
     token_dict = dict(token)
     if token_dict["credentials"]:
-      api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/api/v1/authenticate"
+      api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}" \
+          "/api/v1/authenticate"
       res = requests.get(
           url=api_endpoint,
           headers={

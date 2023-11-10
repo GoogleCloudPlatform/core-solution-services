@@ -71,7 +71,6 @@ class User(BaseModel):
   access_api_docs = BooleanField(default=False)
   gaia_id = TextField()
   photo_url = TextField()
-  inspace_user = MapField(default={})
   is_deleted = BooleanField(default=False)
 
   class Meta:
