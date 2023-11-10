@@ -16,11 +16,9 @@
 from google.auth.transport import requests
 from google.oauth2 import id_token
 import firebase_admin
-from firebase_admin import auth
+from firebase_admin.auth import verify_id_token
 
-from common.models import TempUser
-from common.utils.cache_service import set_key, get_key
-from common.utils.errors import UnauthorizedUserError, InvalidTokenError
+from common.utils.errors import InvalidTokenError
 from common.utils.http_exceptions import InternalServerError, Unauthenticated
 from common.utils.logging_handler import Logger
 
@@ -38,20 +36,9 @@ def validate_token(bearer_token):
         Decoded Token and User type: Dict
   """
   token = bearer_token
-  decoded_token = auth.verify_id_token(token)
+  decoded_token = verify_id_token(token)
   token_data = {**decoded_token}
   Logger.info(f"Id Token: {token_data}")
-
-  user = TempUser.find_by_email(decoded_token["email"])
-  if user is not None:
-    user_fields = user.get_fields(reformat_datetime=True)
-    if user_fields.get("status") == "inactive":
-      raise UnauthorizedUserError("Unauthorized")
-    token_data["access_api_docs"] = False if user_fields.get(
-        "access_api_docs") is None else user_fields.get("access_api_docs")
-    token_data["user_type"] = user_fields.get("user_type")
-  else:
-    raise UnauthorizedUserError("Unauthorized")
   return token_data
 
 
