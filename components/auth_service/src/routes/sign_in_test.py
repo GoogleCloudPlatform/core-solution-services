@@ -15,7 +15,7 @@
 """
   Unit tests for Sign In endpoints
 """
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,unused-import
 from unittest import mock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
