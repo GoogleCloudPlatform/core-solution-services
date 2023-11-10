@@ -17,21 +17,22 @@ from copy import deepcopy
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from requests.exceptions import ConnectTimeout
-from config import ERROR_RESPONSES
 from common.utils.user_handler import get_user_by_email, create_user_in_firestore
 from common.utils.logging_handler import Logger
-from common.utils.errors import (InvalidCredentialsError)
 from common.utils.sessions import create_session
-from common.utils.errors import (InvalidTokenError, InvalidCredentialsError,
-                                 UnauthorizedUserError)
-from common.utils.http_exceptions import (InternalServerError, Unauthenticated,
-                                          Unauthorized, ConnectionTimeout,
+from common.utils.errors import (InvalidTokenError, InvalidCredentialsError)
+from common.utils.http_exceptions import (InternalServerError,
+                                          Unauthenticated,
+                                          ConnectionTimeout,
                                           ServiceUnavailable)
 from schemas.sign_in_schema import (SignInWithCredentialsModel,
                                     SignInWithCredentialsResponseModel,
                                     SignInWithTokenResponseModel)
 from services.validation_service import validate_google_oauth_token
-from config import AUTH_REQUIRE_FIRESTORE_USER, FIREBASE_API_KEY, IDP_URL
+from config import (AUTH_REQUIRE_FIRESTORE_USER,
+                    FIREBASE_API_KEY,
+                    IDP_URL,
+                    ERROR_RESPONSES)
 
 # pylint: disable = broad-exception-raised
 
@@ -118,16 +119,16 @@ def sign_in_with_credentials(credentials: SignInWithCredentialsModel):
     url = f"{IDP_URL}:signInWithPassword?key={FIREBASE_API_KEY}"
     resp = requests.post(url, data, timeout=60)
     resp_json = resp.json()
-
     Logger.info(resp_json)
-    print(resp_json)
+
+    status_code = resp.status_code
 
     # Check with non-200 status code
-    if resp.status_code == 400:
+    if status_code == 400:
       raise InvalidCredentialsError(resp_json.get("error").get("message"))
-    if resp.status_code != 200:
+    if status_code != 200:
       raise Exception(
-          f"Error: {resp.status_code} when signing user in ({credentials.email}): "
+          f"Error: {status_code} when signing user in ({credentials.email}): "
           + resp_json.get("error").get("message"))
 
     if not user:

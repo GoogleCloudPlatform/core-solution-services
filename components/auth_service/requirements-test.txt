@@ -1,6 +1,4 @@
 anyio==3.7.1
-google-cloud-logging==3.5.0
-google-cloud-secret-manager==2.16.1
 mock==4.0.3
 protobuf==3.20.3
 PyJWT==2.7.0

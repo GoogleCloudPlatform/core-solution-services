@@ -18,15 +18,13 @@ from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError
 
-from common.models import User
-from common.utils.errors import UnauthorizedUserError
 from common.utils.errors import TokenNotFoundError, UnauthorizedUserError
 from common.utils.http_exceptions import (BadRequest, InvalidToken,
                                           InternalServerError, Unauthorized)
 from common.utils.user_handler import get_user_by_email
 from services.validation_service import validate_token
 from schemas.validate_token_schema import ValidateTokenResponseModel
-from config import ERROR_RESPONSES, AUTH_REQUIRE_FIRESTORE_USER
+from config import (ERROR_RESPONSES, AUTH_REQUIRE_FIRESTORE_USER)
 
 router = APIRouter(
     tags=["Authentication"],

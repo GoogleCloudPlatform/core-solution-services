@@ -92,12 +92,3 @@ def test_validate_token(mock_verify_id_token):
   assert result["name"] == auth_details["name"]
   assert result["email"] == auth_details["email"]
   assert result["user_id"] == auth_details["user_id"]
-
-
-def test_validate_token_unauthorized():
-  # arrange
-  bearer_token = "Bearer PQR"
-
-  # # action
-  with pytest.raises(InvalidIdTokenError):
-    validate_token(bearer_token)

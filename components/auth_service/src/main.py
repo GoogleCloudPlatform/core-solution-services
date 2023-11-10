@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-"""Auth Microservice"""
-import config
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from routes import sign_in, authenticate
 from common.utils.http_exceptions import add_exception_handlers
+import config
 
 
 # Basic API config

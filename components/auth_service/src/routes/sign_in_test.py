@@ -44,8 +44,7 @@ api_url = f"{API_URL}/sign-in"
 @mock.patch("routes.sign_in.requests.post")
 @mock.patch("routes.sign_in.create_session")
 @mock.patch("routes.sign_in.validate_google_oauth_token")
-def test_sign_in_with_token(mock_token_res, mock_session, mock_request,
-                            clean_firestore):
+def test_sign_in_with_token(mock_token_res, mock_session, mock_request):
   url = f"{api_url}/token"
 
   token = "Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImU4NDdkOTk0OGU4NTQ1OTQ4ZmE4MTU3Y"
@@ -66,8 +65,7 @@ def test_sign_in_with_token(mock_token_res, mock_session, mock_request,
 
 @mock.patch("routes.sign_in.requests.post")
 @mock.patch("routes.sign_in.validate_google_oauth_token")
-def test_sign_in_with_token_negative(mock_token_res, mock_request,
-                                     clean_firestore):
+def test_sign_in_with_token_negative(mock_token_res, mock_request):
   url = f"{api_url}/token"
 
   token = "Bearer eyJhbGcXVhbnRpcGhpX3NuaHU6ODc2MnRhZQ=="
@@ -87,8 +85,7 @@ def test_sign_in_with_token_negative(mock_token_res, mock_request,
 
 @mock.patch("routes.sign_in.requests.post")
 @mock.patch("routes.sign_in.create_session")
-def test_sign_in_with_credentials(mock_session, mock_request,
-                                  clean_firestore):
+def test_sign_in_with_credentials(mock_session, mock_request):
   url = f"{api_url}/credentials"
   credentials = SIGN_IN_WITH_CREDENTIALS_API_INPUT_EXAMPLE
   mock_session.return_value = {"session_id": "asd98798as7dhjgkjsdfh"}
@@ -104,7 +101,7 @@ def test_sign_in_with_credentials(mock_session, mock_request,
 
 
 @mock.patch("routes.sign_in.requests.post")
-def test_sign_in_with_credentials_negative(mock_request, clean_firestore):
+def test_sign_in_with_credentials_negative(mock_request):
   url = f"{api_url}/credentials"
 
   credentials = SIGN_IN_WITH_CREDENTIALS_API_INPUT_EXAMPLE
