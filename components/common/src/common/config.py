@@ -47,4 +47,4 @@ SERVICES = {
 }
 
 # Define custom user types as a list below.
-USER_TYPES = ["user", "admin", "robot"]
+USER_TYPES = ["learner", "user", "admin", "robot"]
