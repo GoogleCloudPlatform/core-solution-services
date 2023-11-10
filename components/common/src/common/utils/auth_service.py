@@ -25,7 +25,7 @@ from common.utils.errors import TokenNotFoundError
 from common.utils.http_exceptions import (InternalServerError, Unauthenticated)
 
 auth_scheme = HTTPBearer(auto_error=False)
-AUTH_SERVICE_NAME = SERVICES["auth-service"]["host"]
+AUTH_SERVICE_NAME = "auth-service"
 
 
 def authenticate(token: auth_scheme = Depends()):
@@ -40,14 +40,15 @@ def authenticate(token: auth_scheme = Depends()):
     raise InternalServerError(str(e)) from e
 
 
-def validate_oauth_token(token: auth_scheme = Depends()):
+def validate_oauth_token(token, auth_service_name=AUTH_SERVICE_NAME):
   if not token:
     raise TokenNotFoundError("Unauthorized: token is empty.")
 
   token_dict = dict(token)
 
   if token_dict["credentials"]:
-    api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
+    auth_service = SERVICES[auth_service_name]["host"]
+    api_endpoint = f"http://{auth_service}/{auth_service}/" \
         "api/v1/authenticate"
     res = requests.get(
         url=api_endpoint,
@@ -65,10 +66,8 @@ def validate_oauth_token(token: auth_scheme = Depends()):
   else:
     raise InvalidTokenError("Unauthorized: Invalid token.")
 
-  return False
 
-
-def validate_service_account_token(token: auth_scheme = Depends()):
+def validate_service_account_token(token):
   if not token:
     raise InvalidTokenError("Unauthorized: token is empty.")
 
@@ -150,7 +149,7 @@ def user_verification(token: str) -> json:
 # TODO: Remove deprecated function.
 def validate_token(token: auth_scheme = Depends()):
   try:
-    return validate_oauth_token(token)
+    return validate_oauth_token(token, auth_service_name="authentication")
   except (InvalidTokenError, TokenNotFoundError) as e:
     raise Unauthenticated(str(e)) from e
   except Exception as e:
