@@ -30,7 +30,7 @@ def validate_name(name):
     return False, "Invalid name format"
 
 
-def validate_user_type(field_val):
+def check_user_type(field_val):
   """validator method for user type field"""
   if field_val.lower() in USER_TYPES:
     return True
@@ -59,10 +59,10 @@ def check_association_type(field_val):
 class User(BaseModel):
   """User base Class"""
   user_id = TextField(required=True)
+  first_name = TextField(required=True, validator=validate_name)
+  last_name = TextField(required=True, validator=validate_name)
   email = TextField(required=True, to_lowercase=True)
-  first_name = TextField(validator=validate_name)
-  last_name = TextField(validator=validate_name)
-  user_type = TextField(validator=validate_user_type)
+  user_type = TextField(required=True, validator=check_user_type)
   user_type_ref = TextField()
   user_groups = ListField()
   status = TextField(validator=check_status)
@@ -71,6 +71,7 @@ class User(BaseModel):
   access_api_docs = BooleanField(default=False)
   gaia_id = TextField()
   photo_url = TextField()
+  inspace_user = MapField(default={})
   is_deleted = BooleanField(default=False)
 
   class Meta:
@@ -93,7 +94,6 @@ class User(BaseModel):
           f"{cls.__name__} with user_id {user_id} not found")
     return user
 
-  # TODO: remove the redundant function.
   @classmethod
   def find_by_uuid(cls, user_id, is_deleted=False):
     """Find the user using user_id
@@ -103,7 +103,12 @@ class User(BaseModel):
     Returns:
         user Object
     """
-    return cls.find_by_user_id(user_id, is_deleted=is_deleted)
+    user = cls.collection.filter(
+      "user_id", "==", user_id).filter("is_deleted", "==", is_deleted).get()
+    if user is None:
+      raise ResourceNotFoundException(
+          f"{cls.__name__} with user_id {user_id} not found")
+    return user
 
   @classmethod
   def find_by_email(cls, email):
