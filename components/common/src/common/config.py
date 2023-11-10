@@ -47,4 +47,6 @@ SERVICES = {
 }
 
 # Define custom user types as a list below.
-USER_TYPES = ["learner", "user", "admin", "robot"]
+# TODO: Clean up unused user types.
+USER_TYPES = ["learner", "faculty", "assessor", "admin", "coach", "instructor",
+              "lxe", "curriculum_designer", "robot"]
