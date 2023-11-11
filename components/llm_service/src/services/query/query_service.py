@@ -27,7 +27,7 @@ from utils.errors import NoDocumentsIndexedException
 from google.cloud import storage
 from services import llm_generate
 from services.query import query_prompts, embeddings
-from services.query.vector_store import VectorStore
+from services.query.vector_store import MatchingEngineVectorStore
 from services.query.data_source import DataSource
 
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
@@ -60,7 +60,7 @@ async def query_generate(
     ResourceNotFoundException if the named query engine doesn't exist
   """
   # get doc context for question
-  query_references = await _query_doc_matches(q_engine, prompt)
+  query_references = await query_search(q_engine, prompt)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -96,11 +96,23 @@ async def query_generate(
   return query_result, query_references
 
 
-async def _query_doc_matches(q_engine: QueryEngine,
-                             query_prompt: str) -> List[dict]:
+async def query_search(q_engine: QueryEngine,
+                       query_prompt: str) -> List[dict]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
+                       
+  Args:
+    q_engine: QueryEngine to search
+    query_prompt (str):  user query
+
+  Returns:
+    list of dicts containing summarized query results, with:
+      "document_id": id of QueryDocument for reference
+      "document_url": url of document containing reference
+      "document_text": text of document containing the grounding for the query 
+      "chunk_id": id of QueryDocumentChunk containing the reference
+                       
   """
   # generate embeddings for prompt
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
@@ -240,7 +252,7 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
 
   storage_client = storage.Client(project=PROJECT_ID)
 
-  vector_store = VectorStore(q_engine)
+  vector_store = MatchingEngineVectorStore(q_engine)
 
   try:
     # process docs at url and upload embeddings to vector store
@@ -252,8 +264,8 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # finalize vectore store (e.g. create endpoint)
-    vector_store.finalize()
+    # deploy vectore store (e.g. create endpoint)
+    vector_store.deploy()
 
     return docs_processed, docs_not_processed
 

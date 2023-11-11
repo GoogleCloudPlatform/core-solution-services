@@ -14,6 +14,7 @@
 """
 Query Vector Store
 """
+from abc import ABC, abstractmethod
 import json
 import gc
 import os
@@ -24,10 +25,12 @@ from pathlib import Path
 from typing import List
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
+from common.utils.http_exceptions import InternalServerError
 from google.cloud import aiplatform, storage
 from google.cloud.exceptions import Conflict
 from services.query import embeddings
-from config import PROJECT_ID, REGION
+from config import PROJECT_ID, REGION, VECTOR_STORES, LC_VECTOR_STORES
+from langchain.schema.vectorstore import VectorStore as LCVectorStore
 
 # pylint: disable=broad-exception-caught
 
@@ -41,13 +44,63 @@ NUM_MATCH_RESULTS = 5
 MAX_NUM_TEXT_CHUNK_PROCESS = 1000
 
 
-class VectorStore:
+class VectorStore(ABC):
   """
-  Class for vector store db operations.  Currently assumes
-  Vertex matching engine.
+  Abstract class for vector store db operations.  A VectorStore is created
+  for a QueryEngine instance and manages the document index for that engine.
   """
+
   def __init__(self, q_engine: QueryEngine) -> None:
     self.q_engine = q_engine
+
+  @staticmethod
+  def from_query_engine(QueryEngine q_engine) -> VectorStore:
+    qe_vector_store = q_engine.vector_store
+    if qe_vector_store is None:
+      # default to matching engine vector store
+      return MatchingEngineVectorStore(q_engine)
+    else:
+      qe_vector_store_class = VECTOR_STORES.get(qe_vector_store)
+      if qe_vector_store_class is None:
+        raise InternalServerError(
+           f"vector store class {qe_vector_store} not found in config")
+      return qe_vector_store_class(q_engine)      
+
+  @abstractmethod
+  def index_document(self, doc_name: str, text_chunks: List[str],
+                          index_base: int) -> int:
+    """
+    Generate index for a document in this vector store
+    Args:
+      doc_name (str): name of document to be indexed
+      text_chunks (List[str]): list of text content chunks for document
+      index_base (int): index to start from; each chunk gets its own index
+    """
+
+  @abstractmethod
+  def deploy(self):
+    """ Deploy vector store index for this query engine """
+
+
+  @classmethod
+  @abstractmethod
+  def find_neighbors(cls, q_engine: QueryEngine,
+                     query_embeddings: List[List[float]]) -> List[int]:
+    """
+    Retrieve text matches for query embeddings.
+    Args:
+      q_engine: QueryEngine model
+      query_embeddings: list of embedding arrays
+    Returns:
+      list of indexes that are matched of length NUM_MATCH_RESULTS
+    """
+
+class MatchingEngineVectorStore(VectorStore):
+  """
+  Class for vector store based on Vertex matching engine. 
+  """
+  def __init__(self, q_engine: QueryEngine) -> None:
+    super().__init__(q_engine)
     self.storage_client = storage.Client(project=PROJECT_ID)
 
     # create bucket for ME index data
@@ -66,7 +119,11 @@ class VectorStore:
   def index_document(self, doc_name: str, text_chunks: List[str],
                           index_base: int) -> int:
     """
-    Generate matching engine index data files in a local directory
+    Generate matching engine index data files in a local directory.
+    Args:
+      doc_name (str): name of document to be indexed
+      text_chunks (List[str]): list of text content chunks for document
+      index_base (int): index to start from; each chunk gets its own index
     """
 
     chunk_index = 0
@@ -141,7 +198,7 @@ class VectorStore:
 
     return index_base
 
-  def finalize(self):
+  def deploy(self):
     """ Create matching engine index and endpoint """
 
     # ME index name and description
@@ -211,4 +268,43 @@ class VectorStore:
         num_neighbors=NUM_MATCH_RESULTS
     )
     return match_indexes_list
+
+
+class LangChainVectorStore(VectorStore):
+  
+  def __init__(self, q_engine: QueryEngine) -> None:
+    super().__init__(q_engine)
+    self.lc_vector_store = self._get_langchain_vector_store()
+
+  def _get_langchain_vector_store(self) -> LCVectorStore:
+    # retrieve langchain vector store obj from config
+    lc_vectorstore = LC_VECTOR_STORES.get(self.q_engine.vector_store)
+    if lc_vectorstore is None:
+      raise InternalServerError(
+          f"vector store {q_engine.vector_store} not found in config")
+    return lc_vectorstore
+
+  def index_document(self, doc_name: str, text_chunks: List[str],
+                          index_base: int) -> int:
+
+    # Convert chunks to embeddings
+    is_successful, chunk_embeddings = embeddings.get_embeddings(
+        text_chunks=text_chunks
+    )
+
+    self.lc_vector_store().add_embeddings(texts=text_chunks, embeddings=chunk_embeddings)
+
+
+  @classmethod
+  def find_neighbors(cls, q_engine: QueryEngine,
+                     query_embeddings: List[List[float]]) -> List[int]:
+
+    return self.lc_vector_store().similarity_search_by_vector(
+        embedding=query_embeddings,
+        k=NUM_MATCH_RESULTS
+    )
+
+  def deploy(self):
+    """ Create matching engine index and endpoint """
+    pass
 

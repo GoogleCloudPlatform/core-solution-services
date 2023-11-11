@@ -24,6 +24,8 @@ QUERY_HUMAN = "HumanQuestion"
 QUERY_AI_RESPONSE = "AIResponse"
 QUERY_AI_REFERENCES = "AIReferences"
 
+VECTOR_STORE_MATCHING_ENGINE = "matching_engine"
+VECTOR_STORE_LANGCHAIN_PGVECTOR = "langchain_pgvector"
 
 class UserQuery(BaseModel):
   """
@@ -90,6 +92,7 @@ class QueryEngine(BaseModel):
   index_id = TextField(required=False)
   index_name = TextField(required=False)
   endpoint = TextField(required=False)
+  vector_store = TextField(required=True, default=VECTOR_STORE_MATCHING_ENGINE)
 
   class Meta:
     ignore_none_field = False
