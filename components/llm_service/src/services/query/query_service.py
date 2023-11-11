@@ -27,7 +27,8 @@ from utils.errors import NoDocumentsIndexedException
 from google.cloud import storage
 from services import llm_generate
 from services.query import query_prompts, embeddings
-from services.query.vector_store import MatchingEngineVectorStore
+from services.query import vector_store
+from services.query.vector_store import VectorStore
 from services.query.data_source import DataSource
 
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
@@ -117,8 +118,9 @@ async def query_search(q_engine: QueryEngine,
   # generate embeddings for prompt
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
 
-  match_indexes_list = VectorStore.find_neighbors(q_engine,
-                                                  query_embeddings)
+  qe_vector_store = vector_store.from_query_engine(q_engine)
+  match_indexes_list = qe_vector_store.find_neighbors(q_engine,
+                                                      query_embeddings)
 
   # assemble document chunk matches from match indexes
   query_references = []
@@ -252,12 +254,12 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
 
   storage_client = storage.Client(project=PROJECT_ID)
 
-  vector_store = MatchingEngineVectorStore(q_engine)
+  qe_vector_store = vector_store.from_query_engine(q_engine)
 
   try:
     # process docs at url and upload embeddings to vector store
     docs_processed, docs_not_processed = process_documents(
-      doc_url, vector_store, q_engine, storage_client)
+      doc_url, qe_vector_store, q_engine, storage_client)
 
     # make sure we actually processed some docs
     if len(docs_processed) == 0:
@@ -265,7 +267,7 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
           f"Failed to process any documents at url {doc_url}")
 
     # deploy vectore store (e.g. create endpoint)
-    vector_store.deploy()
+    qe_vector_store.deploy()
 
     return docs_processed, docs_not_processed
 
@@ -274,7 +276,7 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
     raise InternalServerError(str(e)) from e
 
 
-def process_documents(doc_url: str, vector_store: VectorStore,
+def process_documents(doc_url: str, qe_vector_store: VectorStore,
                        q_engine: QueryEngine, storage_client) -> \
                        Tuple[List[QueryDocument], List[str]]:
   """
@@ -302,7 +304,7 @@ def process_documents(doc_url: str, vector_store: VectorStore,
 
       # generate embedding data and store in local dir
       new_index_base = \
-          vector_store.index_document(doc_name, text_chunks, index_base)
+          qe_vector_store.index_document(doc_name, text_chunks, index_base)
 
       # cleanup temp local file
       os.remove(doc_filepath)
