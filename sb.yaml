@@ -37,6 +37,21 @@ components:
     loadbalancer_name: httplb-gke
     managed_cert_name: managed-cert
     resource_name: gke-ingress
+  tools_service:
+    cloudrun_neg: true
+    component_name: tools_service
+    component_template: blank_service
+    default_deploy: gke
+    depend_on_common: true
+    deploy_cloudrun: false
+    deploy_gke: true
+    destination_path: .
+    gcp_region: us-central1
+    local_port: '9001'
+    module_version: '1.0'
+    resource_name: tools-service
+    service_path: tools-service
+    use_github_action: true
   user_management:
     custom_component: true
     init_script_path: ./components/user_management/src/utils/init.py
