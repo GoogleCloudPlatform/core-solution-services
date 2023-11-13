@@ -1,5 +1,4 @@
 # Changes here will be overwritten by Copier
-_src_path: /Users/jonchen/workspace/solutions-builder/solutions_builder/cli/../modules/blank_service
 cloudrun_neg: true
 component_name: tools_service
 default_deploy: gke

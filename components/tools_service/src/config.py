@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-  Rules Service config file
+  Tools Service config file
 """
 
 import os
