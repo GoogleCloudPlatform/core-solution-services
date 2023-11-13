@@ -16,8 +16,7 @@
 import config
 import uvicorn
 from fastapi import FastAPI
-from routes import (refresh_token, validate_token, password, sign_in, sign_up,
-                    inspace_token)
+from routes import (refresh_token, authenticate, password, sign_in, sign_up)
 from common.utils.http_exceptions import add_exception_handlers
 
 app = FastAPI()
@@ -49,8 +48,7 @@ api.include_router(sign_up.router)
 api.include_router(sign_in.router)
 api.include_router(password.router)
 api.include_router(refresh_token.router)
-api.include_router(validate_token.router)
-api.include_router(inspace_token.router)
+api.include_router(authenticate.router)
 
 app.mount("/authentication/api/v1", api)
 
