@@ -14,7 +14,6 @@
 """Tools Microservice"""
 
 import uvicorn
-import config
 from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 from common.utils.http_exceptions import add_exception_handlers
