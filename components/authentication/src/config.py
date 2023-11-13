@@ -57,16 +57,16 @@ except Exception as e:
                "secret [firebase-api-key]")
 
 ERROR_RESPONSES = {
-    500: {
-        "model": InternalServerErrorResponseModel
-    },
-    503: {
-        "model": ConnectionErrorResponseModel
-    },
-    401: {
-        "model": UnauthorizedUserErrorResponseModel
-    },
-    422: {
-        "model": ValidationErrorResponseModel
-    }
+  500: {
+    "model": InternalServerErrorResponseModel
+  },
+  503: {
+    "model": ConnectionErrorResponseModel
+  },
+  401: {
+    "model": UnauthorizedUserErrorResponseModel
+  },
+  422: {
+    "model": ValidationErrorResponseModel
+  }
 }
