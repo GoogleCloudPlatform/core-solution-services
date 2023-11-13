@@ -55,7 +55,6 @@ try:
 except Exception as e:
   Logger.error("Unable to retrieve FIREBASE_API_KEY from "
                "secret [firebase-api-key]")
-  raise e
 
 ERROR_RESPONSES = {
     500: {
@@ -71,7 +70,3 @@ ERROR_RESPONSES = {
         "model": ValidationErrorResponseModel
     }
 }
-
-# Make sure all required constants are set.
-assert PROJECT_ID
-assert FIREBASE_API_KEY

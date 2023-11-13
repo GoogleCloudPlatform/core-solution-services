@@ -76,11 +76,9 @@ auth_details = {
 }
 
 
-@mock.patch("services.firebase_authentication.auth")
 @mock.patch("routes.refresh_token.generate_token")
 def test_valid_id(mock_generate_token, mock_auth, clean_firestore):
 
-  mock_auth.verify_id_token.return_value = auth_details
   mock_generate_token.return_value = token_credentials
 
   # new_user = {**BASIC_USER_MODEL_EXAMPLE, "email": USER_EMAIL}
