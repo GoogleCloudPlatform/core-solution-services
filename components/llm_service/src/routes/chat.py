@@ -42,7 +42,8 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     name="Get all user chats",
     response_model=LLMUserAllChatsResponse)
 def get_chat_list(skip: int = 0, limit: int = 20,
-                  with_history: bool = False,
+                  with_all_history: bool = False,
+                  with_first_history: bool = False,
                   user_data: dict = Depends(validate_token)):
   """
   Get user chats for authenticated user.  Chat data does not include
@@ -72,11 +73,13 @@ def get_chat_list(skip: int = 0, limit: int = 20,
     for i in user_chats:
       chat_data = i.get_fields(reformat_datetime=True)
       chat_data["id"] = i.id
-      if not with_history:
-        # Trim chat history to slim return payload
+      # Trim chat history to slim return payload
+      if not with_all_history and not with_first_history:
         del chat_data["history"]
+      elif with_first_history:
+        # Trim all chat history except the first one
+        chat_data["history"] = chat_data["history"][:1]
       chat_list.append(chat_data)
-
     return {
       "success": True,
       "message": f"Successfully retrieved user chats for user {user.user_id}",
