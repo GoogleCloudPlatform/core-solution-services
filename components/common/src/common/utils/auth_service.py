@@ -71,6 +71,9 @@ def validate_oauth_token(token: auth_scheme = Depends()):
 
 
 def validate_service_account_token(token: auth_scheme = Depends()):
+  """
+  Validate token for Service Account.
+  """
   if not token:
     raise InvalidTokenError("Unauthorized: token is empty.")
 
@@ -101,7 +104,7 @@ def validate_user_type_and_token(accepted_user_types: list,
     token_dict = dict(token)
     if token_dict["credentials"]:
       api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}" \
-          "/api/v1/authenticate"
+          "/api/v1/validate_token"
       res = requests.get(
           url=api_endpoint,
           headers={
@@ -126,8 +129,7 @@ def validate_user_type_and_token(accepted_user_types: list,
 
 
 def validate_user(token: auth_scheme = Depends()):
-  return validate_user_type_and_token(["other", "faculty", "admin", "robot"],
-                                      token)
+  return validate_user_type_and_token(token)
 
 
 def user_verification(token: str) -> json:
