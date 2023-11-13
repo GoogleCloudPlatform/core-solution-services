@@ -30,20 +30,29 @@ DEPLOYMENT_NAME = os.getenv("DEPLOYMENT_NAME")
 GKE_SERVICE_ACCOUNT_NAME = os.getenv("GKE_SERVICE_ACCOUNT_NAME", "gke-sa")
 PUB_SUB_PROJECT_ID = os.getenv("PUB_SUB_PROJECT_ID", PROJECT_ID)
 SERVICE_NAME = os.getenv("SERVICE_NAME")
+
+# TODO: Automate this with existing GKE service names.
 SERVICES = {
-    # TODO: Remove old authentication service once migrated to auth_service.
     "authentication": {
         "host": "authentication",
-        "port": 80
-    },
-    "auth-service": {
-        "host": "auth-service",
         "port": 80
     },
     "user-management": {
         "host": "user-management",
         "port": 80
-    }
+    },
+    "llm-service": {
+        "host": "llm-service",
+        "port": 80
+    },
+    "rules-engine": {
+        "host": "rules-engine",
+        "port": 80
+    },
+    "tools-service": {
+        "host": "tools-service",
+        "port": 80
+    },
 }
 
 # Define custom user types as a list below.

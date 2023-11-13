@@ -20,7 +20,7 @@ from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError
 from common.utils.errors import TokenNotFoundError, UnauthorizedUserError
 from common.utils.http_exceptions import (BadRequest, InvalidToken,
                                           InternalServerError, Unauthorized)
-from services.validate_token_service import validate_token
+from services.validation_service import validate_token
 from schemas.validate_token_schema import ValidateTokenResponseModel
 from config import ERROR_RESPONSES
 

@@ -15,7 +15,6 @@
 """Utility methods for token validation."""
 from google.auth.transport import requests
 from google.oauth2 import id_token
-import firebase_admin
 from firebase_admin.auth import verify_id_token
 
 from common.utils.errors import InvalidTokenError
@@ -23,7 +22,17 @@ from common.utils.http_exceptions import InternalServerError, Unauthenticated
 from common.utils.logging_handler import Logger
 
 
-default_app = firebase_admin.initialize_app()
+def verify_firebase_token(token):
+  """
+    Verifies id token issued to user, Return user authentication
+    details is token is valid, else Returns token expired as error
+    Args:
+        ID Token: String
+    Returns:
+        User auth details: Dict
+  """
+  return verify_id_token(token)
+
 
 def validate_token(bearer_token):
   """
@@ -37,9 +46,8 @@ def validate_token(bearer_token):
   """
   token = bearer_token
   decoded_token = verify_id_token(token)
-  token_data = {**decoded_token}
-  Logger.info(f"Id Token: {token_data}")
-  return token_data
+  Logger.info(f"Id Token: {decoded_token}")
+  return decoded_token
 
 
 def validate_google_oauth_token(token):

@@ -29,7 +29,7 @@ from common.testing.firestore_emulator import (firestore_emulator,
 
 with mock.patch(
   "google.cloud.logging.Client", side_effect=mock.MagicMock()) as mok:
-  from services.validation_service import validate_token
+  from services.validation_service import validate_token, verify_firebase_token
 from schemas.schema_examples import BASIC_USER_MODEL_EXAMPLE
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"

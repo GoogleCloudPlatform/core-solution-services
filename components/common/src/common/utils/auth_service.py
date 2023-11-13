@@ -25,15 +25,17 @@ from common.utils.errors import TokenNotFoundError
 from common.utils.http_exceptions import (InternalServerError, Unauthenticated)
 
 auth_scheme = HTTPBearer(auto_error=False)
-AUTH_SERVICE_NAME = SERVICES["auth-service"]["host"]
+AUTH_SERVICE_NAME = SERVICES["authentication"]["host"]
 
 
-def authenticate(token: auth_scheme = Depends()):
+def validate_token(token: auth_scheme = Depends()):
+  """
+  Main validation function depended by all microservices.
+  """
   try:
     if validate_oauth_token(token) or validate_service_account_token(token):
       return True
     raise InvalidTokenError("Unauthorized: Invalid token.")
-
   except (InvalidTokenError, TokenNotFoundError) as e:
     raise Unauthenticated(str(e)) from e
   except Exception as e:
@@ -41,11 +43,13 @@ def authenticate(token: auth_scheme = Depends()):
 
 
 def validate_oauth_token(token: auth_scheme = Depends()):
+  """
+  Validate OAuth token from Firebase Auth or Cloud Identity Platform.
+  """
   if not token:
     raise TokenNotFoundError("Unauthorized: token is empty.")
 
   token_dict = dict(token)
-
   if token_dict["credentials"]:
     api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
         "api/v1/authenticate"
@@ -144,12 +148,3 @@ def user_verification(token: str) -> json:
 
   return response
 
-
-# TODO: Remove deprecated function.
-def validate_token(token: auth_scheme = Depends()):
-  try:
-    return validate_oauth_token(token)
-  except (InvalidTokenError, TokenNotFoundError) as e:
-    raise Unauthenticated(str(e)) from e
-  except Exception as e:
-    raise InternalServerError(str(e)) from e
