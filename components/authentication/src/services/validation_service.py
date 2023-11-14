@@ -16,11 +16,31 @@
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from firebase_admin.auth import verify_id_token
+from redis.exceptions import ConnectionError
 
 from common.utils.cache_service import set_key, get_key
 from common.utils.errors import InvalidTokenError
 from common.utils.http_exceptions import InternalServerError, Unauthenticated
 from common.utils.logging_handler import Logger
+
+
+def get_token_cache(token):
+  cached_token = None
+  try:
+    cached_token = get_key(f"cache::{token}")
+  except ConnectionError as e:
+    Logger.error(f"Unable to get token to Redis cache: {e.message}")
+
+  return cached_token
+
+def set_token_cache(token, decoded_token):
+  cached_token = None
+  try:
+    cached_token = set_key(f"cache::{token}", decoded_token, 1800)
+  except ConnectionError as e:
+    Logger.error(f"Unable to set token to Redis cache: {e.message}")
+
+  return cached_token
 
 
 def verify_firebase_token(token):
@@ -46,13 +66,13 @@ def validate_token(bearer_token):
         Decoded Token and User type: Dict
   """
   token = bearer_token
-  cached_token = get_key(f"cache::{token}")
-  if cached_token is None:
-    decoded_token = verify_id_token(token)
-    cache_token = set_key(f"cache::{token}", decoded_token, 1800)
-    Logger.info(f"Id Token caching status: {cache_token}")
-  else:
-    decoded_token = cached_token
+  decoded_token = None
+
+  cached_token = get_token_cache(f"cache::{token}")
+  decoded_token = cached_token if cached_token else verify_id_token(token)
+  if not cached_token:
+    cached_token = set_token_cache(f"cache::{token}", decoded_token)
+    Logger.info(f"Id Token caching status: {cached_token}")
 
   Logger.info(f"Id Token: {decoded_token}")
   return decoded_token
