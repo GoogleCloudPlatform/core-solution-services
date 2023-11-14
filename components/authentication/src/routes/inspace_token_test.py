@@ -31,7 +31,7 @@ from schemas.schema_examples import BASIC_USER_MODEL_EXAMPLE
 from testing.test_config import API_URL
 from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
-from common.models import TempUser
+from common.models import User
 from common.utils.http_exceptions import add_exception_handlers
 
 app = FastAPI()
@@ -93,7 +93,7 @@ def test_get_inspace_token_without_inspace_user(mock_validate_token,
     "is_inspace_user": True,
     "inspace_user_id": ""
   }
-  user = TempUser.from_dict(user_dict)
+  user = User.from_dict(user_dict)
   user.user_id = ""
   user.save()
   user.user_id = user.id
@@ -122,7 +122,7 @@ def test_get_inspace_token_with_inspace_user_false(mock_validate_token,
     "is_inspace_user": False,
     "inspace_user_id": ""
   }
-  user = TempUser.from_dict(user_dict)
+  user = User.from_dict(user_dict)
   user.user_id = ""
   user.save()
   user.user_id = user.id
