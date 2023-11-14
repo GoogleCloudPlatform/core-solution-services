@@ -17,7 +17,6 @@
 import traceback
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
-# TODO: Replace User with User once user management is available
 from common.models import User
 from common.utils.http_exceptions import (InternalServerError,
                                           ResourceNotFound, BadRequest)
