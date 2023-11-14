@@ -16,7 +16,6 @@
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from firebase_admin.auth import verify_id_token
-from redis.exceptions import ConnectionError
 
 from common.utils.cache_service import set_key, get_key
 from common.utils.errors import InvalidTokenError
