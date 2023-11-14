@@ -25,8 +25,9 @@ from common.utils.config import STAFF_USERS, EXTERNAL_USER_PROPERTY_PREFIX
 from common.utils.logging_handler import Logger
 from common.utils.jwt_token_generator import TokenGenerator
 
-# pylint: disable=broad-exception-raised, broad-exception-caught
+# pylint: disable=broad-exception-raised, broad-exception-caught, logging-fstring-interpolation
 
+Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
 
 GCP_PROJECT = os.environ.get("PROJECT_ID")

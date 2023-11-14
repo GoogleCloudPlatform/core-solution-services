@@ -13,23 +13,26 @@
 # limitations under the License.
 
 """ Agent service """
-# pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-import
+# pylint: disable=consider-using-dict-items,consider-iterating-dictionary
 
 import inspect
 import json
 import re
 from typing import List, Tuple
-from common.models.agent import (AgentType, AgentCapability,
+
+from langchain.agents import AgentExecutor
+
+from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import BadRequest, InternalServerError
 from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
-from langchain.agents import AgentExecutor
-from services.agents.agents import BaseAgent
 from services.agents import agents
 
+Logger = Logger.get_logger(__file__)
 AGENTS = None
+
 
 def load_agents(agent_config_path: str):
   global AGENTS
@@ -39,9 +42,9 @@ def load_agents(agent_config_path: str):
       agent_config = json.load(file)
     agent_config = agent_config.get("Agents")
 
-    # add agent class and capabiities
+    # add agent class and capabilities
     agent_classes = {
-      k:klass for (k, klass) in inspect.getmembers(agents)
+      k: klass for (k, klass) in inspect.getmembers(agents)
       if isinstance(klass, type)
     }
     for values in agent_config.values():
@@ -53,17 +56,19 @@ def load_agents(agent_config_path: str):
   except Exception as e:
     raise InternalServerError(f" Error loading agent config: {e}") from e
 
+
 def get_agent_config() -> dict:
   if AGENTS is None:
     load_agents(AGENT_CONFIG_PATH)
   return AGENTS
 
-def get_plan_agent_config() -> List[dict]:
+
+def get_plan_agent_config() -> dict:
   agent_config = get_agent_config()
   planning_agents = {
-      agent: agent_config for agent, agent_config in agent_config.items()
-      if AgentCapability.AGENT_PLAN_CAPABILITY.value \
-          in agent_config["capabilities"]
+    agent: agent_config for agent, agent_config in agent_config.items()
+    if AgentCapability.AGENT_PLAN_CAPABILITY.value \
+       in agent_config["capabilities"]
   }
   return planning_agents
 
@@ -88,7 +93,7 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
-def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
+def run_agent(agent_name: str, prompt: str, chat_history: List = None) -> str:
   """
   Run an agent on user input
 
@@ -101,14 +106,20 @@ def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
       output(str): the output of the agent on the user input
       action_steps: the list of action steps take by the agent for the run
   """
+  Logger.info(f"Running {agent_name} agent "
+              f"with {prompt} and "
+              f"chat_history={chat_history}")
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
 
   tools = llm_service_agent.get_tools()
+  tools_str = ", ".join(tool.name for tool in tools)
+
+  Logger.info(f"Available tools=[{tools_str}]")
   langchain_agent = llm_service_agent.load_agent()
 
   agent_executor = AgentExecutor.from_agent_and_tools(
-      agent=langchain_agent, tools=tools)
+    agent=langchain_agent, tools=tools)
 
   chat_history = chat_history or []
   agent_inputs = {
@@ -116,13 +127,15 @@ def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
     "chat_history": chat_history
   }
 
+  Logger.info("Running agent executor.... ")
   output = agent_executor.run(agent_inputs)
-
+  Logger.info(f"Agent {agent_name} generated"
+              f" output=[{output}]")
   return output
 
 
-def agent_plan(agent_name:str, prompt:str,
-               user_id:str, chat_history:List = None) -> Tuple[str, UserPlan]:
+def agent_plan(agent_name: str, prompt: str,
+               user_id: str, chat_history: List = None) -> Tuple[str, UserPlan]:
   """
   Run an agent on user input to generate a plan
 
@@ -135,6 +148,10 @@ def agent_plan(agent_name:str, prompt:str,
       output(str): the output of the agent on the user input
       user_plan(str): user plan object created from agent plan
   """
+  Logger.info(f"Starting with plan for "
+              f"agent_name=[{agent_name}], "
+              f"prompt=[{prompt}], user_id=[{user_id}], "
+              f"chat_history=[{chat_history}]")
   planning_agents = get_plan_agent_config()
   if not agent_name in planning_agents.keys():
     raise BadRequest(f"{agent_name} is not a planning agent.")
@@ -149,11 +166,11 @@ def agent_plan(agent_name:str, prompt:str,
 
   # create PlanStep models
   plan_steps = [
-      PlanStep(user_id=user_id,
-               plan_id=user_plan.id,
-               description=step_description,
-               agent_name=agent_name)
-      for step_description in raw_plan_steps]
+    PlanStep(user_id=user_id,
+             plan_id=user_plan.id,
+             description=step_description,
+             agent_name=agent_name)
+    for step_description in raw_plan_steps]
   plan_step_ids = []
   for step in plan_steps:
     step.save()
@@ -163,6 +180,8 @@ def agent_plan(agent_name:str, prompt:str,
   user_plan.plan_steps = plan_step_ids
   user_plan.update()
 
+  Logger.info(f"Created steps using plan_agent_name={agent_name} "
+              f"raw_plan_steps={raw_plan_steps}")
   return output, user_plan
 
 
@@ -170,13 +189,13 @@ def parse_plan(text: str) -> List[str]:
   """
   Parse plan steps from agent output
   """
-  Logger.info(f"agent plan output {text}")
+  Logger.info(f"Parsing agent plan {text}")
 
   # Regex pattern to match the steps after 'Plan:'
   # We are using the re.DOTALL flag to match across newlines and
   # re.MULTILINE to treat each line as a separate string
   steps_regex = re.compile(
-      r"^\s*\d+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
+    r"^\s*\d+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
 
   # Find the part of the text after 'Plan:'
   plan_part = re.split(r"Plan:", text, flags=re.IGNORECASE)[-1]
@@ -210,4 +229,3 @@ def get_llm_type_for_agent(agent_name: str) -> str:
     if agent_name == agent:
       return agent_config[agent]["llm_type"]
   raise ResourceNotFoundException(f"can't find agent name {agent_name}")
-  

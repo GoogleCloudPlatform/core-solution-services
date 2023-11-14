@@ -18,8 +18,10 @@ import tempfile
 import os
 from typing import List, Optional, Tuple, Dict
 from common.utils.logging_handler import Logger
-from common.models import (UserQuery, QueryResult, QueryEngine, QueryDocument,
-                           QueryReference, QueryDocumentChunk, BatchJobModel)
+from common.models import (UserQuery, QueryResult, QueryEngine,
+                           QueryDocument,
+                           QueryReference, QueryDocumentChunk,
+                           BatchJobModel)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -35,6 +37,7 @@ from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
 
 # pylint: disable=broad-exception-caught
 
+Logger = Logger.get_logger(__file__)
 
 async def query_generate(
             user_id: str,
@@ -59,6 +62,11 @@ async def query_generate(
   Raises:
     ResourceNotFoundException if the named query engine doesn't exist
   """
+  Logger.info(f"Executing query: "
+              f"llm_type=[{llm_type}], "
+              f"user_id=[{user_id}], "
+              f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
+              f"user_query=[{user_query}]")
   # get doc context for question
   query_references = await _query_doc_matches(q_engine, prompt)
 
@@ -102,6 +110,8 @@ async def _query_doc_matches(q_engine: QueryEngine,
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
   """
+  Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
+              f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
 
@@ -128,6 +138,8 @@ async def _query_doc_matches(q_engine: QueryEngine,
     }
     query_references.append(query_ref)
 
+  Logger.info(f"Retrieved {len(query_references)} "
+              f"references={query_references}")
   return query_references
 
 

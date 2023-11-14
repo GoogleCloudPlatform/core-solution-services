@@ -45,6 +45,8 @@ from services.helper import (get_all_discipline_for_given_program,
                              get_all_assign_user_for_given_instructor_or_coach)
 from config import ERROR_RESPONSES, IMMUTABLE_ASSOCIATION_GROUPS
 
+Logger = Logger.get_logger(__file__)
+
 router = APIRouter(
   tags=["Learner Association Group"],
   prefix="/association-groups",

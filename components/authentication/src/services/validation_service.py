@@ -23,6 +23,9 @@ from common.utils.http_exceptions import InternalServerError, Unauthenticated
 from common.utils.logging_handler import Logger
 
 
+Logger = Logger.get_logger(__file__)
+
+
 def get_token_cache(token):
   cached_token = None
   try:

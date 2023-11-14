@@ -37,8 +37,10 @@ from config import (AUTH_REQUIRE_FIRESTORE_USER,
 # pylint: disable = broad-exception-raised
 
 IDP_SIGN_IN_URL = f"{IDP_URL}:signInWithIdp?key={FIREBASE_API_KEY}"
+Logger = Logger.get_logger(__file__)
 
 auth_scheme = HTTPBearer(auto_error=False)
+
 router = APIRouter(
     tags=["Sign In"], prefix="/sign-in", responses=deepcopy(ERROR_RESPONSES))
 

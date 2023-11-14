@@ -17,7 +17,6 @@
 """
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 import os
-import logging
 from common.utils.logging_handler import Logger
 from common.utils.token_handler import UserCredentials
 from schemas.error_schema import (UnauthorizedResponseModel,
@@ -28,10 +27,8 @@ from langchain.chat_models import ChatOpenAI, ChatVertexAI
 from langchain.llms.cohere import Cohere
 from langchain.llms.vertexai import VertexAI
 
-# override default logging format
-logging.basicConfig(
-      format="%(asctime)s:%(levelname)s:%(message)s",level=logging.INFO)
 
+Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
 
 PORT = os.environ["PORT"] if os.environ.get("PORT") is not None else 80
@@ -231,4 +228,4 @@ auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
                               LLM_BACKEND_ROBOT_PASSWORD)
 
 # agent config
-AGENT_CONFIG_PATH = "./data/agent_config.json"
+AGENT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "data/agent_config.json")

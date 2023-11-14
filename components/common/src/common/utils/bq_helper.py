@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable = logging-fstring-interpolation
+
 """
 Bigquery helper Service
 """
@@ -21,6 +23,7 @@ from common.utils.logging_handler import Logger
 from common.config import PROJECT_ID, BQ_REGION
 
 bq_client = bigquery.Client(location=BQ_REGION)
+Logger = Logger.get_logger(__file__)
 
 def insert_rows_to_bq(rows, dataset, table_name):
   """Insert rows to BQ

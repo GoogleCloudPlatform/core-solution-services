@@ -39,7 +39,7 @@ from services.json_import import json_import_non_user
 from services.staff import create_staff, update_staff
 from config import ERROR_RESPONSES, PAYLOAD_FILE_SIZE
 
-
+Logger = Logger.get_logger(__file__)
 router = APIRouter(tags=["Staff"], responses=ERROR_RESPONSES)
 
 @router.get("/staff/search", response_model=StaffSearchResponseModel)

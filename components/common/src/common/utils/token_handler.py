@@ -19,6 +19,7 @@ import requests
 from common.utils.logging_handler import Logger
 # pylint: disable=line-too-long,broad-exception-raised,broad-exception-caught,cyclic-import
 
+Logger = Logger.get_logger(__file__)
 
 class UserCredentials:
   """Class to fetch token for user account"""

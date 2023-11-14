@@ -25,6 +25,8 @@ from config import (LANGCHAIN_LLM, GOOGLE_LLM,
                     CHAT_LLM_TYPES)
 from vertexai.language_models import (ChatModel, TextGenerationModel)
 
+Logger = Logger.get_logger(__file__)
+
 async def llm_generate(prompt: str, llm_type: str) -> str:
   """
   Generate text with an LLM given a prompt.
@@ -37,11 +39,12 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   Returns:
     the text response: str
   """
+  Logger.info(f"Generating text with an LLM given a prompt={prompt},"
+              f" llm_type={llm_type}")
   # default to openai LLM
   if llm_type is None:
     llm_type = OPENAI_LLM_TYPE_GPT3_5
 
-  Logger.info(f"generating text with llm_type {llm_type}")
   try:
     # for google models, prioritize native client over langchain
     if llm_type in GOOGLE_LLM.keys():
@@ -71,7 +74,8 @@ async def llm_chat(prompt: str, llm_type: str,
   Returns:
     the text response: str
   """
-  Logger.info(f"generating chat with llm_type {llm_type}")
+  Logger.info(f"Generating chat with llm_type=[{llm_type}].")
+  Logger.debug(f"prompt=[{prompt}].")
   if llm_type not in CHAT_LLM_TYPES:
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
@@ -103,6 +107,9 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   Returns:
     the text response.
   """
+  Logger.info(f"Generating text with a Google LLM given a prompt,"
+              f" is_chat=[{is_chat}], google_llm=[{google_llm}]")
+  Logger.debug(f"prompt=[{prompt}].")
   prompt_list = []
   if user_chat is not None:
     history = user_chat.history
@@ -143,7 +150,7 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-  Logger.info(f"Response from Model: {response.text}")
+  Logger.info(f"Received response from the Model [{response.text}]")
   response = response.text
 
   return response

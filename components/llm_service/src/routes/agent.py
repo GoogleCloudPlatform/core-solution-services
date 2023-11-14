@@ -31,8 +31,8 @@ from services.agents.agent_service import (get_all_agents, run_agent,
 from services.langchain_service import langchain_chat_history
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
 
+Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
-
 
 @router.get(
     "",
@@ -75,6 +75,8 @@ def agent_run(agent_name: str, run_config: LLMAgentRunModel,
   """
   runconfig_dict = {**run_config.dict()}
 
+  Logger.info(f"Running {agent_name} agent on {runconfig_dict}")
+
   prompt = runconfig_dict.get("prompt")
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
@@ -88,6 +90,7 @@ def agent_run(agent_name: str, run_config: LLMAgentRunModel,
     llm_type = get_llm_type_for_agent(agent_name)
 
     output = run_agent(agent_name, prompt)
+    Logger.info(f"Generated output=[{output}]")
     agent_thought = output
 
     # create new chat for user
@@ -133,7 +136,9 @@ def agent_run_chat(agent_name: str, chat_id: str,
       LLMAgentRunResponse
   """
   runconfig_dict = {**run_config.dict()}
-
+  Logger.info(f"Running agent {agent_name} on user input {runconfig_dict} "
+              f"with chat history with "
+              f"chat_id = {chat_id}.")
   prompt = runconfig_dict.get("prompt")
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
@@ -151,6 +156,7 @@ def agent_run_chat(agent_name: str, chat_id: str,
     # run agent to get output
     chat_history = langchain_chat_history(user_chat)
     output = run_agent(agent_name, prompt, chat_history)
+    Logger.info(f"Generated output=[{output}]")
     agent_thought = output
 
     # save chat history

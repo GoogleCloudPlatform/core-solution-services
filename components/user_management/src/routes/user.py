@@ -53,6 +53,8 @@ from config import ERROR_RESPONSES
 
 # pylint: disable=unused-variable,no-value-for-parameter
 
+Logger = Logger.get_logger(__file__)
+
 router = APIRouter(tags=["User"], responses=ERROR_RESPONSES)
 
 

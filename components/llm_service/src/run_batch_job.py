@@ -27,6 +27,7 @@ from config import JOB_NAMESPACE
 
 # pylint: disable=broad-exception-raised
 
+Logger = Logger.get_logger(__file__)
 FLAGS = flags.FLAGS
 flags.DEFINE_string("container_name", "",
                     "Name of the container in which job is running")

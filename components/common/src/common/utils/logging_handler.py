@@ -15,15 +15,16 @@
 """class and methods for logs handling."""
 
 import logging
+import os
+import sys
 from common.config import CLOUD_LOGGING_ENABLED
 import google.cloud.logging
 
 if CLOUD_LOGGING_ENABLED:
   client = google.cloud.logging.Client()
   client.setup_logging()
-
-  logging.basicConfig(
-        format='%(asctime)s:%(levelname)s:%(message)s', level=logging.INFO)
+  logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s",
+                      level=logging.INFO)
 else:
   logging.basicConfig(level=logging.INFO)
 
@@ -31,17 +32,20 @@ else:
 class Logger:
   """class def handling logs."""
 
-  @staticmethod
-  def info(message):
-    """Display info logs."""
-    logging.info(message)
+  def __init__(self, name):
+    dirname = os.path.dirname(name)
+    filename = os.path.split(name)[1]
+    folder = os.path.split(dirname)[1]
+    module_name = f"{folder}/{filename}"
+    self.logger = logging.getLogger(module_name)
+    handler = logging.StreamHandler(sys.stdout)
+    log_format = "%(levelname)s: [%(name)s:%(lineno)d - " \
+                 "%(funcName)s()] %(message)s"
+    handler.setFormatter(logging.Formatter(log_format))
+    self.logger.addHandler(handler)
+    self.logger.propagate = False
 
-  @staticmethod
-  def warning(message):
-    """Display warning logs."""
-    logging.warning(message)
-
-  @staticmethod
-  def error(message):
-    """Display error logs."""
-    logging.error(message)
+  @classmethod
+  def get_logger(cls, name) -> logging.Logger:
+    logger_instance = cls(name)
+    return logger_instance.logger

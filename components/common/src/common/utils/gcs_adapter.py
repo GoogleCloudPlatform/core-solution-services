@@ -28,7 +28,7 @@ from common.utils.logging_handler import Logger
 # pylint: disable = broad-exception-raised
 
 gcs_bucket = os.environ.get("GCP_PROJECT")
-
+Logger = Logger.get_logger(__file__)
 
 class GcsCrudService:
   """
