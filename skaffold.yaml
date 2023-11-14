@@ -7,9 +7,6 @@ requires:
   - common
   path: ./components/common
 - configs:
-  - auth_service
-  path: ./components/auth_service
-- configs:
   - authentication
   path: ./components/authentication
 - configs:
