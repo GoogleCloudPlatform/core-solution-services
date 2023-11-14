@@ -58,7 +58,7 @@ def get_agent_config() -> dict:
     load_agents(AGENT_CONFIG_PATH)
   return AGENTS
 
-def get_task_agent_config() -> List[dict]:
+def get_plan_agent_config() -> List[dict]:
   agent_config = get_agent_config()
   planning_agents = {
       agent: agent_config for agent, agent_config in agent_config.items()
@@ -75,7 +75,7 @@ def get_all_agents() -> List[dict]:
     agent_name: {"llm_type": <llm_type>, "capabilities": <capabilities>}
   """
   agent_config = get_agent_config()
-  agent_config.update(get_task_agent_config())
+  agent_config.update(get_plan_agent_config())
   agent_list = [
     {
       agent: {
@@ -135,17 +135,11 @@ def agent_plan(agent_name:str, prompt:str,
       output(str): the output of the agent on the user input
       user_plan(str): user plan object created from agent plan
   """
-  planning_agents = get_task_agent_config()
+  planning_agents = get_plan_agent_config()
   if not agent_name in planning_agents.keys():
     raise BadRequest(f"{agent_name} is not a planning agent.")
 
-  # get LLM service agent
-  agent_params = planning_agents[agent_name]
-  llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
-
-  plan_agent_name = llm_service_agent.get_planning_agent()
-
-  output = run_agent(plan_agent_name, prompt, chat_history)
+  output = run_agent(agent_name, prompt, chat_history)
 
   raw_plan_steps = parse_plan(output)
 
