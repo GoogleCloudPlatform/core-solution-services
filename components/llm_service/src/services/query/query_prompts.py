@@ -17,10 +17,15 @@ Query prompt generator methods
 from typing import List
 
 from services.query.query_prompt_config import QUESTION_PROMPT
+from common.utils.logging_handler import Logger
 
+Logger = Logger.get_logger(__file__)
 
 def question_prompt(prompt: str, query_context: List[dict]) -> str:
   """ Create question prompt with context for LLM """
+  Logger.info(f"Creating question prompt with context "
+              f"for LLM prompt=[{prompt}], "
+              f"query_context={query_context}")
   context_list = [ref["document_text"] for ref in query_context]
   text_context = "\n\n".join(context_list)
   question = QUESTION_PROMPT.format(question=prompt, context=text_context)

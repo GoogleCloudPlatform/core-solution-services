@@ -36,6 +36,7 @@ from services.agents.agent_service import (agent_plan,
                                            get_llm_type_for_agent)
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, PROJECT_ID)
 
+Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent/plan", tags=["Agent Plans"],
                    responses=ERROR_RESPONSES)
 
@@ -51,6 +52,7 @@ def get_plan(plan_id: str):
       LLMUserPlanResponse
   """
   try:
+    Logger.info(f"Getting user plan by plan_id={plan_id}")
     user_plan = UserPlan.find_by_id(plan_id)
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
@@ -89,14 +91,19 @@ def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
       LLMAgentPlanResponse
   """
   planconfig_dict = {**plan_config.dict()}
+  Logger.info(f"Running {agent_name} "
+              f"agent on {planconfig_dict}")
 
   prompt = planconfig_dict.get("prompt")
   if prompt is None or prompt == "":
-    return BadRequest("Missing or invalid payload parameters")
+    error_msg = "Missing or invalid payload parameters"
+    Logger.error(f"{error_msg}")
+    return BadRequest(error_msg)
 
   if len(prompt) > PAYLOAD_FILE_SIZE:
-    return PayloadTooLargeError(
-      f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
+    error_msg = f"Prompt must be less than {PAYLOAD_FILE_SIZE}"
+    Logger.error(f"{error_msg}")
+    return PayloadTooLargeError(error_msg)
 
   try:
     user = User.find_by_email(user_data.get("email"))

@@ -34,7 +34,7 @@ router = APIRouter(tags=["InSpace"],
                    prefix="/inspace",
                    responses=ERROR_RESPONSES)
 auth_scheme = HTTPBearer(auto_error=False)
-
+Logger = Logger.get_logger(__file__)
 
 @router.get("/token/{user_id}",
             name="get token",

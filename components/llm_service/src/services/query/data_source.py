@@ -26,6 +26,7 @@ from utils.errors import NoDocumentsIndexedException
 # pylint: disable=broad-exception-caught
 
 # text chunk size for embedding data
+Logger = Logger.get_logger(__file__)
 CHUNK_SIZE = 1000
 
 class DataSource:

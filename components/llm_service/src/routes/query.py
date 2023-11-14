@@ -12,38 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable = broad-except,unused-import
+# pylint: disable = broad-except
 
 """ Query endpoints """
 import traceback
-from typing import Optional
+
 from fastapi import APIRouter, Depends
+
+from common.models import QueryEngine, User, UserQuery
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
 from common.utils.config import JOB_TYPE_QUERY_ENGINE_BUILD
-from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
-                                          ResourceNotFound, PayloadTooLarge)
-from common.models import QueryEngine, User, UserQuery
+                                          ResourceNotFound)
+from common.utils.logging_handler import Logger
+from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
+                    ERROR_RESPONSES, DEFAULT_QUERY_EMBEDDING_MODEL,
+                    ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
+                    DEFAULT_QUERY_CHAT_MODEL)
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
                                 UserQueryUpdateModel,
                                 LLMQueryEngineModel,
-                                LLMQueryEngineResponse,
                                 LLMGetQueryEnginesResponse,
                                 LLMQueryResponse)
+from services.query.query_service import query_generate
 
-from services.query.query_service import query_generate, query_engine_build
-from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
-                    ERROR_RESPONSES, DEFAULT_QUERY_EMBEDDING_MODEL,
-                    ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_QUERY_CHAT_MODEL)
-
+Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
 
@@ -89,6 +89,7 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
       LLMUserAllQueriesResponse
   """
   try:
+    Logger.info(f"Get all Queries for a user={user_id}")
     if skip < 0:
       raise ValidationError("Invalid value passed to \"skip\" query parameter")
 
@@ -111,6 +112,7 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
       del query_data["history"]
       query_list.append(query_data)
 
+    Logger.info(f"Successfully retrieved user queries query_list={query_list}")
     return {
       "success": True,
       "message": f"Successfully retrieved user queries for user {user.user_id}",
@@ -135,10 +137,12 @@ def get_chat(query_id: str):
       LLMUserQueryResponse
   """
   try:
+    Logger.info(f"Get a specific user query  by id={query_id}")
     user_query = UserQuery.find_by_id(query_id)
     query_data = user_query.get_fields(reformat_datetime=True)
     query_data["id"] = user_query.id
 
+    Logger.info(f"Successfully retrieved user query_data={query_data}")
     return {
       "success": True,
       "message": f"Successfully retrieved user query {query_id}",
@@ -172,6 +176,7 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
     NotFoundErrorResponseModel if the user query not found,
     InternalServerErrorResponseModel if the update raises an exception
   """
+  Logger.info(f"Update a user query by id={query_id}")
   existing_query = UserQuery.find_by_id(query_id)
   if existing_query is None:
     raise ResourceNotFoundException(f"Query {query_id} not found")
@@ -213,6 +218,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
 
   genconfig_dict = {**gen_config.dict()}
 
+  Logger.info(f"Create a query engine with {genconfig_dict}")
   doc_url = genconfig_dict.get("doc_url")
   if doc_url is None or doc_url == "":
     return BadRequest("Missing or invalid payload parameters: doc_url")
@@ -240,7 +246,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM)
     }
     response = initiate_batch_job(data, JOB_TYPE_QUERY_ENGINE_BUILD, env_vars)
-    Logger.info(response)
+    Logger.info(f"Batch job response: {response}")
     return response
   except Exception as e:
     Logger.error(e)
@@ -264,6 +270,8 @@ async def query(query_engine_id: str,
   Returns:
       LLMQueryResponse
   """
+  Logger.info(f"Using query engine with "
+              f"query_engine_id=[{query_engine_id}] and {gen_config}")
   q_engine = QueryEngine.find_by_id(query_engine_id)
   if q_engine is None:
     raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
@@ -287,6 +295,9 @@ async def query(query_engine_id: str,
   try:
     query_result, query_references = await query_generate(user.id, prompt,
                                                           q_engine, llm_type)
+    Logger.info(f"Query response="
+                f"[{query_result.response}],"
+                f"query_references={query_references}")
     return {
         "success": True,
         "message": "Successfully generated text",
@@ -316,6 +327,8 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   Returns:
       LLMQueryResponse
   """
+  Logger.info("Using query engine based on a prior user query "
+              f"user_query_id={user_query_id}, gen_config={gen_config}")
   user_query = UserQuery.find_by_id(user_query_id)
   if user_query is None:
     raise ResourceNotFoundException(f"Query {user_query_id} not found")
@@ -342,6 +355,10 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
                                                           q_engine,
                                                           llm_type,
                                                           user_query)
+    Logger.info(f"Generated query response="
+                f"[{query_result.response}], "
+                f"query_result={query_result} "
+                f"query_references={query_references}")
     return {
         "success": True,
         "message": "Successfully generated text",

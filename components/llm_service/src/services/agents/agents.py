@@ -13,23 +13,26 @@
 # limitations under the License.
 
 """ Agent classes """
-# pylint: disable=unused-import
-
-from abc import ABC, abstractmethod
 import re
+from abc import ABC, abstractmethod
 from typing import Union, Type, Callable, List
-from config import LANGCHAIN_LLM
-from common.utils.http_exceptions import InternalServerError
-from common.models.agent import AgentCapability
+
 from langchain.agents import (Agent, AgentOutputParser,
-                             ConversationalAgent, ZeroShotAgent)
-from langchain.schema import AgentAction, AgentFinish, OutputParserException
+                              ConversationalAgent)
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
+from langchain.schema import AgentAction, AgentFinish
+
+from common.models.agent import AgentCapability
+from common.utils.http_exceptions import InternalServerError
+from common.utils.logging_handler import Logger
+from config import LANGCHAIN_LLM
 from services.agents.agent_prompts import (PREFIX, PLANNING_PREFIX,
-                                    PLAN_FORMAT_INSTRUCTIONS)
+                                           PLAN_FORMAT_INSTRUCTIONS)
 from services.agents.agent_tools import (gmail_tool, docs_tool,
                                          calendar_tool, search_tool,
                                          query_tool)
+
+Logger = Logger.get_logger(__file__)
 
 class BaseAgent(ABC):
   """
@@ -94,6 +97,9 @@ class BaseAgent(ABC):
         format_instructions=self.format_instructions,
         output_parser=output_parser
     )
+    Logger.info(f"Successfully loaded {self.name} agent.")
+    Logger.debug(f"prefix=[{self.prefix}], "
+                 f"format_instructions=[{self.format_instructions}]")
     return self.agent
 
 

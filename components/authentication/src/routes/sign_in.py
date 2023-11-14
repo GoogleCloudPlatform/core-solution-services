@@ -37,6 +37,7 @@ ERROR_RESPONSE_DICT = deepcopy(ERROR_RESPONSES)
 ERROR_RESPONSE_DICT[503] = {"model": ConnectionErrorResponseModel}
 
 auth_scheme = HTTPBearer(auto_error=False)
+Logger = Logger.get_logger(__file__)
 
 # pylint: disable = broad-exception-raised
 router = APIRouter(

@@ -12,24 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable = broad-except,unused-import
+# pylint: disable = broad-except
 
 """ LLM endpoints """
-import traceback
-from typing import Optional
 from fastapi import APIRouter
-from common.utils.logging_handler import Logger
-from common.utils.errors import (ResourceNotFoundException,
-                                 ValidationError,
-                                 PayloadTooLargeError)
-from common.utils.http_exceptions import (InternalServerError, BadRequest,
-                                          ResourceNotFound, PayloadTooLarge)
+
+from common.utils.errors import (PayloadTooLargeError)
+from common.utils.http_exceptions import (InternalServerError, BadRequest)
+from config import PAYLOAD_FILE_SIZE, ERROR_RESPONSES, LLM_TYPES
 from schemas.llm_schema import (LLMGenerateModel,
                                 LLMGetTypesResponse,
                                 LLMGenerateResponse)
-
 from services.llm_generate import llm_generate
-from config import PAYLOAD_FILE_SIZE, ERROR_RESPONSES, LLM_TYPES
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
 
@@ -64,7 +58,8 @@ async def generate(gen_config: LLMGenerateModel):
   Generate text with an LLM
 
   Args:
-      prompt(str): Input prompt for model
+      gen_config: Input config dictionary,
+        including prompt(str) and llm_type(str) type for model
 
   Returns:
       LLMGenerateResponse

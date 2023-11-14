@@ -34,6 +34,7 @@ from schemas.error_schema import (NotFoundErrorResponseModel,
                                   ConflictResponseModel)
 from config import ERROR_RESPONSES
 
+Logger = Logger.get_logger(__file__)
 
 router = APIRouter(
   tags=["Association Group"],

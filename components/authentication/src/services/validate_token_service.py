@@ -20,6 +20,7 @@ from common.utils.cache_service import set_key, get_key
 from common.utils.errors import UnauthorizedUserError
 from common.models import User
 
+Logger = Logger.get_logger(__file__)
 
 def validate_token(bearer_token):
   """
