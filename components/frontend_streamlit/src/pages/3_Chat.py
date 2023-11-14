@@ -34,7 +34,7 @@ def on_input_change():
   if agent_name.lower() == "chat":
     with st.spinner('Sending prompt to Agent...'):
       response = run_agent(agent_name, user_input, chat_id=st.session_state.chat_id)
-  elif agent_name.lower() == "task":
+  elif agent_name.lower() == "plan":
     with st.spinner('Sending prompt to Agent...'):
       response = run_agent_plan(agent_name, user_input, chat_id=st.session_state.chat_id)
   else:
