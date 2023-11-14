@@ -37,10 +37,6 @@ class DataSource:
     self.storage_client = storage_client
     self.docs_not_processed = []
 
-  @property
-  def docs_not_processed(self) -> List[str]:
-    return self.docs_not_processed
-
   def download_documents(self, doc_url: str, temp_dir: Path) -> \
         List[Tuple[str, str, str]]:
     """

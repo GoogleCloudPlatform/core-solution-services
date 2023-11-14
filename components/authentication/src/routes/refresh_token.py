@@ -21,7 +21,7 @@ from fastapi import APIRouter
 from schemas.generate_token_schema import (GenerateTokenResponseModel,
                                            GenerateTokenRequestModel)
 from common.utils.http_exceptions import (InvalidToken, InternalServerError)
-from common.models import TempUser
+from common.models import User
 from config import ERROR_RESPONSES
 
 # pylint: disable = broad-exception-raised
@@ -50,7 +50,7 @@ def generate_id_token(input_params: GenerateTokenRequestModel):
     token_resp = generate_token(input_dict)
 
     decoded_token = validate_token(token_resp["id_token"])
-    user = TempUser.find_by_email(decoded_token["email"])
+    user = User.find_by_email(decoded_token["email"])
     token_resp["user_id"] = user.user_id
     return {
         "success": True,

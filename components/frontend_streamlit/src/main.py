@@ -20,14 +20,14 @@ landing = importlib.import_module("pages.2_Landing")
 
 def app():
   st.set_page_config(
-      page_title="Mira Demo",
+      page_title="GenAI for Enterprise (GENIE)",
       page_icon="💬",
       layout="wide",
       initial_sidebar_state="expanded",
   )
 
   with st.sidebar:
-    st.title("Mira v1.0")
+    st.title("GENIE v1.0")
 
   if st.session_state.get("logged_in", False):
     landing.landing_page()

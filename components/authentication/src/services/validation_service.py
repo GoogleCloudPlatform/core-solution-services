@@ -17,6 +17,7 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 from firebase_admin.auth import verify_id_token
 
+from common.utils.cache_service import set_key, get_key
 from common.utils.errors import InvalidTokenError
 from common.utils.http_exceptions import InternalServerError, Unauthenticated
 from common.utils.logging_handler import Logger
@@ -45,7 +46,14 @@ def validate_token(bearer_token):
         Decoded Token and User type: Dict
   """
   token = bearer_token
-  decoded_token = verify_id_token(token)
+  cached_token = get_key(f"cache::{token}")
+  if cached_token is None:
+    decoded_token = verify_id_token(token)
+    cache_token = set_key(f"cache::{token}", decoded_token, 1800)
+    Logger.info(f"Id Token caching status: {cache_token}")
+  else:
+    decoded_token = cached_token
+
   Logger.info(f"Id Token: {decoded_token}")
   return decoded_token
 

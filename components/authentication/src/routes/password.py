@@ -27,7 +27,7 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import (BadRequest, InternalServerError,
                                           ResourceNotFound, InvalidToken,
                                           Unauthorized)
-from common.models import TempUser
+from common.models import User
 from schemas.password_schema import (SendPasswordResetEmailModel,
                                      SendPasswordResetEmailResponseModel,
                                      ResetPasswordModel,
@@ -77,7 +77,7 @@ def send_password_reset_email(
     url = f"{IDP_URL}:sendOobCode?key={FIREBASE_API_KEY}"
     email = input_password_reset_email_dict.get("email")
 
-    user_data = TempUser.find_by_email(email)
+    user_data = User.find_by_email(email)
     if not user_data:
       raise UnauthorizedUserError("Unauthorized")
     if user_data.get_fields(reformat_datetime=True).get("status",

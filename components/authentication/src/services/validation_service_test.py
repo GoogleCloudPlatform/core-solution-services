@@ -21,9 +21,8 @@ utility methods to execute unit tests for module validation_service.py
 import os
 import pytest
 from unittest import mock
-from firebase_admin.auth import InvalidIdTokenError
-
 from common.models import User
+from common.utils.errors import UnauthorizedUserError
 from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
 
@@ -71,9 +70,10 @@ auth_details = {
     "fiurc756IqcdRSs19upxiVLt1Gr2"
 }
 
-
+@mock.patch("services.validation_service.set_key")
+@mock.patch("services.validation_service.get_key")
 @mock.patch("services.validation_service.verify_id_token")
-def test_validate_token(mock_verify_id_token):
+def test_validate_token(mock_verify_id_token, mock_get_key, mock_set_key):
   user_dict = {**BASIC_USER_MODEL_EXAMPLE}
   user = User.from_dict(user_dict)
   user.user_id = ""
@@ -83,6 +83,8 @@ def test_validate_token(mock_verify_id_token):
   # arrange
   bearer_token = "Bearer XYZ"
   mock_verify_id_token.return_value = auth_details
+  mock_get_key.return_value = None
+  mock_set_key.return_value = auth_details
 
   # action
   result = validate_token(bearer_token)
@@ -92,3 +94,28 @@ def test_validate_token(mock_verify_id_token):
   assert result["name"] == auth_details["name"]
   assert result["email"] == auth_details["email"]
   assert result["user_id"] == auth_details["user_id"]
+
+
+@mock.patch("services.validation_service.set_key")
+@mock.patch("services.validation_service.get_key")
+def test_validate_token_cached(mock_get_key, mock_set_key):
+  user_dict = {**BASIC_USER_MODEL_EXAMPLE}
+  user = User.from_dict(user_dict)
+  user.user_id = ""
+  user.save()
+  user.user_id = user.id
+  user.update()
+  # arrange
+  bearer_token = "Bearer PQR"
+  mock_get_key.return_value = auth_details
+  mock_set_key.return_value = auth_details
+
+  # action
+  result = validate_token(bearer_token)
+
+  # assert
+  assert result is not None
+  assert result["name"] == auth_details["name"]
+  assert result["email"] == auth_details["email"]
+  assert result["user_id"] == auth_details["user_id"]
+

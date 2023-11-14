@@ -67,9 +67,15 @@ module "project_services" {
   services   = local.services
 }
 
+# add timer to avoid errors on API enables
+resource "time_sleep" "wait_60_seconds" {
+  depends_on      = [module.project_services]
+  create_duration = "60s"
+}
+
 module "vpc_network" {
   count                     = ((var.vpc_network != null && var.vpc_network != "") ? 1 : 0)
-  depends_on                = [module.project_services]
+  depends_on                = [time_sleep.wait_60_seconds]
   source                    = "../../modules/vpc_network"
   project_id                = var.project_id
   vpc_network               = var.vpc_network
@@ -81,7 +87,7 @@ module "vpc_network" {
 }
 
 resource "google_project_iam_member" "cloudbuild-sa-iam" {
-  depends_on = [module.project_services]
+  depends_on = [time_sleep.wait_60_seconds]
   for_each   = toset(local.roles_for_default_sa)
   role       = each.key
   member     = "serviceAccount:${var.project_number}@cloudbuild.gserviceaccount.com"
@@ -89,7 +95,7 @@ resource "google_project_iam_member" "cloudbuild-sa-iam" {
 }
 
 resource "google_project_iam_member" "default-compute-sa-iam" {
-  depends_on = [module.project_services]
+  depends_on = [time_sleep.wait_60_seconds]
   for_each   = toset(local.roles_for_default_sa)
   role       = each.key
   member     = "serviceAccount:${var.project_number}-compute@developer.gserviceaccount.com"
@@ -97,7 +103,7 @@ resource "google_project_iam_member" "default-compute-sa-iam" {
 }
 
 module "deployment_service_account" {
-  depends_on   = [module.project_services]
+  depends_on   = [time_sleep.wait_60_seconds]
   source       = "../../modules/service_account"
   project_id   = var.project_id
   name         = "deployment"

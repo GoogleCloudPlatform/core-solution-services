@@ -155,10 +155,10 @@ class TaskAgent(BaseAgent):
     """
     This is the agent used by this agent to create plans for tasks.
     """
-    return "PlanningAgent"
+    return "PlanAgent"
 
 
-class PlanningAgent(BaseAgent):
+class PlanAgent(BaseAgent):
   """
   Plan Agent.  This is an agent configured to make plans.
   Plans will be executed using a different agent.
@@ -166,7 +166,7 @@ class PlanningAgent(BaseAgent):
 
   def __init__(self, llm_type: str):
     super().__init__(llm_type)
-    self.name = "PlanningAgent"
+    self.name = "PlanAgent"
     self.agent_class = ConversationalAgent
 
   @property
@@ -179,7 +179,7 @@ class PlanningAgent(BaseAgent):
 
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
-    return PlanningAgentOutputParser
+    return PlanAgentOutputParser
 
   @classmethod
   def capabilities(cls) -> List[str]:
@@ -192,7 +192,7 @@ class PlanningAgent(BaseAgent):
     return tools
 
 
-class PlanningAgentOutputParser(AgentOutputParser):
+class PlanAgentOutputParser(AgentOutputParser):
   """Output parser for a agent that makes plans."""
 
   ai_prefix: str = "AI"
