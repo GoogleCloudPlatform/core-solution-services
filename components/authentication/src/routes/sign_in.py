@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from requests.exceptions import ConnectTimeout
 from config import FIREBASE_API_KEY, IDP_URL, ERROR_RESPONSES
-from common.models import TempUser
+from common.models import User
 from common.utils.logging_handler import Logger
 from common.utils.errors import (InvalidTokenError, InvalidCredentialsError,
                                  UnauthorizedUserError)
@@ -72,7 +72,7 @@ def sign_in_with_token(token: auth_scheme = Depends()):
     Logger.info(f"decoded_token: {decoded_token}")
     email = decoded_token.get("email")
 
-    user_data = TempUser.find_by_email(email)
+    user_data = User.find_by_email(email)
     if not user_data:
       raise UnauthorizedUserError("Unauthorized")
 
@@ -135,7 +135,7 @@ def sign_in_with_credentials(credentials: SignInWithCredentialsModel):
     Returns the id token as well as refresh token
   """
   try:
-    user_data = TempUser.find_by_email(credentials.email)
+    user_data = User.find_by_email(credentials.email)
     if not user_data:
       raise UnauthorizedUserError("Unauthorized")
     if user_data.get_fields(reformat_datetime=True).get("status") == "inactive":

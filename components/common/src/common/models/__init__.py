@@ -18,7 +18,6 @@ Flatten import namespace for models
 from .base_model import *
 from .node_item import *
 from .competency import *
-from .temp_user import *
 from .user import *
 from .course_template import *
 from .cohort import *

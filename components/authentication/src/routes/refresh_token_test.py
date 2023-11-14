@@ -22,7 +22,7 @@ import os
 from unittest import mock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from common.models import TempUser
+from common.models import User
 from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
 from common.utils.http_exceptions import add_exception_handlers
@@ -85,7 +85,7 @@ def test_valid_id(mock_generate_token, mock_auth, clean_firestore):
 
   # new_user = {**BASIC_USER_MODEL_EXAMPLE, "email": USER_EMAIL}
   new_user = BASIC_USER_MODEL_EXAMPLE
-  user = TempUser.from_dict(new_user)
+  user = User.from_dict(new_user)
   user.user_id = ""
   user.save()
   user.user_id = user.id

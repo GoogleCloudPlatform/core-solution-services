@@ -19,7 +19,7 @@ from copy import deepcopy
 from fastapi import APIRouter
 from requests.exceptions import ConnectTimeout
 from config import ERROR_RESPONSES, FIREBASE_API_KEY, IDP_URL
-from common.models import TempUser
+from common.models import User
 from common.utils.errors import (InvalidRequestPayloadError,
                                  UnauthorizedUserError)
 from common.utils.http_exceptions import (BadRequest, InternalServerError,
@@ -65,7 +65,7 @@ def sign_up_with_credentials(credentials: SignUpWithCredentialsModel):
     Returns the id token as well as refresh token
   """
   try:
-    user_data = TempUser.find_by_email(credentials.email)
+    user_data = User.find_by_email(credentials.email)
     if not user_data:
       raise UnauthorizedUserError("Unauthorized")
     if user_data.get_fields(reformat_datetime=True).get("status") == "inactive":
