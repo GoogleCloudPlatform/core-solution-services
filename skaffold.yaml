@@ -25,6 +25,9 @@ requires:
   - rules_engine
   path: ./components/rules_engine
 - configs:
+  - tools_service
+  path: ./components/tools_service
+- configs:
   - frontend_streamlit
   path: ./components/frontend_streamlit
 - configs:
