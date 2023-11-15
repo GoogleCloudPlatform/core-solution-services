@@ -33,9 +33,15 @@ def validate_token(token: auth_scheme = Depends()):
   Main validation function depended by all microservices.
   """
   try:
-    if validate_oauth_token(token) or validate_service_account_token(token):
-      return True
-    raise InvalidTokenError("Unauthorized: Invalid token.")
+    user_data = validate_oauth_token(token)
+    if not user_data:
+      user_data = validate_service_account_token(token)
+
+    if not user_data:
+      raise InvalidTokenError("Unauthorized: Invalid token.")
+
+    return user_data
+
   except (InvalidTokenError, TokenNotFoundError) as e:
     raise Unauthenticated(str(e)) from e
   except Exception as e:
@@ -63,7 +69,7 @@ def validate_oauth_token(token: auth_scheme = Depends()):
         timeout=60)
     data = res.json()
     if res.status_code == 200 and data["success"] is True:
-      return True
+      return data.get("data")
     else:
       raise InvalidTokenError(data["message"])
   else:
