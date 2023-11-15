@@ -37,10 +37,11 @@ def validate_token(token: auth_scheme = Depends()):
     if not user_data:
       user_data = validate_service_account_token(token)
 
-    if user_data:
-      return user_data
+    if not user_data:
+      raise InvalidTokenError("Unauthorized: Invalid token.")
 
-    raise InvalidTokenError("Unauthorized: Invalid token.")
+    return user_data
+
   except (InvalidTokenError, TokenNotFoundError) as e:
     raise Unauthenticated(str(e)) from e
   except Exception as e:
