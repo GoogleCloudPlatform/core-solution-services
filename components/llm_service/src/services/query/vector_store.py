@@ -14,6 +14,7 @@
 """
 Query Vector Store
 """
+# pylint: disable=broad-exception-caught,ungrouped-imports
 import json
 import gc
 import os
@@ -28,8 +29,8 @@ from google.cloud import aiplatform, storage
 from google.cloud.exceptions import Conflict
 from services.query import embeddings
 from config import PROJECT_ID, REGION
-
-# pylint: disable=broad-exception-caught
+from google.cloud.aiplatform.matching_engine import (
+  matching_engine_index_endpoint as ie, matching_engine_index_config as ic)
 
 Logger = Logger.get_logger(__file__)
 
@@ -45,7 +46,7 @@ MAX_NUM_TEXT_CHUNK_PROCESS = 1000
 
 class VectorStore:
   """
-  Class for vector store db operations.  Currently assumes
+  Class for vector store db operations.  Currently, assumes
   Vertex matching engine.
   """
   def __init__(self, q_engine: QueryEngine) -> None:
@@ -66,13 +67,14 @@ class VectorStore:
     self.bucket_uri = f"gs://{bucket.name}"
 
   def index_document(self, doc_name: str, text_chunks: List[str],
-                          index_base: int) -> int:
+                     index_base: int) -> int:
     """
     Generate matching engine index data files in a local directory
     """
 
     chunk_index = 0
     num_chunks = len(text_chunks)
+    embeddings_dir = None
 
     # create a list of chunks to process
     while chunk_index < num_chunks:
@@ -153,7 +155,7 @@ class VectorStore:
     Logger.info(f"creating matching engine index {index_name}")
 
     index_description = (
-        "Matching Engine index for LLM Service query engine: " + \
+        "Matching Engine index for LLM Service query engine: " +
         self.q_engine.name)
 
     tree_ah_index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
@@ -161,7 +163,7 @@ class VectorStore:
         contents_delta_uri=self.bucket_uri,
         dimensions=DIMENSIONS,
         approximate_neighbors_count=150,
-        distance_measure_type="DOT_PRODUCT_DISTANCE",
+        distance_measure_type=ic.DistanceMeasureType.DOT_PRODUCT_DISTANCE,
         leaf_node_embedding_count=500,
         leaf_nodes_to_search_percent=80,
         description=index_description,
@@ -195,8 +197,9 @@ class VectorStore:
       Logger.error(f"Error creating ME index or endpoint {e}")
 
   @classmethod
-  def find_neighbors(cls, q_engine: QueryEngine,
-                     query_embeddings: List[List[float]]) -> List[int]:
+  def find_neighbors(
+          cls, q_engine: QueryEngine,
+          query_embeddings: List[List[float]]) -> List[List[ie.MatchNeighbor]]:
     """
     Retrieve text matches for query embeddings.
     Args:
@@ -213,4 +216,3 @@ class VectorStore:
         num_neighbors=NUM_MATCH_RESULTS
     )
     return match_indexes_list
-

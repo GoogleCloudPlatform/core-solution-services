@@ -16,7 +16,6 @@
 
 """ Query endpoints """
 import traceback
-
 from fastapi import APIRouter, Depends
 
 from common.models import QueryEngine, User, UserQuery
@@ -80,10 +79,9 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
   get single query endpoint.
 
   Args:
-    skip: `int`
-      Number of tools to be skipped <br/>
-    limit: `int`
-      Size of tools array to be returned <br/>
+    user_id (str):
+    skip (int): Number of tools to be skipped <br/>
+    limit (int): Size of tools array to be returned <br/>
 
   Returns:
       LLMUserAllQueriesResponse
@@ -108,7 +106,7 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
     for i in user_queries:
       query_data = i.get_fields(reformat_datetime=True)
       query_data["id"] = i.id
-      # don't inculde chat history to slim return payload
+      # don't include chat history to slim return payload
       del query_data["history"]
       query_list.append(query_data)
 
@@ -164,6 +162,7 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
   """Update a user query
 
   Args:
+    query_id (str): Query ID
     input_query (UserQueryUpdateModel): fields in body of query to update.
       The only field that can be updated is the title.
 
@@ -210,8 +209,8 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
   Start a query engine build job
 
   Args:
-      LLMQueryEngineModel
-
+      gen_config (LLMQueryEngineModel)
+      user_data (dict)
   Returns:
       LLMQueryEngineResponse
   """
@@ -265,7 +264,9 @@ async def query(query_engine_id: str,
   Send a query to a query engine and return the response
 
   Args:
-      LLMQueryModel
+      query_engine_id (str):
+      gen_config (LLMQueryModel):
+      user_data (dict):
 
   Returns:
       LLMQueryResponse
@@ -321,8 +322,8 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   Send a query to a query engine with a prior user query as context
 
   Args:
-      user_query_id: id of previous user query
-      LLMQueryModel
+      user_query_id (str): id of previous user query
+      gen_config (LLMQueryModel)
 
   Returns:
       LLMQueryResponse

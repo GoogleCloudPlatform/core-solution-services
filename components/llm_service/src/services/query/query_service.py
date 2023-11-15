@@ -45,7 +45,7 @@ async def query_generate(
             q_engine: QueryEngine,
             llm_type: Optional[str] = DEFAULT_QUERY_CHAT_MODEL,
             user_query: Optional[UserQuery] = None) -> \
-                Tuple[QueryResult, List[QueryReference]]:
+                Tuple[QueryResult, List[dict]]:
   """
   Execute a query over a query engine
 
@@ -179,10 +179,11 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   return result_data
 
 
-def query_engine_build(doc_url: str, query_engine: str, user_id: str,
-                       is_public: Optional[bool] = True,
-                       llm_type: Optional[str] = "") -> \
-                       Tuple[str, List[QueryDocument], List[str]]:
+def query_engine_build(
+        doc_url: str, query_engine: str, user_id: str,
+        is_public: Optional[bool] = True,
+        llm_type: Optional[str] = DEFAULT_QUERY_EMBEDDING_MODEL) -> \
+        Tuple[QueryEngine, List[QueryDocument], List[str]]:
   """
   Build a new query engine. NOTE currently supports only Vertex
    TextEmbeddingModel for embeddings.
@@ -206,7 +207,6 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
     raise ValidationError(f"Query engine {query_engine} already exists")
 
   # create model
-  llm_type = DEFAULT_QUERY_EMBEDDING_MODEL
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
                          llm_type=llm_type,
@@ -225,7 +225,7 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
       "query_engine_id", "==", q_engine.id
     ).delete()
     QueryEngine.delete_by_id(q_engine.id)
-    raise InternalServerError(e) from e
+    raise InternalServerError(str(e)) from e
 
   Logger.info(f"Completed query engine build for {query_engine}")
 
@@ -264,7 +264,7 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # finalize vectore store (e.g. create endpoint)
+    # finalize vector store (e.g. create endpoint)
     vector_store.finalize()
 
     return docs_processed, docs_not_processed
@@ -275,8 +275,8 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
 
 
 def process_documents(doc_url: str, vector_store: VectorStore,
-                       q_engine: QueryEngine, storage_client) -> \
-                       Tuple[List[QueryDocument], List[str]]:
+                      q_engine: QueryEngine, storage_client) -> \
+                      Tuple[List[QueryDocument], List[str]]:
   """
   Process docs in data source and upload embeddings to vector store
   Returns:
@@ -327,5 +327,3 @@ def process_documents(doc_url: str, vector_store: VectorStore,
       docs_processed.append(query_doc)
 
   return docs_processed, data_source.docs_not_processed
-
-
