@@ -138,8 +138,9 @@ def user_verification(token: str) -> json:
   :param token:
   :return: json
   """
-  api_endpoint = "http://{}:{}/authentication/api/v1/validate".format(
-      SERVICES["authentication"]["host"], SERVICES["authentication"]["port"])
+  host = SERVICES["authentication"]["host"]
+  port = SERVICES["authentication"]["port"]
+  api_endpoint = f"http://{host}:{port}/authentication/api/v1/validate"
   response = requests.get(
       url=api_endpoint,
       headers={
@@ -149,4 +150,3 @@ def user_verification(token: str) -> json:
       timeout=10)
 
   return response
-

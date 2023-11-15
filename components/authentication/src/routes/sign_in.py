@@ -42,7 +42,7 @@ Logger = Logger.get_logger(__file__)
 auth_scheme = HTTPBearer(auto_error=False)
 
 router = APIRouter(
-    tags=["Sign In"], prefix="/sign-in", responses=deepcopy(ERROR_RESPONSES))
+    tags=["Sign In"], prefix="/sign-in", responses=ERROR_RESPONSES)
 
 
 @router.post("/token", response_model=SignInWithTokenResponseModel)
