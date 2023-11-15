@@ -15,7 +15,7 @@
 """ Secrets Helper Functions"""
 import google_crc32c
 import requests
-from config import PROJECT_ID
+from common.config import PROJECT_ID
 from google.cloud import secretmanager
 
 
@@ -38,6 +38,7 @@ def get_secret(secret_id):
     print("Data corruption detected.")
     return response
   payload = response.payload.data.decode("UTF-8")
+  payload = payload.strip()
   return payload
 
 
