@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Pydantic Model for RuleSet API's"""
+"""Pydantic Model for Email's related API's"""
 
 from pydantic import BaseModel
 
-class EmailSendSchema(BaseModel):
-  """Ruleset Fields Pydantic Model"""
+class EmailSchema(BaseModel):
+  """Email Pydantic Model"""
 
-  # This is the reference API spec for Rule data model.
   recipient: str
   subject: str
   message: str

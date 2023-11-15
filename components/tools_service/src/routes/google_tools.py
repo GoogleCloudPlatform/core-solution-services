@@ -15,7 +15,7 @@
 """ Email tools endpoints """
 
 from fastapi import APIRouter
-from schemas.email import EmailSendSchema
+from schemas.email import EmailSchema
 from services.gmail_service import send_email
 
 router = APIRouter(prefix="/google", tags=["google"])
@@ -24,7 +24,7 @@ SUCCESS_RESPONSE = {"status": "Success"}
 
 
 @router.post("/gmail")
-async def gmail_send_email(data: EmailSendSchema):
+async def gmail_send_email(data: EmailSchema):
   """Send an email using Gmail sevice.
 
   Args:
