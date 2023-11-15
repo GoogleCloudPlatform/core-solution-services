@@ -12,28 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable = broad-except,unused-import
+# pylint: disable = broad-except
 
 """ LLM endpoints """
 import traceback
-from typing import Optional
+
 from fastapi import APIRouter, Depends
+
 from common.models import User, UserChat
 from common.utils.auth_service import validate_token
-from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
-                                 ValidationError,
-                                 PayloadTooLargeError)
+                                 ValidationError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
-                                          ResourceNotFound, PayloadTooLarge)
-from schemas.llm_schema import (ChatModel, ChatUpdateModel,
+                                          ResourceNotFound)
+from common.utils.logging_handler import Logger
+from config import ERROR_RESPONSES
+from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
-                                LLMGenerateResponse,
                                 LLMUserChatResponse,
                                 LLMUserAllChatsResponse)
 from services.llm_generate import llm_chat
-from config import PAYLOAD_FILE_SIZE, ERROR_RESPONSES, LLM_TYPES
 
+
+Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
 
 
@@ -42,7 +43,8 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     name="Get all user chats",
     response_model=LLMUserAllChatsResponse)
 def get_chat_list(skip: int = 0, limit: int = 20,
-                  with_history: bool = False,
+                  with_all_history: bool = False,
+                  with_first_history: bool = False,
                   user_data: dict = Depends(validate_token)):
   """
   Get user chats for authenticated user.  Chat data does not include
@@ -72,11 +74,13 @@ def get_chat_list(skip: int = 0, limit: int = 20,
     for i in user_chats:
       chat_data = i.get_fields(reformat_datetime=True)
       chat_data["id"] = i.id
-      if not with_history:
-        # Trim chat history to slim return payload
+      # Trim chat history to slim return payload
+      if not with_all_history and not with_first_history:
         del chat_data["history"]
+      elif with_first_history:
+        # Trim all chat history except the first one
+        chat_data["history"] = chat_data["history"][:1]
       chat_list.append(chat_data)
-
     return {
       "success": True,
       "message": f"Successfully retrieved user chats for user {user.user_id}",
@@ -202,14 +206,15 @@ async def create_user_chat(gen_config: LLMGenerateModel,
   Create new chat for authentcated user
 
   Args:
-      prompt(str): Input prompt for model
-      llm_type(str): LLM type
+      gen_config: Input config dictionary,
+        including prompt(str) and llm_type(str) type for model
 
   Returns:
       LLMUserChatResponse
   """
   genconfig_dict = {**gen_config.dict()}
-
+  Logger.info("Creating new chat using"
+              f"genconfig_dict={genconfig_dict}")
   response = []
 
   prompt = genconfig_dict.get("prompt")
@@ -253,13 +258,15 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   Continue chat based on context of user chat
 
   Args:
-      prompt(str): Input prompt for model
+      gen_config: Input config dictionary,
+        including prompt(str) and llm_type(str) type for model
 
   Returns:
       LLMUserChatResponse
   """
   genconfig_dict = {**gen_config.dict()}
-
+  Logger.info(f"Generating new chat response for chat_id={chat_id},"
+              f"genconfig_dict={genconfig_dict}")
   response = []
 
   prompt = genconfig_dict.get("prompt")

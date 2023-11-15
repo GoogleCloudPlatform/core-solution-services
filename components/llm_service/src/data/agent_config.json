@@ -11,10 +11,10 @@
       "agent_type": "langchain_Conversational",
       "agent_class": "TaskAgent"
     },
-    "Planning": {
+    "Plan": {
       "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_ZeroShot",
-      "agent_class": "PlanningAgent"
+      "agent_class": "PlanAgent"
     }
   }
 }

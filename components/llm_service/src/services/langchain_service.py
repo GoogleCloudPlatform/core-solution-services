@@ -25,6 +25,7 @@ import langchain.agents as langchain_agents
 from langchain.schema import HumanMessage, AIMessage
 from config import LANGCHAIN_LLM, CHAT_LLM_TYPES
 
+Logger = Logger.get_logger(__file__)
 
 async def langchain_llm_generate(prompt: str, llm_type: str,
                                  user_chat: Optional[UserChat] = None):
@@ -43,7 +44,7 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
   Returns:
     the text response.
   """
-  Logger.info(f"generating text with langchain llm_type {llm_type}")
+  Logger.info(f"Generating text with langchain llm_type {llm_type}")
   try:
     # get LLM object
     llm = LANGCHAIN_LLM.get(llm_type)

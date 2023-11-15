@@ -20,6 +20,7 @@ from common.utils.logging_handler import Logger
 from common.utils.errors import InvalidTokenError
 from common.utils.auth_service import user_verification
 
+Logger = Logger.get_logger(__file__)
 
 # pylint: disable = consider-using-f-string
 def get_user_identity(req: Request) -> dict:
@@ -44,12 +45,12 @@ def get_user_identity(req: Request) -> dict:
     else:
       raise InvalidTokenError(data["message"])
   except InvalidTokenError as e:
-    Logger.error("Token error: %s" % e)
+    Logger.error("Token error: %s", e)
     return {
         "success": False,
         "message": re.split(",", e.error)[0],
         "data": None
     }
   except Exception as e:  # pylint: disable = broad-except
-    Logger.error("Token error: %s" % e)
+    Logger.error("Token error: %s", e)
     return {"success": False, "message": "Internal Server Error", "data": None}

@@ -22,7 +22,7 @@ import os
 import pytest
 from unittest import mock
 
-from common.models import TempUser
+from common.models import User
 from common.utils.errors import UnauthorizedUserError
 from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
@@ -78,7 +78,7 @@ auth_details = {
 def test_validate_token(mock_get_key, mock_verify_token, mock_set_key,
                         clean_firestore):
   user_dict = {**BASIC_USER_MODEL_EXAMPLE}
-  user = TempUser.from_dict(user_dict)
+  user = User.from_dict(user_dict)
   user.user_id = ""
   user.save()
   user.user_id = user.id
@@ -102,7 +102,7 @@ def test_validate_token(mock_get_key, mock_verify_token, mock_set_key,
 @mock.patch("services.validate_token_service.get_key")
 def test_validate_token_cached(mock_get_key, clean_firestore):
   user_dict = {**BASIC_USER_MODEL_EXAMPLE}
-  user = TempUser.from_dict(user_dict)
+  user = User.from_dict(user_dict)
   user.user_id = ""
   user.save()
   user.user_id = user.id

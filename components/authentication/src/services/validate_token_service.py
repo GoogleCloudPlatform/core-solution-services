@@ -18,8 +18,9 @@ from services.firebase_authentication import verify_token
 from common.utils.logging_handler import Logger
 from common.utils.cache_service import set_key, get_key
 from common.utils.errors import UnauthorizedUserError
-from common.models import TempUser
+from common.models import User
 
+Logger = Logger.get_logger(__file__)
 
 def validate_token(bearer_token):
   """
@@ -41,7 +42,7 @@ def validate_token(bearer_token):
     decoded_token = cached_token
 
   final_data = {**decoded_token}
-  user = TempUser.find_by_email(decoded_token["email"])
+  user = User.find_by_email(decoded_token["email"])
   if user is not None:
     user_fields = user.get_fields(reformat_datetime=True)
     if user_fields.get("status") == "inactive":

@@ -13,23 +13,26 @@
 # limitations under the License.
 
 """ Agent classes """
-# pylint: disable=unused-import
-
-from abc import ABC, abstractmethod
 import re
+from abc import ABC, abstractmethod
 from typing import Union, Type, Callable, List
-from config import LANGCHAIN_LLM
-from common.utils.http_exceptions import InternalServerError
-from common.models.agent import AgentCapability
+
 from langchain.agents import (Agent, AgentOutputParser,
-                             ConversationalAgent, ZeroShotAgent)
-from langchain.schema import AgentAction, AgentFinish, OutputParserException
+                              ConversationalAgent)
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
+from langchain.schema import AgentAction, AgentFinish
+
+from common.models.agent import AgentCapability
+from common.utils.http_exceptions import InternalServerError
+from common.utils.logging_handler import Logger
+from config import LANGCHAIN_LLM
 from services.agents.agent_prompts import (PREFIX, PLANNING_PREFIX,
-                                    PLAN_FORMAT_INSTRUCTIONS)
+                                           PLAN_FORMAT_INSTRUCTIONS)
 from services.agents.agent_tools import (gmail_tool, docs_tool,
                                          calendar_tool, search_tool,
                                          query_tool)
+
+Logger = Logger.get_logger(__file__)
 
 class BaseAgent(ABC):
   """
@@ -94,6 +97,9 @@ class BaseAgent(ABC):
         format_instructions=self.format_instructions,
         output_parser=output_parser
     )
+    Logger.info(f"Successfully loaded {self.name} agent.")
+    Logger.debug(f"prefix=[{self.prefix}], "
+                 f"format_instructions=[{self.format_instructions}]")
     return self.agent
 
 
@@ -155,10 +161,10 @@ class TaskAgent(BaseAgent):
     """
     This is the agent used by this agent to create plans for tasks.
     """
-    return "PlanningAgent"
+    return "PlanAgent"
 
 
-class PlanningAgent(BaseAgent):
+class PlanAgent(BaseAgent):
   """
   Plan Agent.  This is an agent configured to make plans.
   Plans will be executed using a different agent.
@@ -166,7 +172,7 @@ class PlanningAgent(BaseAgent):
 
   def __init__(self, llm_type: str):
     super().__init__(llm_type)
-    self.name = "PlanningAgent"
+    self.name = "PlanAgent"
     self.agent_class = ConversationalAgent
 
   @property
@@ -179,7 +185,7 @@ class PlanningAgent(BaseAgent):
 
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
-    return PlanningAgentOutputParser
+    return PlanAgentOutputParser
 
   @classmethod
   def capabilities(cls) -> List[str]:
@@ -192,7 +198,7 @@ class PlanningAgent(BaseAgent):
     return tools
 
 
-class PlanningAgentOutputParser(AgentOutputParser):
+class PlanAgentOutputParser(AgentOutputParser):
   """Output parser for a agent that makes plans."""
 
   ai_prefix: str = "AI"
