@@ -18,7 +18,7 @@ from fastapi import APIRouter
 from schemas.email import EmailSchema
 from services.gmail_service import send_email
 
-router = APIRouter(prefix="/google_tools", tags=["google_tools"])
+router = APIRouter(prefix="/workspace", tags=["workspace"])
 
 SUCCESS_RESPONSE = {"status": "Success"}
 

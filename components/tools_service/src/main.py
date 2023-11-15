@@ -18,7 +18,7 @@ from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_token
-from routes import google_tools
+from routes import workspace
 import config
 
 # Basic API config
@@ -50,7 +50,7 @@ api = FastAPI(
     version=version,
     dependencies=[Depends(validate_token)])
 
-api.include_router(google_tools.router)
+api.include_router(workspace.router)
 
 add_exception_handlers(app)
 add_exception_handlers(api)
