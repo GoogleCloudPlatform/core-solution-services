@@ -19,6 +19,7 @@ utility methods to execute unit tests for module gmail_service.py
 # pylint: disable=unused-argument,redefined-outer-name,unused-import
 
 import os
+import sys
 import pytest
 from unittest import mock
 from unittest.mock import Mock
@@ -47,10 +48,12 @@ def test_send_email(
     mock_build_resource_service,
     mock_get_google_credential):
   # arrange
-  mock_tool = Mock()
-  mock_tool.invoke.return_value = "Message sent."
+  mock_gmail_tool = Mock()
+  mock_gmail_tool.__class__.__name__ = "GmailSendMessage"
+  mock_gmail_tool.invoke.return_value = "Message sent."
   mock_toolkit = Mock()
-  mock_toolkit.get_tools.return_value = [{}, mock_tool]
+  mock_toolkit.get_tools.return_value = [
+      Mock(), mock_gmail_tool, Mock(), Mock()]
   mock_gmail_toolkit.return_value = mock_toolkit
   mock_build_resource_service.return_value = {}
   mock_get_google_credential.return_value = {}
@@ -64,3 +67,27 @@ def test_send_email(
   # assert
   assert result is not None
   assert result == "Message sent."
+
+@mock.patch("services.gmail_service.get_google_credential")
+@mock.patch("services.gmail_service.build_resource_service")
+@mock.patch("services.gmail_service.GmailToolkit")
+def test_send_email_without_required_tool(
+    mock_gmail_toolkit,
+    mock_build_resource_service,
+    mock_get_google_credential):
+  # arrange
+  mock_toolkit = Mock()
+  mock_toolkit.get_tools.return_value = [
+      Mock(), Mock(), Mock(), Mock()]
+  mock_gmail_toolkit.return_value = mock_toolkit
+  mock_build_resource_service.return_value = {}
+  mock_get_google_credential.return_value = {}
+
+  # action - Should raise Exception
+  with pytest.raises(RuntimeError,
+                     match="Unable to locate 'GmailSendMessage' from "
+                     "LangChain toolkit"):
+    send_email(
+      MOCK_EMAIL_CONTENT["recipient"],
+      MOCK_EMAIL_CONTENT["subject"],
+      MOCK_EMAIL_CONTENT["message"])

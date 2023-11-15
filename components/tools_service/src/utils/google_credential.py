@@ -25,8 +25,6 @@ from common.utils.secrets import get_secret
 Logger = Logger.get_logger(__file__)
 
 sm_client = secretmanager.SecretManagerServiceClient()
-OAUTH_TOKEN = get_secret("tools-gmail-oauth-token")
-CLIENT_SECRETS = get_secret("tools-gmail-client-secrets")
 SCOPES = [
   "https://mail.google.com/"
 ]
@@ -34,12 +32,15 @@ SCOPES = [
 def get_google_credential():
   # TODO: Explore other ways to get credentials without the need of OAuth token.
   # Write credential files to local tmp as the temporary approach.
+  oauth_token = get_secret("tools-gmail-oauth-token")
   token_file_path = "/tmp/oauth_token.json"
+  client_secrets = get_secret("tools-gmail-client-secrets")
   client_secrets_file_path = "/tmp/client_secrets.json"
+
   with open(token_file_path, "w", encoding="utf-8") as file:
-    file.write(OAUTH_TOKEN)
+    file.write(oauth_token)
   with open(client_secrets_file_path, "w", encoding="utf-8") as file:
-    file.write(CLIENT_SECRETS)
+    file.write(client_secrets)
 
   credentials = get_gmail_credentials(
       token_file=token_file_path,
