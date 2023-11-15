@@ -6,9 +6,10 @@ on:
     branches:
       - main
     paths:
-      - "components/**"
-      - "utils/**"
       - ".github/workflows/deployment_gke_dev.yaml"
+      - "components/**"
+      - "ingress/**"
+      - "utils/**"
   workflow_dispatch:
 
 env:
