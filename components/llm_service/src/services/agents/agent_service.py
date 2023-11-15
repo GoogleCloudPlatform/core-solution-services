@@ -33,7 +33,6 @@ from services.agents import agents
 Logger = Logger.get_logger(__file__)
 AGENTS = None
 
-
 def load_agents(agent_config_path: str):
   global AGENTS
   try:
@@ -44,7 +43,7 @@ def load_agents(agent_config_path: str):
 
     # add agent class and capabilities
     agent_classes = {
-      k: klass for (k, klass) in inspect.getmembers(agents)
+      k:klass for (k, klass) in inspect.getmembers(agents)
       if isinstance(klass, type)
     }
     for values in agent_config.values():
@@ -56,22 +55,28 @@ def load_agents(agent_config_path: str):
   except Exception as e:
     raise InternalServerError(f" Error loading agent config: {e}") from e
 
-
 def get_agent_config() -> dict:
   if AGENTS is None:
     load_agents(AGENT_CONFIG_PATH)
   return AGENTS
 
-
 def get_plan_agent_config() -> dict:
   agent_config = get_agent_config()
   planning_agents = {
-    agent: agent_config for agent, agent_config in agent_config.items()
-    if AgentCapability.AGENT_PLAN_CAPABILITY.value \
-       in agent_config["capabilities"]
+      agent: agent_config for agent, agent_config in agent_config.items()
+      if AgentCapability.AGENT_PLAN_CAPABILITY.value \
+          in agent_config["capabilities"]
   }
   return planning_agents
 
+def get_task_agent_config() -> dict:
+  agent_config = get_agent_config()
+  planning_agents = {
+      agent: agent_config for agent, agent_config in agent_config.items()
+      if AgentCapability.AGENT_TASK_CAPABILITY.value \
+         in agent_config["capabilities"]
+  }
+  return planning_agents
 
 def get_all_agents() -> List[dict]:
   """
@@ -93,7 +98,7 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
-def run_agent(agent_name: str, prompt: str, chat_history: List = None) -> str:
+def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
   """
   Run an agent on user input
 
@@ -107,8 +112,8 @@ def run_agent(agent_name: str, prompt: str, chat_history: List = None) -> str:
       action_steps: the list of action steps take by the agent for the run
   """
   Logger.info(f"Running {agent_name} agent "
-              f"with {prompt} and "
-              f"chat_history={chat_history}")
+              f"with prompt=[{prompt}] and "
+              f"chat_history=[{chat_history}]")
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
 
@@ -119,7 +124,7 @@ def run_agent(agent_name: str, prompt: str, chat_history: List = None) -> str:
   langchain_agent = llm_service_agent.load_agent()
 
   agent_executor = AgentExecutor.from_agent_and_tools(
-    agent=langchain_agent, tools=tools)
+      agent=langchain_agent, tools=tools)
 
   chat_history = chat_history or []
   agent_inputs = {
@@ -134,8 +139,8 @@ def run_agent(agent_name: str, prompt: str, chat_history: List = None) -> str:
   return output
 
 
-def agent_plan(agent_name: str, prompt: str,
-               user_id: str, chat_history: List = None) -> Tuple[str, UserPlan]:
+def agent_plan(agent_name:str, prompt:str,
+               user_id:str, chat_history:List = None) -> Tuple[str, UserPlan]:
   """
   Run an agent on user input to generate a plan
 
@@ -166,11 +171,11 @@ def agent_plan(agent_name: str, prompt: str,
 
   # create PlanStep models
   plan_steps = [
-    PlanStep(user_id=user_id,
-             plan_id=user_plan.id,
-             description=step_description,
-             agent_name=agent_name)
-    for step_description in raw_plan_steps]
+      PlanStep(user_id=user_id,
+               plan_id=user_plan.id,
+               description=step_description,
+               agent_name=agent_name)
+      for step_description in raw_plan_steps]
   plan_step_ids = []
   for step in plan_steps:
     step.save()
@@ -180,7 +185,7 @@ def agent_plan(agent_name: str, prompt: str,
   user_plan.plan_steps = plan_step_ids
   user_plan.update()
 
-  Logger.info(f"Created steps using plan_agent_name={agent_name} "
+  Logger.info(f"Created steps using plan_agent_name=[{agent_name}] "
               f"raw_plan_steps={raw_plan_steps}")
   return output, user_plan
 
@@ -195,7 +200,7 @@ def parse_plan(text: str) -> List[str]:
   # We are using the re.DOTALL flag to match across newlines and
   # re.MULTILINE to treat each line as a separate string
   steps_regex = re.compile(
-    r"^\s*\d+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
+      r"^\s*\d+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
 
   # Find the part of the text after 'Plan:'
   plan_part = re.split(r"Plan:", text, flags=re.IGNORECASE)[-1]
@@ -229,3 +234,4 @@ def get_llm_type_for_agent(agent_name: str) -> str:
     if agent_name == agent:
       return agent_config[agent]["llm_type"]
   raise ResourceNotFoundException(f"can't find agent name {agent_name}")
+  
