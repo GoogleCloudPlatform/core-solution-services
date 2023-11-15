@@ -372,9 +372,18 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
 
 ###  7.1. <a name='Unittesting'></a>Unit testing
 
-* Install Firebase CLI:
+* Install NodeJS [required by Firebase Emulator](https://firebase.google.com/docs/emulator-suite/install_and_configure):
+  ```
+  Follow instructions on https://nodejs.org/en/download or https://formulae.brew.sh/formula/node
+  ```
+* Install OpenJDK [required by Firebase Emulator](https://firebase.google.com/docs/emulator-suite/install_and_configure):
+  ```
+  Follow instructions on https://openjdk.org/install/ or https://formulae.brew.sh/formula/openjdk
+  ```
+* Install Firebase CLI and emulator:
   ```
   curl -sL https://firebase.tools | bash
+  firebase setup:emulators:firestore
   ```
 * Install Virtualenv and pip requirements
   ```
