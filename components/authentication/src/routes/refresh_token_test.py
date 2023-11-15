@@ -76,11 +76,10 @@ auth_details = {
 }
 
 
-@mock.patch("services.firebase_authentication.auth")
+@mock.patch("routes.refresh_token.validate_token")
 @mock.patch("routes.refresh_token.generate_token")
-def test_valid_id(mock_generate_token, mock_auth, clean_firestore):
-
-  mock_auth.verify_id_token.return_value = auth_details
+def test_valid_id(mock_generate_token, mock_validate_token):
+  mock_validate_token.return_value = auth_details
   mock_generate_token.return_value = token_credentials
 
   # new_user = {**BASIC_USER_MODEL_EXAMPLE, "email": USER_EMAIL}
@@ -92,12 +91,14 @@ def test_valid_id(mock_generate_token, mock_auth, clean_firestore):
   user.update()
 
   url = f"{API_URL}/generate"
-
   response = client.post(url, json={"refresh_token": "foobar"})
   assert response.status_code == 200
 
 
-def test_valid_id_error(mocker):
+@mock.patch("routes.refresh_token.validate_token")
+def test_valid_id_error(mock_validate_token, mocker):
+  mock_validate_token.return_value = auth_details
+
   url = f"{API_URL}/generate"
   mocker.patch("routes.refresh_token.generate_token"
               ).side_effect = InvalidRefreshTokenError("invalid")

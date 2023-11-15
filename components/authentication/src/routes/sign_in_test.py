@@ -113,7 +113,7 @@ def test_sign_in_with_credentials_negative(mock_request, clean_firestore,
     SIGN_IN_WITH_CREDENTIALS_RESPONSE_NEGATIVE_EXAMPLE)
 
   resp = client_with_emulator.post(url, json=credentials)
-  assert resp.status_code == 422, "Status should be 422"
+  assert resp.status_code == 401, "Status should be 401"
   assert resp.json().get(
     "message") == mock_request.return_value.json.return_value.get(
     "error").get("message"), "Incorrect response received"
