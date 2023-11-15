@@ -13,7 +13,6 @@
 # limitations under the License.
 """ Sign In endpoints """
 import requests
-from copy import deepcopy
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from requests.exceptions import ConnectTimeout
