@@ -16,6 +16,7 @@
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from firebase_admin.auth import verify_id_token
+import redis
 
 from common.utils.cache_service import set_key, get_key
 from common.utils.errors import InvalidTokenError
@@ -30,8 +31,8 @@ def get_token_cache(token):
   cached_token = None
   try:
     cached_token = get_key(f"cache::{token}")
-  except ConnectionError as e:
-    Logger.error(f"Unable to get token to Redis cache: {e.message}")
+  except redis.exceptions.ConnectionError as e:
+    Logger.error(f"Unable to get token to Redis cache: {e}")
 
   return cached_token
 
@@ -39,8 +40,8 @@ def set_token_cache(token, decoded_token):
   cached_token = None
   try:
     cached_token = set_key(f"cache::{token}", decoded_token, 1800)
-  except ConnectionError as e:
-    Logger.error(f"Unable to set token to Redis cache: {e.message}")
+  except redis.exceptions.ConnectionError as e:
+    Logger.error(f"Unable to set token to Redis cache: {e}")
 
   return cached_token
 
