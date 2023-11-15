@@ -36,7 +36,7 @@ from config.vector_store import (LC_VECTOR_STORES,
                                  PG_HOST, PG_PORT,
                                  PG_DBNAME, PG_USER, PG_PASSWD)
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
-from langchain.vectorstores import PGVector
+import langchain
 
 
 # pylint: disable=broad-exception-caught
@@ -310,6 +310,17 @@ class LangChainVectorStore(VectorStore):
     pass
 
 
+class MyPGVector(langchain.vector_stores.PGVector):
+  """
+  Subclass PGVector class in Langchain, to customize behavior.
+  We want to manage tables ourselves.
+  """
+  def create_tables_if_not_exists(self) -> None:
+    pass
+
+  def drop_tables(self) -> None:
+    pass
+  
 
 class PostgresVectorStore(LangChainVectorStore):
   """
@@ -334,7 +345,7 @@ class PostgresVectorStore(LangChainVectorStore):
     collection_name = self.q_engine.name
     
     # instantiate the langchain vector store object
-    langchain_vector_store = PGVector(
+    langchain_vector_store = MyPGVector(
         connection_string=connection_string,
         collection_name=collection_name
         )
