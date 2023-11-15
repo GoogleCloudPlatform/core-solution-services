@@ -39,5 +39,15 @@ def send_email(recipient, subject, message):
     "message": message
   }
 
-  result = tools[1].invoke(input=email_content)
+  # Find the GmailSendMessage tool from the toolkit list.
+  send_message_tool = None
+  for tool in tools:
+    if tool.__class__.__name__ == "GmailSendMessage":
+      send_message_tool = tool
+
+  if not send_message_tool:
+    raise RuntimeError(
+        "Unable to locate 'GmailSendMessage' from LangChain toolkit.")
+
+  result = send_message_tool.invoke(input=email_content)
   return result
