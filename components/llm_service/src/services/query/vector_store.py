@@ -28,7 +28,7 @@ from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
 from google.cloud import aiplatform, storage
 from google.cloud.exceptions import Conflict
-from services.query import embeddings
+from services.query import embeddings, LangchainEmbeddings
 from config import PROJECT_ID, REGION
 from config.vector_store import (PG_HOST, PG_PORT,
                                  PG_DBNAME, PG_USER, PG_PASSWD,
@@ -36,17 +36,7 @@ from config.vector_store import (PG_HOST, PG_PORT,
                                  VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                  VECTOR_STORE_MATCHING_ENGINE)
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
-import langchain
-
-VECTOR_STORES = {
-  VECTOR_STORE_MATCHING_ENGINE: MatchingEngineVectorStore,
-  VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
-}
-
-LC_VECTOR_STORES = {
-  VECTOR_STORE_LANGCHAIN_PGVECTOR: PGVector
-}
-
+from langchain.vectorstores.pgvector import PGVector
 
 # pylint: disable=broad-exception-caught
 
@@ -318,7 +308,7 @@ class LangChainVectorStore(VectorStore):
     """ Create matching engine index and endpoint """
     pass
 
-  
+
 
 class PostgresVectorStore(LangChainVectorStore):
   """
@@ -327,36 +317,45 @@ class PostgresVectorStore(LangChainVectorStore):
   """
 
   def _get_langchain_vector_store(self) -> LCVectorStore:
-    
+
     # get postgres connection string using PGVector utility method
     connection_string = PGVector.connection_string_from_db_params(
         driver="psycopg2",
-        host: PG_HOST_NAME,
-        port: PG_PORT,
-        database: PG_DBNAME,
-        user: PG_USER,
-        password: PG_PASSWD
+        host=PG_HOST,
+        port=PG_PORT,
+        database=PG_DBNAME,
+        user=PG_USER,
+        password=PG_PASSWD
     )
-    
+
     # Each query engine is stored in a different PGVector collection,
     # where the collection name is just the query engine name.
     collection_name = self.q_engine.name
-    
+
     # instantiate the langchain vector store object
     langchain_vector_store = PGVector(
+        embedding_function=LangchainEmbeddings,
         connection_string=connection_string,
         collection_name=collection_name
         )
-    
+
     return langchain_vector_store
-  
+
+VECTOR_STORES = {
+  VECTOR_STORE_MATCHING_ENGINE: MatchingEngineVectorStore,
+  VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
+}
+
+LC_VECTOR_STORES = {
+  VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
+}
 
 def from_query_engine(q_engine: QueryEngine) -> VectorStore:
   qe_vector_store = q_engine.vector_store
   if qe_vector_store is None:
     # set to default vector store
     qe_vector_store = DEFAULT_VECTOR_STORE
-    
+
   qe_vector_store_class = VECTOR_STORES.get(qe_vector_store)
   if qe_vector_store_class is None:
     raise InternalServerError(

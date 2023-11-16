@@ -14,7 +14,9 @@
 """
 Vector Store Config
 """
+# pylint: disable=broad-exception-caught
 
+from google.cloud import secretmanager
 from config import PROJECT_ID
 
 VECTOR_STORE_MATCHING_ENGINE = "matching_engine"
@@ -30,6 +32,8 @@ PG_DBNAME = "llm_service_vectors"
 PG_USER = "postgres"
 PG_PASSWD = None
 
+# load secrets
+secrets = secretmanager.SecretManagerServiceClient()
 try:
   PG_PASSWD = secrets.access_secret_version(
       request={
