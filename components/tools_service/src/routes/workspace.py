@@ -46,7 +46,7 @@ async def gmail_send_email(data: EmailSchema):
 
 
 @router.post("/compose_email")
-async def compose_email_subject_and_message(data: EmailComposeSchema):
+def compose_email_subject_and_message(data: EmailComposeSchema):
   """Send an email using Gmail sevice.
 
   Args:

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 
 """ Secrets Helper Functions"""
 import google_crc32c
@@ -79,7 +80,8 @@ def get_env_or_secret(secret_id):
 
     except Exception as e:
       # Suppressing all exceptions.
-      Logger.error(f"Unable to get secret {secret_id}: {e}")
+      message = f"Unable to get secret {secret_id}: {e}"
+      Logger.error(message)
       value = None
 
   return value
