@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import sqlalchemy
 from sqlalchemy.orm import Session
 
 def get_input(prompt):
