@@ -15,8 +15,14 @@
 """ Secrets Helper Functions"""
 import google_crc32c
 import requests
-from common.config import PROJECT_ID
+import os
 from google.cloud import secretmanager
+
+from common.config import PROJECT_ID
+from common.utils.logging_handler import Logger
+
+Logger = Logger.get_logger(__file__)
+sm_client = secretmanager.SecretManagerServiceClient()
 
 
 def get_secret(secret_id):
@@ -28,10 +34,9 @@ def get_secret(secret_id):
   Returns:
       str: the "UTF-8" decoded secret payload
   """
-  client = secretmanager.SecretManagerServiceClient()
   secret_name = f"projects/{PROJECT_ID}/secrets/{secret_id}/versions/latest"
 
-  response = client.access_secret_version(request={"name": secret_name})
+  response = sm_client.access_secret_version(request={"name": secret_name})
   crc32c = google_crc32c.Checksum()
   crc32c.update(response.payload.data)
   if response.payload.data_crc32c != int(crc32c.hexdigest(), 16):
@@ -64,3 +69,17 @@ def get_backend_robot_id_token():
                       timeout=60)
   payload = res.json()["data"]
   return payload["idToken"]
+
+
+def get_env_or_secret(secret_id):
+  value = os.getenv(secret_id)
+  if value is None:
+    try:
+      value = get_secret(secret_id)
+
+    except Exception as e:
+      # Suppressing all exceptions.
+      Logger.error(f"Unable to get secret {secret_id}: {e}")
+      value = None
+
+  return value

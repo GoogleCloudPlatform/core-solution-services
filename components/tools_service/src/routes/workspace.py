@@ -15,8 +15,9 @@
 """ Email tools endpoints """
 
 from fastapi import APIRouter
-from schemas.email import EmailSchema
+from schemas.email import EmailSchema, EmailComposeSchema
 from services.gmail_service import send_email
+from services.email_composer import compose_email
 
 router = APIRouter(prefix="/workspace", tags=["workspace"])
 
@@ -40,5 +41,27 @@ async def gmail_send_email(data: EmailSchema):
     "recipient": data.recipient,
     "subject": data.subject,
     "result": result,
+    "status": "Success",
+  }
+
+
+@router.post("/compose_email")
+async def compose_email_subject_and_message(data: EmailComposeSchema):
+  """Send an email using Gmail sevice.
+
+  Args:
+    data (str): A JSON string data.
+
+  Raises:
+    HTTPException: 500 Internal Server Error if something fails
+  """
+
+  result = compose_email(data.prompt, data.email_template, data.variables)
+
+  print(result)
+
+  return {
+    "subject": result["subject"],
+    "message": result["message"],
     "status": "Success",
   }
