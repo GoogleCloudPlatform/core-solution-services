@@ -44,7 +44,7 @@ def hello():
   See <a href='/{service_path}/api/{version}/docs'>API docs</a>
   """
 
-dependencies = [] # [Depends(validate_token)]
+dependencies = [Depends(validate_token)]
 
 api = FastAPI(
     title=service_title,
