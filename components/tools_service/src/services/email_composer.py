@@ -28,16 +28,13 @@ def compose_email(
   """
     Compose a new email based on the prompt and template.
     Args:
-        Bearer Token: String
+        prompt: String
+        email_template: String
+        variables: Dict
     Returns:
         {subject, message}
   """
   # Generate email body.
-  email_template = """
-      You are working for {state} State Medicaid Agency. Create only the email message body for recipient: {recipient} \n\n
-      \n\n Use text delimited by triple backticks to create the email body text:'''{email_body}'''
-
-      """
   subject_template = """
       Create a subject for the following email: {email_body} \n\n
 
