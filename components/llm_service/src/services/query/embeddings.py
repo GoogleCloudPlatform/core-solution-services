@@ -99,6 +99,6 @@ class LangchainEmbeddings(Embeddings):
     embeddings = encode_texts_to_embeddings([text])
     return embeddings[0]
 
-  def embed_documents(self, texts: list(str)) -> List[List[float]]:
+  def embed_documents(self, texts: List[str]) -> List[List[float]]:
     _, embeddings = get_embeddings(texts)
     return embeddings
