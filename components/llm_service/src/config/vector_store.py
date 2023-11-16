@@ -19,6 +19,7 @@ Vector Store Config
 from google.cloud import secretmanager
 from config import PROJECT_ID
 
+# vector store types
 VECTOR_STORE_MATCHING_ENGINE = "matching_engine"
 VECTOR_STORE_LANGCHAIN_PGVECTOR = "langchain_pgvector"
 
