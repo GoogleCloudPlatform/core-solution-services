@@ -30,11 +30,11 @@ from google.cloud import aiplatform, storage
 from google.cloud.exceptions import Conflict
 from services.query import embeddings
 from config import PROJECT_ID, REGION
-from config.vector_store import (PG_HOST, PG_PORT,
-                                 PG_DBNAME, PG_USER, PG_PASSWD,
-                                 DEFAULT_VECTOR_STORE,
-                                 VECTOR_STORE_LANGCHAIN_PGVECTOR,
-                                 VECTOR_STORE_MATCHING_ENGINE)
+from config.vector_store_config import (PG_HOST, PG_PORT,
+                                        PG_DBNAME, PG_USER, PG_PASSWD,
+                                        DEFAULT_VECTOR_STORE,
+                                        VECTOR_STORE_LANGCHAIN_PGVECTOR,
+                                        VECTOR_STORE_MATCHING_ENGINE)
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
 from langchain.vectorstores.pgvector import PGVector
 

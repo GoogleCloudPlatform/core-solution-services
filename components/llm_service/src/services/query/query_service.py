@@ -213,7 +213,7 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
     is_public: is query engine publicly usable?
     llm_type: LLM used for generating query answers
     embedding_type: LLM used for query embeddings
-    vector_store_type: vector store type (from config.vector_store)
+    vector_store_type: vector store type (from config.vector_store_config)
 
   Returns:
     Tuple of QueryEngine id, list of QueryDocument objects of docs processed,
