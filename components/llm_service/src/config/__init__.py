@@ -15,18 +15,26 @@
 Config for LLM service
 """
 from config.config import (
+    # platform config
+    PROJECT_ID,
+    GCP_PROJECT,
+    REGION,
+    SKAFFOLD_NAMESPACE,
+    GKE_CLUSTER,
+    GCP_ZONE,
+    DATABASE_PREFIX,
+    USER_MANAGEMENT_BASE_URL,
+    RULES_ENGINE_BASE_URL,
+    
     # service config
+    PORT,
     API_BASE_URL,
     CONTAINER_NAME,
     DEPLOYMENT_NAME,
     SERVICE_NAME,
-    SKAFFOLD_NAMESPACE,
-    GKE_CLUSTER,
-    GCP_ZONE,
     PAYLOAD_FILE_SIZE,
     ERROR_RESPONSES,
-    USER_MANAGEMENT_BASE_URL,
-    RULES_ENGINE_BASE_URL,
+    JOB_NAMESPACE,
     auth_client,
 
     # secrets
