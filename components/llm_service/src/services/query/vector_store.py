@@ -24,19 +24,28 @@ import numpy as np
 from pathlib import Path
 from typing import List
 from common.models import QueryEngine
-from common.models.llm_query import (VECTOR_STORE_LANGCHAIN_PGVECTOR,
-                                     VECTOR_STORE_MATCHING_ENGINE)
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
 from google.cloud import aiplatform, storage
 from google.cloud.exceptions import Conflict
 from services.query import embeddings
 from config import PROJECT_ID, REGION
-from config.vector_store import (LC_VECTOR_STORES,
-                                 PG_HOST, PG_PORT,
-                                 PG_DBNAME, PG_USER, PG_PASSWD)
+from config.vector_store import (PG_HOST, PG_PORT,
+                                 PG_DBNAME, PG_USER, PG_PASSWD,
+                                 DEFAULT_VECTOR_STORE,
+                                 VECTOR_STORE_LANGCHAIN_PGVECTOR,
+                                 VECTOR_STORE_MATCHING_ENGINE)
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
 import langchain
+
+VECTOR_STORES = {
+  VECTOR_STORE_MATCHING_ENGINE: MatchingEngineVectorStore,
+  VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
+}
+
+LC_VECTOR_STORES = {
+  VECTOR_STORE_LANGCHAIN_PGVECTOR: PGVector
+}
 
 
 # pylint: disable=broad-exception-caught
@@ -309,17 +318,6 @@ class LangChainVectorStore(VectorStore):
     """ Create matching engine index and endpoint """
     pass
 
-
-class MyPGVector(langchain.vector_stores.PGVector):
-  """
-  Subclass PGVector class in Langchain, to customize behavior.
-  We want to manage tables ourselves.
-  """
-  def create_tables_if_not_exists(self) -> None:
-    pass
-
-  def drop_tables(self) -> None:
-    pass
   
 
 class PostgresVectorStore(LangChainVectorStore):
@@ -345,7 +343,7 @@ class PostgresVectorStore(LangChainVectorStore):
     collection_name = self.q_engine.name
     
     # instantiate the langchain vector store object
-    langchain_vector_store = MyPGVector(
+    langchain_vector_store = PGVector(
         connection_string=connection_string,
         collection_name=collection_name
         )
@@ -356,12 +354,12 @@ class PostgresVectorStore(LangChainVectorStore):
 def from_query_engine(q_engine: QueryEngine) -> VectorStore:
   qe_vector_store = q_engine.vector_store
   if qe_vector_store is None:
-    # default to matching engine vector store
-    return MatchingEngineVectorStore(q_engine)
-  else:
-    qe_vector_store_class = VECTOR_STORES.get(qe_vector_store)
-    if qe_vector_store_class is None:
-      raise InternalServerError(
-         f"vector store class {qe_vector_store} not found in config")
-    return qe_vector_store_class(q_engine)
+    # set to default vector store
+    qe_vector_store = DEFAULT_VECTOR_STORE
+    
+  qe_vector_store_class = VECTOR_STORES.get(qe_vector_store)
+  if qe_vector_store_class is None:
+    raise InternalServerError(
+       f"vector store class {qe_vector_store} not found in config")
+  return qe_vector_store_class(q_engine)
 

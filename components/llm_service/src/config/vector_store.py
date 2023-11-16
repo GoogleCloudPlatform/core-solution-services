@@ -17,20 +17,18 @@ Vector Store Config
 
 from config import PROJECT_ID
 
-VECTOR_STORES = {
-  VECTOR_STORE_MATCHING_ENGINE: MatchingEngineVectorStore,
-  VECTOR_STORE_LANGCHAIN_PGVECTOR: LangChainVectorStore
-}
+VECTOR_STORE_MATCHING_ENGINE = "matching_engine"
+VECTOR_STORE_LANGCHAIN_PGVECTOR = "langchain_pgvector"
 
-LC_VECTOR_STORES = {
-  VECTOR_STORE_LANGCHAIN_PGVECTOR: PGVectorTest
-}
+# default vector store used for query engines
+DEFAULT_VECTOR_STORE = VECTOR_STORE_LANGCHAIN_PGVECTOR
 
 # postgres
 PG_HOST = "10.133.0.2"
 PG_PORT = "5432"
 PG_DBNAME = "llm_service_vectors"
 PG_USER = "postgres"
+PG_PASSWD = None
 
 try:
   PG_PASSWD = secrets.access_secret_version(

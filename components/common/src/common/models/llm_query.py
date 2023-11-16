@@ -24,9 +24,6 @@ QUERY_HUMAN = "HumanQuestion"
 QUERY_AI_RESPONSE = "AIResponse"
 QUERY_AI_REFERENCES = "AIReferences"
 
-VECTOR_STORE_MATCHING_ENGINE = "matching_engine"
-VECTOR_STORE_LANGCHAIN_PGVECTOR = "langchain_pgvector"
-
 class UserQuery(BaseModel):
   """
   UserQuery ORM class
@@ -87,12 +84,13 @@ class QueryEngine(BaseModel):
   id = IDField()
   name = TextField(required=True)
   llm_type = TextField(required=True)
+  embedding_type = TextField(required=True)
+  vector_store = TextField(required=True)
   created_by = TextField(required=True)
   is_public = BooleanField(default=False)
   index_id = TextField(required=False)
   index_name = TextField(required=False)
   endpoint = TextField(required=False)
-  vector_store = TextField(required=True, default=VECTOR_STORE_MATCHING_ENGINE)
 
   class Meta:
     ignore_none_field = False
