@@ -15,6 +15,7 @@
 """
 API interface for streamlit UX
 """
+# pylint: disable=unused-import,unused-argument
 import requests
 import re
 from common.utils.request_handler import get_method, post_method
@@ -37,7 +38,8 @@ def get_api_base_url():
 
 def handle_error(response):
   if response.status_code != 200:
-    raise RuntimeError(f"Error with status {response.status_code}: {str(response)}")
+    raise RuntimeError(
+      f"Error with status {response.status_code}: {str(response)}")
 
 def get_agents() -> List[Agent]:
   """
@@ -68,7 +70,8 @@ def run_agent(agent_name: str, prompt: str,
 
   api_base_url = get_api_base_url()
   if chat_id:
-    api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}/{chat_id}"
+    api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}
+    /agent/run/{agent_name}/{chat_id}"""
   else:
     api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}"
   request_body = {
@@ -96,9 +99,11 @@ def run_agent_plan(agent_name: str, prompt: str,
 
   api_base_url = get_api_base_url()
   if chat_id:
-    api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/{agent_name}/{chat_id}"
+    api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}
+    /agent/plan/{agent_name}/{chat_id}"""
   else:
-    api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/{agent_name}"
+    api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}
+    /agent/plan/{agent_name}"""
   request_body = {
     "prompt": prompt
   }
@@ -159,7 +164,8 @@ def get_all_query_engines(auth_token=None):
   output = json_response["data"]
   return output
 
-def get_all_chats(skip=0, limit=20, auth_token=None) -> List[UserChat]:
+def get_all_chats(skip=0, limit=20, auth_token=None,
+                   with_first_history=True) -> List[UserChat]:
   """
   Retrieve all chats of a specific user.
   """
@@ -167,7 +173,8 @@ def get_all_chats(skip=0, limit=20, auth_token=None) -> List[UserChat]:
     auth_token = get_auth_token()
 
   api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/chat?skip={skip}&limit={limit}"
+  api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}/chat?skip={skip}
+            &limit={limit}&with_first_history={with_first_history}"""
   resp = get_method(api_url,
                     token=auth_token)
   json_response = resp.json()
@@ -198,7 +205,7 @@ def login_user(user_email, user_password) -> str:
   url = f"{api_base_url}/{AUTH_SERVICE_PATH}/sign-in/credentials"
   print(f"API url: {url}")
 
-  sign_in_req = requests.post(url, json=req_body, verify=False)
+  sign_in_req = requests.post(url, json=req_body, verify=False, timeout=10)
 
   sign_in_res = sign_in_req.json()
   if sign_in_res is None or sign_in_res["data"] is None:
