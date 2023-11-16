@@ -29,7 +29,7 @@ DEFAULT_VECTOR_STORE = VECTOR_STORE_LANGCHAIN_PGVECTOR
 # postgres
 PG_HOST = "10.133.0.2"
 PG_PORT = "5432"
-PG_DBNAME = "llm_service_vectors"
+PG_DBNAME = "genie"
 PG_USER = "postgres"
 PG_PASSWD = None
 
