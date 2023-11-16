@@ -21,6 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from vertexai.preview.language_models import TextEmbeddingModel
 from config import GOOGLE_LLM, DEFAULT_QUERY_EMBEDDING_MODEL
+from langchain.schema.embeddings import Embeddings
 
 # pylint: disable=broad-exception-caught
 
@@ -92,3 +93,12 @@ def encode_texts_to_embeddings(
     return [None for _ in range(len(sentence_list))]
 
 
+class LangchainEmbeddings(Embeddings):
+  """ Langchain wrapper for our embeddings """
+  def embed_query(self, text: str) -> List[float]:
+    embeddings = encode_texts_to_embeddings([text])
+    return embeddings[0]
+
+  def embed_documents(self, texts: list(str)) -> List[List[float]]:
+    _, embeddings = get_embeddings(texts)
+    return embeddings
