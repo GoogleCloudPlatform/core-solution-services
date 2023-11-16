@@ -28,6 +28,9 @@ requires:
   - tools_service
   path: ./components/tools_service
 - configs:
+  - huggingface_service
+  path: ./components/huggingface_service
+- configs:
   - frontend_streamlit
   path: ./components/frontend_streamlit
 - configs:
