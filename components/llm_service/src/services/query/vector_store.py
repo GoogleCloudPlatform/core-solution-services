@@ -28,7 +28,7 @@ from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
 from google.cloud import aiplatform, storage
 from google.cloud.exceptions import Conflict
-from services.query import embeddings, LangchainEmbeddings
+from services.query import embeddings
 from config import PROJECT_ID, REGION
 from config.vector_store import (PG_HOST, PG_PORT,
                                  PG_DBNAME, PG_USER, PG_PASSWD,
@@ -334,7 +334,7 @@ class PostgresVectorStore(LangChainVectorStore):
 
     # instantiate the langchain vector store object
     langchain_vector_store = PGVector(
-        embedding_function=LangchainEmbeddings,
+        embedding_function=embeddings.LangchainEmbeddings,
         connection_string=connection_string,
         collection_name=collection_name
         )
