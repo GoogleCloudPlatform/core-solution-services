@@ -32,7 +32,7 @@ if __name__ == "__main__":
   user_id = args[2]
 
   print(f"*** building query index for {doc_url}," \
-        " query_engine {query_engine}, for user id {user_id}")
+        f" query_engine {query_engine}, for user id {user_id}")
 
   params = {}
   query_engine_build(doc_url, query_engine, user_id)
