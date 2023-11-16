@@ -15,13 +15,11 @@
 User Data Model
 """
 import regex
+from common.config import USER_TYPES
 from common.models import BaseModel, NodeItem, LearningUnit
 from common.utils.errors import ResourceNotFoundException
 from fireo.fields import (ReferenceField, TextField, NumberField, MapField,
                           ListField, BooleanField)
-
-USER_TYPES = ["learner", "faculty", "assessor", "admin", "coach", "instructor",
-              "lxe", "curriculum_designer", "robot"]
 
 
 def validate_name(name):

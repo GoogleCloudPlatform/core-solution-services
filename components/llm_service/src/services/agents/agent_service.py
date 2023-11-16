@@ -13,22 +13,24 @@
 # limitations under the License.
 
 """ Agent service """
-# pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-import
+# pylint: disable=consider-using-dict-items,consider-iterating-dictionary
 
 import inspect
 import json
 import re
 from typing import List, Tuple
-from common.models.agent import (AgentType, AgentCapability,
+
+from langchain.agents import AgentExecutor
+
+from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import BadRequest, InternalServerError
 from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
-from langchain.agents import AgentExecutor
-from services.agents.agents import BaseAgent
 from services.agents import agents
 
+Logger = Logger.get_logger(__file__)
 AGENTS = None
 
 def load_agents(agent_config_path: str):
@@ -39,7 +41,7 @@ def load_agents(agent_config_path: str):
       agent_config = json.load(file)
     agent_config = agent_config.get("Agents")
 
-    # add agent class and capabiities
+    # add agent class and capabilities
     agent_classes = {
       k:klass for (k, klass) in inspect.getmembers(agents)
       if isinstance(klass, type)
@@ -58,7 +60,7 @@ def get_agent_config() -> dict:
     load_agents(AGENT_CONFIG_PATH)
   return AGENTS
 
-def get_plan_agent_config() -> List[dict]:
+def get_plan_agent_config() -> dict:
   agent_config = get_agent_config()
   planning_agents = {
       agent: agent_config for agent, agent_config in agent_config.items()
@@ -67,6 +69,14 @@ def get_plan_agent_config() -> List[dict]:
   }
   return planning_agents
 
+def get_task_agent_config() -> dict:
+  agent_config = get_agent_config()
+  planning_agents = {
+      agent: agent_config for agent, agent_config in agent_config.items()
+      if AgentCapability.AGENT_TASK_CAPABILITY.value \
+         in agent_config["capabilities"]
+  }
+  return planning_agents
 
 def get_all_agents() -> List[dict]:
   """
@@ -101,10 +111,16 @@ def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
       output(str): the output of the agent on the user input
       action_steps: the list of action steps take by the agent for the run
   """
+  Logger.info(f"Running {agent_name} agent "
+              f"with prompt=[{prompt}] and "
+              f"chat_history=[{chat_history}]")
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
 
   tools = llm_service_agent.get_tools()
+  tools_str = ", ".join(tool.name for tool in tools)
+
+  Logger.info(f"Available tools=[{tools_str}]")
   langchain_agent = llm_service_agent.load_agent()
 
   agent_executor = AgentExecutor.from_agent_and_tools(
@@ -116,8 +132,10 @@ def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
     "chat_history": chat_history
   }
 
+  Logger.info("Running agent executor.... ")
   output = agent_executor.run(agent_inputs)
-
+  Logger.info(f"Agent {agent_name} generated"
+              f" output=[{output}]")
   return output
 
 
@@ -135,6 +153,10 @@ def agent_plan(agent_name:str, prompt:str,
       output(str): the output of the agent on the user input
       user_plan(str): user plan object created from agent plan
   """
+  Logger.info(f"Starting with plan for "
+              f"agent_name=[{agent_name}], "
+              f"prompt=[{prompt}], user_id=[{user_id}], "
+              f"chat_history=[{chat_history}]")
   planning_agents = get_plan_agent_config()
   if not agent_name in planning_agents.keys():
     raise BadRequest(f"{agent_name} is not a planning agent.")
@@ -163,6 +185,8 @@ def agent_plan(agent_name:str, prompt:str,
   user_plan.plan_steps = plan_step_ids
   user_plan.update()
 
+  Logger.info(f"Created steps using plan_agent_name=[{agent_name}] "
+              f"raw_plan_steps={raw_plan_steps}")
   return output, user_plan
 
 
@@ -170,7 +194,7 @@ def parse_plan(text: str) -> List[str]:
   """
   Parse plan steps from agent output
   """
-  Logger.info(f"agent plan output {text}")
+  Logger.info(f"Parsing agent plan {text}")
 
   # Regex pattern to match the steps after 'Plan:'
   # We are using the re.DOTALL flag to match across newlines and

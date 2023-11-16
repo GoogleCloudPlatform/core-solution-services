@@ -43,6 +43,8 @@ from config import ERROR_RESPONSES, IMMUTABLE_ASSOCIATION_GROUPS
 
 # pylint: disable=invalid-name
 
+Logger = Logger.get_logger(__file__)
+
 router = APIRouter(
     tags=["Discipline Association Group"],
     prefix="/association-groups",

@@ -12,19 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Method to validate google auth token"""
-from google.oauth2 import id_token
-from google.auth.transport import requests
-from common.utils.errors import InvalidTokenError
-from common.utils.http_exceptions import InternalServerError, Unauthenticated
+"""
+student learner profile integration service
+"""
+from common.models import Session
+from common.utils.http_exceptions import InternalServerError
 
 
-def validate_google_oauth_token(token):
+def create_session(user_id: str = None):
+  """ Create a new session"""
   try:
-    # If the ID token is valid. Get the user's Google Account ID from the
-    # decoded token.
-    return id_token.verify_oauth2_token(token, requests.Request())
-  except (ValueError, InvalidTokenError) as e:
-    raise Unauthenticated(str(e)) from e
+    new_session = Session()
+    data = {"user_id": user_id}
+    new_session = new_session.from_dict(data)
+    new_session.user_id = user_id
+    new_session.session_id = ""
+    new_session.save()
+    new_session.session_id = new_session.id
+    new_session.update()
+
+    return new_session.get_fields(reformat_datetime=True)
   except Exception as e:
     raise InternalServerError(str(e)) from e

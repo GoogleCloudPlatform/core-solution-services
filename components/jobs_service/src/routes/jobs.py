@@ -31,6 +31,8 @@ from schemas.jobs_schema import (JobGetStatusResponse,
 from config import ERROR_RESPONSES
 # pylint: disable = broad-except
 
+Logger = Logger.get_logger(__file__)
+
 
 router = APIRouter(
     prefix="/jobs",

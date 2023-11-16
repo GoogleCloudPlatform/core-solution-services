@@ -26,6 +26,8 @@ from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError, ResourceNotFound
 from common.utils.errors import ResourceNotFoundException
 
+Logger = Logger.get_logger(__file__)
+
 router = APIRouter(
     prefix="/user/{user_id}/user_event",
     tags=["UserEvent"],

@@ -20,7 +20,7 @@ from fastapi.security import HTTPBearer
 from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError
 
 from config import ERROR_RESPONSES, FIREBASE_API_KEY, IDP_URL
-from services.validate_token_service import validate_token
+from services.validation_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
                                  InvalidRequestPayloadError, TokenNotFoundError,
                                  UnauthorizedUserError)

@@ -17,7 +17,6 @@
 """
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 import os
-import logging
 from common.utils.logging_handler import Logger
 from common.utils.token_handler import UserCredentials
 from schemas.error_schema import (UnauthorizedResponseModel,
@@ -28,10 +27,8 @@ from langchain.chat_models import ChatOpenAI, ChatVertexAI
 from langchain.llms.cohere import Cohere
 from langchain.llms.vertexai import VertexAI
 
-# override default logging format
-logging.basicConfig(
-      format="%(asctime)s:%(levelname)s:%(message)s",level=logging.INFO)
 
+Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
 
 PORT = os.environ["PORT"] if os.environ.get("PORT") is not None else 80
@@ -43,7 +40,7 @@ REGION = os.getenv("REGION", "us-central1")
 
 try:
   with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r",
-            encoding="utf-8",errors="ignore") as \
+            encoding="utf-8", errors="ignore") as \
     ns_file:
     namespace = ns_file.readline()
     JOB_NAMESPACE = namespace
@@ -84,6 +81,7 @@ def get_environ_flag(env_flag_str, default=True):
   Logger.info(f"{env_flag_str} = {evn_flag}")
   return evn_flag
 
+
 # VertexAI models are enabled by default
 ENABLE_GOOGLE_LLM = get_environ_flag("ENABLE_GOOGLE_LLM", True)
 
@@ -121,16 +119,21 @@ OPENAI_LLM_TYPE_GPT3_5 = "OpenAI-GPT3.5"
 OPENAI_LLM_TYPE_GPT4 = "OpenAI-GPT4"
 COHERE_LLM_TYPE = "Cohere"
 VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
+VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat"
 VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat"
 VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
 
 LLM_TYPES = []
 OPENAI_LLM_TYPES = [OPENAI_LLM_TYPE_GPT3_5, OPENAI_LLM_TYPE_GPT4]
 COHERE_LLM_TYPES = [COHERE_LLM_TYPE]
-GOOGLE_LLM_TYPES = [VERTEX_LLM_TYPE_BISON_TEXT, VERTEX_LLM_TYPE_BISON_CHAT]
+GOOGLE_LLM_TYPES = [VERTEX_LLM_TYPE_BISON_TEXT,
+                    VERTEX_LLM_TYPE_BISON_V1_CHAT,
+                    VERTEX_LLM_TYPE_BISON_CHAT]
 
 # these LLMs are trained as chat models
-CHAT_LLM_TYPES = [OPENAI_LLM_TYPE_GPT3_5, OPENAI_LLM_TYPE_GPT4,
+CHAT_LLM_TYPES = [OPENAI_LLM_TYPE_GPT3_5,
+                  OPENAI_LLM_TYPE_GPT4,
+                  VERTEX_LLM_TYPE_BISON_V1_CHAT,
                   VERTEX_LLM_TYPE_BISON_CHAT]
 
 if ENABLE_OPENAI_LLM:
@@ -146,9 +149,9 @@ LANGCHAIN_LLM = {}
 if ENABLE_OPENAI_LLM:
   LANGCHAIN_LLM.update({
     OPENAI_LLM_TYPE_GPT3_5: ChatOpenAI(openai_api_key=OPENAI_API_KEY,
-                                model_name="gpt-3.5-turbo"),
+                                       model_name="gpt-3.5-turbo"),
     OPENAI_LLM_TYPE_GPT4: ChatOpenAI(openai_api_key=OPENAI_API_KEY,
-                                model_name="gpt-4"),
+                                     model_name="gpt-4"),
     COHERE_LLM_TYPE: Cohere(cohere_api_key=COHERE_API_KEY, max_tokens=1024)
   })
 
@@ -156,15 +159,18 @@ GOOGLE_LLM = {}
 if ENABLE_GOOGLE_LLM:
   GOOGLE_LLM = {
     VERTEX_LLM_TYPE_BISON_TEXT: "text-bison",
-    VERTEX_LLM_TYPE_BISON_CHAT: "chat-bison@001",
+    VERTEX_LLM_TYPE_BISON_V1_CHAT: "chat-bison@001",
+    VERTEX_LLM_TYPE_BISON_CHAT: "chat-bison",
     VERTEX_LLM_TYPE_GECKO_EMBEDDING: "textembedding-gecko@001"
   }
-LANGCHAIN_LLM.update({
-  VERTEX_LLM_TYPE_BISON_TEXT: VertexAI(
-      model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_TEXT], project=PROJECT_ID),
-  VERTEX_LLM_TYPE_BISON_CHAT: ChatVertexAI(
-      model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_CHAT], project=PROJECT_ID)
-})
+  LANGCHAIN_LLM.update({
+    VERTEX_LLM_TYPE_BISON_TEXT: VertexAI(
+        model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_TEXT], project=PROJECT_ID),
+    VERTEX_LLM_TYPE_BISON_V1_CHAT: ChatVertexAI(
+      model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_V1_CHAT], project=PROJECT_ID),
+    VERTEX_LLM_TYPE_BISON_CHAT: ChatVertexAI(
+        model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_CHAT], project=PROJECT_ID)
+  })
 
 
 Logger.info(f"LLM types loaded {LLM_TYPES}")
@@ -179,6 +185,10 @@ SERVICES = {
     "host": "http://user-management",
     "port": 80
   },
+  "tools-service": {
+    "host": "http://tools-service",
+    "port": 80
+  },
   "rules-engine": {
     "host": "http://rules-engine",
     "port": 80
@@ -189,6 +199,10 @@ USER_MANAGEMENT_BASE_URL = f"{SERVICES['user-management']['host']}:" \
                   f"{SERVICES['user-management']['port']}" \
                   f"/user-management/api/v1"
 
+TOOLS_SERVICE_BASE_URL = f"{SERVICES['tools-service']['host']}:" \
+                  f"{SERVICES['tools-service']['port']}" \
+                  f"/rules-engine/api/v1"
+
 RULES_ENGINE_BASE_URL = f"{SERVICES['rules-engine']['host']}:" \
                   f"{SERVICES['rules-engine']['port']}" \
                   f"/rules-engine/api/v1"
@@ -198,7 +212,7 @@ try:
       request={
           "name":
               f"projects/{PROJECT_ID}" +
-               "/secrets/llm-backend-robot-username/versions/latest"
+              "/secrets/llm-backend-robot-username/versions/latest"
       }).payload.data.decode("utf-8")
   LLM_BACKEND_ROBOT_USERNAME = LLM_BACKEND_ROBOT_USERNAME.strip()
 except Exception as e:
@@ -209,26 +223,26 @@ try:
       request={
           "name":
               f"projects/{PROJECT_ID}" +
-               "/secrets/llm-backend-robot-password/versions/latest"
+              "/secrets/llm-backend-robot-password/versions/latest"
       }).payload.data.decode("utf-8")
   LLM_BACKEND_ROBOT_PASSWORD = LLM_BACKEND_ROBOT_PASSWORD.strip()
 except Exception as e:
   LLM_BACKEND_ROBOT_PASSWORD = None
 
 # Update this config for local development or notebook usage, by adding
-# an additional param to the UserCredentials class initializer, to
+# a parameter to the UserCredentials class initializer, to
 # pass URL to auth client.
-#auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
-#                              LLM_BACKEND_ROBOT_PASSWORD,
-#                              "http://localhost:9004")
+# auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
+#                               LLM_BACKEND_ROBOT_PASSWORD,
+#                               "http://localhost:9004")
 # pass URL to auth client for external routes to auth.  Replace dev.domain with
 # the externally mapped domain for your dev server
-#auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
-#                              LLM_BACKEND_ROBOT_PASSWORD,
-#                              "https://[dev.domain]")
+# auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
+#                               LLM_BACKEND_ROBOT_PASSWORD,
+#                               "https://[dev.domain]")
 
 auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
                               LLM_BACKEND_ROBOT_PASSWORD)
 
 # agent config
-AGENT_CONFIG_PATH = "./data/agent_config.json"
+AGENT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "data/agent_config.json")

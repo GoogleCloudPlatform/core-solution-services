@@ -17,15 +17,17 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError
+
 from common.utils.errors import TokenNotFoundError, UnauthorizedUserError
 from common.utils.http_exceptions import (BadRequest, InvalidToken,
                                           InternalServerError, Unauthorized)
-from services.validate_token_service import validate_token
+from common.utils.user_handler import get_user_by_email
+from services.validation_service import validate_token
 from schemas.validate_token_schema import ValidateTokenResponseModel
-from config import ERROR_RESPONSES
+from config import (ERROR_RESPONSES, AUTH_REQUIRE_FIRESTORE_USER)
 
 router = APIRouter(
-    tags=["Token Validation"],
+    tags=["Authentication"],
     responses=ERROR_RESPONSES)
 auth_scheme = HTTPBearer(auto_error=False)
 
@@ -51,10 +53,21 @@ def validate_id_token(token: auth_scheme = Depends()):
     if token is None:
       raise TokenNotFoundError("Token not found")
     token_dict = dict(token)
+    token_data = validate_token(token_dict["credentials"])
+    user = get_user_by_email(
+        token_data["email"], check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER)
+
+    if user:
+      user_fields = user.get_fields(reformat_datetime=True)
+      if user_fields.get("status") == "inactive":
+        raise UnauthorizedUserError("Unauthorized: User status is inactive.")
+      token_data["access_api_docs"] = user_fields.get("access_api_docs", False)
+      token_data["user_type"] = user_fields.get("user_type")
+
     return {
         "success": True,
         "message": "Token validated successfully",
-        "data": validate_token(token_dict["credentials"])
+        "data": token_data
     }
   except UnauthorizedUserError as e:
     raise Unauthorized(str(e)) from e

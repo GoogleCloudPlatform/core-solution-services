@@ -40,6 +40,8 @@ from services.permissions import (update_permissions_with_user_group,
                                   filter_and_update_permissions_of_applications)
 from config import ERROR_RESPONSES, IMMUTABLE_USER_GROUPS
 
+Logger = Logger.get_logger(__file__)
+
 router = APIRouter(tags=["UserGroup"], responses=ERROR_RESPONSES)
 
 

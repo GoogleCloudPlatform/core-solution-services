@@ -26,6 +26,7 @@ from utils.errors import NoDocumentsIndexedException
 # pylint: disable=broad-exception-caught
 
 # text chunk size for embedding data
+Logger = Logger.get_logger(__file__)
 CHUNK_SIZE = 1000
 
 class DataSource:
@@ -37,7 +38,7 @@ class DataSource:
     self.storage_client = storage_client
     self.docs_not_processed = []
 
-  def download_documents(self, doc_url: str, temp_dir: Path) -> \
+  def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[Tuple[str, str, str]]:
     """
     Download files from doc_url source to a local tmp directory
@@ -66,8 +67,8 @@ class DataSource:
 
     return doc_filepaths
 
-  def chunk_document(self, doc_name: str, doc_url: str, doc_filepath: str) -> \
-                      List[str]:
+  def chunk_document(self, doc_name: str, doc_url: str,
+                     doc_filepath: str) -> List[str]:
     """
     Process doc into chunks for embeddings
 
@@ -111,7 +112,8 @@ class DataSource:
 
     return text_chunks
 
-  def read_doc(self, doc_name: str, doc_filepath: str) -> List[str]:
+  @staticmethod
+  def read_doc(doc_name: str, doc_filepath: str) -> List[str]:
     """
     Read document and return content as a list of strings
 
@@ -150,6 +152,6 @@ class DataSource:
 
     if loader is not None:
       langchain_document = loader.load()
-      doc_text_list = [section.content for section in langchain_document]
+      doc_text_list = [section.page_content for section in langchain_document]
 
     return doc_text_list

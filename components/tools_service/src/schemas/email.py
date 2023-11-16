@@ -4,29 +4,31 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+#     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Query prompt templates
-"""
 
-from langchain.prompts import PromptTemplate
+"""Pydantic Model for Email's related API's"""
 
-prompt_template = """
-Use the following pieces of context to answer the question at the end.
-If you don't know the answer, just say that you don't know, don't try to make up an answer.
+from pydantic import BaseModel
 
-Context:
-{context}
+class EmailSchema(BaseModel):
+  """Email Pydantic Model"""
 
-Question: {question}
-Helpful Answer:"""
+  recipient: str
+  subject: str
+  message: str
 
-QUESTION_PROMPT = PromptTemplate(
-    template=prompt_template, input_variables=["context", "question"]
-)
+  class Config:
+    orm_mode = True
+    schema_extra = {
+      "example": {
+        "recipient": "test@example.com",
+        "subject": "Hello",
+        "message": "From the world."
+      }
+    }

@@ -23,6 +23,8 @@ from schemas.error_schema import (UnauthorizedResponseModel,
 from common.utils.logging_handler import Logger
 from common.utils.config import JOB_TYPES_WITH_PREDETERMINED_TITLES
 
+Logger = Logger.get_logger(__file__)
+
 PORT = os.environ["PORT"] if os.environ.get("PORT") is not None else 80
 PROJECT_ID = os.environ.get("PROJECT_ID")
 os.environ["GOOGLE_CLOUD_PROJECT"] = PROJECT_ID
