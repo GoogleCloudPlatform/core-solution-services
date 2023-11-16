@@ -46,10 +46,12 @@ class EmailComposeSchema(BaseModel):
     schema_extra = {
       "example": {
         "prompt":
-          "Create an email to this applicant that is missing income " "verification asking them to email a pay stub from their "
+          "Create an email to this applicant that is missing income "
+          "verification asking them to email a pay stub from their "
           "employers",
         "email_template":
-          "You are working for {state} agency. Create only the email message " "body for recipient: {recipient} \n\n "
+          "You are working for {state} agency. Create only the email "
+          "message body for recipient: {recipient} \n\n "
           "Use text delimited by triple backticks to create the email body "
           "text:'''{email_body}'''"
           "",
