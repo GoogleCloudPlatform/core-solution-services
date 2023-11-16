@@ -61,6 +61,9 @@ class VectorStore(ABC):
   def __init__(self, q_engine: QueryEngine) -> None:
     self.q_engine = q_engine
 
+  @property
+  def vector_store_type(self):
+    return DEFAULT_VECTOR_STORE
 
   @abstractmethod
   def index_document(self, doc_name: str, text_chunks: List[str],
@@ -110,6 +113,10 @@ class MatchingEngineVectorStore(VectorStore):
       bucket = self.storage_client.create_bucket(self.bucket_name,
                                                  location=REGION)
     self.bucket_uri = f"gs://{bucket.name}"
+
+  @property
+  def vector_store_type(self):
+    return VECTOR_STORE_MATCHING_ENGINE
 
   def index_document(self, doc_name: str, text_chunks: List[str],
                           index_base: int) -> int:
@@ -315,6 +322,9 @@ class PostgresVectorStore(LangChainVectorStore):
   LLM Service interface for Postgres Vector Stores, based on langchain
   PGVector VectorStore class.
   """
+  @property
+  def vector_store_type(self):
+    return VECTOR_STORE_LANGCHAIN_PGVECTOR
 
   def _get_langchain_vector_store(self) -> LCVectorStore:
 
@@ -361,4 +371,3 @@ def from_query_engine(q_engine: QueryEngine) -> VectorStore:
     raise InternalServerError(
        f"vector store class {qe_vector_store} not found in config")
   return qe_vector_store_class(q_engine)
-

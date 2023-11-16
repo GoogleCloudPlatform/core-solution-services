@@ -220,16 +220,22 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
     raise ValidationError(f"Query engine {query_engine} already exists")
 
   # create model
-  llm_type = DEFAULT_QUERY_EMBEDDING_MODEL
+  llm_type = DEFAULT_QUERY_CHAT_MODEL
+  embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
                          llm_type=llm_type,
+                         embedding_type=embedding_type,
+                         vector_store=vector_store,
                          is_public=is_public)
+  qe_vector_store = vector_store.from_query_engine(q_engine)
+  q_engine.vector_store = qe_vector_store.vector_store_type
   q_engine.save()
 
   # build document index
   try:
-    docs_processed, docs_not_processed = build_doc_index(doc_url, query_engine)
+    docs_processed, docs_not_processed = \
+        build_doc_index(doc_url, query_engine, qe_vector_store)
   except Exception as e:
     # delete query engine model if build unsuccessful
     QueryDocument.collection.filter(
@@ -246,7 +252,8 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
   return q_engine, docs_processed, docs_not_processed
 
 
-def build_doc_index(doc_url: str, query_engine: str) -> \
+def build_doc_index(doc_url: str, query_engine: str,
+                    qe_vector_store: VectorStore) -> \
         Tuple[List[QueryDocument], List[str]]:
   """
   Build the document index.
@@ -265,8 +272,6 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
     raise ResourceNotFoundException(f"cant find query engine {query_engine}")
 
   storage_client = storage.Client(project=PROJECT_ID)
-
-  qe_vector_store = vector_store.from_query_engine(q_engine)
 
   try:
     # process docs at url and upload embeddings to vector store
