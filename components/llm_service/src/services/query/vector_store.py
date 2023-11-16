@@ -298,15 +298,15 @@ class LangChainVectorStore(VectorStore):
         text_chunks=text_chunks
     )
 
-    self.lc_vector_store().add_embeddings(texts=text_chunks,
-                                          embeddings=chunk_embeddings,
-                                          ids=ids)
+    self.lc_vector_store.add_embeddings(texts=text_chunks,
+                                        embeddings=chunk_embeddings,
+                                        ids=ids)
 
 
   def find_neighbors(self, q_engine: QueryEngine,
                      query_embeddings: List[List[float]]) -> List[int]:
 
-    return self.lc_vector_store().similarity_search_by_vector(
+    return self.lc_vector_store.similarity_search_by_vector(
         embedding=query_embeddings,
         k=NUM_MATCH_RESULTS
     )
