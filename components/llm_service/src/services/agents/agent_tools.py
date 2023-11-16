@@ -38,14 +38,15 @@ def gmail_tool(email_text: str) -> str:
   """
   Send an email using Gmail
   """
+  print("!!! gmail tool called: "+email_text)
   return ""
 
 @tool(infer_schema=False)
 def docs_tool(content: str) -> str:
   """
-  Compose a document using Google Docs
+  Create a document using Google Docs
   """
-
+  print("!!! docs tool called:"+content)
   return ""
 
 @tool(infer_schema=False)
@@ -53,7 +54,7 @@ def calendar_tool(date: str) -> str:
   """
   Create and update meetings using Google Calendar
   """
-
+  print("!!! calendar tool called:"+date)
   return ""
 
 @tool(infer_schema=False)
@@ -61,6 +62,7 @@ def search_tool(query: str) -> str:
   """
   Perform an internet search.
   """
+  print("!!! search tool called:"+query)
   return ""
 
 
@@ -69,4 +71,5 @@ def query_tool(query: str) -> str:
   """
   Perform a query and craft an answer using one of the available query engines.
   """
+  print("!!! query tool called:"+query)
   return ""
