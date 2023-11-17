@@ -22,24 +22,25 @@ import utils
 
 CHAT_HISTORY_LIST_STYLE = """
 <style>
-    [data-testid=stSidebar] {
-        .stButton button {
-          @media screen and (prefers-color-scheme: dark) {
-            background-color: #195;
-          }
-          font-weight: bold;
-          border: 0px;
-          text-align: left;
-          border-radius: 30px;
-        }
-
-        .stButton button:hover {
-          background-color:#d3d3d3;
-          color: black;
-          border-radius: 30px;
-          text-align: left;
-        }
+  [data-testid=stSidebar] {
+    .stButton button {
+      @media screen and (prefers-color-scheme: dark) {
+        background-color: #195;
+      }
+      display: block !important;
+      font-weight: bold;
+      border: 0px;
+      text-align: left;
+      border-radius: 10px;
     }
+
+    .stButton button:hover {
+      background-color:#d3d3d3;
+      color: black;
+      border-radius: 10px;
+      text-align: left;
+    }
+  }
 </style>
 """
 
@@ -49,18 +50,22 @@ def get_agent_chats(selected_agent):
   """
   index = 0
   for user_chat in (st.session_state.user_chats or []):
-    first_question = user_chat["history"][0]["HumanInput"][:100]
+    first_question = user_chat["history"][0]["HumanInput"][:50]
+    if len(user_chat["history"][0]["HumanInput"]) > 60:
+      first_question = first_question + "..."
+
     chat_id = user_chat["id"]
     if "agent_name" in user_chat and (
       selected_agent in (user_chat["agent_name"], "All")):
       agent_name = user_chat["agent_name"]
       with st.container():
-        select_chat = st.button(f"{agent_name}: {first_question}",
+        select_chat = st.button(f"**{agent_name}**: {first_question}",
                                 use_container_width=True,
                                 key=f"{agent_name}{index}")
         if select_chat:
           utils.navigate_to(
-            f"/Chat?chat_id={chat_id}&auth_token={st.session_state.auth_token}")
+            f"/Chat?chat_id={chat_id}&agent_name={agent_name}&" \
+            f"auth_token={st.session_state.auth_token}")
     index += 1
 
 def chat_history_panel():
@@ -71,14 +76,17 @@ def chat_history_panel():
       auth_token=st.session_state.auth_token)
   css = CHAT_HISTORY_LIST_STYLE
   st.markdown(css, unsafe_allow_html=True)
+
   with st.sidebar:
     st.header("My Chats")
     all_agents = set()
+
     # Iterate through all chats and get available agents
     for user_chat in (st.session_state.user_chats or []):
-      all_agents.add(user_chat.agent_name)
+      all_agents.add(user_chat["agent_name"])
     agent_options = list(all_agents)
     agent_options.insert(0, "All")
+
     # Add agent options to dropdown
     select_agent = st.selectbox("Agent:", agent_options, key="agent0")
     get_agent_chats(select_agent)
