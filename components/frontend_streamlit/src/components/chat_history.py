@@ -76,7 +76,7 @@ def chat_history_panel():
     all_agents = set()
     # Iterate through all chats and get available agents
     for user_chat in (st.session_state.user_chats or []):
-      all_agents.add(user_chat.agent_name)
+      all_agents.add(user_chat["agent_name"])
     agent_options = list(all_agents)
     agent_options.insert(0, "All")
     # Add agent options to dropdown

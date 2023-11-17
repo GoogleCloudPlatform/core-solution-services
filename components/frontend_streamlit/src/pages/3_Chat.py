@@ -16,7 +16,7 @@
 """
 # pylint: disable=invalid-name
 import streamlit as st
-from api import get_chat, run_agent, run_agent_plan
+from api import get_chat, run_agent, run_agent_plan, run_agent_execute_plan
 from components.chat_history import chat_history_panel
 import utils
 
@@ -59,7 +59,7 @@ def init_messages():
   messages = []
   if st.session_state.chat_id:
     chat_data = get_chat(st.session_state.chat_id)
-    messages = chat_data.history
+    messages = chat_data["history"]
   else:
     messages.append({"AIOutput": "You can ask me anything."})
   # Initialize with chat history if any.
@@ -92,8 +92,15 @@ def chat_content():
           st.divider()
           index = 1
           for step in item["plan"]["plan_steps"]:
-            st.text_area(f"Step {index}", step.get("description"))
+            print(step)
+            st.text_area(f"Step {index}", step)
             index = index + 1
+
+        if st.button("Execute this plan"):
+          st.write("Executing.")
+          run_agent_execute_plan(
+            plan_id=item["id"],
+            auth_token=st.session_state.auth_token)
 
       index = index + 1
 

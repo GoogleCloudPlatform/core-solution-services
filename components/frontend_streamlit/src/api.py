@@ -17,10 +17,10 @@ API interface for streamlit UX
 # pylint: disable=unused-import,unused-argument
 import requests
 from common.utils.request_handler import get_method, post_method
-from common.models import Agent, UserChat
+from common.models import Agent, UserChat, UserPlan
 from typing import List
 import streamlit as st
-from config import API_BASE_URL
+from common.config import API_BASE_URL
 
 
 LLM_SERVICE_PATH = "llm-service/api/v1"
@@ -116,6 +116,30 @@ def run_agent_plan(agent_name: str, prompt: str,
   output = json_response["data"]
   return output
 
+
+def run_agent_execute_plan(plan_id: str,
+                           auth_token=None):
+  """
+  Run Agent on human input, and return output
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/" \
+            f"{plan_id}/run"
+
+  print(api_url)
+  resp = post_method(api_url,
+                     token=auth_token)
+  handle_error(resp)
+  json_response = resp.json()
+
+  print(json_response)
+  output = json_response["data"]
+  return output
+
+
 def run_query(query_engine_id: str, prompt: str,
               chat_id: str = None, auth_token=None):
   """
@@ -173,6 +197,8 @@ def get_all_chats(skip=0, limit=20, auth_token=None,
   api_base_url = get_api_base_url()
   api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}/chat?skip={skip}
             &limit={limit}&with_first_history={with_first_history}"""
+  print(api_url)
+
   resp = get_method(api_url,
                     token=auth_token)
   json_response = resp.json()
@@ -193,6 +219,23 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
   json_response = resp.json()
   output = json_response["data"]
   return output
+
+def get_plan(plan_id, auth_token=None) -> UserPlan:
+  """
+  Retrieve a specific UserPlan object
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/" \
+            f"{plan_id}"
+  resp = get_method(api_url,
+                    token=auth_token)
+  json_response = resp.json()
+  output = json_response["data"]
+  return output
+
 
 def login_user(user_email, user_password) -> str or None:
   req_body = {
