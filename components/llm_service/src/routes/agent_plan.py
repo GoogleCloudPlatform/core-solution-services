@@ -76,7 +76,9 @@ def get_plan(plan_id: str):
     "/{agent_name}",
     name="Generate a plan by agent on user input",
     response_model=LLMAgentPlanResponse)
-def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
+def generate_agent_plan(agent_name: str,
+                        plan_config: LLMAgentPlanModel,
+                        chat_id: str,
                         user_data: dict = Depends(validate_token)):
   """
   Run agent on user input to generate a plan.
@@ -109,6 +111,7 @@ def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
     user = User.find_by_email(user_data.get("email"))
     llm_type = get_llm_type_for_agent(agent_name)
 
+    # Generate the plan
     output, user_plan = agent_plan(agent_name, prompt, user.id)
 
     # create default name for user plan
@@ -116,15 +119,18 @@ def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
     user_plan.name = f"User {user.id} Plan {agent_name} {now}"
     user_plan.update()
 
-    # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
+    # Get the existing Chat data or create a new one.
+    if chat_id:
+      user_chat = UserChat.get_by_id(chat_id)
+    else:
+      user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
                          agent_name=agent_name)
-    history = UserChat.get_history_entry(prompt, output)
-    user_chat.history = history
-    user_chat.save()
-
+      chat_id = user_chat.id
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
+
+    user_chat.update_history(prompt, output)
+    user_chat.save()
 
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
