@@ -291,7 +291,7 @@ class LangChainVectorStore(VectorStore):
                           index_base: int) -> int:
 
     # generate np array of chunk IDs starting from index base
-    ids = np.arange(index_base, index_base + len(text_chunks))
+    ids = [i for i in range(index_base, index_base + len(text_chunks))]
 
     # Convert chunks to embeddings
     _, chunk_embeddings = embeddings.get_embeddings(
