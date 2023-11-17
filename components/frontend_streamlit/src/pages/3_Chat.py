@@ -25,6 +25,15 @@ import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
+CHAT_PAGE_STYLES = """
+<style>
+  .stTextInput input {
+    color: #555555;
+    -webkit-text-fill-color: black;
+  }
+</style>
+"""
+
 # For development purpose:
 params = st.experimental_get_query_params()
 st.session_state.auth_token = params.get("auth_token", [None])[0]
@@ -96,32 +105,31 @@ def chat_content():
 
       if "plan" in item:
         with st.chat_message("ai"):
-          st.divider()
           index = 1
 
           plan = get_plan(item["plan"]["id"])
           print(plan)
 
           for step in plan["plan_steps"]:
-            st.text_area(f"Step {index}", step["description"])
+            st.text_input(f"step-{index}", step["description"], disabled=True)
             index = index + 1
 
-        if st.button("Execute this plan"):
-          with st.spinner("Executing the plan..."):
-            plan_id = plan["id"]
-            output = run_agent_execute_plan(
-              plan_id=plan_id,
-              chat_id=st.session_state.chat_id,
-              auth_token=st.session_state.auth_token)
-          st.session_state.messages.append({
-            "AIOutput": f"Plan executed successfully. (plan_id={plan_id})",
-          })
+          plan_id = plan["id"]
+          if st.button("Execute this plan", key=f"plan-{plan_id}"):
+            with st.spinner("Executing the plan..."):
+              output = run_agent_execute_plan(
+                plan_id=plan_id,
+                chat_id=st.session_state.chat_id,
+                auth_token=st.session_state.auth_token)
+            st.session_state.messages.append({
+              "AIOutput": f"Plan executed successfully. (plan_id={plan_id})",
+            })
 
-          agent_process_output = output.get("agent_process_output", "")
-          agent_process_output = ansi_escape.sub("", agent_process_output)
-          st.session_state.messages.append({
-            "AIOutput": agent_process_output,
-          })
+            agent_process_output = output.get("agent_process_output", "")
+            agent_process_output = ansi_escape.sub("", agent_process_output)
+            st.session_state.messages.append({
+              "AIOutput": agent_process_output,
+            })
 
       index = index + 1
 
@@ -130,6 +138,7 @@ def chat_content():
 
 def chat_page():
   st.title(st.session_state.agent_name + " Agent")
+  st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()

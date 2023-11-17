@@ -67,11 +67,9 @@ def run_agent(agent_name: str, prompt: str,
     auth_token = get_auth_token()
 
   api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}"
   if chat_id:
-    api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}
-    /agent/run/{agent_name}/{chat_id}"""
-  else:
-    api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}"
+    api_url = api_url + f"/{chat_id}"
   request_body = {
     "prompt": prompt
   }
@@ -96,12 +94,10 @@ def run_agent_plan(agent_name: str, prompt: str,
     auth_token = get_auth_token()
 
   api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/{agent_name}"
   if chat_id:
-    api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}
-    /agent/plan/{agent_name}/{chat_id}"""
-  else:
-    api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}
-    /agent/plan/{agent_name}"""
+    api_url = api_url + f"/{chat_id}"
+
   request_body = {
     "prompt": prompt
   }

@@ -71,14 +71,17 @@ def chat_history_panel():
       auth_token=st.session_state.auth_token)
   css = CHAT_HISTORY_LIST_STYLE
   st.markdown(css, unsafe_allow_html=True)
+
   with st.sidebar:
     st.header("My Chats")
     all_agents = set()
+
     # Iterate through all chats and get available agents
     for user_chat in (st.session_state.user_chats or []):
       all_agents.add(user_chat["agent_name"])
     agent_options = list(all_agents)
     agent_options.insert(0, "All")
+
     # Add agent options to dropdown
     select_agent = st.selectbox("Agent:", agent_options, key="agent0")
     get_agent_chats(select_agent)
