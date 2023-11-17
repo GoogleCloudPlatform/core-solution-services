@@ -58,6 +58,16 @@ def get_plan(plan_id: str):
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
 
+    # Populate plan steps.
+    plan_steps = []
+    for plan_step_id in plan_data["plan_steps"]:
+      plan_step = PlanStep.find_by_id(plan_step_id)
+      plan_steps.append({
+        "id": plan_step_id,
+        "description": plan_step.description
+      })
+    plan_data["plan_steps"] = plan_steps
+
     return {
       "success": True,
       "message": f"Successfully retrieved user plan {plan_id}",
