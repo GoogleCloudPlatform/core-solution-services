@@ -17,5 +17,8 @@
 """
 
 import os
+from common.utils.secrets import get_env_or_secret
 
 PORT = os.environ["PORT"] if os.environ.get("PORT") is not None else 80
+
+OPENAI_API_KEY = get_env_or_secret("openai-api-key")

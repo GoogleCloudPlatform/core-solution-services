@@ -44,11 +44,12 @@ def hello():
   See <a href='/{service_path}/api/{version}/docs'>API docs</a>
   """
 
+dependencies = [Depends(validate_token)]
 
 api = FastAPI(
     title=service_title,
     version=version,
-    dependencies=[Depends(validate_token)])
+    dependencies=dependencies)
 
 api.include_router(workspace.router)
 
