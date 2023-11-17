@@ -31,6 +31,13 @@ CHAT_PAGE_STYLES = """
     color: #555555;
     -webkit-text-fill-color: black;
   }
+  .stTextArea label {
+    display: none !important;
+  }
+  .stTextArea textarea {
+    color: #555555;
+    -webkit-text-fill-color: black;
+  }
 </style>
 """
 
@@ -39,6 +46,7 @@ params = st.experimental_get_query_params()
 st.session_state.auth_token = params.get("auth_token", [None])[0]
 st.session_state.chat_id = params.get("chat_id", [None])[0]
 st.session_state.agent_name = params.get("agent_name", ["Chat"])[0]
+st.session_state.input_loading = False
 
 
 def on_input_change():
@@ -48,16 +56,18 @@ def on_input_change():
   st.session_state.messages.append({"HumanInput": user_input})
 
   # Send API to llm-service
+  st.session_state.input_loading = True
   if agent_name.lower() == "chat":
-    with st.spinner("Sending prompt to Agent..."):
-      response = run_agent(agent_name, user_input,
-                           chat_id=st.session_state.chat_id)
+    response = run_agent(agent_name, user_input,
+                         chat_id=st.session_state.chat_id)
+
   elif agent_name.lower() == "plan":
-    with st.spinner("Sending prompt to Agent..."):
-      response = run_agent_plan(agent_name, user_input,
-                                chat_id=st.session_state.chat_id)
+    response = run_agent_plan(agent_name, user_input,
+                              chat_id=st.session_state.chat_id)
   else:
     raise ValueError(f"agent_name {agent_name} is not supported.")
+
+  st.session_state.input_loading = False
 
   st.session_state.chat_id = response["chat"]["id"]
   st.session_state.messages.append({"AIOutput": response["content"]})
@@ -80,6 +90,19 @@ def init_messages():
   st.session_state.setdefault("messages", messages)
 
 
+def format_ai_output(text):
+  print(text)
+
+  text = ansi_escape.sub("", text)
+  text = text.replace("> Entering new AgentExecutor chain",
+                      "**Entering new AgentExecutor chain**")
+  text = text.replace("Observation:", "---\n**Observation**:")
+  text = text.replace("Thought:", "- **Thought**:")
+  text = text.replace("Action:", "- **Action**:")
+  text = text.replace("Action Input:", "- **Action Input**:")
+  text = text.replace("> Finished chain:", "** Finished chain**:")
+  return text
+
 def chat_content():
   init_messages()
 
@@ -88,6 +111,8 @@ def chat_content():
   with chat_placeholder.container():
     index = 1
     for item in st.session_state.messages:
+      print(item)
+
       if "HumanInput" in item:
         with st.chat_message("user"):
           st.write(item["HumanInput"], is_user=True, key=f"human_{index}")
@@ -95,7 +120,7 @@ def chat_content():
       if "AIOutput" in item:
         with st.chat_message("ai"):
           ai_output = item["AIOutput"]
-          ai_output = ansi_escape.sub("", ai_output)
+          ai_output = format_ai_output(ai_output)
           st.write(
               ai_output,
               key=f"ai_{index}",
@@ -111,7 +136,9 @@ def chat_content():
           print(plan)
 
           for step in plan["plan_steps"]:
-            st.text_input(f"step-{index}", step["description"], disabled=True)
+            st.text_area(f"step-{index}", step["description"],
+                         height=30, disabled=True,
+                         label_visibility="hidden")
             index = index + 1
 
           plan_id = plan["id"]
@@ -142,6 +169,9 @@ def chat_page():
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
+
+  if st.session_state.input_loading:
+    st.spinner("Sending prompt to Agent...")
 
   # Set up columns to mimic a right-side sidebar
   main_container = st.container()
