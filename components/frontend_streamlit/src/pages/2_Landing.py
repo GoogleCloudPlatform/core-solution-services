@@ -14,7 +14,7 @@
 """
   Streamlit app Landing Page
 """
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,pointless-string-statement,unused-variable
 import streamlit as st
 from api import get_all_query_engines
 from components.chat_history import chat_history_panel
@@ -36,7 +36,7 @@ def landing_page():
       agent_name = st.selectbox(
           "Agent:",
           ("Chat", "Plan"))
-      chat_button = st.button("Start",key=2)
+      chat_button = st.button("Start", key=2)
       if chat_button:
         utils.navigate_to(
           f"/Chat?agent_name={agent_name}&auth_token={auth_token}")
