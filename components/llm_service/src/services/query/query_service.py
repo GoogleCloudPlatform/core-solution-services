@@ -128,11 +128,12 @@ async def query_search(q_engine: QueryEngine,
   # generate embeddings for prompt
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
 
+  # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store.from_query_engine(q_engine)
-  match_indexes_list = qe_vector_store.find_neighbors(q_engine,
-                                                      query_embeddings)
+  match_indexes_list = qe_vector_store.similarity_search(q_engine,
+                                                         query_embeddings)
 
-  # assemble document chunk matches from match indexes
+  # assemble document chunk references from vector store indexes
   query_references = []
   match_indexes = match_indexes_list[0]
   for match in match_indexes:
@@ -305,7 +306,7 @@ def build_doc_index(doc_url: str, query_engine: str,
     raise InternalServerError(str(e)) from e
 
 
-def process_documents(doc_url: str, vector_store: VectorStore,
+def process_documents(doc_url: str, qe_vector_store: VectorStore,
                       q_engine: QueryEngine, storage_client) -> \
                       Tuple[List[QueryDocument], List[str]]:
   """

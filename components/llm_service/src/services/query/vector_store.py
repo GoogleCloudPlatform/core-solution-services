@@ -86,8 +86,8 @@ class VectorStore(ABC):
 
 
   @abstractmethod
-  def find_neighbors(self, q_engine: QueryEngine,
-                     query_embeddings: List[List[float]]) -> List[int]:
+  def similarity_search(self, q_engine: QueryEngine,
+                        query_embeddings: List[List[float]]) -> List[int]:
     """
     Retrieve text matches for query embeddings.
     Args:
@@ -256,8 +256,8 @@ class MatchingEngineVectorStore(VectorStore):
     except Exception as e:
       Logger.error(f"Error creating ME index or endpoint {e}")
 
-  def find_neighbors(self, q_engine: QueryEngine,
-                     query_embeddings: List[List[float]]) -> List[int]:
+  def similarity_search(self, q_engine: QueryEngine,
+                        query_embeddings: List[List[float]]) -> List[int]:
     """
     Retrieve text matches for query embeddings.
     Args:
@@ -309,8 +309,8 @@ class LangChainVectorStore(VectorStore):
     new_index_base = index_base + len(text_chunks)
     return new_index_base
 
-  def find_neighbors(self, q_engine: QueryEngine,
-                     query_embeddings: List[List[float]]) -> List[int]:
+  def similarity_search(self, q_engine: QueryEngine,
+                       query_embeddings: List[List[float]]) -> List[int]:
     return self.lc_vector_store.similarity_search_by_vector(
         embedding=query_embeddings,
         k=NUM_MATCH_RESULTS
