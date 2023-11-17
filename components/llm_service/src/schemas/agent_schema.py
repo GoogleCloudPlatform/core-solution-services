@@ -84,6 +84,18 @@ class LLMAgentPlanResponse(BaseModel):
     }
 
 
+class LLMAgentPlanRunResponse(BaseModel):
+  """LLM Agent plan response model"""
+  success: str
+  message: str = ""
+  data: dict = {}
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": AGENT_PLAN_RESPONSE_EXAMPLE
+    }
+
 class LLMUserPlanResponse(BaseModel):
   """LLM User plan response model"""
   success: str

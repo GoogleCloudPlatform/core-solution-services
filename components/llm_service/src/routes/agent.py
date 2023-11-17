@@ -61,7 +61,8 @@ def get_agents():
     "/run/{agent_name}",
     name="Run agent on user input",
     response_model=LLMAgentRunResponse)
-def agent_run(agent_name: str, run_config: LLMAgentRunModel,
+def agent_run(agent_name: str,
+              run_config: LLMAgentRunModel,
               user_data: dict = Depends(validate_token)):
   """
   Run agent on user input. Store history in new UserChat.
@@ -95,9 +96,9 @@ def agent_run(agent_name: str, run_config: LLMAgentRunModel,
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                         agent_name=agent_name)
-    history = UserChat.get_history_entry(prompt, output)
-    user_chat.history = history
+                           agent_name=agent_name)
+    # Save user chat to retrieve actual ID.
+    user_chat.update_history(prompt, output)
     user_chat.save()
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
