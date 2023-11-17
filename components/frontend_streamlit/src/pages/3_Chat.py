@@ -23,7 +23,7 @@ from api import (
 from components.chat_history import chat_history_panel
 import utils
 
-ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 # For development purpose:
 params = st.experimental_get_query_params()

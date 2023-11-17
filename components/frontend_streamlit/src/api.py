@@ -16,10 +16,11 @@ API interface for streamlit UX
 """
 # pylint: disable=unused-import,unused-argument
 import requests
-from common.utils.request_handler import get_method, post_method
-from common.models import Agent, UserChat, UserPlan
 from typing import List
 import streamlit as st
+
+from common.utils.request_handler import get_method, post_method
+from common.models import Agent, UserChat, UserPlan
 from common.config import API_BASE_URL
 
 
