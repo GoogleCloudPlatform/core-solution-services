@@ -111,6 +111,7 @@ def chat_content():
             plan_id = plan["id"]
             output = run_agent_execute_plan(
               plan_id=plan_id,
+              chat_id=st.session_state.chat_id,
               auth_token=st.session_state.auth_token)
           st.session_state.messages.append({
             "AIOutput": f"Plan executed successfully. (plan_id={plan_id})",

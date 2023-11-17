@@ -119,6 +119,7 @@ def run_agent_plan(agent_name: str, prompt: str,
 
 
 def run_agent_execute_plan(plan_id: str,
+                           chat_id: str,
                            auth_token=None):
   """
   Run Agent on human input, and return output
@@ -128,7 +129,7 @@ def run_agent_execute_plan(plan_id: str,
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/" \
-            f"{plan_id}/run"
+            f"{plan_id}/run?chat_id={chat_id}"
 
   print(api_url)
   resp = post_method(api_url,
