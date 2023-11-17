@@ -40,7 +40,7 @@ from config.vector_store_config import (PG_HOST, PG_PORT,
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
 from langchain.vectorstores.pgvector import PGVector
 from google.cloud.aiplatform.matching_engine import (
-  matching_engine_index_endpoint as ie, matching_engine_index_config as ic)
+    matching_engine_index_config as ic)
 
 Logger = Logger.get_logger(__file__)
 
@@ -293,8 +293,8 @@ class LangChainVectorStore(VectorStore):
 
   def index_document(self, doc_name: str, text_chunks: List[str],
                           index_base: int) -> int:
-    # generate np array of chunk IDs starting from index base
-    ids = [i for i in range(index_base, index_base + len(text_chunks))]
+    # generate list of chunk IDs starting from index base
+    ids = list(range(index_base, index_base + len(text_chunks)))
 
     # Convert chunks to embeddings
     _, chunk_embeddings = embeddings.get_embeddings(
