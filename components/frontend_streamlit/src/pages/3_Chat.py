@@ -85,8 +85,10 @@ def chat_content():
 
       if "AIOutput" in item:
         with st.chat_message("ai"):
+          ai_output = item["AIOutput"]
+          ai_output = ansi_escape.sub("", ai_output)
           st.write(
-              item["AIOutput"],
+              ai_output,
               key=f"ai_{index}",
               allow_html=False,
               is_table=False,  # TODO: Detect whether an output content type.
@@ -105,19 +107,19 @@ def chat_content():
             index = index + 1
 
         if st.button("Execute this plan"):
-          st.write("Executing...")
-          plan_id = plan["id"]
-          output = run_agent_execute_plan(
-            plan_id=plan_id,
-            auth_token=st.session_state.auth_token)
+          with st.spinner("Executing the plan..."):
+            plan_id = plan["id"]
+            output = run_agent_execute_plan(
+              plan_id=plan_id,
+              auth_token=st.session_state.auth_token)
           st.session_state.messages.append({
-            "AIOutput": f"Plan {plan_id} executed successfully.",
+            "AIOutput": f"Plan executed successfully. (plan_id={plan_id})",
           })
 
           agent_process_output = output.get("agent_process_output", "")
           agent_process_output = ansi_escape.sub("", agent_process_output)
           st.session_state.messages.append({
-            "AIOutput": output.get("agent_process_output"),
+            "AIOutput": agent_process_output,
           })
 
       index = index + 1
