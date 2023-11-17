@@ -20,8 +20,6 @@ import traceback
 from fastapi import APIRouter, Depends
 from common.models import User, UserChat, UserPlan, PlanStep
 from common.utils.auth_service import validate_token
-from common.utils.batch_jobs import initiate_batch_job
-from common.utils.config import JOB_TYPE_AGENT_PLAN_EXECUTE
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
@@ -35,7 +33,7 @@ from schemas.agent_schema import (LLMAgentPlanModel,
 from services.agents.agent_service import (agent_plan,
                                            agent_execute_plan,
                                            get_llm_type_for_agent)
-from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, PROJECT_ID)
+from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent/plan", tags=["Agent Plans"],
@@ -197,6 +195,7 @@ async def agent_plan_execute(plan_id: str,
   """
   user_plan = UserPlan.find_by_id(plan_id)
   assert user_plan, f"Unable to find user plan {plan_id}"
+  assert user_data, "user_data is not defined."
 
   # TODO: Add a check whether this plan belongs to a particular
   # user_id.

@@ -16,20 +16,6 @@
 
 # pylint: disable=unused-argument,unused-import
 
-from langchain.agents import Tool, AgentExecutor, BaseMultiActionAgent, AgentOutputParser
-from langchain.tools.gmail.utils import build_resource_service, get_gmail_credentials
-from langchain.agents.agent_toolkits import GmailToolkit
-from langchain.agents import initialize_agent, AgentType
-from langchain.agents.chat.base import ChatAgent
-from langchain.prompts import StringPromptTemplate, ChatPromptTemplate, PromptTemplate
-from langchain.llms import OpenAI, VertexAI
-from langchain.chat_models import ChatVertexAI, ChatOpenAI
-from langchain.utilities import SerpAPIWrapper
-from langchain.chains import LLMChain
-from typing import List, Union
-from langchain.schema import AgentAction, AgentFinish, OutputParserException
-
-from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
 from langchain.tools import tool
@@ -61,8 +47,7 @@ def gmail_tool(email_text: str) -> str:
   """
   print(f"[gmail_tool]: {email_text}")
 
-  # api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
-  api_url_prefix = "https://gcp-mira-demo.cloudpssolutions.com/tools-service/api/v1"
+  api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
   api_url = f"{api_url_prefix}/workspace/gmail"
 
   # TODO: Replace the usage of context with StructuredToolChat agent.
@@ -99,9 +84,7 @@ def docs_tool(content: str) -> str:
   """
   print(f"[docs_tool]: {content}")
 
-  # api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
-  api_url_prefix = "https://gcp-mira-demo.cloudpssolutions.com/tools-service/" \
-                   "api/v1"
+  api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
   api_url = f"{api_url_prefix}/workspace/compose_email"
 
   # TODO: Add more template to support additional use cases.
