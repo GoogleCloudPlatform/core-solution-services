@@ -50,6 +50,10 @@ from config.config import (
     VERTEX_LLM_TYPE_BISON_TEXT,
     VERTEX_LLM_TYPE_BISON_CHAT,
 
+    # LLM config
+    ENABLE_OPENAI_LLM,
+    ENABLE_COHERE_LLM,
+
     # LLM models and collections of models
     DEFAULT_QUERY_CHAT_MODEL,
     DEFAULT_QUERY_EMBEDDING_MODEL,
