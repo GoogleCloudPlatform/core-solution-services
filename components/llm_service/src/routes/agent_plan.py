@@ -202,13 +202,14 @@ async def agent_plan_execute(plan_id: str,
 
   try:
     prompt = """Run the plan in the chat history provided below."""
-    result = agent_execute_plan(agent_name, prompt, user_plan)
+    result, agent_process_output = agent_execute_plan(agent_name, prompt, user_plan)
     Logger.info(result)
     return {
       "success": True,
       "message": f"Successfully executed plan {plan_id}",
       "data": {
         "result": result,
+        "agent_process_output": agent_process_output
       }
     }
 

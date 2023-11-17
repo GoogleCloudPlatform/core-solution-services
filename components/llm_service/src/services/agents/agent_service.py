@@ -18,6 +18,8 @@
 import inspect
 import json
 import re
+import io
+from contextlib import redirect_stdout
 from typing import List, Tuple
 
 from langchain.agents import AgentExecutor
@@ -244,10 +246,16 @@ def agent_execute_plan(
     "chat_history": plan_steps
   }
   Logger.info("Running agent executor.... ")
-  output = agent_executor.run(agent_inputs)
+
+  # Collect print-output to the string.
+  with io.StringIO() as buf, redirect_stdout(buf):
+    result = agent_executor.run(agent_inputs)
+    agent_process_output = buf.getvalue()
+    Logger.info(f"Agent process output: \n\n{agent_process_output}")
+
   Logger.info(f"Agent {agent_name} generated"
-              f" output=[{output}]")
-  return output
+              f" result=[{result}]")
+  return result, agent_process_output
 
 
 def get_llm_type_for_agent(agent_name: str) -> str:
