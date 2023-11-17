@@ -15,12 +15,15 @@
   Streamlit app Chat Page
 """
 # pylint: disable=invalid-name
+import re
 import streamlit as st
 from api import (
     get_chat, run_agent, run_agent_plan, get_plan,
     run_agent_execute_plan)
 from components.chat_history import chat_history_panel
 import utils
+
+ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
 # For development purpose:
 params = st.experimental_get_query_params()
@@ -95,19 +98,26 @@ def chat_content():
           index = 1
 
           plan = get_plan(item["plan"]["id"])
+          print(plan)
+
           for step in plan["plan_steps"]:
-            print(step)
             st.text_area(f"Step {index}", step["description"])
             index = index + 1
 
         if st.button("Execute this plan"):
           st.write("Executing...")
+          plan_id = plan["id"]
           output = run_agent_execute_plan(
-            plan_id=plan["id"],
+            plan_id=plan_id,
             auth_token=st.session_state.auth_token)
-
           st.session_state.messages.append({
-            "AIOutput": output,
+            "AIOutput": f"Plan {plan_id} executed successfully.",
+          })
+
+          agent_process_output = output.get("agent_process_output", "")
+          agent_process_output = ansi_escape.sub("", agent_process_output)
+          st.session_state.messages.append({
+            "AIOutput": output.get("agent_process_output"),
           })
 
       index = index + 1
