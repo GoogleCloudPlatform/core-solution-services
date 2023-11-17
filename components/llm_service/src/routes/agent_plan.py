@@ -60,7 +60,7 @@ def get_plan(plan_id: str):
 
     # Populate plan steps.
     plan_steps = []
-    for plan_step_id in plan_data["plan_steps"]:
+    for plan_step_id in plan_data.get("plan_steps", []):
       plan_step = PlanStep.find_by_id(plan_step_id)
       plan_steps.append({
         "id": plan_step_id,
