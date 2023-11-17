@@ -160,8 +160,7 @@ def chat_content():
 
       index = index + 1
 
-  st.write("User Input:")
-  st.text_area("User Input:", on_change=on_input_change, key="user_input")
+  st.text_input("User Input:", on_change=on_input_change, key="user_input")
 
 
 def chat_page():
