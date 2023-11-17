@@ -131,7 +131,7 @@ def generate_agent_plan(agent_name: str,
     # Get the existing Chat data or create a new one.
     user_chat = None
     if chat_id:
-      user_chat = UserChat.get_by_id(chat_id)
+      user_chat = UserChat.find_by_id(chat_id)
 
     if not user_chat:
       user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
@@ -182,6 +182,7 @@ def generate_agent_plan(agent_name: str,
     name="Start to execute a plan",
     response_model=LLMAgentPlanRunResponse)
 async def agent_plan_execute(plan_id: str,
+                             chat_id: str = None,
                              agent_name: str = "Task",
                              user_data: dict = Depends(validate_token)):
   """
@@ -201,9 +202,21 @@ async def agent_plan_execute(plan_id: str,
   # user_id.
 
   try:
+    # Get the existing Chat data or create a new one.
+    user_chat = None
+    if chat_id:
+      user_chat = UserChat.find_by_id(chat_id)
+
     prompt = """Run the plan in the chat history provided below."""
     result, agent_process_output = agent_execute_plan(
         agent_name, prompt, user_plan)
+
+    if user_chat:
+      user_chat.update_history(
+          response=f"Successfully executed plan {plan_id}")
+      user_chat.update_history(response=agent_process_output)
+      user_chat.save()
+
     Logger.info(result)
     return {
       "success": True,
