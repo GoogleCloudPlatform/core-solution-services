@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
   Streamlit app config file
 """
@@ -31,7 +30,7 @@ try:
       request={
           "name":
               f"projects/{PROJECT_ID}" +
-               "/secrets/llm-backend-robot-username/versions/latest"
+              "/secrets/llm-backend-robot-username/versions/latest"
       }).payload.data.decode("utf-8")
   LLM_BACKEND_ROBOT_USERNAME = LLM_BACKEND_ROBOT_USERNAME.strip()
 except Exception as e:
@@ -42,23 +41,22 @@ try:
       request={
           "name":
               f"projects/{PROJECT_ID}" +
-               "/secrets/llm-backend-robot-password/versions/latest"
+              "/secrets/llm-backend-robot-password/versions/latest"
       }).payload.data.decode("utf-8")
   LLM_BACKEND_ROBOT_PASSWORD = LLM_BACKEND_ROBOT_PASSWORD.strip()
 except Exception as e:
   LLM_BACKEND_ROBOT_PASSWORD = None
 
 # Update this config for local development or notebook usage, by adding
-# an additional param to the UserCredentials class initializer, to
-# pass URL to auth client.
-#auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
-#                              LLM_BACKEND_ROBOT_PASSWORD,
-#                              "http://localhost:9004")
+# a param to the UserCredentials class initializer, to pass URL to auth client
+# auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
+#                               LLM_BACKEND_ROBOT_PASSWORD,
+#                               "http://localhost:9004")
 # pass URL to auth client for external routes to auth.  Replace dev.domain with
 # the externally mapped domain for your dev server
-#auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
-#                              LLM_BACKEND_ROBOT_PASSWORD,
-#                              "https://[dev.domain]")
+# auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
+#                               LLM_BACKEND_ROBOT_PASSWORD,
+#                               "https://[dev.domain]")
 
 auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
                               LLM_BACKEND_ROBOT_PASSWORD)

@@ -56,11 +56,12 @@ def get_agent_chats(selected_agent):
       agent_name = user_chat["agent_name"]
       with st.container():
         select_chat = st.button(f"{agent_name}: {first_question}",
-                        use_container_width=True, key=f"{agent_name}{index}")
+                                use_container_width=True,
+                                key=f"{agent_name}{index}")
         if select_chat:
           utils.navigate_to(
             f"/Chat?chat_id={chat_id}&auth_token={st.session_state.auth_token}")
-    index+=1
+    index += 1
 
 def chat_history_panel():
   """
@@ -75,7 +76,7 @@ def chat_history_panel():
     all_agents = set()
     # Iterate through all chats and get available agents
     for user_chat in (st.session_state.user_chats or []):
-      all_agents.add(user_chat["agent_name"])
+      all_agents.add(user_chat.agent_name)
     agent_options = list(all_agents)
     agent_options.insert(0, "All")
     # Add agent options to dropdown

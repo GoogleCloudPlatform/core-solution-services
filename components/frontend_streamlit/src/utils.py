@@ -11,17 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+  Streamlit app utils file
+"""
 import re
 import streamlit as st
-from streamlit.components.v1 import html
 from streamlit_javascript import st_javascript
 from config import API_BASE_URL
 
 def navigate_to(url):
-  nav_script = """
-      <meta http-equiv="refresh" content="0; url='%s'">
-  """ % (url)
+  nav_script = f"""
+      <meta http-equiv="refresh" content="0; url='{url}'">
+  """
   st.write(nav_script, unsafe_allow_html=True)
 
 def init_api_base_url():
