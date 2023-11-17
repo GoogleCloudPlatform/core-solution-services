@@ -46,7 +46,7 @@ async def query_generate(
             q_engine: QueryEngine,
             llm_type: Optional[str] = DEFAULT_QUERY_CHAT_MODEL,
             user_query: Optional[UserQuery] = None) -> \
-                Tuple[QueryResult, List[QueryReference]]:
+                Tuple[QueryResult, List[dict]]:
   """
   Execute a query over a query engine
 
@@ -257,7 +257,7 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
       "query_engine_id", "==", q_engine.id
     ).delete()
     QueryEngine.delete_by_id(q_engine.id)
-    raise InternalServerError(e) from e
+    raise InternalServerError(str(e)) from e
 
   Logger.info(f"Completed query engine build for {query_engine}")
 
@@ -305,9 +305,9 @@ def build_doc_index(doc_url: str, query_engine: str,
     raise InternalServerError(str(e)) from e
 
 
-def process_documents(doc_url: str, qe_vector_store: VectorStore,
-                       q_engine: QueryEngine, storage_client) -> \
-                       Tuple[List[QueryDocument], List[str]]:
+def process_documents(doc_url: str, vector_store: VectorStore,
+                      q_engine: QueryEngine, storage_client) -> \
+                      Tuple[List[QueryDocument], List[str]]:
   """
   Process docs in data source and upload embeddings to vector store
   Returns:
@@ -358,5 +358,3 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       docs_processed.append(query_doc)
 
   return docs_processed, data_source.docs_not_processed
-
-

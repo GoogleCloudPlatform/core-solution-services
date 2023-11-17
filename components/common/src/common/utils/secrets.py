@@ -11,12 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 
 """ Secrets Helper Functions"""
 import google_crc32c
 import requests
-from config import PROJECT_ID
+import os
 from google.cloud import secretmanager
+
+from common.config import PROJECT_ID
+from common.utils.logging_handler import Logger
+
+Logger = Logger.get_logger(__file__)
+sm_client = secretmanager.SecretManagerServiceClient()
 
 
 def get_secret(secret_id):
@@ -28,16 +35,16 @@ def get_secret(secret_id):
   Returns:
       str: the "UTF-8" decoded secret payload
   """
-  client = secretmanager.SecretManagerServiceClient()
   secret_name = f"projects/{PROJECT_ID}/secrets/{secret_id}/versions/latest"
 
-  response = client.access_secret_version(request={"name": secret_name})
+  response = sm_client.access_secret_version(request={"name": secret_name})
   crc32c = google_crc32c.Checksum()
   crc32c.update(response.payload.data)
   if response.payload.data_crc32c != int(crc32c.hexdigest(), 16):
     print("Data corruption detected.")
     return response
   payload = response.payload.data.decode("UTF-8")
+  payload = payload.strip()
   return payload
 
 
@@ -63,3 +70,18 @@ def get_backend_robot_id_token():
                       timeout=60)
   payload = res.json()["data"]
   return payload["idToken"]
+
+
+def get_env_or_secret(secret_id):
+  value = os.getenv(secret_id)
+  if value is None:
+    try:
+      value = get_secret(secret_id)
+
+    except Exception as e:
+      # Suppressing all exceptions.
+      message = f"Unable to get secret {secret_id}: {e}"
+      Logger.error(message)
+      value = None
+
+  return value

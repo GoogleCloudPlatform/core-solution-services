@@ -16,8 +16,8 @@
 import config
 import uvicorn
 from fastapi import FastAPI
-from routes import (refresh_token, validate_token, password, sign_in, sign_up,
-                    inspace_token)
+from fastapi.responses import HTMLResponse
+from routes import (refresh_token, validate_token, password, sign_in, sign_up)
 from common.utils.http_exceptions import add_exception_handlers
 
 app = FastAPI()
@@ -31,6 +31,11 @@ os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 """
 
+# Basic API config
+service_title = "Authentication"
+service_path = "authentication"
+version = "v1"
+
 
 @app.get("/ping")
 def health_check():
@@ -40,6 +45,14 @@ def health_check():
     "data": {}
   }
 
+@app.get("/", response_class=HTMLResponse)
+@app.get(f"/{service_path}", response_class=HTMLResponse)
+@app.get(f"/{service_path}/", response_class=HTMLResponse)
+def hello():
+  return f"""
+  You've reached the {service_title}. <br>
+  See <a href='/{service_path}/api/{version}/docs'>API docs</a>
+  """
 
 api = FastAPI(
   title="Authentication APIs",
@@ -50,12 +63,11 @@ api.include_router(sign_in.router)
 api.include_router(password.router)
 api.include_router(refresh_token.router)
 api.include_router(validate_token.router)
-api.include_router(inspace_token.router)
-
-app.mount("/authentication/api/v1", api)
 
 add_exception_handlers(app)
 add_exception_handlers(api)
+app.mount(f"/{service_path}/api/{version}", api)
+
 
 if __name__ == "__main__":
   uvicorn.run(

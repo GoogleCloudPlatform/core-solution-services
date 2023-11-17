@@ -18,6 +18,8 @@ from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_token
+from routes import workspace
+import config
 
 # Basic API config
 service_title = "Tools Service"
@@ -42,11 +44,14 @@ def hello():
   See <a href='/{service_path}/api/{version}/docs'>API docs</a>
   """
 
+dependencies = [Depends(validate_token)]
 
 api = FastAPI(
     title=service_title,
     version=version,
-    dependencies=[Depends(validate_token)])
+    dependencies=dependencies)
+
+api.include_router(workspace.router)
 
 add_exception_handlers(app)
 add_exception_handlers(api)

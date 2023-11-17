@@ -111,13 +111,6 @@ GCLOUD_LOG_URL = ("https://console.cloud.google.com/logs/query;" +
     "{MICROSERVICE}%22%20severity%3E%3DDEFAULT;timeRange=" +
     "{INIT_TIMESTAMP}%2F{FINAL_TIMESTAMP}?project={GCP_PROJECT}")
 
-SERVICES = {
-  "authentication": {
-    "host": "authentication",
-    "port": 80
-  }
-}
-
 STAFF_USERS = ["assessor", "instructor", "coach"]
 
 EXTERNAL_USER_PROPERTY_PREFIX = os.getenv("EXTERNAL_USER_PROPERTY_PREFIX")

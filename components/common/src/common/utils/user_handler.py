@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utility methods for validation of authentication."""
-import firebase_admin
-from firebase_admin import auth
-
-default_app = firebase_admin.initialize_app()
+"""Helper functions to handle user related operations."""
+from common.models import User
 
 
-def verify_token(token):
-  """
-    Verifies id token issued to user, Return user authentication
-    details is token is valid, else Returns token expired as error
-    Args:
-        ID Token: String
-    Returns:
-        User auth details: Dict
-  """
-  return auth.verify_id_token(token)
+def get_user_by_email(email, check_firestore_user=False):
+  user = User.find_by_email(email)
+  if check_firestore_user and not user:
+    raise ValueError(f"Unauthorized: user {email} not found in the database.")
+  return user
+
+def create_user_in_firestore(user_data: dict):
+  user = User()
+  user.user_id = user_data["user_id"]
+  user.email = user_data["email"]
+  return user

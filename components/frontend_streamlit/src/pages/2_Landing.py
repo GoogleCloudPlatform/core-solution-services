@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+  Streamlit app Landing Page
+"""
+# pylint: disable=invalid-name,pointless-string-statement,unused-variable
 import streamlit as st
 from api import get_all_query_engines
 from components.chat_history import chat_history_panel
@@ -25,17 +28,18 @@ def landing_page():
   st.title("Welcome.")
   chat_history_panel()
 
-  start_chat, col2, start_query = st.columns((1,1,1))
+  start_chat, col2, start_query = st.columns((1, 1, 1))
 
   with start_chat:
     with st.container():
       "Start a Chat with"
       agent_name = st.selectbox(
-          'Agent:',
-          ('Chat', 'Plan'))
-      chat_button=st.button("Start",key=2)
+          "Agent:",
+          ("Chat", "Plan"))
+      chat_button = st.button("Start", key=2)
       if chat_button:
-        utils.navigate_to(f"/Chat?agent_name={agent_name}&auth_token={auth_token}")
+        utils.navigate_to(
+          f"/Chat?agent_name={agent_name}&auth_token={auth_token}")
 
   with start_query:
     # Get all query engines as a list
@@ -49,12 +53,14 @@ def landing_page():
     with st.container():
       "Start a Query with"
       qe_name = st.selectbox(
-          'Query Engine:',
+          "Query Engine:",
           tuple(query_engines.keys()))
-      query_button = st.button("Start",key=3)
+      query_button = st.button("Start", key=3)
       query_engine_id = query_engines[qe_name]["id"]
       if query_button:
-          utils.navigate_to(f"/Query?query_engine_id={query_engine_id}&auth_token={auth_token}")
+        utils.navigate_to(
+          f"/Query?query_engine_id={query_engine_id}&auth_token={auth_token}")
+
 
 if __name__ == "__main__":
   utils.init_api_base_url()

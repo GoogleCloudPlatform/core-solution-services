@@ -15,12 +15,6 @@
  *
  */
 
-# add timer to avoid errors on API enablement
-resource "time_sleep" "wait_60_seconds" {
-  depends_on      = [module.project_services]
-  create_duration = "60s"
-}
-
 resource "google_apikeys_key" "idp_api_key" {
   depends_on   = [time_sleep.wait_60_seconds]
   name         = "idp-api-key"

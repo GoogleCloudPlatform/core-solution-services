@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+  Streamlit app Login Page
+"""
+# pylint: disable=invalid-name
 import streamlit as st
-import importlib
 import utils
 import api
-# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
-
 
 def login_clicked(username, password):
   token = api.login_user(username, password)
@@ -36,7 +36,7 @@ def login_page():
   if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
 
-  if st.session_state["logged_in"] == False:
+  if not st.session_state["logged_in"]:
     st.warning("Please enter your username and password")
 
   with placeholder.form("login"):
@@ -46,6 +46,7 @@ def login_page():
     submit = st.form_submit_button("Login")
   if submit:
     login_clicked(username, password)
+
 
 if __name__ == "__main__":
   utils.init_api_base_url()

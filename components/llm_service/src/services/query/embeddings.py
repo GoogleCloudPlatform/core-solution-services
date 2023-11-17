@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Generate Query embedddings. Currently using Vertex TextEmbedding model.
+Generate Query embeddings. Currently, using Vertex TextEmbedding model.
 """
 import time
-import functools
 from typing import List, Optional, Generator, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
@@ -54,7 +53,7 @@ def get_embeddings(text_chunks: List[str]) -> Tuple[List[bool], np.ndarray]:
     futures = []
     for batch in batches:
       futures.append(
-          executor.submit(functools.partial(encode_texts_to_embeddings), batch)
+          executor.submit(encode_texts_to_embeddings, batch)
       )
       time.sleep(seconds_per_job)
 

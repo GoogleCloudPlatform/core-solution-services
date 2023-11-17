@@ -11,12 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 API interface for streamlit UX
 """
+# pylint: disable=unused-import,unused-argument
 import requests
-import re
 from common.utils.request_handler import get_method, post_method
 from common.models import Agent, UserChat
 from typing import List
@@ -37,9 +36,10 @@ def get_api_base_url():
 
 def handle_error(response):
   if response.status_code != 200:
-    raise RuntimeError(f"Error with status {response.status_code}: {str(response)}")
+    raise RuntimeError(
+      f"Error with status {response.status_code}: {str(response)}")
 
-def get_agents() -> List[Agent]:
+def get_agents(auth_token=None) -> List[Agent]:
   """
   Return list of Agent models from LLM Service
   """
@@ -48,18 +48,17 @@ def get_agents() -> List[Agent]:
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent"
-  resp = get_method(api_url,
-                    auth_token=None)
+  resp = get_method(api_url, auth_token)
   json_response = resp.json()
 
   # load agent models based on response
   agent_list = []
   for agent_name in json_response.get("data"):
-    agent_list.append(Agent.get_by_name(agent_name))
+    agent_list.append(Agent.find_by_name(agent_name))
   return agent_list
 
 def run_agent(agent_name: str, prompt: str,
-              chat_id: str=None, auth_token=None):
+              chat_id: str = None, auth_token=None):
   """
   Run Agent on human input, and return output
   """
@@ -68,7 +67,8 @@ def run_agent(agent_name: str, prompt: str,
 
   api_base_url = get_api_base_url()
   if chat_id:
-    api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}/{chat_id}"
+    api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}
+    /agent/run/{agent_name}/{chat_id}"""
   else:
     api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}"
   request_body = {
@@ -87,7 +87,7 @@ def run_agent(agent_name: str, prompt: str,
   return output
 
 def run_agent_plan(agent_name: str, prompt: str,
-              chat_id: str=None, auth_token=None):
+                   chat_id: str = None, auth_token=None):
   """
   Run Agent on human input, and return output
   """
@@ -96,9 +96,11 @@ def run_agent_plan(agent_name: str, prompt: str,
 
   api_base_url = get_api_base_url()
   if chat_id:
-    api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/{agent_name}/{chat_id}"
+    api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}
+    /agent/plan/{agent_name}/{chat_id}"""
   else:
-    api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/{agent_name}"
+    api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}
+    /agent/plan/{agent_name}"""
   request_body = {
     "prompt": prompt
   }
@@ -115,13 +117,14 @@ def run_agent_plan(agent_name: str, prompt: str,
   return output
 
 def run_query(query_engine_id: str, prompt: str,
-              chat_id: str=None, auth_token=None):
+              chat_id: str = None, auth_token=None):
   """
   Run Agent on human input, and return output
   """
   if not auth_token:
     auth_token = get_auth_token()
 
+  print(chat_id)
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/engine/{query_engine_id}"
   request_body = {
@@ -159,7 +162,8 @@ def get_all_query_engines(auth_token=None):
   output = json_response["data"]
   return output
 
-def get_all_chats(skip=0, limit=20, auth_token=None) -> List[UserChat]:
+def get_all_chats(skip=0, limit=20, auth_token=None,
+                   with_first_history=True) -> List[UserChat]:
   """
   Retrieve all chats of a specific user.
   """
@@ -167,7 +171,8 @@ def get_all_chats(skip=0, limit=20, auth_token=None) -> List[UserChat]:
     auth_token = get_auth_token()
 
   api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/chat?skip={skip}&limit={limit}"
+  api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}/chat?skip={skip}
+            &limit={limit}&with_first_history={with_first_history}"""
   resp = get_method(api_url,
                     token=auth_token)
   json_response = resp.json()
@@ -189,7 +194,7 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
   output = json_response["data"]
   return output
 
-def login_user(user_email, user_password) -> str:
+def login_user(user_email, user_password) -> str or None:
   req_body = {
     "email": user_email,
     "password": user_password
@@ -198,7 +203,7 @@ def login_user(user_email, user_password) -> str:
   url = f"{api_base_url}/{AUTH_SERVICE_PATH}/sign-in/credentials"
   print(f"API url: {url}")
 
-  sign_in_req = requests.post(url, json=req_body, verify=False)
+  sign_in_req = requests.post(url, json=req_body, verify=False, timeout=10)
 
   sign_in_res = sign_in_req.json()
   if sign_in_res is None or sign_in_res["data"] is None:

@@ -14,6 +14,8 @@
 """
 Query Vector Store
 """
+# pylint: disable=broad-exception-caught,ungrouped-imports
+
 from abc import ABC, abstractmethod
 import json
 import gc
@@ -37,8 +39,8 @@ from config.vector_store_config import (PG_HOST, PG_PORT,
                                         VECTOR_STORE_MATCHING_ENGINE)
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
 from langchain.vectorstores.pgvector import PGVector
-
-# pylint: disable=broad-exception-caught
+from google.cloud.aiplatform.matching_engine import (
+  matching_engine_index_endpoint as ie, matching_engine_index_config as ic)
 
 Logger = Logger.get_logger(__file__)
 
@@ -121,7 +123,7 @@ class MatchingEngineVectorStore(VectorStore):
     return VECTOR_STORE_MATCHING_ENGINE
 
   def index_document(self, doc_name: str, text_chunks: List[str],
-                          index_base: int) -> int:
+                     index_base: int) -> int:
     """
     Generate matching engine index data files in a local directory.
     Args:
@@ -132,6 +134,7 @@ class MatchingEngineVectorStore(VectorStore):
 
     chunk_index = 0
     num_chunks = len(text_chunks)
+    embeddings_dir = None
 
     # create a list of chunks to process
     while chunk_index < num_chunks:
@@ -212,7 +215,7 @@ class MatchingEngineVectorStore(VectorStore):
     Logger.info(f"creating matching engine index {index_name}")
 
     index_description = (
-        "Matching Engine index for LLM Service query engine: " + \
+        "Matching Engine index for LLM Service query engine: " +
         self.q_engine.name)
 
     tree_ah_index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
@@ -220,7 +223,7 @@ class MatchingEngineVectorStore(VectorStore):
         contents_delta_uri=self.bucket_uri,
         dimensions=DIMENSIONS,
         approximate_neighbors_count=150,
-        distance_measure_type="DOT_PRODUCT_DISTANCE",
+        distance_measure_type=ic.DistanceMeasureType.DOT_PRODUCT_DISTANCE,
         leaf_node_embedding_count=500,
         leaf_nodes_to_search_percent=80,
         description=index_description,
@@ -271,7 +274,6 @@ class MatchingEngineVectorStore(VectorStore):
         num_neighbors=NUM_MATCH_RESULTS
     )
     return match_indexes_list
-
 
 class LangChainVectorStore(VectorStore):
   """
