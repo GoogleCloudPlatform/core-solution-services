@@ -148,9 +148,11 @@ if ENABLE_GOOGLE_LLM:
 LANGCHAIN_LLM = {}
 if ENABLE_OPENAI_LLM:
   LANGCHAIN_LLM.update({
-    OPENAI_LLM_TYPE_GPT3_5: ChatOpenAI(openai_api_key=OPENAI_API_KEY,
+    OPENAI_LLM_TYPE_GPT3_5: ChatOpenAI(temperature=0,
+                                       openai_api_key=OPENAI_API_KEY,
                                        model_name="gpt-3.5-turbo"),
-    OPENAI_LLM_TYPE_GPT4: ChatOpenAI(openai_api_key=OPENAI_API_KEY,
+    OPENAI_LLM_TYPE_GPT4: ChatOpenAI(temperature=0,
+                                     openai_api_key=OPENAI_API_KEY,
                                      model_name="gpt-4"),
     COHERE_LLM_TYPE: Cohere(cohere_api_key=COHERE_API_KEY, max_tokens=1024)
   })
@@ -183,15 +185,21 @@ DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 SERVICES = {
   "user-management": {
     "host": "http://user-management",
-    "port": 80
+    "port": 80,
+    "api_path": "/user-management/api/v1",
+    "api_url_prefix": "http://user-management:80/user-management/api/v1",
   },
   "tools-service": {
     "host": "http://tools-service",
-    "port": 80
+    "port": 80,
+    "api_path": "/tools-service/api/v1",
+    "api_url_prefix": "http://tools-service:80/tools-service/api/v1",
   },
   "rules-engine": {
     "host": "http://rules-engine",
-    "port": 80
+    "port": 80,
+    "api_path": "/rules-engine/api/v1",
+    "api_url_prefix": "http://rules-engine:80/rules-engine/api/v1",
   }
 }
 

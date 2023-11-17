@@ -40,7 +40,7 @@ class UserChat(BaseModel):
 
   @classmethod
   def find_by_user(cls,
-                   userid,
+                   user_id,
                    skip=0,
                    order_by="-created_time",
                    limit=1000):
@@ -48,7 +48,7 @@ class UserChat(BaseModel):
     Fetch all chats for user
 
     Args:
-        userid (str): User id
+        user_id (str): User id
         skip (int, optional): number of chats to skip.
         order_by (str, optional): order list according to order_by field.
         limit (int, optional): limit till cohorts to be fetched.
@@ -58,7 +58,7 @@ class UserChat(BaseModel):
 
     """
     objects = cls.collection.filter(
-        "user_id", "==", userid).filter(
+        "user_id", "==", user_id).filter(
             "deleted_at_timestamp", "==",
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
@@ -69,10 +69,27 @@ class UserChat(BaseModel):
     entry = [{CHAT_HUMAN: prompt}, {CHAT_AI: response}]
     return entry
 
-  def update_history(self, prompt: str, response: str):
+  def update_history(self,
+                     prompt: str=None,
+                     response: str=None,
+                     custom_entries: dict=None):
     """ Update history with query and response """
-    entry = self.get_history_entry(prompt, response)
-    self.history.extend(entry)
+
+    if not self.history:
+      self.history = []
+
+    if prompt:
+      self.history.append({CHAT_HUMAN: prompt})
+
+    if response:
+      self.history.append({CHAT_AI: response})
+
+    if custom_entries:
+      for key, value in custom_entries.items():
+        self.history.append({
+          key: value
+        })
+
     self.save(merge=True)
 
   @classmethod

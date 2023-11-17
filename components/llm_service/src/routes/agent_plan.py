@@ -20,21 +20,20 @@ import traceback
 from fastapi import APIRouter, Depends
 from common.models import User, UserChat, UserPlan, PlanStep
 from common.utils.auth_service import validate_token
-from common.utils.batch_jobs import initiate_batch_job
-from common.utils.config import JOB_TYPE_AGENT_PLAN_EXECUTE
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
-from common.schemas.batch_job_schemas import BatchJobModel
 from schemas.agent_schema import (LLMAgentPlanModel,
                                   LLMAgentPlanResponse,
-                                  LLMUserPlanResponse)
+                                  LLMUserPlanResponse,
+                                  LLMAgentPlanRunResponse)
 from services.agents.agent_service import (agent_plan,
+                                           agent_execute_plan,
                                            get_llm_type_for_agent)
-from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, PROJECT_ID)
+from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent/plan", tags=["Agent Plans"],
@@ -57,6 +56,16 @@ def get_plan(plan_id: str):
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
 
+    # Populate plan steps.
+    plan_steps = []
+    for plan_step_id in plan_data.get("plan_steps", []):
+      plan_step = PlanStep.find_by_id(plan_step_id)
+      plan_steps.append({
+        "id": plan_step_id,
+        "description": plan_step.description
+      })
+    plan_data["plan_steps"] = plan_steps
+
     return {
       "success": True,
       "message": f"Successfully retrieved user plan {plan_id}",
@@ -76,7 +85,9 @@ def get_plan(plan_id: str):
     "/{agent_name}",
     name="Generate a plan by agent on user input",
     response_model=LLMAgentPlanResponse)
-def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
+def generate_agent_plan(agent_name: str,
+                        plan_config: LLMAgentPlanModel,
+                        chat_id: str = None,
                         user_data: dict = Depends(validate_token)):
   """
   Run agent on user input to generate a plan.
@@ -109,6 +120,7 @@ def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
     user = User.find_by_email(user_data.get("email"))
     llm_type = get_llm_type_for_agent(agent_name)
 
+    # Generate the plan
     output, user_plan = agent_plan(agent_name, prompt, user.id)
 
     # create default name for user plan
@@ -116,18 +128,28 @@ def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
     user_plan.name = f"User {user.id} Plan {agent_name} {now}"
     user_plan.update()
 
-    # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                         agent_name=agent_name)
-    history = UserChat.get_history_entry(prompt, output)
-    user_chat.history = history
+    # Get the existing Chat data or create a new one.
+    user_chat = None
+    if chat_id:
+      user_chat = UserChat.find_by_id(chat_id)
+
+    if not user_chat:
+      user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
+                           agent_name=agent_name)
+    # Save user chat to retrieve actual ID.
+    user_chat.update_history(prompt, output)
     user_chat.save()
 
+    chat_id = user_chat.id
     chat_data = user_chat.get_fields(reformat_datetime=True)
-    chat_data["id"] = user_chat.id
+    chat_data["id"] = chat_id
 
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
+
+    user_chat.update_history(custom_entries={
+      "plan": plan_data,
+    })
 
     # return plan steps in summary form with plans and descriptions
     plan_steps = []
@@ -157,9 +179,11 @@ def generate_agent_plan(agent_name: str, plan_config: LLMAgentPlanModel,
 
 @router.post(
     "/{plan_id}/run",
-    name="Start a batch job to execute a plan",
-    response_model=BatchJobModel)
+    name="Start to execute a plan",
+    response_model=LLMAgentPlanRunResponse)
 async def agent_plan_execute(plan_id: str,
+                             chat_id: str = None,
+                             agent_name: str = "Task",
                              user_data: dict = Depends(validate_token)):
   """
   Start a plan execution job
@@ -170,20 +194,44 @@ async def agent_plan_execute(plan_id: str,
   Returns:
       LLMPlanRunResponse
   """
-  user_id = user_data.get("user_id")
+  user_plan = UserPlan.find_by_id(plan_id)
+  assert user_plan, f"Unable to find user plan {plan_id}"
+  assert user_data, "user_data is not defined."
+
+  # TODO: Add a check whether this plan belongs to a particular
+  # user_id.
 
   try:
-    data = {
-      "plan_id": plan_id,
-      "user_id": user_id
+    # Get the existing Chat data or create a new one.
+    user_chat = None
+    if chat_id:
+      user_chat = UserChat.find_by_id(chat_id)
+
+    prompt = """Run the plan in the chat history provided below."""
+    result, agent_process_output = agent_execute_plan(
+        agent_name, prompt, user_plan)
+
+    if user_chat:
+      user_chat.update_history(
+          response=f"Successfully executed plan {plan_id}")
+      user_chat.update_history(response=agent_process_output)
+      user_chat.save()
+
+    Logger.info(result)
+    return {
+      "success": True,
+      "message": f"Successfully executed plan {plan_id}",
+      "data": {
+        "result": result,
+        "agent_process_output": agent_process_output
+      }
     }
-    env_vars = {
-      "PROJECT_ID": PROJECT_ID
-    }
-    response = initiate_batch_job(data, JOB_TYPE_AGENT_PLAN_EXECUTE, env_vars)
-    Logger.info(response)
-    return response
+
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+
+    return {
+      "success": False,
+      "message": traceback.print_exc(),
+    }
