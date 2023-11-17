@@ -28,11 +28,12 @@ from common.utils.errors import (ResourceNotFoundException,
                                  PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
-from common.schemas.batch_job_schemas import BatchJobModel
 from schemas.agent_schema import (LLMAgentPlanModel,
                                   LLMAgentPlanResponse,
-                                  LLMUserPlanResponse)
+                                  LLMUserPlanResponse,
+                                  LLMAgentPlanRunResponse)
 from services.agents.agent_service import (agent_plan,
+                                           agent_execute_plan,
                                            get_llm_type_for_agent)
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, PROJECT_ID)
 
@@ -78,7 +79,7 @@ def get_plan(plan_id: str):
     response_model=LLMAgentPlanResponse)
 def generate_agent_plan(agent_name: str,
                         plan_config: LLMAgentPlanModel,
-                        chat_id: str,
+                        chat_id: str = None,
                         user_data: dict = Depends(validate_token)):
   """
   Run agent on user input to generate a plan.
@@ -120,20 +121,27 @@ def generate_agent_plan(agent_name: str,
     user_plan.update()
 
     # Get the existing Chat data or create a new one.
+    user_chat = None
     if chat_id:
       user_chat = UserChat.get_by_id(chat_id)
-    else:
-      user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                         agent_name=agent_name)
-      chat_id = user_chat.id
-    chat_data = user_chat.get_fields(reformat_datetime=True)
-    chat_data["id"] = user_chat.id
 
+    if not user_chat:
+      user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
+                           agent_name=agent_name)
+    # Save user chat to retrieve actual ID.
     user_chat.update_history(prompt, output)
     user_chat.save()
 
+    chat_id = user_chat.id
+    chat_data = user_chat.get_fields(reformat_datetime=True)
+    chat_data["id"] = chat_id
+
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
+
+    user_chat.update_history(custom_entries={
+      "plan": plan_data,
+    })
 
     # return plan steps in summary form with plans and descriptions
     plan_steps = []
@@ -163,9 +171,10 @@ def generate_agent_plan(agent_name: str,
 
 @router.post(
     "/{plan_id}/run",
-    name="Start a batch job to execute a plan",
-    response_model=BatchJobModel)
+    name="Start to execute a plan",
+    response_model=LLMAgentPlanRunResponse)
 async def agent_plan_execute(plan_id: str,
+                             agent_name: str = "Task",
                              user_data: dict = Depends(validate_token)):
   """
   Start a plan execution job
@@ -176,20 +185,29 @@ async def agent_plan_execute(plan_id: str,
   Returns:
       LLMPlanRunResponse
   """
-  user_id = user_data.get("user_id")
+  user_plan = UserPlan.find_by_id(plan_id)
+  assert user_plan, f"Unable to find user plan {plan_id}"
+
+  # TODO: Add a check whether this plan belongs to a particular
+  # user_id.
 
   try:
-    data = {
-      "plan_id": plan_id,
-      "user_id": user_id
+    prompt = """Run the plan in the chat history provided below."""
+    result = agent_execute_plan(agent_name, prompt, user_plan)
+    Logger.info(result)
+    return {
+      "success": True,
+      "message": f"Successfully executed plan {plan_id}",
+      "data": {
+        "result": result,
+      }
     }
-    env_vars = {
-      "PROJECT_ID": PROJECT_ID
-    }
-    response = initiate_batch_job(data, JOB_TYPE_AGENT_PLAN_EXECUTE, env_vars)
-    Logger.info(response)
-    return response
+
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+
+    return {
+      "success": False,
+      "message": traceback.print_exc(),
+    }

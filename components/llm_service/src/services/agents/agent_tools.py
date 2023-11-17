@@ -57,11 +57,11 @@ def rules_engine_get_ruleset_fields(ruleset_name: str):
 @tool(infer_schema=True)
 def gmail_tool(email_text: str) -> str:
   """
-  Send an email using Gmail
+  Send an email to a list of recipients
   """
   print(f"[gmail_tool]: {email_text}")
 
-  # api_url_prefix = SERVICES["rules-engine"]["api_url_prefix"]
+  # api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
   api_url_prefix = "https://gcp-mira-demo.cloudpssolutions.com/tools-service/api/v1"
   api_url = f"{api_url_prefix}/workspace/gmail"
 
@@ -99,6 +99,7 @@ def docs_tool(content: str) -> str:
   """
   print(f"[docs_tool]: {content}")
 
+  # api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
   api_url_prefix = "https://gcp-mira-demo.cloudpssolutions.com/tools-service/" \
                    "api/v1"
   api_url = f"{api_url_prefix}/workspace/compose_email"

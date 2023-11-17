@@ -90,6 +90,15 @@ def chat_content():
             st.text_area(f"Step {index}", step.get("description"))
             index = index + 1
 
+        if st.button("Execute this plan"):
+          st.write("Executing.")
+          run_agent(
+            agent_name="Task",
+            chat_id=st.session_state.chat_id,
+            prompt="Run the plan in the chat history provided above.",
+            auth_token=st.session_state.auth_token,
+          )
+
       index = index + 1
 
   st.text_input("User Input:", on_change=on_input_change, key="user_input")

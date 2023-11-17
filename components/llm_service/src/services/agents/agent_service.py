@@ -213,9 +213,41 @@ def parse_plan(text: str) -> List[str]:
 
   return steps
 
+def agent_execute_plan(
+    agent_name:str, prompt:str, user_plan:UserPlan = None) -> str:
+  """
+  Execute a given plan_steps.
+  """
+  Logger.info(f"Running {agent_name} agent "
+              f"with prompt=[{prompt}] and "
+              f"user_plan=[{user_plan}]")
+  agent_params = get_agent_config()[agent_name]
+  llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
+  agent = llm_service_agent.load_agent()
 
-def batch_execute_plan():
-  pass
+  tools = llm_service_agent.get_tools()
+  tools_str = ", ".join(tool.name for tool in tools)
+
+  Logger.info(f"Available tools=[{tools_str}]")
+
+  plan_steps = []
+  for step in user_plan.plan_steps:
+    description = PlanStep.find_by_id(step).description
+    plan_steps.append(description)
+
+  agent_executor = AgentExecutor.from_agent_and_tools(
+    agent=agent,
+    tools=tools,
+    verbose=True)
+  agent_inputs = {
+    "input": prompt,
+    "chat_history": plan_steps
+  }
+  Logger.info("Running agent executor.... ")
+  output = agent_executor.run(agent_inputs)
+  Logger.info(f"Agent {agent_name} generated"
+              f" output=[{output}]")
+  return output
 
 
 def get_llm_type_for_agent(agent_name: str) -> str:
@@ -234,4 +266,3 @@ def get_llm_type_for_agent(agent_name: str) -> str:
     if agent_name == agent:
       return agent_config[agent]["llm_type"]
   raise ResourceNotFoundException(f"can't find agent name {agent_name}")
-  
