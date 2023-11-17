@@ -87,7 +87,7 @@ class LLMAgentPlanResponse(BaseModel):
 class LLMAgentPlanRunResponse(BaseModel):
   """LLM Agent plan response model"""
   success: str
-  message: str
+  message: str = ""
   data: dict = {}
 
   class Config():

@@ -187,19 +187,19 @@ SERVICES = {
     "host": "http://user-management",
     "port": 80,
     "api_path": "/user-management/api/v1",
-    "api_url_prefix": "http://user-management:80//user-management/api/v1",
+    "api_url_prefix": "http://user-management:80/user-management/api/v1",
   },
   "tools-service": {
     "host": "http://tools-service",
     "port": 80,
     "api_path": "/tools-service/api/v1",
-    "api_url_prefix": "http://tools-service:80//tools-service/api/v1",
+    "api_url_prefix": "http://tools-service:80/tools-service/api/v1",
   },
   "rules-engine": {
     "host": "http://rules-engine",
     "port": 80,
     "api_path": "/rules-engine/api/v1",
-    "api_url_prefix": "http://rules-engine:80//rules-engine/api/v1",
+    "api_url_prefix": "http://rules-engine:80/rules-engine/api/v1",
   }
 }
 
