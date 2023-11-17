@@ -88,5 +88,5 @@ def chat_history_panel():
     agent_options.insert(0, "All")
 
     # Add agent options to dropdown
-    select_agent = st.selectbox("Agent:", agent_options, key="agent0")
+    select_agent = st.selectbox("Filter by Agent:", agent_options, key="agent0")
     get_agent_chats(select_agent)
