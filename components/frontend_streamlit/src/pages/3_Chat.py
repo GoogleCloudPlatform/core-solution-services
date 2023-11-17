@@ -100,7 +100,7 @@ def format_ai_output(text):
   text = text.replace("Thought:", "- **Thought**:")
   text = text.replace("Action:", "- **Action**:")
   text = text.replace("Action Input:", "- **Action Input**:")
-  text = text.replace("> Finished chain:", "** Finished chain**:")
+  text = text.replace("> Finished chain:", "**Finished chain**:")
   return text
 
 def chat_content():
@@ -160,7 +160,8 @@ def chat_content():
 
       index = index + 1
 
-  st.text_input("User Input:", on_change=on_input_change, key="user_input")
+  st.write("User Input:")
+  st.text_area("User Input:", on_change=on_input_change, key="user_input")
 
 
 def chat_page():
