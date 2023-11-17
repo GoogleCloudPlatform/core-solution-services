@@ -321,7 +321,6 @@ class LangChainVectorStore(VectorStore):
     pass
 
 
-
 class PostgresVectorStore(LangChainVectorStore):
   """
   LLM Service interface for Postgres Vector Stores, based on langchain
@@ -356,23 +355,6 @@ class PostgresVectorStore(LangChainVectorStore):
 
     return langchain_vector_store
 
-VECTOR_STORES = {
-  VECTOR_STORE_MATCHING_ENGINE: MatchingEngineVectorStore,
-  VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
-}
-
 LC_VECTOR_STORES = {
   VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
 }
-
-def from_query_engine(q_engine: QueryEngine) -> VectorStore:
-  qe_vector_store = q_engine.vector_store
-  if qe_vector_store is None:
-    # set to default vector store
-    qe_vector_store = DEFAULT_VECTOR_STORE
-
-  qe_vector_store_class = VECTOR_STORES.get(qe_vector_store)
-  if qe_vector_store_class is None:
-    raise InternalServerError(
-       f"vector store class {qe_vector_store} not found in config")
-  return qe_vector_store_class(q_engine)

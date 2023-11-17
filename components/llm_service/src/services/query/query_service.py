@@ -30,15 +30,24 @@ from google.cloud import storage
 from services import llm_generate
 from services.query import query_prompts, embeddings
 from services.query import vector_store
-from services.query.vector_store import VectorStore
+from services.query.vector_store import (VectorStore,
+                                         MatchingEngineVectorStore,
+                                         PostgresVectorStore)
 from services.query.data_source import DataSource
-
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL)
+from config.vector_store_config import (DEFAULT_VECTOR_STORE,
+                                        VECTOR_STORE_LANGCHAIN_PGVECTOR,
+                                        VECTOR_STORE_MATCHING_ENGINE)
 
 # pylint: disable=broad-exception-caught
 
 Logger = Logger.get_logger(__file__)
+
+VECTOR_STORES = {
+  VECTOR_STORE_MATCHING_ENGINE: MatchingEngineVectorStore,
+  VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
+}
 
 async def query_generate(
             user_id: str,
@@ -241,7 +250,7 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
                          is_public=is_public)
 
   # retrieve vector store class and store type in q_engine
-  qe_vector_store = vector_store.from_query_engine(q_engine)
+  qe_vector_store = vector_store_from_query_engine(q_engine)
   q_engine.vector_store = qe_vector_store.vector_store_type
   q_engine.save()
 
@@ -359,3 +368,15 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       docs_processed.append(query_doc)
 
   return docs_processed, data_source.docs_not_processed
+
+def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
+  qe_vector_store = q_engine.vector_store
+  if qe_vector_store is None:
+    # set to default vector store
+    qe_vector_store = DEFAULT_VECTOR_STORE
+
+  qe_vector_store_class = VECTOR_STORES.get(qe_vector_store)
+  if qe_vector_store_class is None:
+    raise InternalServerError(
+       f"vector store class {qe_vector_store} not found in config")
+  return qe_vector_store_class(q_engine)
