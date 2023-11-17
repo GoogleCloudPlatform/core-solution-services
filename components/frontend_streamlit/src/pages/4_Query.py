@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+  Streamlit app Query Page
+"""
+# pylint: disable=invalid-name
 import streamlit as st
 from api import get_chat, run_query
 from components.chat_history import chat_history_panel
@@ -31,7 +34,8 @@ def on_input_change():
   st.session_state.messages.append({"HumanInput": user_input})
 
   # Send API to llm-service
-  response = run_query(query_engine_id, user_input, chat_id=st.session_state.chat_id)
+  response = run_query(query_engine_id, user_input,
+                       chat_id=st.session_state.chat_id)
 
   query_result = response["query_result"]
   query_references = response.get("query_references", None)
@@ -49,7 +53,7 @@ def init_messages():
   messages = []
   if st.session_state.chat_id:
     chat_data = get_chat(st.session_state.chat_id)
-    messages = chat_data.get("history", [])
+    messages = chat_data.history
   else:
     messages.append({"AIOutput": "You can ask me anything."})
   # Initialize with chat history if any.

@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+  Streamlit app Chat Page
+"""
+# pylint: disable=invalid-name
 import streamlit as st
 from api import get_chat, run_agent, run_agent_plan
 from components.chat_history import chat_history_panel
@@ -32,11 +35,13 @@ def on_input_change():
 
   # Send API to llm-service
   if agent_name.lower() == "chat":
-    with st.spinner('Sending prompt to Agent...'):
-      response = run_agent(agent_name, user_input, chat_id=st.session_state.chat_id)
+    with st.spinner("Sending prompt to Agent..."):
+      response = run_agent(agent_name, user_input,
+                           chat_id=st.session_state.chat_id)
   elif agent_name.lower() == "plan":
-    with st.spinner('Sending prompt to Agent...'):
-      response = run_agent_plan(agent_name, user_input, chat_id=st.session_state.chat_id)
+    with st.spinner("Sending prompt to Agent..."):
+      response = run_agent_plan(agent_name, user_input,
+                                chat_id=st.session_state.chat_id)
   else:
     raise ValueError(f"agent_name {agent_name} is not supported.")
 
@@ -54,7 +59,7 @@ def init_messages():
   messages = []
   if st.session_state.chat_id:
     chat_data = get_chat(st.session_state.chat_id)
-    messages = chat_data.get("history", [])
+    messages = chat_data.history
   else:
     messages.append({"AIOutput": "You can ask me anything."})
   # Initialize with chat history if any.
