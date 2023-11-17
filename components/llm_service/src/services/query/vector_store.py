@@ -74,6 +74,8 @@ class VectorStore(ABC):
       doc_name (str): name of document to be indexed
       text_chunks (List[str]): list of text content chunks for document
       index_base (int): index to start from; each chunk gets its own index
+    Returns:
+      new_index_base: updated query engine index base
     """
 
   @abstractmethod
@@ -289,7 +291,6 @@ class LangChainVectorStore(VectorStore):
 
   def index_document(self, doc_name: str, text_chunks: List[str],
                           index_base: int) -> int:
-
     # generate np array of chunk IDs starting from index base
     ids = [i for i in range(index_base, index_base + len(text_chunks))]
 
@@ -298,14 +299,16 @@ class LangChainVectorStore(VectorStore):
         text_chunks=text_chunks
     )
 
+    # add embeddings to vector store
     self.lc_vector_store.add_embeddings(texts=text_chunks,
                                         embeddings=chunk_embeddings,
                                         ids=ids)
-
+    # return new index base
+    new_index_base = index_base + len(text_chunks)
+    return new_index_base
 
   def find_neighbors(self, q_engine: QueryEngine,
                      query_embeddings: List[List[float]]) -> List[int]:
-
     return self.lc_vector_store.similarity_search_by_vector(
         embedding=query_embeddings,
         k=NUM_MATCH_RESULTS
