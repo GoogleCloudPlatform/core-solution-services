@@ -78,9 +78,11 @@ class UserChat(BaseModel):
     if not self.history:
       self.history = []
 
-    if prompt or response:
-      entry = [{CHAT_HUMAN: prompt}, {CHAT_AI: response}]
-      self.history.extend(entry)
+    if prompt:
+      self.history.append({CHAT_HUMAN: prompt})
+
+    if response:
+      self.history.append({CHAT_AI: response})
 
     if custom_entries:
       for key, value in custom_entries.items():
