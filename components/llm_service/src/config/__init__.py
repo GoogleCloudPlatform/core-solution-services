@@ -42,6 +42,7 @@ from config.config import (
     LLM_BACKEND_ROBOT_PASSWORD,
 
     # LLM types
+    LLM_TYPES,
     CHAT_LLM_TYPES,
     OPENAI_LLM_TYPE_GPT3_5,
     OPENAI_LLM_TYPE_GPT4,
