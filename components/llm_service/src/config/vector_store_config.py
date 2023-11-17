@@ -16,16 +16,22 @@ Vector Store Config
 """
 # pylint: disable=broad-exception-caught
 
+import os
 from common.utils.http_exceptions import InternalServerError
+from common.utils.logging_handler import Logger
 from google.cloud import secretmanager
-from config import PROJECT_ID
+from config.config import PROJECT_ID
+
+Logger = Logger.get_logger(__file__)
 
 # vector store types
 VECTOR_STORE_MATCHING_ENGINE = "matching_engine"
 VECTOR_STORE_LANGCHAIN_PGVECTOR = "langchain_pgvector"
 
 # default vector store used for query engines
-DEFAULT_VECTOR_STORE = VECTOR_STORE_LANGCHAIN_PGVECTOR
+DEFAULT_VECTOR_STORE = os.getenv("DEFAULT_VECTOR_STORE",
+                                  VECTOR_STORE_MATCHING_ENGINE)
+Logger.info(f"Default vector store = [{DEFAULT_VECTOR_STORE}]")
 
 # postgres
 PG_HOST = "10.133.0.2"
