@@ -25,6 +25,7 @@ from config.config import (
     DATABASE_PREFIX,
     USER_MANAGEMENT_BASE_URL,
     RULES_ENGINE_BASE_URL,
+    SERVICES,
 
     # service config
     PORT,
