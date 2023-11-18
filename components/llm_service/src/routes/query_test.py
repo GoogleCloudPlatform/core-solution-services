@@ -22,13 +22,12 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
-from testing.test_config import API_URL, TESTING_FOLDER_PATH
-from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, QUERY_EXAMPLE,
+from testing.test_config import API_URL
+from schemas.schema_examples import (QUERY_EXAMPLE,
                                      USER_QUERY_EXAMPLE,
                                      USER_EXAMPLE, QUERY_ENGINE_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE)
 from common.models import UserQuery, QueryResult, QueryEngine, User
-from common.models.llm_query import QUERY_HUMAN, QUERY_AI_RESPONSE, QUERY_AI_REFERENCES
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
@@ -74,7 +73,7 @@ FAKE_QE_BUILD_RESPONSE = {
 }
 
 FAKE_QUERY_ENGINE_BUILD = {
-  "doc_url": "fake-url",
+  "doc_url": "http://fake-url",
   "query_engine": "query-engine-test",
   "llm_type": DEFAULT_QUERY_CHAT_MODEL,
   "is_public": True
@@ -144,7 +143,7 @@ def test_create_query_engine(create_user, client_with_emulator):
   url = f"{api_url}/engine"
   params = FAKE_QUERY_ENGINE_BUILD
   with mock.patch("routes.query.initiate_batch_job",
-                  return_value = FAKE_QE_BUILD_RESPONSE):
+                  return_value=FAKE_QE_BUILD_RESPONSE):
     resp = client_with_emulator.post(url, json=params)
 
   json_response = resp.json()
@@ -161,7 +160,7 @@ def test_query(create_user, create_engine,
   query_result = QueryResult.find_by_id(QUERY_RESULT_EXAMPLE["id"])
   fake_query_response = (query_result, FAKE_REFERENCES)
   with mock.patch("routes.query.query_generate",
-                  return_value = fake_query_response):
+                  return_value=fake_query_response):
     resp = client_with_emulator.post(url, json=FAKE_QUERY_PARAMS)
 
   json_response = resp.json()
@@ -182,7 +181,7 @@ def test_query_generate(create_user, create_engine, create_user_query,
   query_result = QueryResult.find_by_id(QUERY_RESULT_EXAMPLE["id"])
   fake_query_response = (query_result, FAKE_REFERENCES)
   with mock.patch("routes.query.query_generate",
-                  return_value = fake_query_response):
+                  return_value=fake_query_response):
     resp = client_with_emulator.post(url, json=FAKE_QUERY_PARAMS)
 
   json_response = resp.json()
