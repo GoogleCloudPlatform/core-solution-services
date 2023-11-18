@@ -34,7 +34,7 @@ from services.query.data_source import DataSource
 
 Logger = Logger.get_logger(__file__)
 
-def clear_bucket(storage_client, bucket_name) -> None:
+def clear_bucket(storage_client:storage.Client, bucket_name:str) -> None:
   """
   Delete all the contents of the specified GCS bucket
   """
@@ -47,7 +47,8 @@ def clear_bucket(storage_client, bucket_name) -> None:
     index += 1
   Logger.info(f"{index} files deleted")
 
-def upload_to_gcs(storage_client, bucket_name, file_name, content,
+def upload_to_gcs(storage_client:storage.Client, bucket_name:str,
+                  file_name:str, content:str,
                   content_type="text/plain") -> None:
   """Upload content to GCS bucket"""
   Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
@@ -59,9 +60,9 @@ def upload_to_gcs(storage_client, bucket_name, file_name, content,
   )
   Logger.info(f"Uploaded {len(content)} bytes")
 
-def save_file(filepath, file_name, content) -> None:
+def save_content(filepath:str, file_name:str, content:str) -> None:
   """
-  Save file to a local directory
+  Save content in a file in a local directory
   """
   Logger.info(f"Saving {file_name} to {filepath}")
   doc_filepath = os.path.join(filepath, file_name)
@@ -69,7 +70,7 @@ def save_file(filepath, file_name, content) -> None:
     f.write(content)
   Logger.info(f"{len(content)} bytes written")
 
-def clean_html(html_content) -> str:
+def clean_html(html_content:str) -> str:
   """
   Remove all <script> tags and their content from the given HTML content.
   Remove all <style> tags and <link> tags that reference stylesheets
@@ -186,7 +187,7 @@ class WebDataSourceSpider(CrawlSpider):
       upload_to_gcs(self.storage_client, self.bucket_name,
                     file_name, file_content, content_type)
     else:
-      save_file(self.filepath, file_name, file_content)
+      save_content(self.filepath, file_name, file_content)
     return item_metadata
 
 class WebDataSource(DataSource):
