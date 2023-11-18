@@ -28,6 +28,11 @@ Logger = Logger.get_logger(__file__)
 VECTOR_STORE_MATCHING_ENGINE = "matching_engine"
 VECTOR_STORE_LANGCHAIN_PGVECTOR = "langchain_pgvector"
 
+VECTOR_STORES = [
+  VECTOR_STORE_MATCHING_ENGINE,
+  VECTOR_STORE_LANGCHAIN_PGVECTOR
+]
+
 # default vector store used for query engines
 DEFAULT_VECTOR_STORE = os.getenv("DEFAULT_VECTOR_STORE",
                                   VECTOR_STORE_MATCHING_ENGINE)
