@@ -60,7 +60,13 @@ from config.config import (
     DEFAULT_QUERY_EMBEDDING_MODEL,
     GOOGLE_LLM,
     LANGCHAIN_LLM,
+    EMBEDDING_MODELS,
 
     # agent config
     AGENT_CONFIG_PATH,
     )
+
+from config.vector_store_config import (
+  DEFAULT_VECTOR_STORE
+  )
+

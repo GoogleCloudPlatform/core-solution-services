@@ -83,7 +83,6 @@ class QueryEngine(BaseModel):
   """
   id = IDField()
   name = TextField(required=True)
-  llm_type = TextField(required=True)
   embedding_type = TextField(required=True)
   vector_store = TextField(required=True)
   created_by = TextField(required=True)
