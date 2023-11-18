@@ -31,7 +31,8 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from common.utils.logging_handler import Logger
 from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_QUERY_CHAT_MODEL, DEFAULT_VECTOR_STORE)
+                    DEFAULT_QUERY_CHAT_MODEL, DEFAULT_VECTOR_STORE,
+                    VECTOR_STORES)
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
@@ -41,7 +42,6 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import query_generate
-
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -80,12 +80,11 @@ def get_vector_store_list():
   Returns:
       LLMGetVectorStoreTypesResponse
   """
-  vector_stores = vector_store.get_vector_store_types()
   try:
     return {
       "success": True,
       "message": "Successfully retrieved vector store types",
-      "data": vector_stores
+      "data": VECTOR_STORES
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -145,6 +144,7 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
     raise ResourceNotFound(str(e)) from e
   except Exception as e:
     raise InternalServerError(str(e)) from e
+
 
 @router.get(
     "/{query_id}",
