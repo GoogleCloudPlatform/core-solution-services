@@ -42,7 +42,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import query_generate
-
+from services.query import vector_store
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -260,7 +260,8 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "query_engine": query_engine,
       "user_id": user_id,
       "is_public": is_public,
-      "embedding_type": genconfig_dict.get("embedding_type", DEFAULT_QUERY_EMBEDDING_MODEL)
+      "embedding_type": 
+          genconfig_dict.get("embedding_type", DEFAULT_QUERY_EMBEDDING_MODEL),
       "vector_store": genconfig_dict.get("vector_store", DEFAULT_VECTOR_STORE)
     }
     env_vars = {

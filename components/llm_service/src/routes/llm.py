@@ -19,14 +19,13 @@ from fastapi import APIRouter
 
 from common.utils.errors import (PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
-from config import (PAYLOAD_FILE_SIZE, 
+from config import (PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, LLM_TYPES, EMBEDDING_MODELS)
 from schemas.llm_schema import (LLMGenerateModel,
                                 LLMGetTypesResponse,
                                 LLMGetEmbeddingTypesResponse,
                                 LLMGenerateResponse)
 from services.llm_generate import llm_generate
-from services.embeddings import get_embedding_types
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
 
