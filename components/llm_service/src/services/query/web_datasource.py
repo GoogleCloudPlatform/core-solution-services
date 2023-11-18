@@ -82,12 +82,14 @@ def clean_html(html_content:str) -> str:
   """
   # Parse the HTML content
   soup = BeautifulSoup(html_content, "html.parser")
-  # Remove script and style tags
-  for script_style_tag in soup(["script", "style"]):
-    script_style_tag.decompose()
-  # Remove <link> tags that are stylesheets
-  for link_tag in soup.find_all("link", {"rel": "stylesheet"}):
-    link_tag.decompose()
+
+  # Remove script and style and other irrelevant tags
+  tags_to_remove = ['script', 'style', 'footer', 'nav', 'aside', 'form', 'meta', 
+                    'iframe', 'header', 'button', 'input', 'select', 'textarea', 
+                    'noscript', 'img', 'figure', 'figcaption', 'link']
+  for element in soup(tags_to_remove):
+    element.decompose()
+    
   # Get the cleaned HTML content
   cleaned_content = str(soup)
   # Replace HTML escape characters with their equivalents
