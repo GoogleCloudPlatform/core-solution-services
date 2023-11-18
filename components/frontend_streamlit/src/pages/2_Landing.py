@@ -28,7 +28,7 @@ def landing_page():
   st.title("Welcome.")
   chat_history_panel()
 
-  start_chat, col2, start_query = st.columns((1, 1, 1))
+  start_chat, start_query, build_query = st.columns((1, 1, 1))
 
   with start_chat:
     with st.container():
@@ -60,6 +60,14 @@ def landing_page():
       if query_button:
         utils.navigate_to(
           f"/Query?query_engine_id={query_engine_id}&auth_token={auth_token}")
+
+  with build_query:
+    with st.container():
+      "Create a Query Engine"
+      build_button = st.button("Start", key=4)
+      if chat_button:
+        utils.navigate_to(
+          f"/Build_QEngine?auth_token={auth_token}")
 
 
 if __name__ == "__main__":

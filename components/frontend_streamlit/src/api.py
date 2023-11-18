@@ -165,6 +165,34 @@ def run_query(query_engine_id: str, prompt: str,
   output = json_response["data"]
   return output
 
+def build_query_engine(name:str, doc_url:str, embedding_type: str,
+                       vector_store: str, auth_token=None):
+  """
+  Start a query engine build job
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/engine"
+  request_body = {
+    "query_engine": name,
+    "doc_url": doc_url,
+    "embedding_type": embedding_type,
+    "vector_store": vector_store
+  }
+
+  print(api_url)
+  resp = post_method(api_url,
+                     request_body=request_body,
+                     token=auth_token)
+  handle_error(resp)
+  json_response = resp.json()
+
+  print(json_response)
+  output = json_response["data"]
+  return output
+
 def get_all_query_engines(auth_token=None):
   """
   Retrieve all chats of a specific user.
@@ -174,6 +202,44 @@ def get_all_query_engines(auth_token=None):
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query"
+  resp = get_method(api_url,
+                    token=auth_token)
+  json_response = resp.json()
+  print(resp)
+
+  print(json_response)
+
+  output = json_response["data"]
+  return output
+
+def get_all_embedding_types(auth_token=None):
+  """
+  Retrieve all supported embedding types
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/embedding"
+  resp = get_method(api_url,
+                    token=auth_token)
+  json_response = resp.json()
+  print(resp)
+
+  print(json_response)
+
+  output = json_response["data"]
+  return output
+
+def get_all_vector_stores(auth_token=None):
+  """
+  Retrieve all vector store types
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/vectorstore"
   resp = get_method(api_url,
                     token=auth_token)
   json_response = resp.json()
