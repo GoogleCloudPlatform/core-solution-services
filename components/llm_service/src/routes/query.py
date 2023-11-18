@@ -259,7 +259,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "query_engine": query_engine,
       "user_id": user_id,
       "is_public": is_public,
-      "embedding_type": genconfig_dict.get("embedding_type", None)
+      "embedding_type": genconfig_dict.get("embedding_type", None),
       "vector_store": genconfig_dict.get("vector_store", None)
     }
     env_vars = {
