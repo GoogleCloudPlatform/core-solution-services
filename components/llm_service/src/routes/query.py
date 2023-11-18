@@ -39,7 +39,8 @@ from schemas.llm_schema import (LLMQueryModel,
                                 UserQueryUpdateModel,
                                 LLMQueryEngineModel,
                                 LLMGetQueryEnginesResponse,
-                                LLMQueryResponse)
+                                LLMQueryResponse,
+                                LLMGetVectorStoreTypesResponse)
 from services.query.query_service import query_generate
 
 Logger = Logger.get_logger(__file__)
@@ -67,6 +68,29 @@ def get_engine_list():
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
+
+
+@router.get(
+    "/vectorstore",
+    name="Get supported vector store types",
+    response_model=LLMGetVectorStoreTypesResponse)
+def get_vector_store_list():
+  """
+  Get available Vector Stores
+
+  Returns:
+      LLMGetVectorStoreTypesResponse
+  """
+  vector_stores = vector_store.get_vector_store_types()
+  try:
+    return {
+      "success": True,
+      "message": "Successfully retrieved vector store types",
+      "data": vector_stores
+    }
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
 
 @router.get(
     "/user/{user_id}",
