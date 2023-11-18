@@ -65,7 +65,7 @@ def landing_page():
     with st.container():
       "Create a Query Engine"
       build_button = st.button("Start", key=4)
-      if chat_button:
+      if build_button:
         utils.navigate_to(
           f"/Build_QEngine?auth_token={auth_token}")
 
