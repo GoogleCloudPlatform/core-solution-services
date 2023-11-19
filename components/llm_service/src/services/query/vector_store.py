@@ -216,3 +216,6 @@ class VectorStore:
         num_neighbors=NUM_MATCH_RESULTS
     )
     return match_indexes_list
+
+def get_vector_store_types() -> List[str]:
+  return []

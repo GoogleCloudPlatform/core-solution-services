@@ -53,6 +53,38 @@ class LLMGetTypesResponse(BaseModel):
         }
     }
 
+class LLMGetVectorStoreTypesResponse(BaseModel):
+  """LLM Get vector store types model"""
+  success: Optional[bool] = True
+  message: Optional[str] = "Successfully retrieved vector store types"
+  data: Optional[list[str]] = []
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": {
+            "success": True,
+            "message": "Successfully retrieved vector store types",
+            "data": []
+        }
+    }
+
+class LLMGetEmbeddingTypesResponse(BaseModel):
+  """LLM Get embedding types model"""
+  success: Optional[bool] = True
+  message: Optional[str] = "Successfully retrieved embedding types"
+  data: Optional[list[str]] = []
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": {
+            "success": True,
+            "message": "Successfully retrieved embedding types",
+            "data": []
+        }
+    }
+
 
 class LLMGetQueryEnginesResponse(BaseModel):
   """LLM Get types model"""

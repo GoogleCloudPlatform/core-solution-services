@@ -32,16 +32,17 @@ from common.utils.logging_handler import Logger
 from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, DEFAULT_QUERY_EMBEDDING_MODEL,
                     ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_QUERY_CHAT_MODEL)
+                    DEFAULT_QUERY_CHAT_MODEL, DEFAULT_VECTOR_STORE)
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
                                 UserQueryUpdateModel,
                                 LLMQueryEngineModel,
                                 LLMGetQueryEnginesResponse,
-                                LLMQueryResponse)
+                                LLMQueryResponse,
+                                LLMGetVectorStoreTypesResponse)
 from services.query.query_service import query_generate
-
+from services.query import vector_store
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -67,6 +68,29 @@ def get_engine_list():
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
+
+
+@router.get(
+    "/vectorstore",
+    name="Get supported vector store types",
+    response_model=LLMGetVectorStoreTypesResponse)
+def get_vector_store_list():
+  """
+  Get available Vector Stores
+
+  Returns:
+      LLMGetVectorStoreTypesResponse
+  """
+  vector_stores = vector_store.get_vector_store_types()
+  try:
+    return {
+      "success": True,
+      "message": "Successfully retrieved vector store types",
+      "data": vector_stores
+    }
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
 
 @router.get(
     "/user/{user_id}",
@@ -246,7 +270,9 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "query_engine": query_engine,
       "user_id": user_id,
       "is_public": is_public,
-      "llm_type": genconfig_dict.get("llm_type", DEFAULT_QUERY_EMBEDDING_MODEL)
+      "embedding_type": 
+          genconfig_dict.get("embedding_type", DEFAULT_QUERY_EMBEDDING_MODEL),
+      "vector_store": genconfig_dict.get("vector_store", DEFAULT_VECTOR_STORE)
     }
     env_vars = {
       "DATABASE_PREFIX": DATABASE_PREFIX,
