@@ -179,7 +179,7 @@ class WebDataSourceSpider(CrawlSpider):
       }
 
     file_name = sanitize_url(response.url)
-    item_metadata = {
+    item = {
       "url": response.url,
       "filename": file_name,
       "bucket_name": self.bucket_name,
@@ -191,7 +191,7 @@ class WebDataSourceSpider(CrawlSpider):
     if self.storage_client and self.bucket_name:
       upload_to_gcs(self.storage_client, self.bucket_name,
                     file_name, file_content, content_type)
-    return item_metadata
+    return item
 
 
 class WebDataSource(DataSource):
@@ -216,12 +216,13 @@ class WebDataSource(DataSource):
     self.bucket_name = bucket_name
     self.doc_data = []
 
-  def _response_downloaded(self, response):
+  def _item_scraped(self, item, response, spider):
     """Handler for the response_downloaded signal."""
     Logger.info(f"Downloaded Response URL: {response.url}")
-    self.doc_data.append((response.item_metadata["filename"],
-                          response.url,
-                          response.item_metadata["filepath"]))
+    filepath = os.path.join(item["filepath"], item["filename"])
+    self.doc_data.append((item["filename"],
+                          item["url"],
+                          filepath))
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[Tuple[str, str, str]]:
@@ -249,9 +250,9 @@ class WebDataSource(DataSource):
     process = CrawlerProcess(settings=settings)
     crawler = process.create_crawler(WebDataSourceSpider)
 
-    # Connect the response_downloaded signal to the handler
-    crawler.signals.connect(self._response_downloaded,
-                            signal=signals.response_downloaded)
+    # Connect the item_scraped signal to the handler
+    crawler.signals.connect(self._item_scraped,
+                            signal=signals.item_scraped)
     process.crawl(crawler,
                   start_urls=[doc_url],
                   storage_client=self.storage_client,
