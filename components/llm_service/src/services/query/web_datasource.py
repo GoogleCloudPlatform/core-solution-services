@@ -92,8 +92,14 @@ def clean_html(html_content:str) -> str:
   for element in soup(tags_to_remove):
     element.decompose()
 
+  # remove HTML comments
+  comments = soup.find_all(string=lambda text: isinstance(text, Comment))
+    for comment in comments:
+      comment.extract()
+
   # Get the cleaned HTML content
   cleaned_content = str(soup)
+  
   # Replace HTML escape characters with their equivalents
   cleaned_content = replace_escape_chars(cleaned_content)
   return cleaned_content
