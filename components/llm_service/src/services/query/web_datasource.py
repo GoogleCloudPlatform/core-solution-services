@@ -17,7 +17,12 @@
 Web data sources for Query Engines
 """
 from datetime import datetime
-from typing import List
+import re
+import hashlib
+import os
+import sys
+import tempfile
+from typing import List, Tuple
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
 from scrapy.linkextractors import LinkExtractor
@@ -25,9 +30,6 @@ from scrapy.spiders import CrawlSpider, Rule
 from scrapy.http import Response
 from w3lib.html import replace_escape_chars
 from bs4 import BeautifulSoup
-import os
-import re
-import hashlib
 from google.cloud import storage
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource
@@ -84,12 +86,12 @@ def clean_html(html_content:str) -> str:
   soup = BeautifulSoup(html_content, "html.parser")
 
   # Remove script and style and other irrelevant tags
-  tags_to_remove = ['script', 'style', 'footer', 'nav', 'aside', 'form', 'meta', 
-                    'iframe', 'header', 'button', 'input', 'select', 'textarea', 
-                    'noscript', 'img', 'figure', 'figcaption', 'link']
+  tags_to_remove = ["script", "style", "footer", "nav", "aside", "form", "meta",
+                    "iframe", "header", "button", "input", "select", "textarea", 
+                    "noscript", "img", "figure", "figcaption", "link"]
   for element in soup(tags_to_remove):
     element.decompose()
-    
+
   # Get the cleaned HTML content
   cleaned_content = str(soup)
   # Replace HTML escape characters with their equivalents
@@ -185,48 +187,58 @@ class WebDataSourceSpider(CrawlSpider):
       "content_type": content_type,
       "content": file_content
     }
+    save_content(self.filepath, file_name, file_content)
     if self.storage_client and self.bucket_name:
       upload_to_gcs(self.storage_client, self.bucket_name,
                     file_name, file_content, content_type)
-    else:
-      save_content(self.filepath, file_name, file_content)
     return item_metadata
 
-class WebDataSource(DataSource):
-  """Document loader that uses Scrapy to download webpages."""
 
-  def __init__(self, start_urls, depth_limit=1,
-               storage_client=None, bucket_name=None, filepath="/tmp"):
+class WebDataSource(DataSource):
+  """
+   Web site data source.
+  """
+
+  def __init__(self, storage_client=None, bucket_name=None, depth_limit=1):
     """
     Initialize the WebDataSource.
 
     Args:
       start_urls: List of URLs to download.
-      bucket_name: GCS bucket to save downloaded webpages.
+      bucket_name (str): name of GCS bucket to save downloaded webpages.
+                         If None files will not be saved.
+      depth_limit (int): depth limit to crawl
     """
     if storage_client is None:
       storage_client = storage.Client()
     super().__init__(storage_client)
-    self.storage_client = storage_client
-    self.start_urls = start_urls
     self.depth_limit = depth_limit
     self.bucket_name = bucket_name
-    self.filepath = filepath
-    self.crawled_urls = []
+    self.doc_data = []
 
   def _response_downloaded(self, response):
     """Handler for the response_downloaded signal."""
     Logger.info(f"Downloaded Response URL: {response.url}")
-    self.crawled_urls.append(response.url)
+    self.doc_data.append((response.item_metadata["filename"],
+                          response.url,
+                          response.item_metadata["filepath"]))
 
-  def load(self) -> List[str]:
+  def download_documents(self, doc_url: str, temp_dir: str) -> \
+        List[Tuple[str, str, str]]:
     """
-    Load the webpages and return them as a list of Document objects.
+    Download files from doc_url source to a local tmp directory
+
+    Args:
+        doc_url: url pointing to container of documents to be indexed
+        temp_dir: Path to temporary directory to download files to
 
     Returns:
-      List of Document objects.
+        list of tuples (doc name, document url, local file path)
     """
-    clear_bucket(self.storage_client, self.bucket_name)
+    #
+    if self.bucket_name:
+      clear_bucket(self.storage_client, self.bucket_name)
+
     # Define the Scrapy settings
     settings = {
       "ROBOTSTXT_OBEY": False,
@@ -241,27 +253,32 @@ class WebDataSource(DataSource):
     crawler.signals.connect(self._response_downloaded,
                             signal=signals.response_downloaded)
     process.crawl(crawler,
-                  start_urls=self.start_urls,
+                  start_urls=[doc_url],
                   storage_client=self.storage_client,
                   bucket_name=self.bucket_name,
-                  filepath=self.filepath)
+                  filepath=temp_dir)
     process.start()
 
-    return self.crawled_urls
+    return self.doc_data
 
-
-if __name__ == "__main__":
-  base_url = ["https://dmv.nv.gov//"]
-  gcs_bucket = "gcp-mira-demo-test"
+def main():
+  args = ["genie-demo-gdch-web", "https://dmv.nv.gov//", 1]
+  if len(sys.argv) > 1:
+    args = sys.argv[1:]
+  bucket,url,depth = args
   start_time = datetime.now()
   # WebDataSource(start_url="https://www.medicaid.gov/sitemap/index.html",
   #               depth_limit=1, bucket_name="gcp-mira-demo-medicaid-test")
-  web_datasource = WebDataSource(start_urls=base_url,
-                                 depth_limit=1,
-                                 bucket_name=gcs_bucket)
-  crawled_urls = web_datasource.load()
+  web_datasource = WebDataSource(bucket_name=bucket,
+                                 depth_limit=depth)
+  temp_dir = tempfile.mkdtemp()
+  doc_data = web_datasource.download_documents(url, temp_dir)
   time_elapsed = datetime.now() - start_time
   Logger.info(f"Time elapsed (hh:mm:ss.ms) {time_elapsed}")
-  Logger.info(f"Scraped {len(crawled_urls)} links")
-  for crawled_url in crawled_urls:
-    print(crawled_url)
+  Logger.info(f"Scraped {len(doc_data)} links")
+  crawled_urls = [d[1] for d in doc_data]
+  print(crawled_urls)
+  print(f"*** Pages stored at [{temp_dir}]")
+
+if __name__ == "__main__":
+  main()
