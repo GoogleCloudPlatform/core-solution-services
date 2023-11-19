@@ -97,19 +97,20 @@ def clean_html(html_content:str) -> str:
   for comment in comments:
     comment.extract()
 
-  # Remove all attributes except href from <a> tags and all attributes from other tags
+  # Remove all attributes except href from <a> tags
+  # and all attributes from other tags
   for tag in soup.find_all(True):
-    if tag.name == 'a':
-      href = tag.get('href')
+    if tag.name == "a":
+      href = tag.get("href")
       tag.attrs = {}
       if href:
-        tag['href'] = href
+        tag["href"] = href
     else:
       tag.attrs = {}
 
   # Get the cleaned HTML content
   cleaned_content = str(soup)
-  
+
   # Replace HTML escape characters with their equivalents
   cleaned_content = replace_escape_chars(cleaned_content)
   return cleaned_content
@@ -195,7 +196,7 @@ class WebDataSourceSpider(CrawlSpider):
       return {
         "url": response.url,
         "content_type": content_type,
-        "content": response.body
+        "content": None
       }
 
     file_name = sanitize_url(response.url)
@@ -237,12 +238,17 @@ class WebDataSource(DataSource):
     self.doc_data = []
 
   def _item_scraped(self, item, response, spider):
-    """Handler for the response_downloaded signal."""
+    """Handler for the item_scraped signal."""
     Logger.info(f"Downloaded Response URL: {response.url}")
-    filepath = os.path.join(item["filepath"], item["filename"])
-    self.doc_data.append((item["filename"],
-                          item["url"],
-                          filepath))
+    content_type = item["content_type"]
+    if item["content"] is None:
+      Logger.warn(
+        f"No content from: {response.url}, content type: {content_type}")
+    else:
+      filepath = os.path.join(item["filepath"], item["filename"])
+      self.doc_data.append((item["filename"],
+                            item["url"],
+                            filepath))
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[Tuple[str, str, str]]:
@@ -264,7 +270,6 @@ class WebDataSource(DataSource):
     settings = {
       "ROBOTSTXT_OBEY": False,
       "DEPTH_LIMIT": self.depth_limit,
-      # Add other Scrapy settings as needed
     }
     # Start the Scrapy process
     process = CrawlerProcess(settings=settings)
