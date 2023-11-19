@@ -29,7 +29,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.http import Response
 from w3lib.html import replace_escape_chars
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from google.cloud import storage
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource
@@ -94,8 +94,18 @@ def clean_html(html_content:str) -> str:
 
   # remove HTML comments
   comments = soup.find_all(string=lambda text: isinstance(text, Comment))
-    for comment in comments:
-      comment.extract()
+  for comment in comments:
+    comment.extract()
+
+  # Remove all attributes except href from <a> tags and all attributes from other tags
+  for tag in soup.find_all(True):
+    if tag.name == 'a':
+      href = tag.get('href')
+      tag.attrs = {}
+      if href:
+        tag['href'] = href
+    else:
+      tag.attrs = {}
 
   # Get the cleaned HTML content
   cleaned_content = str(soup)
@@ -107,8 +117,10 @@ def clean_html(html_content:str) -> str:
 def sanitize_url(url) -> str:
   # Remove the scheme (http, https) and domain, and keep the path and query
   url_path = url.split("//", 1)[-1].split("/", 1)[-1]
+
   # Replace invalid file name characters with underscores
   safe_filename = re.sub(r"[^a-zA-Z0-9_\-.]", "_", url_path)
+
   # Truncate if the file name is too long
   max_length = 200  # Maximum length for file names
   if len(safe_filename) > max_length:
@@ -116,9 +128,11 @@ def sanitize_url(url) -> str:
     # and use first 10 characters of hash
     hash_suffix = hashlib.md5(url.encode()).hexdigest()[:10]
     safe_filename = safe_filename[:max_length-11] + "_" + hash_suffix
-  # Ensure the file name ends with ".html" or ".pdf"
-  if not safe_filename.endswith((".html", ".pdf")):
+
+  # Ensure the file name ends with ".html" or ".htm" or ".pdf"
+  if not safe_filename.endswith((".html", ".pdf", ".htm")):
     safe_filename += ".html"
+
   return safe_filename
 
 
