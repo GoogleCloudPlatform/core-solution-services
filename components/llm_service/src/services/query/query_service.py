@@ -34,6 +34,7 @@ from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore)
 from services.query.data_source import DataSource
+from services.query.web_datasource import WebDataSource
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
@@ -318,7 +319,9 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
      Tuple of list of QueryDocument objects for docs processed,
         list of doc urls of docs not processed
   """
-  data_source = DataSource(storage_client)
+  # get datasource class for doc_url
+  data_source = datasource_from_url(doc_url, storage_client)
+
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
     doc_filepaths = data_source.download_documents(doc_url, temp_dir)
@@ -363,6 +366,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
   return docs_processed, data_source.docs_not_processed
 
+
 def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
   qe_vector_store = q_engine.vector_store
   if qe_vector_store is None:
@@ -374,3 +378,18 @@ def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
     raise InternalServerError(
        f"vector store class {qe_vector_store} not found in config")
   return qe_vector_store_class(q_engine)
+
+
+def datasource_from_url(doc_url, storage_client):
+  """
+  Check if doc_url is supported as a data source.  If so return
+  a DataSource class to handle the url.
+  If not raise an InternalServerError exception.
+  """
+  if doc_url.startswith("gs://"):
+    return DataSource(storage_client)
+  elif doc_url.startswith("http://") or doc_url.startswith("https://"):
+    return WebDataSource(storage_client)
+  else:
+    raise InternalServerError(
+        f"No datasource available for doc url [{doc_url}]")
