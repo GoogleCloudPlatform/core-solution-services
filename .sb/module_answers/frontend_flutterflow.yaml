@@ -1,0 +1,13 @@
+# Changes here will be overwritten by Copier
+cloudrun_neg: true
+component_name: frontend_flutterflow
+default_deploy: gke
+depend_on_common: true
+deploy_cloudrun: false
+deploy_gke: true
+gcp_region: us-central1
+local_port: '9001'
+module_version: '1.0'
+resource_name: frontend-flutterflow
+service_path: frontend-flutterflow
+use_github_action: true
