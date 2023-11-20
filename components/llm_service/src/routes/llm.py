@@ -52,7 +52,7 @@ def get_llm_list():
 
 
 @router.get(
-    "/embedding",
+    "/embedding_types",
     name="Get supported embedding types",
     response_model=LLMGetEmbeddingTypesResponse)
 def get_embedding_list():
