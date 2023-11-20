@@ -55,7 +55,7 @@ def get_llm_list():
     "/embedding_types",
     name="Get supported embedding types",
     response_model=LLMGetEmbeddingTypesResponse)
-def get_embedding_list():
+def get_embedding_types():
   """
   Get supported embedding types
 
