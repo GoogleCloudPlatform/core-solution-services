@@ -24,7 +24,8 @@ import utils
 params = st.experimental_get_query_params()
 st.session_state.auth_token = params.get("auth_token", [None])[0]
 
-def build_clicked(username, password):
+def build_clicked(engine_name:str, doc_url:str,
+                  embedding_type:str, vector_store:str):
   build_query_engine(engine_name, doc_url, embedding_type, vector_store)
 
 def qengine_build_page():
