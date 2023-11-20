@@ -340,7 +340,7 @@ def datasource_from_url(doc_url, storage_client):
   """
   if doc_url.startswith("gs://"):
     return DataSource(storage_client)
-  elif doc_url.startswith("gs://"):
+  elif doc_url.startswith("http://") or doc_url.startswith("https://"):
     return WebDataSource(storage_client)
   else:
     raise InternalServerError(
