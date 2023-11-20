@@ -220,7 +220,7 @@ def get_all_embedding_types(auth_token=None):
     auth_token = get_auth_token()
 
   api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/embedding"
+  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/embedding_types"
   resp = get_method(api_url,
                     token=auth_token)
   json_response = resp.json()
