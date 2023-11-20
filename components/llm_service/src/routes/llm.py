@@ -52,22 +52,21 @@ def get_llm_list():
 
 
 @router.get(
-    "/embedding",
+    "/embedding_types",
     name="Get supported embedding types",
     response_model=LLMGetEmbeddingTypesResponse)
-def get_embedding_list():
+def get_embedding_types():
   """
   Get supported embedding types
 
   Returns:
       LLMGetEmbeddingTypesResponse
   """
-  embeddings = EMBEDDING_MODELS
   try:
     return {
       "success": True,
       "message": "Successfully retrieved embedding types",
-      "data": embeddings
+      "data": EMBEDDING_MODELS
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e

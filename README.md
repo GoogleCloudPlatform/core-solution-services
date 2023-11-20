@@ -242,6 +242,7 @@ Please follow [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and de
 
 Please refer to [TROUBLESHOOTING.md](https://github.com/GoogleCloudPlatform/solutions-builder/blob/main/docs/TROUBLESHOOTING.md) for any Terraform errors
 
+### Firestore database already exists
 ```commandline
 ╷
 │ Error: Error creating Database: googleapi: Error 409: Database already exists. Please use another database_id
@@ -258,3 +259,13 @@ cd terraform/stages/2-foundation/
 terraform import google_firestore_database.database "(default)"
 cd -
 ```
+
+### Docker not working for current user
+```commandline
+docker: Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/containers/create": dial unix /var/run/docker.sock: connect: permission denied.
+```
+Fix
+```commandline
+sudo usermod -aG docker $USER
+```
+Log out and log back in again to re-evaluate group memberships
