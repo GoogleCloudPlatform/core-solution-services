@@ -34,5 +34,8 @@ requires:
   - frontend_streamlit
   path: ./components/frontend_streamlit
 - configs:
+  - frontend_flutterflow
+  path: ./components/frontend_flutterflow
+- configs:
   - ingress
   path: ./ingress
