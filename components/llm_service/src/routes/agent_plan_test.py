@@ -31,7 +31,6 @@ from common.models.llm import CHAT_HUMAN, CHAT_AI
 from common.models import UserChat, User, UserPlan, PlanStep
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
-from services.agents.agent_service import get_all_agents
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"

@@ -29,7 +29,6 @@ from common.models.llm import CHAT_HUMAN, CHAT_AI
 from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
-from services.agents.agent_service import get_all_agents
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
@@ -51,6 +50,7 @@ api_url = f"{API_URL}/agent"
 with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
   from routes.agent import router
   from common.testing.client_with_emulator import client_with_emulator
+  from services.agents.agent_service import get_all_agents
 
 app = FastAPI()
 add_exception_handlers(app)
