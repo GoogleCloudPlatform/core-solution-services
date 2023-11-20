@@ -30,7 +30,8 @@ from google.cloud import storage
 from services import llm_generate
 from services.query import query_prompts, embeddings
 from services.query.vector_store import VectorStore
-from services.query.data_source import DataSource, WebDataSource
+from services.query.data_source import DataSource
+from services.query.web_datasource import WebDataSource
 
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL)
