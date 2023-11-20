@@ -64,7 +64,8 @@ USER_QUERY_EXAMPLE = {
 QUERY_ENGINE_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "name": "query-engine-test",
-  "llm_type": "VertexAI-Chat",
+  "embedding_type": "VertexAI-Chat",
+  "vector_store": "langchain_pgvector",
   "created_by": "fake-user-id",
   "is_public": True,
   "index_id": "projects/83285581741/locations/us-central1/indexes/682347240495461171",
