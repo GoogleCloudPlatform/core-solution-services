@@ -5,7 +5,7 @@
 
 
     <application
-        android:label="Google CLP AI v2"
+        android:label="GenAI for Enterprise"
         tools:replace="android:label"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true">
