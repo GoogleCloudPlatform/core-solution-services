@@ -18,6 +18,7 @@
 import streamlit as st
 from api import get_chat, run_query
 from components.chat_history import chat_history_panel
+from common.utils.logging_handler import Logger
 import utils
 
 # For development purpose:
@@ -26,6 +27,7 @@ st.session_state.auth_token = params.get("auth_token", [None])[0]
 st.session_state.chat_id = params.get("chat_id", [None])[0]
 st.session_state.query_engine_id = params.get("query_engine_id", [None])[0]
 
+Logger = Logger.get_logger(__file__)
 
 def on_input_change():
   user_input = st.session_state.user_input

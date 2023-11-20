@@ -17,8 +17,11 @@ Chat history panel for UI
 """
 
 import streamlit as st
+from common.utils.logging_handler import Logger
 from api import get_all_chats
 import utils
+
+Logger = Logger.get_logger(__file__)
 
 CHAT_HISTORY_LIST_STYLE = """
 <style>

@@ -18,8 +18,10 @@
 
 import os
 from google.cloud import secretmanager
+from common.utils.logging_handler import Logger
 from common.utils.token_handler import UserCredentials
 
+Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
 
 PROJECT_ID = os.environ.get("PROJECT_ID", None)
