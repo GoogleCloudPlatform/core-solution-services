@@ -58,8 +58,7 @@ class TestWebDataSource(unittest.TestCase):
 """
 
     self.cleaned_content = """
-<html><head></head><body><p>Mocked Response</p><button onclick="myFunction()">\
-Click me</button></body></html>
+<html><head></head><body><p>Mocked Response</p></body></html>
 """.strip("\n")
 
   def test_load(self):
