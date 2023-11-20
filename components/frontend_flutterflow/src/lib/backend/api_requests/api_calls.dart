@@ -596,14 +596,19 @@ class GetEnginesCall {
     );
   }
 
-  dynamic engines(dynamic response) => getJsonField(
-        response,
-        r'''$.data''',
-        true,
-      );
   dynamic apiMessage(dynamic response) => getJsonField(
         response,
         r'''$.message''',
+      );
+  dynamic engines(dynamic response) => getJsonField(
+        response,
+        r'''$.data[:].name''',
+        true,
+      );
+  dynamic engineIds(dynamic response) => getJsonField(
+        response,
+        r'''$.data[:].id''',
+        true,
       );
 }
 
@@ -719,6 +724,12 @@ class GetUserQueryHistoryCall {
       cache: false,
     );
   }
+
+  dynamic dateTime(dynamic response) => getJsonField(
+        response,
+        r'''$.data[:].lastModifiedBy''',
+        true,
+      );
 }
 
 /// End Google CLP Document Query Group Code

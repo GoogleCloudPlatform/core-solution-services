@@ -298,7 +298,7 @@ class _LandingWidgetState extends State<LandingWidget>
                                                             ChipData('Chat',
                                                                 Icons.chat),
                                                             ChipData(
-                                                                'Document',
+                                                                'Query',
                                                                 Icons
                                                                     .file_copy_rounded)
                                                           ],
@@ -332,7 +332,7 @@ class _LandingWidgetState extends State<LandingWidget>
                                                             borderRadius:
                                                                 BorderRadius
                                                                     .circular(
-                                                                        16.0),
+                                                                        8.0),
                                                           ),
                                                           unselectedChipStyle:
                                                               ChipStyle(
@@ -360,7 +360,7 @@ class _LandingWidgetState extends State<LandingWidget>
                                                             borderRadius:
                                                                 BorderRadius
                                                                     .circular(
-                                                                        16.0),
+                                                                        8.0),
                                                           ),
                                                           chipSpacing: 12.0,
                                                           rowSpacing: 12.0,
@@ -673,7 +673,7 @@ class _LandingWidgetState extends State<LandingWidget>
                                                                               (_model.uploadedLocalFile.bytes?.isNotEmpty ?? false)
                                                                           ? null
                                                                           : () async {
-                                                                              final selectedFiles = await selectFile(
+                                                                              final selectedFiles = await selectFiles(
                                                                                 allowedExtensions: [
                                                                                   'pdf'
                                                                                 ],
@@ -690,9 +690,9 @@ class _LandingWidgetState extends State<LandingWidget>
                                                                                     showLoading: true,
                                                                                   );
                                                                                   selectedUploadedFiles = selectedFiles
-                                                                                      .map((f) => FFUploadedFile(
-                                                                                            name: f.storagePath.split('/').last,
-                                                                                            bytes: f.bytes,
+                                                                                      .map((m) => FFUploadedFile(
+                                                                                            name: m.storagePath.split('/').last,
+                                                                                            bytes: m.bytes,
                                                                                           ))
                                                                                       .toList();
                                                                                 } finally {
@@ -897,15 +897,21 @@ class _LandingWidgetState extends State<LandingWidget>
                                                                             final documentDropdownGetEnginesResponse =
                                                                                 snapshot.data!;
                                                                             return FlutterFlowDropDown<String>(
-                                                                              controller: _model.documentDropdownValueController ??= FormFieldController<String>(
-                                                                                _model.documentDropdownValue ??= '8Xf6bsfDOqaME8fbLDFD',
-                                                                              ),
-                                                                              options: [
-                                                                                '8Xf6bsfDOqaME8fbLDFD'
-                                                                              ],
-                                                                              optionLabels: [
-                                                                                'iste-demo-engine-3'
-                                                                              ],
+                                                                              controller: _model.documentDropdownValueController ??= FormFieldController<String>(null),
+                                                                              options: (GoogleCLPDocumentQueryGroup.getEnginesCall.engineIds(
+                                                                                documentDropdownGetEnginesResponse.jsonBody,
+                                                                              ) as List)
+                                                                                  .map<String>((s) => s.toString())
+                                                                                  .toList()!
+                                                                                  .map((e) => e.toString())
+                                                                                  .toList(),
+                                                                              optionLabels: (GoogleCLPDocumentQueryGroup.getEnginesCall.engines(
+                                                                                documentDropdownGetEnginesResponse.jsonBody,
+                                                                              ) as List)
+                                                                                  .map<String>((s) => s.toString())
+                                                                                  .toList()!
+                                                                                  .map((e) => e.toString())
+                                                                                  .toList(),
                                                                               onChanged: (val) => setState(() => _model.documentDropdownValue = val),
                                                                               height: 40.0,
                                                                               textStyle: FlutterFlowTheme.of(context).bodyMedium.override(
@@ -913,7 +919,7 @@ class _LandingWidgetState extends State<LandingWidget>
                                                                                     color: FlutterFlowTheme.of(context).secondaryText,
                                                                                     fontSize: 12.0,
                                                                                   ),
-                                                                              hintText: 'Model',
+                                                                              hintText: 'Engine',
                                                                               icon: Icon(
                                                                                 Icons.keyboard_arrow_down_rounded,
                                                                                 color: Color(0xFF9DA2A9),
