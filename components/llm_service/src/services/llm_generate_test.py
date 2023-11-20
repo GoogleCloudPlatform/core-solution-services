@@ -19,7 +19,7 @@
 import os
 import pytest
 from unittest import mock
-from llm_generate import llm_generate, llm_chat
+from services.llm_generate import llm_generate, llm_chat
 from vertexai.preview.language_models import TextGenerationResponse
 from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
