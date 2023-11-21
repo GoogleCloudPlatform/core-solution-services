@@ -260,6 +260,20 @@ terraform import google_firestore_database.database "(default)"
 cd -
 ```
 
+### Running user-tool gives an error
+```commandline
+user@jump-host:/home/user/core-solution-services$ PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py create_user --base-url=$BASE_URL
+API base URL: http://x.x.x.x
+User email (user@example.com):
+/home/user/.local/lib/python3.9/site-packages/google/cloud/firestore_v1/base_collection.py:290: UserWarning: Detected filter using positional arguments. Prefer using the 'filter' keyword argument instead.
+  return query.where(field_path, op_string, value)
+```
+Fix
+```commandline
+pip install -r components/common/requirements.txt
+pip install -r components/authentication/requirements.txt
+```
+
 ### Docker not working for current user
 ```commandline
 docker: Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/containers/create": dial unix /var/run/docker.sock: connect: permission denied.
