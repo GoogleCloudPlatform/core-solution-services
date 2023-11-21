@@ -20,6 +20,8 @@ COPY src/ /app/
 WORKDIR /app/
 RUN flutter build web
 
+RUN ls -l /app/build/web
+
 # Stage 2
 FROM nginx:1.21.1-alpine
 COPY --from=build-env /app/build/web /usr/share/nginx/html
