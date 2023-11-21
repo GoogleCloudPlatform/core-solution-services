@@ -18,6 +18,9 @@
 import streamlit as st
 import utils
 import api
+from common.utils.logging_handler import Logger
+
+Logger = Logger.get_logger(__file__)
 
 def login_clicked(username, password):
   token = api.login_user(username, password)

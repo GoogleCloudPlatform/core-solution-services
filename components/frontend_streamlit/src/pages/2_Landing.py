@@ -18,8 +18,10 @@
 import streamlit as st
 from api import get_all_query_engines
 from components.chat_history import chat_history_panel
+from common.utils.logging_handler import Logger
 import utils
 
+Logger = Logger.get_logger(__file__)
 params = st.experimental_get_query_params()
 st.session_state.auth_token = params.get("auth_token", [None])[0]
 auth_token = st.session_state.auth_token
@@ -48,7 +50,7 @@ def landing_page():
     for item in query_engine_list:
       query_engines[item["name"]] = item
 
-    print(query_engines)
+    Logger.info(query_engines)
 
     with st.container():
       "Start a Query with"

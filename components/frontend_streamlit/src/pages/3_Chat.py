@@ -21,6 +21,7 @@ from api import (
     get_chat, run_agent, run_agent_plan, get_plan,
     run_agent_execute_plan)
 from components.chat_history import chat_history_panel
+from common.utils.logging_handler import Logger
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
@@ -48,6 +49,7 @@ st.session_state.chat_id = params.get("chat_id", [None])[0]
 st.session_state.agent_name = params.get("agent_name", ["Chat"])[0]
 st.session_state.input_loading = False
 
+Logger = Logger.get_logger(__file__)
 
 def on_input_change():
   user_input = st.session_state.user_input

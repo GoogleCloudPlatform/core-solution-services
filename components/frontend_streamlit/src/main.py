@@ -16,7 +16,9 @@
 """
 import importlib
 import streamlit as st
+from common.utils.logging_handler import Logger
 
+Logger = Logger.get_logger(__file__)
 login = importlib.import_module("pages.1_Login")
 landing = importlib.import_module("pages.2_Landing")
 

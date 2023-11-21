@@ -19,11 +19,12 @@ import requests
 from typing import List
 import streamlit as st
 
+from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
 from common.models import Agent, UserChat, UserPlan
 from common.config import API_BASE_URL
 
-
+Logger = Logger.get_logger(__file__)
 LLM_SERVICE_PATH = "llm-service/api/v1"
 AUTH_SERVICE_PATH = "authentication/api/v1"
 
@@ -128,8 +129,7 @@ def run_agent_execute_plan(plan_id: str,
             f"{plan_id}/run?chat_id={chat_id}"
 
   print(api_url)
-  resp = post_method(api_url,
-                     token=auth_token)
+  resp = post_method(api_url, token=auth_token)
   handle_error(resp)
   json_response = resp.json()
 
@@ -202,8 +202,7 @@ def get_all_query_engines(auth_token=None):
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query"
-  resp = get_method(api_url,
-                    token=auth_token)
+  resp = get_method(api_url, token=auth_token)
   json_response = resp.json()
   print(resp)
 
@@ -278,8 +277,7 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/chat/{chat_id}"
-  resp = get_method(api_url,
-                    token=auth_token)
+  resp = get_method(api_url, token=auth_token)
   json_response = resp.json()
   output = json_response["data"]
   return output
@@ -294,8 +292,7 @@ def get_plan(plan_id, auth_token=None) -> UserPlan:
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/" \
             f"{plan_id}"
-  resp = get_method(api_url,
-                    token=auth_token)
+  resp = get_method(api_url, token=auth_token)
   json_response = resp.json()
   output = json_response["data"]
   return output
