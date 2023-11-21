@@ -18,12 +18,15 @@ from common.models import UserChat
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
+from common.config import PROJECT_ID
 from services.langchain_service import langchain_llm_generate
 from typing import Optional
-from config import (LANGCHAIN_LLM, GOOGLE_LLM,
+from config import (LANGCHAIN_LLM, GOOGLE_LLM, GOOGLE_MODEL_GARDEN,
                     OPENAI_LLM_TYPE_GPT3_5, VERTEX_LLM_TYPE_BISON_TEXT,
-                    CHAT_LLM_TYPES)
+                    CHAT_LLM_TYPES, REGION)
 from vertexai.language_models import (ChatModel, TextGenerationModel)
+from google.cloud import aiplatform
+import time
 
 Logger = Logger.get_logger(__file__)
 
@@ -46,8 +49,12 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
     llm_type = OPENAI_LLM_TYPE_GPT3_5
 
   try:
+    start_time = time.time()
     # for google models, prioritize native client over langchain
-    if llm_type in GOOGLE_LLM.keys():
+    if llm_type in GOOGLE_MODEL_GARDEN.keys():
+      aip_endpoint_name = GOOGLE_MODEL_GARDEN.get(llm_type)
+      response = await model_garden_predict(prompt, aip_endpoint_name)
+    elif llm_type in GOOGLE_LLM.keys():
       google_llm = GOOGLE_LLM.get(llm_type, VERTEX_LLM_TYPE_BISON_TEXT)
       is_chat = llm_type in CHAT_LLM_TYPES
       response = await google_llm_predict(prompt, is_chat, google_llm)
@@ -56,6 +63,9 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
+    process_time = round(time.time() - start_time)
+    Logger.info(f"Received response in {process_time} seconds from "
+                f"model with llm_type={llm_type}.")
     return response
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -91,6 +101,49 @@ async def llm_chat(prompt: str, llm_type: str,
     return response
   except Exception as e:
     raise InternalServerError(str(e)) from e
+
+
+async def model_garden_predict(prompt: str,
+    aip_endpoint_name: str, parameters: dict = None) -> str:
+  """
+  Generate text with a Model Garden model.
+  Args:
+    prompt: the text prompt to pass to the LLM
+    aip_endpoint_name: endpoint id from the Vertex AI online predictions
+    parameters (optional):  parameters to be used for prediction
+
+  Returns:
+    the prediction text.
+  """
+  aip_endpoint = f"projects/{PROJECT_ID}/locations/" \
+                 f"{REGION}/endpoints/{aip_endpoint_name}"
+  Logger.info(f"Generating text using Model Garden "
+              f"endpoint=[{aip_endpoint}], prompt=[{prompt}], "
+              f"parameters=[{parameters}.")
+
+  if parameters is None:
+    parameters = {
+        "prompt": f"'{prompt}'",
+        "max_tokens": 900,
+        "temperature": 0.2,
+        "top_p": 1.0,
+        "top_k": 10,
+    }
+  else:
+    parameters.update({"prompt": f"'{prompt}'"})
+
+  instances = [parameters, ]
+
+  endpoint_without_peft = aiplatform.Endpoint(aip_endpoint)
+
+  response = endpoint_without_peft.predict(instances=instances)
+  predictions_text = "\n".join(response.predictions)
+  Logger.info(f"Received response from "
+              f"{response.model_resource_name} version="
+              f"[{response.model_version_id}] with {len(response.predictions)}"
+              f" prediction(s) = [{predictions_text}] ")
+
+  return predictions_text
 
 
 async def google_llm_predict(prompt: str, is_chat: bool,
