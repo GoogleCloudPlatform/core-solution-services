@@ -19,6 +19,7 @@ import streamlit as st
 import utils
 import api
 from common.utils.logging_handler import Logger
+from config import APP_BASE_PATH
 
 Logger = Logger.get_logger(__file__)
 
@@ -28,7 +29,7 @@ def login_clicked(username, password):
     st.session_state["logged_in"] = True
     st.session_state["auth_token"] = token
     st.session_state["username"] = username
-    utils.navigate_to(f"/Landing?auth_token={token}")
+    utils.navigate_to(f"{APP_BASE_PATH}/Landing?auth_token={token}")
   else:
     st.session_state["logged_in"] = False
     st.error("Invalid username or password")

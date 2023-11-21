@@ -10,6 +10,12 @@ Set up API endpoint
 export API_BASE_URL=https://my.domain.com
 ```
 
+Set the subpath where the streamlit will deploy to. By default, it sets to "/streamlit"
+
+```
+export APP_BASE_PATH="/streamlit"
+```
+
 Install virtualenv and dependencies
 ```
 python -m virtualenv .venv
@@ -19,7 +25,8 @@ pip install -r requirements.txt
 ```
 
 ```
-PYTHONPATH=components/common/src streamlit run components/frontend_streamlit/src/main.py
+PYTHONPATH=components/common/src streamlit run components/frontend_streamlit/src/main.py \
+  --server.baseUrlPath=$APP_BASE_PATH
 ```
 
 ### Deploy and run at remote GKE cluster
