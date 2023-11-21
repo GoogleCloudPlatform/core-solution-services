@@ -71,8 +71,8 @@ profiles:
       # Creating ".env" file for the Flutter frontend app usage with dotenv.
       # See https://pub.dev/packages/flutter_dotenv
       - host:
-          dir: ./kustomize/base
-          command: ["cp", "properties.rendered.env", "src/.env"]
+          dir: .
+          command: ["cp", "./kustomize/base/properties.rendered.env", "src/.env"]
       after:
       - host:
           dir: ./kustomize/base
