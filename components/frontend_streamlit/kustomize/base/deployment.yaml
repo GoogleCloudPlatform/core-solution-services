@@ -33,7 +33,7 @@ spec:
           livenessProbe:
             failureThreshold: 5
             httpGet:
-              path: /
+              path: /streamlit/
               port: 80
               scheme: HTTP
             periodSeconds: 30
@@ -42,7 +42,7 @@ spec:
           readinessProbe:
             failureThreshold: 5
             httpGet:
-              path: /
+              path: /streamlit/
               port: 80
               scheme: HTTP
             periodSeconds: 30

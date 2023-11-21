@@ -28,7 +28,7 @@ def build_clicked(engine_name:str, doc_url:str,
                   embedding_type:str, vector_store:str):
   build_query_engine(engine_name, doc_url, embedding_type, vector_store)
 
-def qengine_build_page():
+def query_engine_build_page():
   placeholder = st.empty()
 
   # Get all embedding types as a list
@@ -53,4 +53,4 @@ def qengine_build_page():
 
 if __name__ == "__main__":
   utils.init_api_base_url()
-  qengine_build_page()
+  query_engine_build_page()
