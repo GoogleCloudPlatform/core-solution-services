@@ -194,7 +194,7 @@ class RefreshSessionCall {
 /// Start Google CLP Chat Group Code
 
 class GoogleCLPChatGroup {
-  static String baseUrl = dotenv.env['API_BASE_URL'];
+  static String? baseUrl = dotenv.env['API_BASE_URL'];
   static Map<String, String> headers = {};
   static GetModelsCall getModelsCall = GetModelsCall();
   static CreateChatCall createChatCall = CreateChatCall();
@@ -567,7 +567,7 @@ class DeleteChatCall {
 /// Start Google CLP Document Query Group Code
 
 class GoogleCLPDocumentQueryGroup {
-  static String baseUrl = dotenv.env['API_BASE_URL'];
+  static String? baseUrl = dotenv.env['API_BASE_URL'];
   static Map<String, String> headers = {};
   static GetEnginesCall getEnginesCall = GetEnginesCall();
   static MakeQueryCall makeQueryCall = MakeQueryCall();
