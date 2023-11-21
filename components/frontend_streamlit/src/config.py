@@ -26,6 +26,7 @@ secrets = secretmanager.SecretManagerServiceClient()
 
 PROJECT_ID = os.environ.get("PROJECT_ID", None)
 API_BASE_URL = os.environ.get("API_BASE_URL", None)
+APP_BASE_PATH = "/streamlit"
 
 try:
   LLM_BACKEND_ROBOT_USERNAME = secrets.access_secret_version(

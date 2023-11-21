@@ -20,6 +20,7 @@ from api import get_all_query_engines
 from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
 import utils
+from config import APP_BASE_PATH
 
 Logger = Logger.get_logger(__file__)
 params = st.experimental_get_query_params()
@@ -41,7 +42,8 @@ def landing_page():
       chat_button = st.button("Start", key=2)
       if chat_button:
         utils.navigate_to(
-          f"/Chat?agent_name={agent_name}&auth_token={auth_token}")
+          f"{APP_BASE_PATH}/Chat?agent_name={agent_name}"
+          f"&auth_token={auth_token}")
 
   with start_query:
     # Get all query engines as a list
@@ -61,7 +63,8 @@ def landing_page():
       query_engine_id = query_engines[qe_name]["id"]
       if query_button:
         utils.navigate_to(
-          f"/Query?query_engine_id={query_engine_id}&auth_token={auth_token}")
+          f"{APP_BASE_PATH}/Query?query_engine_id={query_engine_id}"
+          f"&auth_token={auth_token}")
 
   with build_query:
     with st.container():
@@ -69,7 +72,7 @@ def landing_page():
       build_button = st.button("Start", key=4)
       if build_button:
         utils.navigate_to(
-          f"/Build_QEngine?auth_token={auth_token}")
+          f"{APP_BASE_PATH}/Build_QEngine?auth_token={auth_token}")
 
 
 if __name__ == "__main__":
