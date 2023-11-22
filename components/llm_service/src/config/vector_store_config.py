@@ -17,7 +17,6 @@ Vector Store Config
 # pylint: disable=broad-exception-caught
 
 import os
-from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from google.cloud import secretmanager
