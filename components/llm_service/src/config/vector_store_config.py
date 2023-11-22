@@ -21,7 +21,6 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from google.cloud import secretmanager
-from config.config import PROJECT_ID
 
 Logger = Logger.get_logger(__file__)
 
