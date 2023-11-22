@@ -242,7 +242,7 @@ pip install -r requirements.txt
 * Set the following variables to your kubernetes cluster name and region. If you are not sure of your cluster name or region check the [GCP cloud console](https://console.cloud.google.com/kubernetes/list/overview).
   ```
   export REGION=<your cluster region>
-  export CLUSTER_NAME=main_cluster
+  export CLUSTER_NAME=main-cluster
   ```
 
 * Create a kubernetes context for your cluster.
@@ -274,7 +274,7 @@ pip install -r requirements.txt
 * Run the following to create a Kubernetes Service Account (ksa) in your namespace and bind it to the GCP service account used for GKE:
   ```
   export PROJECT_ID=<your-dev-project-id>
-  bash ./tools/setup_ksa.sh
+  bash ./setup/setup_ksa.sh
   ```
   - This will create a service account in the GKE cluster.
   - It will also bind the GKE service account with the regular GCP service account named "gke-sa".
