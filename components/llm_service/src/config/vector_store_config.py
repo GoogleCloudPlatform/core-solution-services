@@ -39,6 +39,7 @@ DEFAULT_VECTOR_STORE = os.getenv("DEFAULT_VECTOR_STORE",
 Logger.info(f"Default vector store = [{DEFAULT_VECTOR_STORE}]")
 
 # postgres
+# TODO: create secrets for this
 PG_HOST = "10.133.0.2"
 PG_PORT = "5432"
 PG_DBNAME = "genie"
