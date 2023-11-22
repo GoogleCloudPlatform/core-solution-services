@@ -19,7 +19,7 @@ void main() async {
   await appState.initializePersistedState();
 
   // Load environment variables from `.env` file.
-  await dotenv.load(fileName: '.env');
+  await dotenv.load();
 
   runApp(ChangeNotifierProvider(
     create: (context) => appState,

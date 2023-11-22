@@ -25,6 +25,15 @@ build:
     requires:
     - image: common
       alias: COMMON_IMAGE
+    hooks:
+      before:
+      - dir: ./kustomize/base
+        command: ["sh", "-c",
+          "envsubst < properties.env > properties.rendered.env"]
+      # Creating ".env" file for the Flutter frontend app usage with dotenv.
+      # See https://pub.dev/packages/flutter_dotenv
+      - dir: .
+        command: ["cp", "./kustomize/base/properties.rendered.env", "src/.env"]
   googleCloudBuild: {}
 
 # Portforwarding when running `skaffold dev` locally.
@@ -68,11 +77,6 @@ profiles:
           dir: ./kustomize/base
           command: ["sh", "-c",
             "envsubst < properties.env > properties.rendered.env"]
-      # Creating ".env" file for the Flutter frontend app usage with dotenv.
-      # See https://pub.dev/packages/flutter_dotenv
-      - host:
-          dir: .
-          command: ["cp", "./kustomize/base/properties.rendered.env", "src/.env"]
       after:
       - host:
           dir: ./kustomize/base
