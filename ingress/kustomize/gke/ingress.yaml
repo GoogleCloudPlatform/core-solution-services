@@ -59,7 +59,7 @@ spec:
                 port:
                   number: 80
 
-          - path: /streamlit
+          - path: /streamlit/
             pathType: Prefix
             backend:
               service:
