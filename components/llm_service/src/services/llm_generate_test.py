@@ -33,7 +33,7 @@ from testing.test_config import (FAKE_GENERATE_RESPONSE,
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
-with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient",
+with mock.patch("common.utils.secrets.get_secret",
                 new=mock.AsyncMock()):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere"):

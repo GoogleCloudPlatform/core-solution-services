@@ -49,7 +49,7 @@ FAKE_GENERATE_RESPONSE = "test generation"
 # assigning url
 api_url = f"{API_URL}/agent/plan"
 
-with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
+with mock.patch("common.utils.secrets.get_secret"):
   from routes.agent import router
   from common.testing.client_with_emulator import client_with_emulator
 

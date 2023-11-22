@@ -33,7 +33,7 @@ os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
 with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient",
+    "common.utils.secrets.get_secret",
         side_effect=mock.MagicMock()) as mok:
   with mock.patch("langchain.chat_models.ChatOpenAI"):
     with mock.patch("langchain.llms.Cohere"):
