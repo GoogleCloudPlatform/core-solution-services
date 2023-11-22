@@ -51,5 +51,5 @@ secrets = secretmanager.SecretManagerServiceClient()
 try:
   PG_PASSWD = get_secret("postgres-user-passwd")
 except Exception as e:
-  raise InternalServerError(
-      "Can't access postgres user password secret: {e}") from e
+  Logger.warn("Can't access postgres user password secret")
+  PG_PASSWD = None
