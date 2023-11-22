@@ -17,7 +17,6 @@ Vector Store Config
 # pylint: disable=broad-exception-caught
 
 import os
-from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from google.cloud import secretmanager
@@ -51,5 +50,5 @@ secrets = secretmanager.SecretManagerServiceClient()
 try:
   PG_PASSWD = get_secret("postgres-user-passwd")
 except Exception as e:
-  raise InternalServerError(
-      "Can't access postgres user password secret: {e}") from e
+  Logger.warn("Can't access postgres user password secret")
+  PG_PASSWD = None
