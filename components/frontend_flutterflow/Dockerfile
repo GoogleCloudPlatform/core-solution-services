@@ -21,6 +21,8 @@ WORKDIR /app/
 RUN flutter build web
 
 RUN ls -l /app/build/web
+RUN cat /app/build/web/assets/.env
+
 
 # Stage 2
 FROM nginx:1.21.1-alpine
