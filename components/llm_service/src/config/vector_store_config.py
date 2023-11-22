@@ -19,6 +19,7 @@ Vector Store Config
 import os
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
+from common.utils.secrets import get_secret
 from google.cloud import secretmanager
 from config.config import PROJECT_ID
 
@@ -49,12 +50,7 @@ PG_PASSWD = None
 # load secrets
 secrets = secretmanager.SecretManagerServiceClient()
 try:
-  PG_PASSWD = secrets.access_secret_version(
-      request={
-          "name": "projects/" + PROJECT_ID +
-                  "/secrets/postgres-user-passwd/versions/latest"
-      }).payload.data.decode("utf-8")
-  PG_PASSWD = PG_PASSWD.strip()
+  PG_PASSWD = get_secret("postgres-user-passwd")
 except Exception as e:
   raise InternalServerError(
       "Can't access postgres user password secret: {e}") from e
