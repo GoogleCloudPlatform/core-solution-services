@@ -43,3 +43,4 @@ def app():
 
 if __name__ == "__main__":
   app()
+  Logger.info("Streamlit main page rendered.")
