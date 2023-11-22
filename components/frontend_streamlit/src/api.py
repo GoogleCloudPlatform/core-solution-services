@@ -33,6 +33,8 @@ def get_auth_token():
 
 def get_api_base_url():
   api_base_url = st.session_state.get("api_base_url", API_BASE_URL)
+  assert api_base_url, "api_base_url is not defined."
+
   print(f"api_base_url = {api_base_url}")
   return api_base_url.rstrip("/")
 

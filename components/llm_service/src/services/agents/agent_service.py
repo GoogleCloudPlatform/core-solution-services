@@ -62,6 +62,22 @@ def get_agent_config() -> dict:
     load_agents(AGENT_CONFIG_PATH)
   return AGENTS
 
+
+def get_agent_config_by_name(agent_name: str) -> dict:
+  if agent_name in get_agent_config():
+    return get_agent_config()[agent_name]
+  return {}
+
+
+def get_model_garden_agent_config() -> dict:
+  agent_config = get_agent_config()
+  planning_agents = {
+      agent: agent_config for agent, agent_config in agent_config.items()
+      if AgentCapability.AGENT_PLAN_CAPABILITY.value \
+         in agent_config["capabilities"]
+  }
+  return planning_agents
+
 def get_plan_agent_config() -> dict:
   agent_config = get_agent_config()
   planning_agents = {

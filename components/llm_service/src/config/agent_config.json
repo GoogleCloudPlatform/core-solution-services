@@ -15,6 +15,11 @@
       "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_ZeroShot",
       "agent_class": "PlanAgent"
+    },
+    "ModelGarden_LLAMA2": {
+      "llm_type": "VertexAi-ModelGarden-Chat",
+      "agent_type": "model_garden",
+      "agent_class": "ChatAgent"
     }
   }
 }
