@@ -24,7 +24,6 @@ QUERY_HUMAN = "HumanQuestion"
 QUERY_AI_RESPONSE = "AIResponse"
 QUERY_AI_REFERENCES = "AIReferences"
 
-
 class UserQuery(BaseModel):
   """
   UserQuery ORM class
@@ -84,7 +83,8 @@ class QueryEngine(BaseModel):
   """
   id = IDField()
   name = TextField(required=True)
-  llm_type = TextField(required=True)
+  embedding_type = TextField(required=True)
+  vector_store = TextField(required=True)
   created_by = TextField(required=True)
   is_public = BooleanField(default=False)
   index_id = TextField(required=False)

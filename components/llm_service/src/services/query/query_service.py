@@ -29,16 +29,26 @@ from utils.errors import NoDocumentsIndexedException
 from google.cloud import storage
 from services import llm_generate
 from services.query import query_prompts, embeddings
-from services.query.vector_store import VectorStore
+from services.query import vector_store
+from services.query.vector_store import (VectorStore,
+                                         MatchingEngineVectorStore,
+                                         PostgresVectorStore)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
-
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL)
+from config.vector_store_config import (DEFAULT_VECTOR_STORE,
+                                        VECTOR_STORE_LANGCHAIN_PGVECTOR,
+                                        VECTOR_STORE_MATCHING_ENGINE)
 
 # pylint: disable=broad-exception-caught
 
 Logger = Logger.get_logger(__file__)
+
+VECTOR_STORES = {
+  VECTOR_STORE_MATCHING_ENGINE: MatchingEngineVectorStore,
+  VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
+}
 
 async def query_generate(
             user_id: str,
@@ -69,7 +79,7 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
   # get doc context for question
-  query_references = await _query_doc_matches(q_engine, prompt)
+  query_references = await query_search(q_engine, prompt)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -105,21 +115,35 @@ async def query_generate(
   return query_result, query_references
 
 
-async def _query_doc_matches(q_engine: QueryEngine,
-                             query_prompt: str) -> List[dict]:
+async def query_search(q_engine: QueryEngine,
+                       query_prompt: str) -> List[dict]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
+                       
+  Args:
+    q_engine: QueryEngine to search
+    query_prompt (str):  user query
+
+  Returns:
+    list of dicts containing summarized query results, with:
+      "document_id": id of QueryDocument for reference
+      "document_url": url of document containing reference
+      "document_text": text of document containing the grounding for the query 
+      "chunk_id": id of QueryDocumentChunk containing the reference
+                       
   """
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
 
-  match_indexes_list = VectorStore.find_neighbors(q_engine,
-                                                  query_embeddings)
+  # retrieve indexes of relevant document chunks from vector store
+  qe_vector_store = vector_store.from_query_engine(q_engine)
+  match_indexes_list = qe_vector_store.similarity_search(q_engine,
+                                                         query_embeddings)
 
-  # assemble document chunk matches from match indexes
+  # assemble document chunk references from vector store indexes
   query_references = []
   match_indexes = match_indexes_list[0]
   for match in match_indexes:
@@ -158,12 +182,14 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   query_engine = request_body.get("query_engine")
   user_id = request_body.get("user_id")
   is_public = request_body.get("is_public")
-  llm_type = request_body.get("llm_type")
+  embedding_type = request_body.get("embedding_type")
+  vector_store_type = request_body.get("vector_store")
 
   Logger.info(f"Starting batch job for {query_engine} job id {job.id}")
 
   q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, query_engine, user_id, is_public, llm_type)
+      query_engine_build(doc_url, query_engine, user_id, is_public,
+                         embedding_type, vector_store_type)
 
   # update result data in batch job model
   docs_processed_urls = [doc.doc_url for doc in docs_processed]
@@ -180,11 +206,11 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   return result_data
 
 
-def query_engine_build(
-        doc_url: str, query_engine: str, user_id: str,
-        is_public: Optional[bool] = True,
-        llm_type: Optional[str] = DEFAULT_QUERY_EMBEDDING_MODEL) -> \
-        Tuple[QueryEngine, List[QueryDocument], List[str]]:
+def query_engine_build(doc_url: str, query_engine: str, user_id: str,
+                       is_public: Optional[bool] = True,
+                       embedding_type: Optional[str] = None,
+                       vector_store_type: Optional[str] = None) -> \
+                       Tuple[str, List[QueryDocument], List[str]]:
   """
   Build a new query engine. NOTE currently supports only Vertex
    TextEmbeddingModel for embeddings.
@@ -194,7 +220,8 @@ def query_engine_build(
     query_engine: the name of the query engine to create
     user_id: user id of engine creator
     is_public: is query engine publicly usable?
-    llm_type: LLM used for query embeddings (currently not used)
+    embedding_type: LLM used for query embeddings
+    vector_store_type: vector store type (from config.vector_store_config)
 
   Returns:
     Tuple of QueryEngine id, list of QueryDocument objects of docs processed,
@@ -208,15 +235,24 @@ def query_engine_build(
     raise ValidationError(f"Query engine {query_engine} already exists")
 
   # create model
+  if embedding_type is None:
+    embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
+
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
-                         llm_type=llm_type,
+                         embedding_type=embedding_type,
+                         vector_store=vector_store_type,
                          is_public=is_public)
+
+  # retrieve vector store class and store type in q_engine
+  qe_vector_store = vector_store_from_query_engine(q_engine)
+  q_engine.vector_store = qe_vector_store.vector_store_type
   q_engine.save()
 
   # build document index
   try:
-    docs_processed, docs_not_processed = build_doc_index(doc_url, query_engine)
+    docs_processed, docs_not_processed = \
+        build_doc_index(doc_url, query_engine, qe_vector_store)
   except Exception as e:
     # delete query engine model if build unsuccessful
     QueryDocument.collection.filter(
@@ -233,7 +269,8 @@ def query_engine_build(
   return q_engine, docs_processed, docs_not_processed
 
 
-def build_doc_index(doc_url: str, query_engine: str) -> \
+def build_doc_index(doc_url: str, query_engine: str,
+                    qe_vector_store: VectorStore) -> \
         Tuple[List[QueryDocument], List[str]]:
   """
   Build the document index.
@@ -253,20 +290,18 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
 
   storage_client = storage.Client(project=PROJECT_ID)
 
-  vector_store = VectorStore(q_engine)
-
   try:
     # process docs at url and upload embeddings to vector store
     docs_processed, docs_not_processed = process_documents(
-      doc_url, vector_store, q_engine, storage_client)
+      doc_url, qe_vector_store, q_engine, storage_client)
 
     # make sure we actually processed some docs
     if len(docs_processed) == 0:
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # finalize vector store (e.g. create endpoint)
-    vector_store.finalize()
+    # deploy vectore store (e.g. create endpoint)
+    qe_vector_store.deploy()
 
     return docs_processed, docs_not_processed
 
@@ -275,7 +310,7 @@ def build_doc_index(doc_url: str, query_engine: str) -> \
     raise InternalServerError(str(e)) from e
 
 
-def process_documents(doc_url: str, vector_store: VectorStore,
+def process_documents(doc_url: str, qe_vector_store: VectorStore,
                       q_engine: QueryEngine, storage_client) -> \
                       Tuple[List[QueryDocument], List[str]]:
   """
@@ -305,7 +340,7 @@ def process_documents(doc_url: str, vector_store: VectorStore,
 
       # generate embedding data and store in local dir
       new_index_base = \
-          vector_store.index_document(doc_name, text_chunks, index_base)
+          qe_vector_store.index_document(doc_name, text_chunks, index_base)
 
       # cleanup temp local file
       os.remove(doc_filepath)
@@ -330,6 +365,19 @@ def process_documents(doc_url: str, vector_store: VectorStore,
       docs_processed.append(query_doc)
 
   return docs_processed, data_source.docs_not_processed
+
+
+def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
+  qe_vector_store = q_engine.vector_store
+  if qe_vector_store is None:
+    # set to default vector store
+    qe_vector_store = DEFAULT_VECTOR_STORE
+
+  qe_vector_store_class = VECTOR_STORES.get(qe_vector_store)
+  if qe_vector_store_class is None:
+    raise InternalServerError(
+       f"vector store class {qe_vector_store} not found in config")
+  return qe_vector_store_class(q_engine)
 
 
 def datasource_from_url(doc_url, storage_client):

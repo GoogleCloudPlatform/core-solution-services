@@ -18,6 +18,7 @@
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 import os
 from common.utils.logging_handler import Logger
+from common.utils.secrets import get_secret
 from common.utils.token_handler import UserCredentials
 from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
@@ -26,7 +27,6 @@ from google.cloud import secretmanager
 from langchain.chat_models import ChatOpenAI, ChatVertexAI
 from langchain.llms.cohere import Cohere
 from langchain.llms.vertexai import VertexAI
-
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
@@ -96,28 +96,12 @@ ENABLE_COHERE_LLM = get_environ_flag("ENABLE_COHERE_LLM", True)
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if OPENAI_API_KEY is None:
-  try:
-    OPENAI_API_KEY = secrets.access_secret_version(
-        request={
-            "name": "projects/" + PROJECT_ID +
-                    "/secrets/openai-api-key/versions/latest"
-        }).payload.data.decode("utf-8")
-    OPENAI_API_KEY = OPENAI_API_KEY.strip()
-  except Exception:
-    OPENAI_API_KEY = None
+  OPENAI_API_KEY = get_secret("openai-api-key")
 ENABLE_OPENAI_LLM = ENABLE_OPENAI_LLM and (OPENAI_API_KEY is not None)
 
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 if COHERE_API_KEY is None:
-  try:
-    COHERE_API_KEY = secrets.access_secret_version(
-        request={
-            "name": "projects/" + PROJECT_ID +
-                    "/secrets/cohere-api-key/versions/latest"
-        }).payload.data.decode("utf-8")
-    COHERE_API_KEY = COHERE_API_KEY.strip()
-  except Exception:
-    COHERE_API_KEY = None
+  COHERE_API_KEY = get_secret("cohere-api-key")
 ENABLE_COHERE_LLM = ENABLE_COHERE_LLM and (COHERE_API_KEY is not None)
 
 OPENAI_LLM_TYPE_GPT3_5 = "OpenAI-GPT3.5"
@@ -201,11 +185,7 @@ DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
 EMBEDDING_MODELS = [VERTEX_LLM_TYPE_GECKO_EMBEDDING]
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 
-# vector stores
-DEFAULT_VECTOR_STORE = "langchain_pgvector"
-
 # services config
-
 SERVICES = {
   "user-management": {
     "host": "http://user-management",
@@ -240,24 +220,12 @@ RULES_ENGINE_BASE_URL = f"{SERVICES['rules-engine']['host']}:" \
                   f"/rules-engine/api/v1"
 
 try:
-  LLM_BACKEND_ROBOT_USERNAME = secrets.access_secret_version(
-      request={
-          "name":
-              f"projects/{PROJECT_ID}" +
-              "/secrets/llm-backend-robot-username/versions/latest"
-      }).payload.data.decode("utf-8")
-  LLM_BACKEND_ROBOT_USERNAME = LLM_BACKEND_ROBOT_USERNAME.strip()
+  LLM_BACKEND_ROBOT_USERNAME = get_secret("llm-backend-robot-username")
 except Exception as e:
   LLM_BACKEND_ROBOT_USERNAME = None
 
 try:
-  LLM_BACKEND_ROBOT_PASSWORD = secrets.access_secret_version(
-      request={
-          "name":
-              f"projects/{PROJECT_ID}" +
-              "/secrets/llm-backend-robot-password/versions/latest"
-      }).payload.data.decode("utf-8")
-  LLM_BACKEND_ROBOT_PASSWORD = LLM_BACKEND_ROBOT_PASSWORD.strip()
+  LLM_BACKEND_ROBOT_PASSWORD = get_secret("llm-backend-robot-password")
 except Exception as e:
   LLM_BACKEND_ROBOT_PASSWORD = None
 
@@ -277,4 +245,4 @@ auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
                               LLM_BACKEND_ROBOT_PASSWORD)
 
 # agent config
-AGENT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "data/agent_config.json")
+AGENT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "agent_config.json")

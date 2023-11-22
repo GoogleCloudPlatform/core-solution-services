@@ -34,7 +34,7 @@ os.environ["PROJECT_ID"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
-with mock.patch("google.cloud.secretmanager.SecretManagerServiceClient"):
+with mock.patch("common.utils.secrets.get_secret"):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
       from config import LLM_TYPES
@@ -45,7 +45,7 @@ LLM_TESTDATA_FILENAME = os.path.join(TESTING_FOLDER_PATH,
                                         "llm_generate.json")
 
 with mock.patch(
-    "google.cloud.secretmanager.SecretManagerServiceClient"):
+    "common.utils.secrets.get_secret"):
   from routes.llm import router
 
 app = FastAPI()

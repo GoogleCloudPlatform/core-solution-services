@@ -30,9 +30,9 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
 from common.utils.logging_handler import Logger
 from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
-                    ERROR_RESPONSES, DEFAULT_QUERY_EMBEDDING_MODEL,
-                    ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_QUERY_CHAT_MODEL, DEFAULT_VECTOR_STORE)
+                    ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
+                    DEFAULT_QUERY_CHAT_MODEL, DEFAULT_VECTOR_STORE,
+                    VECTOR_STORES)
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
@@ -42,7 +42,6 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import query_generate
-from services.query import vector_store
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -81,12 +80,11 @@ def get_vector_store_list():
   Returns:
       LLMGetVectorStoreTypesResponse
   """
-  vector_stores = vector_store.get_vector_store_types()
   try:
     return {
       "success": True,
       "message": "Successfully retrieved vector store types",
-      "data": vector_stores
+      "data": VECTOR_STORES
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -146,6 +144,7 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
     raise ResourceNotFound(str(e)) from e
   except Exception as e:
     raise InternalServerError(str(e)) from e
+
 
 @router.get(
     "/{query_id}",
@@ -270,15 +269,15 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "query_engine": query_engine,
       "user_id": user_id,
       "is_public": is_public,
-      "embedding_type": 
-          genconfig_dict.get("embedding_type", DEFAULT_QUERY_EMBEDDING_MODEL),
-      "vector_store": genconfig_dict.get("vector_store", DEFAULT_VECTOR_STORE)
+      "embedding_type": genconfig_dict.get("embedding_type", None),
+      "vector_store": genconfig_dict.get("vector_store", None)
     }
     env_vars = {
       "DATABASE_PREFIX": DATABASE_PREFIX,
       "PROJECT_ID": PROJECT_ID,
       "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
-      "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM)
+      "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
+      "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE)
     }
     response = initiate_batch_job(data, JOB_TYPE_QUERY_ENGINE_BUILD, env_vars)
     Logger.info(f"Batch job response: {response}")
