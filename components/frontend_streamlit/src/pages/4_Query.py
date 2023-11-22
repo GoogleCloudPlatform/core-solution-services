@@ -55,7 +55,7 @@ def init_messages():
   messages = []
   if st.session_state.chat_id:
     chat_data = get_chat(st.session_state.chat_id)
-    messages = chat_data.history
+    messages = chat_data["history"]
   else:
     messages.append({"AIOutput": "You can ask me anything."})
   # Initialize with chat history if any.
