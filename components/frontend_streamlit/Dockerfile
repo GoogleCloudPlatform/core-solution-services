@@ -18,4 +18,6 @@ EXPOSE 80
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-ENTRYPOINT ["streamlit", "run", "main.py", "--server.port=80", "--server.baseUrlPath=/streamlit/"]
+RUN apt-get update && apt-get -y install procps curl
+
+ENTRYPOINT ["streamlit", "run", "main.py", "--server.port=80", "--server.baseUrlPath=/streamlit"]
