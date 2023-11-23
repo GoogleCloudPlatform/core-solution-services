@@ -27,6 +27,7 @@ from google.cloud import secretmanager
 from langchain.chat_models import ChatOpenAI, ChatVertexAI
 from langchain.llms.cohere import Cohere
 from langchain.llms.vertexai import VertexAI
+from langchain.embeddings.openai import OpenAIEmbeddings
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
@@ -106,6 +107,7 @@ ENABLE_COHERE_LLM = ENABLE_COHERE_LLM and (COHERE_API_KEY is not None)
 
 OPENAI_LLM_TYPE_GPT3_5 = "OpenAI-GPT3.5"
 OPENAI_LLM_TYPE_GPT4 = "OpenAI-GPT4"
+OPENAI_EMBEDDING_TYPE = "OpenAI-Embeddings"
 COHERE_LLM_TYPE = "Cohere"
 VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
 VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat"
@@ -182,7 +184,15 @@ Logger.info(f"LLM types loaded {LLM_TYPES}")
 DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
 
 # embedding models
-EMBEDDING_MODELS = [VERTEX_LLM_TYPE_GECKO_EMBEDDING]
+VERTEX_EMBEDDING_MODELS = [VERTEX_LLM_TYPE_GECKO_EMBEDDING]
+LANGCHAIN_EMBEDDING_MODELS = []
+if ENABLE_OPENAI_LLM:
+  LANGCHAIN_EMBEDDING_MODELS.append(OPENAI_EMBEDDING_TYPE)
+  LANGCHAIN_LLM.update({
+    OPENAI_EMBEDDING_TYPE: OpenAIEmbeddings(OPENAI_API_KEY)
+  })
+
+EMBEDDING_MODELS = VERTEX_EMBEDDING_MODELS + LANGCHAIN_EMBEDDING_MODELS
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 
 # services config

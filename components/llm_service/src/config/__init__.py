@@ -61,6 +61,8 @@ from config.config import (
     GOOGLE_LLM,
     LANGCHAIN_LLM,
     EMBEDDING_MODELS,
+    LANGCHAIN_EMBEDDINGS,
+    VERTEX_EMBEDDING_MODELS,
     GOOGLE_MODEL_GARDEN,
 
     # agent config

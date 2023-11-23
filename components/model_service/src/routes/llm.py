@@ -24,9 +24,7 @@ from config import (PAYLOAD_FILE_SIZE,
 from schemas.llm_schema import (LLMGenerateModel,
                                 LLMGetTypesResponse,
                                 LLMGetEmbeddingTypesResponse,
-                                LLMGenerateResponse,
-                                LLMEmbeddingsResponse,
-                                LLMEmbeddingsModel)
+                                LLMGenerateResponse)
 from services.llm_generate import llm_generate
 from services.embeddings import get_embeddings
 
@@ -70,42 +68,6 @@ def get_embedding_types():
       "success": True,
       "message": "Successfully retrieved embedding types",
       "data": EMBEDDING_MODELS
-    }
-  except Exception as e:
-    raise InternalServerError(str(e)) from e
-
-@router.post(
-    "/embedding",
-    name="Generate embeddings from LLM",
-    response_model=LLMEmbeddingsResponse)
-async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
-  """
-  Generate embeddings with an LLM
-
-  Args:
-      embeddings_config: Input config dictionary,
-        including text(str) and embedding_type(str) type for model
-
-  Returns:
-      LLMEmbeddingsResponse
-  """
-  text = embeddings_config.get("text")
-  if text is None or text == "":
-    return BadRequest("Missing or invalid payload parameters")
-
-  if len(text) > PAYLOAD_FILE_SIZE:
-    return PayloadTooLargeError(
-      f"Text must be less than {PAYLOAD_FILE_SIZE}")
-
-  embedding_type = embeddings_config.get("embedding_type")
-
-  try:
-    embeddings = await get_embeddings(text, embedding_type)
-
-    return {
-        "success": True,
-        "message": "Successfully generated text",
-        "data": embeddings
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
