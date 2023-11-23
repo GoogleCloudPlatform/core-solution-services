@@ -30,7 +30,7 @@ from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
 from google.cloud import aiplatform, storage
 from google.cloud.exceptions import Conflict
-from services.query import embeddings
+from services import embeddings
 from config import PROJECT_ID, REGION
 from config.vector_store_config import (PG_HOST, PG_PORT,
                                         PG_DBNAME, PG_USER, PG_PASSWD,
@@ -60,8 +60,9 @@ class VectorStore(ABC):
   for a QueryEngine instance and manages the document index for that engine.
   """
 
-  def __init__(self, q_engine: QueryEngine) -> None:
+  def __init__(self, q_engine: QueryEngine, embedding_type:str=None) -> None:
     self.q_engine = q_engine
+    self.embedding_type = embedding_type
 
   @property
   def vector_store_type(self):
@@ -154,7 +155,8 @@ class MatchingEngineVectorStore(VectorStore):
 
       # Convert chunks to embeddings in batches, to manage API throttling
       is_successful, chunk_embeddings = embeddings.get_embeddings(
-          text_chunks=process_chunks
+          process_chunks,
+          self.embedding_type
       )
 
       Logger.info(f"generated embeddings for chunks"
@@ -279,8 +281,8 @@ class LangChainVectorStore(VectorStore):
   """
   Generic LLM Service interface to Langchain vector store classes.
   """
-  def __init__(self, q_engine: QueryEngine) -> None:
-    super().__init__(q_engine)
+  def __init__(self, q_engine: QueryEngine, embedding_type:str=None) -> None:
+    super().__init__(q_engine, embedding_type)
     self.lc_vector_store = self._get_langchain_vector_store()
 
   def _get_langchain_vector_store(self) -> LCVectorStore:
@@ -298,7 +300,8 @@ class LangChainVectorStore(VectorStore):
 
     # Convert chunks to embeddings
     _, chunk_embeddings = embeddings.get_embeddings(
-        text_chunks=text_chunks
+        text_chunks,
+        self.embedding_type
     )
 
     # add embeddings to vector store
