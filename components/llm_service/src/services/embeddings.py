@@ -46,7 +46,7 @@ def get_embeddings(text_chunks: List[str], embedding_type:str=None) -> \
     Tuple of (list of booleans for chunk true if embeddings were generated,
               numpy array of embeddings indexed by chunks)
   """
-  if embedding_type is None:
+  if embedding_type is None or embedding_type == "":
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
   if embedding_type in LANGCHAIN_EMBEDDINGS:
