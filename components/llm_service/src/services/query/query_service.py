@@ -139,7 +139,7 @@ async def query_search(q_engine: QueryEngine,
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
 
   # retrieve indexes of relevant document chunks from vector store
-  qe_vector_store = vector_store.from_query_engine(q_engine)
+  qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
                                                          query_embeddings)
 
