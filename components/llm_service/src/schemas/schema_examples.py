@@ -18,8 +18,11 @@
 LLM_GENERATE_EXAMPLE = {
   "llm_type": "",
   "prompt": "",
-  "context": "",
-  "primer":  ""
+}
+
+LLM_EMBEDDINGS_EXAMPLE = {
+  "embedding_type": "",
+  "text": "",  
 }
 
 QUERY_EXAMPLE = {
