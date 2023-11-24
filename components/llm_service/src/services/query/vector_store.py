@@ -333,6 +333,28 @@ class LangChainVectorStore(VectorStore):
     """ Create matching engine index and endpoint """
     pass
 
+class LLMServicePGVector(PGVector):
+  """
+  Our version of langchain PGVector with override for result processing.
+  """
+  def _results_to_docs_and_scores(self, results: Any) -> \
+    List[Tuple[Document, float, int]]:
+    """
+    Override langchain class results to return doc indexes along with docs.
+    """
+    docs = [
+      (
+        Document(
+            page_content=result.EmbeddingStore.document,
+            metadata=result.EmbeddingStore.cmetadata,
+        ),
+        result.distance \
+            if self.embedding_function is not None else None,
+        result.EmbeddingStore.custom_id
+      )
+      for result in results
+    ]
+    return docs
 
 class PostgresVectorStore(LangChainVectorStore):
   """
@@ -360,32 +382,13 @@ class PostgresVectorStore(LangChainVectorStore):
     collection_name = self.q_engine.name
 
     # instantiate the langchain vector store object
-    langchain_vector_store = PGVector(
+    langchain_vector_store = LLMServicePGVector(
         embedding_function=embeddings.LangchainEmbeddings,
         connection_string=connection_string,
         collection_name=collection_name
         )
 
     return langchain_vector_store
-
-  def _results_to_docs_and_scores(self, results: Any) -> \
-    List[Tuple[Document, float, int]]:
-    """
-    Override langchain class results to return doc indexes along with docs.
-    """
-    docs = [
-      (
-        Document(
-            page_content=result.EmbeddingStore.document,
-            metadata=result.EmbeddingStore.cmetadata,
-        ),
-        result.distance \
-            if self.embedding_function is not None else None,
-        result.EmbeddingStore.custom_id
-      )
-      for result in results
-    ]
-    return docs
 
   def process_results(self, results: List[Any]) -> List[int]:
     """
