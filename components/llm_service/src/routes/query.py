@@ -269,6 +269,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "query_engine": query_engine,
       "user_id": user_id,
       "is_public": is_public,
+      "llm_type": genconfig_dict.get("llm_type", None),
       "embedding_type": genconfig_dict.get("embedding_type", None),
       "vector_store": genconfig_dict.get("vector_store", None)
     }
@@ -323,8 +324,6 @@ async def query(query_engine_id: str,
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   llm_type = genconfig_dict.get("llm_type")
-  if llm_type is None or llm_type == "":
-    llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   user = User.find_by_email(user_data.get("email"))
 
@@ -380,8 +379,6 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   llm_type = genconfig_dict.get("llm_type")
-  if llm_type is None or llm_type == "":
-    llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   try:
     q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
