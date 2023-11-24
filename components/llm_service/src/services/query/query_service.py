@@ -87,7 +87,6 @@ async def query_generate(
   #   if llm_type is passed as an arg use it
   #   else if llm_type is set in query engine use that
   #   else use the default query chat model
-  
   if llm_type is None:
     if q_engine.llm_type is not None:
       llm_type = q_engine.llm_type

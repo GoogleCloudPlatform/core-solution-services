@@ -31,8 +31,7 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from common.utils.logging_handler import Logger
 from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_QUERY_CHAT_MODEL, DEFAULT_VECTOR_STORE,
-                    VECTOR_STORES)
+                    DEFAULT_VECTOR_STORE, VECTOR_STORES)
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
