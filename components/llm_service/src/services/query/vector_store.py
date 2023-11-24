@@ -274,7 +274,8 @@ class MatchingEngineVectorStore(VectorStore):
         deployed_index_id=q_engine.deployed_index_name,
         num_neighbors=NUM_MATCH_RESULTS
     )
-    return match_indexes_list
+    match_indexes = [int(match.id) for match in match_indexes_list[0]]
+    return match_indexes
 
 class LangChainVectorStore(VectorStore):
   """

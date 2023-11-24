@@ -145,12 +145,11 @@ async def query_search(q_engine: QueryEngine,
 
   # assemble document chunk references from vector store indexes
   query_references = []
-  match_indexes = match_indexes_list[0]
-  for match in match_indexes:
-    doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, int(match.id))
+  for match in match_indexes_list:
+    doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
     if doc_chunk is None:
       raise ResourceNotFoundException(
-        f"Missing doc chunk match index {match.id} q_engine {q_engine.name}")
+        f"Missing doc chunk match index {match} q_engine {q_engine.name}")
     query_doc = QueryDocument.find_by_id(doc_chunk.query_document_id)
     if query_doc is None:
       raise ResourceNotFoundException(
