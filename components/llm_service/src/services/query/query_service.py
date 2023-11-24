@@ -273,11 +273,12 @@ def build_doc_index(doc_url: str, query_engine: str,
         Tuple[List[QueryDocument], List[str]]:
   """
   Build the document index.
-  Supports only GCS URLs initially, containing PDF files.
+  Supports GCS URLs and http(s)://, containing PDF files, text
+  files, html, csv.
 
   Args:
     doc_url: URL pointing to folder of documents
-    query_engine: the query engine to
+    query_engine: the query engine to build the index for
 
   Returns:
     Tuple of list of QueryDocument objects of docs processed,
@@ -299,7 +300,8 @@ def build_doc_index(doc_url: str, query_engine: str,
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # deploy vectore store (e.g. create endpoint)
+    # deploy vectore store (e.g. create endpoint for matching engine)
+    # db vector stores typically don't require this step.
     qe_vector_store.deploy()
 
     return docs_processed, docs_not_processed
@@ -337,7 +339,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
         # unable to process this doc; skip
         continue
 
-      # generate embedding data and store in local dir
+      # generate embedding data and store in vector store
       new_index_base = \
           qe_vector_store.index_document(doc_name, text_chunks, index_base)
 
