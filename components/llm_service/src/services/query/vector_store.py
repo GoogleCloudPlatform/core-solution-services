@@ -397,7 +397,7 @@ class PostgresVectorStore(LangChainVectorStore):
     (Document, distance, index). So return a list of indexes extracted from
     result tuples.
     """
-    processed_results = [result[2] for result in results]
+    processed_results = [int(result[2]) for result in results]
     return processed_results
 
 
