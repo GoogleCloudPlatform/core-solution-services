@@ -24,7 +24,7 @@ from typing import Optional
 from config import (LANGCHAIN_LLM, GOOGLE_LLM, GOOGLE_MODEL_GARDEN,
                     OPENAI_LLM_TYPE_GPT3_5, VERTEX_LLM_TYPE_BISON_TEXT,
                     CHAT_LLM_TYPES, REGION)
-from vertexai.language_models import (ChatModel, TextGenerationModel)
+from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
 from google.cloud import aiplatform
 import time
 
