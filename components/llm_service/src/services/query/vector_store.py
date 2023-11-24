@@ -24,7 +24,7 @@ import shutil
 import tempfile
 import numpy as np
 from pathlib import Path
-from typing import List
+from typing import List, Tuple, Any
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
@@ -39,6 +39,7 @@ from config.vector_store_config import (PG_HOST, PG_PORT,
                                         VECTOR_STORE_MATCHING_ENGINE)
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
 from langchain.vectorstores.pgvector import PGVector
+from langchain.docstore.document import Document
 from google.cloud.aiplatform.matching_engine import (
     matching_engine_index_config as ic)
 
@@ -87,12 +88,12 @@ class VectorStore(ABC):
 
   @abstractmethod
   def similarity_search(self, q_engine: QueryEngine,
-                        query_embeddings: List[List[float]]) -> List[int]:
+                        query_embedding: List[float]) -> List[int]:
     """
     Retrieve text matches for query embeddings.
     Args:
       q_engine: QueryEngine model
-      query_embeddings: list of embedding arrays
+      query_embedding: single embedding array for query
     Returns:
       list of indexes that are matched of length NUM_MATCH_RESULTS
     """
@@ -257,19 +258,19 @@ class MatchingEngineVectorStore(VectorStore):
       Logger.error(f"Error creating ME index or endpoint {e}")
 
   def similarity_search(self, q_engine: QueryEngine,
-                        query_embeddings: List[List[float]]) -> List[int]:
+                        query_embedding: List[float]) -> List[int]:
     """
     Retrieve text matches for query embeddings.
     Args:
       q_engine: QueryEngine model
-      query_embeddings: list of embedding arrays
+      query_embedding: single embedding array for query
     Returns:
       list of indexes that are matched of length NUM_MATCH_RESULTS
     """
     index_endpoint = aiplatform.MatchingEngineIndexEndpoint(q_engine.endpoint)
 
     match_indexes_list = index_endpoint.find_neighbors(
-        queries=query_embeddings,
+        queries=[query_embedding],
         deployed_index_id=q_engine.deployed_index_name,
         num_neighbors=NUM_MATCH_RESULTS
     )
@@ -310,11 +311,23 @@ class LangChainVectorStore(VectorStore):
     return new_index_base
 
   def similarity_search(self, q_engine: QueryEngine,
-                       query_embeddings: List[List[float]]) -> List[int]:
-    return self.lc_vector_store.similarity_search_by_vector(
-        embedding=query_embeddings,
+                       query_embedding: List[float]) -> List[int]:
+    results = self.lc_vector_store.similarity_search_with_score_by_vector(
+        embedding=query_embedding,
         k=NUM_MATCH_RESULTS
     )
+    processed_results = self.process_results(results)
+    return processed_results
+
+  def process_results(self, results: List[Any]) -> List[int]:
+    """
+    Process langchain vector store results to return list of indexes.  The
+    default behavior for langchain is to return list of Documents, but we
+    manage the documents separately in the LLM Service.  So we need the vector
+    store to return the list of matching indexes.
+    """
+    raise NotImplementedError(
+      "Must implement process_results for Langchain vectorstore")
 
   def deploy(self):
     """ Create matching engine index and endpoint """
@@ -354,6 +367,35 @@ class PostgresVectorStore(LangChainVectorStore):
         )
 
     return langchain_vector_store
+
+  def _results_to_docs_and_scores(self, results: Any) -> \
+    List[Tuple[Document, float, int]]:
+    """
+    Override langchain class results to return doc indexes along with docs.
+    """
+    docs = [
+      (
+        Document(
+            page_content=result.EmbeddingStore.document,
+            metadata=result.EmbeddingStore.cmetadata,
+        ),
+        result.distance \
+            if self.embedding_function is not None else None,
+        result.EmbeddingStore.custom_id
+      )
+      for result in results
+    ]
+    return docs
+
+  def process_results(self, results: List[Any]) -> List[int]:
+    """
+    Our overridden method _results_to_docs_and_scores returns a tuple of
+    (Document, distance, index). So return a list of indexes extracted from
+    result tuples.
+    """
+    processed_results = [result[2] for result in results]
+    return processed_results
+
 
 LC_VECTOR_STORES = {
   VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore

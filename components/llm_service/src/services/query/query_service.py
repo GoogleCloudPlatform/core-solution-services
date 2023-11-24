@@ -29,7 +29,6 @@ from utils.errors import NoDocumentsIndexedException
 from google.cloud import storage
 from services import llm_generate
 from services.query import query_prompts, embeddings
-from services.query import vector_store
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore)
@@ -137,11 +136,12 @@ async def query_search(q_engine: QueryEngine,
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
   query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
+  query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
-                                                         query_embeddings)
+                                                         query_embedding)
 
   # assemble document chunk references from vector store indexes
   query_references = []
