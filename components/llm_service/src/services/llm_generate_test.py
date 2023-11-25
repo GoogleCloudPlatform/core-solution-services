@@ -94,7 +94,7 @@ async def test_llm_chat_resume(clean_firestore, test_chat):
 @pytest.mark.asyncio
 async def test_llm_generate_google(clean_firestore):
   with mock.patch(
-      "vertexai.language_models.TextGenerationModel.predict_async",
+      "vertexai.preview.language_models.TextGenerationModel.predict_async",
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate(
       FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_TEXT)
