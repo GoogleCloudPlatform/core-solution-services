@@ -22,7 +22,7 @@ import numpy as np
 from vertexai.preview.language_models import TextEmbeddingModel
 from common.utils.http_exceptions import InternalServerError
 from config import (GOOGLE_LLM, LANGCHAIN_LLM, DEFAULT_QUERY_EMBEDDING_MODEL,
-                    LANGCHAIN_EMBEDDINGS, VERTEX_EMBEDDING_MODELS)
+                    LANGCHAIN_EMBEDDING_MODELS, VERTEX_EMBEDDING_MODELS)
 from langchain.schema.embeddings import Embeddings
 
 # pylint: disable=broad-exception-caught
@@ -49,7 +49,7 @@ def get_embeddings(text_chunks: List[str], embedding_type:str=None) -> \
   if embedding_type is None or embedding_type == "":
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
-  if embedding_type in LANGCHAIN_EMBEDDINGS:
+  if embedding_type in LANGCHAIN_EMBEDDING_MODELS:
     embedding_generator = get_langchain_embedding_generator(embedding_type)
   elif embedding_type in VERTEX_EMBEDDING_MODELS:
     embedding_generator = get_vertex_embedding_generator(embedding_type)
