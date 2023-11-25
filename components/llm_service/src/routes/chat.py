@@ -213,7 +213,7 @@ async def create_user_chat(gen_config: LLMGenerateModel,
       LLMUserChatResponse
   """
   genconfig_dict = {**gen_config.dict()}
-  Logger.info("Creating new chat using"
+  Logger.info("Creating new chat using "
               f"genconfig_dict={genconfig_dict}")
   response = []
 

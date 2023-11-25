@@ -18,12 +18,13 @@ from common.models import UserChat
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
+from common.utils.request_handler import post_method
 from common.config import PROJECT_ID
 from services.langchain_service import langchain_llm_generate
 from typing import Optional
 from config import (LANGCHAIN_LLM, GOOGLE_LLM, GOOGLE_MODEL_GARDEN,
                     OPENAI_LLM_TYPE_GPT3_5, VERTEX_LLM_TYPE_BISON_TEXT,
-                    CHAT_LLM_TYPES, REGION)
+                    CHAT_LLM_TYPES, REGION, LLM_TRUSS_MODELS)
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
 from google.cloud import aiplatform
 import time
@@ -51,7 +52,10 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   try:
     start_time = time.time()
     # for google models, prioritize native client over langchain
-    if llm_type in GOOGLE_MODEL_GARDEN.keys():
+    if llm_type in LLM_TRUSS_MODELS.keys():
+      model_endpoint = LLM_TRUSS_MODELS.get(llm_type)
+      response = await llm_truss_service_predict(prompt, model_endpoint)
+    elif llm_type in GOOGLE_MODEL_GARDEN.keys():
       aip_endpoint_name = GOOGLE_MODEL_GARDEN.get(llm_type)
       response = await model_garden_predict(prompt, aip_endpoint_name)
     elif llm_type in GOOGLE_LLM.keys():
@@ -78,7 +82,7 @@ async def llm_chat(prompt: str, llm_type: str,
 
   Args:
     prompt: the text prompt to pass to the LLM
-    llm_type: the type of LLM to use (default to openai)
+    llm_type: the type of LLM to use
     user_chat (optional): a user chat to use for context
 
   Returns:
@@ -91,7 +95,13 @@ async def llm_chat(prompt: str, llm_type: str,
 
   try:
     response = None
-    if llm_type in GOOGLE_LLM.keys():
+    if llm_type in LLM_TRUSS_MODELS.keys():
+      model_endpoint = LLM_TRUSS_MODELS.get(llm_type)
+      response = await llm_truss_service_predict(prompt, model_endpoint)
+    elif llm_type in GOOGLE_MODEL_GARDEN.keys():
+      aip_endpoint_name = GOOGLE_MODEL_GARDEN.get(llm_type)
+      response = await model_garden_predict(prompt, aip_endpoint_name)
+    elif llm_type in GOOGLE_LLM.keys():
       google_llm = GOOGLE_LLM.get(llm_type)
       is_chat = True
       response = await google_llm_predict(prompt, is_chat,
@@ -102,6 +112,50 @@ async def llm_chat(prompt: str, llm_type: str,
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
+
+async def llm_truss_service_predict(prompt: str,
+    model_endpoint: str,
+    parameters: dict = None) -> str:
+  """
+  Send a prompt to an instance of the LLM service and return response.
+
+  Args:
+    prompt: the text prompt to pass to the LLM
+    model_endpoint: model endpoint ip to be used for prediction and port number
+      (e.g: xx.xxx.xxx.xx:8080)
+    parameters (optional):  parameters to be used for prediction
+
+  Returns:
+    the text response: str
+  """
+
+  if parameters is None:
+    parameters = {
+        "prompt": f"'{prompt}'",
+        "temperature": 0.2,
+        "top_p": 0.95,
+        "top_k": 40,
+    }
+  else:
+    parameters.update({"prompt": f"'{prompt}'"})
+
+
+  api_url = f"http://{model_endpoint}/v1/models/model:predict"
+  Logger.info(f"Generating text using Truss Hosted Model "
+              f"api_url=[{api_url}], prompt=[{prompt}], "
+              f"parameters=[{parameters}.")
+
+  resp = post_method(api_url, request_body=parameters)
+
+  if resp.status_code != 200:
+    raise InternalServerError(
+      f"Error status {resp.status_code}: {str(resp)}")
+
+  json_response = resp.json()
+
+  Logger.info(f"Got LLM service response {json_response}")
+  output = json_response["data"]["generated_text"]
+  return output
 
 async def model_garden_predict(prompt: str,
     aip_endpoint_name: str, parameters: dict = None) -> str:

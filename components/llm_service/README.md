@@ -16,6 +16,27 @@ echo $OPENAI_API_KEY | gcloud secrets versions add "openai-api-key" --data-file=
 echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=-
 ```
 
+## Adding Optional LLM Models
+
+### Llama2 Truss Deployment
+Optionally deploy Llama2 using Truss following these [instructions]("../../experimental/llm_truss/llama2-7b-sample/README.md).
+
+To use deployed llama2 Endpoint (IP:PORT), set the following environment variable before deploying llm-service:
+
+
+````shell
+export TRUSS_LLAMA2_ENDPOINT = "xx.xxx.xxx.xx:8080"
+````
+
+### Llama2 Vertex AI Deployment
+You can deploy Llama2 using [Model Garden](https://cloud.google.com/model-garden?hl=en) in Vertex AI.
+To use the online prediction endpoint, set the following environment variable before the deployment:
+
+````shell
+export REGION=<region-where-endpoint-is-deployed
+export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
+````
+  
 ## Apply terraform infra for LLM service
 
 Set up Cloud Storage with one sample PDF file for Query Engine to use later:

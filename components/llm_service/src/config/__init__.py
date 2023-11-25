@@ -64,6 +64,7 @@ from config.config import (
     LANGCHAIN_EMBEDDING_MODELS,
     VERTEX_EMBEDDING_MODELS,
     GOOGLE_MODEL_GARDEN,
+    LLM_TRUSS_MODELS,
 
     # agent config
     AGENT_CONFIG_PATH,
