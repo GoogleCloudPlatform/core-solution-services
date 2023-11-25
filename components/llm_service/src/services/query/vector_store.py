@@ -40,8 +40,6 @@ from config.vector_store_config import (PG_HOST, PG_PORT,
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
 from langchain.vectorstores.pgvector import PGVector
 from langchain.docstore.document import Document
-from google.cloud.aiplatform.matching_engine import (
-    matching_engine_index_config as ic)
 
 Logger = Logger.get_logger(__file__)
 
@@ -226,7 +224,7 @@ class MatchingEngineVectorStore(VectorStore):
         contents_delta_uri=self.bucket_uri,
         dimensions=DIMENSIONS,
         approximate_neighbors_count=150,
-        distance_measure_type=ic.DistanceMeasureType.DOT_PRODUCT_DISTANCE,
+        distance_measure_type="DOT_PRODUCT_DISTANCE",
         leaf_node_embedding_count=500,
         leaf_nodes_to_search_percent=80,
         description=index_description,

@@ -128,7 +128,9 @@ class DataSource:
     doc_text_list = None
     loader = None
 
-    if doc_extension == "txt":
+    text_doc_extensions = ["txt", "html", "htm"]
+
+    if doc_extension in text_doc_extensions:
       with open(doc_filepath, "r", encoding="utf-8") as f:
         doc_text = f.read()
       doc_text_list = [doc_text]

@@ -270,6 +270,7 @@ class WebDataSource(DataSource):
     settings = {
       "ROBOTSTXT_OBEY": False,
       "DEPTH_LIMIT": self.depth_limit,
+      "LOG_LEVEL": "INFO"
     }
     # Start the Scrapy process
     process = CrawlerProcess(settings=settings)
