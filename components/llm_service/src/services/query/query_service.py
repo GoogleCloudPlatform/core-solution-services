@@ -27,8 +27,8 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import InternalServerError
 from utils.errors import NoDocumentsIndexedException
 from google.cloud import storage
-from services import llm_generate
-from services.query import query_prompts, embeddings
+from services import llm_generate, embeddings
+from services.query import query_prompts
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore)
