@@ -239,7 +239,7 @@ class LLMGenerateResponse(BaseModel):
 class LLMEmbeddingsResponse(BaseModel):
   """LLM Embeddings Response model"""
   success: Optional[bool] = True
-  message: Optional[str] = "Successfully generated text"
+  message: Optional[str] = "Successfully generated embeddings"
   data: Optional[List[float]] = []
 
   class Config():

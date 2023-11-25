@@ -34,8 +34,9 @@ API_CALLS_PER_SECOND = int(300 / 60)
 ITEMS_PER_REQUEST = 5
 
 
-def get_embeddings(text_chunks: List[str], embedding_type:str=None) -> \
-    Tuple[List[bool], np.ndarray]:
+async def get_embeddings(
+        text_chunks: List[str], embedding_type: str = None) -> (
+        Tuple)[List[bool], np.ndarray]:
   """
   Get embeddings for a list of text strings.
 
@@ -101,26 +102,26 @@ def _generate_batches(text_chunks: List[str],
     yield text_chunks[i: i + batch_size]
 
 
-def get_langchain_embedding_generator(embedding_type:str):
+def get_langchain_embedding_generator(embedding_type: str):
   langchain_embedding = LANGCHAIN_LLM.get(embedding_type)
   return functools.partial(langchain_embeddings_generator, langchain_embedding)
 
-def get_vertex_embedding_generator(embedding_type:str):
+def get_vertex_embedding_generator(embedding_type: str):
   vertex_model = TextEmbeddingModel.from_pretrained(
       GOOGLE_LLM.get(embedding_type))
   return functools.partial(vertex_embeddings_generator, vertex_model)
 
-def vertex_embeddings_generator(model, sentence_list: List[str]) -> \
-    List[Optional[List[float]]]:
+def vertex_embeddings_generator(
+        model, sentence_list: List[str]) -> (List)[Optional[List[float]]]:
   try:
     embeddings = model.get_embeddings(sentence_list)
     return [embedding.values for embedding in embeddings]
   except Exception:
     return [None for _ in range(len(sentence_list))]
 
-def langchain_embeddings_generator(langchain_embedding,
-                                   sentence_list: List[str]) -> \
-    List[Optional[List[float]]]:
+def langchain_embeddings_generator(
+        langchain_embedding,
+        sentence_list: List[str]) -> (List)[Optional[List[float]]]:
   embeddings = langchain_embedding.embed_documents(sentence_list)
   return embeddings
 

@@ -89,7 +89,8 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
   Returns:
       LLMEmbeddingsResponse
   """
-  text = embeddings_config.get("text")
+  embeddings_config_dict = {**embeddings_config.dict()}
+  text = embeddings_config_dict.get("text")
   if text is None or text == "":
     return BadRequest("Missing or invalid payload parameters")
 
@@ -97,14 +98,14 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
     return PayloadTooLargeError(
       f"Text must be less than {PAYLOAD_FILE_SIZE}")
 
-  embedding_type = embeddings_config.get("embedding_type")
+  embedding_type = embeddings_config_dict.get("embedding_type")
 
   try:
     embeddings = await get_embeddings(text, embedding_type)
 
     return {
         "success": True,
-        "message": "Successfully generated text",
+        "message": "Successfully generated embeddings",
         "data": embeddings
     }
   except Exception as e:
@@ -148,5 +149,3 @@ async def generate(gen_config: LLMGenerateModel):
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
-
-
