@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama2-7b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: llama2-7b-layer
+  template:
+    metadata:
+      labels:
+        component: llama2-7b-layer
+    spec:
+      containers:
+        - name: llama2-7b-container
+          image: llama2-7b:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: env-vars
+          resources:
+            limits:
+              nvidia.com/gpu: "1"

@@ -1,0 +1,10 @@
+torch==2.0.1
+peft
+sentencepiece
+accelerate
+bitsandbytes
+google-cloud-secret-manager==2.16.1
+einops
+scipy
+protobuf
+git+https://github.com/huggingface/transformers.git
