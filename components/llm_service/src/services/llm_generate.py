@@ -14,32 +14,30 @@
 """
 LLM Generation Service
 """
+import time
+from typing import Optional
+import google.cloud.aiplatform
+from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
+
+from common.config import PROJECT_ID
 from common.models import UserChat
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
-from common.config import PROJECT_ID
-from services.langchain_service import langchain_llm_generate
-from typing import Optional
 from config import (LANGCHAIN_LLM, GOOGLE_LLM, GOOGLE_MODEL_GARDEN,
                     OPENAI_LLM_TYPE_GPT3_5, VERTEX_LLM_TYPE_BISON_TEXT,
                     CHAT_LLM_TYPES, REGION, LLM_TRUSS_MODELS)
-from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-from google.cloud import aiplatform
-import time
+from services.langchain_service import langchain_llm_generate
 
 Logger = Logger.get_logger(__file__)
 
 async def llm_generate(prompt: str, llm_type: str) -> str:
   """
   Generate text with an LLM given a prompt.
-
   Args:
     prompt: the text prompt to pass to the LLM
-
     llm_type: the type of LLM to use (default to openai)
-
   Returns:
     the text response: str
   """
@@ -51,7 +49,7 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
 
   try:
     start_time = time.time()
-    # for google models, prioritize native client over langchain
+    # for Google models, prioritize native client over langchain
     if llm_type in LLM_TRUSS_MODELS.keys():
       model_endpoint = LLM_TRUSS_MODELS.get(llm_type)
       response = await llm_truss_service_predict(prompt, model_endpoint)
@@ -74,17 +72,14 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None) -> str:
   """
   Send a prompt to a chat model and return response.
-
   Args:
     prompt: the text prompt to pass to the LLM
     llm_type: the type of LLM to use
     user_chat (optional): a user chat to use for context
-
   Returns:
     the text response: str
   """
@@ -112,19 +107,16 @@ async def llm_chat(prompt: str, llm_type: str,
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-
 async def llm_truss_service_predict(prompt: str,
-    model_endpoint: str,
-    parameters: dict = None) -> str:
+                                    model_endpoint: str,
+                                    parameters: dict = None) -> str:
   """
   Send a prompt to an instance of the LLM service and return response.
-
   Args:
     prompt: the text prompt to pass to the LLM
     model_endpoint: model endpoint ip to be used for prediction and port number
       (e.g: xx.xxx.xxx.xx:8080)
     parameters (optional):  parameters to be used for prediction
-
   Returns:
     the text response: str
   """
@@ -138,7 +130,6 @@ async def llm_truss_service_predict(prompt: str,
     }
   else:
     parameters.update({"prompt": f"'{prompt}'"})
-
 
   api_url = f"http://{model_endpoint}/v1/models/model:predict"
   Logger.info(f"Generating text using Truss Hosted Model "
@@ -158,14 +149,14 @@ async def llm_truss_service_predict(prompt: str,
   return output
 
 async def model_garden_predict(prompt: str,
-    aip_endpoint_name: str, parameters: dict = None) -> str:
+                               aip_endpoint_name: str,
+                               parameters: dict = None) -> str:
   """
   Generate text with a Model Garden model.
   Args:
     prompt: the text prompt to pass to the LLM
     aip_endpoint_name: endpoint id from the Vertex AI online predictions
     parameters (optional):  parameters to be used for prediction
-
   Returns:
     the prediction text.
   """
@@ -187,10 +178,9 @@ async def model_garden_predict(prompt: str,
     parameters.update({"prompt": f"'{prompt}'"})
 
   instances = [parameters, ]
+  endpoint_without_peft = google.cloud.aiplatform.Endpoint(aip_endpoint)
 
-  endpoint_without_peft = aiplatform.Endpoint(aip_endpoint)
-
-  response = endpoint_without_peft.predict(instances=instances)
+  response = await endpoint_without_peft.predict_async(instances=instances)
   predictions_text = "\n".join(response.predictions)
   Logger.info(f"Received response from "
               f"{response.model_resource_name} version="
@@ -204,13 +194,11 @@ async def google_llm_predict(prompt: str, is_chat: bool,
                              google_llm: str, user_chat=None) -> str:
   """
   Generate text with a Google LLM given a prompt.
-
   Args:
     prompt: the text prompt to pass to the LLM
     is_chat: true if the model is a chat model
     google_llm: name of the vertex llm model
-    user_chat:
-
+    user_chat: chat history
   Returns:
     the text response.
   """

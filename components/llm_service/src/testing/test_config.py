@@ -22,6 +22,8 @@ API_URL = "http://localhost/llm-service/api/v1"
 
 TESTING_FOLDER_PATH = os.path.join(os.getcwd(), "testing")
 
+FAKE_PREDICTION_RESPONSE = "test prediction"
+
 FAKE_GENERATE_RESPONSE = "test generation"
 
 FAKE_LANGCHAIN_GENERATION = Generation(text=FAKE_GENERATE_RESPONSE)

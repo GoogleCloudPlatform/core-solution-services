@@ -68,7 +68,6 @@ FAKE_GENERATE_EMBEDDINGS = {
     "text": "test prompt"
 }
 
-
 FAKE_GENERATE_RESPONSE = "test generation"
 FAKE_EMBEDDINGS = [0.01234]
 
