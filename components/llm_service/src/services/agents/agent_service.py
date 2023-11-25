@@ -13,17 +13,17 @@
 # limitations under the License.
 
 """ Agent service """
-# pylint: disable=consider-using-dict-items,consider-iterating-dictionary
+# pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-argument
 
 import inspect
 import json
 import re
 import io
 from contextlib import redirect_stdout
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
-
+from common.models import BatchJobModel
 from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.errors import ResourceNotFoundException
@@ -34,6 +34,10 @@ from services.agents import agents
 
 Logger = Logger.get_logger(__file__)
 AGENTS = None
+
+def batch_execute_plan(request_body: Dict, job: BatchJobModel) -> Dict:
+  # TODO
+  pass
 
 def load_agents(agent_config_path: str):
   global AGENTS

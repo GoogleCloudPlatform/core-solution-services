@@ -198,7 +198,11 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   embedding_type = request_body.get("embedding_type")
   vector_store_type = request_body.get("vector_store")
 
-  Logger.info(f"Starting batch job for {query_engine} job id {job.id}")
+  Logger.info(f"Starting batch job for query engine [{query_engine}] "
+              f"job id [{job.id}]")
+  Logger.info(f"doc_url: [{doc_url}] user id: [{user_id}]")
+  Logger.info(f"embedding type: [{embedding_type}]")
+  Logger.info(f"vector store type: [{vector_store_type}]")
 
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url, query_engine, user_id, is_public,
