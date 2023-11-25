@@ -160,7 +160,7 @@ if ENABLE_GOOGLE_LLM:
   GOOGLE_LLM = {
     VERTEX_LLM_TYPE_BISON_TEXT: "text-bison",
     VERTEX_LLM_TYPE_BISON_V1_CHAT: "chat-bison@001",
-    VERTEX_LLM_TYPE_BISON_CHAT: "chat-bison",
+    VERTEX_LLM_TYPE_BISON_CHAT: "chat-bison-32k",
     VERTEX_LLM_TYPE_GECKO_EMBEDDING: "textembedding-gecko@001"
   }
   LANGCHAIN_LLM.update({
