@@ -59,6 +59,12 @@ async def query_generate(
   """
   Execute a query over a query engine
 
+  The rule for determining the model used for question generation
+    model is:
+    if llm_type is passed as an arg use it
+    else if llm_type is set in query engine use that
+    else use the default query chat model
+
   Args:
     user_id: user id if user making query
     prompt: the text prompt to pass to the query engine
@@ -83,10 +89,7 @@ async def query_generate(
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
 
-  # Determine question generation model. The rule is:
-  #   if llm_type is passed as an arg use it
-  #   else if llm_type is set in query engine use that
-  #   else use the default query chat model
+  # determine question generation model
   if llm_type is None:
     if q_engine.llm_type is not None:
       llm_type = q_engine.llm_type
@@ -150,6 +153,7 @@ async def query_search(q_engine: QueryEngine,
   # generate embeddings for prompt
   query_embeddings = embeddings.get_embeddings([query_prompt],
                                                q_engine.embedding_type)
+  query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store_from_query_engine(q_engine)
