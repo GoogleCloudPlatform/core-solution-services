@@ -36,6 +36,7 @@ os.environ["PROJECT_ID"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
+os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 
 with mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock()):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
@@ -51,6 +52,10 @@ FAKE_GOOGLE_RESPONSE = TextGenerationResponse(text=FAKE_GENERATE_RESPONSE,
                                               _prediction_response={})
 FAKE_MODEL_GARDEN_RESPONSE = Prediction(predictions=[FAKE_PREDICTION_RESPONSE],
                                         deployed_model_id="123")
+FAKE_TRUSS_RESPONSE = {
+  "data": {"generated_text": FAKE_GENERATE_RESPONSE}
+}
+
 FAKE_PROMPT = "test prompt"
 
 
@@ -129,6 +134,7 @@ async def test_llm_chat_google_resume(clean_firestore, test_chat):
 
   assert response == FAKE_GENERATE_RESPONSE
 
+
 @pytest.mark.asyncio
 async def test_model_garden_predict(clean_firestore, test_chat):
   with mock.patch(
@@ -138,3 +144,14 @@ async def test_model_garden_predict(clean_firestore, test_chat):
       FAKE_PROMPT, VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
 
   assert response == FAKE_PREDICTION_RESPONSE
+
+#
+# @pytest.mark.asyncio
+# async def test_llm_truss_service_predict(clean_firestore, test_chat):
+#   with mock.patch(
+#           "common.utils.request_handler.post_method",
+#           return_value=FAKE_TRUSS_RESPONSE):
+#     response = await llm_chat(
+#       FAKE_PROMPT, TRUSS_LLM_LLAMA2_CHAT)
+#
+#   assert response == FAKE_GENERATE_RESPONSE
