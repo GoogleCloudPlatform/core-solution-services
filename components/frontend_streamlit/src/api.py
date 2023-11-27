@@ -26,6 +26,7 @@ from common.config import API_BASE_URL
 
 Logger = Logger.get_logger(__file__)
 LLM_SERVICE_PATH = "llm-service/api/v1"
+JOBS_SERVICE_PATH = "jobs-service/api/v1"
 AUTH_SERVICE_PATH = "authentication/api/v1"
 
 def get_auth_token():
@@ -241,6 +242,25 @@ def get_all_vector_stores(auth_token=None):
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/vectorstore"
+  resp = get_method(api_url,
+                    token=auth_token)
+  json_response = resp.json()
+  print(resp)
+
+  print(json_response)
+
+  output = json_response["data"]
+  return output
+
+def get_all_jobs(job_type = "query_engine_build", auth_token=None):
+  """
+  Retrieve all vector store types
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_base_url = get_api_base_url()
+  api_url = f"{api_base_url}/{JOBS_SERVICE_PATH}/jobs/{job_type}"
   resp = get_method(api_url,
                     token=auth_token)
   json_response = resp.json()
