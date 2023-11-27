@@ -40,17 +40,19 @@ def query_engine_build_page():
 
   # Reformat list of dict to nested arrays for table.
   jobs_table_value = [[
-    "Job ID", "Status", "Engine Name", "Doc URL", "LLM type", "Errors",
-    "Last Modified"
+    "Job ID","Engine Name", "Status", "Embeddings Type", "LLM type",
+    "Vector Store", "Doc URL", "Errors", "Last Modified"
   ]]
   for job in qe_build_jobs:
     input_data = json.loads(job["input_data"])
     jobs_table_value.append([
       job["name"],
+      input_data.get("query_engine"),
       job["status"],
-      input_data["query_engine"],
-      input_data["doc_url"],
-      input_data["llm_type"],
+      input_data.get("llm_type"),
+      input_data.get("embedding_type"),
+      input_data.get("vector_store"),
+      input_data.get("doc_url"),
       job.get("errors", {}).get("error_message", ""),
       job["last_modified_time"]
     ])
