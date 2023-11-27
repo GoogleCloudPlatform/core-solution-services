@@ -36,11 +36,11 @@ def query_engine_build_page():
   vector_store_list = get_all_vector_stores()
   # Get all query_engine_build jobs
   qe_build_jobs = get_all_jobs()
-  qe_build_jobs.sort(key=lambda x: x["last_modified_time"])
+  qe_build_jobs.sort(key=lambda x: x["last_modified_time"], reverse=True)
 
   # Reformat list of dict to nested arrays for table.
   jobs_table_value = [[
-    "Job ID", "Status", "Engine Name", "Doc URL", "LLM type",
+    "Job ID", "Status", "Engine Name", "Doc URL", "LLM type", "Errors",
     "Last Modified"
   ]]
   for job in qe_build_jobs:
@@ -51,6 +51,7 @@ def query_engine_build_page():
       input_data["query_engine"],
       input_data["doc_url"],
       input_data["llm_type"],
+      job.get("errors", {}).get("error_message", ""),
       job["last_modified_time"]
     ])
 

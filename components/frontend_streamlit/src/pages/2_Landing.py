@@ -68,7 +68,7 @@ def landing_page():
 
   with build_query:
     with st.container():
-      "Create a Query Engine"
+      "Managing Query Engines"
       build_button = st.button("Start", key=4)
       if build_button:
         utils.navigate_to(
