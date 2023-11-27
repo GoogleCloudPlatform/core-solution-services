@@ -15,9 +15,10 @@
   Streamlit app Query Engine Build Page
 """
 # pylint: disable=invalid-name
+import json
 import streamlit as st
 from api import (build_query_engine, get_all_embedding_types,
-                 get_all_vector_stores)
+                 get_all_vector_stores, get_all_jobs)
 import utils
 
 # For development purpose:
@@ -29,16 +30,45 @@ def build_clicked(engine_name:str, doc_url:str,
   build_query_engine(engine_name, doc_url, embedding_type, vector_store)
 
 def query_engine_build_page():
-  placeholder = st.empty()
-
   # Get all embedding types as a list
   embedding_types = get_all_embedding_types()
-
   # Get all vector stores as a list
   vector_store_list = get_all_vector_stores()
+  # Get all query_engine_build jobs
+  qe_build_jobs = get_all_jobs()
+  qe_build_jobs.sort(key=lambda x: x["last_modified_time"], reverse=True)
+
+  # Reformat list of dict to nested arrays for table.
+  jobs_table_value = [[
+    "Job ID","Engine Name", "Status", "Embeddings Type", "LLM type",
+    "Vector Store", "Doc URL", "Errors", "Last Modified"
+  ]]
+  for job in qe_build_jobs:
+    input_data = json.loads(job["input_data"])
+    jobs_table_value.append([
+      job["name"],
+      input_data.get("query_engine"),
+      job["status"],
+      input_data.get("llm_type"),
+      input_data.get("embedding_type"),
+      input_data.get("vector_store"),
+      input_data.get("doc_url"),
+      job.get("errors", {}).get("error_message", ""),
+      job["last_modified_time"]
+    ])
+
+  st.title("Query Engine Management")
+  tab1, tab2 = st.tabs(["Build Query Engine", "Job List"])
+
+  with tab1:
+    st.subheader("Build a new Query Engine")
+    placeholder = st.empty()
+
+  with tab2:
+    st.subheader("Query Engine Jobs")
+    st.table(jobs_table_value)
 
   with placeholder.form("build"):
-    st.title("Build Query Engine")
     engine_name = st.text_input("Name")
     doc_url = st.text_input("Document URL")
     embedding_type = st.selectbox(
