@@ -19,7 +19,8 @@ from pydantic import BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      QUERY_EXAMPLE,
                                      QUERY_ENGINE_EXAMPLE,
-                                     QUERY_RESULT_EXAMPLE)
+                                     QUERY_RESULT_EXAMPLE,
+                                     LLM_EMBEDDINGS_EXAMPLE)
 
 class ChatModel(BaseModel):
   id: Optional[str] = None
@@ -103,16 +104,25 @@ class LLMGetQueryEnginesResponse(BaseModel):
     }
 
 class LLMGenerateModel(BaseModel):
-  """LLM Generate model"""
+  """LLM Generate request model"""
   prompt: str
   llm_type: Optional[str] = None
-  context: Optional[str] = ""
-  primer: Optional[list[str]] = []
 
   class Config():
     orm_mode = True
     schema_extra = {
         "example": LLM_GENERATE_EXAMPLE
+    }
+
+class LLMEmbeddingsModel(BaseModel):
+  """LLM Embeddings request model"""
+  text: str
+  embedding_type: Optional[str] = None
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": LLM_EMBEDDINGS_EXAMPLE
     }
 
 
@@ -223,6 +233,22 @@ class LLMGenerateResponse(BaseModel):
             "success": True,
             "message": "Successfully generated text",
             "content": None
+        }
+    }
+
+class LLMEmbeddingsResponse(BaseModel):
+  """LLM Embeddings Response model"""
+  success: Optional[bool] = True
+  message: Optional[str] = "Successfully generated embeddings"
+  data: Optional[List[float]] = []
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": {
+            "success": True,
+            "message": "Successfully generated text",
+            "data": None
         }
     }
 

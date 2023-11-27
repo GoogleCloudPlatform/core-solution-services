@@ -27,8 +27,8 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import InternalServerError
 from utils.errors import NoDocumentsIndexedException
 from google.cloud import storage
-from services import llm_generate
-from services.query import query_prompts, embeddings
+from services import llm_generate, embeddings
+from services.query import query_prompts
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore)
@@ -59,6 +59,12 @@ async def query_generate(
   """
   Execute a query over a query engine
 
+  The rule for determining the model used for question generation
+    model is:
+    if llm_type is passed as an arg use it
+    else if llm_type is set in query engine use that
+    else use the default query chat model
+
   Args:
     user_id: user id if user making query
     prompt: the text prompt to pass to the query engine
@@ -83,10 +89,7 @@ async def query_generate(
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
 
-  # Determine question generation model. The rule is:
-  #   if llm_type is passed as an arg use it
-  #   else if llm_type is set in query engine use that
-  #   else use the default query chat model
+  # determine question generation model
   if llm_type is None:
     if q_engine.llm_type is not None:
       llm_type = q_engine.llm_type
@@ -148,7 +151,8 @@ async def query_search(q_engine: QueryEngine,
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
-  query_embeddings = embeddings.encode_texts_to_embeddings([query_prompt])
+  query_embeddings = embeddings.get_embeddings([query_prompt],
+                                               q_engine.embedding_type)
   query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
@@ -393,16 +397,18 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
 
 def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
-  qe_vector_store = q_engine.vector_store
-  if qe_vector_store is None:
+  qe_vector_store_type = q_engine.vector_store
+  if qe_vector_store_type is None:
     # set to default vector store
-    qe_vector_store = DEFAULT_VECTOR_STORE
+    qe_vector_store_type = DEFAULT_VECTOR_STORE
 
-  qe_vector_store_class = VECTOR_STORES.get(qe_vector_store)
+  qe_vector_store_class = VECTOR_STORES.get(qe_vector_store_type)
   if qe_vector_store_class is None:
     raise InternalServerError(
-       f"vector store class {qe_vector_store} not found in config")
-  return qe_vector_store_class(q_engine)
+       f"vector store class {qe_vector_store_type} not found in config")
+
+  qe_vector_store = qe_vector_store_class(q_engine, q_engine.embedding_type)
+  return qe_vector_store
 
 
 def datasource_from_url(doc_url, storage_client):

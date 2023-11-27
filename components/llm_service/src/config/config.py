@@ -27,6 +27,7 @@ from google.cloud import secretmanager
 from langchain.chat_models import ChatOpenAI, ChatVertexAI
 from langchain.llms.cohere import Cohere
 from langchain.llms.vertexai import VertexAI
+from langchain.embeddings.openai import OpenAIEmbeddings
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
@@ -90,6 +91,9 @@ ENABLE_GOOGLE_MODEL_GARDEN = get_environ_flag("ENABLE_GOOGLE_MODEL_GARDEN",
 ENABLE_OPENAI_LLM = get_environ_flag("ENABLE_OPENAI_LLM", True)
 ENABLE_COHERE_LLM = get_environ_flag("ENABLE_COHERE_LLM", True)
 
+# truss hosted models
+ENABLE_TRUSS_LLAMA2 = get_environ_flag("ENABLE_TRUSS_LLAMA2", True)
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if OPENAI_API_KEY is None:
   OPENAI_API_KEY = get_secret("openai-api-key")
@@ -102,13 +106,14 @@ ENABLE_COHERE_LLM = ENABLE_COHERE_LLM and (COHERE_API_KEY is not None)
 
 OPENAI_LLM_TYPE_GPT3_5 = "OpenAI-GPT3.5"
 OPENAI_LLM_TYPE_GPT4 = "OpenAI-GPT4"
+OPENAI_EMBEDDING_TYPE = "OpenAI-Embeddings"
 COHERE_LLM_TYPE = "Cohere"
 VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
 VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat-V1"
 VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat"
 VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
 VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT = "VertexAI-ModelGarden-LLAMA2-Chat"
-
+TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
 
 LLM_TYPES = []
 OPENAI_LLM_TYPES = [OPENAI_LLM_TYPE_GPT3_5, OPENAI_LLM_TYPE_GPT4]
@@ -121,7 +126,9 @@ GOOGLE_LLM_TYPES = [VERTEX_LLM_TYPE_BISON_TEXT,
 CHAT_LLM_TYPES = [OPENAI_LLM_TYPE_GPT3_5,
                   OPENAI_LLM_TYPE_GPT4,
                   VERTEX_LLM_TYPE_BISON_V1_CHAT,
-                  VERTEX_LLM_TYPE_BISON_CHAT]
+                  VERTEX_LLM_TYPE_BISON_CHAT,
+                  TRUSS_LLM_LLAMA2_CHAT,
+                  VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT]
 
 if ENABLE_OPENAI_LLM:
   LLM_TYPES.extend(OPENAI_LLM_TYPES)
@@ -172,12 +179,29 @@ if ENABLE_GOOGLE_MODEL_GARDEN:
     }
     LLM_TYPES.extend(GOOGLE_MODEL_GARDEN_TYPES)
 
+LLM_TRUSS_MODELS = {}
+if ENABLE_TRUSS_LLAMA2:
+  LLM_TRUSS_MODEL_ENDPOINT = os.getenv("TRUSS_LLAMA2_ENDPOINT")
+  if LLM_TRUSS_MODEL_ENDPOINT:
+    LLM_TRUSS_MODELS = {
+        TRUSS_LLM_LLAMA2_CHAT: LLM_TRUSS_MODEL_ENDPOINT,
+    }
+    LLM_TYPES.extend(LLM_TRUSS_MODELS)
+
 Logger.info(f"LLM types loaded {LLM_TYPES}")
 
 DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
 
 # embedding models
-EMBEDDING_MODELS = [VERTEX_LLM_TYPE_GECKO_EMBEDDING]
+VERTEX_EMBEDDING_MODELS = [VERTEX_LLM_TYPE_GECKO_EMBEDDING]
+LANGCHAIN_EMBEDDING_MODELS = []
+if ENABLE_OPENAI_LLM:
+  LANGCHAIN_EMBEDDING_MODELS.append(OPENAI_EMBEDDING_TYPE)
+  LANGCHAIN_LLM.update({
+    OPENAI_EMBEDDING_TYPE: OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+  })
+
+EMBEDDING_MODELS = VERTEX_EMBEDDING_MODELS + LANGCHAIN_EMBEDDING_MODELS
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 
 # services config

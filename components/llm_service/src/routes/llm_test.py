@@ -23,7 +23,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
 from testing.test_config import API_URL, TESTING_FOLDER_PATH
-from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
@@ -37,15 +36,14 @@ os.environ["COHERE_API_KEY"] = "fake-key"
 with mock.patch("common.utils.secrets.get_secret"):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
-      from config import LLM_TYPES
+      from config import LLM_TYPES, EMBEDDING_MODELS
 
 # assigning url
 api_url = f"{API_URL}/llm"
 LLM_TESTDATA_FILENAME = os.path.join(TESTING_FOLDER_PATH,
                                         "llm_generate.json")
 
-with mock.patch(
-    "common.utils.secrets.get_secret"):
+with mock.patch("common.utils.secrets.get_secret"):
   from routes.llm import router
 
 app = FastAPI()
@@ -65,7 +63,13 @@ FAKE_GENERATE_PARAMS = {
     "prompt": "test prompt"
   }
 
+FAKE_GENERATE_EMBEDDINGS = {
+    "embedding_type": "Embedding Test",
+    "text": "test prompt"
+}
+
 FAKE_GENERATE_RESPONSE = "test generation"
+FAKE_EMBEDDINGS = [0.01234]
 
 @pytest.fixture
 def client_with_emulator(clean_firestore, scope="module"):
@@ -90,11 +94,32 @@ def test_get_llm_list(client_with_emulator):
   assert json_response.get("data") == LLM_TYPES
 
 
+def test_embedding_types(client_with_emulator):
+  url = f"{api_url}/embedding_types"
+  resp = client_with_emulator.get(url)
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  assert json_response.get("data") == EMBEDDING_MODELS
+
+
+def test_generate_embeddings(client_with_emulator):
+  url = f"{api_url}/embedding"
+
+  with mock.patch("routes.llm.get_embeddings",
+                  return_value=FAKE_EMBEDDINGS):
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_EMBEDDINGS)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  assert json_response.get("data") == FAKE_EMBEDDINGS, \
+    "returned generated embeddings"
+
+
 def test_llm_generate(client_with_emulator):
   url = f"{api_url}/generate"
 
   with mock.patch("routes.llm.llm_generate",
-                  return_value = FAKE_GENERATE_RESPONSE):
+                  return_value=FAKE_GENERATE_RESPONSE):
     resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
 
   json_response = resp.json()
