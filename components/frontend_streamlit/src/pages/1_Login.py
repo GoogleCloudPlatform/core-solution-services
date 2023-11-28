@@ -29,13 +29,16 @@ def login_clicked(username, password):
     st.session_state["logged_in"] = True
     st.session_state["auth_token"] = token
     st.session_state["username"] = username
-    utils.navigate_to(f"{APP_BASE_PATH}/Landing?auth_token={token}")
+    utils.navigate_to("Landing")
   else:
     st.session_state["logged_in"] = False
     st.error("Invalid username or password")
 
 def login_page():
   placeholder = st.empty()
+
+  if "auth_token" not in st.session_state:
+    st.session_state["auth_token"] = None
 
   if "logged_in" not in st.session_state:
     st.session_state["logged_in"] = False
@@ -53,5 +56,6 @@ def login_page():
 
 
 if __name__ == "__main__":
+  utils.hide_pages(["main"])
   utils.init_api_base_url()
   login_page()

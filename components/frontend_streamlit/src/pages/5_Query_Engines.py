@@ -21,9 +21,6 @@ from api import (build_query_engine, get_all_embedding_types,
                  get_all_vector_stores, get_all_jobs)
 import utils
 
-# For development purpose:
-params = st.experimental_get_query_params()
-st.session_state.auth_token = params.get("auth_token", [None])[0]
 
 def build_clicked(engine_name:str, doc_url:str,
                   embedding_type:str, vector_store:str):
