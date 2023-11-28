@@ -110,6 +110,9 @@ class DataSource:
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
         self.docs_not_processed.append(doc_url)
 
+    # Clean up text_chunks with empty items.
+    text_chunks = [x for x in text_chunks if x.strip() != ""]
+
     return text_chunks
 
   @staticmethod
