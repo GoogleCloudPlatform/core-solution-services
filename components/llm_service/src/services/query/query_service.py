@@ -59,7 +59,8 @@ async def query_generate(
             prompt: str,
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
-            user_query: Optional[UserQuery] = None) -> \
+            user_query: Optional[UserQuery] = None,
+            sentence_references: bool = False) -> \
                 Tuple[QueryResult, List[dict]]:
   """
   Execute a query over a query engine
@@ -90,7 +91,7 @@ async def query_generate(
               f"user_query=[{user_query}]")
   # get doc context for question
   query_references = await query_search(
-      q_engine, prompt, search_on_sentences=True)
+      q_engine, prompt, sentence_references=sentence_references)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -138,7 +139,7 @@ async def query_generate(
 
 async def query_search(q_engine: QueryEngine,
                        query_prompt: str,
-                       search_on_sentences: bool = False) -> List[dict]:
+                       sentence_references: bool = False) -> List[dict]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -169,7 +170,7 @@ async def query_search(q_engine: QueryEngine,
                                                          query_embedding)
 
   query_references = []
-  if search_on_sentences:
+  if sentence_references:
     # Assemble sentences from a document chunk. Currently it gets the
     # sentences from the top-ranked document chunk.
     match = match_indexes_list[0]
