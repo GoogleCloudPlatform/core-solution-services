@@ -433,7 +433,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                index_doc_url,
                                                doc_filepath)
 
-      if text_chunks is None:
+      if text_chunks is None or len(text_chunks) == 0:
         # unable to process this doc; skip
         continue
 
