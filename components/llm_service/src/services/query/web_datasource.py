@@ -31,7 +31,7 @@ from scrapy.http import Response
 from google.cloud import storage
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource
-from services.html_helper import html_trim_tags, html_to_text
+from utils.html_helper import html_trim_tags, html_to_text
 
 Logger = Logger.get_logger(__file__)
 
