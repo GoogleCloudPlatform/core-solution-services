@@ -335,7 +335,7 @@ class _QueryResultWidgetState extends State<QueryResultWidget> {
                               ],
                               borderRadius: BorderRadius.circular(18.0),
                               border: Border.all(
-                                color: Color(0x494490DB),
+                                color: Color(0xFFC2E7FE),
                                 width: 0.25,
                               ),
                             ),
