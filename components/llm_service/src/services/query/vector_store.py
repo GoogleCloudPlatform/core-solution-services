@@ -25,12 +25,13 @@ import tempfile
 import numpy as np
 from pathlib import Path
 from typing import List, Tuple, Any
+from google.cloud import aiplatform, storage
+from google.cloud.exceptions import Conflict
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
-from google.cloud import aiplatform, storage
 from services import embeddings
-from config import PROJECT_ID
+from config import PROJECT_ID, REGION
 from config.vector_store_config import (PG_HOST, PG_PORT,
                                         PG_DBNAME, PG_USER, PG_PASSWD,
                                         DEFAULT_VECTOR_STORE,

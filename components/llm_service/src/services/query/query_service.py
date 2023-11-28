@@ -16,6 +16,9 @@ Query Engine Service
 """
 import tempfile
 import os
+from numpy.linalg import norm
+import numpy as np
+import pandas as pd
 from typing import List, Optional, Tuple, Dict
 from google.cloud.exceptions import Conflict
 from common.utils.logging_handler import Logger
@@ -86,7 +89,8 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
   # get doc context for question
-  query_references = await query_search(q_engine, prompt)
+  query_references = await query_search(
+      q_engine, prompt, search_on_sentences=True)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -133,7 +137,8 @@ async def query_generate(
 
 
 async def query_search(q_engine: QueryEngine,
-                       query_prompt: str) -> List[dict]:
+                       query_prompt: str,
+                       search_on_sentences: bool = False) -> List[dict]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -153,37 +158,93 @@ async def query_search(q_engine: QueryEngine,
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
-  query_embeddings = embeddings.get_embeddings([query_prompt],
+  status, query_embeddings = embeddings.get_embeddings([query_prompt],
                                                q_engine.embedding_type)
-  query_embedding = query_embeddings[1][0]
+  Logger.info(f"get_embeddings: {status}, {query_embeddings}")
+  query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
                                                          query_embedding)
 
-  # assemble document chunk references from vector store indexes
   query_references = []
-  for match in match_indexes_list:
+  if search_on_sentences:
+    # Assemble sentences from a document chunk. Currently it gets the
+    # sentences from the top-ranked document chunk.
+    match = match_indexes_list[0]
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
-    if doc_chunk is None:
-      raise ResourceNotFoundException(
-        f"Missing doc chunk match index {match} q_engine {q_engine.name}")
     query_doc = QueryDocument.find_by_id(doc_chunk.query_document_id)
-    if query_doc is None:
-      raise ResourceNotFoundException(
-        f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
-    query_ref = {
-      "document_id": query_doc.id,
-      "document_url": query_doc.doc_url,
-      "document_text": doc_chunk.text,
-      "chunk_id": doc_chunk.id
-    }
-    query_references.append(query_ref)
+    sentences = doc_chunk.sentences
+
+    top_sentences = get_top_relevant_sentences(
+        q_engine, query_embeddings, sentences, expand_neighbors=1)
+
+    for sentence in top_sentences:
+      query_references.append({
+        "document_id": query_doc.id,
+        "document_url": query_doc.doc_url,
+        "document_text": sentence,
+        "document_clean_text": doc_chunk.clean_text,
+        "chunk_id": doc_chunk.id
+      })
+
+  else:
+    # Assemble document chunk references from vector store indexes
+    for match in match_indexes_list:
+      doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
+      if doc_chunk is None:
+        raise ResourceNotFoundException(
+          f"Missing doc chunk match index {match} q_engine {q_engine.name}")
+      query_doc = QueryDocument.find_by_id(doc_chunk.query_document_id)
+      if query_doc is None:
+        raise ResourceNotFoundException(
+          f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
+      query_references.append({
+        "document_id": query_doc.id,
+        "document_url": query_doc.doc_url,
+        "document_text": doc_chunk.text,
+        "chunk_id": doc_chunk.id
+      })
 
   Logger.info(f"Retrieved {len(query_references)} "
               f"references={query_references}")
   return query_references
+
+def get_top_relevant_sentences(q_engine,
+    query_embeddings, sentences, expand_neighbors=1) -> list:
+
+  status, sentence_embeddings = embeddings.get_embeddings(sentences,
+                                                  q_engine.embedding_type)
+  Logger.debug(f"len(sentences) = {len(sentences)}")
+
+  similarity_scores = get_similarity(query_embeddings, sentence_embeddings)
+  Logger.debug("Similarity of query_embeddings and sentence_embeddings: "
+                f"{similarity_scores}")
+
+  top_sentence_index = np.argmax(similarity_scores)
+  start_index = top_sentence_index - expand_neighbors
+  end_index = top_sentence_index + expand_neighbors + 1
+
+  if start_index <= 0:
+    start_index = 0
+  if end_index >= len(similarity_scores):
+    end_index = None
+  return sentences[start_index:end_index]
+
+def get_similarity(query_embeddings, sentence_embeddings) -> list:
+  query_df = pd.DataFrame(query_embeddings.transpose())
+  sentence_df = pd.DataFrame(sentence_embeddings)
+
+  cos_sim = []
+  for index, row in sentence_df.iterrows():
+    x = row
+    y = query_df
+    # calculate the cosine similiarity
+    cosine = np.dot(x,y) / (norm(x) * norm(y))
+    cos_sim.append(cosine[0])
+
+  return cos_sim
 
 
 def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
