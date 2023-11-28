@@ -17,6 +17,7 @@ Query Engine Service
 import tempfile
 import os
 from typing import List, Optional, Tuple, Dict
+from google.cloud.exceptions import Conflict
 from common.utils.logging_handler import Logger
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
@@ -34,7 +35,8 @@ from services.query.vector_store import (VectorStore,
                                          PostgresVectorStore)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
-from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
+from services.html_helper import html_to_text, html_to_sentence_list
+from config import (PROJECT_ID, REGION, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
@@ -135,7 +137,7 @@ async def query_search(q_engine: QueryEngine,
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
-                       
+
   Args:
     q_engine: QueryEngine to search
     query_prompt (str):  user query
@@ -144,9 +146,9 @@ async def query_search(q_engine: QueryEngine,
     list of dicts containing summarized query results, with:
       "document_id": id of QueryDocument for reference
       "document_url": url of document containing reference
-      "document_text": text of document containing the grounding for the query 
+      "document_text": text of document containing the grounding for the query
       "chunk_id": id of QueryDocumentChunk containing the reference
-                       
+
   """
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
@@ -207,6 +209,19 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"doc_url: [{doc_url}] user id: [{user_id}]")
   Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"vector store type: [{vector_store_type}]")
+
+  # Create a bucket if not exist.
+  bucket_name = f"{PROJECT_ID}-{query_engine}-data"
+  storage_client = storage.Client(project=PROJECT_ID)
+  try:
+    bucket = storage_client.create_bucket(bucket_name,
+                                                location=REGION)
+  except Conflict:
+    # if bucket already exists, delete and recreate
+    bucket = storage_client.bucket(bucket_name)
+    bucket.delete(force=True)
+    bucket = storage_client.create_bucket(bucket_name,
+                                                location=REGION)
 
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url, query_engine, user_id, is_public,
@@ -383,11 +398,15 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       query_doc.save()
 
       for i in range(0, len(text_chunks)):
+        clean_text = html_to_text(text_chunks[i])
+        sentences = html_to_sentence_list(text_chunks[i])
         query_doc_chunk = QueryDocumentChunk(
-                                  query_engine_id=q_engine.id,
-                                  query_document_id=query_doc.id,
-                                  index=i+index_base,
-                                  text=text_chunks[i])
+                              query_engine_id=q_engine.id,
+                              query_document_id=query_doc.id,
+                              index=i+index_base,
+                              text=text_chunks[i],
+                              clean_text=clean_text,
+                              sentences=sentences)
         query_doc_chunk.save()
 
       index_base = new_index_base

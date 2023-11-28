@@ -29,9 +29,8 @@ from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
 from google.cloud import aiplatform, storage
-from google.cloud.exceptions import Conflict
 from services import embeddings
-from config import PROJECT_ID, REGION
+from config import PROJECT_ID
 from config.vector_store_config import (PG_HOST, PG_PORT,
                                         PG_DBNAME, PG_USER, PG_PASSWD,
                                         DEFAULT_VECTOR_STORE,
@@ -107,16 +106,18 @@ class MatchingEngineVectorStore(VectorStore):
 
     # create bucket for ME index data
     self.bucket_name = f"{PROJECT_ID}-{q_engine.name}-data"
-    try:
-      bucket = self.storage_client.create_bucket(self.bucket_name,
-                                                 location=REGION)
-    except Conflict:
-      # if bucket already exists, delete and recreate
-      bucket = self.storage_client.bucket(self.bucket_name)
-      bucket.delete(force=True)
-      bucket = self.storage_client.create_bucket(self.bucket_name,
-                                                 location=REGION)
-    self.bucket_uri = f"gs://{bucket.name}"
+    self.bucket_uri = f"gs://{self.bucket_name}"
+
+    # FIXME: Removing the unnecesary bucket creation.
+    # try:
+    #   bucket = self.storage_client.create_bucket(self.bucket_name,
+    #                                              location=REGION)
+    # except Conflict:
+    #   # if bucket already exists, delete and recreate
+    #   bucket = self.storage_client.bucket(self.bucket_name)
+    #   bucket.delete(force=True)
+    #   bucket = self.storage_client.create_bucket(self.bucket_name,
+    #                                              location=REGION)
 
   @property
   def vector_store_type(self):
