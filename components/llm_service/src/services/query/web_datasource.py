@@ -28,11 +28,10 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.http import Response
-from w3lib.html import replace_escape_chars
-from bs4 import BeautifulSoup, Comment
 from google.cloud import storage
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource
+from utils.html_helper import html_trim_tags, html_to_text
 
 Logger = Logger.get_logger(__file__)
 
@@ -71,49 +70,6 @@ def save_content(filepath:str, file_name:str, content:str) -> None:
   with open(doc_filepath, "w", encoding="utf-8") as f:
     f.write(content)
   Logger.info(f"{len(content)} bytes written")
-
-def clean_html(html_content:str) -> str:
-  """
-  Remove all <script> tags and their content from the given HTML content.
-  Remove all <style> tags and <link> tags that reference stylesheets
-  from the given HTML content.
-  Args:
-      html_content (str): The HTML content.
-  Returns:
-      str: The HTML content without <script> tags and CSS references.
-  """
-  # Parse the HTML content
-  soup = BeautifulSoup(html_content, "html.parser")
-
-  # Remove script and style and other irrelevant tags
-  tags_to_remove = ["script", "style", "footer", "nav", "aside", "form", "meta",
-                    "iframe", "header", "button", "input", "select", "textarea", 
-                    "noscript", "img", "figure", "figcaption", "link"]
-  for element in soup(tags_to_remove):
-    element.decompose()
-
-  # remove HTML comments
-  comments = soup.find_all(string=lambda text: isinstance(text, Comment))
-  for comment in comments:
-    comment.extract()
-
-  # Remove all attributes except href from <a> tags
-  # and all attributes from other tags
-  for tag in soup.find_all(True):
-    if tag.name == "a":
-      href = tag.get("href")
-      tag.attrs = {}
-      if href:
-        tag["href"] = href
-    else:
-      tag.attrs = {}
-
-  # Get the cleaned HTML content
-  cleaned_content = str(soup)
-
-  # Replace HTML escape characters with their equivalents
-  cleaned_content = replace_escape_chars(cleaned_content)
-  return cleaned_content
 
 def sanitize_url(url) -> str:
   # Remove the scheme (http, https) and domain, and keep the path and query
@@ -188,7 +144,7 @@ class WebDataSourceSpider(CrawlSpider):
 
     # Check if the content type is HTML
     if "text/html" in content_type:
-      file_content = clean_html(response.text)
+      file_content = html_trim_tags(response.text)
     elif "application/pdf" in content_type:
       file_content = response.body
     else:
