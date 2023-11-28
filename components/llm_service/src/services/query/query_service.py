@@ -60,7 +60,7 @@ async def query_generate(
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
-            sentence_references: bool = False) -> \
+            sentence_references: bool = True) -> \
                 Tuple[QueryResult, List[dict]]:
   """
   Execute a query over a query engine
