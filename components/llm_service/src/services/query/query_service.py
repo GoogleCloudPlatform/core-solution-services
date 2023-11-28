@@ -153,7 +153,7 @@ async def query_search(q_engine: QueryEngine,
   # generate embeddings for prompt
   query_embeddings = embeddings.get_embeddings([query_prompt],
                                                q_engine.embedding_type)
-  query_embedding = query_embeddings[0]
+  query_embedding = query_embeddings[1][0]
 
   # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store_from_query_engine(q_engine)
