@@ -67,7 +67,7 @@ class _QueryWidgetState extends State<QueryWidget> {
             height: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFD7CAE5), Color(0xFFA8B9E6)],
+                colors: [Color(0xFFf0f4f9), Color(0xFFf0f4f9)],
                 stops: [0.0, 1.0],
                 begin: AlignmentDirectional(-0.64, 1.0),
                 end: AlignmentDirectional(0.64, -1.0),
@@ -140,8 +140,8 @@ class _QueryWidgetState extends State<QueryWidget> {
                                                   ],
                                                   gradient: LinearGradient(
                                                     colors: [
-                                                      Color(0x9EFFFFFF),
-                                                      Color(0x97DDE4F0)
+                                                      Color(0xFFFFFFFF),
+                                                      Color(0xFFFFFFFF)
                                                     ],
                                                     stops: [0.0, 1.0],
                                                     begin: AlignmentDirectional(
@@ -303,19 +303,8 @@ class _QueryWidgetState extends State<QueryWidget> {
                                                                             child:
                                                                                 Container(
                                                                               decoration: BoxDecoration(
-                                                                                color: Color(0x70FFFFFF),
-                                                                                boxShadow: [
-                                                                                  BoxShadow(
-                                                                                    blurRadius: 2.0,
-                                                                                    color: Color(0x33FFFFFF),
-                                                                                    offset: Offset(1.0, 1.0),
-                                                                                  )
-                                                                                ],
+                                                                                color: Color(0xFFf0f4f9),
                                                                                 borderRadius: BorderRadius.circular(18.0),
-                                                                                border: Border.all(
-                                                                                  color: Color(0x494490DB),
-                                                                                  width: 0.25,
-                                                                                ),
                                                                               ),
                                                                               child: Padding(
                                                                                 padding: EdgeInsetsDirectional.fromSTEB(15.0, 10.0, 15.0, 10.0),
@@ -326,7 +315,7 @@ class _QueryWidgetState extends State<QueryWidget> {
                                                                                   ),
                                                                                   style: FlutterFlowTheme.of(context).bodyMedium.override(
                                                                                         fontFamily: 'Poppins',
-                                                                                        color: FlutterFlowTheme.of(context).secondaryText,
+                                                                                        color: Color(0xFF000000),
                                                                                         fontSize: 11.5,
                                                                                         fontWeight: FontWeight.normal,
                                                                                       ),
@@ -548,8 +537,7 @@ class _QueryWidgetState extends State<QueryWidget> {
                                                                   ),
                                                                   decoration:
                                                                       BoxDecoration(
-                                                                    color: Color(
-                                                                        0x69FFFFFF),
+                                                                    color: Color(0x69FFFFFF),
                                                                     borderRadius:
                                                                         BorderRadius.circular(
                                                                             30.0),
@@ -665,7 +653,7 @@ class _QueryWidgetState extends State<QueryWidget> {
                                                                                 BoxDecoration(),
                                                                             child:
                                                                                 Text(
-                                                                              'iste-demo-engine-3',
+                                                                              'Query Engine',
                                                                               textAlign: TextAlign.center,
                                                                               style: FlutterFlowTheme.of(context).bodyMedium.override(
                                                                                     fontFamily: 'Poppins',
