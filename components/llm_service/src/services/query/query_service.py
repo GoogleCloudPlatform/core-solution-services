@@ -333,6 +333,9 @@ def build_doc_index(doc_url: str, query_engine: str,
 
   storage_client = storage.Client(project=PROJECT_ID)
 
+  # initialize the vector store index
+  qe_vector_store.init_index()
+
   try:
     # process docs at url and upload embeddings to vector store
     docs_processed, docs_not_processed = process_documents(

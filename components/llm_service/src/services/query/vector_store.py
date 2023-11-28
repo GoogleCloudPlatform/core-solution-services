@@ -67,6 +67,12 @@ class VectorStore(ABC):
     return DEFAULT_VECTOR_STORE
 
   @abstractmethod
+  def init_index(self):
+    """
+    Called before starting a new index build.
+    """
+
+  @abstractmethod
   def index_document(self, doc_name: str, text_chunks: List[str],
                           index_base: int) -> int:
     """
@@ -103,21 +109,20 @@ class MatchingEngineVectorStore(VectorStore):
   def __init__(self, q_engine: QueryEngine, embedding_type:str=None) -> None:
     super().__init__(q_engine)
     self.storage_client = storage.Client(project=PROJECT_ID)
-
-    # create bucket for ME index data
-    self.bucket_name = f"{PROJECT_ID}-{q_engine.name}-data"
+    self.bucket_name = f"{PROJECT_ID}-{self.q_engine.name}-data"
     self.bucket_uri = f"gs://{self.bucket_name}"
 
-    # FIXME: Removing the unnecesary bucket creation.
-    # try:
-    #   bucket = self.storage_client.create_bucket(self.bucket_name,
-    #                                              location=REGION)
-    # except Conflict:
-    #   # if bucket already exists, delete and recreate
-    #   bucket = self.storage_client.bucket(self.bucket_name)
-    #   bucket.delete(force=True)
-    #   bucket = self.storage_client.create_bucket(self.bucket_name,
-    #                                              location=REGION)
+  def init_index(self):
+    # create bucket for ME index data
+    try:
+      bucket = self.storage_client.create_bucket(self.bucket_name,
+                                                 location=REGION)
+    except Conflict:
+      # if bucket already exists, delete and recreate
+      bucket = self.storage_client.bucket(self.bucket_name)
+      bucket.delete(force=True)
+      bucket = self.storage_client.create_bucket(self.bucket_name,
+                                                 location=REGION)
 
   @property
   def vector_store_type(self):
@@ -132,6 +137,7 @@ class MatchingEngineVectorStore(VectorStore):
       text_chunks (List[str]): list of text content chunks for document
       index_base (int): index to start from; each chunk gets its own index
     """
+
 
     chunk_index = 0
     num_chunks = len(text_chunks)
@@ -285,6 +291,9 @@ class LangChainVectorStore(VectorStore):
   def __init__(self, q_engine: QueryEngine, embedding_type:str=None) -> None:
     super().__init__(q_engine, embedding_type)
     self.lc_vector_store = self._get_langchain_vector_store()
+
+  def init_index(self):
+    pass
 
   def _get_langchain_vector_store(self) -> LCVectorStore:
     # retrieve langchain vector store obj from config
