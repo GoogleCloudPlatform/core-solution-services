@@ -38,7 +38,7 @@ from services.query.vector_store import (VectorStore,
                                          PostgresVectorStore)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
-from services.html_helper import html_to_text, html_to_sentence_list
+from utils.html_helper import html_to_text, html_to_sentence_list
 from config import (PROJECT_ID, REGION, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
@@ -177,6 +177,9 @@ async def query_search(q_engine: QueryEngine,
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
     query_doc = QueryDocument.find_by_id(doc_chunk.query_document_id)
     sentences = doc_chunk.sentences
+
+    if not sentences:
+      sentences = html_to_sentence_list(doc_chunk.text)
 
     top_sentences = get_top_relevant_sentences(
         q_engine, query_embeddings, sentences, expand_neighbors=1)
