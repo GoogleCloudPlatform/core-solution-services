@@ -210,19 +210,6 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"vector store type: [{vector_store_type}]")
 
-  # Create a bucket if not exist.
-  bucket_name = f"{PROJECT_ID}-{query_engine}-data"
-  storage_client = storage.Client(project=PROJECT_ID)
-  try:
-    bucket = storage_client.create_bucket(bucket_name,
-                                                location=REGION)
-  except Conflict:
-    # if bucket already exists, delete and recreate
-    bucket = storage_client.bucket(bucket_name)
-    bucket.delete(force=True)
-    bucket = storage_client.create_bucket(bucket_name,
-                                                location=REGION)
-
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url, query_engine, user_id, is_public,
                          llm_type, embedding_type, vector_store_type)
