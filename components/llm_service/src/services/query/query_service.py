@@ -190,7 +190,7 @@ async def query_search(q_engine: QueryEngine,
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
 
-      if not sentences:
+      if not sentences or len(sentences) == 0:
         sentences = html_to_sentence_list(doc_chunk.text)
       # Remove empty sentences.
       sentences = [x for x in sentences if x.strip() != ""]
