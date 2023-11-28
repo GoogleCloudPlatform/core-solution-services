@@ -190,15 +190,18 @@ async def query_search(q_engine: QueryEngine,
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
 
-      if not sentences:
+      if not sentences or len(sentences) == 0:
         sentences = html_to_sentence_list(doc_chunk.text)
       # Remove empty sentences.
       sentences = [x for x in sentences if x.strip() != ""]
 
-      top_sentences = get_top_relevant_sentences(
-          q_engine, query_embeddings, sentences,
-          expand_neighbors=2, highlight_top_sentence=True)
-      clean_text = " ".join(top_sentences)
+      # Only update clean_text when sentences is not empty.
+      Logger.info(f"sentences = {sentences}")
+      if sentences and len(sentences) > 0:
+        top_sentences = get_top_relevant_sentences(
+            q_engine, query_embeddings, sentences,
+            expand_neighbors=2, highlight_top_sentence=True)
+        clean_text = " ".join(top_sentences)
 
     query_references.append({
       "document_id": query_doc.id,
