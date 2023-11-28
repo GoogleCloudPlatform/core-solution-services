@@ -19,6 +19,7 @@ HTML helper functions.
 
 from w3lib.html import replace_escape_chars
 from bs4 import BeautifulSoup, Comment
+import re
 
 
 TAGS_TO_REMOVE = ["script", "style", "footer", "nav", "aside", "form", "meta",
@@ -91,6 +92,9 @@ def html_to_sentence_list(html_content:str, tags_to_trim:list = None) -> list:
       sentences.append(" ".join(items))
     else:
       sentences.append(element.get_text())
+
+  # Remove empty sentences.
+  sentences = [x for x in sentences if x.strip() != ""]
 
   return sentences
 

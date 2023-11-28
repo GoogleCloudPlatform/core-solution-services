@@ -161,79 +161,76 @@ async def query_search(q_engine: QueryEngine,
   # generate embeddings for prompt
   status, query_embeddings = embeddings.get_embeddings([query_prompt],
                                                q_engine.embedding_type)
-  Logger.info(f"get_embeddings: {status}, {query_embeddings}")
   query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
                                                          query_embedding)
-
   query_references = []
-  if sentence_references:
-    # Assemble sentences from a document chunk. Currently it gets the
-    # sentences from the top-ranked document chunk.
-    match = match_indexes_list[0]
+
+  # Assemble document chunk references from vector store indexes
+  for match in match_indexes_list:
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
+    if doc_chunk is None:
+      raise ResourceNotFoundException(
+        f"Missing doc chunk match index {match} q_engine {q_engine.name}")
+
     query_doc = QueryDocument.find_by_id(doc_chunk.query_document_id)
-    sentences = doc_chunk.sentences
+    if query_doc is None:
+      raise ResourceNotFoundException(
+        f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
 
-    if not sentences:
-      sentences = html_to_sentence_list(doc_chunk.text)
+    clean_text = doc_chunk.clean_text
+    if not clean_text:
+      clean_text = html_to_text(doc_chunk.text)
 
-    top_sentences = get_top_relevant_sentences(
-        q_engine, query_embeddings, sentences, expand_neighbors=1)
+    if sentence_references:
+      # Assemble sentences from a document chunk. Currently it gets the
+      # sentences from the top-ranked document chunk.
+      sentences = doc_chunk.sentences
 
-    for sentence in top_sentences:
-      query_references.append({
-        "document_id": query_doc.id,
-        "document_url": query_doc.doc_url,
-        "document_text": sentence,
-        "document_clean_text": doc_chunk.clean_text,
-        "chunk_id": doc_chunk.id
-      })
+      if not sentences:
+        sentences = html_to_sentence_list(doc_chunk.text)
+      # Remove empty sentences.
+      sentences = [x for x in sentences if x.strip() != ""]
 
-  else:
-    # Assemble document chunk references from vector store indexes
-    for match in match_indexes_list:
-      doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
-      if doc_chunk is None:
-        raise ResourceNotFoundException(
-          f"Missing doc chunk match index {match} q_engine {q_engine.name}")
-      query_doc = QueryDocument.find_by_id(doc_chunk.query_document_id)
-      if query_doc is None:
-        raise ResourceNotFoundException(
-          f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
-      query_references.append({
-        "document_id": query_doc.id,
-        "document_url": query_doc.doc_url,
-        "document_text": doc_chunk.text,
-        "chunk_id": doc_chunk.id
-      })
+      top_sentences = get_top_relevant_sentences(
+          q_engine, query_embeddings, sentences,
+          expand_neighbors=2, highlight_top_sentence=True)
+      clean_text = " ".join(top_sentences)
 
-  Logger.info(f"Retrieved {len(query_references)} "
-              f"references={query_references}")
+    query_references.append({
+      "document_id": query_doc.id,
+      "document_url": query_doc.doc_url,
+      "document_text": clean_text,
+      "chunk_id": doc_chunk.id
+    })
+
+  # Logger.info(f"Retrieved {len(query_references)} "
+  #             f"references={query_references}")
   return query_references
 
-def get_top_relevant_sentences(q_engine,
-    query_embeddings, sentences, expand_neighbors=1) -> list:
+def get_top_relevant_sentences(q_engine, query_embeddings,
+    sentences, expand_neighbors=2, highlight_top_sentence=False) -> list:
 
   status, sentence_embeddings = embeddings.get_embeddings(sentences,
                                                   q_engine.embedding_type)
-  Logger.debug(f"len(sentences) = {len(sentences)}")
-
   similarity_scores = get_similarity(query_embeddings, sentence_embeddings)
-  Logger.debug("Similarity of query_embeddings and sentence_embeddings: "
-                f"{similarity_scores}")
+  Logger.info("Similarity scores of query_embeddings and sentence_embeddings: "
+              f"{len(similarity_scores)}")
 
   top_sentence_index = np.argmax(similarity_scores)
   start_index = top_sentence_index - expand_neighbors
   end_index = top_sentence_index + expand_neighbors + 1
 
-  if start_index <= 0:
-    start_index = 0
-  if end_index >= len(similarity_scores):
-    end_index = None
+  if highlight_top_sentence:
+    sentences[top_sentence_index] = \
+        "<b>" + sentences[top_sentence_index] + "</b>"
+
+  start_index = max(start_index, 0)
+  end_index = min(end_index, len(similarity_scores))
+
   return sentences[start_index:end_index]
 
 def get_similarity(query_embeddings, sentence_embeddings) -> list:

@@ -324,16 +324,16 @@ async def query(query_engine_id: str,
 
   llm_type = genconfig_dict.get("llm_type")
   sentence_references = genconfig_dict.get("sentence_references", None)
+  Logger.info(f"sentence_references = {sentence_references}")
 
   user = User.find_by_email(user_data.get("email"))
 
   try:
-    query_result, query_references = await query_generate(user.id, prompt,
-                                                          q_engine, llm_type,
-                                                          sentence_references)
+    query_result, query_references = await query_generate(
+          user.id, prompt, q_engine, llm_type,
+          sentence_references=sentence_references)
     Logger.info(f"Query response="
-                f"[{query_result.response}],"
-                f"query_references={query_references}")
+                f"[{query_result.response}]")
     return {
         "success": True,
         "message": "Successfully generated text",
