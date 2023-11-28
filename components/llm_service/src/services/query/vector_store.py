@@ -99,9 +99,9 @@ class VectorStore(ABC):
 
 class MatchingEngineVectorStore(VectorStore):
   """
-  Class for vector store based on Vertex matching engine. 
+  Class for vector store based on Vertex matching engine.
   """
-  def __init__(self, q_engine: QueryEngine) -> None:
+  def __init__(self, q_engine: QueryEngine, embedding_type:str=None) -> None:
     super().__init__(q_engine)
     self.storage_client = storage.Client(project=PROJECT_ID)
 
