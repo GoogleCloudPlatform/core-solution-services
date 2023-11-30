@@ -19,6 +19,10 @@ from typing import Union, Type, Callable, List
 
 from langchain.agents import (Agent, AgentOutputParser,
                               ConversationalAgent)
+from langchain.agents.structured_chat.base import StructuredChatAgent
+from langchain.agents.structured_chat.output_parser import (
+                                            StructuredChatOutputParserWithRetries)
+from langchain.agents.structured_chat.prompt import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from langchain.schema import AgentAction, AgentFinish
 
@@ -139,12 +143,50 @@ class TaskAgent(BaseAgent):
   def __init__(self, llm_type: str):
     super().__init__(llm_type)
     self.name = "TaskAgent"
-    self.agent_class = ConversationalAgent
+    self.agent_class = StructuredChatAgent
 
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
     return ToolAgentOutputParser
 
+  @classmethod
+  def capabilities(cls) -> List[str]:
+    """ return capabilities of this agent class """
+    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
+                    AgentCapability.AGENT_QUERY_CAPABILITY,
+                    AgentCapability.AGENT_TASK_CAPABILITY]
+    return capabilities
+
+  def get_tools(self):
+    tools = [gmail_tool, docs_tool, calendar_tool, search_tool, query_tool]
+    return tools
+
+  def get_planning_agent(self) -> str:
+    """
+    This is the agent used by this agent to create plans for tasks.
+    """
+    return "PlanAgent"
+
+class StructuredTaskAgent(BaseAgent):
+  """
+  Structured Task Agent.  This agent accepts multiple inputs and can call StructuredTools that accept multiple inputs,
+  not just one String. This is an agent configured to execute tasks on behalf of a
+  human.  Every task has a plan, consisting of plan steps.
+  Creation of the plan is done by a planning agent.
+  """
+
+  def __init__(self, llm_type: str):
+    super().__init__(llm_type)
+    self.name = "StructuredTaskAgent"
+    self.agent_class = StructuredChatAgent
+
+  @property
+  def output_parser_class(self) -> Type[AgentOutputParser]:
+    return StructuredChatOutputParserWithRetries
+
+  @property
+  def format_instructions(self) -> str:
+    return STRUCTURED_FORMAT_INSTRUCTIONS
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
@@ -173,7 +215,7 @@ class PlanAgent(BaseAgent):
   def __init__(self, llm_type: str):
     super().__init__(llm_type)
     self.name = "PlanAgent"
-    self.agent_class = ConversationalAgent
+    self.agent_class = StructuredChatAgent
 
   @property
   def prefix(self) -> str:
@@ -245,6 +287,7 @@ class ToolAgentOutputParser(AgentOutputParser):
       return AgentFinish(
           {"output": text.split(f"{self.ai_prefix}:")[-1].strip()}, text
       )
+    print(f"[ToolAgentOutputParser] text: {text}")
     regex = r"Action: (.*?)[\n]*Action Input: (.*)"
     match = re.search(regex, text)
     if not match:
