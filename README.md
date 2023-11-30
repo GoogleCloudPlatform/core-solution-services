@@ -26,7 +26,7 @@ Highlighted features:
   content such as a list of documents, databases, etc.
 - Easy to plug in and use any LLM models available in the market, leveraging Langchain.
 - A built-in frontend app (using [Streamlit](https://streamlit.io/)) to showcase end-to-end user journeys.
-- (Optional) Cross-platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows and seamless digital experience on Android, iOS, web, and desktop platforms.
+- Cross-platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows and seamless digital experience on Android, iOS, web, and desktop platforms.
 
 ## Prerequisites
 
@@ -152,6 +152,8 @@ sb vars set domain_name ${DOMAIN_NAME}
 export API_BASE_URL=https://${DOMAIN_NAME}
 ```
 
+Run the rest of the deployment steps from within this jumphost.
+
 ### Initialize the Cloud infra
 
 Apply infra/terraform for the foundation and load balancer:
@@ -198,8 +200,11 @@ sb deploy
 
 Once deployed, check out the API docs with the following links:
 
-- Frontend Streamlit app:
+- Frontend Flutterflow app:
   - https://$YOUR_DNS_DOMAIN
+
+- Frontend Streamlit app:
+  - https://$YOUR_DNS_DOMAIN/streamlit
 
 - Backend API documentations:
   - https://$YOUR_DNS_DOMAIN/authentication/api/v1/docs
@@ -214,29 +219,25 @@ BASE_IP_ADDRESS=$(gcloud compute addresses list --global --format="value(address
 - Open up `http://$BASE_IP_ADDRESS/authentication/api/v1/docs` in a web browser.
 
 In the GCP Console, check the following:
-- A query engine
-- A vertex AI endpoint to the query engine
+- A query engine at https://console.cloud.google.com/vertex-ai/matching-engine/indexes?referrer=search&project=$PROJECT_ID.
+- A vertex AI endpoint to the query engine at https://console.cloud.google.com/vertex-ai/matching-engine/index-endpoints?referrer=search&project=$PROJECT_ID
 
-## Frontend application
+## Frontend applications
 
-When running `sb deploy` like above, it automatically deploys a Streamlit-based frontend app
+When running `sb deploy` like above, it automatically deploys Streamlit-based and FlutterFlow-based frontend apps
 altogether with all services deployment.
-- It deploys the frontend app in [components/frontend_streamlit](components/frontend_streamlit)
-- Once deployed, you can verify the frontend app at `https://$YOUR_DNS_DOMAIN` in a web browser.
+- Once deployed, you can verify the FlutterFlow frontend app at `https://$YOUR_DNS_DOMAIN` in a web browser.
+- Once deployed, you can verify the Streamlit frontend app at `https://$YOUR_DNS_DOMAIN/streamlit` in a web browser.
+
+> [FlutterFlow](https://flutterflow.io/enterprise) is a low-code development platform that enables you to build native mobile and web applications without writing code.
 
 > [Streamlit](https://streamlit.io) is an open-source Python library that makes it easy to create custom web apps. It's a popular choice for data scientists and machine learning engineers who want to quickly create interactive dashboards and visualizations
 
-### Deploy or run the frontend app manually
+### (Optional) Deploy or run the frontend apps manually
 
-See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the frontend app.
+See [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
 
-### (Optional) Deploy a FlutterFlow app
-
-In addition to the default Streamlit frontend app, you can choose to use the GENIE FlutterFlow UI app.
-
-Please follow [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
-
-> FlutterFlow is a low-code development platform that enables you to build native mobile and web applications without writing code. To learn more about FlutterFlow, visit https://flutterflow.io/enterprise.
+See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the Streamlit app.
 
 ## Troubleshooting
 
