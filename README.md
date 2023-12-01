@@ -63,9 +63,10 @@ gcloud resource-manager org-policies delete constraints/iam.allowedPolicyMemberD
 
 ### Clone repo
 
-Clone this repo to your local machine to start. Optionally you can use Cloud Shell. Run the rest of the commands inside the repo folder.
+Clone this repo to your local machine to start. Optionally, you can use Cloud Shell. Run the rest of the commands inside the repo folder.
 ```
-git clone https://github.com/GoogleCloudPlatform/core-solution-services
+# Clone repo (skip unnecessary history)
+git clone --depth 1 https://github.com/GoogleCloudPlatform/core-solution-services
 cd core-solution-services
 ```
 
@@ -128,7 +129,7 @@ ls -la /tmp/jumphost_ready
 
 Check out the code in the jump host:
 ```
-git clone https://github.com/GoogleCloudPlatform/core-solution-services
+git clone --depth 1 https://github.com/GoogleCloudPlatform/core-solution-services
 ```
 
 Initialize the jump host and set Project ID:
@@ -280,6 +281,6 @@ docker: Got permission denied while trying to connect to the Docker daemon socke
 ```
 Fix
 ```commandline
-sudo usermod -aG docker $USER
+sudo usermod -aG docker ${USER}
 ```
 Log out and log back in again to re-evaluate group memberships
