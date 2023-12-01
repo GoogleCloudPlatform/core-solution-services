@@ -16,7 +16,11 @@ Query Engine Service
 """
 import tempfile
 import os
+from numpy.linalg import norm
+import numpy as np
+import pandas as pd
 from typing import List, Optional, Tuple, Dict
+from google.cloud.exceptions import Conflict
 from common.utils.logging_handler import Logger
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
@@ -34,7 +38,8 @@ from services.query.vector_store import (VectorStore,
                                          PostgresVectorStore)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
-from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
+from utils.html_helper import html_to_text, html_to_sentence_list
+from config import (PROJECT_ID, REGION, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
@@ -54,7 +59,8 @@ async def query_generate(
             prompt: str,
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
-            user_query: Optional[UserQuery] = None) -> \
+            user_query: Optional[UserQuery] = None,
+            sentence_references: bool = True) -> \
                 Tuple[QueryResult, List[dict]]:
   """
   Execute a query over a query engine
@@ -84,7 +90,8 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
   # get doc context for question
-  query_references = await query_search(q_engine, prompt)
+  query_references = await query_search(
+      q_engine, prompt, sentence_references=sentence_references)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -131,11 +138,12 @@ async def query_generate(
 
 
 async def query_search(q_engine: QueryEngine,
-                       query_prompt: str) -> List[dict]:
+                       query_prompt: str,
+                       sentence_references: bool = False) -> List[dict]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
-                       
+
   Args:
     q_engine: QueryEngine to search
     query_prompt (str):  user query
@@ -144,14 +152,14 @@ async def query_search(q_engine: QueryEngine,
     list of dicts containing summarized query results, with:
       "document_id": id of QueryDocument for reference
       "document_url": url of document containing reference
-      "document_text": text of document containing the grounding for the query 
+      "document_text": text of document containing the grounding for the query
       "chunk_id": id of QueryDocumentChunk containing the reference
-                       
+
   """
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
-  query_embeddings = embeddings.get_embeddings([query_prompt],
+  status, query_embeddings = embeddings.get_embeddings([query_prompt],
                                                q_engine.embedding_type)
   query_embedding = query_embeddings[0]
 
@@ -159,29 +167,88 @@ async def query_search(q_engine: QueryEngine,
   qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
                                                          query_embedding)
-
-  # assemble document chunk references from vector store indexes
   query_references = []
+
+  # Assemble document chunk references from vector store indexes
   for match in match_indexes_list:
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
     if doc_chunk is None:
       raise ResourceNotFoundException(
         f"Missing doc chunk match index {match} q_engine {q_engine.name}")
+
     query_doc = QueryDocument.find_by_id(doc_chunk.query_document_id)
     if query_doc is None:
       raise ResourceNotFoundException(
         f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
-    query_ref = {
+
+    clean_text = doc_chunk.clean_text
+    if not clean_text:
+      clean_text = html_to_text(doc_chunk.text)
+
+    if sentence_references:
+      # Assemble sentences from a document chunk. Currently it gets the
+      # sentences from the top-ranked document chunk.
+      sentences = doc_chunk.sentences
+
+      if not sentences or len(sentences) == 0:
+        sentences = html_to_sentence_list(doc_chunk.text)
+      # Remove empty sentences.
+      sentences = [x for x in sentences if x.strip() != ""]
+
+      # Only update clean_text when sentences is not empty.
+      Logger.info(f"sentences = {sentences}")
+      if sentences and len(sentences) > 0:
+        top_sentences = get_top_relevant_sentences(
+            q_engine, query_embeddings, sentences,
+            expand_neighbors=2, highlight_top_sentence=True)
+        clean_text = " ".join(top_sentences)
+
+    query_references.append({
       "document_id": query_doc.id,
       "document_url": query_doc.doc_url,
-      "document_text": doc_chunk.text,
+      "document_text": clean_text,
       "chunk_id": doc_chunk.id
-    }
-    query_references.append(query_ref)
+    })
 
-  Logger.info(f"Retrieved {len(query_references)} "
-              f"references={query_references}")
+  # Logger.info(f"Retrieved {len(query_references)} "
+  #             f"references={query_references}")
   return query_references
+
+def get_top_relevant_sentences(q_engine, query_embeddings,
+    sentences, expand_neighbors=2, highlight_top_sentence=False) -> list:
+
+  status, sentence_embeddings = embeddings.get_embeddings(sentences,
+                                                  q_engine.embedding_type)
+  similarity_scores = get_similarity(query_embeddings, sentence_embeddings)
+  Logger.info("Similarity scores of query_embeddings and sentence_embeddings: "
+              f"{len(similarity_scores)}")
+
+  top_sentence_index = np.argmax(similarity_scores)
+  start_index = top_sentence_index - expand_neighbors
+  end_index = top_sentence_index + expand_neighbors + 1
+
+  if highlight_top_sentence:
+    sentences[top_sentence_index] = \
+        "<b>" + sentences[top_sentence_index] + "</b>"
+
+  start_index = max(start_index, 0)
+  end_index = min(end_index, len(similarity_scores))
+
+  return sentences[start_index:end_index]
+
+def get_similarity(query_embeddings, sentence_embeddings) -> list:
+  query_df = pd.DataFrame(query_embeddings.transpose())
+  sentence_df = pd.DataFrame(sentence_embeddings)
+
+  cos_sim = []
+  for index, row in sentence_df.iterrows():
+    x = row
+    y = query_df
+    # calculate the cosine similiarity
+    cosine = np.dot(x,y) / (norm(x) * norm(y))
+    cos_sim.append(cosine[0])
+
+  return cos_sim
 
 
 def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
@@ -318,6 +385,9 @@ def build_doc_index(doc_url: str, query_engine: str,
 
   storage_client = storage.Client(project=PROJECT_ID)
 
+  # initialize the vector store index
+  qe_vector_store.init_index()
+
   try:
     # process docs at url and upload embeddings to vector store
     docs_processed, docs_not_processed = process_documents(
@@ -363,7 +433,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                index_doc_url,
                                                doc_filepath)
 
-      if text_chunks is None:
+      if text_chunks is None or len(text_chunks) == 0:
         # unable to process this doc; skip
         continue
 
@@ -383,11 +453,15 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       query_doc.save()
 
       for i in range(0, len(text_chunks)):
+        clean_text = html_to_text(text_chunks[i])
+        sentences = html_to_sentence_list(text_chunks[i])
         query_doc_chunk = QueryDocumentChunk(
-                                  query_engine_id=q_engine.id,
-                                  query_document_id=query_doc.id,
-                                  index=i+index_base,
-                                  text=text_chunks[i])
+                              query_engine_id=q_engine.id,
+                              query_document_id=query_doc.id,
+                              index=i+index_base,
+                              text=text_chunks[i],
+                              clean_text=clean_text,
+                              sentences=sentences)
         query_doc_chunk.save()
 
       index_base = new_index_base

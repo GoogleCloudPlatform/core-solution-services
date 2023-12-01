@@ -3,6 +3,11 @@ import '/flutter_flow/flutter_flow_util.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:html/parser.dart' as htmlparser;
+import 'package:html/dom.dart' as dom;
+import 'package:flutter_html/flutter_html.dart';
 import 'query_result_model.dart';
 export 'query_result_model.dart';
 
@@ -89,7 +94,7 @@ class _QueryResultWidgetState extends State<QueryResultWidget> {
                         Flexible(
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Color(0x9890B6F2),
+                              color: Color(0xFFFFFFFF),
                               boxShadow: [
                                 BoxShadow(
                                   blurRadius: 2.0,
@@ -150,7 +155,7 @@ class _QueryResultWidgetState extends State<QueryResultWidget> {
                     style: FlutterFlowTheme.of(context).bodyMedium.override(
                           fontFamily: 'Poppins',
                           color: FlutterFlowTheme.of(context).secondaryText,
-                          fontSize: 8.0,
+                          fontSize: 11.0,
                         ),
                   ),
                 ),
@@ -164,6 +169,17 @@ class _QueryResultWidgetState extends State<QueryResultWidget> {
                         children:
                             List.generate(queryRefs.length, (queryRefsIndex) {
                           final queryRefsItem = queryRefs[queryRefsIndex];
+                          final document_url =
+                              getJsonField(queryRefsItem, r'''$.document_url''')
+                                  .toString();
+
+                          final document_text =
+                              getJsonField(queryRefsItem, r'''$.document_text''')
+                                  .toString().maybeHandleOverflow(
+                                    maxChars: 350,
+                                    replacement: '…',
+                                  );
+
                           return Padding(
                             padding: EdgeInsetsDirectional.fromSTEB(
                                 0.0, 0.0, 0.0, 10.0),
@@ -175,7 +191,7 @@ class _QueryResultWidgetState extends State<QueryResultWidget> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Container(
-                                      width: 400.0,
+                                      width: 500.0,
                                       decoration: BoxDecoration(
                                         color: FlutterFlowTheme.of(context)
                                             .accent2,
@@ -220,16 +236,30 @@ class _QueryResultWidgetState extends State<QueryResultWidget> {
                                                     CrossAxisAlignment.start,
                                                 children: [
                                                   SelectionArea(
-                                                      child: Text(
-                                                    getJsonField(
-                                                      queryRefsItem,
-                                                      r'''$.document_text''',
-                                                    )
-                                                        .toString()
-                                                        .maybeHandleOverflow(
-                                                          maxChars: 150,
-                                                          replacement: '…',
+                                                    child: Html(
+                                                      data: document_text,
+                                                      style: {
+                                                        "*": Style(
+                                                          fontSize: FontSize(11.0),
                                                         ),
+                                                      },
+                                                    )
+                                                  ),
+                                                  Padding(
+                                                    padding:
+                                                        EdgeInsetsDirectional
+                                                            .fromSTEB(0.0, 6.0,
+                                                                0.0, 0.0),
+                                                    child: Linkify(
+                                                      onOpen: (link) async {
+                                                        if (!await launchUrl(
+                                                            Uri.parse(
+                                                                document_url))) {
+                                                          throw Exception(
+                                                              'Could not launch ${document_url}');
+                                                        }
+                                                      },
+                                                      text: document_url,
                                                     style: FlutterFlowTheme.of(
                                                             context)
                                                         .bodyMedium
@@ -238,41 +268,11 @@ class _QueryResultWidgetState extends State<QueryResultWidget> {
                                                           color: FlutterFlowTheme
                                                                   .of(context)
                                                               .primaryText,
-                                                          fontSize: 8.0,
+                                                          fontSize: 11.0,
                                                           fontWeight:
                                                               FontWeight.w500,
                                                         ),
-                                                  )),
-                                                  Padding(
-                                                    padding:
-                                                        EdgeInsetsDirectional
-                                                            .fromSTEB(0.0, 6.0,
-                                                                0.0, 0.0),
-                                                    child: SelectionArea(
-                                                        child: Text(
-                                                      getJsonField(
-                                                        queryRefsItem,
-                                                        r'''$.document_url''',
-                                                      ).toString(),
-                                                      style:
-                                                          FlutterFlowTheme.of(
-                                                                  context)
-                                                              .bodyMedium
-                                                              .override(
-                                                                fontFamily:
-                                                                    'Poppins',
-                                                                color: FlutterFlowTheme.of(
-                                                                        context)
-                                                                    .primaryText,
-                                                                fontSize: 8.0,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                decoration:
-                                                                    TextDecoration
-                                                                        .underline,
-                                                              ),
-                                                    )),
+                                                    ),
                                                   ),
                                                 ],
                                               ),
@@ -335,7 +335,7 @@ class _QueryResultWidgetState extends State<QueryResultWidget> {
                               ],
                               borderRadius: BorderRadius.circular(18.0),
                               border: Border.all(
-                                color: Color(0x494490DB),
+                                color: Color(0xFFC2E7FE),
                                 width: 0.25,
                               ),
                             ),

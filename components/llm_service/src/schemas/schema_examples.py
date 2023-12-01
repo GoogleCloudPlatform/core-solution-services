@@ -22,12 +22,13 @@ LLM_GENERATE_EXAMPLE = {
 
 LLM_EMBEDDINGS_EXAMPLE = {
   "embedding_type": "",
-  "text": "",  
+  "text": "",
 }
 
 QUERY_EXAMPLE = {
   "prompt": "test prompt",
-  "llm_type": "VertexAI-Chat"
+  "llm_type": "VertexAI-Chat",
+  "sentence_references": False
 }
 
 USER_QUERY_EXAMPLE = {

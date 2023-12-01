@@ -190,7 +190,7 @@ class _LandingWidgetState extends State<LandingWidget>
                 height: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFFD7CAE5), Color(0xFFA8B9E6)],
+                    colors: [Color(0xFFe9eef6), Color(0xFFe9eef6)],
                     stops: [0.0, 1.0],
                     begin: AlignmentDirectional(-0.64, 1.0),
                     end: AlignmentDirectional(0.64, -1.0),
@@ -247,8 +247,8 @@ class _LandingWidgetState extends State<LandingWidget>
                                                       ],
                                                       gradient: LinearGradient(
                                                         colors: [
-                                                          Color(0x9EFFFFFF),
-                                                          Color(0x97DDE4F0)
+                                                          Color(0xFFFFFFFF),
+                                                          Color(0xFFFFFFFF)
                                                         ],
                                                         stops: [0.0, 1.0],
                                                         begin:
@@ -563,7 +563,7 @@ class _LandingWidgetState extends State<LandingWidget>
                                                                                   fontSize: 12.0,
                                                                                 ),
                                                                             hintText:
-                                                                                'Let\'s talk about learning...',
+                                                                                'Ask me anything...',
                                                                             hintStyle: FlutterFlowTheme.of(context).labelMedium.override(
                                                                                   fontFamily: 'Poppins',
                                                                                   fontSize: 12.0,

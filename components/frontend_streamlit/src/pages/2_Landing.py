@@ -48,23 +48,27 @@ def landing_page():
   with start_query:
     # Get all query engines as a list
     query_engine_list = get_all_query_engines(auth_token=auth_token)
-    query_engines = {}
-    for item in query_engine_list:
-      query_engines[item["name"]] = item
 
-    Logger.info(query_engines)
+    if len(query_engine_list) == 0:
+      with st.container():
+        "No Query Engines"
+    else:
+      query_engines = {}
+      for item in query_engine_list:
+        query_engines[item["name"]] = item
 
-    with st.container():
-      "Start a Query with"
-      qe_name = st.selectbox(
-          "Query Engine:",
-          tuple(query_engines.keys()))
-      query_button = st.button("Start", key=3)
-      query_engine_id = query_engines[qe_name]["id"]
-      if query_button:
-        utils.navigate_to(
-          f"{APP_BASE_PATH}/Query?query_engine_id={query_engine_id}"
-          f"&auth_token={auth_token}")
+      Logger.info(query_engines)
+      with st.container():
+        "Start a Query with"
+        qe_name = st.selectbox(
+            "Query Engine:",
+            tuple(query_engines.keys()))
+        query_button = st.button("Start", key=3)
+        query_engine_id = query_engines[qe_name]["id"]
+        if query_button:
+          utils.navigate_to(
+            f"{APP_BASE_PATH}/Query?query_engine_id={query_engine_id}"
+            f"&auth_token={auth_token}")
 
   with build_query:
     with st.container():

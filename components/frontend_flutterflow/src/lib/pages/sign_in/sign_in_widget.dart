@@ -54,7 +54,7 @@ class _SignInWidgetState extends State<SignInWidget> {
             height: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFD7CAE5), Color(0xFFA8B9E6)],
+                colors: [Color(0xFFf0f4f9), Color(0xFFf0f4f9)],
                 stops: [0.0, 1.0],
                 begin: AlignmentDirectional(-0.64, 1.0),
                 end: AlignmentDirectional(0.64, -1.0),
@@ -71,7 +71,7 @@ class _SignInWidgetState extends State<SignInWidget> {
                       width: double.infinity,
                       height: double.infinity,
                       constraints: BoxConstraints(
-                        maxWidth: 1280.0,
+                        maxWidth: 800.0,
                       ),
                       decoration: BoxDecoration(),
                       child: Padding(
@@ -110,8 +110,8 @@ class _SignInWidgetState extends State<SignInWidget> {
                                             ],
                                             gradient: LinearGradient(
                                               colors: [
-                                                Color(0x9EFFFFFF),
-                                                Color(0x97DDE4F0)
+                                                Color(0xFFFFFFFF),
+                                                Color(0xFFFFFFFF)
                                               ],
                                               stops: [0.0, 1.0],
                                               begin: AlignmentDirectional(

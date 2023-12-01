@@ -34,7 +34,7 @@ API_CALLS_PER_SECOND = int(300 / 60)
 ITEMS_PER_REQUEST = 5
 
 
-async def get_embeddings(
+def get_embeddings(
         text_chunks: List[str], embedding_type: str = None) -> (
         Tuple)[List[bool], np.ndarray]:
   """

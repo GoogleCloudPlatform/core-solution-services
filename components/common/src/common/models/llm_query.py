@@ -206,6 +206,8 @@ class QueryDocumentChunk(BaseModel):
   query_document_id = TextField(required=True)
   index = NumberField(required=True)
   text = TextField(required=True)
+  clean_text = TextField(required=False)
+  sentences = ListField(required=False)
 
   class Meta:
     ignore_none_field = False
