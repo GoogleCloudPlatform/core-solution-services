@@ -19,7 +19,6 @@ import streamlit as st
 import utils
 import api
 from common.utils.logging_handler import Logger
-from config import APP_BASE_PATH
 
 Logger = Logger.get_logger(__file__)
 
@@ -57,6 +56,8 @@ def login_page():
 
 
 if __name__ == "__main__":
+  #./main.py is used as an entrypoint for the build,
+  # which creates a page that duplicates the Login page named "main".
   utils.hide_pages(["main"])
   utils.init_api_base_url()
   login_page()

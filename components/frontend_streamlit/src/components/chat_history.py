@@ -20,7 +20,6 @@ import streamlit as st
 from common.utils.logging_handler import Logger
 from api import get_all_chats
 import utils
-from config import APP_BASE_PATH
 
 Logger = Logger.get_logger(__file__)
 

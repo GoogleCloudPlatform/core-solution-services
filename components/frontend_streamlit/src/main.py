@@ -17,7 +17,6 @@
 import importlib
 import utils
 import streamlit as st
-from streamlit.source_util import get_pages
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
@@ -46,4 +45,6 @@ def app():
 if __name__ == "__main__":
   app()
   Logger.info("Streamlit main page rendered.")
+  #./main.py is used as an entrypoint for the build,
+  # which creates a page that duplicates the Login page named "main".
   utils.hide_pages(["main"])

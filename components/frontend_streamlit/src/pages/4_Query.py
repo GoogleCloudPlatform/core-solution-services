@@ -84,7 +84,10 @@ def chat_content():
           for reference in item["References"]:
             document_url = reference["document_url"]
             document_text = reference["document_text"]
-            st.text_area(f"Reference: {document_url}", document_text, key=f"ref_{query_index}")
+            st.text_area(
+              f"Reference: {document_url}",
+              document_text,
+              key=f"ref_{query_index}")
             query_index = query_index + 1
           st.divider()
 
@@ -105,6 +108,8 @@ def chat_page():
 
 
 if __name__ == "__main__":
+  #./main.py is used as an entrypoint for the build,
+  # which creates a page that duplicates the Login page named "main".
   utils.hide_pages(["main"])
   utils.init_api_base_url()
   chat_page()
