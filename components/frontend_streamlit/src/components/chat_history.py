@@ -53,6 +53,7 @@ def get_agent_chats(selected_agent):
   List all chat history for a given agent
   """
   index = 0
+  Logger.info(f"get_chat_agents with {selected_agent}")
   for user_chat in (st.session_state.user_chats or []):
     first_question = user_chat["history"][0]["HumanInput"][:50]
     if len(user_chat["history"][0]["HumanInput"]) > 60:
@@ -68,7 +69,7 @@ def get_agent_chats(selected_agent):
                                 key=f"{agent_name}{index}")
         if select_chat:
           utils.navigate_to(
-            f"{APP_BASE_PATH}/Chat?chat_id={chat_id}&agent_name={agent_name}&" \
+            f"{APP_BASE_PATH}/Chat?chat_id={chat_id}&agent_name={agent_name}&"
             f"auth_token={st.session_state.auth_token}")
     index += 1
 

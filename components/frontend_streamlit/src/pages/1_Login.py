@@ -24,6 +24,7 @@ from config import APP_BASE_PATH
 Logger = Logger.get_logger(__file__)
 
 def login_clicked(username, password):
+  Logger.info(f"Logging in as {username}")
   token = api.login_user(username, password)
   if token:
     st.session_state["logged_in"] = True
