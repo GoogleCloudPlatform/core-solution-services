@@ -152,6 +152,7 @@ if ENABLE_GOOGLE_LLM:
   LLM_TYPES.extend(GOOGLE_LLM_TYPES)
 
 LANGCHAIN_LLM = {}
+LLAMA2CPP_MODEL_PATH = None
 if ENABLE_LLAMA2CPP_LLM:
   LLAMA2CPP_MODEL_FILE = os.getenv("LLAMA2CPP_MODEL_FILE")
   models_dir = os.path.join(os.path.dirname(__file__), "models/")
@@ -224,8 +225,9 @@ if ENABLE_GOOGLE_MODEL_GARDEN:
 
 # read llm service models from json config file
 LLM_SERVICE_MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__),
-    "llm_service_models.json")
+                                             "llm_service_models.json")
 LLM_SERVICE_MODELS = {}
+LLM_SERVICE_EMBEDDING_MODELS = {}
 try:
   with open(LLM_SERVICE_MODEL_CONFIG_PATH, "r", encoding="utf-8") as file:
     LLM_SERVICE_MODELS = json.load(file)
@@ -275,9 +277,9 @@ if ENABLE_LLAMA2CPP_LLM:
   })
 
 
-EMBEDDING_MODELS = VERTEX_EMBEDDING_MODELS + \
-                   LANGCHAIN_EMBEDDING_MODELS + \
-                   LLM_SERVICE_EMBEDDING_MODELS
+EMBEDDING_MODELS = (VERTEX_EMBEDDING_MODELS +
+                    LANGCHAIN_EMBEDDING_MODELS +
+                    LLM_SERVICE_EMBEDDING_MODELS)
 
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 Logger.info(f"Embedding models loaded {EMBEDDING_MODELS}")
