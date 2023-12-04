@@ -25,9 +25,11 @@ from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
+from common.utils.token_handler import UserCredentials
 from config import (LANGCHAIN_LLM, GOOGLE_LLM, GOOGLE_MODEL_GARDEN,
-                    OPENAI_LLM_TYPE_GPT3_5, VERTEX_LLM_TYPE_BISON_TEXT,
-                    CHAT_LLM_TYPES, REGION, LLM_TRUSS_MODELS)
+                    LLM_SERVICE_MODELS, OPENAI_LLM_TYPE_GPT3_5,
+                    VERTEX_LLM_TYPE_BISON_TEXT, CHAT_LLM_TYPES, REGION,
+                    LLM_TRUSS_MODELS)
 from services.langchain_service import langchain_llm_generate
 
 Logger = Logger.get_logger(__file__)
@@ -49,8 +51,12 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
 
   try:
     start_time = time.time()
+
     # for Google models, prioritize native client over langchain
-    if llm_type in LLM_TRUSS_MODELS.keys():
+    if llm_type in LLM_SERVICE_MODELS.keys():
+      is_chat = llm_type in CHAT_LLM_TYPES
+      response = await llm_service_predict(prompt, is_chat, llm_type)
+    elif llm_type in LLM_TRUSS_MODELS.keys():
       model_endpoint = LLM_TRUSS_MODELS.get(llm_type)
       response = await llm_truss_service_predict(prompt, model_endpoint)
     elif llm_type in GOOGLE_MODEL_GARDEN.keys():
@@ -90,7 +96,12 @@ async def llm_chat(prompt: str, llm_type: str,
 
   try:
     response = None
-    if llm_type in LLM_TRUSS_MODELS.keys():
+
+    if llm_type in LLM_SERVICE_MODELS.keys():
+      is_chat = True
+      response = await llm_service_predict(prompt, is_chat, llm_type,
+                                           user_chat)
+    elif llm_type in LLM_TRUSS_MODELS.keys():
       model_endpoint = LLM_TRUSS_MODELS.get(llm_type)
       response = await llm_truss_service_predict(prompt, model_endpoint)
     elif llm_type in GOOGLE_MODEL_GARDEN.keys():
@@ -127,6 +138,7 @@ async def llm_truss_service_predict(prompt: str,
         "temperature": 0.2,
         "top_p": 0.95,
         "top_k": 40,
+        "max_length": 2048
     }
   else:
     parameters.update({"prompt": f"'{prompt}'"})
@@ -146,6 +158,60 @@ async def llm_truss_service_predict(prompt: str,
 
   Logger.info(f"Got LLM service response {json_response}")
   output = json_response["data"]["generated_text"]
+  return output
+
+async def llm_service_predict(prompt: str, is_chat: bool,
+                             llm_type: str, user_chat=None,
+                             auth_token:str=None) -> str:
+
+  """
+  Send a prompt to an instance of the LLM service and return response.
+
+  Args:
+    prompt: the text prompt to pass to the LLM
+    is_chat: true if the model is a chat model
+    llm_type: the type of LLM to use
+    user_chat (optional): a user chat to use for context
+
+  Returns:
+    the text response: str
+  """
+  llm_service_config = LLM_SERVICE_MODELS.get(llm_type)
+  if not auth_token:
+    auth_client = UserCredentials(llm_service_config.get("user"),
+                                  llm_service_config.get("password"))
+    auth_token = auth_client.get_id_token()
+
+  # start with base url of the LLM service we are calling
+  api_url = llm_service_config.get("api_base_url")
+
+  if is_chat:
+    if user_chat:
+      path = "/chat/{user_chat.id}"
+    else:
+      path = "/chat"
+  else:
+    path = "/llm/generate"
+  api_url = api_url + path
+
+  request_body = {
+    "prompt": prompt,
+    "llm_type": llm_type
+  }
+
+  Logger.info(f"Sending LLM service request to {api_url}")
+  resp = post_method(api_url,
+                     request_body=request_body,
+                     token=auth_token)
+
+  if resp.status_code != 200:
+    raise InternalServerError(
+      f"Error status {resp.status_code}: {str(resp)}")
+
+  json_response = resp.json()
+
+  Logger.info(f"Got LLM service response {json_response}")
+  output = json_response["content"]
   return output
 
 async def model_garden_predict(prompt: str,

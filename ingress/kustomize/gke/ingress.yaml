@@ -35,6 +35,14 @@ spec:
                 port:
                   number: 80
 
+          - path: /model-service/
+            pathType: Prefix
+            backend:
+              service:
+                name: model-service
+                port:
+                  number: 80
+
           - path: /user-management/
             pathType: Prefix
             backend:

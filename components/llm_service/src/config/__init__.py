@@ -28,6 +28,7 @@ from config.config import (
     SERVICES,
 
     # service config
+    LLM_SERVICE_PATH,
     PORT,
     API_BASE_URL,
     CONTAINER_NAME,
@@ -65,7 +66,9 @@ from config.config import (
     EMBEDDING_MODELS,
     LANGCHAIN_EMBEDDING_MODELS,
     VERTEX_EMBEDDING_MODELS,
+    LLM_SERVICE_EMBEDDING_MODELS,
     GOOGLE_MODEL_GARDEN,
+    LLM_SERVICE_MODELS,
     LLM_TRUSS_MODELS,
 
     # agent config

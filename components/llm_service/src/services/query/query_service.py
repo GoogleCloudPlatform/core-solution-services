@@ -20,7 +20,7 @@ from numpy.linalg import norm
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Tuple, Dict
-from google.cloud.exceptions import Conflict
+from google.cloud import storage
 from common.utils.logging_handler import Logger
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
@@ -29,8 +29,6 @@ from common.models import (UserQuery, QueryResult, QueryEngine,
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
-from utils.errors import NoDocumentsIndexedException
-from google.cloud import storage
 from services import llm_generate, embeddings
 from services.query import query_prompts
 from services.query.vector_store import (VectorStore,
@@ -38,8 +36,9 @@ from services.query.vector_store import (VectorStore,
                                          PostgresVectorStore)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
+from utils.errors import NoDocumentsIndexedException
 from utils.html_helper import html_to_text, html_to_sentence_list
-from config import (PROJECT_ID, REGION, DEFAULT_QUERY_CHAT_MODEL,
+from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
@@ -159,8 +158,8 @@ async def query_search(q_engine: QueryEngine,
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
-  status, query_embeddings = embeddings.get_embeddings([query_prompt],
-                                               q_engine.embedding_type)
+  _, query_embeddings = embeddings.get_embeddings([query_prompt],
+                                                  q_engine.embedding_type)
   query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
@@ -217,8 +216,8 @@ async def query_search(q_engine: QueryEngine,
 def get_top_relevant_sentences(q_engine, query_embeddings,
     sentences, expand_neighbors=2, highlight_top_sentence=False) -> list:
 
-  status, sentence_embeddings = embeddings.get_embeddings(sentences,
-                                                  q_engine.embedding_type)
+  _, sentence_embeddings = embeddings.get_embeddings(sentences,
+                                                     q_engine.embedding_type)
   similarity_scores = get_similarity(query_embeddings, sentence_embeddings)
   Logger.info("Similarity scores of query_embeddings and sentence_embeddings: "
               f"{len(similarity_scores)}")
@@ -241,7 +240,7 @@ def get_similarity(query_embeddings, sentence_embeddings) -> list:
   sentence_df = pd.DataFrame(sentence_embeddings)
 
   cos_sim = []
-  for index, row in sentence_df.iterrows():
+  for _, row in sentence_df.iterrows():
     x = row
     y = query_df
     # calculate the cosine similiarity
@@ -301,8 +300,7 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
                        vector_store_type: Optional[str] = None) -> \
                        Tuple[str, List[QueryDocument], List[str]]:
   """
-  Build a new query engine. NOTE currently supports only Vertex
-   TextEmbeddingModel for embeddings.
+  Build a new query engine.
 
   Args:
     doc_url: the URL to the set of documents to be indexed

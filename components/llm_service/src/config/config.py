@@ -16,10 +16,13 @@
   LLM Service config file
 """
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
+import json
 import os
+from common.utils.gcs_adapter import download_file_from_gcs
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from common.utils.token_handler import UserCredentials
+from common.utils.http_exceptions import InternalServerError
 from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
@@ -27,7 +30,9 @@ from google.cloud import secretmanager
 from langchain.chat_models import ChatOpenAI, ChatVertexAI
 from langchain.llms.cohere import Cohere
 from langchain.llms.vertexai import VertexAI
+from langchain.llms.llamacpp import LlamaCpp
 from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.embeddings.llamacpp import LlamaCppEmbeddings
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
@@ -48,6 +53,7 @@ except FileNotFoundError as e:
   JOB_NAMESPACE = "default"
   Logger.info("Namespace File not found, setting job namespace as default")
 
+LLM_SERVICE_PATH = "llm-service/api/v1"
 CONTAINER_NAME = os.getenv("CONTAINER_NAME")
 DEPLOYMENT_NAME = os.getenv("DEPLOYMENT_NAME")
 API_BASE_URL = os.getenv("API_BASE_URL")
@@ -87,6 +93,10 @@ ENABLE_GOOGLE_LLM = get_environ_flag("ENABLE_GOOGLE_LLM", True)
 ENABLE_GOOGLE_MODEL_GARDEN = get_environ_flag("ENABLE_GOOGLE_MODEL_GARDEN",
                                               True)
 
+# llama2cpp (via langchain) requires special configuration as the model is
+# served by CPU in memory
+ENABLE_LLAMA2CPP_LLM = get_environ_flag("ENABLE_LLAMA2CPP_LLM", False)
+
 # 3rd party models are enabled if the flag is set AND the API key is defined
 ENABLE_OPENAI_LLM = get_environ_flag("ENABLE_OPENAI_LLM", True)
 ENABLE_COHERE_LLM = get_environ_flag("ENABLE_COHERE_LLM", True)
@@ -108,6 +118,8 @@ OPENAI_LLM_TYPE_GPT3_5 = "OpenAI-GPT3.5"
 OPENAI_LLM_TYPE_GPT4 = "OpenAI-GPT4"
 OPENAI_EMBEDDING_TYPE = "OpenAI-Embeddings"
 COHERE_LLM_TYPE = "Cohere"
+LLAMA2CPP_LLM_TYPE = "Llama2cpp"
+LLAMA2CPP_LLM_TYPE_EMBEDDING = "Llama2cpp-Embedding"
 VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
 VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat-V1"
 VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat"
@@ -140,6 +152,33 @@ if ENABLE_GOOGLE_LLM:
   LLM_TYPES.extend(GOOGLE_LLM_TYPES)
 
 LANGCHAIN_LLM = {}
+LLAMA2CPP_MODEL_PATH = None
+if ENABLE_LLAMA2CPP_LLM:
+  LLAMA2CPP_MODEL_FILE = os.getenv("LLAMA2CPP_MODEL_FILE")
+  models_dir = os.path.join(os.path.dirname(__file__), "models/")
+  Logger.info(f"llama2cpp model file = {LLAMA2CPP_MODEL_FILE}")
+
+  # download Llama2cpp model file from GCS
+  try:
+    if LLAMA2CPP_MODEL_FILE.startswith("gs://"):
+      LLAMA2CPP_MODEL_PATH = \
+          download_file_from_gcs(LLAMA2CPP_MODEL_FILE,
+                                 destination_folder_path=models_dir)
+    else:
+      # assume its a file path
+      LLAMA2CPP_MODEL_PATH = LLAMA2CPP_MODEL_FILE
+
+  except Exception as e:
+    raise InternalServerError(
+        f"Failed to download llama2cpp model file {str(e)}") from e
+
+  Logger.info(f"llama2cpp model path = {LLAMA2CPP_MODEL_PATH}")
+
+  LANGCHAIN_LLM.update({
+    LLAMA2CPP_LLM_TYPE: LlamaCpp(model_path=LLAMA2CPP_MODEL_PATH)
+  })
+  LLM_TYPES.append(LLAMA2CPP_LLM_TYPE)
+
 if ENABLE_OPENAI_LLM:
   LANGCHAIN_LLM.update({
     OPENAI_LLM_TYPE_GPT3_5: ChatOpenAI(temperature=0,
@@ -147,7 +186,11 @@ if ENABLE_OPENAI_LLM:
                                        model_name="gpt-3.5-turbo"),
     OPENAI_LLM_TYPE_GPT4: ChatOpenAI(temperature=0,
                                      openai_api_key=OPENAI_API_KEY,
-                                     model_name="gpt-4"),
+                                     model_name="gpt-4")
+  })
+
+if ENABLE_COHERE_LLM:
+  LANGCHAIN_LLM.update({
     COHERE_LLM_TYPE: Cohere(cohere_api_key=COHERE_API_KEY, max_tokens=1024)
   })
 
@@ -179,6 +222,32 @@ if ENABLE_GOOGLE_MODEL_GARDEN:
     }
     LLM_TYPES.extend(GOOGLE_MODEL_GARDEN_TYPES)
 
+
+# read llm service models from json config file
+LLM_SERVICE_MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__),
+                                             "llm_service_models.json")
+LLM_SERVICE_MODELS = {}
+LLM_SERVICE_EMBEDDING_MODELS = []
+try:
+  with open(LLM_SERVICE_MODEL_CONFIG_PATH, "r", encoding="utf-8") as file:
+    LLM_SERVICE_MODELS = json.load(file)
+
+  # populate credentials in config dict
+  for llm_type, llm_config in LLM_SERVICE_MODELS.items():
+    auth_password = get_secret(f"llm_service_password_{llm_type}")
+    LLM_SERVICE_MODELS[llm_type]["password"] = auth_password
+
+  LLM_SERVICE_MODEL_TYPES = list(LLM_SERVICE_MODELS.keys())
+  LLM_TYPES.extend(LLM_SERVICE_MODEL_TYPES)
+  LLM_SERVICE_EMBEDDING_MODELS = LLM_SERVICE_MODEL_TYPES
+  Logger.info(
+      f"Loaded LLM Service-provider models: {LLM_SERVICE_MODEL_TYPES}")
+  Logger.info(
+      f"Loaded LLM Service-provider embedding models: {LLM_SERVICE_EMBEDDING_MODELS}")
+except Exception as e:
+  Logger.info(f"Can't load llm_service_models.json: {str(e)}")
+
+# truss models
 LLM_TRUSS_MODELS = {}
 if ENABLE_TRUSS_LLAMA2:
   LLM_TRUSS_MODEL_ENDPOINT = os.getenv("TRUSS_LLAMA2_ENDPOINT")
@@ -186,7 +255,7 @@ if ENABLE_TRUSS_LLAMA2:
     LLM_TRUSS_MODELS = {
         TRUSS_LLM_LLAMA2_CHAT: LLM_TRUSS_MODEL_ENDPOINT,
     }
-    LLM_TYPES.extend(LLM_TRUSS_MODELS)
+    LLM_TYPES.append(TRUSS_LLM_LLAMA2_CHAT)
 
 Logger.info(f"LLM types loaded {LLM_TYPES}")
 
@@ -201,8 +270,19 @@ if ENABLE_OPENAI_LLM:
     OPENAI_EMBEDDING_TYPE: OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
   })
 
-EMBEDDING_MODELS = VERTEX_EMBEDDING_MODELS + LANGCHAIN_EMBEDDING_MODELS
+if ENABLE_LLAMA2CPP_LLM:
+  LANGCHAIN_EMBEDDING_MODELS.append(LLAMA2CPP_LLM_TYPE_EMBEDDING)
+  LANGCHAIN_LLM.update({
+    LLAMA2CPP_LLM_TYPE_EMBEDDING: LlamaCppEmbeddings(model_path=LLAMA2CPP_MODEL_PATH)
+  })
+
+
+EMBEDDING_MODELS = (VERTEX_EMBEDDING_MODELS +
+                    LANGCHAIN_EMBEDDING_MODELS +
+                    LLM_SERVICE_EMBEDDING_MODELS)
+
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
+Logger.info(f"Embedding models loaded {EMBEDDING_MODELS}")
 
 # services config
 SERVICES = {

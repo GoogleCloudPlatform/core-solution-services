@@ -1,0 +1,15 @@
+# Changes here will be overwritten by Copier
+_src_path: /Users/lramsey/work/ailp/lukmanr-gps-core-solution-services/.venv/lib/python3.9/site-packages/solutions_builder/cli/../modules/restful_service
+cloudrun_neg: true
+component_name: model_service
+data_model: model
+data_model_plural: models
+default_deploy: gke
+depend_on_common: true
+deploy_cloudrun: false
+deploy_gke: true
+gcp_region: us-central1
+local_port: '9001'
+resource_name: model
+service_path: model-service
+use_github_action: true

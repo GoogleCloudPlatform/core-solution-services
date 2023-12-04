@@ -5,9 +5,6 @@
 
 name: Unit test & linter for Common
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -22,8 +19,8 @@ env:
 
 jobs:
   unit-test:
-    environment: dev
     runs-on: ubuntu-latest
+    environment: develop
     strategy:
       fail-fast: false
       matrix:

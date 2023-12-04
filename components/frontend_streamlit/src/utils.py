@@ -56,7 +56,8 @@ def init_api_base_url():
       api_base_url = match.group(1) + match.group(3)
 
   st.session_state.api_base_url = api_base_url.rstrip("/")
-  print(f"st.session_state.api_base_url = {st.session_state.api_base_url}")
+  Logger.info("st.session_state.api_base_url = "
+              f"{st.session_state.api_base_url}")
 
 def hide_pages(hidden_pages: list[str]):
     styling = ""

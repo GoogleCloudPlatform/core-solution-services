@@ -46,7 +46,7 @@ def landing_page():
     # Get all query engines as a list
     query_engine_list = get_all_query_engines(auth_token=st.session_state.auth_token)
 
-    if len(query_engine_list) == 0:
+    if query_engine_list is None or len(query_engine_list) == 0:
       with st.container():
         "No Query Engines"
     else:

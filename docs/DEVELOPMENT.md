@@ -402,7 +402,7 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
   ```
 * Run unit tests locally:
   ```
-  PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/<component_name>/src python -m pytest
+  PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest
   ```
 
 ###  7.2. <a name='Testfilenameconventionandformat'></a>Test filename convention and format

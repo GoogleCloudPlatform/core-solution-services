@@ -5,9 +5,6 @@
 
 name: Unit test & lint for Frontend Streamlit
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -24,6 +21,7 @@ env:
 jobs:
   unit-test:
     runs-on: ubuntu-latest
+    environment: develop
     strategy:
       fail-fast: false
       matrix:
