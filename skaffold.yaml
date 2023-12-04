@@ -36,6 +36,6 @@ requires:
 - configs:
   - ingress
   path: ./ingress
-- configs:
-  - model_service
-  path: ./components/model_service
+#- configs:
+#  - model_service
+#  path: ./components/model_service
