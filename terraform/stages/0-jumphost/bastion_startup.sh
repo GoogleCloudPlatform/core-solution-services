@@ -22,6 +22,7 @@ cd /tmp
 sudo apt-get update -y && sudo apt-get autoremove -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -yq
 sudo apt-get install apt-transport-https python3.9 python3-pip python3-testresources pipenv redis-tools unzip -y
+sudo apt-get install python3.9-venv net-tools -y
 
 sudo addgroup --system docker
 sudo snap install docker && sudo snap start docker
