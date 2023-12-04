@@ -1,12 +1,12 @@
 # copier:raw
 
-name: GKE - Deploy microservices to dev
+name: GKE - Deploy microservices to develop
 on:
   push:
     branches:
       - main
     paths:
-      - ".github/workflows/deployment_gke_dev.yaml"
+      - ".github/workflows/deployment_gke_develop.yaml"
       - "components/**"
       - "ingress/**"
       - "utils/**"
@@ -28,6 +28,7 @@ jobs:
   deploy_backends:
     name: Deploy microservices to GKE cluster
     runs-on: ubuntu-latest
+    environment: develop
     steps:
       - name: Check out repository
         uses: actions/checkout@v3

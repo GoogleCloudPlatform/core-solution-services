@@ -19,8 +19,6 @@ HTML helper functions.
 
 from w3lib.html import replace_escape_chars
 from bs4 import BeautifulSoup, Comment
-import re
-
 
 TAGS_TO_REMOVE = ["script", "style", "footer", "nav", "aside", "form", "meta",
                   "iframe", "header", "button", "input", "select", "textarea",
@@ -80,11 +78,11 @@ def html_to_sentence_list(html_content:str, tags_to_trim:list = None) -> list:
   # TODO: Replace this with better splitter, e.g.
   # https://python.langchain.com/docs/modules/data_connection/document_transformers/text_splitters/split_by_token
 
-  SENTENCE_TAGS = ["p", "ul"]
+  sentence_tags = ["p", "ul"]
   soup = get_clean_html_soup(html_content, tags_to_trim)
 
   sentences = []
-  for element in soup.find_all(SENTENCE_TAGS):
+  for element in soup.find_all(sentence_tags):
     if element.name == "ul":
       items = []
       for li in element.find_all("li"):

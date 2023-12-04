@@ -25,6 +25,7 @@ env:
 jobs:
   unit-test:
     runs-on: ubuntu-latest
+    environment: develop
     strategy:
       fail-fast: false
       matrix:
