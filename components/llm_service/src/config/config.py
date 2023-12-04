@@ -227,7 +227,7 @@ if ENABLE_GOOGLE_MODEL_GARDEN:
 LLM_SERVICE_MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__),
                                              "llm_service_models.json")
 LLM_SERVICE_MODELS = {}
-LLM_SERVICE_EMBEDDING_MODELS = {}
+LLM_SERVICE_EMBEDDING_MODELS = []
 try:
   with open(LLM_SERVICE_MODEL_CONFIG_PATH, "r", encoding="utf-8") as file:
     LLM_SERVICE_MODELS = json.load(file)

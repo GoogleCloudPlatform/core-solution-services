@@ -5,9 +5,6 @@
 
 name: Unit test & linter for Common
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main

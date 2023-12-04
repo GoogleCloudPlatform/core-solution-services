@@ -5,9 +5,6 @@
 
 name: Unit test & lint for Tools Service
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
