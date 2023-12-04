@@ -29,7 +29,7 @@ PYTHONPATH=components/common/src streamlit run components/frontend_streamlit/src
   --server.baseUrlPath=$APP_BASE_PATH
 ```
 
-### Deploy and run at remote GKE cluster
+### Deploy and run with livereload at remote GKE cluster
 
 Deploy the microservice with livereload.
 - This will run `skaffold dev` behind the scene.
@@ -45,6 +45,8 @@ Port forwarding service/frontend-streamlit in namespace <namespace>, remote port
 ```
 
 At this point, the frontend app is ready and accessible at http://127.0.0.1:8080.
+
+## Deployment
 
 ### Deploy to remote GKE cluster
 
