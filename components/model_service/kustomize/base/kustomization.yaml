@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: batch-job
-rules:
-- apiGroups: [""] # "" indicates the core API group
-  resources: ["pods"]
-  verbs: ["get", "list", "watch", "delete"]
-- apiGroups: ["apps"]
-  resources: ["deployments"]
-  verbs: ["get", "list"]
-- apiGroups: ["batch", "extensions"]
-  resources: ["jobs"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./deployment.yaml
+  - ./service.yaml
+  - ./role_binding.yaml
+  - ./role.yaml
+configMapGenerator:
+  - name: env-vars
+    envs:
+      - properties.rendered.env

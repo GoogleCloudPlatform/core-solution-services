@@ -66,7 +66,6 @@ from config.config import (
     EMBEDDING_MODELS,
     LANGCHAIN_EMBEDDING_MODELS,
     VERTEX_EMBEDDING_MODELS,
-    LLM_SERVICE_EMBEDDING_MODELS,
     GOOGLE_MODEL_GARDEN,
     LLM_SERVICE_MODELS,
     LLM_TRUSS_MODELS,
@@ -74,9 +73,4 @@ from config.config import (
     # agent config
     AGENT_CONFIG_PATH,
     )
-
-from config.vector_store_config import (
-  DEFAULT_VECTOR_STORE,
-  VECTOR_STORES
-  )
 

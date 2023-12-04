@@ -138,7 +138,6 @@ async def llm_truss_service_predict(prompt: str,
         "temperature": 0.2,
         "top_p": 0.95,
         "top_k": 40,
-        "max_length": 2048
     }
   else:
     parameters.update({"prompt": f"'{prompt}'"})

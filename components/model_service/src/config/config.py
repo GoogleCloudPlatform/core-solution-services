@@ -235,17 +235,12 @@ try:
     auth_password = get_secret(f"llm_service_password_{llm_type}")
     LLM_SERVICE_MODELS[llm_type]["password"] = auth_password
 
-  LLM_SERVICE_MODEL_TYPES = list(LLM_SERVICE_MODELS.keys())
-  LLM_TYPES.extend(LLM_SERVICE_MODEL_TYPES)
-  LLM_SERVICE_EMBEDDING_MODELS = LLM_SERVICE_MODEL_TYPES
+  LLM_TYPES.extend(LLM_SERVICE_MODELS.keys())
   Logger.info(
-      f"Loaded LLM Service-provider models: {LLM_SERVICE_MODEL_TYPES}")
-  Logger.info(
-      f"Loaded LLM Service-provider embedding models: {LLM_SERVICE_EMBEDDING_MODELS}")
+      f"Loaded LLM Service-provider models: {LLM_SERVICE_MODELS.keys()}")
 except Exception as e:
   Logger.info(f"Can't load llm_service_models.json: {str(e)}")
 
-# truss models
 LLM_TRUSS_MODELS = {}
 if ENABLE_TRUSS_LLAMA2:
   LLM_TRUSS_MODEL_ENDPOINT = os.getenv("TRUSS_LLAMA2_ENDPOINT")
@@ -275,10 +270,7 @@ if ENABLE_LLAMA2CPP_LLM:
   })
 
 
-EMBEDDING_MODELS = VERTEX_EMBEDDING_MODELS + \
-                   LANGCHAIN_EMBEDDING_MODELS + \
-                   LLM_SERVICE_EMBEDDING_MODELS
-
+EMBEDDING_MODELS = VERTEX_EMBEDDING_MODELS + LANGCHAIN_EMBEDDING_MODELS
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 Logger.info(f"Embedding models loaded {EMBEDDING_MODELS}")
 
