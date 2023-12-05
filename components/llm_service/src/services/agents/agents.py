@@ -135,40 +135,6 @@ class ChatAgent(BaseAgent):
 
 class TaskAgent(BaseAgent):
   """
-  Task Agent.  This is an agent configured to execute tasks on behalf of a
-  human.  Every task has a plan, consisting of plan steps.
-  Creation of the plan is done by a planning agent.
-  """
-
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "TaskAgent"
-    self.agent_class = StructuredChatAgent
-
-  @property
-  def output_parser_class(self) -> Type[AgentOutputParser]:
-    return ToolAgentOutputParser
-
-  @classmethod
-  def capabilities(cls) -> List[str]:
-    """ return capabilities of this agent class """
-    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
-                    AgentCapability.AGENT_QUERY_CAPABILITY,
-                    AgentCapability.AGENT_TASK_CAPABILITY]
-    return capabilities
-
-  def get_tools(self):
-    tools = [gmail_tool, docs_tool, calendar_tool, search_tool, query_tool]
-    return tools
-
-  def get_planning_agent(self) -> str:
-    """
-    This is the agent used by this agent to create plans for tasks.
-    """
-    return "PlanAgent"
-
-class StructuredTaskAgent(BaseAgent):
-  """
   Structured Task Agent.  This agent accepts multiple inputs and can call StructuredTools that accept multiple inputs,
   not just one String. This is an agent configured to execute tasks on behalf of a
   human.  Every task has a plan, consisting of plan steps.
@@ -177,7 +143,7 @@ class StructuredTaskAgent(BaseAgent):
 
   def __init__(self, llm_type: str):
     super().__init__(llm_type)
-    self.name = "StructuredTaskAgent"
+    self.name = "TaskAgent"
     self.agent_class = StructuredChatAgent
 
   @property
@@ -204,6 +170,7 @@ class StructuredTaskAgent(BaseAgent):
     This is the agent used by this agent to create plans for tasks.
     """
     return "PlanAgent"
+
 
 
 class PlanAgent(BaseAgent):

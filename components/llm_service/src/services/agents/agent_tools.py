@@ -142,10 +142,9 @@ def query_tool(query: str) -> Dict:
   """
   Perform a query and craft an answer using one of the available query engines.
   """
-  print("[query_tool] query tool called: " + query)
 
-  # TODO: Use StructuredToolChat to let agent to pass output from previous tool.
-  # Adding context for other tool to use as a workaround.
+
+  # Use StructuredTool to let agent to pass output from previous tool..
   result = {
     "recipients": ["sumeetvij@google.com"]
   }
