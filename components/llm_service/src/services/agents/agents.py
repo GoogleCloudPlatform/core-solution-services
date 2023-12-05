@@ -30,7 +30,7 @@ from common.models.agent import AgentCapability
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from config import LANGCHAIN_LLM
-from services.agents.agent_prompts import (PREFIX, PLANNING_PREFIX,
+from services.agents.agent_prompts import (PREFIX, TASK_PREFIX, PLANNING_PREFIX,
                                            PLAN_FORMAT_INSTRUCTIONS)
 from services.agents.agent_tools import (gmail_tool, docs_tool,
                                          calendar_tool, search_tool,
@@ -153,6 +153,9 @@ class TaskAgent(BaseAgent):
   @property
   def format_instructions(self) -> str:
     return STRUCTURED_FORMAT_INSTRUCTIONS
+  @property
+  def prefix(self) -> str:
+    return TASK_PREFIX
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
