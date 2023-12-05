@@ -1,8 +1,55 @@
 {
-  "Llama2cpp": {
-    "user": "lramsey@google.com",
-    "api_base_url": "http://model-service/api/v1",
-    "has_embeddings": "True",
-    "is_chat": "True"
+  "models": {
+    "VertexAI-Text": {
+      "is_chat": "False",
+      "provider": "Vertex"
+    },
+    "VertexAI-Chat-V1": {
+      "is_chat": "True",
+      "provider": "Langchain"
+    },
+    "VertexAI-Chat": {
+      "is_chat": "True",
+      "provider": "Langchain"
+    },
+    "Truss-Llama2-Chat": {
+      "api_base_url": "34.171.143.157:8080",
+      "is_chat": "True",
+      "provider": "Truss",
+      "enabled": "False"
+    },
+    "VertexAI-ModelGarden-LLAMA2-Chat": {
+      "is_chat": "True",
+      "provider": "Langchain",
+      "enabled": "False"
+    },
+    "OpenAI-GPT": {
+      "is_chat": "True",
+      "provider": "Langchain"
+    },
+    "OpenAI-GPT3.5": {
+      "is_chat": "True",
+      "provider": "Langchain"
+    },
+    "Cohere": {
+      "has_embeddings": "False",
+      "is_chat": "True",
+      "provider": "Langchain"
+    }
+  },
+  "embeddings": {
+    "Llama2cpp": {
+      "user": "lramsey@google.com",
+      "api_base_url": "http://model-service/api/v1",
+      "has_embeddings": "True",
+      "is_chat": "True",
+      "provider": "LLMService"
+    },
+    "VertexAI-Embedding": {
+      "provider": "Vertex"
+    },
+    "OpenAI-Embedding": {
+      "provider": "Vertex"
+    }
   }
 }
