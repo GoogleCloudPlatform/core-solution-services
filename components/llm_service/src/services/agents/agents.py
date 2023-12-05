@@ -153,6 +153,11 @@ class TaskAgent(BaseAgent):
   @property
   def format_instructions(self) -> str:
     return STRUCTURED_FORMAT_INSTRUCTIONS
+
+  @property
+  def prefix(self) -> str:
+    return TASK_PREFIX
+
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
