@@ -271,7 +271,7 @@ pip install -r requirements.txt
   kubectl config set-context --current --namespace=$SKAFFOLD_NAMESPACE
   ```
 
-* Run the following to create a Kubernetes Service Account (ksa) in your namespace and bind it to the GCP service account used for GKE:
+* Run the following to create a Kubernetes Service Account (gke-sa) in your namespace and bind it to the GCP service account used for GKE:
   ```
   export PROJECT_ID=<your-dev-project-id>
   bash ./setup/setup_ksa.sh

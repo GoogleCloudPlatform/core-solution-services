@@ -7,7 +7,8 @@ import time
 parser = argparse.ArgumentParser()
 parser.add_argument("prompt", type=str)
 parser.add_argument("--model_ip", type=str, help="Model endpoint ip")
-parser.add_argument("--temp", type=str, help="Temperature")
+parser.add_argument("--max_length", type=str, help="Maximum request length")
+parser.add_argument("--temperature", type=str, help="Temperature")
 parser.add_argument("--top_p", type=str, help="Token selection Top-P sampling")
 parser.add_argument("--top_k", type=str, help="Token selection Top-K sampling")
 args = parser.parse_args()
@@ -30,10 +31,13 @@ assert MODEL_IP, "MODEL_IP is not set, should be set either " \
 
 data = {
     "prompt": args.prompt,
-    "temperature": float(args.temp) if args.temp else 0.2,
+    "temperature": float(args.temperature) if args.temperature else 0.2,
     "top_p": float(args.top_p) if args.top_p else 0.95,
     "top_k": int(args.top_k) if args.top_k else 40,
 }
+
+if args.max_length:
+    data.update({"max_length": int(args.max_length)})
 
 MODEL_ENDPOINT = f"http://{MODEL_IP}:8080/v1/models/model:predict"
 print(f"Using model endpoint {MODEL_ENDPOINT} with data: {data}")

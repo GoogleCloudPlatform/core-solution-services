@@ -11,7 +11,11 @@ from google.cloud import secretmanager
 secrets = secretmanager.SecretManagerServiceClient()
 
 MODEL_NAME = "meta-llama/Llama-2-7b-chat-hf"
-DEFAULT_MAX_LENGTH = 128
+
+DEFAULT_MAX_LENGTH = os.getenv("DEFAULT_MAX_LENGTH", 256)
+if DEFAULT_MAX_LENGTH == "":
+    DEFAULT_MAX_LENGTH = 256
+
 PROJECT_ID = os.environ.get("PROJECT_ID")
 
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
@@ -33,6 +37,7 @@ assert PROJECT_ID, "PROJECT_ID is not set"
 print()
 print("HUGGINGFACE_API_KEY: ", HUGGINGFACE_API_KEY)
 print("PROJECT_ID: ", PROJECT_ID)
+print("DEFAULT_MAX_LENGTH: ", DEFAULT_MAX_LENGTH)
 print()
 
 class Model:
@@ -74,13 +79,18 @@ class Model:
         with torch.no_grad():
             try:
                 prompt = request.pop("prompt")
+                max_length = request.pop("max_length", DEFAULT_MAX_LENGTH)
+                print(f"Running prediction with prompt: {prompt}, "
+                      f"max_length: {max_length}, {request}")
                 data = self.pipeline(
                     prompt,
                     eos_token_id=self._tokenizer.eos_token_id,
-                    max_length=DEFAULT_MAX_LENGTH,
+                    max_length=max_length,
                     **request
                 )[0]
+                print(f"Prediction completed - {data}")
                 return {"data": data}
 
             except Exception as exc:
+                print(f"ERROR while running prediction: {exc}")
                 return {"status": "error", "data": None, "message": str(exc)}
