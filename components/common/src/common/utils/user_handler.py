@@ -14,9 +14,14 @@
 
 """Helper functions to handle user related operations."""
 from common.models import User
+from common.utils.logging_handler import Logger
+# pylint: disable=logging-fstring-interpolation
+
+Logger = Logger.get_logger(__file__)
 
 
 def get_user_by_email(email, check_firestore_user=False):
+  Logger.info(f"Find user {email}")
   user = User.find_by_email(email)
   if check_firestore_user and not user:
     raise ValueError(f"Unauthorized: user {email} not found in the database.")
@@ -26,4 +31,5 @@ def create_user_in_firestore(user_data: dict):
   user = User()
   user.user_id = user_data["user_id"]
   user.email = user_data["email"]
+  Logger.info(f"Created user {user.email}")
   return user

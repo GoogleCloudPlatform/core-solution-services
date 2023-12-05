@@ -113,7 +113,7 @@ def chat_content():
   with chat_placeholder.container():
     index = 1
     for item in st.session_state.messages:
-      print(item)
+      Logger.info(item)
 
       if "HumanInput" in item:
         with st.chat_message("user"):
@@ -135,7 +135,7 @@ def chat_content():
           index = 1
 
           plan = get_plan(item["plan"]["id"])
-          print(plan)
+          Logger.info(plan)
 
           for step in plan["plan_steps"]:
             st.text_area(f"step-{index}", step["description"],

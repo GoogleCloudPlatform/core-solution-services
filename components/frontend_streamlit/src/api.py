@@ -255,8 +255,7 @@ def get_all_jobs(job_type = "query_engine_build", auth_token=None):
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{JOBS_SERVICE_PATH}/jobs/{job_type}"
-  resp = get_method(api_url,
-                    token=auth_token)
+  resp = get_method(api_url, token=auth_token)
 
   json_response = resp.json()
   Logger.info(json_response)
@@ -276,8 +275,7 @@ def get_all_chats(skip=0, limit=20, auth_token=None,
             &limit={limit}&with_first_history={with_first_history}"""
   Logger.info(api_url)
 
-  resp = get_method(api_url,
-                    token=auth_token)
+  resp = get_method(api_url, token=auth_token)
   json_response = resp.json()
   output = json_response["data"]
   return output
