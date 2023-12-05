@@ -126,7 +126,7 @@ def chat_content():
           st.write(
               ai_output,
               key=f"ai_{index}",
-              allow_html=False,
+              unsafe_allow_html=False,
               is_table=False,  # TODO: Detect whether an output content type.
           )
 

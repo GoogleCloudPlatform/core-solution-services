@@ -19,7 +19,10 @@ import json
 import streamlit as st
 from api import (build_query_engine, get_all_embedding_types,
                  get_all_vector_stores, get_all_jobs)
+from common.utils.logging_handler import Logger
 import utils
+
+Logger = Logger.get_logger(__file__)
 
 # For development purpose:
 params = st.experimental_get_query_params()
@@ -36,11 +39,15 @@ def query_engine_build_page():
   vector_store_list = get_all_vector_stores()
   # Get all query_engine_build jobs
   qe_build_jobs = get_all_jobs()
+  if not qe_build_jobs:
+    Logger.error("No query engine build jobs")
+    st.write("No query engine build jobs")
+    return
   qe_build_jobs.sort(key=lambda x: x["last_modified_time"], reverse=True)
 
   # Reformat list of dict to nested arrays for table.
   jobs_table_value = [[
-    "Job ID","Engine Name", "Status", "Embeddings Type", "LLM type",
+    "Job ID", "Engine Name", "Status", "Embeddings Type", "LLM type",
     "Vector Store", "Doc URL", "Errors", "Last Modified"
   ]]
   for job in qe_build_jobs:
@@ -72,7 +79,7 @@ def query_engine_build_page():
     engine_name = st.text_input("Name")
     doc_url = st.text_input("Document URL")
     embedding_type = st.selectbox(
-        "Emebdding:",
+        "Embedding:",
         embedding_types)
     vector_store = st.selectbox(
         "Vector Store:",
@@ -80,6 +87,7 @@ def query_engine_build_page():
     submit = st.form_submit_button("Build")
   if submit:
     build_clicked(engine_name, doc_url, embedding_type, vector_store)
+
 
 if __name__ == "__main__":
   utils.init_api_base_url()

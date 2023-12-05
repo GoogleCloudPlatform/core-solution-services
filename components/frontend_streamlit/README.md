@@ -10,7 +10,7 @@ Set up API endpoint
 export API_BASE_URL=https://my.domain.com
 ```
 
-Set the subpath where the streamlit will deploy to. By default, it sets to "/streamlit"
+Set the sub-path where the streamlit will deploy to. By default, it sets to "/streamlit"
 
 ```
 export APP_BASE_PATH="/streamlit"
