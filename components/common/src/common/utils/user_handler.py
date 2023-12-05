@@ -32,6 +32,10 @@ def create_user_in_firestore(user_data: dict):
   user = User()
   user.user_id = user_data["user_id"]
   user.email = user_data["email"]
+  user.first_name = "Test"
+  user.last_name = "User"
+  user.user_type = "Learner"
+  user.status = "active"
   user.save()
   Logger.info(f"Created user {user.email}")
   return user
