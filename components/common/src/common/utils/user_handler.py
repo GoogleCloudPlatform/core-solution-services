@@ -24,6 +24,7 @@ def get_user_by_email(email, check_firestore_user=False):
   Logger.info(f"Find user {email}")
   user = User.find_by_email(email)
   if check_firestore_user and not user:
+    Logger.error(f"user {email} not found in the database")
     raise ValueError(f"Unauthorized: user {email} not found in the database.")
   return user
 
@@ -31,5 +32,6 @@ def create_user_in_firestore(user_data: dict):
   user = User()
   user.user_id = user_data["user_id"]
   user.email = user_data["email"]
+  user.save()
   Logger.info(f"Created user {user.email}")
   return user

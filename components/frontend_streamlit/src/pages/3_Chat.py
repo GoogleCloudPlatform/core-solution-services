@@ -93,7 +93,7 @@ def init_messages():
 
 
 def format_ai_output(text):
-  print(text)
+  Logger.info(text)
 
   text = ansi_escape.sub("", text)
   text = text.replace("> Entering new AgentExecutor chain",

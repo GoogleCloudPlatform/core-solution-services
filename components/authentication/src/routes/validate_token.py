@@ -21,10 +21,13 @@ from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError
 from common.utils.errors import TokenNotFoundError, UnauthorizedUserError
 from common.utils.http_exceptions import (BadRequest, InvalidToken,
                                           InternalServerError, Unauthorized)
+from common.utils.logging_handler import Logger
 from common.utils.user_handler import get_user_by_email
 from services.validation_service import validate_token
 from schemas.validate_token_schema import ValidateTokenResponseModel
 from config import (ERROR_RESPONSES, AUTH_REQUIRE_FIRESTORE_USER)
+
+Logger = Logger.get_logger(__file__)
 
 router = APIRouter(
     tags=["Authentication"],
@@ -59,6 +62,7 @@ def validate_id_token(token: auth_scheme = Depends()):
 
     if user:
       user_fields = user.get_fields(reformat_datetime=True)
+      Logger.info(user_fields)
       if user_fields.get("status") == "inactive":
         raise UnauthorizedUserError("Unauthorized: User status is inactive.")
       token_data["access_api_docs"] = user_fields.get("access_api_docs", False)
