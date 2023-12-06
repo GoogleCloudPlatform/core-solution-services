@@ -24,9 +24,7 @@ from typing import List, Dict
 Logger = Logger.get_logger(__file__)
 
 
-# TODO: This is a workaround without using StructuredToolChat.
-# For inter-tool communication.
-#tools_context = {}
+
 
 
 def rules_engine_get_ruleset_fields(ruleset_name: str):
@@ -49,13 +47,7 @@ def gmail_tool(recipients: List, subject: str, message: str) -> str:
   api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
   api_url = f"{api_url_prefix}/workspace/gmail"
 
-  # TODO: Replace the usage of context with StructuredToolChat agent.
-  #recipients = ",".join(tools_context["query_tool"]["recipients"])
-  #subject = tools_context["docs_tool"]["subject"]
-  #message = tools_context["docs_tool"]["message"]
   recipients = ",".join(recipients)
-  subject =  subject
-  message = message
   data = {
     "recipient": recipients,
     "subject": subject,
@@ -115,7 +107,7 @@ def docs_tool(recipients: List, content: str) -> Dict:
       "subject": resp_data["subject"],
       "message": resp_data["message"]
     }
-    #tools_context["docs_tool"] = output
+
 
   except RuntimeError as e:
     Logger.error(f"[gmail_tool] Unable to send email: {e}")
@@ -148,6 +140,6 @@ def query_tool(query: str) -> Dict:
   result = {
     "recipients": ["sumeetvij@google.com"]
   }
-  #tools_context["query_tool"] = result
+
 
   return result

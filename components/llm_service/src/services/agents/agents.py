@@ -20,8 +20,7 @@ from typing import Union, Type, Callable, List
 from langchain.agents import (Agent, AgentOutputParser,
                               ConversationalAgent)
 from langchain.agents.structured_chat.base import StructuredChatAgent
-from langchain.agents.structured_chat.output_parser import (
-                                            StructuredChatOutputParserWithRetries)
+from langchain.agents.structured_chat.output_parser import ( StructuredChatOutputParserWithRetries)
 from langchain.agents.structured_chat.prompt import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from langchain.schema import AgentAction, AgentFinish
@@ -30,7 +29,7 @@ from common.models.agent import AgentCapability
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from config import LANGCHAIN_LLM
-from services.agents.agent_prompts import (PREFIX, PLANNING_PREFIX,
+from services.agents.agent_prompts import (PREFIX, TASK_PREFIX, PLANNING_PREFIX,
                                            PLAN_FORMAT_INSTRUCTIONS)
 from services.agents.agent_tools import (gmail_tool, docs_tool,
                                          calendar_tool, search_tool,
@@ -135,9 +134,9 @@ class ChatAgent(BaseAgent):
 
 class TaskAgent(BaseAgent):
   """
-  Structured Task Agent.  This agent accepts multiple inputs and can call StructuredTools that accept multiple inputs,
-  not just one String. This is an agent configured to execute tasks on behalf of a
-  human.  Every task has a plan, consisting of plan steps.
+  Structured Task Agent.  This agent accepts multiple inputs and can call StructuredTools
+  that accept multiple inputs,not just one String. This is an agent configured to execute tasks on
+  behalf of a human.  Every task has a plan, consisting of plan steps.
   Creation of the plan is done by a planning agent.
   """
 

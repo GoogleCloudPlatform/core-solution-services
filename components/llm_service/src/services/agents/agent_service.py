@@ -262,7 +262,7 @@ def agent_execute_plan(
     tools=tools,
     verbose=True)
   #Langchain StructedChatAgent takes only one input called input
-  plan_steps_string = ''.join(plan_steps)
+  plan_steps_string = "".join(plan_steps)
   agent_inputs = {
     "input": prompt +plan_steps_string
   }
