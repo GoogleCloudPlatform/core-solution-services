@@ -134,10 +134,11 @@ class ChatAgent(BaseAgent):
 
 class TaskAgent(BaseAgent):
   """
-  Structured Task Agent.  This agent accepts multiple inputs and can call StructuredTools
-  that accept multiple inputs,not just one String. This is an agent configured to execute tasks on
-  behalf of a human.  Every task has a plan, consisting of plan steps.
-  Creation of the plan is done by a planning agent.
+  Structured Task Agent.  This agent accepts multiple inputs and can call 
+  StructuredTools that accept multiple inputs,not just one String. This is an 
+  agent configured to execute tasks on behalf of a human.  Every task has a 
+  plan, consisting of plan steps. Creation of the plan is done by a planning 
+  agent.
   """
 
   def __init__(self, llm_type: str):
