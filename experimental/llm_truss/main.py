@@ -47,5 +47,3 @@ res = requests.post(MODEL_ENDPOINT, json=data)
 process_time = round(time.time() - start_time)
 print(res.json())
 print(f"Received response in {process_time} seconds.")
-
-

@@ -219,10 +219,10 @@ cd experimental/llm_truss
 ```
 
 First you need to get IP address of the Prediction model:
-
 ```shell
-export MODEL_IP=$(kubectl describe service/llama2-7b-service | grep 'LoadBalancer Ingress:' | awk '{print $3}')
-echo MODEL_IP=$MODEL_IP
+kubectl port-forward service/truss-llama2-7b-service 28015:80 &
+export MODEL_IP=localhost:28015
+echo MODEL_IP=${MODEL_IP}
 ```
 
 Now you can test prediction:
@@ -235,7 +235,7 @@ Sample Output:
 
 ```text
 python main.py "What is Medicaid?"
-Using model endpoint http://35.224.143.29:8080/v1/models/model:predict with data: {'prompt': 'What is Medicaid?', 'temperature': 0.2, 'top_p': 0.95, 'top_k': 40}
+Using model endpoint http://truss-llama2-7b-service/v1/models/model:predict with data: {'prompt': 'What is Medicaid?', 'temperature': 0.2, 'top_p': 0.95, 'top_k': 40}
 {'data': {'generated_text': 'What is Medicaid?\n\nMedicaid is a government program that provides health coverage to eligible individuals with low income and limited resources. It is a joint federal-state program, meaning that both the federal government and each individual state contribute funding to the program. Medicaid is designed to help ensure that certain groups of people, such as low-income children, pregnant women, and people with disabilities, have access to necessary medical care.\n\nWho is eligible for Medicaid?\n\nMedicaid eligibility varies by state, but generally, individuals who have'}}
 Received response in 8 seconds.
 ```

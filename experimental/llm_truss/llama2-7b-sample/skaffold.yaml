@@ -20,11 +20,11 @@ metadata:
 
 build:
   artifacts:
-  - image: llama2-7b
+  - image: truss-llama2-7b
     docker:
       cacheFrom:
-      - llama2-7b
-      - llama2-7b:latest
+      - truss-llama2-7b
+      - truss-llama2-7b:latest
   googleCloudBuild: {}
 
 deploy:

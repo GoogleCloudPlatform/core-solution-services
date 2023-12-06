@@ -15,22 +15,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: llama2-7b
+  name: truss-llama2-7b
 spec:
   replicas: 1
   selector:
     matchLabels:
-      component: llama2-7b-layer
+      component: truss-llama2-7b-layer
   template:
     metadata:
       labels:
-        component: llama2-7b-layer
+        component: truss-llama2-7b-layer
     spec:
       serviceAccountName: gke-sa
       automountServiceAccountToken: true
       containers:
-        - name: llama2-7b-container
-          image: llama2-7b:latest
+        - name: truss-llama2-7b-container
+          image: truss-llama2-7b:latest
           ports:
             - containerPort: 8080
           envFrom:

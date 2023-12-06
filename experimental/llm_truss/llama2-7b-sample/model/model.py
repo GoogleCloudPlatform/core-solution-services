@@ -40,6 +40,7 @@ print("PROJECT_ID: ", PROJECT_ID)
 print("DEFAULT_MAX_LENGTH: ", DEFAULT_MAX_LENGTH)
 print()
 
+
 class Model:
     def __init__(self, data_dir: str, config: Dict, **kwargs) -> None:
         self._data_dir = data_dir

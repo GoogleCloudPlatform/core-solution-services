@@ -25,7 +25,8 @@ To use deployed llama2 Endpoint (IP:PORT), set the following environment variabl
 
 
 ````shell
-export TRUSS_LLAMA2_ENDPOINT = "xx.xxx.xxx.xx:8080"
+export ENABLE_TRUSS_LLAMA2=True
+export TRUSS_LLAMA2_ENDPOINT = "truss-llama2-7b-service"
 ````
 
 ### Llama2 Vertex AI Deployment
