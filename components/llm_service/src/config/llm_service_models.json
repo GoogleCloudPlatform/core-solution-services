@@ -20,7 +20,7 @@
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
       "is_chat": "True",
-      "provider": "Langchain",
+      "provider": "ModelGarden",
       "enabled": "False"
     },
     "OpenAI-GPT": {
@@ -32,7 +32,6 @@
       "provider": "Langchain"
     },
     "Cohere": {
-      "has_embeddings": "False",
       "is_chat": "True",
       "provider": "Langchain"
     }
@@ -49,7 +48,7 @@
       "provider": "Vertex"
     },
     "OpenAI-Embedding": {
-      "provider": "Vertex"
+      "provider": "Langchain"
     }
   }
 }
