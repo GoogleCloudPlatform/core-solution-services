@@ -7,8 +7,8 @@
       "agent_class": "ChatAgent"
     },
     "Task": {
-      "llm_type": "VertexAI-Chat",
-      "agent_type": "langchain_Conversational",
+      "llm_type": "OpenAI-GPT4",
+      "agent_type": "langchain_StructuredChatAgent",
       "agent_class": "TaskAgent"
     },
     "Plan": {

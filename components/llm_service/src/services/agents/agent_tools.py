@@ -20,13 +20,11 @@ from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
 from langchain.tools import tool
 from config import SERVICES, auth_client
-
+from typing import List, Dict
 Logger = Logger.get_logger(__file__)
 
 
-# TODO: This is a workaround without using StructuredToolChat.
-# For inter-tool communication.
-tools_context = {}
+
 
 
 def rules_engine_get_ruleset_fields(ruleset_name: str):
@@ -41,20 +39,15 @@ def rules_engine_get_ruleset_fields(ruleset_name: str):
   return fields
 
 @tool(infer_schema=True)
-def gmail_tool(email_text: str) -> str:
+def gmail_tool(recipients: List, subject: str, message: str) -> str:
   """
   Send an email to a list of recipients
   """
-  print(f"[gmail_tool]: {email_text}")
 
   api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
   api_url = f"{api_url_prefix}/workspace/gmail"
 
-  # TODO: Replace the usage of context with StructuredToolChat agent.
-  recipients = ",".join(tools_context["query_tool"]["recipients"])
-  subject = tools_context["docs_tool"]["subject"]
-  message = tools_context["docs_tool"]["message"]
-
+  recipients = ",".join(recipients)
   data = {
     "recipient": recipients,
     "subject": subject,
@@ -78,11 +71,11 @@ def gmail_tool(email_text: str) -> str:
   return output
 
 @tool(infer_schema=True)
-def docs_tool(content: str) -> str:
+def docs_tool(recipients: List, content: str) -> Dict:
   """
   Compose or create a document using Google Docs
   """
-  print(f"[docs_tool]: {content}")
+  print(f"[docs_tool]: {recipients}")
 
   api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
   api_url = f"{api_url_prefix}/workspace/compose_email"
@@ -109,15 +102,15 @@ def docs_tool(content: str) -> str:
     output = resp_data["message"]
     Logger.info(f"[docs_tool] Composed an email with subject: {subject}")
 
-    # Adding to tools_context
-    tools_context["docs_tool"] = {
+
+    output = {
       "subject": resp_data["subject"],
-      "message": resp_data["message"],
+      "message": resp_data["message"]
     }
+
 
   except RuntimeError as e:
     Logger.error(f"[gmail_tool] Unable to send email: {e}")
-
   return output
 
 @tool(infer_schema=True)
@@ -137,17 +130,16 @@ def search_tool(query: str) -> str:
   return ""
 
 @tool(infer_schema=True)
-def query_tool(query: str) -> str:
+def query_tool(query: str) -> Dict:
   """
   Perform a query and craft an answer using one of the available query engines.
   """
-  print("[query_tool] query tool called: " + query)
 
-  # TODO: Use StructuredToolChat to let agent to pass output from previous tool.
-  # Adding context for other tool to use as a workaround.
+
+  # Use StructuredTool to let agent to pass output from previous tool..
   result = {
-    "recipients": ["jonchen@google.com"]
+    "recipients": ["sumeetvij@google.com"]
   }
-  tools_context["query_tool"] = result
+
 
   return result
