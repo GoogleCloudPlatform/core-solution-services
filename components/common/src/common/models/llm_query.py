@@ -83,6 +83,7 @@ class QueryEngine(BaseModel):
   """
   id = IDField()
   name = TextField(required=True)
+  description = TextField(required=True)
   llm_type = TextField(required=False)
   embedding_type = TextField(required=True)
   vector_store = TextField(required=True)
@@ -91,7 +92,6 @@ class QueryEngine(BaseModel):
   index_id = TextField(required=False)
   index_name = TextField(required=False)
   endpoint = TextField(required=False)
-  description = TextField(required=True)
 
   class Meta:
     ignore_none_field = False

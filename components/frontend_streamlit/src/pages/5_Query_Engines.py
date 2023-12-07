@@ -18,7 +18,8 @@
 import json
 import streamlit as st
 from api import (build_query_engine, get_all_embedding_types,
-                 get_all_vector_stores, get_all_jobs)
+                 get_all_vector_stores, get_all_query_engines,
+                 get_all_jobs)
 from common.utils.logging_handler import Logger
 import utils
 
@@ -34,11 +35,40 @@ def build_clicked(engine_name:str, doc_url:str,
   build_query_engine(
     engine_name, doc_url, embedding_type, vector_store, description)
 
-def query_engine_build_page():
-  # Get all embedding types as a list
-  embedding_types = get_all_embedding_types()
-  # Get all vector stores as a list
-  vector_store_list = get_all_vector_stores()
+
+def get_qe_table_data() -> list:
+  qe_list = get_all_query_engines()
+  if not qe_list:
+    Logger.error("No query engine found.")
+    st.write("No query engine found.")
+    return
+
+  st.write(qe_list)
+
+  qe_list.sort(key=lambda x: x["name"], reverse=True)
+
+  # Reformat list of dict to nested arrays for table.
+  table_data = [[
+    "Engine Name",
+    "Description",
+    "LLM type",
+    "Embeddings Type",
+    "Vector Store",
+    "Created Timestamp"
+  ]]
+  for qe in qe_list:
+    table_data.append([
+      qe["name"],
+      qe.get("description"),
+      qe.get("llm_type"),
+      qe.get("embedding_type"),
+      qe.get("vector_store"),
+      qe.get("created_time"),
+    ])
+  return table_data
+
+
+def get_jobs_table_data():
   # Get all query_engine_build jobs
   qe_build_jobs = get_all_jobs()
   if not qe_build_jobs:
@@ -48,36 +78,62 @@ def query_engine_build_page():
   qe_build_jobs.sort(key=lambda x: x["last_modified_time"], reverse=True)
 
   # Reformat list of dict to nested arrays for table.
-  jobs_table_value = [[
-    "Job ID", "Engine Name", "Status", "Embeddings Type", "LLM type",
-    "Vector Store", "Doc URL", "Errors", "Last Modified"
+  jobs_table_data = [[
+    "Job ID",
+    "Engine Name",
+    "Status",
+    "LLM type",
+    "Embeddings Type",
+    "Vector Store",
+    "Doc URL",
+    "Errors",
+    "Last Modified"
   ]]
   for job in qe_build_jobs:
     input_data = json.loads(job["input_data"])
-    jobs_table_value.append([
+    jobs_table_data.append([
       job["name"],
       input_data.get("query_engine"),
       job["status"],
-      input_data.get("embedding_type"),
       input_data.get("llm_type"),
+      input_data.get("embedding_type"),
       input_data.get("vector_store"),
       input_data.get("doc_url"),
       job.get("errors", {}).get("error_message", ""),
       job["last_modified_time"]
     ])
+  return jobs_table_data
+
+def query_engine_build_page():
+  # Get all embedding types as a list
+  embedding_types = get_all_embedding_types()
+  # Get all vector stores as a list
+  vector_store_list = get_all_vector_stores()
+
+  # Prepare table values
+  qe_table_data = get_qe_table_data()
+  jobs_table_data = get_jobs_table_data()
 
   st.title("Query Engine Management")
-  tab1, tab2 = st.tabs(["Build Query Engine", "Job List"])
+  tab1, tab2, tab3 = st.tabs([
+    "Query Engines",
+    "Build Query Engine",
+    "Job List"]
+  )
 
   with tab1:
-    st.subheader("Build a new Query Engine")
-    placeholder = st.empty()
+    st.subheader("Query Engines")
+    st.table(qe_table_data)
 
   with tab2:
-    st.subheader("Query Engine Jobs")
-    st.table(jobs_table_value)
+    st.subheader("Build a new Query Engine")
+    placeholder_build_qe = st.empty()
 
-  with placeholder.form("build"):
+  with tab3:
+    st.subheader("Query Engine Jobs")
+    st.table(jobs_table_data)
+
+  with placeholder_build_qe.form("build"):
     engine_name = st.text_input("Name")
     doc_url = st.text_input("Document URL")
     embedding_type = st.selectbox(
