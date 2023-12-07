@@ -120,6 +120,51 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
+def run_dispatch(prompt:str, chat_history:List = None) -> str:
+  """
+  Dispatch a prompt to the best matched routes.
+
+  Args:
+      prompt(str): the user input prompt
+      chat_history(List): any previous chat history for context
+
+  Returns:
+      output(str): the output of the agent on the user input
+      action_steps: the list of action steps take by the agent for the run
+  """
+
+  Logger.info(f"Running dispatch "
+              f"with prompt=[{prompt}] and "
+              f"chat_history=[{chat_history}]")
+  agent_name = "Dispatch"
+  agent_params = get_agent_config()[agent_name]
+  llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
+
+  langchain_agent = llm_service_agent.load_agent()
+  agent_executor = AgentExecutor.from_agent_and_tools(
+      agent=langchain_agent, tools=[])
+  agent_inputs = {
+    "input": prompt,
+    "chat_history": []
+  }
+
+  Logger.info("Running agent executor.... ")
+  output = agent_executor.run(agent_inputs)
+  Logger.info(f"Agent {agent_name} generated output=[{output}]")
+
+  routes = parse_output("Route:", output) or []
+
+  # If no best route(s) found, pass to Chat agent.
+  if not routes or len(routes) == 0:
+    return run_agent("Chat", prompt, chat_history)
+
+  # Get the route for the best matched (first) returned routes.
+  route, detail = parse_step(routes[0])[0]
+  Logger.info(f"route: {route}, {detail}")
+
+  # TODO: perform routes
+
+
 def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
   """
   Run an agent on user input
@@ -185,7 +230,7 @@ def agent_plan(agent_name:str, prompt:str,
 
   output = run_agent(agent_name, prompt, chat_history)
 
-  raw_plan_steps = parse_plan(output)
+  raw_plan_steps = parse_output("Plan:", output)
 
   # create user plan
   user_plan = UserPlan(user_id=user_id, agent_name=agent_name)
@@ -212,11 +257,11 @@ def agent_plan(agent_name:str, prompt:str,
   return output, user_plan
 
 
-def parse_plan(text: str) -> List[str]:
+def parse_output(header: str, text: str) -> List[str]:
   """
   Parse plan steps from agent output
   """
-  Logger.info(f"Parsing agent plan {text}")
+  Logger.info(f"Parsing agent output: {header}, {text}")
 
   # Regex pattern to match the steps after 'Plan:'
   # We are using the re.DOTALL flag to match across newlines and
@@ -225,7 +270,7 @@ def parse_plan(text: str) -> List[str]:
       r"^\s*\d+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
 
   # Find the part of the text after 'Plan:'
-  plan_part = re.split(r"Plan:", text, flags=re.IGNORECASE)[-1]
+  plan_part = re.split(header, text, flags=re.IGNORECASE)[-1]
 
   # Find all the steps within the 'Plan:' part
   steps = steps_regex.findall(plan_part)
@@ -234,6 +279,12 @@ def parse_plan(text: str) -> List[str]:
   steps = [step.strip() for step in steps]
 
   return steps
+
+def parse_step(text:str) -> dict:
+  step_regex = re.compile(
+      r"\d+\.\s.*\[(.*)\]\s?(.*)", re.DOTALL)
+  matches = step_regex.findall(text)
+  return matches
 
 def agent_execute_plan(
     agent_name:str, prompt:str, user_plan:UserPlan = None) -> str:
