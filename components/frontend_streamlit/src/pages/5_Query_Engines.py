@@ -29,8 +29,10 @@ params = st.experimental_get_query_params()
 st.session_state.auth_token = params.get("auth_token", [None])[0]
 
 def build_clicked(engine_name:str, doc_url:str,
-                  embedding_type:str, vector_store:str):
-  build_query_engine(engine_name, doc_url, embedding_type, vector_store)
+                  embedding_type:str, vector_store:str,
+                  description:str):
+  build_query_engine(
+    engine_name, doc_url, embedding_type, vector_store, description)
 
 def query_engine_build_page():
   # Get all embedding types as a list
@@ -56,8 +58,8 @@ def query_engine_build_page():
       job["name"],
       input_data.get("query_engine"),
       job["status"],
-      input_data.get("llm_type"),
       input_data.get("embedding_type"),
+      input_data.get("llm_type"),
       input_data.get("vector_store"),
       input_data.get("doc_url"),
       job.get("errors", {}).get("error_message", ""),
@@ -84,9 +86,12 @@ def query_engine_build_page():
     vector_store = st.selectbox(
         "Vector Store:",
         vector_store_list)
+    description = st.text_area("description")
+
     submit = st.form_submit_button("Build")
   if submit:
-    build_clicked(engine_name, doc_url, embedding_type, vector_store)
+    build_clicked(
+      engine_name, doc_url, embedding_type, vector_store, description)
 
 
 if __name__ == "__main__":
