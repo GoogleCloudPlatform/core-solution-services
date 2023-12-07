@@ -125,6 +125,9 @@ Plan:
    ...
 """
 
+# TODO: replace the format with JSON structure as in
+# https://github.com/langchain-ai/langchain/blob/master/libs/langchain/langchain/output_parsers/format_instructions.py
+
 DISPATCH_FORMAT_INSTRUCTIONS = """
 Use the following format for your output:
 

@@ -149,7 +149,7 @@ class DispatchAgent(BaseAgent):
 
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
-    return ToolAgentOutputParser
+    return DispatchAgentOutputParser
 
   @property
   def format_instructions(self) -> str:
@@ -241,6 +241,37 @@ class PlanAgent(BaseAgent):
   def get_tools(self):
     tools = [gmail_tool, docs_tool, calendar_tool, search_tool, query_tool]
     return tools
+
+
+class DispatchAgentOutputParser(AgentOutputParser):
+  """Output parser for a agent that makes plans."""
+
+  ai_prefix: str = "AI"
+  """Prefix to use before AI output."""
+
+  def get_format_instructions(self) -> str:
+    return DISPATCH_FORMAT_INSTRUCTIONS
+
+  def parse(self, text: str) -> Union[AgentAction, AgentFinish]:
+    regex = r"Action: (.*?)[\n]*Action Input: (.*)"
+    match = re.search(regex, text)
+    if not match:
+      # TODO: undo this temporary fix to make the v1 agent terminate
+      #raise OutputParserException(
+      #    f"MIRA: Could not parse LLM output: `{text}`")
+      return AgentFinish(
+          {
+            "output": text.split(f"{self.ai_prefix}:")[-1].strip()
+          }, text
+      )
+    action = match.group(1)
+    action_input = match.group(2)
+    return AgentAction(action.strip(),
+                       action_input.strip(" ").strip('"'), text)
+
+  @property
+  def _type(self) -> str:
+    return "zero_shot"
 
 
 class PlanAgentOutputParser(AgentOutputParser):
