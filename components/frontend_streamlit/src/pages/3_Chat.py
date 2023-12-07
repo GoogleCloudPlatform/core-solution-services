@@ -88,7 +88,7 @@ def init_messages():
 
 
 def format_ai_output(text):
-  print(text)
+  Logger.info(text)
 
   text = ansi_escape.sub("", text)
   text = text.replace("> Entering new AgentExecutor chain",
@@ -108,7 +108,7 @@ def chat_content():
   with chat_placeholder.container():
     index = 1
     for item in st.session_state.messages:
-      print(item)
+      Logger.info(item)
 
       if "HumanInput" in item:
         with st.chat_message("user"):
@@ -121,7 +121,7 @@ def chat_content():
           st.write(
               ai_output,
               key=f"ai_{index}",
-              allow_html=False,
+              unsafe_allow_html=False,
               is_table=False,  # TODO: Detect whether an output content type.
           )
 
@@ -130,7 +130,7 @@ def chat_content():
           index = 1
 
           plan = get_plan(item["plan"]["id"])
-          print(plan)
+          Logger.info(plan)
 
           for step in plan["plan_steps"]:
             st.text_area(f"step-{index}", step["description"],

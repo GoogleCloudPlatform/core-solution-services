@@ -15,12 +15,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: llama2-7b-service
+  name: truss-llama2-7b-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
-    component: llama2-7b-layer
+    component: truss-llama2-7b-layer
   ports:
-    - port: 8080
+    - port: 80
       protocol: TCP
       targetPort: 8080

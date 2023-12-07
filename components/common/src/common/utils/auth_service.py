@@ -30,7 +30,7 @@ AUTH_SERVICE_NAME = SERVICES["authentication"]["host"]
 
 def validate_token(token: auth_scheme = Depends()):
   """
-  Main validation function depended by all microservices.
+  Main validation function that is depended on by all microservices.
   """
   try:
     user_data = validate_oauth_token(token)

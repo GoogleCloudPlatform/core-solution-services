@@ -40,7 +40,7 @@ build:
 
   googleCloudBuild: {}
 
-# Portforwarding when running `skaffold dev` locally.
+# Port-forwarding when running `skaffold dev` locally.
 portForward:
 - resourceType: service
   resourceName: frontend-streamlit

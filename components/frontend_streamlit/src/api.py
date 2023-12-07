@@ -36,7 +36,6 @@ def get_api_base_url():
   api_base_url = st.session_state.get("api_base_url", API_BASE_URL)
   assert api_base_url, "api_base_url is not defined."
 
-  Logger.info(f"api_base_url = {api_base_url}")
   return api_base_url.rstrip("/")
 
 def handle_error(response):
@@ -53,7 +52,10 @@ def get_agents(auth_token=None) -> List[Agent]:
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent"
+  Logger.info(f"api_url={api_url}")
+
   resp = get_method(api_url, auth_token)
+  Logger.info(resp)
   json_response = resp.json()
 
   # load agent models based on response
@@ -74,18 +76,16 @@ def run_agent(agent_name: str, prompt: str,
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}"
   if chat_id:
     api_url = api_url + f"/{chat_id}"
+  Logger.info(f"api_url={api_url}")
+
   request_body = {
     "prompt": prompt
   }
-
-  Logger.info(api_url)
-  resp = post_method(api_url,
-                     request_body=request_body,
-                     token=auth_token)
+  resp = post_method(api_url, request_body=request_body, token=auth_token)
   handle_error(resp)
+  Logger.info(resp)
 
   json_response = resp.json()
-  Logger.info(json_response)
   output = json_response["data"]
   return output
 
@@ -101,19 +101,16 @@ def run_agent_plan(agent_name: str, prompt: str,
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/{agent_name}"
   if chat_id:
     api_url = api_url + f"/{chat_id}"
+  Logger.info(f"api_url={api_url}")
 
   request_body = {
     "prompt": prompt
   }
-
-  Logger.info(api_url)
-  resp = post_method(api_url,
-                     request_body=request_body,
-                     token=auth_token)
+  resp = post_method(api_url, request_body=request_body, token=auth_token)
   handle_error(resp)
+  Logger.info(resp)
 
   json_response = resp.json()
-  Logger.info(json_response)
   output = json_response["data"]
   return output
 
@@ -130,13 +127,13 @@ def run_agent_execute_plan(plan_id: str,
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/" \
             f"{plan_id}/run?chat_id={chat_id}"
+  Logger.info(f"api_url={api_url}")
 
-  Logger.info(api_url)
   resp = post_method(api_url, token=auth_token)
   handle_error(resp)
+  Logger.info(resp)
 
   json_response = resp.json()
-  Logger.info(json_response)
   output = json_response["data"]
   return output
 
@@ -152,23 +149,21 @@ def run_query(query_engine_id: str, prompt: str,
   Logger.info(chat_id)
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/engine/{query_engine_id}"
+  Logger.info(f"api_url={api_url}")
+
   request_body = {
     "prompt": prompt,
     "llm_type": "VertexAI-Chat"
   }
-
-  Logger.info(api_url)
-  resp = post_method(api_url,
-                     request_body=request_body,
-                     token=auth_token)
+  resp = post_method(api_url, request_body=request_body, token=auth_token)
   handle_error(resp)
+  Logger.info(resp)
 
   json_response = resp.json()
-  Logger.info(json_response)
   output = json_response["data"]
   return output
 
-def build_query_engine(name:str, doc_url:str, embedding_type: str,
+def build_query_engine(name: str, doc_url: str, embedding_type: str,
                        vector_store: str, auth_token=None):
   """
   Start a query engine build job
@@ -178,21 +173,19 @@ def build_query_engine(name:str, doc_url:str, embedding_type: str,
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/engine"
+  Logger.info(f"api_url={api_url}")
+
   request_body = {
     "query_engine": name,
     "doc_url": doc_url,
     "embedding_type": embedding_type,
     "vector_store": vector_store
   }
-
-  Logger.info(api_url)
-  resp = post_method(api_url,
-                     request_body=request_body,
-                     token=auth_token)
+  resp = post_method(api_url, request_body=request_body, token=auth_token)
   handle_error(resp)
+  Logger.info(resp)
 
   json_response = resp.json()
-  Logger.info(json_response)
   output = json_response["data"]
   return output
 
@@ -205,10 +198,11 @@ def get_all_query_engines(auth_token=None):
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query"
+  Logger.info(f"api_url={api_url}")
   resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
 
   json_response = resp.json()
-  Logger.info(json_response)
   output = json_response["data"]
   return output
 
@@ -221,11 +215,11 @@ def get_all_embedding_types(auth_token=None):
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/llm/embedding_types"
-  resp = get_method(api_url,
-                    token=auth_token)
+  Logger.info(f"api_url={api_url}")
+  resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
 
   json_response = resp.json()
-  Logger.info(json_response)
   output = json_response["data"]
   return output
 
@@ -238,15 +232,15 @@ def get_all_vector_stores(auth_token=None):
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/vectorstore"
-  resp = get_method(api_url,
-                    token=auth_token)
+  Logger.info(f"api_url={api_url}")
+  resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
 
   json_response = resp.json()
-  Logger.info(json_response)
   output = json_response["data"]
   return output
 
-def get_all_jobs(job_type = "query_engine_build", auth_token=None):
+def get_all_jobs(job_type="query_engine_build", auth_token=None):
   """
   Retrieve all vector store types
   """
@@ -255,11 +249,11 @@ def get_all_jobs(job_type = "query_engine_build", auth_token=None):
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{JOBS_SERVICE_PATH}/jobs/{job_type}"
-  resp = get_method(api_url,
-                    token=auth_token)
+  Logger.info(f"api_url={api_url}")
+  resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
 
   json_response = resp.json()
-  Logger.info(json_response)
   output = json_response["data"]
   return output
 
@@ -274,10 +268,10 @@ def get_all_chats(skip=0, limit=20, auth_token=None,
   api_base_url = get_api_base_url()
   api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}/chat?skip={skip}
             &limit={limit}&with_first_history={with_first_history}"""
-  Logger.info(api_url)
+  Logger.info(f"api_url={api_url}")
 
-  resp = get_method(api_url,
-                    token=auth_token)
+  resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
   json_response = resp.json()
   output = json_response["data"]
   return output
@@ -291,8 +285,10 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
 
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/chat/{chat_id}"
-  resp = get_method(api_url, token=auth_token)
+  Logger.info(f"api_url={api_url}")
 
+  resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
   json_response = resp.json()
   output = json_response["data"]
   return output
@@ -307,7 +303,10 @@ def get_plan(plan_id, auth_token=None) -> UserPlan:
   api_base_url = get_api_base_url()
   api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/" \
             f"{plan_id}"
+  Logger.info(f"api_url={api_url}")
+
   resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
   json_response = resp.json()
   output = json_response["data"]
   return output
@@ -319,10 +318,10 @@ def login_user(user_email, user_password) -> str or None:
     "password": user_password
   }
   api_base_url = get_api_base_url()
-  url = f"{api_base_url}/{AUTH_SERVICE_PATH}/sign-in/credentials"
-  print(f"API url: {url}")
+  api_url = f"{api_base_url}/{AUTH_SERVICE_PATH}/sign-in/credentials"
+  Logger.info(f"API url: {api_url}")
 
-  sign_in_req = requests.post(url, json=req_body, verify=False, timeout=10)
+  sign_in_req = requests.post(api_url, json=req_body, verify=False, timeout=10)
 
   sign_in_res = sign_in_req.json()
   if sign_in_res is None or sign_in_res["data"] is None:

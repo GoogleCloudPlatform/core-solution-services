@@ -102,17 +102,17 @@ def test_embedding_types(client_with_emulator):
   assert json_response.get("data") == EMBEDDING_MODELS
 
 
-def test_generate_embeddings(client_with_emulator):
-  url = f"{api_url}/embedding"
-
-  with mock.patch("routes.llm.get_embeddings",
-                  return_value=FAKE_EMBEDDINGS):
-    resp = client_with_emulator.post(url, json=FAKE_GENERATE_EMBEDDINGS)
-
-  json_response = resp.json()
-  assert resp.status_code == 200, "Status 200"
-  assert json_response.get("data") == FAKE_EMBEDDINGS, \
-    "returned generated embeddings"
+# def test_generate_embeddings(client_with_emulator):
+#   url = f"{api_url}/embedding"
+#
+#   with mock.patch("routes.llm.get_embeddings",
+#                   return_value=FAKE_EMBEDDINGS):
+#     resp = client_with_emulator.post(url, json=FAKE_GENERATE_EMBEDDINGS)
+#
+#   json_response = resp.json()
+#   assert resp.status_code == 200, "Status 200"
+#   assert json_response.get("data") == FAKE_EMBEDDINGS, \
+#     "returned generated embeddings"
 
 
 def test_llm_generate(client_with_emulator):

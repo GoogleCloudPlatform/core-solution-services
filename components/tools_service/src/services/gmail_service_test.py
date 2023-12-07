@@ -19,7 +19,6 @@ utility methods to execute unit tests for module gmail_service.py
 # pylint: disable=unused-argument,redefined-outer-name,unused-import
 
 import os
-import sys
 import pytest
 from unittest import mock
 from unittest.mock import Mock

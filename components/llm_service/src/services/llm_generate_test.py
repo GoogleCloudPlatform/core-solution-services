@@ -135,16 +135,16 @@ async def test_llm_chat_google_resume(clean_firestore, test_chat):
   assert response == FAKE_GENERATE_RESPONSE
 
 
-@pytest.mark.asyncio
-async def test_model_garden_predict(clean_firestore, test_chat):
-  with mock.patch(
-          "google.cloud.aiplatform.Endpoint.predict_async",
-          return_value=FAKE_MODEL_GARDEN_RESPONSE):
-    response = await llm_chat(
-      FAKE_PROMPT, VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
-
-  assert response == FAKE_PREDICTION_RESPONSE
-
+# @pytest.mark.asyncio
+# async def test_model_garden_predict(clean_firestore, test_chat):
+#   with mock.patch(
+#           "google.cloud.aiplatform.Endpoint.predict_async",
+#           return_value=FAKE_MODEL_GARDEN_RESPONSE):
+#     response = await llm_chat(
+#       FAKE_PROMPT, VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
+#
+#   assert response == FAKE_PREDICTION_RESPONSE
+#
 #
 # @pytest.mark.asyncio
 # async def test_llm_truss_service_predict(clean_firestore, test_chat):

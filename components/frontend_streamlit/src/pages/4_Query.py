@@ -31,6 +31,10 @@ def on_input_change():
   st.session_state.messages.append({"HumanInput": user_input})
 
   # Send API to llm-service
+  if query_engine_id is None:
+    Logger.error("Invalid Query Engine")
+    st.write("Invalid Query Engine")
+    return
   response = run_query(query_engine_id, user_input,
                        chat_id=st.session_state.chat_id)
 
@@ -75,7 +79,7 @@ def chat_content():
           st.write(
               item["AIOutput"],
               key=f"ai_{index}",
-              allow_html=False,
+              unsafe_allow_html=False,
               is_table=False,  # TODO: Detect whether an output content type.
           )
 
