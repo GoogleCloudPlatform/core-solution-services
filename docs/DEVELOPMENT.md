@@ -9,6 +9,7 @@ Table of Content
 5. [Advanced Skaffold commands](#AdvancedSkaffoldcommands)
 6. [Debugging](#Debugging)
 7. [Testing](#Testing)
+8. [Running Jupyter Notebooks](#RunningJupyterNotebooks)
 
 <!-- vscode-markdown-toc-config
 	numbering=true
@@ -426,3 +427,23 @@ Run linter locally:
 ```
 python -m pylint $(git ls-files '*.py') --rcfile=$BASE_DIR/.pylintrc
 ```
+
+##  8. <a name='RunningJupyterNotebooks'></a>Running Jupyter Notebooks
+
+Complete the steps below in your virtual environment:
+###  8.1. <a name='Installation'></a>Installation
+
+
+Install jupyterlab and notebook:
+```
+pip install jupyterlab notebook
+```
+
+###  8.2. <a name='Run Jupyter Notebook'></a>Run Jupyter Notebook
+Run Jupyter Notebook:
+```
+jupyter notebook
+```
+This will open a UI in your browser where you can navigate to the notebook and develop/run it.
+
+
