@@ -331,7 +331,7 @@ async def query(query_engine_id: str,
   user = User.find_by_email(user_data.get("email"))
 
   try:
-    query_result, query_references = await query_generate(
+    query_result, query_references = query_generate(
           user.id, prompt, q_engine, llm_type,
           sentence_references=sentence_references)
     Logger.info(f"Query response="
@@ -386,7 +386,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   try:
     q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
 
-    query_result, query_references = await query_generate(user_query.user_id,
+    query_result, query_references = query_generate(user_query.user_id,
                                                           prompt,
                                                           q_engine,
                                                           llm_type,

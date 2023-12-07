@@ -23,7 +23,7 @@ from contextlib import redirect_stdout
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
-from common.models import BatchJobModel
+from common.models import BatchJobModel, QueryEngine, User
 from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.errors import ResourceNotFoundException
@@ -31,6 +31,7 @@ from common.utils.http_exceptions import BadRequest, InternalServerError
 from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
 from services.agents import agents
+from services.query.query_service import query_generate
 
 Logger = Logger.get_logger(__file__)
 AGENTS = None
@@ -120,7 +121,8 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
-def run_dispatch(prompt:str, chat_history:List = None) -> str:
+def run_dispatch(
+    prompt:str, chat_history:List = None, user:User = None) -> dict:
   """
   Dispatch a prompt to the best matched routes.
 
@@ -139,12 +141,30 @@ def run_dispatch(prompt:str, chat_history:List = None) -> str:
   agent_name = "Dispatch"
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
+  user_id = None if not user else user.id
 
   langchain_agent = llm_service_agent.load_agent()
   agent_executor = AgentExecutor.from_agent_and_tools(
       agent=langchain_agent, tools=[])
+
+  # Collect all query engines with their description as topics.
+  query_engine_list_str = ""
+  query_engines = QueryEngine.collection.fetch()
+  for qe in query_engines:
+    query_engine_list_str += \
+      f"- [QE:{qe.name}] to run a query on a query engine  for topics of " \
+      f" {qe.description} \n"
+
+  dispatch_prompt = f"""
+    An AI Dispatch Assistant has access to the following routes:
+    - [create_plan] to compose, generate or create a plan.
+    - [chat] to perform generic chat conversation.
+    {query_engine_list_str}
+    Choose one route based on the question below:
+    """
+
   agent_inputs = {
-    "input": prompt,
+    "input": dispatch_prompt + prompt,
     "chat_history": []
   }
 
@@ -158,11 +178,50 @@ def run_dispatch(prompt:str, chat_history:List = None) -> str:
   if not routes or len(routes) == 0:
     return run_agent("Chat", prompt, chat_history)
 
+  # TODO: Refactor this with DispatchAgentOutputParser
   # Get the route for the best matched (first) returned routes.
   route, detail = parse_step(routes[0])[0]
   Logger.info(f"route: {route}, {detail}")
 
-  # TODO: perform routes
+  # TODO: Wrap this with a schema structure.
+  result = {
+    "route": route,
+  }
+
+  # Perform routes
+  if route == "create_plan":
+    Logger.info("Dispatch to 'create_plan' route.")
+    output, user_plan = agent_plan("Plan", prompt, chat_history)
+    result[route] = {
+      "output": output,
+      "user_plan": user_plan,
+    }
+
+  elif route[:3] == "QE:":
+    Logger.info(f"Dispatch to 'Query Engine' route as {route}")
+
+    query_engine_name = route[3:]
+    query_engine = QueryEngine.find_by_name(query_engine_name)
+    query_result, query_references = query_generate(
+          user_id,
+          prompt,
+          query_engine_name,
+          query_engine.llm_type,
+          sentence_references=True)
+
+    result[route] = {
+      "query_result": query_result,
+      "query_references": query_references,
+    }
+
+  else:
+    Logger.info("Dispatch to generic 'chat'")
+    output = run_agent("Chat", prompt, chat_history)
+    result[route] = {
+      "output": output,
+    }
+
+  return result
 
 
 def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
