@@ -261,11 +261,12 @@ def agent_execute_plan(
     agent=agent,
     tools=tools,
     verbose=True)
+  #Langchain StructedChatAgent takes only one input called input
+  plan_steps_string = "".join(plan_steps)
   agent_inputs = {
-    "input": prompt,
-    "chat_history": plan_steps
+    "input": prompt +plan_steps_string
   }
-  Logger.info("Running agent executor.... ")
+  Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
 
   # Collect print-output to the string.
   with io.StringIO() as buf, redirect_stdout(buf):
