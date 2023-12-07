@@ -20,7 +20,6 @@ import streamlit as st
 from common.utils.logging_handler import Logger
 from api import get_all_chats
 import utils
-from config import APP_BASE_PATH
 
 Logger = Logger.get_logger(__file__)
 
@@ -68,9 +67,9 @@ def get_agent_chats(selected_agent):
                                 use_container_width=True,
                                 key=f"{agent_name}{index}")
         if select_chat:
-          utils.navigate_to(
-            f"{APP_BASE_PATH}/Chat?chat_id={chat_id}&agent_name={agent_name}&"
-            f"auth_token={st.session_state.auth_token}")
+          st.session_state.agent_name = agent_name
+          st.session_state.chat_id = chat_id
+          utils.navigate_to("Chat")
     index += 1
 
 def chat_history_panel():
