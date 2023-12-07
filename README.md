@@ -65,8 +65,8 @@ gcloud resource-manager org-policies delete constraints/iam.allowedPolicyMemberD
 
 Clone this repo to your local machine to start. Optionally, you can use Cloud Shell. Run the rest of the commands inside the repo folder.
 ```
-# Clone repo (skip unnecessary history)
-git clone --depth 1 https://github.com/GoogleCloudPlatform/core-solution-services
+# Clone repo
+git clone https://github.com/GoogleCloudPlatform/core-solution-services
 cd core-solution-services
 ```
 
@@ -129,7 +129,7 @@ ls -la /tmp/jumphost_ready
 
 Check out the code in the jump host:
 ```
-git clone --depth 1 https://github.com/GoogleCloudPlatform/core-solution-services
+git clone https://github.com/GoogleCloudPlatform/core-solution-services
 ```
 
 Initialize the jump host and set Project ID:
