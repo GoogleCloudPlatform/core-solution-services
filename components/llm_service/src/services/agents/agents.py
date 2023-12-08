@@ -158,7 +158,7 @@ class TaskAgent(BaseAgent):
   @property
   def prefix(self) -> str:
     return TASK_PREFIX
-  
+
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
     return StructuredChatOutputParserWithRetries
