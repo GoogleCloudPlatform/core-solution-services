@@ -31,7 +31,6 @@ from common.utils.http_exceptions import BadRequest, InternalServerError
 from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
 from services.agents import agents
-from services.query.query_service import query_generate
 
 Logger = Logger.get_logger(__file__)
 AGENTS = None
@@ -141,7 +140,6 @@ def run_dispatch(
   agent_name = "Dispatch"
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
-  user_id = None if not user else user.id
 
   langchain_agent = llm_service_agent.load_agent()
   agent_executor = AgentExecutor.from_agent_and_tools(

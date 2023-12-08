@@ -112,11 +112,14 @@ async def agent_dispatch(run_config: LLMAgentRunModel,
     query_engine = QueryEngine.find_by_name(query_engine_name)
     Logger.info("Query Engine: {query_engine}")
 
+    if not llm_type:
+      llm_type = query_engine.llm_type
+
     query_result, query_references = await query_generate(
           user.id,
           prompt,
           query_engine,
-          query_engine.llm_type,
+          llm_type,
           sentence_references=True)
     Logger.info(f"Query response="
                 f"[{query_result}]")
