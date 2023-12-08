@@ -15,7 +15,7 @@
 """ Agent classes """
 import re
 from abc import ABC, abstractmethod
-from typing import Union, Type, Callable, List
+from typing import Union, Type, Callable, List, Optional
 
 from langchain.agents import (Agent, AgentOutputParser,
                               ConversationalAgent)
@@ -31,7 +31,7 @@ from common.utils.logging_handler import Logger
 from config import LANGCHAIN_LLM
 from services.agents.agent_prompts import (PREFIX, TASK_PREFIX, PLANNING_PREFIX,
                                            PLAN_FORMAT_INSTRUCTIONS)
-from services.agents.agent_tools import (gmail_tool, docs_tool,
+from services.agents.agent_tools import (gmail_tool, docs_tool, database_tool, google_sheets_tool,
                                          calendar_tool, search_tool,
                                          query_tool)
 
@@ -55,15 +55,19 @@ class BaseAgent(ABC):
 
   name:str = None
   """ The name of the agent """
-
+  prefix:str = PREFIX
+  """ The prefix prompt of the agent """
   def __init__(self, llm_type: str):
     self.llm_type = llm_type
     self.agent = None
 
   @property
   def prefix(self) -> str:
-    return PREFIX
+    return self.prefix
 
+  def prefix(self, prefix):
+    self.prefix = prefix
+  
   @property
   def format_instructions(self) -> str:
     return FORMAT_INSTRUCTIONS
@@ -82,7 +86,7 @@ class BaseAgent(ABC):
   def get_tools(self) -> List[Callable]:
     """ return tools used by this agent """
 
-  def load_agent(self) -> Agent:
+  def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
     """ load this agent and return an instance of langchain Agent"""
     tools = self.get_tools()
 
@@ -92,17 +96,18 @@ class BaseAgent(ABC):
           f"Agent: cannot find LLM type {self.llm_type}")
 
     output_parser = self.output_parser_class()
-
     self.agent = self.agent_class.from_llm_and_tools(
         llm=llm,
         tools=tools,
         prefix=self.prefix,
         format_instructions=self.format_instructions,
-        output_parser=output_parser
+        output_parser=output_parser,
+        input_variables=input_variables
     )
     Logger.info(f"Successfully loaded {self.name} agent.")
     Logger.debug(f"prefix=[{self.prefix}], "
-                 f"format_instructions=[{self.format_instructions}]")
+                 f"format_instructions=[{self.format_instructions}]",
+                 f"input_variables=[{input_variables}]")
     return self.agent
 
 
@@ -145,7 +150,15 @@ class TaskAgent(BaseAgent):
     super().__init__(llm_type)
     self.name = "TaskAgent"
     self.agent_class = StructuredChatAgent
-
+    self.prefix = TASK_PREFIX
+  
+  def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
+    """ load this agent and return an instance of langchain Agent"""
+    #This is the list of variables defined in the associated prompt
+    #input_variables = ["input", "user", "user_email", "task_plan","agent_scratchpad"]
+    return super().load_agent()
+    
+  
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
     return StructuredChatOutputParserWithRetries
@@ -153,11 +166,7 @@ class TaskAgent(BaseAgent):
   @property
   def format_instructions(self) -> str:
     return STRUCTURED_FORMAT_INSTRUCTIONS
-
-  @property
-  def prefix(self) -> str:
-    return TASK_PREFIX
-
+  
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
@@ -167,7 +176,7 @@ class TaskAgent(BaseAgent):
     return capabilities
 
   def get_tools(self):
-    tools = [gmail_tool, docs_tool, calendar_tool, search_tool, query_tool]
+    tools = [gmail_tool, database_tool,  google_sheets_tool, docs_tool, calendar_tool, search_tool, query_tool]
     return tools
 
   def get_planning_agent(self) -> str:
@@ -208,7 +217,7 @@ class PlanAgent(BaseAgent):
     return capabilities
 
   def get_tools(self):
-    tools = [gmail_tool, docs_tool, calendar_tool, search_tool, query_tool]
+    tools = [gmail_tool, database_tool, google_sheets_tool, docs_tool, calendar_tool, search_tool, query_tool]
     return tools
 
 

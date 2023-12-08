@@ -18,7 +18,7 @@ from fastapi import APIRouter
 from schemas.email import EmailSchema, EmailComposeSchema
 from services.gmail_service import send_email
 from services.email_composer import compose_email
-
+from services.sheets_service import create_spreadsheet
 router = APIRouter(prefix="/workspace", tags=["workspace"])
 
 SUCCESS_RESPONSE = {"status": "Success"}
@@ -65,3 +65,25 @@ def compose_email_subject_and_message(data: EmailComposeSchema):
     "message": result["message"],
     "status": "Success",
   }
+@router.post("/sheets/create")
+async def create_sheets(name: str,share_with: List=None, columns : List, rows : List) -> Dict:
+  """
+     Create a Google Sheet with the supplied data and return the sheet url and id
+
+  Args:
+       Name of the spreadsheet name : String
+       List of User emails that this spreadsheet should be shared_with: List
+       Column names of thte spreadsheet and rows as a List of Lists   columns : List
+       Rows containing the values for the speadsheet as List of Lists rows : List
+    Returns:
+        Spreadsheet url and id type: Dict
+  Raises:
+    HTTPException: 500 Internal Server Error if something fails
+  """
+
+  result = create_spreadsheet (name, share_with, input_data)
+  result ["status"] = "Success"
+  print(f"create_sheets:{result}")
+  return result
+
+

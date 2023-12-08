@@ -141,5 +141,51 @@ def query_tool(query: str) -> Dict:
     "recipients": ["sumeetvij@google.com"]
   }
 
-
   return result
+
+@tool(infer_schema=True)
+def google_sheets_tool(name: str,columns : List, rows : List, user_email: str=None) -> Dict:
+    """
+     Create a Google Sheet with the supplied data and return the sheet url and id
+    """
+    Logger.info(f"[google_sheets_tool] creating spreadsheet name:{name}, columns: {columns}"
+                f"for user: {user_email}.")
+    api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
+    api_url = f"{api_url_prefix}/workspace/sheets/create"
+    output = {}
+    data = {
+    "name": name,
+    "share_with": user_email,
+    "columns": columns,
+    "rows": rows
+    }
+  
+    try:
+      response = post_method(url=api_url,
+                             request_body=data,
+                             auth_client=auth_client)
+
+      resp_data = response.json()
+      Logger.info(f"[google_sheets_tool] response from google_sheets_service: {response}")
+      result = resp_data["result"]
+      Logger.info(f"[google_sheets_tool] creating spreadsheet for user: {user_email}. Result: {result}")
+      output = {
+        "sheet_url": resp_data["sheet_url"],
+        "sheet_id": resp_data["sheet_id"]
+      }
+    except RuntimeError as e:
+      Logger.error(f"[google_sheets_tool] Unable to create Google Sheets: {e}")
+    return output
+
+@tool(infer_schema=True)
+def database_tool(database_query: str) -> Dict:
+    """
+      Accepts a natural language question and queries a database to get definite answer
+    """
+    rows = [["New York","sumeetvij@google.com","1234","12/08/2023"],["New Jersey","jonchen@google.com","5678","12/08/2023"]]
+    output = {
+    "columns": ["FQHC_NAME","FQHC_EMAIL", "CDT_CODE", "TRANSACTION_DATE"],
+    "rows": rows
+    }
+ 
+    return output

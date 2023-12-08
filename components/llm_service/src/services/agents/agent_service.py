@@ -23,7 +23,7 @@ from contextlib import redirect_stdout
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
-from common.models import BatchJobModel
+from common.models import BatchJobModel, User
 from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.errors import ResourceNotFoundException
@@ -236,17 +236,22 @@ def parse_plan(text: str) -> List[str]:
   return steps
 
 def agent_execute_plan(
-    agent_name:str, prompt:str, user_plan:UserPlan = None) -> str:
+    agent_name:str, prompt:str, user_plan:UserPlan = None, user:User = None) -> str:
   """
   Execute a given plan_steps.
   """
   Logger.info(f"Running {agent_name} agent "
               f"with prompt=[{prompt}] and "
+              f"User={user} and"
               f"user_plan=[{user_plan}]")
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
-  agent = llm_service_agent.load_agent()
-
+  langchain_agent = llm_service_agent.load_agent()
+  username = user_email = None
+  #update user information 
+  if user is not None: 
+    username = user.first_name +" "+user.last_name
+    user_email = user.email
   tools = llm_service_agent.get_tools()
   tools_str = ", ".join(tool.name for tool in tools)
 
@@ -258,15 +263,20 @@ def agent_execute_plan(
     plan_steps.append(description)
 
   agent_executor = AgentExecutor.from_agent_and_tools(
-    agent=agent,
+    agent=langchain_agent,
     tools=tools,
     verbose=True)
   #Langchain StructedChatAgent takes only one input called input
   plan_steps_string = "".join(plan_steps)
+  prompt_addition = (f"Execute the steps as outlined in this numbered list {plan_steps_string}."
+  f"You are executing this plan on behalf of User:{username} "
+  f"with user email:{user_email}")
+  
+  prompt = prompt + prompt_addition
   agent_inputs = {
-    "input": prompt +plan_steps_string
+    "input": prompt,
   }
-  Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
+  Logger.info(f"Running agent executor.... input:{prompt} ")
 
   # Collect print-output to the string.
   with io.StringIO() as buf, redirect_stdout(buf):
