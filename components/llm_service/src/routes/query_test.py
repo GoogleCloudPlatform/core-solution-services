@@ -22,12 +22,18 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
+
 from testing.test_config import API_URL
 from schemas.schema_examples import (QUERY_EXAMPLE,
                                      USER_QUERY_EXAMPLE,
-                                     USER_EXAMPLE, QUERY_ENGINE_EXAMPLE,
+                                     USER_EXAMPLE,
+                                     QUERY_ENGINE_EXAMPLE,
+                                     QUERY_DOCUMENT_EXAMPLE_1,
+                                     QUERY_DOCUMENT_EXAMPLE_2,
+                                     QUERY_DOCUMENT_EXAMPLE_3,
                                      QUERY_RESULT_EXAMPLE)
-from common.models import UserQuery, QueryResult, QueryEngine, User
+from common.models import (UserQuery, QueryResult, QueryEngine,
+                           User, QueryDocument)
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
@@ -130,6 +136,16 @@ def create_query_result(client_with_emulator):
   query_result.save()
 
 
+@pytest.fixture
+def create_query_docs(client_with_emulator):
+  query_doc1 = QueryDocument.from_dict(QUERY_DOCUMENT_EXAMPLE_1)
+  query_doc1.save()
+  query_doc2 = QueryDocument.from_dict(QUERY_DOCUMENT_EXAMPLE_2)
+  query_doc2.save()
+  query_doc3 = QueryDocument.from_dict(QUERY_DOCUMENT_EXAMPLE_3)
+  query_doc3.save()
+
+
 def test_get_query_engine_list(create_engine, client_with_emulator):
   url = f"{api_url}"
   resp = client_with_emulator.get(url)
@@ -137,6 +153,20 @@ def test_get_query_engine_list(create_engine, client_with_emulator):
   assert resp.status_code == 200, "Status 200"
   saved_ids = [i.get("id") for i in json_response.get("data")]
   assert QUERY_ENGINE_EXAMPLE["id"] in saved_ids, "all data not retrieved"
+
+
+def test_get_query_engine_urls(create_engine, create_query_docs,
+                               client_with_emulator):
+  q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
+  url = f"{api_url}/urls/{q_engine_id}"
+
+  resp = client_with_emulator.get(url)
+  json_response = resp.json()
+  urls = json_response.get("data")
+  assert resp.status_code == 200, "Status 200"
+  assert QUERY_DOCUMENT_EXAMPLE_1["doc_url"] in urls, "doc1 retrieved"
+  assert QUERY_DOCUMENT_EXAMPLE_2["doc_url"] in urls, "doc2 retrieved"
+  assert QUERY_DOCUMENT_EXAMPLE_3["doc_url"] not in urls, "doc3 not retrieved"
 
 
 def test_create_query_engine(create_user, client_with_emulator):
@@ -150,6 +180,26 @@ def test_create_query_engine(create_user, client_with_emulator):
   assert resp.status_code == 200, "Status 200"
   query_engine_data = json_response.get("data")
   assert query_engine_data == FAKE_QE_BUILD_RESPONSE["data"]
+
+
+@mock.patch("routes.query.vector_store_from_query_engine")
+def test_delete_query_engine(mock_vector_store, create_user,
+                             create_engine, client_with_emulator):
+  mock_vector_store = mock.Mock()
+  mock_vector_store.delete.return_value = None
+  q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
+  url = f"{api_url}/engine/{q_engine_id}"
+
+  query_engine_before = QueryEngine.find_by_id(q_engine_id)
+  resp = client_with_emulator.delete(url)
+  json_response = resp.json()
+  query_data = json_response.get("message")
+  query_engine_after = QueryEngine.find_by_name(q_engine_id)
+  assert query_engine_before.name == QUERY_ENGINE_EXAMPLE["name"], "valid"
+  assert resp.status_code == 200, "Status 200"
+  assert query_data == (f"Successfully deleted query engine"
+                        f" {q_engine_id}"), "Success"
+  assert query_engine_after is None, "query engine deleted"
 
 
 def test_query(create_user, create_engine,
@@ -174,9 +224,9 @@ def test_query(create_user, create_engine,
 
 def test_query_generate(create_user, create_engine, create_user_query,
                         create_query_result, client_with_emulator):
-  queryid = USER_QUERY_EXAMPLE["id"]
+  query_id = USER_QUERY_EXAMPLE["id"]
 
-  url = f"{api_url}/{queryid}"
+  url = f"{api_url}/{query_id}"
 
   query_result = QueryResult.find_by_id(QUERY_RESULT_EXAMPLE["id"])
   fake_query_response = (query_result, FAKE_REFERENCES)
