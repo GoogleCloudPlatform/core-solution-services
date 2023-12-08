@@ -56,8 +56,5 @@ def login_page():
 
 
 if __name__ == "__main__":
-  #./main.py is used as an entrypoint for the build,
-  # which creates a page that duplicates the Login page named "main".
-  utils.hide_pages(["main"])
-  utils.init_api_base_url()
+  utils.init_page(redirect_to_without_auth=False)
   login_page()
