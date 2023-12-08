@@ -185,12 +185,18 @@ sb infra apply 4-llm
 Follow README files for each microservice to set up:
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
 
-### Deploy all microservices and ingress to GKE cluster:
-```
-sb deploy
+### Deploy all microservices to GKE cluster:
+```bash
+NAMESPACE=default
+sb deploy -n $NAMESPACE
 ```
 - This will run `skaffold` commands to deploy all microservices and ingress to the GKE cluster.
 
+### Deploy ingress to GKE cluster:
+```bash
+cd ingress
+skaffold run -p default-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
+```
 ### After deployment
 
 - Follow [components/authentication/README.md#create-users](./components/authentication/README.md#create-users) to create the first user.
