@@ -64,7 +64,7 @@ class BaseAgent(ABC):
   @property
   def prefix(self) -> str:
     return self.prefix
-  
+
   @property
   def format_instructions(self) -> str:
     return FORMAT_INSTRUCTIONS
@@ -152,7 +152,8 @@ class TaskAgent(BaseAgent):
   def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
     """ load this agent and return an instance of langchain Agent"""
     #This is the list of variables defined in the associated prompt
-    #input_variables = ["input", "user", "user_email", "task_plan","agent_scratchpad"]
+    #input_variables = ["input", "user", "user_email", "task_plan",
+    # "agent_scratchpad"]
     return super().load_agent()
     
   
@@ -173,7 +174,8 @@ class TaskAgent(BaseAgent):
     return capabilities
 
   def get_tools(self):
-    tools = [gmail_tool, database_tool,  google_sheets_tool, docs_tool, calendar_tool, search_tool, query_tool]
+    tools = [gmail_tool, database_tool,  google_sheets_tool, docs_tool, 
+      calendar_tool, search_tool, query_tool]
     return tools
 
   def get_planning_agent(self) -> str:
@@ -214,7 +216,8 @@ class PlanAgent(BaseAgent):
     return capabilities
 
   def get_tools(self):
-    tools = [gmail_tool, database_tool, google_sheets_tool, docs_tool, calendar_tool, search_tool, query_tool]
+    tools = [gmail_tool, database_tool, google_sheets_tool, docs_tool,
+      calendar_tool, search_tool, query_tool]
     return tools
 
 

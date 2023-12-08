@@ -144,9 +144,11 @@ def query_tool(query: str) -> Dict:
   return result
 
 @tool(infer_schema=True)
-def google_sheets_tool(name: str,columns : List, rows : List, user_email: str=None) -> Dict:
+def google_sheets_tool(name: str,columns : List, rows : List, 
+                      user_email: str=None) -> Dict:
     """
-     Create a Google Sheet with the supplied data and return the sheet url and id
+     Create a Google Sheet with the supplied data and return the sheet url and 
+     id
     """
     Logger.info(f"[google_sheets_tool] creating spreadsheet name:{name}, columns: {columns}"
                 f"for user: {user_email}.")
@@ -166,7 +168,9 @@ def google_sheets_tool(name: str,columns : List, rows : List, user_email: str=No
                              auth_client=auth_client)
 
       resp_data = response.json()
-      Logger.info(f"[google_sheets_tool] response from google_sheets_service: {response}")
+      Logger.info(
+        f"[google_sheets_tool] response from google_sheets_service: {response}"
+        )
       result = resp_data["result"]
       Logger.info(f"[google_sheets_tool] creating spreadsheet for user: {user_email}. Result: {result}")
       output = {
@@ -180,12 +184,13 @@ def google_sheets_tool(name: str,columns : List, rows : List, user_email: str=No
 @tool(infer_schema=True)
 def database_tool(database_query: str) -> Dict:
     """
-      Accepts a natural language question and queries a database to get definite answer
+      Accepts a natural language question and queries a database to get definite 
+      answer
     """
-    rows = [["New York","sumeetvij@google.com","1234","12/08/2023"],["New Jersey","jonchen@google.com","5678","12/08/2023"]]
+    rows = [["New York","sumeetvij@google.com","1234","12/08/2023"],
+            ["New Jersey","jonchen@google.com","5678","12/08/2023"]]
     output = {
     "columns": ["FQHC_NAME","FQHC_EMAIL", "CDT_CODE", "TRANSACTION_DATE"],
     "rows": rows
     }
- 
     return output

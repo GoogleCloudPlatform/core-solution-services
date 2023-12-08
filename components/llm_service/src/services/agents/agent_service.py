@@ -236,7 +236,8 @@ def parse_plan(text: str) -> List[str]:
   return steps
 
 def agent_execute_plan(
-    agent_name:str, prompt:str, user_plan:UserPlan = None, user:User = None) -> str:
+    agent_name:str, prompt:str, user_plan:UserPlan = None, 
+    user:User = None) -> str:
   """
   Execute a given plan_steps.
   """
@@ -268,7 +269,8 @@ def agent_execute_plan(
     verbose=True)
   #Langchain StructedChatAgent takes only one input called input
   plan_steps_string = "".join(plan_steps)
-  prompt_addition = (f"Execute the steps as outlined in this numbered list {plan_steps_string}."
+  prompt_addition = (
+  f"Execute the steps as outlined in this numbered list {plan_steps_string}."
   f"You are executing this plan on behalf of User:{username} "
   f"with user email:{user_email}")
   
