@@ -147,7 +147,6 @@ class TaskAgent(BaseAgent):
     super().__init__(llm_type)
     self.name = "TaskAgent"
     self.agent_class = StructuredChatAgent
-    self.prefix = TASK_PREFIX
 
   def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
     """ load this agent and return an instance of langchain Agent"""
@@ -155,6 +154,11 @@ class TaskAgent(BaseAgent):
     #input_variables = ["input", "user", "user_email", "task_plan",
     # "agent_scratchpad"]
     return super().load_agent()
+  
+  @property
+  def prefix(self) -> str:
+    return TASK_PREFIX
+
   
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:

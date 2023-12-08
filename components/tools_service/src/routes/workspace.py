@@ -66,16 +66,19 @@ def compose_email_subject_and_message(data: EmailComposeSchema):
     "status": "Success",
   }
 @router.post("/sheets/create")
-async def create_sheets(name: str, columns : List, rows : List, 
+async def create_sheets(name: str, columns : List, rows : List,
                         share_with: List=None) -> Dict:
   """
-     Create a Google Sheet with the supplied data and return the sheet url and id
+    Create a Google Sheet with the supplied data and return the sheet url 
+    and id
 
   Args:
        Name of the spreadsheet name : String
        List of User emails that this spreadsheet should be shared_with: List
-       Column names of thte spreadsheet and rows as a List of Lists   columns : List
-       Rows containing the values for the speadsheet as List of Lists rows : List
+       Column names of thte spreadsheet and rows as a     
+        List of columns : List
+       Rows containing the values for the speadsheet as 
+        List of Lists rows : List
     Returns:
         Spreadsheet url and id type: Dict
   Raises:
@@ -89,5 +92,3 @@ async def create_sheets(name: str, columns : List, rows : List,
   result ["status"] = "Success"
   print(f"create_sheets:{result}")
   return result
-
-

@@ -34,7 +34,7 @@ def create_spreadsheet(name: str, columns : List, rows : List,
     Returns:
         Spreadsheet url and id type: Dict
   """
-  #This function reads the secret from Google cloud, and saves it 
+  #This function reads the secret from Google cloud, and saves it
   # locally to a tmp path
   file_path = get_google_sheets_credential()
   gc = gspread.service_account(filename=file_path)
