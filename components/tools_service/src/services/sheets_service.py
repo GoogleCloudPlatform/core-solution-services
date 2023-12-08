@@ -32,21 +32,14 @@ def create_spreadsheet(name: str, columns : List, rows : List, share_with: List=
     Returns:
         Spreadsheet url and id type: Dict
   """
-  #cred = get_google_credential()
-  #api_resource = build_resource_service(credentials=cred)
-  #TODO: This function reads the secret from Google cloud, and saves it locally to a tmp path
+  #This function reads the secret from Google cloud, and saves it locally to a tmp path
   file_path = get_google_sheets_credential()
   gc = gspread.service_account(filename=file_path)
-  print(f"create_spreadsheet: gspread{gc}")
   sh = gc.create(name)
   len_columns = len_rows = 10
-  print(f"create_spreadsheet: sheet{sh}")
-  #worksheet = sh.add_worksheet(title="Sheet1",rows = len_rows, cols = len_columns)
   if share_with:
     recipients = ",".join(share_with)
     sh.share(recipients, perm_type='user', role = 'writer')
-  #print(f"create_spreadsheet: worksheet{worksheet}")
- 
   worksheet = sh.get_worksheet(0)
   #columns is a list of Strings of the column names
   if columns is not None:
