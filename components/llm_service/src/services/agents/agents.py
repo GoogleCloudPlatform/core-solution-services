@@ -155,7 +155,6 @@ class TaskAgent(BaseAgent):
     #input_variables = ["input", "user", "user_email", "task_plan",
     # "agent_scratchpad"]
     return super().load_agent()
-    
   
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:

@@ -20,8 +20,8 @@ from utils.google_credential import get_google_sheets_credential
 
 Logger = Logger.get_logger(__file__)
 
-def create_spreadsheet(name: str, columns : List, rows : List, 
-                       share_with: List=None,) -> Dict:
+def create_spreadsheet(name: str, columns : List, rows : List,
+                      share_with: List=None) -> Dict:
   """
     Create spreadsheet with the given name an email to a recipient with message.
     Args:
@@ -34,7 +34,8 @@ def create_spreadsheet(name: str, columns : List, rows : List,
     Returns:
         Spreadsheet url and id type: Dict
   """
-  #This function reads the secret from Google cloud, and saves it locally to a tmp path
+  #This function reads the secret from Google cloud, and saves it 
+  # locally to a tmp path
   file_path = get_google_sheets_credential()
   gc = gspread.service_account(filename=file_path)
   sh = gc.create(name)
@@ -45,9 +46,9 @@ def create_spreadsheet(name: str, columns : List, rows : List,
   #columns is a list of Strings of the column names
   if columns is not None:
     worksheet.append_row( columns, value_input_option="RAW")
-  #rows is a list of lists, with each element of the outer list is a row of 
+  #rows is a list of lists, with each element of the outer list is a row of
   #values
-  if rows is not None: 
+  if rows is not None:
     worksheet.append_rows(rows,value_input_option="RAW")
   result =  {
       "sheet_url": sh.url,

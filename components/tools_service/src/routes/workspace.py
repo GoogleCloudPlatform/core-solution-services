@@ -67,7 +67,7 @@ def compose_email_subject_and_message(data: EmailComposeSchema):
   }
 @router.post("/sheets/create")
 async def create_sheets(name: str, columns : List, rows : List, 
-                        share_with: List=None,) -> Dict:
+                        share_with: List=None) -> Dict:
   """
      Create a Google Sheet with the supplied data and return the sheet url and id
 
@@ -82,7 +82,10 @@ async def create_sheets(name: str, columns : List, rows : List,
     HTTPException: 500 Internal Server Error if something fails
   """
 
-  result = create_spreadsheet (name, share_with, input_data)
+  result = create_spreadsheet (name=name, 
+                               columns=columns,
+                               rows = rows,
+                               share_with = share_with)
   result ["status"] = "Success"
   print(f"create_sheets:{result}")
   return result
