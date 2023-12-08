@@ -53,7 +53,7 @@ VECTOR_STORES = {
   VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
 }
 
-def query_generate(
+async def query_generate(
             user_id: str,
             prompt: str,
             q_engine: QueryEngine,

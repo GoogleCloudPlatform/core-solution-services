@@ -210,8 +210,8 @@ def run_dispatch(
           sentence_references=True)
 
     result[route] = {
-      "query_result": query_result,
-      "query_references": query_references,
+      "output": query_result,
+      "references": query_references,
     }
 
   else:
