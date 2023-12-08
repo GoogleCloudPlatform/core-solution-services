@@ -15,6 +15,7 @@
 """ Email tools endpoints """
 
 from fastapi import APIRouter
+from typing import List, Dict
 from schemas.email import EmailSchema, EmailComposeSchema
 from services.gmail_service import send_email
 from services.email_composer import compose_email
@@ -85,7 +86,7 @@ async def create_sheets(name: str, columns : List, rows : List,
     HTTPException: 500 Internal Server Error if something fails
   """
 
-  result = create_spreadsheet (name=name, 
+  result = create_spreadsheet (name=name,
                                columns=columns,
                                rows = rows,
                                share_with = share_with)
