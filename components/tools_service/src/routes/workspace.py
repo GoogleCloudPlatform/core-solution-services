@@ -66,7 +66,8 @@ def compose_email_subject_and_message(data: EmailComposeSchema):
     "status": "Success",
   }
 @router.post("/sheets/create")
-async def create_sheets(name: str,share_with: List=None, columns : List, rows : List) -> Dict:
+async def create_sheets(name: str, columns : List, rows : List, 
+                        share_with: List=None,) -> Dict:
   """
      Create a Google Sheet with the supplied data and return the sheet url and id
 

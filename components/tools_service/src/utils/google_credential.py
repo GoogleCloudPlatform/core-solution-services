@@ -48,7 +48,7 @@ def get_google_credential():
       client_secrets_file=client_secrets_file_path,
   )
   return credentials
-  
+
 def get_google_sheets_credential():
   # TODO: 
   # Write credential files to local tmp as the temporary approach.
