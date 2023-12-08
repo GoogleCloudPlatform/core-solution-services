@@ -1,4 +1,26 @@
 {
+  "providers": {
+    "Vertex": {
+      "enabled": "True",
+      "env_flag": "ENABLE_GOOGLE_LLM"
+    },
+    "ModelGarden": {
+      "enabled": "True",
+      "env_flag": "ENABLE_GOOGLE_MODEL_GARDEN"
+    },
+    "Langchain": {
+      "enabled": "True",
+      "env_flag": "ENABLE_LANGCHAIN_LLM"
+    },
+    "LLMService": {
+      "enabled": "True",
+      "env_flag": "ENABLE_LLM_SERVICE_LLM"
+    },
+    "Truss": {
+      "enabled": "True",
+      "env_flag": "ENABLE_TRUSS_LLAMA2"
+    }    
+  },
   "models": {
     "VertexAI-Text": {
       "is_chat": "False",
@@ -23,17 +45,23 @@
       "provider": "ModelGarden",
       "enabled": "False"
     },
-    "OpenAI-GPT": {
+    "OpenAI-GPT4": {
       "is_chat": "True",
-      "provider": "Langchain"
+      "provider": "Langchain",
+      "enabled": "True",
+      "api_key": "openai-api-key"
     },
     "OpenAI-GPT3.5": {
       "is_chat": "True",
-      "provider": "Langchain"
+      "provider": "Langchain",
+      "enabled": "True",
+      "api_key": "openai-api-key"
     },
     "Cohere": {
       "is_chat": "True",
-      "provider": "Langchain"
+      "provider": "Langchain",
+      "enabled": "True",
+      "api_key": "cohere-api-key"
     }
   },
   "embeddings": {
