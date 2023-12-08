@@ -204,6 +204,23 @@ class LLMUserQueryResponse(BaseModel):
     }
 
 
+class LLMQueryEngineURLResponse(BaseModel):
+  """LLM Get Query Engine URL Response model"""
+  success: Optional[bool] = True
+  message: Optional[str] = "Successfully retrieved URLs"
+  data: List[str] = []
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+      "example": {
+        "success": True,
+        "message": "Successfully retrieved URLs",
+        "data": None
+      }
+    }
+
+
 class LLMUserAllQueriesResponse(BaseModel):
   """LLM Get Queries Response model"""
   success: Optional[bool] = True
