@@ -64,9 +64,6 @@ class BaseAgent(ABC):
   @property
   def prefix(self) -> str:
     return self.prefix
-
-  def prefix(self, prefix):
-    self.prefix = prefix
   
   @property
   def format_instructions(self) -> str:
