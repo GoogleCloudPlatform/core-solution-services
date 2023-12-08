@@ -25,12 +25,15 @@ from streamlit.source_util import get_pages
 Logger = Logger.get_logger(__file__)
 
 def http_navigate_to(url):
+  """ Navigate to a specific URL. However, this will lose all session_state. """
   nav_script = f"""
       <meta http-equiv="refresh" content="0; url='{url}'">
   """
   st.write(nav_script, unsafe_allow_html=True)
 
+
 def navigate_to(page_name):
+  """ Navigate to a specific page and keep session_state. """
   def standardize_name(name: str) -> str:
     return name.lower().replace("_", " ")
   page_name = standardize_name(page_name)
@@ -45,7 +48,28 @@ def navigate_to(page_name):
         )
       )
 
-def init_api_base_url():
+def init_page(redirect_to_without_auth=True):
+  query_params = st.experimental_get_query_params()
+
+  # If set query_param "debug=true"
+  if query_params.get("debug", [""])[0].lower() == "true":
+    st.write("query_params: ")
+    st.write(query_params)
+    st.write("st.session_state: ")
+    st.write(st.session_state)
+
+  # Try to get auth_token from query parameter.
+  if not st.session_state.get("auth_token", None):
+    st.session_state.auth_token = query_params.get("auth_token", [None])[0]
+
+  # If still not getting auth_token, redirect back to Login page.
+  if redirect_to_without_auth and not st.session_state.get("auth_token", None):
+    navigate_to("Login")
+
+  #./main.py is used as an entrypoint for the build,
+  # which creates a page that duplicates the Login page named "main".
+  hide_pages(["main"])
+
   api_base_url = API_BASE_URL
 
   if not API_BASE_URL:
