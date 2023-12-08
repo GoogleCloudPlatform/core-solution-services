@@ -157,7 +157,7 @@ def run_dispatch(
 
   dispatch_prompt = f"""
     An AI Dispatch Assistant has access to the following routes:
-    - [create_plan] to compose, generate or create a plan.
+    - [plan] to compose, generate or create a plan.
     - [chat] to perform generic chat conversation.
     {query_engine_list_str}
     Choose one route based on the question below:
@@ -183,45 +183,7 @@ def run_dispatch(
   route, detail = parse_step(routes[0])[0]
   Logger.info(f"route: {route}, {detail}")
 
-  # TODO: Wrap this with a schema structure.
-  result = {
-    "route": route,
-  }
-
-  # Perform routes
-  if route == "create_plan":
-    Logger.info("Dispatch to 'create_plan' route.")
-    output, user_plan = agent_plan("Plan", prompt, chat_history)
-    result[route] = {
-      "output": output,
-      "user_plan": user_plan,
-    }
-
-  elif route[:3] == "QE:":
-    Logger.info(f"Dispatch to 'Query Engine' route as {route}")
-
-    query_engine_name = route[3:]
-    query_engine = QueryEngine.find_by_name(query_engine_name)
-    query_result, query_references = query_generate(
-          user_id,
-          prompt,
-          query_engine_name,
-          query_engine.llm_type,
-          sentence_references=True)
-
-    result[route] = {
-      "output": query_result,
-      "references": query_references,
-    }
-
-  else:
-    Logger.info("Dispatch to generic 'chat'")
-    output = run_agent("Chat", prompt, chat_history)
-    result[route] = {
-      "output": output,
-    }
-
-  return result
+  return route
 
 
 def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
@@ -292,6 +254,8 @@ def agent_plan(agent_name:str, prompt:str,
   raw_plan_steps = parse_output("Plan:", output)
 
   # create user plan
+  print(f"user_id = {user_id}")
+
   user_plan = UserPlan(user_id=user_id, agent_name=agent_name)
   user_plan.save()
 

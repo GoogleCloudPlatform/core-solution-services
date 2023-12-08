@@ -17,7 +17,7 @@
 """ Agent endpoints """
 import traceback
 from fastapi import APIRouter, Depends
-from common.models import User, UserChat
+from common.models import QueryEngine, User, UserChat
 from common.utils.auth_service import validate_token
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
@@ -63,9 +63,9 @@ def get_agents():
     "/run/dispatch",
     name="Run agent dispatch on user input")
 async def agent_dispatch(run_config: LLMAgentRunModel,
-                   agent_name: str = None,
-                   chat_id: str = None,
-                   user_data: dict = Depends(validate_token)):
+                         chat_id: str = None,
+                         route: str = None,
+                         user_data: dict = Depends(validate_token)):
   """
   Run DispatchAgent with prompt, and pass to corresponding agent,
   e.g. Chat, Plan or Query.
@@ -92,34 +92,47 @@ async def agent_dispatch(run_config: LLMAgentRunModel,
   if chat_id:
     user_chat = UserChat.find_by_id(chat_id)
   if not user_chat:
-    user_chat = UserChat(user_id=user.user_id, agent_name=agent_name)
+    user_chat = UserChat(user_id=user.user_id)
 
   user_chat.update_history(prompt=prompt)
   user_chat.save()
 
-  output = run_dispatch(prompt, chat_history=user_chat.history, user=user)
-  Logger.info(output)
+  if not route:
+    route = run_dispatch(prompt, chat_history=user_chat.history, user=user)
+    Logger.info(f"Agent dispatch chooses this best route: {route}, " \
+                f"based on user prompt: {prompt}")
 
   # TODO: Unify all response structure from all agent/query runs.
-  route = output["route"]
   response_data = {}
   if route[:3] == "QE:":
-    output_data = output[route]
+    # Run RAG via a specific query engine
+    query_engine_name = route[3:]
+    Logger.info("Dispatch to Query Engine: {query_engine_name}")
+
+    query_engine = QueryEngine.find_by_name(query_engine_name)
+    Logger.info("Query Engine: {query_engine}")
+
     query_result, query_references = await query_generate(
-          user.id, prompt, output_data["query_engine_name"], llm_type,
+          user.id,
+          prompt,
+          query_engine,
+          query_engine.llm_type,
           sentence_references=True)
     Logger.info(f"Query response="
-                f"[{query_result.response}]")
-
+                f"[{query_result}]")
     response_data = {
       "query_result": query_result,
       "query_references": query_references
     }
-    user_chat.update_history(response=output, custom_entries=response_data)
+    user_chat.update_history(response=query_result, custom_entries={
+      "query_references": query_references,
+    })
     user_chat.save()
 
-  elif route == "create_plan":
-    output, user_plan = agent_plan("Plan", prompt, user.id)
+  elif route == "plan":
+    # Run PlanAgent to generate a plan
+    output, user_plan = agent_plan(
+        agent_name="Plan", prompt=prompt, user_id=user.id)
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
     user_chat.update_history(response=output, custom_entries={
@@ -148,6 +161,7 @@ async def agent_dispatch(run_config: LLMAgentRunModel,
   return {
     "success": True,
     "message": "Successfully ran dispatch",
+    "route": route,
     "data": response_data
   }
 
