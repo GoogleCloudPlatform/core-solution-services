@@ -144,14 +144,16 @@ def query_tool(query: str) -> Dict:
   return result
 
 @tool(infer_schema=True)
-def google_sheets_tool(name: str,columns : List, rows : List, 
+def google_sheets_tool(name: str,columns : List, rows : List,
                       user_email: str=None) -> Dict:
     """
      Create a Google Sheet with the supplied data and return the sheet url and 
      id
     """
-    Logger.info(f"[google_sheets_tool] creating spreadsheet name:{name}, columns: {columns}"
-                f"for user: {user_email}.")
+    Logger.info(
+        f"[google_sheets_tool] creating spreadsheet name:{name},"
+        f" columns: {columns}"
+        f"for user: {user_email}.")
     api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
     api_url = f"{api_url_prefix}/workspace/sheets/create"
     output = {}
@@ -161,7 +163,7 @@ def google_sheets_tool(name: str,columns : List, rows : List,
     "columns": columns,
     "rows": rows
     }
-  
+
     try:
       response = post_method(url=api_url,
                              request_body=data,
@@ -172,7 +174,9 @@ def google_sheets_tool(name: str,columns : List, rows : List,
         f"[google_sheets_tool] response from google_sheets_service: {response}"
         )
       result = resp_data["result"]
-      Logger.info(f"[google_sheets_tool] creating spreadsheet for user: {user_email}. Result: {result}")
+      Logger.info(
+          f"[google_sheets_tool] creating spreadsheet for user: {user_email}."
+          f" Result: {result}")
       output = {
         "sheet_url": resp_data["sheet_url"],
         "sheet_id": resp_data["sheet_id"]

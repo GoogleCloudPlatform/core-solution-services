@@ -236,7 +236,7 @@ def parse_plan(text: str) -> List[str]:
   return steps
 
 def agent_execute_plan(
-    agent_name:str, prompt:str, user_plan:UserPlan = None, 
+    agent_name:str, prompt:str, user_plan:UserPlan = None,
     user:User = None) -> str:
   """
   Execute a given plan_steps.
@@ -249,8 +249,8 @@ def agent_execute_plan(
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
   langchain_agent = llm_service_agent.load_agent()
   username = user_email = None
-  #update user information 
-  if user is not None: 
+  #update user information
+  if user is not None:
     username = user.first_name +" "+user.last_name
     user_email = user.email
   tools = llm_service_agent.get_tools()
@@ -273,7 +273,7 @@ def agent_execute_plan(
   f"Execute the steps as outlined in this numbered list {plan_steps_string}."
   f"You are executing this plan on behalf of User:{username} "
   f"with user email:{user_email}")
-  
+
   prompt = prompt + prompt_addition
   agent_inputs = {
     "input": prompt,

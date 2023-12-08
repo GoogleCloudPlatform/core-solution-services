@@ -148,7 +148,7 @@ class TaskAgent(BaseAgent):
     self.name = "TaskAgent"
     self.agent_class = StructuredChatAgent
     self.prefix = TASK_PREFIX
-  
+
   def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
     """ load this agent and return an instance of langchain Agent"""
     #This is the list of variables defined in the associated prompt
@@ -164,7 +164,6 @@ class TaskAgent(BaseAgent):
   @property
   def format_instructions(self) -> str:
     return STRUCTURED_FORMAT_INSTRUCTIONS
-  
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
@@ -174,7 +173,7 @@ class TaskAgent(BaseAgent):
     return capabilities
 
   def get_tools(self):
-    tools = [gmail_tool, database_tool,  google_sheets_tool, docs_tool, 
+    tools = [gmail_tool, database_tool,  google_sheets_tool, docs_tool,
       calendar_tool, search_tool, query_tool]
     return tools
 
