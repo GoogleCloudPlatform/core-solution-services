@@ -19,14 +19,31 @@ import streamlit as st
 from streamlit_javascript import st_javascript
 from common.utils.logging_handler import Logger
 from config import API_BASE_URL
+from streamlit.runtime.scriptrunner import RerunData, RerunException
+from streamlit.source_util import get_pages
 
 Logger = Logger.get_logger(__file__)
 
-def navigate_to(url):
+def http_navigate_to(url):
   nav_script = f"""
       <meta http-equiv="refresh" content="0; url='{url}'">
   """
   st.write(nav_script, unsafe_allow_html=True)
+
+def navigate_to(page_name):
+  def standardize_name(name: str) -> str:
+    return name.lower().replace("_", " ")
+  page_name = standardize_name(page_name)
+  pages = get_pages("main.py")
+
+  for page_hash, config in pages.items():
+    if standardize_name(config["page_name"]) == page_name:
+      raise RerunException(
+        RerunData(
+          page_script_hash=page_hash,
+          page_name=page_name,
+        )
+      )
 
 def init_api_base_url():
   api_base_url = API_BASE_URL
@@ -41,3 +58,34 @@ def init_api_base_url():
   st.session_state.api_base_url = api_base_url.rstrip("/")
   Logger.info("st.session_state.api_base_url = "
               f"{st.session_state.api_base_url}")
+
+def hide_pages(hidden_pages: list[str]):
+  styling = ""
+  current_pages = get_pages("")
+  section_hidden = False
+
+  for idx, val in enumerate(current_pages.values()):
+    page_name = val.get("page_name")
+
+    if val.get("is_section"):
+      # Set whole section as hidden
+      section_hidden = page_name in hidden_pages
+    elif not val.get("in_section"):
+      # Reset whole section hiding if we hit a page thats not in a section
+      section_hidden = False
+    if page_name in hidden_pages or section_hidden:
+      styling += f"""
+        div[data-testid=\"stSidebarNav\"] li:nth-child({idx + 1}) {{
+            display: none;
+        }}
+      """
+
+  styling = f"""
+    <style>
+        {styling}
+    </style>
+  """
+  st.write(
+    styling,
+    unsafe_allow_html=True,
+  )

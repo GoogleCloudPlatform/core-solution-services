@@ -57,7 +57,16 @@ def get_engine_list():
       LLMGetQueryEnginesResponse
   """
   query_engines = QueryEngine.collection.fetch()
-  query_engine_data = [{"name": qe.name, "id": qe.id} for qe in query_engines]
+  query_engine_data = [{
+    "id": qe.id,
+    "name": qe.name,
+    "description": qe.description,
+    "llm_type": qe.llm_type,
+    "embedding_type": qe.embedding_type,
+    "vector_store": qe.vector_store,
+    "created_time": qe.created_time,
+    "last_modified_time": qe.last_modified_time,
+  } for qe in query_engines]
   try:
     return {
       "success": True,
