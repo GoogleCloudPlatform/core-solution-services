@@ -19,6 +19,14 @@
 # Config dicts that hold the current config for providers, models,
 # embedding models
 
+import json
+from typing import Dict, Any
+from common.utils.config import get_environ_flag
+from common.utils.logging_handler import Logger
+from common.utils.secrets import get_secret
+from common.utils.http_exceptions import InternalServerError
+
+Logger = Logger.get_logger(__file__)
 
 # config dict keys
 KEY_ENABLED = "enabled"
@@ -34,28 +42,53 @@ class ModelConfigMissingException(Exception):
 class ModelConfig():
   """
   Model config class
+
+  Instances of this class represent config for LLM models managed by the
+  LLM Service.  Config is stored in three instance dicts:
+  
+  llm_model_providers: Dict[str, Dict[str, Any]] 
+    provider_id: provider config dict
+
+    provider config keys:
+      enabled: is provider enabled
+      env_flag: environment variable to enable/disable provider
+
+  llm_models: Dict[str, Dict[str, Any]]
+    model_id: model config dict
+
+    model config keys:
+      enabled: is model enabled
+      is_chat: is the model a chat model
+      provider: the provider of the model
+      api_base_url: base url of a model served by an external provider
+      api_key: secret id for api key
+
+  llm_embedding_models: Dict[str, Dict[str, Any]]
+    model_id: embedding model config dict
+  
+    embedding model config uses all model config keys
+    embedding models also include these keys
+      dimension: dimension of embedding vector
   """
 
-  LLM_MODEL_PROVIDERS = {}
-  LLM_MODELS = {}
-  LLM_EMBEDDING_MODELS = {}
-
-  def __init__(model_config_path: str):
+  def __init__(self, model_config_path: str):
     self.model_config_path = model_config_path
+    self.llm_model_providers: Dict[str, Dict[str, Any]] = {}
+    self.llm_models: Dict[str, Dict[str, Any]] = {}
+    self.llm_embedding_models: Dict[str, Dict[str, Any]] = {}
 
   def read_model_config(self):
     """ read model config from json config file """
     try:
       with open(self.model_config_path, "r", encoding="utf-8") as file:
         model_config = json.load(file)
-
-      LLM_MODEL_PROVIDERS = model_config.get(KEY_PROVIDERS, LLM_MODEL_PROVIDERS)
-      LLM_MODELS = model_config.get(KEY_MODELS, LLM_MODELS)
-      LLM_EMBEDDING_MODELS = model_config.get(KEY_EMBEDDINGS,
-          LLM_EMBEDDING_MODELS)
-
+        self.llm_model_providers = model_config.get(KEY_PROVIDERS, {})
+        self.llm_models = model_config.get(KEY_MODELS, {})
+        self.llm_embedding_models = model_config.get(KEY_EMBEDDINGS, {})
     except Exception as e:
-      Logger.error(f"Can't load llm_service_models.json: {str(e)}")
+      Logger.error(
+          "Can't load models config json at"
+          f" {self.model_config_path}: {str(e)}")
       raise InternalServerError(str(e)) from e
 
   def set_model_config(self):
@@ -69,11 +102,11 @@ class ModelConfig():
 
     We always default to True if a setting or env var is not present.
     """
-    for model_id, model_config in LLM_MODELS.items():
+    for model_id, model_config in self.llm_models.items():
       # Get enabled setting in model config
       model_config_enabled = model_config.get(KEY_ENABLED, "True")
       model_enabled = model_config_enabled.lower() == "true"
-    
+
       # if there is no env flag variable for this model, or it is not set,
       # then env_flag_setting defaults to True
       env_flag_setting = True
@@ -89,7 +122,7 @@ class ModelConfig():
         Logger.error(f"No provider for model {model_id}: disabling")
         model_config[KEY_ENABLED] = False
         continue
-      provider_config = LLM_MODEL_PROVIDERS.get(provider, None)
+      provider_config = self.llm_model_providers.get(provider, None)
       if provider_config is None:
         Logger.error(
             f"Provider config for model {model_id} not found: disabling")
@@ -97,15 +130,15 @@ class ModelConfig():
         continue
       provider_enabled_setting = provider_config.get(KEY_ENABLED, "True")
       provider_enabled = provider_enabled_setting.lower() == "true"
-    
+
       # Get api keys if present. If an api key serect is configured and
       # the key is missing, disable the model.
-      api_key = get_api_key(model_id)
-      api_check = True 
-      if get_config_value(KEY_API_KEY):
+      api_key = self.get_api_key(model_id)
+      api_check = True
+      if self.get_config_value(model_id, KEY_API_KEY):
         api_check = api_key is not None
 
-      model_enabled = 
+      model_enabled = \
           api_check and \
           model_enabled and \
           provider_enabled and \
@@ -117,31 +150,35 @@ class ModelConfig():
           f"Setting model enabled flag for {model_id} to {model_enabled}")
 
   def is_model_enabled(self, model_id: str) -> bool:
-    model_config = LLM_MODELS.get(model_id)
+    model_config = self.llm_models.get(model_id)
     return model_config(KEY_ENABLED)
 
-  def get_model_config(self, model_id: str) -> dict: 
-    model_config = LLM_MODELS.get(model_id, None)
+  def get_model_config(self, model_id: str) -> dict:
+    model_config = self.llm_models.get(model_id, None)
     if model_config is None:
       raise ModelConfigMissingException(model_id)
     return model_config
 
-  def get_config_value(model_id: str, key: str) -> Any:
-    return get_model_config(model_id).get(key)
+  def get_config_value(self, model_id: str, key: str) -> Any:
+    return self.get_model_config(model_id).get(key)
+
+  def get_all_model_config(self):
+    """ return dict of model config and embedding model config combined """
+    return self.llm_models.copy().update(self.llm_embedding_models)
 
   def get_api_keys(self) -> dict:
     """ return a dict of model_id: api_key """
     api_keys = {}
-    for model_id, _ in model_config.items():
-      api_key = get_api_key(model_id: str)
+    for model_id, _ in self.get_all_model_config().items():
+      api_key = self.get_api_key(model_id)
       api_keys.update({model_id: api_key})
     return api_keys
 
   def get_api_key(self, model_id: str) -> str:
     """ Get api key for model.  Also set it into model config. """
-    model_config = get_model_config(model_id)
+    model_config = self.get_model_config(model_id)
     api_key = None
-    if is_model_enabled(model_id):
+    if self.is_model_enabled(model_id):
       # get the key secret id from config
       api_key_id = model_config.get(KEY_API_KEY, None)
       if api_key_id:
@@ -153,7 +190,8 @@ class ModelConfig():
           # it should normally just result in the model being disabled.
           # Here we will just log an error.
           Logger.error(
-              f"Unable to retrieve api key secret {api_key_id} for {model_id}")
+              f"Unable to get api key secret {api_key_id} "
+              f"for {model_id}: {str(e)}")
 
     model_config["api_key_value"] = api_key
     return api_key
@@ -163,5 +201,5 @@ class ModelConfig():
     Load model config dicts.  
     Refresh api keys and set enabled flags for all models.
     """
-    read_model_config()
-    set_model_config()
+    self.read_model_config()
+    self.set_model_config()

@@ -18,6 +18,7 @@
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 import json
 import os
+from common.utils.config import get_environ_flag
 from common.utils.gcs_adapter import download_file_from_gcs
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
@@ -77,16 +78,6 @@ ERROR_RESPONSES = {
 }
 
 # LLM configuration
-
-def get_environ_flag(env_flag_str, default=True):
-  default_str = str(default)
-  evn_val = os.getenv(env_flag_str, default_str)
-  if evn_val is None or evn_val == "":
-    evn_val = default_str
-  evn_flag = evn_val.lower() == "true"
-  Logger.info(f"{env_flag_str} = {evn_flag}")
-  return evn_flag
-
 
 # VertexAI models are enabled by default
 ENABLE_GOOGLE_LLM = get_environ_flag("ENABLE_GOOGLE_LLM", True)

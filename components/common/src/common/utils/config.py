@@ -17,6 +17,15 @@
 import os
 from enum import Enum
 
+def get_environ_flag(env_flag_str, default=True):
+  default_str = str(default)
+  evn_val = os.getenv(env_flag_str, default_str)
+  if evn_val is None or evn_val == "":
+    evn_val = default_str
+  evn_flag = evn_val.lower() == "true"
+  Logger.info(f"{env_flag_str} = {evn_flag}")
+  return evn_flag
+
 IS_CLOUD_LOGGING_ENABLED = bool(
   os.getenv("IS_CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))
 
