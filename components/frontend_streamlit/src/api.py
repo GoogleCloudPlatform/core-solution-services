@@ -183,6 +183,7 @@ def build_query_engine(name: str, doc_url: str, embedding_type: str,
     "vector_store": vector_store,
     "description": description,
   }
+  Logger.info(f"Sending request_body={request_body} to {api_url}")
   resp = post_method(api_url, request_body=request_body, token=auth_token)
   handle_error(resp)
   Logger.info(resp)

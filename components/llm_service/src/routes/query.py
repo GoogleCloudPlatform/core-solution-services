@@ -353,7 +353,9 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "is_public": is_public,
       "llm_type": genconfig_dict.get("llm_type", None),
       "embedding_type": genconfig_dict.get("embedding_type", None),
-      "vector_store": genconfig_dict.get("vector_store", None)
+      "vector_store": genconfig_dict.get("vector_store", None),
+      "description": genconfig_dict.get("description", None),
+
     }
     env_vars = {
       "DATABASE_PREFIX": DATABASE_PREFIX,
