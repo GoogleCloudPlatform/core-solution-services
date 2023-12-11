@@ -136,9 +136,9 @@ async def query_generate(
   return query_result, query_references
 
 
-async def query_search(q_engine: QueryEngine,
-                       query_prompt: str,
-                       sentence_references: bool = False) -> List[dict]:
+def query_search(q_engine: QueryEngine,
+                 query_prompt: str,
+                 sentence_references: bool = False) -> List[dict]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
