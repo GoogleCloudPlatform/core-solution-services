@@ -44,7 +44,7 @@ from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
 
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,ungrouped-imports,unused-import
 
 Logger = Logger.get_logger(__file__)
 
@@ -243,8 +243,8 @@ def get_similarity(query_embeddings, sentence_embeddings) -> list:
   for _, row in sentence_df.iterrows():
     x = row
     y = query_df
-    # calculate the cosine similiarity
-    cosine = np.dot(x,y) / (norm(x) * norm(y))
+    # calculate the cosine similarity
+    cosine = np.dot(x, y) / (norm(x) * norm(y))
     cos_sim.append(cosine[0])
 
   return cos_sim
