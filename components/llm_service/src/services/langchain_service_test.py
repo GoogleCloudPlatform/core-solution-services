@@ -16,8 +16,14 @@
 """
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
+# pylint: disable=wrong-import-position
 import os
 import pytest
+
+os.environ["PROJECT_ID"] = "fake-project"
+os.environ["OPENAI_API_KEY"] = "fake-key"
+os.environ["COHERE_API_KEY"] = "fake-key"
+
 from unittest import mock
 from services.langchain_service import langchain_llm_generate
 from common.models import User, UserChat
@@ -29,9 +35,6 @@ from testing.test_config import (FAKE_GENERATE_RESPONSE,
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 from langchain.schema import Generation
 
-os.environ["OPENAI_API_KEY"] = "fake-key"
-os.environ["COHERE_API_KEY"] = "fake-key"
-
 with mock.patch(
     "common.utils.secrets.get_secret",
         side_effect=mock.MagicMock()) as mok:
@@ -40,20 +43,19 @@ with mock.patch(
       from config import OPENAI_LLM_TYPE_GPT3_5, COHERE_LLM_TYPE
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 
 FAKE_LANGCHAIN_GENERATION = Generation(text=FAKE_GENERATE_RESPONSE)
 
 
 @pytest.fixture
-def create_user(firestore_emulator, clean_firestore):
+def create_user(firestore_emulator, clean_firestore, scope="module"):
   user_dict = USER_EXAMPLE
   user = User.from_dict(user_dict)
   user.save()
 
 
 @pytest.fixture
-def test_chat(firestore_emulator, clean_firestore):
+def test_chat(firestore_emulator, clean_firestore, scope="module"):
   chat_dict = CHAT_EXAMPLE
   chat = UserChat.from_dict(chat_dict)
   chat.save()
@@ -61,7 +63,7 @@ def test_chat(firestore_emulator, clean_firestore):
 
 
 @pytest.mark.asyncio
-async def test_langchain_llm_generate():
+async def test_langchain_llm_generate(clean_firestore):
   prompt = "test prompt"
   with mock.patch("langchain.llms.Cohere.agenerate",
                   return_value=FAKE_GENERATE_RESULT):
@@ -70,7 +72,7 @@ async def test_langchain_llm_generate():
 
 
 @pytest.mark.asyncio
-async def test_langchain_llm_generate_chat(create_user, test_chat):
+async def test_langchain_llm_generate_chat(test_chat, clean_firestore):
   prompt = "test prompt"
   with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
                   return_value=FAKE_CHAT_RESULT):

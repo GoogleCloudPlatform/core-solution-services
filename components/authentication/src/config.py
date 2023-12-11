@@ -25,6 +25,7 @@ from schemas.error_schema import (UnauthorizedUserErrorResponseModel,
                                   ValidationErrorResponseModel,
                                   ConnectionErrorResponseModel)
 
+Logger = Logger.get_logger(__file__)
 default_firebase_app = firebase_admin.initialize_app()
 secret_client = secretmanager.SecretManagerServiceClient()
 
@@ -41,6 +42,8 @@ IS_DEVELOPMENT = bool(os.getenv("IS_DEVELOPMENT", "").lower() in ("True",
 # Firestore User record in "users" collection.
 AUTH_REQUIRE_FIRESTORE_USER = os.getenv(
     "AUTH_REQUIRE_FIRESTORE_RECORD", "").lower() == "true"
+Logger.info("Setting AUTH_REQUIRE_FIRESTORE_RECORD as "
+            f"{AUTH_REQUIRE_FIRESTORE_USER}")
 
 # Retrieving FIREBASE_API_KEY from secrets manager.
 FIREBASE_API_KEY = None

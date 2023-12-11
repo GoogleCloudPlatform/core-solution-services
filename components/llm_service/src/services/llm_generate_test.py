@@ -15,22 +15,11 @@
   Unit tests for Langchain Service endpoints
 """
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import
-# pylint: disable=unused-variable,ungrouped-imports
+# pylint: disable=unused-argument,redefined-outer-name,unused-import,wrong-import-position
+# pylint: disable=unused-variable,ungrouped-imports,import-outside-toplevel
 import os
 import pytest
 from unittest import mock
-from services.llm_generate import llm_generate, llm_chat
-from google.cloud.aiplatform.models import Prediction
-from vertexai.preview.language_models import TextGenerationResponse
-from common.testing.firestore_emulator import (firestore_emulator,
-                                               clean_firestore)
-from common.models import User, UserChat
-from schemas.schema_examples import (CHAT_EXAMPLE, USER_EXAMPLE)
-from testing.test_config import (FAKE_GENERATE_RESPONSE,
-                                 FAKE_GENERATE_RESULT,
-                                 FAKE_CHAT_RESULT,
-                                 FAKE_PREDICTION_RESPONSE)
 
 os.environ["PROJECT_ID"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
@@ -38,15 +27,29 @@ os.environ["COHERE_API_KEY"] = "fake-key"
 os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
 os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 
-with mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock()):
+from services.llm_generate import llm_generate, llm_chat
+from google.cloud.aiplatform.models import Prediction
+from vertexai.preview.language_models import TextGenerationResponse
+from common.models import User, UserChat
+from common.testing.firestore_emulator import (firestore_emulator,
+                                               clean_firestore)
+from common.utils.logging_handler import Logger
+from schemas.schema_examples import (CHAT_EXAMPLE, USER_EXAMPLE)
+from testing.test_config import (FAKE_GENERATE_RESPONSE,
+                                 FAKE_GENERATE_RESULT,
+                                 FAKE_CHAT_RESULT,
+                                 FAKE_PREDICTION_RESPONSE)
+
+Logger = Logger.get_logger(__file__)
+
+with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere"):
-      from config import (COHERE_LLM_TYPE,
+      from config import (LLM_TYPES,
+                          COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
-                          VERTEX_LLM_TYPE_BISON_CHAT,
-                          VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
-                          TRUSS_LLM_LLAMA2_CHAT)
+                          VERTEX_LLM_TYPE_BISON_CHAT)
 
 FAKE_GOOGLE_RESPONSE = TextGenerationResponse(text=FAKE_GENERATE_RESPONSE,
                                               _prediction_response={})
@@ -135,23 +138,32 @@ async def test_llm_chat_google_resume(clean_firestore, test_chat):
   assert response == FAKE_GENERATE_RESPONSE
 
 
-# @pytest.mark.asyncio
-# async def test_model_garden_predict(clean_firestore, test_chat):
-#   with mock.patch(
-#           "google.cloud.aiplatform.Endpoint.predict_async",
-#           return_value=FAKE_MODEL_GARDEN_RESPONSE):
-#     response = await llm_chat(
-#       FAKE_PROMPT, VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
-#
-#   assert response == FAKE_PREDICTION_RESPONSE
-#
-#
-# @pytest.mark.asyncio
-# async def test_llm_truss_service_predict(clean_firestore, test_chat):
-#   with mock.patch(
-#           "common.utils.request_handler.post_method",
-#           return_value=FAKE_TRUSS_RESPONSE):
-#     response = await llm_chat(
-#       FAKE_PROMPT, TRUSS_LLM_LLAMA2_CHAT)
-#
-#   assert response == FAKE_GENERATE_RESPONSE
+@pytest.mark.asyncio
+async def test_model_garden_predict(clean_firestore, test_chat):
+  with mock.patch(
+          "google.cloud.aiplatform.Endpoint.predict_async",
+          return_value=FAKE_MODEL_GARDEN_RESPONSE):
+    from config.config import (GOOGLE_MODEL_GARDEN,
+                               VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
+    GOOGLE_MODEL_GARDEN[VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT] = "fake-endpoint"
+    LLM_TYPES.extend([VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT])
+    response = await llm_chat(
+      FAKE_PROMPT, VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
+
+  assert response == FAKE_PREDICTION_RESPONSE
+
+
+@pytest.mark.asyncio
+async def test_llm_truss_service_predict(clean_firestore, test_chat):
+  with mock.patch(
+          "services.llm_generate.post_method",
+          return_value=mock.Mock(status_code=200,
+                                 json=lambda: FAKE_TRUSS_RESPONSE)):
+    from config.config import (LLM_TRUSS_MODELS,
+                               TRUSS_LLM_LLAMA2_CHAT)
+    LLM_TRUSS_MODELS[TRUSS_LLM_LLAMA2_CHAT] = "fake-endpoint"
+    LLM_TYPES.append(TRUSS_LLM_LLAMA2_CHAT)
+    response = await llm_chat(
+      FAKE_PROMPT, TRUSS_LLM_LLAMA2_CHAT)
+
+  assert response == FAKE_GENERATE_RESPONSE

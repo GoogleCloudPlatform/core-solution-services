@@ -21,11 +21,6 @@ from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
 import utils
 
-# For development purpose:
-params = st.experimental_get_query_params()
-st.session_state.auth_token = params.get("auth_token", [None])[0]
-st.session_state.chat_id = params.get("chat_id", [None])[0]
-st.session_state.query_engine_id = params.get("query_engine_id", [None])[0]
 
 Logger = Logger.get_logger(__file__)
 
@@ -36,6 +31,10 @@ def on_input_change():
   st.session_state.messages.append({"HumanInput": user_input})
 
   # Send API to llm-service
+  if query_engine_id is None:
+    Logger.error("Invalid Query Engine")
+    st.write("Invalid Query Engine")
+    return
   response = run_query(query_engine_id, user_input,
                        chat_id=st.session_state.chat_id)
 
@@ -69,6 +68,7 @@ def chat_content():
   chat_placeholder = st.empty()
   with chat_placeholder.container():
     index = 1
+    query_index = 1
     for item in st.session_state.messages:
       if "HumanInput" in item:
         with st.chat_message("user"):
@@ -79,7 +79,7 @@ def chat_content():
           st.write(
               item["AIOutput"],
               key=f"ai_{index}",
-              allow_html=False,
+              unsafe_allow_html=False,
               is_table=False,  # TODO: Detect whether an output content type.
           )
 
@@ -88,7 +88,11 @@ def chat_content():
           for reference in item["References"]:
             document_url = reference["document_url"]
             document_text = reference["document_text"]
-            st.text_area(f"Reference: {document_url}", document_text)
+            st.text_area(
+              f"Reference: {document_url}",
+              document_text,
+              key=f"ref_{query_index}")
+            query_index = query_index + 1
           st.divider()
 
   st.text_input("User Input:", on_change=on_input_change, key="user_input")
@@ -108,5 +112,5 @@ def chat_page():
 
 
 if __name__ == "__main__":
-  utils.init_api_base_url()
+  utils.init_page()
   chat_page()

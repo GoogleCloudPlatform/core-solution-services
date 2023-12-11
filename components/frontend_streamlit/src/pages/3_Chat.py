@@ -42,11 +42,6 @@ CHAT_PAGE_STYLES = """
 </style>
 """
 
-# For development purpose:
-params = st.experimental_get_query_params()
-st.session_state.auth_token = params.get("auth_token", [None])[0]
-st.session_state.chat_id = params.get("chat_id", [None])[0]
-st.session_state.agent_name = params.get("agent_name", ["Chat"])[0]
 st.session_state.input_loading = False
 
 Logger = Logger.get_logger(__file__)
@@ -93,7 +88,7 @@ def init_messages():
 
 
 def format_ai_output(text):
-  print(text)
+  Logger.info(text)
 
   text = ansi_escape.sub("", text)
   text = text.replace("> Entering new AgentExecutor chain",
@@ -113,7 +108,7 @@ def chat_content():
   with chat_placeholder.container():
     index = 1
     for item in st.session_state.messages:
-      print(item)
+      Logger.info(item)
 
       if "HumanInput" in item:
         with st.chat_message("user"):
@@ -126,7 +121,7 @@ def chat_content():
           st.write(
               ai_output,
               key=f"ai_{index}",
-              allow_html=False,
+              unsafe_allow_html=False,
               is_table=False,  # TODO: Detect whether an output content type.
           )
 
@@ -135,7 +130,7 @@ def chat_content():
           index = 1
 
           plan = get_plan(item["plan"]["id"])
-          print(plan)
+          Logger.info(plan)
 
           for step in plan["plan_steps"]:
             st.text_area(f"step-{index}", step["description"],
@@ -182,5 +177,5 @@ def chat_page():
 
 
 if __name__ == "__main__":
-  utils.init_api_base_url()
+  utils.init_page()
   chat_page()

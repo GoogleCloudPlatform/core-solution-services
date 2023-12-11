@@ -28,27 +28,60 @@ gcloud secrets create "huggingface-api-key" --project $PROJECT_ID
 echo $HUGGINGFACE_API_KEY | gcloud secrets versions add "huggingface-api-key" --data-file=-
 ```
 
-TODO:
-* Currently secret is not being used, since deployment needs a service account with access to the secret manager (it is being passed as an environment variable to ConfigMap).
-  This part shall be added later during the integration with the main project
+### Service Account and Workload Identity 
+
+These instructions assume that you have service account `gke-sa` existing in the GCP project and that there is gke-sa Kubernetes service account (which is required and used within this project )
+
+If you are using a different project without service account, make sure to:
+
+* Create service account named `gke-sa`:  `gke-sa@$PROJECT_ID.iam.gserviceaccount.com`
+  * Assign the following roles:
+      * Secret Manager Admin
+      * Kubernetes Engine Admin
+      * Storage Admin
+      * Workload Identity User
+    
+* Create Kubernetes Service Account (gke-sa)  and bind it to the GCP service account used for GKE:
+  ```
+  export PROJECT_ID=<your-dev-project-id>
+  bash ./setup/setup_ksa.sh
+  ```
+    - This will create a service account in the GKE cluster.
+    - It will also bind the GKE service account with the regular GCP service account named "gke-sa".
+    - You can verify it on the GCP Console > Service Accounts > "gke-sa" service account > Permissions.
+
 
 ### GPU cluster with nvidia Drivers
 You will need a GPU cluster with nvidia drivers installed.
 
-#### Create GPU cluster (if does not exist)
-Create GPU GKE Cluster:
-* In the default-pool >
-  * Enable cluster autoscaler
-* In the Nodes tab:
+#### Cluster with Regional GPU nodepool
+
+Node pool details: 
+* Name: explanatory name, such as `gpu-node-pool` 
+* Size (Number of nodes): 1
+* Enable cluster autoscaler - Checkbox on
+  ** Location policy -> Balanced
+  ** Total limits:
+  * Minimum number of all nodes 1,
+  * Maximum number of all nodes 3,
+    ** Specify node locations - Checkbox on
+    * us-central1-c
+
+Nodes:
   * Change Machine Configuration from General Purpose to GPU
-    * GPU type: Nvidia TF
+    * GPU type: Nvidia T4
     * Number of GPUs: 1
-    * Enable GPU time sharing
-    * Max shared clients per GPU: 8
+    * Enable GPU time sharing (*)
+      * Max shared clients per GPU: 8
   * GPU Driver installation
     - Google-managed (latest)    
   * Machine type: n1-standard-4
   * Boot disk size: 100 GB
+
+Security:
+  * Specify service account: `gke-sa@$PROJECT_ID.iam.gserviceaccount.com`
+
+(*) GPU sharing does not come up as an option, when adding new nodepool to the existing cluster, and is available for the new cluster creation onlu.
 
 
 Following Org Policy needs to be disabled: (need to have `orgpolicy.policies.create` permission):
@@ -56,39 +89,17 @@ Following Org Policy needs to be disabled: (need to have `orgpolicy.policies.cre
 gloud org-policies reset constraints/compute.vmExternalIpAccess --project $PROJECT_ID
 ```
 
-gcloud command line:
-
 ```shell
 export PROJECT_ID=...
 export CLUSTER_NAME=...
 export REGION="us-central1"
-export ZONE="us-central1-c"
 ```
 
-```shell
-gcloud beta container --project "$PROJECT_ID" clusters create "$CLUSTER_NAME" \
-  --no-enable-basic-auth --cluster-version "1.27.3-gke.100" --release-channel "regular" \
-  --machine-type "n1-standard-4" \
-  --accelerator "type=nvidia-tesla-t4,count=1,gpu-sharing-strategy=time-sharing,max-shared-clients-per-gpu=8" \
-  --image-type "COS_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" \
-  --metadata disable-legacy-endpoints=true \
-  --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
-  --num-nodes "3" --logging=SYSTEM,WORKLOAD --monitoring=SYSTEM --enable-ip-alias \
-  --network "projects/$PROJECT_ID/global/networks/jump-vpc" \
-  --subnetwork "projects/$PROJECT_ID/regions/$REGION/subnetworks/jump-vpc-subnet" \
-  --no-enable-intra-node-visibility --default-max-pods-per-node "110" \
-  --security-posture=standard --workload-vulnerability-scanning=disabled \
-  --no-enable-master-authorized-networks \
-  --addons HorizontalPodAutoscaling,HttpLoadBalancing,GcePersistentDiskCsiDriver \
-  --enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 \
-  --max-unavailable-upgrade 0 --binauthz-evaluation-mode=DISABLED \
-  --enable-managed-prometheus --enable-shielded-nodes --node-locations "$ZONE"
-```
 
 #### Connect to the cluster
 
 ```shell
-gcloud container clusters get-credentials $CLUSTER_NAME --region $REGION --project $PROJECT_ID
+gcloud container clusters get-credentials main-cluster --region $REGION --project $PROJECT_ID
 ```
 
 ## Create Truss Foundation
@@ -143,6 +154,16 @@ cp llama2-7b-sample/skaffold.yaml $MODEL_NAME/
 
 ## Build and Deploy Llama2
 
+### Llama2 Configuration
+Before the deployment you can tune llama2 prediction parameters and change the default values:  
+
+* `DEFAULT_MAX_LENGTH` - max_length in the request payload (default is 256)
+You can increase or decrease it by exporting value into the env variable:
+
+```shell
+export DEFAULT_MAX_LENGTH=1024
+```
+
 Build and deploy into the default namespace:
 
 ```shell
@@ -166,6 +187,19 @@ kubectl get pods
 
 Grab the full name of the running pod, such as `llama2-7b-7f9c8888d5-rlxr4`
 
+Note, it will take ~10 minutes for the pod to download the model. 
+
+You can track the progress via logs
+```shell
+kubectl logs <pod-name> 
+```
+
+Wait till it gets to 100%:
+```text
+Downloading shards:  50%|█████     | 1/2 [01:03<01:03, 63.31s/it]1:03<00:00, 194MB/s]
+
+```
+
 Make sure cuda is activated:
 
 ```shell
@@ -185,10 +219,10 @@ cd experimental/llm_truss
 ```
 
 First you need to get IP address of the Prediction model:
-
 ```shell
-export MODEL_IP=$(kubectl describe service/llama2-7b-service | grep 'LoadBalancer Ingress:' | awk '{print $3}')
-echo MODEL_IP=$MODEL_IP
+kubectl port-forward service/truss-llama2-7b-service 28015:80 &
+export MODEL_IP=localhost:28015
+echo MODEL_IP=${MODEL_IP}
 ```
 
 Now you can test prediction:
@@ -201,7 +235,7 @@ Sample Output:
 
 ```text
 python main.py "What is Medicaid?"
-Using model endpoint http://35.224.143.29:8080/v1/models/model:predict with data: {'prompt': 'What is Medicaid?', 'temperature': 0.2, 'top_p': 0.95, 'top_k': 40}
+Using model endpoint http://truss-llama2-7b-service/v1/models/model:predict with data: {'prompt': 'What is Medicaid?', 'temperature': 0.2, 'top_p': 0.95, 'top_k': 40}
 {'data': {'generated_text': 'What is Medicaid?\n\nMedicaid is a government program that provides health coverage to eligible individuals with low income and limited resources. It is a joint federal-state program, meaning that both the federal government and each individual state contribute funding to the program. Medicaid is designed to help ensure that certain groups of people, such as low-income children, pregnant women, and people with disabilities, have access to necessary medical care.\n\nWho is eligible for Medicaid?\n\nMedicaid eligibility varies by state, but generally, individuals who have'}}
 Received response in 8 seconds.
 ```
@@ -209,13 +243,13 @@ Received response in 8 seconds.
 Optionally overwrite parameters:
 
 ```shell
-python main.py "what is medicaid?" --temp 1 --top_p 1 --top_k 10
+python main.py "what is medicaid?"  --max_length 100 --temperature 1 --top_p 0.9 --top_k 30
 ```
 
 Help:
 ```text
 python main.py --help
-usage: main.py [-h] [--model_ip MODEL_IP] [--temperature TEMPERATURE] [--top_p TOP_P] [--top_k TOP_K] prompt
+usage: main.py [-h] [--model_ip MODEL_IP] [--max_length MAX_LENGTH] [--temperature TEMP] [--top_p TOP_P] [--top_k TOP_K] prompt
 
 positional arguments:
   prompt
@@ -223,8 +257,8 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --model_ip MODEL_IP   Model endpoint ip
-  --temperature TEMPERATURE
-                        Temperature
+  --max_length MAX_LENGTH Maximum request length
+  --temperature TEMP    Temperature
   --top_p TOP_P         Token selection Top-P sampling
   --top_k TOP_K         Token selection Top-K sampling
 ```

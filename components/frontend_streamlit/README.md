@@ -10,7 +10,7 @@ Set up API endpoint
 export API_BASE_URL=https://my.domain.com
 ```
 
-Set the subpath where the streamlit will deploy to. By default, it sets to "/streamlit"
+Set the sub-path where the streamlit will deploy to. By default, it sets to "/streamlit"
 
 ```
 export APP_BASE_PATH="/streamlit"
@@ -20,8 +20,8 @@ Install virtualenv and dependencies
 ```
 python -m virtualenv .venv
 source .venv/bin/activate
-pip install -r ../common/requirements.txt
-pip install -r requirements.txt
+pip install -r components/common/requirements.txt
+pip install -r components/frontend_streamlit/requirements.txt
 ```
 
 ```
@@ -29,7 +29,7 @@ PYTHONPATH=components/common/src streamlit run components/frontend_streamlit/src
   --server.baseUrlPath=$APP_BASE_PATH
 ```
 
-### Deploy and run at remote GKE cluster
+### Deploy and run with livereload at remote GKE cluster
 
 Deploy the microservice with livereload.
 - This will run `skaffold dev` behind the scene.
@@ -45,6 +45,8 @@ Port forwarding service/frontend-streamlit in namespace <namespace>, remote port
 ```
 
 At this point, the frontend app is ready and accessible at http://127.0.0.1:8080.
+
+## Deployment
 
 ### Deploy to remote GKE cluster
 

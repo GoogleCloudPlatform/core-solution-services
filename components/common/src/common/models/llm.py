@@ -30,7 +30,7 @@ class UserChat(BaseModel):
   id = IDField()
   user_id = TextField(required=True)
   title = TextField(required=False, default="")
-  llm_type = TextField(required=True)
+  llm_type = TextField(required=False)
   agent_name = TextField(required=False)
   history = ListField(default=[])
 

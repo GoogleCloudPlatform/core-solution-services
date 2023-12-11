@@ -14,7 +14,6 @@
 
 """ Sign Up endpoints """
 import requests
-import traceback
 from copy import deepcopy
 from fastapi import APIRouter
 from requests.exceptions import ConnectTimeout
@@ -25,11 +24,13 @@ from common.utils.errors import (InvalidRequestPayloadError,
 from common.utils.http_exceptions import (BadRequest, InternalServerError,
                                           Unauthorized, ConnectionTimeout,
                                           ServiceUnavailable)
+from common.utils.logging_handler import Logger
 from schemas.sign_up_schema import (SignUpWithCredentialsModel,
                                     SignUpWithCredentialsResponseModel)
 from schemas.error_schema import ConnectionErrorResponseModel
 from services.create_session_service import create_session
 
+Logger = Logger.get_logger(__file__)
 ERROR_RESPONSE_DICT = deepcopy(ERROR_RESPONSES)
 del ERROR_RESPONSE_DICT[401]
 ERROR_RESPONSE_DICT[503] = {"model": ConnectionErrorResponseModel}
@@ -67,9 +68,9 @@ def sign_up_with_credentials(credentials: SignUpWithCredentialsModel):
   try:
     user_data = User.find_by_email(credentials.email)
     if not user_data:
-      raise UnauthorizedUserError("Unauthorized")
+      raise UnauthorizedUserError("Unauthorized: User not found in database")
     if user_data.get_fields(reformat_datetime=True).get("status") == "inactive":
-      raise UnauthorizedUserError("Unauthorized")
+      raise UnauthorizedUserError("Unauthorized: User status is inactive")
     url = f"{IDP_URL}:signUp?key={FIREBASE_API_KEY}"
     data = {
         "email": credentials.email,
@@ -78,12 +79,12 @@ def sign_up_with_credentials(credentials: SignUpWithCredentialsModel):
     }
     resp = requests.post(url, data, timeout=60)
     resp_data = resp.json()
-    print("IDP SIGNUP RESPONSE", resp_data)
+    Logger.info("IDP SIGNUP RESPONSE", resp_data)
     if resp.status_code == 200:
       res = resp.json()
       res["user_id"] = user_data.user_id
       session_res = create_session(user_data.user_id)
-      print("SESSION_RES: ", session_res)
+      Logger.info("SESSION_RES: ", session_res)
       res["session_id"] = session_res.get("session_id")
       return {"success": True, "message": "Successfully signed up", "data": res}
     if resp.status_code == 400:
@@ -92,17 +93,12 @@ def sign_up_with_credentials(credentials: SignUpWithCredentialsModel):
     if resp.status_code == 403:
       raise Exception("Firebase API key missing")
   except UnauthorizedUserError as e:
-    print(traceback.print_exc())
     raise Unauthorized(str(e)) from e
   except InvalidRequestPayloadError as e:
-    print(traceback.print_exc())
     raise BadRequest(str(e)) from e
   except ConnectTimeout as e:
-    print(traceback.print_exc())
     raise ConnectionTimeout(str(e)) from e
   except ConnectionError as e:
-    print(traceback.print_exc())
     raise ServiceUnavailable(str(e)) from e
   except Exception as e:
-    print(traceback.print_exc())
     raise InternalServerError(str(e)) from e

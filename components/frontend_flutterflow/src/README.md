@@ -1,59 +1,61 @@
-# Google CLP AI v2
+# GENIE Flutterflow Frontend UI
 
-A new Flutter project.
+A web application built with FlutterFlow (flutterflow.io).
 
-## Getting Started (Docker)
+## Development
 
-> Note: this Dockerfile will not work on Mac M1/M2 machines
-> because of this [qemu bug](https://github.com/docker/for-mac/issues/5123)
+### Build and deploy with livereload to a GKE cluster
 
-To build the docker container for this FlutterFlow application, run
-
-```bash
-docker build --platform linux/amd64 -t edai-web .
-```
-
-To run the docker container, use
+Run the following to build and deploy the web app instance to a GKE cluster with
+livereload and port forwarding.
 
 ```bash
-docker run --rm -p 8080:80 --name edai edai-web
+sb deploy -m frontend_flutterflow -n $NAMESPACE --dev
 ```
 
-## Getting Started (Manual)
+### Run Flutter web app locally (for local development)
 
-1. [Install Flutter](https://docs.flutter.dev/get-started/install)
-    - This FlutterFlow application supports Flutter version 3.10.4
+- [Install Flutter](https://docs.flutter.dev/get-started/install)
+  - This FlutterFlow application supports Flutter version 3.10.4
 
-1. Build web assets
+- Update `src/.env` file with the correct API_BASE_URL and PROJECT_ID:
+  ```
+  WEB_APP_TITLE="GenAI for Enterprise"
+  API_BASE_URL="https://your-api-domain.com/"
+  PROJECT_ID=your-project-id
+  ```
+- Run flutter web app locally:
+  ```bash
+  cd src
+  flutter config --enable-web
+  flutter run -d chrome
+  ```
+
+### Build web assets and run locally
+
+- Update `src/.env` file with the correct API_BASE_URL and PROJECT_ID:
+  ```
+  WEB_APP_TITLE="GenAI for Enterprise"
+  API_BASE_URL="https://your-api-domain.com/"
+  PROJECT_ID=your-project-id
+  ```
+
+- Build web package and assets:
+  ```bash
+  flutter build web
+  ```
+
+- Run and serve the web UI with a web server like `http-server`:
+  - https://www.npmjs.com/package/http-server
+
+  ```bash
+  http-server build/
+  ```
+
+## Deployment
+
+To build and deploy the Flutter web app to a GKE cluster:
 
 ```bash
-flutter config --enable-web
-flutter build web
-```
-
-1. Create a Dockerfile in the project root directory
-
-```
-FROM nginx:1.21.1-alpine
-COPY ./build/web /usr/share/nginx/html
-```
-
-1. Build docker image and run docker container
-
-```
-docker build --platform linux/amd64 -t [tag] .
-docker run --rm -p 8080:80 --name edai [tag]
-```
-## Cloud Run Deployment
-
-```bash
-export IMAGE_TAG=<IMAGE_TAG>
-export REGION=us-central1
-
-gcloud run deploy $SERVICE_NAME \
-  --image $IMAGE_TAG \
-  --execution-environment=gen2 \
-  --platform managed \
-  --region $REGION \
-  --port 80
+sb deploy -m frontend_flutterflow -n $NAMESPACE
 ```

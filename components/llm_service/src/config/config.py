@@ -303,7 +303,7 @@ USER_MANAGEMENT_BASE_URL = f"{SERVICES['user-management']['host']}:" \
 
 TOOLS_SERVICE_BASE_URL = f"{SERVICES['tools-service']['host']}:" \
                   f"{SERVICES['tools-service']['port']}" \
-                  f"/rules-engine/api/v1"
+                  f"/tools-service/api/v1"
 
 RULES_ENGINE_BASE_URL = f"{SERVICES['rules-engine']['host']}:" \
                   f"{SERVICES['rules-engine']['port']}" \
