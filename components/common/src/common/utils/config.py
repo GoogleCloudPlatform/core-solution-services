@@ -22,9 +22,16 @@ def get_environ_flag(env_flag_str, default=True):
   evn_val = os.getenv(env_flag_str, default_str)
   if evn_val is None or evn_val == "":
     evn_val = default_str
-  evn_flag = evn_val.lower() == "true"
+  evn_flag = evn_val.lower() == default_str.lower()
   Logger.info(f"{env_flag_str} = {evn_flag}")
   return evn_flag
+
+def get_flag_value(config: str, key: str, default=True) -> bool:
+  """ get boolean flag value from config dict """
+  default_str = str(default)
+  flag_setting = config.get(key, default)
+  flag_value = flag_setting.lower() == default_str.lower()
+  return flag_value
 
 IS_CLOUD_LOGGING_ENABLED = bool(
   os.getenv("IS_CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))

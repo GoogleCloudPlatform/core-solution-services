@@ -20,8 +20,8 @@
 # embedding models
 
 import json
-from typing import Dict, Any
-from common.utils.config import get_environ_flag
+from typing import Dict, Any, Callable
+from common.utils.config import get_environ_flag, get_flag_value
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from common.utils.http_exceptions import InternalServerError
@@ -35,6 +35,8 @@ KEY_PROVIDERS = "providers"
 KEY_PROVIDER = "provider"
 KEY_EMBEDDINGS = "embeddings"
 KEY_API_KEY = "api_key"
+KEY_ENV_FLAG = "env_flag"
+KEY_MODEL_CLASS = "model_class"
 
 class ModelConfigMissingException(Exception):
   pass
@@ -93,30 +95,39 @@ class ModelConfig():
 
   def set_model_config(self):
     """
-    Set enabled flags for models.  A model is enabled if its config setting
-    is enabled, environment variables (which override config file settings)
-    are set to true if present, the provider of the model is enabled, and the
-    API key is present (if applicable).
+    Initialize and set config for providers, models and embeddings, based
+    on current config dicts (loaded from a config file), environment variables
+    and secrets associated with the project.
+    
+    This method performs the following:
+    
+    - Set enabled flags for models.  
+      A model is enabled if its config setting
+      is enabled, environment variables (which override config file settings)
+      are set to true if present, the provider of the model is enabled, and the
+      API key is present (if applicable).
 
-    Also set API keys for models.
+    - Set API keys for models.
+    
+    - Instantiate model classes and store in the config dicts for models and
+    Embeddings.
 
     We always default to True if a setting or env var is not present.
     """
-    for model_id, model_config in self.llm_models.items():
-      # Get enabled setting in model config
-      model_config_enabled = model_config.get(KEY_ENABLED, "True")
-      model_enabled = model_config_enabled.lower() == "true"
+    for model_id, model_config in self.get_all_model_config().items():
+      # Get enabled boolean setting in model config
+      model_enabled = get_flag_value(model_config, KEY_ENABLED)
 
       # if there is no env flag variable for this model, or it is not set,
       # then env_flag_setting defaults to True
       env_flag_setting = True
-      if "env_flag" in model_config:
-        env_flag = model_config["env_flag"]
+      if KEY_ENV_FLAG in model_config:
+        env_flag = model_config[KEY_ENV_FLAG]
         env_flag_setting = get_environ_flag(env_flag)
 
       # Validate presence of provider config and determine whether the
       # provider is enabled. By default providers are enabled. If provider
-      # config is not present model
+      # config is not present model is disabled.
       provider = model_config.get(KEY_PROVIDER, None)
       if provider is None:
         Logger.error(f"No provider for model {model_id}: disabling")
@@ -128,8 +139,7 @@ class ModelConfig():
             f"Provider config for model {model_id} not found: disabling")
         model_config[KEY_ENABLED] = False
         continue
-      provider_enabled_setting = provider_config.get(KEY_ENABLED, "True")
-      provider_enabled = provider_enabled_setting.lower() == "true"
+      provider_enabled = get_flag_value(provider_config, KEY_ENABLED)
 
       # Get api keys if present. If an api key serect is configured and
       # the key is missing, disable the model.
@@ -146,6 +156,11 @@ class ModelConfig():
 
       model_config[KEY_ENABLED] = model_enabled
 
+      # instantiate model class
+      if model_enabled:
+        model_class = self.instantiate_model_class(model_config)
+        model_config[KEY_MODEL_CLASS] = model_class
+
       Logger.info(
           f"Setting model enabled flag for {model_id} to {model_enabled}")
 
@@ -154,7 +169,7 @@ class ModelConfig():
     return model_config(KEY_ENABLED)
 
   def get_model_config(self, model_id: str) -> dict:
-    model_config = self.llm_models.get(model_id, None)
+    model_config = self.get_all_model_config().get(model_id, None)
     if model_config is None:
       raise ModelConfigMissingException(model_id)
     return model_config
@@ -195,6 +210,12 @@ class ModelConfig():
 
     model_config["api_key_value"] = api_key
     return api_key
+
+  def instantiate_model_class(self, model_config: str) -> Callable:
+    """ 
+    Instantiate the model class for providers that use them (e.g. Langchain)
+    """
+    return None
 
   def load_model_config(self):
     """ 
