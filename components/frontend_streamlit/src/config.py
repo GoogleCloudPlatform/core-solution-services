@@ -25,6 +25,8 @@ PROJECT_ID = os.environ.get("PROJECT_ID", None)
 API_BASE_URL = os.environ.get("API_BASE_URL", None)
 APP_BASE_PATH = os.environ.get("APP_BASE_PATH", "/streamlit")
 
+assert API_BASE_URL, "API_BASE_URL is not defined."
+
 LLM_SERVICE_PATH = "llm-service/api/v1"
 JOBS_SERVICE_PATH = "jobs-service/api/v1"
 AUTH_SERVICE_PATH = "authentication/api/v1"
@@ -35,8 +37,3 @@ JOBS_SERVICE_API_URL = os.environ.get("JOBS_SERVICE_API_URL",
                                      f"{API_BASE_URL}/{JOBS_SERVICE_PATH}")
 AUTH_SERVICE_API_URL = os.environ.get("AUTH_SERVICE_API_URL",
                                      f"{API_BASE_URL}/{AUTH_SERVICE_PATH}")
-
-
-# export JOBS_SERVICE_API_URL=http://127.0.0.1:9001/jobs-service/api/v1
-# export LLM_SERVICE_API_URL=http://127.0.0.1:9003/llm-service/api/v1
-# export AUTH_SERVICE_API_URL=http://127.0.0.1:9002/authentication/api/v1

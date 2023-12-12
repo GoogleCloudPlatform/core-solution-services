@@ -29,6 +29,36 @@ PYTHONPATH=components/common/src streamlit run components/frontend_streamlit/src
   --server.baseUrlPath=$APP_BASE_PATH
 ```
 
+### Run Streamlit locally with deployed microservices with local port forwording:
+
+Build and deploy microservices with local port-forwording:
+
+```
+sb deploy -m authentication,llm_service,jobs_service -n $NAMESPACE --dev
+```
+
+Once deployed, it will show the corresponding services and ports like below:
+```
+Port forwarding service/authentication in namespace <namespace>, remote port 80 -> http://127.0.0.1:9001
+Port forwarding service/llm-service in namespace <namespace>, remote port 80 -> http://127.0.0.1:9002
+Port forwarding service/jobs-service in namespace <namespace>, remote port 80 -> http://127.0.0.1:9003
+```
+- Please note that the ports could be different when re-deploying. This is based on the skaffold.yaml
+  in each microservice src folder.
+
+Set the environment variables to override each API endpoints:
+```
+export AUTH_SERVICE_API_URL=http://127.0.0.1:9001/authentication/api/v1
+export JOBS_SERVICE_API_URL=http://127.0.0.1:9002/jobs-service/api/v1
+export LLM_SERVICE_API_URL=http://127.0.0.1:9003/llm-service/api/v1
+```
+
+Run Streamlit locally:
+```
+PYTHONPATH=components/common/src streamlit run components/frontend_streamlit/src/main.py \
+  --server.baseUrlPath=$APP_BASE_PATH
+```
+
 ### Deploy and run with livereload at remote GKE cluster
 
 Deploy the microservice with livereload.

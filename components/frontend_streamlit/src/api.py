@@ -63,7 +63,7 @@ def run_dispatch(prompt: str, chat_id: str = None,
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_url = f"{LLM_SERVICE_API_URL}/dispatch"
+  api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch"
   Logger.info(f"api_url = {api_url}")
   Logger.info(f"chat_id = {chat_id}")
 
@@ -78,31 +78,6 @@ def run_dispatch(prompt: str, chat_id: str = None,
   json_response = resp.json()
   output = json_response["data"]
   return output
-
-def run_dispatch_route(route: str, prompt: str, chat_id: str = None,
-                       auth_token=None):
-  """
-  Run Agent on human input, and return output
-  """
-  if not auth_token:
-    auth_token = get_auth_token()
-
-  api_url = f"{LLM_SERVICE_API_URL}/dispatch/{route}"
-  Logger.info(f"api_url = {api_url}")
-  Logger.info(f"chat_id = {chat_id}")
-
-  request_body = {
-    "prompt": prompt,
-    "chat_id": chat_id,
-  }
-  resp = post_method(api_url, request_body=request_body, token=auth_token)
-  handle_error(resp)
-  Logger.info(resp)
-
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
-
 
 
 def run_agent(agent_name: str, prompt: str,
