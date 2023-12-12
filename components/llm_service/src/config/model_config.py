@@ -19,14 +19,32 @@
 # Config dicts that hold the current config for providers, models,
 # embedding models
 
+import inspect
 import json
-from typing import Dict, Any, Callable
-from common.utils.config import get_environ_flag, get_flag_value
+from typing import Dict, Any, Callable, Tuple
+from common.utils.config import get_environ_flag
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from common.utils.http_exceptions import InternalServerError
+import langchain.chat_models as langchain_chat
+import langchain.llms as langchain_llm
+import langchain.embeddings as langchain_embedding
 
 Logger = Logger.get_logger(__file__)
+
+LANGCHAIN_CHAT_CLASSES = {
+  k:klass for (k, klass) in inspect.getmembers(langchain_chat)
+  if isinstance(klass, type)
+}
+LANGCHAIN_LLM_CLASSES = {
+  k:klass() for (k, klass) in langchain_llm.get_type_to_cls_dict()
+}
+LANGCHAIN_EMBEDDING_CLASSES = {
+  k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
+  if isinstance(klass, type)
+}
+LANGCHAIN_CLASSES = LANGCHAIN_CHAT_CLASSES | LANGCHAIN_LLM_CLASSES \
+                    | LANGCHAIN_EMBEDDING_CLASSES
 
 # config dict keys
 KEY_ENABLED = "enabled"
@@ -37,6 +55,9 @@ KEY_EMBEDDINGS = "embeddings"
 KEY_API_KEY = "api_key"
 KEY_ENV_FLAG = "env_flag"
 KEY_MODEL_CLASS = "model_class"
+KEY_MODEL_NAME = "model_name"
+KEY_IS_CHAT = "is_chat"
+
 
 class ModelConfigMissingException(Exception):
   pass
@@ -116,7 +137,7 @@ class ModelConfig():
     """
     for model_id, model_config in self.get_all_model_config().items():
       # Get enabled boolean setting in model config
-      model_enabled = get_flag_value(model_config, KEY_ENABLED)
+      model_enabled = model_config.get(KEY_ENABLED, True)
 
       # if there is no env flag variable for this model, or it is not set,
       # then env_flag_setting defaults to True
@@ -128,18 +149,13 @@ class ModelConfig():
       # Validate presence of provider config and determine whether the
       # provider is enabled. By default providers are enabled. If provider
       # config is not present model is disabled.
-      provider = model_config.get(KEY_PROVIDER, None)
-      if provider is None:
-        Logger.error(f"No provider for model {model_id}: disabling")
-        model_config[KEY_ENABLED] = False
-        continue
-      provider_config = self.llm_model_providers.get(provider, None)
+      _, provider_config = self.get_provider_config(model_id)
       if provider_config is None:
         Logger.error(
             f"Provider config for model {model_id} not found: disabling")
         model_config[KEY_ENABLED] = False
         continue
-      provider_enabled = get_flag_value(provider_config, KEY_ENABLED)
+      provider_enabled = provider_config.get(KEY_ENABLED, True)
 
       # Get api keys if present. If an api key serect is configured and
       # the key is missing, disable the model.
@@ -156,10 +172,10 @@ class ModelConfig():
 
       model_config[KEY_ENABLED] = model_enabled
 
-      # instantiate model class
-      if model_enabled:
-        model_class = self.instantiate_model_class(model_config)
-        model_config[KEY_MODEL_CLASS] = model_class
+      # instantiate model class if necessary (mainly langchain models)
+      if model_enabled and KEY_MODEL_CLASS in model_config:
+        model_instance = self.instantiate_model_class(model_id)
+        model_config[KEY_MODEL_CLASS] = model_instance
 
       Logger.info(
           f"Setting model enabled flag for {model_id} to {model_enabled}")
@@ -173,6 +189,19 @@ class ModelConfig():
     if model_config is None:
       raise ModelConfigMissingException(model_id)
     return model_config
+  
+  def get_provider_config(self, model_id: str) -> Tuple[str, dict]:
+    """
+    Get provider config for model
+    Returns:
+        tuple of provider id, config
+    """
+    provider_config = None
+    model_config = self.get_model_config(model_id)
+    provider = model_config.get(KEY_PROVIDER, None)
+    if provider is not None:
+      provider_config = self.llm_model_providers.get(provider, None)
+    return provider, provider_config
 
   def get_config_value(self, model_id: str, key: str) -> Any:
     return self.get_model_config(model_id).get(key)
@@ -211,11 +240,20 @@ class ModelConfig():
     model_config["api_key_value"] = api_key
     return api_key
 
-  def instantiate_model_class(self, model_config: str) -> Callable:
+  def instantiate_model_class(self, model_id: str) -> Callable:
     """ 
     Instantiate the model class for providers that use them (e.g. Langchain)
     """
-    return None
+    model_class_instance = None
+    provider, provider_config = self.get_provider_config(model_id)
+    model_config = self.get_model_config(model_id)
+    model_class_name = self.get_config_value(model_id, KEY_MODEL_CLASS)
+    model_name = self.get_config_value(model_id, KEY_MODEL_NAME)
+    if provider == "Langchain":
+      model_cls = LANGCHAIN_CLASSES.get(model_class_name)
+      model_class_instance = model_cls(model_name=model_name, **model_config)
+    
+    return model_class_instance
 
   def load_model_config(self):
     """ 
