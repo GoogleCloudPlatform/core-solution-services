@@ -21,7 +21,7 @@ from schemas.user_event import (UserEventModel, UpdateUserEventModel,
 from schemas.error_schema import (InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel,
                                   NotFoundErrorResponseModel)
-from common.models import User, UserEvent, LearningUnit
+from common.models import User, UserEvent
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError, ResourceNotFound
 from common.utils.errors import ResourceNotFoundException
@@ -140,9 +140,7 @@ def create_user_event(user_id: str, input_user_event: UserEventModel):
     new_user_event = UserEvent()
     input_user_event_dict = {**input_user_event.dict()}
     user = User.find_by_id(user_id)
-    learning_unit = LearningUnit.find_by_id(input_user_event.learning_unit)
     new_user_event = new_user_event.from_dict(input_user_event_dict)
-    new_user_event.learning_unit = learning_unit.id
     if user:
       setattr(new_user_event, "user_id", user.id)
     new_user_event.save()
