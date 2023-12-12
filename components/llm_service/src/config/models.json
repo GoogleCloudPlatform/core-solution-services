@@ -1,66 +1,70 @@
 {
   "providers": {
     "Vertex": {
-      "enabled": "True",
+      "enabled": true,
       "env_flag": "ENABLE_GOOGLE_LLM"
     },
     "ModelGarden": {
-      "enabled": "True",
+      "enabled": true,
       "env_flag": "ENABLE_GOOGLE_MODEL_GARDEN"
     },
     "Langchain": {
-      "enabled": "True",
+      "enabled": true,
       "env_flag": "ENABLE_LANGCHAIN_LLM"
     },
     "LLMService": {
-      "enabled": "True",
+      "enabled": true,
       "env_flag": "ENABLE_LLM_SERVICE_LLM"
     },
     "Truss": {
-      "enabled": "True",
+      "enabled": true,
       "env_flag": "ENABLE_TRUSS_LLAMA2"
     }    
   },
   "models": {
     "VertexAI-Text": {
-      "is_chat": "False",
+      "is_chat": false,
       "provider": "Vertex"
     },
-    "VertexAI-Chat-V1": {
-      "is_chat": "True",
-      "provider": "Langchain"
+    "VertexAI-Chat-Palm2V2": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "chat-bison@002"
     },
-    "VertexAI-Chat": {
-      "is_chat": "True",
-      "provider": "Langchain"
+    "VertexAI-Chat-Palm2-32k": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "chat-bison-32k"
     },
     "Truss-Llama2-Chat": {
       "api_base_url": "34.171.143.157:8080",
-      "is_chat": "True",
+      "is_chat": true,
       "provider": "Truss",
-      "enabled": "False"
+      "enabled": false
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
-      "is_chat": "True",
+      "is_chat": true,
       "provider": "ModelGarden",
-      "enabled": "False"
+      "enabled": false
     },
     "OpenAI-GPT4": {
-      "is_chat": "True",
+      "is_chat": true,
       "provider": "Langchain",
-      "enabled": "True",
-      "api_key": "openai-api-key"
+      "enabled": true,
+      "api_key": "openai-api-key",
+      "model_name": "gpt-4"
     },
     "OpenAI-GPT3.5": {
-      "is_chat": "True",
+      "is_chat": true,
       "provider": "Langchain",
-      "enabled": "True",
-      "api_key": "openai-api-key"
+      "enabled": true,
+      "api_key": "openai-api-key",
+      "model_name": "gpt-3.5-turbo"
     },
     "Cohere": {
-      "is_chat": "True",
+      "is_chat": true,
       "provider": "Langchain",
-      "enabled": "True",
+      "enabled": true,
       "api_key": "cohere-api-key"
     }
   },
