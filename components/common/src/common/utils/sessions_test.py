@@ -25,7 +25,7 @@ from common.testing.firestore_emulator import clean_firestore, firestore_emulato
 
 def test_create_session(firestore_emulator, clean_firestore):
   """test for creating a new session """
-  new_session = Section.from_dict(TEST_SESSION)
+  new_session = Session.from_dict(TEST_SESSION)
   new_session.save()
   session = Session.find_by_id(new_session.id)
   assert session.user_id == TEST_SESSION["user_id"]

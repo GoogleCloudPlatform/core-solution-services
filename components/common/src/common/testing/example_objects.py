@@ -13,10 +13,6 @@
 # limitations under the License.
 
 """Example Data for testing"""
-import datetime
-from common.models.cohort import Cohort
-from common.models.section import Section
-from common.models.course_template import CourseTemplate
 
 TEST_USER = {
     "user_id": "kh5FoIBOx5qDsfh4ZRuv",
