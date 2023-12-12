@@ -18,7 +18,7 @@
 import re
 import streamlit as st
 from api import (
-    get_chat, run_dispatch, get_plan, run_dispatch_route,
+    get_chat, run_agent, run_agent_plan, get_plan,
     run_agent_execute_plan)
 from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
@@ -46,6 +46,36 @@ st.session_state.input_loading = False
 
 Logger = Logger.get_logger(__file__)
 
+def on_input_change():
+  user_input = st.session_state.user_input
+  agent_name = st.session_state.agent_name
+  # Appending messages.
+  st.session_state.messages.append({"HumanInput": user_input})
+
+  # Send API to llm-service
+  st.session_state.input_loading = True
+  if agent_name.lower() == "chat":
+    response = run_agent(agent_name, user_input,
+                         chat_id=st.session_state.chat_id)
+
+  elif agent_name.lower() == "plan":
+    response = run_agent_plan(agent_name, user_input,
+                              chat_id=st.session_state.chat_id)
+  else:
+    raise ValueError(f"agent_name {agent_name} is not supported.")
+
+  st.session_state.input_loading = False
+
+  st.session_state.chat_id = response["chat"]["id"]
+  st.session_state.messages.append({"AIOutput": response["content"]})
+
+  if "plan" in response:
+    st.session_state.messages.append({"plan": response["plan"]})
+
+  # Clean up input field.
+  st.session_state.user_input = ""
+
+
 def init_messages():
   messages = []
   if st.session_state.chat_id:
@@ -54,50 +84,8 @@ def init_messages():
   else:
     messages.append({"AIOutput": "You can ask me anything."})
   # Initialize with chat history if any.
-  st.session_state.messages = messages
+  st.session_state.setdefault("messages", messages)
 
-def on_input_change():
-  """ Run dispatch agent when adding an user input prompt """
-  user_input = st.session_state.user_input
-  # Appending messages.
-  st.session_state.messages.append({"HumanInput": user_input})
-
-  # Send API to llm-service
-  st.session_state.input_loading = True
-
-  response = run_dispatch(user_input,
-                          chat_id=st.session_state.chat_id)
-  st.session_state.input_loading = False
-  st.session_state.chat_id = response["chat"]["id"]
-
-  if "content" in response:
-    st.session_state.messages.append({"AIOutput": response["content"]})
-
-  if "route" in response:
-    route = response["route"]
-    st.session_state.messages.append({"AIOutput": f"Choosing route: {route}"})
-
-  send_prompt_to_route(route, user_input)
-
-  # Clean up input field.
-  st.session_state.user_input = ""
-
-def send_prompt_to_route(route, user_input):
-  """ Send user input prompt to a particular route. """
-  st.session_state.input_loading = True
-  response = run_dispatch_route(route, user_input,
-                                chat_id=st.session_state.chat_id)
-  st.session_state.input_loading = False
-  st.session_state.chat_id = response["chat"]["id"]
-
-  if "content" in response:
-    st.session_state.messages.append({"AIOutput": response["content"]})
-
-  if "plan" in response:
-    st.session_state.messages.append({"plan": response["plan"]})
-
-  # Clean up input field.
-  st.session_state.user_input = ""
 
 def format_ai_output(text):
   Logger.info(text)
@@ -137,14 +125,6 @@ def chat_content():
               is_table=False,  # TODO: Detect whether an output content type.
           )
 
-      if "route" in item:
-        route = item["route"]
-        with st.chat_message("ai"):
-          st.write(
-              f"Using route \"**{route}**\" to respond.",
-              key=f"ai_{index}",
-          )
-
       if "plan" in item:
         with st.chat_message("ai"):
           index = 1
@@ -181,9 +161,7 @@ def chat_content():
 
 
 def chat_page():
-  st.title("Chat")
-  if st.session_state.chat_id:
-    st.write(f"Chat ID: **{st.session_state.chat_id}**")
+  st.title(st.session_state.agent_name + " Agent")
   st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
 
   # List all existing chats if any. (data model: UserChat)

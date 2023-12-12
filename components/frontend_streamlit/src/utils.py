@@ -48,7 +48,7 @@ def navigate_to(page_name):
         )
       )
 
-def init_page(redirect_to_without_auth=True):
+def init_session_state():
   query_params = st.experimental_get_query_params()
 
   # If set query_param "debug=true"
@@ -58,9 +58,16 @@ def init_page(redirect_to_without_auth=True):
     st.write("st.session_state: ")
     st.write(st.session_state)
 
-  # Try to get auth_token from query parameter.
-  if not st.session_state.get("auth_token", None):
-    st.session_state.auth_token = query_params.get("auth_token", [None])[0]
+  # Try to get a state var from query parameter.
+  states_to_init = [
+    "auth_token", "chat_id", "agent_name", "messages"
+  ]
+  for state_name in states_to_init:
+    if not st.session_state.get(state_name, None):
+      st.session_state[state_name] = query_params.get(state_name, [""])[0]
+
+def init_page(redirect_to_without_auth=True):
+  init_session_state()
 
   # If still not getting auth_token, redirect back to Login page.
   if redirect_to_without_auth and not st.session_state.get("auth_token", None):
@@ -71,14 +78,6 @@ def init_page(redirect_to_without_auth=True):
   hide_pages(["main"])
 
   api_base_url = API_BASE_URL
-
-  if not API_BASE_URL:
-    url = st_javascript(
-        "await fetch('').then(r => window.parent.location.href)")
-    match = re.search("(https?://)?(www\\.)?([^/]+)", (url or ""))
-    if match:
-      api_base_url = match.group(1) + match.group(3)
-
   st.session_state.api_base_url = api_base_url.rstrip("/")
   Logger.info("st.session_state.api_base_url = "
               f"{st.session_state.api_base_url}")

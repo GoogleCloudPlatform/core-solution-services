@@ -61,9 +61,11 @@ def get_agent_chats(selected_agent):
     chat_id = user_chat["id"]
     if "agent_name" in user_chat and (
       selected_agent in (user_chat["agent_name"], "All")):
-      agent_name = user_chat["agent_name"]
+      agent_name = user_chat.get("agent_name", None)
+      agent_name_str = f"**{agent_name}** " if agent_name else ""
+
       with st.container():
-        select_chat = st.button(f"**{agent_name}**: {first_question}",
+        select_chat = st.button(f"{agent_name_str}{first_question}",
                                 use_container_width=True,
                                 key=f"{agent_name}{index}")
         if select_chat:

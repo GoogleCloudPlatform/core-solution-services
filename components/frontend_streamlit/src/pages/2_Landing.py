@@ -78,4 +78,6 @@ def landing_page():
 
 if __name__ == "__main__":
   utils.init_page()
+
+  st.divider()
   landing_page()
