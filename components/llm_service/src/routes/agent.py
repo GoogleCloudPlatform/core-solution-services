@@ -18,6 +18,7 @@
 import traceback
 from fastapi import APIRouter, Depends
 from common.models import QueryEngine, User, UserChat
+from common.models.llm import CHAT_HUMAN, CHAT_AI
 from common.utils.auth_service import validate_token
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
@@ -77,6 +78,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   runconfig_dict = {**run_config.dict()}
   prompt = runconfig_dict.get("prompt")
   chat_id = runconfig_dict.get("chat_id")
+  llm_type = runconfig_dict.get("llm_type")
   Logger.info(f"Choosing a dispatch route based on {runconfig_dict}")
 
   if prompt is None or prompt == "":
@@ -91,6 +93,12 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   if not user_chat:
     user_chat = UserChat(user_id=user.user_id)
 
+  user_chat.update_history(custom_entry={
+    f"{CHAT_HUMAN}": prompt,
+  })
+  user_chat.save()
+
+  # Get the intent based on prompt.
   route = run_intent(prompt, chat_history=user_chat.history, user=user)
   Logger.info(f"Agent dispatch chooses this best route: {route}, " \
               f"based on user prompt: {prompt}")
@@ -103,10 +111,15 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   # TODO: Fix the hardcoded route types below.
   route_name = route
   Logger.info(f"Chosen route: {route}")
+  user_chat.update_history(custom_entry={
+    "route": route,
+    "route_name": route.capitalize(),
+  })
 
+  # Executing based on the best intent route.
+  chat_history_entry = {}
   if route[:3] == "QE:":
     # Run RAG via a specific query engine
-    route_name = f"Query Engine: {route[3:]}"
     query_engine_name = route[3:]
     Logger.info("Dispatch to Query Engine: {query_engine_name}")
 
@@ -128,10 +141,9 @@ async def run_dispatch(run_config: LLMAgentRunModel,
       "query_result": query_result,
       "query_references": query_references
     }
-    user_chat.update_history(response=query_result, custom_entry={
-      "query_references": query_references,
-    })
-    user_chat.save()
+    chat_history_entry["route_name"] = f"Query Engine: {route[3:]}"
+    chat_history_entry[CHAT_AI] = query_result
+    chat_history_entry["query_references"] = query_references
 
   elif route == "plan":
     # Run PlanAgent to generate a plan
@@ -139,10 +151,8 @@ async def run_dispatch(run_config: LLMAgentRunModel,
         agent_name="Plan", prompt=prompt, user_id=user.id)
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
-    user_chat.update_history(response=output, custom_entry={
-      "plan": plan_data,
-    })
-    user_chat.save()
+    chat_history_entry[CHAT_AI] = output
+    chat_history_entry["plan"] = plan_data
 
     response_data = {
       "content": output,
@@ -150,13 +160,15 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     }
 
   else:
+    # Run with the generic ChatAgent for anything else.
     output = run_agent("Chat", prompt)
-    user_chat.update_history(response=output)
-    user_chat.save()
-
+    chat_history_entry[CHAT_AI] = output
     response_data = {
       "content": output,
     }
+
+  user_chat.update_history(custom_entry=chat_history_entry)
+  user_chat.save()
 
   chat_data = user_chat.get_fields(reformat_datetime=True)
   chat_data["id"] = user_chat.id
