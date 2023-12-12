@@ -281,6 +281,7 @@ def get_all_chats(skip=0, limit=20, auth_token=None,
   resp = get_method(api_url, token=auth_token)
   Logger.info(resp)
   json_response = resp.json()
+
   output = json_response["data"]
   return output
 

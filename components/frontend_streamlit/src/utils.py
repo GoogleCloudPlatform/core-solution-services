@@ -53,14 +53,11 @@ def init_session_state():
 
   # If set query_param "debug=true"
   if query_params.get("debug", [""])[0].lower() == "true":
-    st.write("query_params: ")
-    st.write(query_params)
-    st.write("st.session_state: ")
-    st.write(st.session_state)
+    st.session_state.debug = True
 
   # Try to get a state var from query parameter.
   states_to_init = [
-    "auth_token", "chat_id", "agent_name"
+    "auth_token", "chat_id", "agent_name", "debug"
   ]
   for state_name in states_to_init:
     if not st.session_state.get(state_name, None):

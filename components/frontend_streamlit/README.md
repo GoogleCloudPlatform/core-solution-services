@@ -49,8 +49,8 @@ Port forwarding service/jobs-service in namespace <namespace>, remote port 80 ->
 Set the environment variables to override each API endpoints:
 ```
 export AUTH_SERVICE_API_URL=http://127.0.0.1:9001/authentication/api/v1
-export JOBS_SERVICE_API_URL=http://127.0.0.1:9002/jobs-service/api/v1
-export LLM_SERVICE_API_URL=http://127.0.0.1:9003/llm-service/api/v1
+export LLM_SERVICE_API_URL=http://127.0.0.1:9002/llm-service/api/v1
+export JOBS_SERVICE_API_URL=http://127.0.0.1:9003/jobs-service/api/v1
 ```
 
 Run Streamlit locally:

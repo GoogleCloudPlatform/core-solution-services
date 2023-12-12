@@ -18,7 +18,7 @@
 import re
 import streamlit as st
 from api import (
-    get_chat, run_dispatch, get_plan, run_dispatch_route,
+    get_chat, run_dispatch, get_plan,
     run_agent_execute_plan)
 from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
@@ -59,50 +59,24 @@ def on_submit(user_input):
   st.session_state.messages.append({"HumanInput": user_input})
 
   # Send API to llm-service
-  if st.session_state.default_route == "Auto":
-    response = get_dispatch_route(user_input)
-    st.session_state.default_route = response.get("route", None)
+  response = run_dispatch(user_input)
+  st.session_state.default_route = response.get("route", None)
 
-  st.session_state.chat_id = response["chat"]["id"]
+  if not st.session_state.chat_id:
+    st.session_state.chat_id = response["chat"]["id"]
+    st.session_state.user_chats.insert(0, response["chat"])
 
-  send_prompt_to_route(
-      st.session_state.default_route, user_input,
-      chat_id=st.session_state.chat_id)
+  # TODO: Currently the AIOutput vs content are inconsistent across
+  # API response and in a UserChat history.
+  if "content" in response:
+    response["AIOutput"] = response["content"]
+  del response["chat"]
+
+  st.session_state.messages.append(response)
 
   # Clean up input field.
   st.session_state.input_loading = False
 
-
-def get_dispatch_route(user_input):
-  """ Return the best matched route. """
-  response = run_dispatch(user_input,
-                          chat_id=st.session_state.chat_id)
-  st.session_state.chat_id = response["chat"]["id"]
-
-  if "content" in response:
-    st.session_state.messages.append({"AIOutput": response["content"]})
-
-  if "route" in response:
-    route = response["route"]
-    st.session_state.messages.append({
-        "AIOutput": f"Choosing route: **{route}**"})
-
-  return response
-
-
-def send_prompt_to_route(route, user_input, chat_id):
-  """ Send user input prompt to a particular route. """
-  st.session_state.input_loading = True
-  response = run_dispatch_route(route, user_input,
-                                chat_id=chat_id)
-  st.session_state.input_loading = False
-  st.session_state.chat_id = response["chat"]["id"]
-
-  if "content" in response:
-    st.session_state.messages.append({"AIOutput": response["content"]})
-
-  if "plan" in response:
-    st.session_state.messages.append({"plan": response["plan"]})
 
 def format_ai_output(text):
   Logger.info(text)
@@ -118,6 +92,12 @@ def format_ai_output(text):
   return text
 
 def chat_content():
+  if st.session_state.debug:
+    st.write(st.session_state.messages)
+
+  if st.session_state.chat_id:
+    st.write(f"Chat ID: **{st.session_state.chat_id}**")
+
   # Create a placeholder for all chat history.
   chat_placeholder = st.empty()
   with chat_placeholder.container():
@@ -129,6 +109,14 @@ def chat_content():
         with st.chat_message("user"):
           st.write(item["HumanInput"], is_user=True, key=f"human_{index}")
 
+      if "route_name" in item:
+        route_name = item["route_name"]
+        with st.chat_message("ai"):
+          st.write(
+              f"Using route \"**{route_name.capitalize()}**\" to respond.",
+              key=f"ai_{index}",
+          )
+
       if "AIOutput" in item:
         with st.chat_message("ai"):
           ai_output = item["AIOutput"]
@@ -138,14 +126,6 @@ def chat_content():
               key=f"ai_{index}",
               unsafe_allow_html=False,
               is_table=False,  # TODO: Detect whether an output content type.
-          )
-
-      if "route" in item:
-        route = item["route_name"]
-        with st.chat_message("ai"):
-          st.write(
-              f"Using route \"**{route}**\" to respond.",
-              key=f"ai_{index}",
           )
 
       if "plan" in item:
@@ -194,10 +174,7 @@ def init_messages():
 
 def chat_page():
   st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
-
   st.title("Chat")
-  if st.session_state.chat_id:
-    st.write(f"Chat ID: **{st.session_state.chat_id}**")
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
