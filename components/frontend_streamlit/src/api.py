@@ -325,6 +325,28 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
   output = json_response["data"]
   return output
 
+def add_chat_history(chat_id, entry):
+  """
+  Append a new UserChat history entry.
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/chat/{chat_id}"
+  Logger.info(f"api_url={api_url}")
+  request_body = {
+    "chat_id": chat_id,
+    "history_entry": entry,
+  }
+  resp = post_method(api_url, request_body=request_body, token=auth_token)
+  handle_error(resp)
+  Logger.info(resp)
+
+  json_response = resp.json()
+  output = json_response["data"]
+  return output
+
+
 def get_plan(plan_id, auth_token=None) -> UserPlan:
   """
   Retrieve a specific UserPlan object

@@ -23,15 +23,44 @@ import utils
 
 Logger = Logger.get_logger(__file__)
 
+
+LANDING_PAGE_STYLES = """
+<style>
+  .stButton[data-testid="stFormSubmitButton"] {
+    display: none;
+  }
+</style>
+"""
+
+
 def landing_page():
-  st.title("Welcome.")
   chat_history_panel()
 
-  start_chat, start_query, build_query = st.columns((1, 1, 1))
+  st.markdown(LANDING_PAGE_STYLES, unsafe_allow_html=True)
+
+  st.title("Hello again.")
+  st.subheader("You can ask me anything:")
+  with st.form("user_input_form", border=False, clear_on_submit=True):
+    col1, col2 = st.columns([5, 1])
+    with col1:
+      user_input = st.text_input("")
+      submitted = st.form_submit_button("Submit")
+    with col2:
+      st.session_state.default_route = st.selectbox(
+          "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
+
+    if submitted:
+      st.session_state.landing_user_input = user_input
+      st.session_state.chat_id = None
+      utils.navigate_to("Chat")
+
+  st.divider()
+
+  st.subheader("Or run with a specific Agent or Task:")
+  start_chat, start_query = st.columns((1, 1))
 
   with start_chat:
     with st.container():
-      "Start a Chat with"
       agent_name = st.selectbox(
           "Agent:",
           ("Chat", "Plan"))
@@ -39,7 +68,7 @@ def landing_page():
       if chat_button:
         st.session_state.agent_name = agent_name
         st.session_state.chat_id = None
-        utils.navigate_to("Chat")
+        utils.navigate_to("Agent")
 
   with start_query:
     # Get all query engines as a list
@@ -56,7 +85,6 @@ def landing_page():
 
       Logger.info(query_engines)
       with st.container():
-        "Start a Query with"
         qe_name = st.selectbox(
             "Query Engine:",
             tuple(query_engines.keys()))
@@ -68,16 +96,6 @@ def landing_page():
           st.session_state.chat_id = None
           utils.navigate_to("Query")
 
-  with build_query:
-    with st.container():
-      "Managing Query Engines"
-      build_button = st.button("Start", key=4)
-      if build_button:
-        utils.navigate_to("Query_Engines")
-
-
 if __name__ == "__main__":
   utils.init_page()
-
-  st.divider()
   landing_page()

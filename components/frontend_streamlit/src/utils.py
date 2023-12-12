@@ -60,7 +60,7 @@ def init_session_state():
 
   # Try to get a state var from query parameter.
   states_to_init = [
-    "auth_token", "chat_id", "agent_name", "messages"
+    "auth_token", "chat_id", "agent_name"
   ]
   for state_name in states_to_init:
     if not st.session_state.get(state_name, None):

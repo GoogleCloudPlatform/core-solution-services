@@ -54,9 +54,14 @@ def get_agent_chats(selected_agent):
   index = 0
   Logger.info(f"get_chat_agents with {selected_agent}")
   for user_chat in (st.session_state.user_chats or []):
-    first_question = user_chat["history"][0]["HumanInput"][:50]
-    if len(user_chat["history"][0]["HumanInput"]) > 60:
-      first_question = first_question + "..."
+
+    first_history_item = user_chat["history"][0]
+    if "HumanInput" in first_history_item:
+      first_question = first_history_item["HumanInput"][:50]
+      if len(first_history_item["HumanInput"]) > 60:
+        first_question = first_question + "..."
+    else:
+      first_question = "Chat (No question)"
 
     chat_id = user_chat["id"]
     if "agent_name" in user_chat and (
@@ -84,7 +89,15 @@ def chat_history_panel():
   st.markdown(css, unsafe_allow_html=True)
 
   with st.sidebar:
-    st.header("My Chats")
+    col1, col2 = st.columns([3, 2])
+    with col1:
+      st.subheader("My Chats")
+    with col2:
+      new_chat_button = st.button("New Chat")
+      if new_chat_button:
+          st.session_state.chat_id = None
+          utils.navigate_to("Chat")
+
     all_agents = set()
 
     # Iterate through all chats and get available agents
