@@ -27,7 +27,7 @@ from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentRunModel,
                                  LLMAgentGetAllResponse)
 from services.agents.agent_service import (get_all_agents, run_agent,
-                                          agent_plan, run_dispatch,
+                                          agent_plan, run_intent,
                                           get_llm_type_for_agent)
 from services.langchain_service import langchain_chat_history
 from services.query.query_service import query_generate
@@ -60,12 +60,10 @@ def get_agents():
 
 
 @router.post(
-    "/run/dispatch",
-    name="Run agent dispatch on user input")
-async def agent_dispatch(run_config: LLMAgentRunModel,
-                         chat_id: str = None,
-                         route: str = None,
-                         user_data: dict = Depends(validate_token)):
+    "/dispatch",
+    name="Evaluate user input and choose a dispatch route")
+async def run_dispatch(run_config: LLMAgentRunModel,
+                       user_data: dict = Depends(validate_token)):
   """
   Run DispatchAgent with prompt, and pass to corresponding agent,
   e.g. Chat, Plan or Query.
@@ -77,10 +75,9 @@ async def agent_dispatch(run_config: LLMAgentRunModel,
       LLMAgentRunResponse
   """
   runconfig_dict = {**run_config.dict()}
-  Logger.info(f"Running dispatch on {runconfig_dict}")
-
   prompt = runconfig_dict.get("prompt")
-  llm_type = runconfig_dict.get("llm_type")
+  chat_id = runconfig_dict.get("chat_id")
+  Logger.info(f"Choosing a dispatch route based on {runconfig_dict}")
 
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
@@ -94,18 +91,22 @@ async def agent_dispatch(run_config: LLMAgentRunModel,
   if not user_chat:
     user_chat = UserChat(user_id=user.user_id)
 
-  user_chat.update_history(prompt=prompt)
-  user_chat.save()
-
-  if not route:
-    route = run_dispatch(prompt, chat_history=user_chat.history, user=user)
-    Logger.info(f"Agent dispatch chooses this best route: {route}, " \
-                f"based on user prompt: {prompt}")
+  route = run_intent(prompt, chat_history=user_chat.history, user=user)
+  Logger.info(f"Agent dispatch chooses this best route: {route}, " \
+              f"based on user prompt: {prompt}")
 
   # TODO: Unify all response structure from all agent/query runs.
-  response_data = {}
+  response_data = {
+    "route": route,
+  }
+
+  # TODO: Fix the hardcoded route types below.
+  route_name = route
+  Logger.info(f"Chosen route: {route}")
+
   if route[:3] == "QE:":
     # Run RAG via a specific query engine
+    route_name = f"Query Engine: {route[3:]}"
     query_engine_name = route[3:]
     Logger.info("Dispatch to Query Engine: {query_engine_name}")
 
@@ -127,7 +128,7 @@ async def agent_dispatch(run_config: LLMAgentRunModel,
       "query_result": query_result,
       "query_references": query_references
     }
-    user_chat.update_history(response=query_result, custom_entries={
+    user_chat.update_history(response=query_result, custom_entry={
       "query_references": query_references,
     })
     user_chat.save()
@@ -138,7 +139,7 @@ async def agent_dispatch(run_config: LLMAgentRunModel,
         agent_name="Plan", prompt=prompt, user_id=user.id)
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
-    user_chat.update_history(response=output, custom_entries={
+    user_chat.update_history(response=output, custom_entry={
       "plan": plan_data,
     })
     user_chat.save()
@@ -160,6 +161,7 @@ async def agent_dispatch(run_config: LLMAgentRunModel,
   chat_data = user_chat.get_fields(reformat_datetime=True)
   chat_data["id"] = user_chat.id
   response_data["chat"] = chat_data
+  response_data["route_name"] = route_name
 
   return {
     "success": True,
