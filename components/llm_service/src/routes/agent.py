@@ -138,7 +138,8 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     Logger.info(f"Query response="
                 f"[{query_result}]")
     response_data = {
-      "query_result": query_result,
+      "query_engine_id": query_result["query_engine_id"],
+      "query_result": query_result["response"],
       "query_references": query_references
     }
     chat_history_entry["route_name"] = f"Query Engine: {route[3:]}"
