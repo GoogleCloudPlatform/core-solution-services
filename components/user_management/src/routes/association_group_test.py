@@ -17,14 +17,13 @@
 """
 import os
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name
+# pylint: disable=unused-import,unused-argument,redefined-outer-name
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from routes.association_group import router
 from testing.test_config import API_URL
 from schemas.schema_examples import (BASIC_ASSOCIATION_GROUP_EXAMPLE,
                                      ASSOCIATION_GROUP_EXAMPLE,
-                                     FULL_USER_MODEL_EXAMPLE,
                                      BASIC_USER_MODEL_EXAMPLE
                                      )
 from common.models import AssociationGroup, User
