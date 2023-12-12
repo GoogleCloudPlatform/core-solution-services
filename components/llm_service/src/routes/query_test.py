@@ -82,6 +82,7 @@ FAKE_QUERY_ENGINE_BUILD = {
   "doc_url": "http://fake-url",
   "query_engine": "query-engine-test",
   "llm_type": DEFAULT_QUERY_CHAT_MODEL,
+  "description": "Test Description",
   "is_public": True
 }
 
