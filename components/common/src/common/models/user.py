@@ -18,7 +18,7 @@ import regex
 from common.config import USER_TYPES
 from common.models import BaseModel, NodeItem
 from common.utils.errors import ResourceNotFoundException
-from fireo.fields import (ReferenceField, TextField, NumberField, MapField,
+from fireo.fields import (TextField, NumberField, MapField,
                           ListField, BooleanField)
 
 
