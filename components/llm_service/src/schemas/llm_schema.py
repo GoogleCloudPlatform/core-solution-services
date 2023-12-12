@@ -143,6 +143,7 @@ class LLMQueryEngineModel(BaseModel):
   """LLM Query Engine model"""
   doc_url: str
   query_engine: str
+  description: str
   llm_type: Optional[str]
   embedding_type: Optional[str]
   vector_store: Optional[str]
