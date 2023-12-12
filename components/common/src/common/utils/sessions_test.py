@@ -19,12 +19,11 @@ Unit test for session.py
 from common.models import Session
 from common.testing.example_objects import TEST_SESSION
 from common.testing.firestore_emulator import clean_firestore, firestore_emulator
-
+from common.utils.sessions import create_session
 
 def test_create_session(firestore_emulator, clean_firestore):
   """test for creating a new session """
-  new_session = Session.from_dict(TEST_SESSION)
-  new_session.save()
+  new_session = create_session(TEST_SESSION["user_id"])
   session = Session.find_by_id(new_session.id)
   assert session.user_id == TEST_SESSION["user_id"]
-  assert session.session_id == TEST_SESSION["session_id"]
+  assert session.session_id == session.id
