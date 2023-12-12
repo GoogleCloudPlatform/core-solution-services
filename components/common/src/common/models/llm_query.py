@@ -197,6 +197,31 @@ class QueryDocument(BaseModel):
     ignore_none_field = False
     collection_name = BaseModel.DATABASE_PREFIX + "query_documents"
 
+  @classmethod
+  def find_by_query_engine_id(cls,
+                              query_engine_id,
+                              skip=0,
+                              order_by="-created_time",
+                              limit=1000):
+    """
+    Fetch all QueryDocuments for query engine
+
+    Args:
+        query_engine_id (str): Query Engine id
+        skip (int, optional): number of urls to skip.
+        order_by (str, optional): order list according to order_by field.
+        limit (int, optional): limit till cohorts to be fetched.
+
+    Returns:
+        List[QueryDocument]: List of QueryDocuments
+
+    """
+    objects = cls.collection.filter(
+      "query_engine_id", "==", query_engine_id).filter(
+      "deleted_at_timestamp", "==",
+      None).order(order_by).offset(skip).fetch(limit)
+    return list(objects)
+
 
 class QueryDocumentChunk(BaseModel):
   """

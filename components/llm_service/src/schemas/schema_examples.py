@@ -90,6 +90,33 @@ QUERY_RESULT_EXAMPLE = {
   "created_time": "2023-07-04 19:22:50.799741+00:00"
 }
 
+QUERY_DOCUMENT_EXAMPLE_1 = {
+  "id": "asd98798as7dhjgkjsdfh1",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
+  "query_engine": "query-engine-test",
+  "doc_url": "abcd.com/pdf1",
+  "index_start": 0,
+  "index_end": 123
+}
+
+QUERY_DOCUMENT_EXAMPLE_2 = {
+  "id": "asd98798as7dhjgkjsdfh2",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
+  "query_engine": "query-engine-test",
+  "doc_url": "abcd.com/pdf2",
+  "index_start": 0,
+  "index_end": 11
+}
+
+QUERY_DOCUMENT_EXAMPLE_3 = {
+  "id": "asd98798as7dhjgkjsdfh3",
+  "query_engine_id": "asd98798as7dhjgkjs",
+  "query_engine": "query-engine-test",
+  "doc_url": "abcd.com/pdf3",
+  "index_start": 0,
+  "index_end": 1234
+}
+
 CHAT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "user_id": "fake-user-id",

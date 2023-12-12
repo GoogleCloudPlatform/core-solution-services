@@ -44,7 +44,7 @@ from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
 
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,ungrouped-imports,unused-import
 
 Logger = Logger.get_logger(__file__)
 
@@ -136,9 +136,9 @@ async def query_generate(
   return query_result, query_references
 
 
-async def query_search(q_engine: QueryEngine,
-                       query_prompt: str,
-                       sentence_references: bool = False) -> List[dict]:
+def query_search(q_engine: QueryEngine,
+                 query_prompt: str,
+                 sentence_references: bool = False) -> List[dict]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -243,8 +243,8 @@ def get_similarity(query_embeddings, sentence_embeddings) -> list:
   for _, row in sentence_df.iterrows():
     x = row
     y = query_df
-    # calculate the cosine similiarity
-    cosine = np.dot(x,y) / (norm(x) * norm(y))
+    # calculate the cosine similarity
+    cosine = np.dot(x, y) / (norm(x) * norm(y))
     cos_sim.append(cosine[0])
 
   return cos_sim
@@ -262,6 +262,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   """
   doc_url = request_body.get("doc_url")
   query_engine = request_body.get("query_engine")
+  description = request_body.get("description")
   user_id = request_body.get("user_id")
   is_public = request_body.get("is_public")
   llm_type = request_body.get("llm_type")
@@ -269,14 +270,18 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   vector_store_type = request_body.get("vector_store")
 
   Logger.info(f"Starting batch job for query engine [{query_engine}] "
-              f"job id [{job.id}]")
+              f"job id [{job.id}], request_body=[{request_body}]")
   Logger.info(f"doc_url: [{doc_url}] user id: [{user_id}]")
   Logger.info(f"embedding type: [{embedding_type}]")
+  Logger.info(f"query description: [{description}]")
+  Logger.info(f"llm type: [{llm_type}]")
+  Logger.info(f"vector store type: [{embedding_type}]")
   Logger.info(f"vector store type: [{vector_store_type}]")
 
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url, query_engine, user_id, is_public,
-                         llm_type, embedding_type, vector_store_type)
+                         llm_type, description,
+                         embedding_type, vector_store_type)
 
   # update result data in batch job model
   docs_processed_urls = [doc.doc_url for doc in docs_processed]
@@ -296,6 +301,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
 def query_engine_build(doc_url: str, query_engine: str, user_id: str,
                        is_public: Optional[bool] = True,
                        llm_type: Optional[str] = None,
+                       query_description: Optional[str] = None,
                        embedding_type: Optional[str] = None,
                        vector_store_type: Optional[str] = None) -> \
                        Tuple[str, List[QueryDocument], List[str]]:
@@ -309,6 +315,7 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
     is_public: is query engine publicly usable?
     llm_type: llm used for query answer generation
     embedding_type: LLM used for query embeddings
+    query_description: description of the query engine
     vector_store_type: vector store type (from config.vector_store_config)
 
   Returns:
@@ -332,6 +339,7 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
                          llm_type=llm_type,
+                         description=query_description,
                          embedding_type=embedding_type,
                          vector_store=vector_store_type,
                          is_public=is_public)

@@ -25,10 +25,6 @@ import utils
 
 Logger = Logger.get_logger(__file__)
 
-# For development purpose:
-params = st.experimental_get_query_params()
-st.session_state.auth_token = params.get("auth_token", [None])[0]
-
 def build_clicked(engine_name:str, doc_url:str,
                   embedding_type:str, vector_store:str,
                   description:str):
@@ -42,8 +38,6 @@ def get_qe_table_data() -> list:
     Logger.error("No query engine found.")
     st.write("No query engine found.")
     return
-
-  st.write(qe_list)
 
   qe_list.sort(key=lambda x: x["name"], reverse=True)
 
@@ -117,21 +111,21 @@ def query_engine_build_page():
   st.title("Query Engine Management")
   tab1, tab2, tab3 = st.tabs([
     "Query Engines",
+    "Job List",
     "Build Query Engine",
-    "Job List"]
-  )
+  ])
 
   with tab1:
     st.subheader("Query Engines")
     st.table(qe_table_data)
 
   with tab2:
-    st.subheader("Build a new Query Engine")
-    placeholder_build_qe = st.empty()
-
-  with tab3:
     st.subheader("Query Engine Jobs")
     st.table(jobs_table_data)
+
+  with tab3:
+    st.subheader("Build a new Query Engine")
+    placeholder_build_qe = st.empty()
 
   with placeholder_build_qe.form("build"):
     engine_name = st.text_input("Name")
@@ -151,5 +145,5 @@ def query_engine_build_page():
 
 
 if __name__ == "__main__":
-  utils.init_api_base_url()
+  utils.init_page()
   query_engine_build_page()
