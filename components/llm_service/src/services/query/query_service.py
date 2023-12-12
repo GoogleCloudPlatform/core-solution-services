@@ -89,7 +89,7 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
   # get doc context for question
-  query_references = await query_search(
+  query_references = query_search(
       q_engine, prompt, sentence_references=sentence_references)
 
   # generate question prompt for chat model
