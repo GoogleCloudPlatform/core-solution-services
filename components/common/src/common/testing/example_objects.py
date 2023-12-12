@@ -29,5 +29,5 @@ TEST_SESSION = {
     "session_id": "abcdef123456",
     "user_id": "kh5FoIBOx5qDsfh4ZRuv",
     "parent_session_id": "fedcba54321",
-    "is_expired": "False",
+    "is_expired": False
 }

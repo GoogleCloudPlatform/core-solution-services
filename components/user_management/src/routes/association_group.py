@@ -27,7 +27,6 @@ from schemas.association_group_schema import (
                   GetAssociationGroupResponseModel,
                   ImmutableAssociationGroupModel,
                   PostImmutableAssociationGroupResponseModel,
-                  AutoUpdateAllAssociationGroupsResponseModel,
                   UserTypeResponseModel)
 from schemas.error_schema import (NotFoundErrorResponseModel,
                                   ConflictResponseModel)

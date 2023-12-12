@@ -16,9 +16,8 @@
   Unit tests for association endpoints
 """
 import os
-from copy import deepcopy
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import
+# pylint: disable=unused-argument,redefined-outer-name
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from routes.association_group import router

@@ -15,10 +15,9 @@
 Unit test for session.py
 """
 # disabling these rules, as they cause issues with pytest fixtures
-# pylint: disable=unused-import,unused-argument,redefined-outer-name
+# pylint: disable=unused-argument,redefined-outer-name
 import pytest
 from common.models import Session
-from common.utils.errors import ResourceNotFoundException
 from common.testing.example_objects import TEST_SESSION
 from common.testing.firestore_emulator import clean_firestore, firestore_emulator
 
