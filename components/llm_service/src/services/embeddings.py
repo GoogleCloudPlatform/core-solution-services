@@ -39,9 +39,9 @@ ITEMS_PER_REQUEST = 5
 
 Logger = Logger.get_logger(__file__)
 
-async def get_embeddings(
-        text_chunks: List[str], embedding_type: str = None) -> (
-        Tuple)[List[bool], np.ndarray]:
+def get_embeddings(
+    text_chunks: List[str], embedding_type: str = None) -> (
+    Tuple)[List[bool], np.ndarray]:
   """
   Get embeddings for a list of text strings.
 
