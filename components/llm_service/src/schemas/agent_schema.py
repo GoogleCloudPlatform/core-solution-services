@@ -41,6 +41,7 @@ class LLMAgentGetAllResponse(BaseModel):
 class LLMAgentRunModel(BaseModel):
   """LLM Agent run model"""
   prompt: str
+  chat_id: str = None
 
   class Config():
     orm_mode = True

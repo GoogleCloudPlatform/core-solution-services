@@ -22,21 +22,13 @@ import streamlit as st
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
 from common.models import Agent, UserChat, UserPlan
-from common.config import API_BASE_URL
+from config import (
+    LLM_SERVICE_API_URL, JOBS_SERVICE_API_URL, AUTH_SERVICE_API_URL)
 
 Logger = Logger.get_logger(__file__)
-LLM_SERVICE_PATH = "llm-service/api/v1"
-JOBS_SERVICE_PATH = "jobs-service/api/v1"
-AUTH_SERVICE_PATH = "authentication/api/v1"
 
 def get_auth_token():
   return st.session_state.get("auth_token", None)
-
-def get_api_base_url():
-  api_base_url = st.session_state.get("api_base_url", API_BASE_URL)
-  assert api_base_url, "api_base_url is not defined."
-
-  return api_base_url.rstrip("/")
 
 def handle_error(response):
   if response.status_code != 200:
@@ -50,8 +42,7 @@ def get_agents(auth_token=None) -> List[Agent]:
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent"
+  api_url = f"{LLM_SERVICE_API_URL}/agent"
   Logger.info(f"api_url={api_url}")
 
   resp = get_method(api_url, auth_token)
@@ -64,6 +55,31 @@ def get_agents(auth_token=None) -> List[Agent]:
     agent_list.append(Agent.find_by_name(agent_name))
   return agent_list
 
+def run_dispatch(prompt: str, chat_id: str = None,
+                 route=None, auth_token=None):
+  """
+  Run Agent on human input, and return output
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch"
+  Logger.info(f"api_url = {api_url}")
+  Logger.info(f"chat_id = {chat_id}")
+
+  request_body = {
+    "prompt": prompt,
+    "chat_id": chat_id,
+  }
+  resp = post_method(api_url, request_body=request_body, token=auth_token)
+  handle_error(resp)
+  Logger.info(resp)
+
+  json_response = resp.json()
+  output = json_response["data"]
+  return output
+
+
 def run_agent(agent_name: str, prompt: str,
               chat_id: str = None, auth_token=None):
   """
@@ -72,8 +88,7 @@ def run_agent(agent_name: str, prompt: str,
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/run/{agent_name}"
+  api_url = f"{LLM_SERVICE_API_URL}/agent/run/{agent_name}"
   if chat_id:
     api_url = api_url + f"/{chat_id}"
   Logger.info(f"api_url={api_url}")
@@ -97,8 +112,7 @@ def run_agent_plan(agent_name: str, prompt: str,
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/{agent_name}"
+  api_url = f"{LLM_SERVICE_API_URL}/agent/plan/{agent_name}"
   if chat_id:
     api_url = api_url + f"/{chat_id}"
   Logger.info(f"api_url={api_url}")
@@ -124,8 +138,7 @@ def run_agent_execute_plan(plan_id: str,
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/" \
+  api_url = f"{LLM_SERVICE_API_URL}/agent/plan/" \
             f"{plan_id}/run?chat_id={chat_id}"
   Logger.info(f"api_url={api_url}")
 
@@ -147,8 +160,7 @@ def run_query(query_engine_id: str, prompt: str,
     auth_token = get_auth_token()
 
   Logger.info(chat_id)
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/engine/{query_engine_id}"
+  api_url = f"{LLM_SERVICE_API_URL}/query/engine/{query_engine_id}"
   Logger.info(f"api_url={api_url}")
 
   request_body = {
@@ -172,8 +184,7 @@ def build_query_engine(name: str, doc_url: str, embedding_type: str,
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/engine"
+  api_url = f"{LLM_SERVICE_API_URL}/query/engine"
   Logger.info(f"api_url={api_url}")
 
   request_body = {
@@ -183,6 +194,7 @@ def build_query_engine(name: str, doc_url: str, embedding_type: str,
     "vector_store": vector_store,
     "description": description,
   }
+  Logger.info(f"Sending request_body={request_body} to {api_url}")
   resp = post_method(api_url, request_body=request_body, token=auth_token)
   handle_error(resp)
   Logger.info(resp)
@@ -198,8 +210,7 @@ def get_all_query_engines(auth_token=None):
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query"
+  api_url = f"{LLM_SERVICE_API_URL}/query"
   Logger.info(f"api_url={api_url}")
   resp = get_method(api_url, token=auth_token)
   Logger.info(resp)
@@ -215,8 +226,7 @@ def get_all_embedding_types(auth_token=None):
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/llm/embedding_types"
+  api_url = f"{LLM_SERVICE_API_URL}/llm/embedding_types"
   Logger.info(f"api_url={api_url}")
   resp = get_method(api_url, token=auth_token)
   Logger.info(resp)
@@ -232,8 +242,7 @@ def get_all_vector_stores(auth_token=None):
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/query/vectorstore"
+  api_url = f"{LLM_SERVICE_API_URL}/query/vectorstore"
   Logger.info(f"api_url={api_url}")
   resp = get_method(api_url, token=auth_token)
   Logger.info(resp)
@@ -249,8 +258,7 @@ def get_all_jobs(job_type="query_engine_build", auth_token=None):
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{JOBS_SERVICE_PATH}/jobs/{job_type}"
+  api_url = f"{JOBS_SERVICE_API_URL}/jobs/{job_type}"
   Logger.info(f"api_url={api_url}")
   resp = get_method(api_url, token=auth_token)
   Logger.info(resp)
@@ -267,14 +275,14 @@ def get_all_chats(skip=0, limit=20, auth_token=None,
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"""{api_base_url}/{LLM_SERVICE_PATH}/chat?skip={skip}
+  api_url = f"""{LLM_SERVICE_API_URL}/chat?skip={skip}
             &limit={limit}&with_first_history={with_first_history}"""
   Logger.info(f"api_url={api_url}")
 
   resp = get_method(api_url, token=auth_token)
   Logger.info(resp)
   json_response = resp.json()
+
   output = json_response["data"]
   return output
 
@@ -285,8 +293,7 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/chat/{chat_id}"
+  api_url = f"{LLM_SERVICE_API_URL}/chat/{chat_id}"
   Logger.info(f"api_url={api_url}")
 
   resp = get_method(api_url, token=auth_token)
@@ -302,8 +309,7 @@ def get_plan(plan_id, auth_token=None) -> UserPlan:
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{LLM_SERVICE_PATH}/agent/plan/" \
+  api_url = f"{LLM_SERVICE_API_URL}/agent/plan/" \
             f"{plan_id}"
   Logger.info(f"api_url={api_url}")
 
@@ -319,8 +325,7 @@ def login_user(user_email, user_password) -> str or None:
     "email": user_email,
     "password": user_password
   }
-  api_base_url = get_api_base_url()
-  api_url = f"{api_base_url}/{AUTH_SERVICE_PATH}/sign-in/credentials"
+  api_url = f"{AUTH_SERVICE_API_URL}/sign-in/credentials"
   Logger.info(f"API url: {api_url}")
 
   sign_in_req = requests.post(api_url, json=req_body, verify=False, timeout=10)

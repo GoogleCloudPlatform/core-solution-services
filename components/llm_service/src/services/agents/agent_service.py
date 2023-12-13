@@ -120,10 +120,10 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
-def run_dispatch(
+def run_intent(
     prompt:str, chat_history:List = None, user:User = None) -> dict:
   """
-  Dispatch a prompt to the best matched routes.
+  Evaluate a prompt to get the intent with best matched route.
 
   Args:
       prompt(str): the user input prompt
