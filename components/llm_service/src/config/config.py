@@ -28,12 +28,7 @@ from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
 from google.cloud import secretmanager
-from langchain.chat_models import ChatOpenAI, ChatVertexAI
-from langchain.llms.cohere import Cohere
-from langchain.llms.vertexai import VertexAI
-from langchain.llms.llamacpp import LlamaCpp
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.embeddings.llamacpp import LlamaCppEmbeddings
+from config.model_config import ModelConfig
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
@@ -78,73 +73,41 @@ ERROR_RESPONSES = {
 }
 
 # LLM configuration
+MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "models.json")
+model_config = ModelConfig(MODEL_CONFIG_PATH)
+model_config.load_model_config()
 
 # VertexAI models are enabled by default
-ENABLE_GOOGLE_LLM = get_environ_flag("ENABLE_GOOGLE_LLM", True)
-ENABLE_GOOGLE_MODEL_GARDEN = get_environ_flag("ENABLE_GOOGLE_MODEL_GARDEN",
-                                              True)
+ENABLE_GOOGLE_LLM = model_config.is_provider_enabled(PROVIDER_VERTEX)
+ENABLE_GOOGLE_MODEL_GARDEN = \
+    model_config.is_provider_enabled(PROVIDER_MODEL_GARDEN)
 
-# llama2cpp (via langchain) requires special configuration as the model is
-# served by CPU in memory
 ENABLE_LLAMA2CPP_LLM = get_environ_flag("ENABLE_LLAMA2CPP_LLM", False)
 
-# 3rd party models are enabled if the flag is set AND the API key is defined
-ENABLE_OPENAI_LLM = get_environ_flag("ENABLE_OPENAI_LLM", True)
-ENABLE_COHERE_LLM = get_environ_flag("ENABLE_COHERE_LLM", True)
+ENABLE_OPENAI_LLM = model_config.is_provider_enabled(PROVIDER_OPENAI)
+ENABLE_COHERE_LLM = model_config.is_provider_enabled(PROVIDER_COHERE)
 
 # truss hosted models
-ENABLE_TRUSS_LLAMA2 = get_environ_flag("ENABLE_TRUSS_LLAMA2", True)
+# TODO: delete
+ENABLE_TRUSS_LLAMA2 = model_config.is_provider_enabled(PROVIDER_TRUSS)
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if OPENAI_API_KEY is None:
-  OPENAI_API_KEY = get_secret("openai-api-key")
-ENABLE_OPENAI_LLM = ENABLE_OPENAI_LLM and (OPENAI_API_KEY is not None)
+OPENAI_API_KEY = model_config.get_api_key(PROVIDER_OPENAI)
+COHERE_API_KEY = model_config.get_api_key(PROVIDER_COHERE)
 
-COHERE_API_KEY = os.getenv("COHERE_API_KEY")
-if COHERE_API_KEY is None:
-  COHERE_API_KEY = get_secret("cohere-api-key")
-ENABLE_COHERE_LLM = ENABLE_COHERE_LLM and (COHERE_API_KEY is not None)
 
-OPENAI_LLM_TYPE_GPT3_5 = "OpenAI-GPT3.5"
-OPENAI_LLM_TYPE_GPT4 = "OpenAI-GPT4"
-OPENAI_EMBEDDING_TYPE = "OpenAI-Embeddings"
-COHERE_LLM_TYPE = "Cohere"
-LLAMA2CPP_LLM_TYPE = "Llama2cpp"
-LLAMA2CPP_LLM_TYPE_EMBEDDING = "Llama2cpp-Embedding"
-VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
-VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat-V1"
-VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat"
-VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
-VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT = "VertexAI-ModelGarden-LLAMA2-Chat"
-TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
 
 LLM_TRUSS_MODEL_ENDPOINT = os.getenv("TRUSS_LLAMA2_ENDPOINT", "http://truss-llama2-7b-service:8080")
 
-LLM_TYPES = []
-OPENAI_LLM_TYPES = [OPENAI_LLM_TYPE_GPT3_5, OPENAI_LLM_TYPE_GPT4]
-COHERE_LLM_TYPES = [COHERE_LLM_TYPE]
-GOOGLE_LLM_TYPES = [VERTEX_LLM_TYPE_BISON_TEXT,
-                    VERTEX_LLM_TYPE_BISON_V1_CHAT,
-                    VERTEX_LLM_TYPE_BISON_CHAT]
+LLM_TYPES = model_config.get_llm_types()
 
-# these LLMs are trained as chat models
-CHAT_LLM_TYPES = [OPENAI_LLM_TYPE_GPT3_5,
-                  OPENAI_LLM_TYPE_GPT4,
-                  VERTEX_LLM_TYPE_BISON_V1_CHAT,
-                  VERTEX_LLM_TYPE_BISON_CHAT,
-                  TRUSS_LLM_LLAMA2_CHAT,
-                  VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT]
+OPENAI_LLM_TYPES = model_config.get_provider_llms(PROVIDER_OPENAI)
+COHERE_LLM_TYPES = model_config.get_provider_llms(PROVIDER_COHERE)
+GOOGLE_LLM_TYPES = mode_config.get_provider_llms(PROVIDER_VERTEX)
 
-if ENABLE_OPENAI_LLM:
-  LLM_TYPES.extend(OPENAI_LLM_TYPES)
+CHAT_LLM_TYPES = model_config.get_chat_llm_types()
 
-if ENABLE_COHERE_LLM:
-  LLM_TYPES.extend(COHERE_LLM_TYPES)
+LANGCHAIN_LLM = model_config.get_group_llm_config(LANGCHAIN_GROUP)
 
-if ENABLE_GOOGLE_LLM:
-  LLM_TYPES.extend(GOOGLE_LLM_TYPES)
-
-LANGCHAIN_LLM = {}
 LLAMA2CPP_MODEL_PATH = None
 if ENABLE_LLAMA2CPP_LLM:
   LLAMA2CPP_MODEL_FILE = os.getenv("LLAMA2CPP_MODEL_FILE")
@@ -172,29 +135,11 @@ if ENABLE_LLAMA2CPP_LLM:
   })
   LLM_TYPES.append(LLAMA2CPP_LLM_TYPE)
 
-if ENABLE_OPENAI_LLM:
-  LANGCHAIN_LLM.update({
-    OPENAI_LLM_TYPE_GPT3_5: ChatOpenAI(temperature=0,
-                                       openai_api_key=OPENAI_API_KEY,
-                                       model_name="gpt-3.5-turbo"),
-    OPENAI_LLM_TYPE_GPT4: ChatOpenAI(temperature=0,
-                                     openai_api_key=OPENAI_API_KEY,
-                                     model_name="gpt-4")
-  })
+GOOGLE_LLM = model_config.get_provider_config(PROVIDER_VERTEX)
 
-if ENABLE_COHERE_LLM:
-  LANGCHAIN_LLM.update({
-    COHERE_LLM_TYPE: Cohere(cohere_api_key=COHERE_API_KEY, max_tokens=1024)
-  })
-
-GOOGLE_LLM = {}
 if ENABLE_GOOGLE_LLM:
-  GOOGLE_LLM = {
-    VERTEX_LLM_TYPE_BISON_TEXT: "text-bison",
-    VERTEX_LLM_TYPE_BISON_V1_CHAT: "chat-bison@001",
-    VERTEX_LLM_TYPE_BISON_CHAT: "chat-bison-32k",
-    VERTEX_LLM_TYPE_GECKO_EMBEDDING: "textembedding-gecko@001"
-  }
+  # TODO - add vertex langchain models to model config
+
   LANGCHAIN_LLM.update({
     VERTEX_LLM_TYPE_BISON_TEXT: VertexAI(
       model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_TEXT], project=PROJECT_ID),
@@ -204,16 +149,19 @@ if ENABLE_GOOGLE_LLM:
       model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_CHAT], project=PROJECT_ID)
   })
 
-GOOGLE_MODEL_GARDEN = {}
-if ENABLE_GOOGLE_MODEL_GARDEN:
-  MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = \
-    os.getenv("MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID")
-  if MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID:
-    GOOGLE_MODEL_GARDEN_TYPES = [VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT]
-    GOOGLE_MODEL_GARDEN = {
-        VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT: MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID,
-    }
-    LLM_TYPES.extend(GOOGLE_MODEL_GARDEN_TYPES)
+GOOGLE_MODEL_GARDEN = model_config.get_provider_config(PROVIDER_MODEL_GARDEN)
+
+# TODO: fix model garden config
+
+#if ENABLE_GOOGLE_MODEL_GARDEN:
+#  MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = \
+#    os.getenv("MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID")
+#  if MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID:
+#    GOOGLE_MODEL_GARDEN_TYPES = [VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT]
+#    GOOGLE_MODEL_GARDEN = {
+#        VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT: MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID,
+#    }
+#    LLM_TYPES.extend(GOOGLE_MODEL_GARDEN_TYPES)
 
 
 # read llm service models from json config file
@@ -241,36 +189,17 @@ except Exception as e:
   Logger.info(f"Can't load llm_service_models.json: {str(e)}")
 
 # truss models
-LLM_TRUSS_MODELS = {}
-if ENABLE_TRUSS_LLAMA2:
-  LLM_TRUSS_MODELS = {
-      TRUSS_LLM_LLAMA2_CHAT: LLM_TRUSS_MODEL_ENDPOINT,
-  }
-  LLM_TYPES.append(TRUSS_LLM_LLAMA2_CHAT)
+LLM_TRUSS_MODELS = model_config.get_provider_config(PROVIDER_TRUSS)
+
 
 Logger.info(f"LLM types loaded {LLM_TYPES}")
 
 DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
 
 # embedding models
-VERTEX_EMBEDDING_MODELS = [VERTEX_LLM_TYPE_GECKO_EMBEDDING]
-LANGCHAIN_EMBEDDING_MODELS = []
-if ENABLE_OPENAI_LLM:
-  LANGCHAIN_EMBEDDING_MODELS.append(OPENAI_EMBEDDING_TYPE)
-  LANGCHAIN_LLM.update({
-    OPENAI_EMBEDDING_TYPE: OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-  })
-
-if ENABLE_LLAMA2CPP_LLM:
-  LANGCHAIN_EMBEDDING_MODELS.append(LLAMA2CPP_LLM_TYPE_EMBEDDING)
-  LANGCHAIN_LLM.update({
-    LLAMA2CPP_LLM_TYPE_EMBEDDING: LlamaCppEmbeddings(model_path=LLAMA2CPP_MODEL_PATH)
-  })
-
-
-EMBEDDING_MODELS = (VERTEX_EMBEDDING_MODELS +
-                    LANGCHAIN_EMBEDDING_MODELS +
-                    LLM_SERVICE_EMBEDDING_MODELS)
+VERTEX_EMBEDDING_MODELS = model_config.get_provider_embeddings(PROVIDER_VERTEX)
+LANGCHAIN_EMBEDDING_MODELS = model_config.get_provider_embeddings(PROVIDER_LANGCHAIN)
+EMBEDDING_MODELS = model_config.get_embedding_types()
 
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 Logger.info(f"Embedding models loaded {EMBEDDING_MODELS}")
