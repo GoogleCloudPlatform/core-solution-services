@@ -17,7 +17,8 @@
 """ Agent endpoints """
 import traceback
 from fastapi import APIRouter, Depends
-from common.models import User, UserChat
+from common.models import QueryEngine, User, UserChat
+from common.models.llm import CHAT_HUMAN, CHAT_AI
 from common.utils.auth_service import validate_token
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
@@ -27,8 +28,10 @@ from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentRunModel,
                                  LLMAgentGetAllResponse)
 from services.agents.agent_service import (get_all_agents, run_agent,
-                                           get_llm_type_for_agent)
+                                          agent_plan, run_intent,
+                                          get_llm_type_for_agent)
 from services.langchain_service import langchain_chat_history
+from services.query.query_service import query_generate
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
 
 Logger = Logger.get_logger(__file__)
@@ -55,6 +58,130 @@ def get_agents():
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
+
+
+@router.post(
+    "/dispatch",
+    name="Evaluate user input and choose a dispatch route")
+async def run_dispatch(run_config: LLMAgentRunModel,
+                       user_data: dict = Depends(validate_token)):
+  """
+  Run DispatchAgent with prompt, and pass to corresponding agent,
+  e.g. Chat, Plan or Query.
+
+  Args:
+      run_config(LLMAgentRunModel): the config of the Agent model.
+
+  Returns:
+      LLMAgentRunResponse
+  """
+  runconfig_dict = {**run_config.dict()}
+  prompt = runconfig_dict.get("prompt")
+  chat_id = runconfig_dict.get("chat_id")
+  llm_type = runconfig_dict.get("llm_type")
+  Logger.info(f"Choosing a dispatch route based on {runconfig_dict}")
+
+  if prompt is None or prompt == "":
+    return BadRequest("Missing or invalid payload parameters")
+
+  user = User.find_by_email(user_data.get("email"))
+  user_chat = None
+
+  # Retrieve an existing chat or create new chat for user
+  if chat_id:
+    user_chat = UserChat.find_by_id(chat_id)
+  if not user_chat:
+    user_chat = UserChat(user_id=user.user_id)
+
+  user_chat.update_history(custom_entry={
+    f"{CHAT_HUMAN}": prompt,
+  })
+  user_chat.save()
+
+  # Get the intent based on prompt.
+  route = run_intent(prompt, chat_history=user_chat.history, user=user)
+  Logger.info(f"Agent dispatch chooses this best route: {route}, " \
+              f"based on user prompt: {prompt}")
+
+  # TODO: Unify all response structure from all agent/query runs.
+  response_data = {
+    "route": route,
+  }
+
+  # TODO: Fix the hardcoded route types below.
+  route_name = route
+  Logger.info(f"Chosen route: {route}")
+  user_chat.update_history(custom_entry={
+    "route": route,
+    "route_name": route.capitalize(),
+  })
+
+  # Executing based on the best intent route.
+  chat_history_entry = {}
+  if route[:3] == "QE:":
+    # Run RAG via a specific query engine
+    query_engine_name = route[3:]
+    Logger.info("Dispatch to Query Engine: {query_engine_name}")
+
+    query_engine = QueryEngine.find_by_name(query_engine_name)
+    Logger.info("Query Engine: {query_engine}")
+
+    if not llm_type:
+      llm_type = query_engine.llm_type
+
+    query_result, query_references = await query_generate(
+          user.id,
+          prompt,
+          query_engine,
+          llm_type,
+          sentence_references=True)
+    Logger.info(f"Query response="
+                f"[{query_result}]")
+    response_data = {
+      "query_engine_id": query_result["query_engine_id"],
+      "query_result": query_result["response"],
+      "query_references": query_references
+    }
+    chat_history_entry["route_name"] = f"Query Engine: {route[3:]}"
+    chat_history_entry[CHAT_AI] = query_result
+    chat_history_entry["query_references"] = query_references
+
+  elif route == "plan":
+    # Run PlanAgent to generate a plan
+    output, user_plan = agent_plan(
+        agent_name="Plan", prompt=prompt, user_id=user.id)
+    plan_data = user_plan.get_fields(reformat_datetime=True)
+    plan_data["id"] = user_plan.id
+    chat_history_entry[CHAT_AI] = output
+    chat_history_entry["plan"] = plan_data
+
+    response_data = {
+      "content": output,
+      "plan": plan_data
+    }
+
+  else:
+    # Run with the generic ChatAgent for anything else.
+    output = run_agent("Chat", prompt)
+    chat_history_entry[CHAT_AI] = output
+    response_data = {
+      "content": output,
+    }
+
+  user_chat.update_history(custom_entry=chat_history_entry)
+  user_chat.save()
+
+  chat_data = user_chat.get_fields(reformat_datetime=True)
+  chat_data["id"] = user_chat.id
+  response_data["chat"] = chat_data
+  response_data["route_name"] = route_name
+
+  return {
+    "success": True,
+    "message": "Successfully ran dispatch",
+    "route": route,
+    "data": response_data
+  }
 
 
 @router.post(
@@ -92,7 +219,6 @@ def agent_run(agent_name: str,
 
     output = run_agent(agent_name, prompt)
     Logger.info(f"Generated output=[{output}]")
-    agent_thought = output
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
@@ -104,16 +230,16 @@ def agent_run(agent_name: str,
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
 
-    response = {
+    response_data = {
       "content": output,
       "chat": chat_data,
-      "agent_thought": agent_thought
+      "agent_thought": output
     }
 
     return {
       "success": True,
       "message": "Successfully ran agent",
-      "data": response
+      "data": response_data
     }
   except Exception as e:
     Logger.error(e)
@@ -158,7 +284,6 @@ def agent_run_chat(agent_name: str, chat_id: str,
     chat_history = langchain_chat_history(user_chat)
     output = run_agent(agent_name, prompt, chat_history)
     Logger.info(f"Generated output=[{output}]")
-    agent_thought = output
 
     # save chat history
     user_chat.update_history(prompt, output)
@@ -169,7 +294,6 @@ def agent_run_chat(agent_name: str, chat_id: str,
     response_data = {
       "content": output,
       "chat": chat_data,
-      "agent_thought": agent_thought
     }
 
     return {

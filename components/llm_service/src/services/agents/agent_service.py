@@ -23,7 +23,7 @@ from contextlib import redirect_stdout
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
-from common.models import BatchJobModel, User
+from common.models import BatchJobModel, QueryEngine, User
 from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.errors import ResourceNotFoundException
@@ -120,6 +120,70 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
+def run_intent(
+    prompt:str, chat_history:List = None, user:User = None) -> dict:
+  """
+  Evaluate a prompt to get the intent with best matched route.
+
+  Args:
+      prompt(str): the user input prompt
+      chat_history(List): any previous chat history for context
+
+  Returns:
+      output(str): the output of the agent on the user input
+      action_steps: the list of action steps take by the agent for the run
+  """
+
+  Logger.info(f"Running dispatch "
+              f"with prompt=[{prompt}] and "
+              f"chat_history=[{chat_history}]")
+  agent_name = "Dispatch"
+  agent_params = get_agent_config()[agent_name]
+  llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
+
+  langchain_agent = llm_service_agent.load_agent()
+  agent_executor = AgentExecutor.from_agent_and_tools(
+      agent=langchain_agent, tools=[])
+
+  # Collect all query engines with their description as topics.
+  query_engine_list_str = ""
+  query_engines = QueryEngine.collection.fetch()
+  for qe in query_engines:
+    query_engine_list_str += \
+      f"- [QE:{qe.name}] to run a query on a query engine  for topics of " \
+      f" {qe.description} \n"
+
+  dispatch_prompt = f"""
+    An AI Dispatch Assistant has access to the following routes:
+    - [plan] to compose, generate or create a plan.
+    - [chat] to perform generic chat conversation.
+    {query_engine_list_str}
+    Choose one route based on the question below:
+    """
+
+  agent_inputs = {
+    "input": dispatch_prompt + prompt,
+    "chat_history": []
+  }
+
+  Logger.info("Running agent executor.... ")
+  output = agent_executor.run(agent_inputs)
+  Logger.info(f"Agent {agent_name} generated output=[{output}]")
+
+  routes = parse_output("Route:", output) or []
+
+  # If no best route(s) found, pass to Chat agent.
+  if not routes or len(routes) == 0:
+    return run_agent("Chat", prompt, chat_history)
+
+  # TODO: Refactor this with DispatchAgentOutputParser
+  # Get the route for the best matched (first) returned routes.
+  route, detail = parse_step(routes[0])[0]
+  Logger.info(f"route: {route}, {detail}")
+
+  return route
+
+
 def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
   """
   Run an agent on user input
@@ -185,9 +249,11 @@ def agent_plan(agent_name:str, prompt:str,
 
   output = run_agent(agent_name, prompt, chat_history)
 
-  raw_plan_steps = parse_plan(output)
+  raw_plan_steps = parse_output("Plan:", output)
 
   # create user plan
+  print(f"user_id = {user_id}")
+
   user_plan = UserPlan(user_id=user_id, agent_name=agent_name)
   user_plan.save()
 
@@ -212,11 +278,11 @@ def agent_plan(agent_name:str, prompt:str,
   return output, user_plan
 
 
-def parse_plan(text: str) -> List[str]:
+def parse_output(header: str, text: str) -> List[str]:
   """
   Parse plan steps from agent output
   """
-  Logger.info(f"Parsing agent plan {text}")
+  Logger.info(f"Parsing agent output: {header}, {text}")
 
   # Regex pattern to match the steps after 'Plan:'
   # We are using the re.DOTALL flag to match across newlines and
@@ -225,7 +291,7 @@ def parse_plan(text: str) -> List[str]:
       r"^\s*\d+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
 
   # Find the part of the text after 'Plan:'
-  plan_part = re.split(r"Plan:", text, flags=re.IGNORECASE)[-1]
+  plan_part = re.split(header, text, flags=re.IGNORECASE)[-1]
 
   # Find all the steps within the 'Plan:' part
   steps = steps_regex.findall(plan_part)
@@ -234,6 +300,12 @@ def parse_plan(text: str) -> List[str]:
   steps = [step.strip() for step in steps]
 
   return steps
+
+def parse_step(text:str) -> dict:
+  step_regex = re.compile(
+      r"\d+\.\s.*\[(.*)\]\s?(.*)", re.DOTALL)
+  matches = step_regex.findall(text)
+  return matches
 
 def agent_execute_plan(
     agent_name:str, prompt:str, user_plan:UserPlan = None,

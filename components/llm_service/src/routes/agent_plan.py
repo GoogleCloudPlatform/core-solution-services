@@ -147,7 +147,7 @@ def generate_agent_plan(agent_name: str,
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
 
-    user_chat.update_history(custom_entries={
+    user_chat.update_history(custom_entry={
       "plan": plan_data,
     })
 

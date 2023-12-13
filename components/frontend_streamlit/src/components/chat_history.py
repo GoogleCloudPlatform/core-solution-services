@@ -20,7 +20,6 @@ import streamlit as st
 from common.utils.logging_handler import Logger
 from api import get_all_chats
 import utils
-from config import APP_BASE_PATH
 
 Logger = Logger.get_logger(__file__)
 
@@ -55,22 +54,29 @@ def get_agent_chats(selected_agent):
   index = 0
   Logger.info(f"get_chat_agents with {selected_agent}")
   for user_chat in (st.session_state.user_chats or []):
-    first_question = user_chat["history"][0]["HumanInput"][:50]
-    if len(user_chat["history"][0]["HumanInput"]) > 60:
-      first_question = first_question + "..."
+
+    first_history_item = user_chat["history"][0]
+    if "HumanInput" in first_history_item:
+      first_question = first_history_item["HumanInput"][:50]
+      if len(first_history_item["HumanInput"]) > 60:
+        first_question = first_question + "..."
+    else:
+      first_question = "Chat (No question)"
 
     chat_id = user_chat["id"]
     if "agent_name" in user_chat and (
       selected_agent in (user_chat["agent_name"], "All")):
-      agent_name = user_chat["agent_name"]
+      agent_name = user_chat.get("agent_name", None)
+      agent_name_str = f"**{agent_name}** " if agent_name else ""
+
       with st.container():
-        select_chat = st.button(f"**{agent_name}**: {first_question}",
+        select_chat = st.button(f"{agent_name_str}{first_question}",
                                 use_container_width=True,
                                 key=f"{agent_name}{index}")
         if select_chat:
-          utils.navigate_to(
-            f"{APP_BASE_PATH}/Chat?chat_id={chat_id}&agent_name={agent_name}&"
-            f"auth_token={st.session_state.auth_token}")
+          st.session_state.agent_name = agent_name
+          st.session_state.chat_id = chat_id
+          utils.navigate_to("Chat")
     index += 1
 
 def chat_history_panel():
@@ -83,7 +89,16 @@ def chat_history_panel():
   st.markdown(css, unsafe_allow_html=True)
 
   with st.sidebar:
-    st.header("My Chats")
+    col1, col2 = st.columns([3, 2])
+    with col1:
+      st.subheader("My Chats")
+    with col2:
+      new_chat_button = st.button("New Chat")
+      if new_chat_button:
+        st.session_state.messages = None
+        st.session_state.chat_id = None
+        utils.navigate_to("Chat")
+
     all_agents = set()
 
     # Iterate through all chats and get available agents

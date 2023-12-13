@@ -14,6 +14,7 @@
 """
 LLM Generation Service
 """
+# pylint: disable=import-outside-toplevel
 import time
 from typing import Optional
 import google.cloud.aiplatform
@@ -131,7 +132,6 @@ async def llm_truss_service_predict(prompt: str,
   Returns:
     the text response: str
   """
-
   if parameters is None:
     parameters = {
         "prompt": f"'{prompt}'",
@@ -161,8 +161,8 @@ async def llm_truss_service_predict(prompt: str,
   return output
 
 async def llm_service_predict(prompt: str, is_chat: bool,
-                             llm_type: str, user_chat=None,
-                             auth_token:str=None) -> str:
+                              llm_type: str, user_chat=None,
+                              auth_token: str = None) -> str:
 
   """
   Send a prompt to an instance of the LLM service and return response.
@@ -172,6 +172,7 @@ async def llm_service_predict(prompt: str, is_chat: bool,
     is_chat: true if the model is a chat model
     llm_type: the type of LLM to use
     user_chat (optional): a user chat to use for context
+    auth_token:
 
   Returns:
     the text response: str

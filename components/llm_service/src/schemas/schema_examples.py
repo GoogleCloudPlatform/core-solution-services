@@ -68,6 +68,7 @@ USER_QUERY_EXAMPLE = {
 QUERY_ENGINE_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "name": "query-engine-test",
+  "description": "sample description",
   "embedding_type": "VertexAI-Chat",
   "vector_store": "langchain_pgvector",
   "created_by": "fake-user-id",
@@ -87,6 +88,33 @@ QUERY_RESULT_EXAMPLE = {
   "archived_by": None,
   "created_by": "fake-user-id",
   "created_time": "2023-07-04 19:22:50.799741+00:00"
+}
+
+QUERY_DOCUMENT_EXAMPLE_1 = {
+  "id": "asd98798as7dhjgkjsdfh1",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
+  "query_engine": "query-engine-test",
+  "doc_url": "abcd.com/pdf1",
+  "index_start": 0,
+  "index_end": 123
+}
+
+QUERY_DOCUMENT_EXAMPLE_2 = {
+  "id": "asd98798as7dhjgkjsdfh2",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
+  "query_engine": "query-engine-test",
+  "doc_url": "abcd.com/pdf2",
+  "index_start": 0,
+  "index_end": 11
+}
+
+QUERY_DOCUMENT_EXAMPLE_3 = {
+  "id": "asd98798as7dhjgkjsdfh3",
+  "query_engine_id": "asd98798as7dhjgkjs",
+  "query_engine": "query-engine-test",
+  "doc_url": "abcd.com/pdf3",
+  "index_start": 0,
+  "index_end": 1234
 }
 
 CHAT_EXAMPLE = {

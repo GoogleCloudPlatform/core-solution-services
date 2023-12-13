@@ -18,7 +18,7 @@
 import traceback
 from fastapi import APIRouter, Depends
 
-from common.models import QueryEngine, User, UserQuery
+from common.models import QueryEngine, User, UserQuery, QueryDocument
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
@@ -38,9 +38,11 @@ from schemas.llm_schema import (LLMQueryModel,
                                 UserQueryUpdateModel,
                                 LLMQueryEngineModel,
                                 LLMGetQueryEnginesResponse,
+                                LLMQueryEngineURLResponse,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
-from services.query.query_service import query_generate
+from services.query.query_service import (query_generate,
+                                          vector_store_from_query_engine)
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -57,7 +59,16 @@ def get_engine_list():
       LLMGetQueryEnginesResponse
   """
   query_engines = QueryEngine.collection.fetch()
-  query_engine_data = [{"name": qe.name, "id": qe.id} for qe in query_engines]
+  query_engine_data = [{
+    "id": qe.id,
+    "name": qe.name,
+    "description": qe.description,
+    "llm_type": qe.llm_type,
+    "embedding_type": qe.embedding_type,
+    "vector_store": qe.vector_store,
+    "created_time": qe.created_time,
+    "last_modified_time": qe.last_modified_time,
+  } for qe in query_engines]
   try:
     return {
       "success": True,
@@ -85,6 +96,41 @@ def get_vector_store_list():
       "message": "Successfully retrieved vector store types",
       "data": VECTOR_STORES
     }
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
+
+@router.get(
+  "/urls/{query_engine_id}",
+  name="Get all URLs for a query engine",
+  response_model=LLMQueryEngineURLResponse)
+def get_urls_for_query_engine(query_engine_id: str):
+  """
+  Get all doc/web URLs for a Query Engine
+  Args:
+    query_engine_id (str):
+  Returns:
+      LLMQueryEngineURLResponse
+  """
+  try:
+    Logger.info(f"Get all URLs for a Query Engine={query_engine_id}")
+
+    # other user queries
+    q_engine = QueryEngine.find_by_id(query_engine_id)
+    if q_engine is None:
+      raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
+
+    query_docs = QueryDocument.find_by_query_engine_id(query_engine_id)
+
+    url_list = list(map(lambda query_doc: query_doc.doc_url, query_docs))
+    return {
+      "success": True,
+      "message": "Successfully retrieved document URLs "
+                 f"for query engine {query_engine_id}",
+      "data": url_list
+    }
+  except ResourceNotFoundException as e:
+    raise ResourceNotFound(str(e)) from e
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
@@ -220,6 +266,43 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
     Logger.error(e)
     raise InternalServerError(str(e)) from e
 
+@router.delete(
+  "/engine/{query_engine_id}",
+  name="Delete a query engine")
+def delete_query_engine(query_engine_id: str):
+  """
+  Delete a query engine
+
+  Args:
+      query_engine_id (LLMQueryEngineModel)
+  Returns:
+    [JSON]: {'success': 'True'} if the query engine is deleted,
+    ResourceNotFoundException if the query engine not found,
+    InternalServerErrorResponseModel if the deletion raises an exception
+  """
+  if query_engine_id is None or query_engine_id == "":
+    return BadRequest("Missing or invalid payload parameters: query_engine_id")
+
+  q_engine = QueryEngine.find_by_id(query_engine_id)
+  if q_engine is None:
+    raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
+
+  try:
+    Logger.info(f"Deleting q_engine=[{q_engine.name}]")
+
+    qe_vector_store = vector_store_from_query_engine(q_engine)
+    qe_vector_store.delete()
+    QueryEngine.soft_delete_by_id(query_engine_id)
+    Logger.info(f"Successfully deleted q_engine=[{q_engine.name}]")
+  except Exception as e:
+    Logger.error(e)
+    raise InternalServerError(str(e)) from e
+
+  return {
+    "success": True,
+    "message": f"Successfully deleted query engine {query_engine_id}",
+  }
+
 
 @router.post(
     "/engine",
@@ -270,7 +353,9 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "is_public": is_public,
       "llm_type": genconfig_dict.get("llm_type", None),
       "embedding_type": genconfig_dict.get("embedding_type", None),
-      "vector_store": genconfig_dict.get("vector_store", None)
+      "vector_store": genconfig_dict.get("vector_store", None),
+      "description": genconfig_dict.get("description", None),
+
     }
     env_vars = {
       "DATABASE_PREFIX": DATABASE_PREFIX,

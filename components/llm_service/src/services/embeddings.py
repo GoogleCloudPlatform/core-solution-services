@@ -40,8 +40,8 @@ ITEMS_PER_REQUEST = 5
 Logger = Logger.get_logger(__file__)
 
 def get_embeddings(
-        text_chunks: List[str], embedding_type: str = None) -> (
-        Tuple)[List[bool], np.ndarray]:
+    text_chunks: List[str], embedding_type: str = None) -> (
+    Tuple)[List[bool], np.ndarray]:
   """
   Get embeddings for a list of text strings.
 
@@ -121,8 +121,8 @@ def get_vertex_embeddings(embedding_type: str,
   """
   Generate an embedding from a Vertex model
   Args:
-    emebdding_type: str - vertex model identifier
-    sentence_list: list of text chunks to generate emneddings for
+    embedding_type: str - vertex model identifier
+    sentence_list: list of text chunks to generate embeddings for
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
@@ -142,7 +142,7 @@ def get_langchain_embeddings(embedding_type: str,
   """
   Generate an embedding from a langchain model
   Args:
-    emebdding_type: str - lanchain model identifier
+    embedding_type: str - lancghain model identifier
     sentence_list: list of text chunks to generate emneddings for
   Returns:
     list of embedding vectors (each vector is a list of floats)
@@ -157,7 +157,7 @@ def get_llm_service_embeddings(embedding_type: str,
   Call LLM Service provider to generate embeddings
 
   Args:
-    emebdding_type: str - lanchain model identifier
+    embedding_type: str - langchain model identifier
     sentence_list: list of text chunks to generate emneddings for
   Returns:
     list of embedding vectors (each vector is a list of floats)

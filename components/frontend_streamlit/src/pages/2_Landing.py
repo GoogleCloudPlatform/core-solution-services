@@ -20,34 +20,60 @@ from api import get_all_query_engines
 from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
 import utils
-from config import APP_BASE_PATH
 
 Logger = Logger.get_logger(__file__)
-params = st.experimental_get_query_params()
-st.session_state.auth_token = params.get("auth_token", [None])[0]
-auth_token = st.session_state.auth_token
+
+
+LANDING_PAGE_STYLES = """
+<style>
+  .stButton[data-testid="stFormSubmitButton"] {
+    display: none;
+  }
+</style>
+"""
+
 
 def landing_page():
-  st.title("Welcome.")
   chat_history_panel()
 
-  start_chat, start_query, build_query = st.columns((1, 1, 1))
+  st.markdown(LANDING_PAGE_STYLES, unsafe_allow_html=True)
+
+  st.title("Hello again.")
+  st.subheader("You can ask me anything:")
+  with st.form("user_input_form", border=False, clear_on_submit=True):
+    col1, col2 = st.columns([5, 1])
+    with col1:
+      user_input = st.text_input("")
+      submitted = st.form_submit_button("Submit")
+    with col2:
+      st.session_state.default_route = st.selectbox(
+          "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
+
+    if submitted:
+      st.session_state.landing_user_input = user_input
+      st.session_state.chat_id = None
+      utils.navigate_to("Chat")
+
+  st.divider()
+
+  st.subheader("Or run with a specific Agent or Task:")
+  start_chat, start_query = st.columns((1, 1))
 
   with start_chat:
     with st.container():
-      "Start a Chat with"
       agent_name = st.selectbox(
           "Agent:",
           ("Chat", "Plan"))
       chat_button = st.button("Start", key=2)
       if chat_button:
-        utils.navigate_to(
-          f"{APP_BASE_PATH}/Chat?agent_name={agent_name}"
-          f"&auth_token={auth_token}")
+        st.session_state.agent_name = agent_name
+        st.session_state.chat_id = None
+        utils.navigate_to("Agent")
 
   with start_query:
     # Get all query engines as a list
-    query_engine_list = get_all_query_engines(auth_token=auth_token)
+    query_engine_list = get_all_query_engines(
+      auth_token=st.session_state.auth_token)
 
     if query_engine_list is None or len(query_engine_list) == 0:
       with st.container():
@@ -59,26 +85,17 @@ def landing_page():
 
       Logger.info(query_engines)
       with st.container():
-        "Start a Query with"
         qe_name = st.selectbox(
             "Query Engine:",
             tuple(query_engines.keys()))
         query_button = st.button("Start", key=3)
         query_engine_id = query_engines[qe_name]["id"]
+        st.session_state.query_engine_id = query_engine_id
         if query_button:
-          utils.navigate_to(
-            f"{APP_BASE_PATH}/Query?query_engine_id={query_engine_id}"
-            f"&auth_token={auth_token}")
-
-  with build_query:
-    with st.container():
-      "Managing Query Engines"
-      build_button = st.button("Start", key=4)
-      if build_button:
-        utils.navigate_to(
-          f"{APP_BASE_PATH}/Query_Engines?auth_token={auth_token}")
-
+          st.session_state.agent_name = agent_name
+          st.session_state.chat_id = None
+          utils.navigate_to("Query")
 
 if __name__ == "__main__":
-  utils.init_api_base_url()
+  utils.init_page()
   landing_page()
