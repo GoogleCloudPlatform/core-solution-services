@@ -56,6 +56,7 @@ KEY_API_KEY = "api_key"
 KEY_ENV_FLAG = "env_flag"
 KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
+KEY_MODEL_PARAMS = "model_params"
 KEY_IS_CHAT = "is_chat"
 
 # providers
@@ -64,6 +65,21 @@ PROVIDER_MODEL_GARDEN = "ModelGarden"
 PROVIDER_LANGCHAIN = "Langchain"
 PROVIDER_TRUSS = "Truss"
 PROVIDER_LLM_SERVICE = "LLMService"
+
+# model ids
+OPENAI_LLM_TYPE_GPT3_5 = "OpenAI-GPT3.5"
+OPENAI_LLM_TYPE_GPT4 = "OpenAI-GPT4"
+OPENAI_EMBEDDING_TYPE = "OpenAI-Embeddings"
+COHERE_LLM_TYPE = "Cohere"
+LLAMA2CPP_LLM_TYPE = "Llama2cpp"
+LLAMA2CPP_LLM_TYPE_EMBEDDING = "Llama2cpp-Embedding"
+VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
+VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat-V1"
+VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat"
+VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
+VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT = "VertexAI-ModelGarden-LLAMA2-Chat"
+TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
+
 
 class ModelConfigMissingException(Exception):
   pass
@@ -267,10 +283,12 @@ class ModelConfig():
     model_config = self.get_model_config(model_id)
     model_class_name = self.get_config_value(model_id, KEY_MODEL_CLASS)
     model_name = self.get_config_value(model_id, KEY_MODEL_NAME)
+    model_params = self.get_config_value(model_id, KEY_MODEL_PARAMS)
+    if model_params is None:
+      model_params = {}
     if provider == "Langchain":
       model_cls = LANGCHAIN_CLASSES.get(model_class_name)
-      model_class_instance = model_cls(model_name=model_name, **model_config)
-
+      model_class_instance = model_cls(model_name=model_name, **model_params)
     return model_class_instance
 
   def load_model_config(self):
