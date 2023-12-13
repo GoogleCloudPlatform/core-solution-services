@@ -15,10 +15,11 @@
 """ Email tools endpoints """
 
 from fastapi import APIRouter
+from typing import List, Dict
 from schemas.email import EmailSchema, EmailComposeSchema
 from services.gmail_service import send_email
 from services.email_composer import compose_email
-
+from services.database_service import execute_query
 router = APIRouter(prefix="/workspace", tags=["workspace"])
 
 SUCCESS_RESPONSE = {"status": "Success"}
@@ -63,5 +64,25 @@ def compose_email_subject_and_message(data: EmailComposeSchema):
   return {
     "subject": result["subject"],
     "message": result["message"],
+    "status": "Success",
+  }
+@router.post("/database/query")
+def execute_databasequery(query:str) –> Dict:
+  """Execute a database query.
+
+  Args:
+    query(str): The SQL query that will be executed.
+
+  Raises:
+    HTTPException: 500 Internal Server Error if something fails
+  """
+
+  result = execute_query(query)
+
+  print(result)
+
+  return {
+    "columns": result["columns"],
+    "rows": result["rows"],
     "status": "Success",
   }
