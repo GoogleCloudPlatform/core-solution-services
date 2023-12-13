@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-  LLM Service config helper module
+  LLM Service config object module
 """
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 # Config dicts that hold the current config for providers, models,
@@ -58,6 +58,12 @@ KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
 KEY_IS_CHAT = "is_chat"
 
+# providers
+PROVIDER_VERTEX = "Vertex"
+PROVIDER_MODEL_GARDEN = "ModelGarden"
+PROVIDER_LANGCHAIN = "Langchain"
+PROVIDER_TRUSS = "Truss"
+PROVIDER_LLM_SERVICE = "LLMService"
 
 class ModelConfigMissingException(Exception):
   pass
@@ -262,3 +268,16 @@ class ModelConfig():
     """
     self.read_model_config()
     self.set_model_config()
+
+  def get_llm_types(self) -> dict:
+    """ get all supported LLM types, as a list of model identifiers """
+    llm_types = self.llm_models.keys()
+    return llm_types
+
+  def get_chat_llm_types(self) -> dict:
+    """ get all supported LLM types, as a list of model identifiers """
+    chat_llm_types = {
+      k for k,config in self.llm_models.items()
+      if KEY_IS_CHAT in config and config[KEY_IS_CHAT]
+    }
+    return chat_llm_types
