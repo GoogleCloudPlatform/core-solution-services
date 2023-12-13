@@ -16,6 +16,9 @@
 
 import os
 from enum import Enum
+from common.utils.logging_handler import Logger
+
+Logger = Logger.get_logger(__file__)
 
 def get_environ_flag(env_flag_str, default=True):
   default_str = str(default)
