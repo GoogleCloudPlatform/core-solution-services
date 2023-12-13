@@ -25,7 +25,7 @@ def get_environ_flag(env_flag_str, default=True):
   evn_val = os.getenv(env_flag_str, default_str)
   if evn_val is None or evn_val == "":
     evn_val = default_str
-  evn_flag = evn_val.lower() == default_str.lower()
+  evn_flag = evn_val.lower() == "true"
   Logger.info(f"{env_flag_str} = {evn_flag}")
   return evn_flag
 
