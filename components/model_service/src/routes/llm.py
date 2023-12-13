@@ -101,7 +101,7 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
   embedding_type = embeddings_config_dict.get("embedding_type")
 
   try:
-    embeddings = await get_embeddings(text, embedding_type)
+    embeddings = get_embeddings(text, embedding_type)
 
     return {
         "success": True,
