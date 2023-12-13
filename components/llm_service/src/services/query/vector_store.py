@@ -59,7 +59,7 @@ class VectorStore(ABC):
   for a QueryEngine instance and manages the document index for that engine.
   """
 
-  def __init__(self, q_engine: QueryEngine, embedding_type:str=None) -> None:
+  def __init__(self, q_engine: QueryEngine, embedding_type: str=None) -> None:
     self.q_engine = q_engine
     self.embedding_type = embedding_type
 
@@ -90,6 +90,9 @@ class VectorStore(ABC):
   def deploy(self):
     """ Deploy vector store index for this query engine """
 
+  def delete(self):
+    """ Delete vector store index for this query engine """
+    raise NotImplementedError("Not implemented")
 
   @abstractmethod
   def similarity_search(self, q_engine: QueryEngine,
@@ -112,6 +115,11 @@ class MatchingEngineVectorStore(VectorStore):
     self.storage_client = storage.Client(project=PROJECT_ID)
     self.bucket_name = f"{PROJECT_ID}-{self.q_engine.name}-data"
     self.bucket_uri = f"gs://{self.bucket_name}"
+    self.index_name = self.q_engine.name.replace("-", "_") + "_MEindex"
+    self.index_endpoint = None
+    self.tree_ah_index = None
+    self.index_description = ("Matching Engine index for LLM Service "
+                              "query engine: " + self.q_engine.name)
 
   def init_index(self):
     # create bucket for ME index data
@@ -214,54 +222,55 @@ class MatchingEngineVectorStore(VectorStore):
 
     return index_base
 
+  def delete(self):
+    """ Delete vector store index for this query engine """
+    Logger.info(f"deleting matching engine index {self.index_name}")
+    if self.index_endpoint:
+      self.index_endpoint.delete(force=True)
+    if self.tree_ah_index:
+      self.tree_ah_index.delete()
+
   def deploy(self):
     """ Create matching engine index and endpoint """
 
-    # ME index name and description
-    index_name = self.q_engine.name.replace("-", "_") + "_MEindex"
-
     # create ME index
-    Logger.info(f"creating matching engine index {index_name}")
+    Logger.info(f"creating matching engine index {self.index_name}")
 
-    index_description = (
-        "Matching Engine index for LLM Service query engine: " +
-        self.q_engine.name)
-
-    tree_ah_index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
-        display_name=index_name,
+    self.tree_ah_index = aiplatform.MatchingEngineIndex.create_tree_ah_index(
+        display_name=self.index_name,
         contents_delta_uri=self.bucket_uri,
         dimensions=DIMENSIONS,
         approximate_neighbors_count=150,
         distance_measure_type="DOT_PRODUCT_DISTANCE",
         leaf_node_embedding_count=500,
         leaf_nodes_to_search_percent=80,
-        description=index_description,
+        description=self.index_description,
     )
-    Logger.info(f"Created matching engine index {index_name}")
+    Logger.info(f"Created matching engine index {self.index_name}")
 
     # create index endpoint
-    index_endpoint = aiplatform.MatchingEngineIndexEndpoint.create(
-        display_name=index_name,
-        description=index_name,
+    self.index_endpoint = aiplatform.MatchingEngineIndexEndpoint.create(
+        display_name=self.index_name,
+        description=self.index_name,
         public_endpoint_enabled=True,
     )
-    Logger.info(f"Created matching engine endpoint for {index_name}")
+    Logger.info(f"Created matching engine endpoint for {self.index_name}")
 
     # store index in query engine model
-    self.q_engine.index_id = tree_ah_index.resource_name
-    self.q_engine.index_name = index_name
-    self.q_engine.endpoint = index_endpoint.resource_name
+    self.q_engine.index_id = self.tree_ah_index.resource_name
+    self.q_engine.index_name = self.index_name
+    self.q_engine.endpoint = self.index_endpoint.resource_name
     self.q_engine.update()
 
     # deploy index endpoint
     try:
       # this seems to consistently time out, throwing an error, but
       # actually successfully deploys the endpoint
-      index_endpoint.deploy_index(
-          index=tree_ah_index,
+      self.index_endpoint.deploy_index(
+          index=self.tree_ah_index,
           deployed_index_id=self.q_engine.deployed_index_name
       )
-      Logger.info(f"Deployed matching engine endpoint for {index_name}")
+      Logger.info(f"Deployed matching engine endpoint for {self.index_name}")
     except Exception as e:
       Logger.error(f"Error creating ME index or endpoint {e}")
 
@@ -289,9 +298,15 @@ class LangChainVectorStore(VectorStore):
   """
   Generic LLM Service interface to Langchain vector store classes.
   """
-  def __init__(self, q_engine: QueryEngine, embedding_type:str=None) -> None:
+  def __init__(self, q_engine: QueryEngine, embedding_type: str = None) -> None:
     super().__init__(q_engine, embedding_type)
     self.lc_vector_store = self._get_langchain_vector_store()
+    self.index_length = 0
+
+  def delete(self):
+    self.lc_vector_store.index.remove_ids(
+      np.array(np.arange(self.index_length), dtype=np.int64)
+    )
 
   def init_index(self):
     pass
@@ -321,6 +336,7 @@ class LangChainVectorStore(VectorStore):
                                         ids=ids)
     # return new index base
     new_index_base = index_base + len(text_chunks)
+    self.index_length = new_index_base
     return new_index_base
 
   def similarity_search(self, q_engine: QueryEngine,

@@ -30,7 +30,7 @@ class UserChat(BaseModel):
   id = IDField()
   user_id = TextField(required=True)
   title = TextField(required=False, default="")
-  llm_type = TextField(required=True)
+  llm_type = TextField(required=False)
   agent_name = TextField(required=False)
   history = ListField(default=[])
 
@@ -72,7 +72,7 @@ class UserChat(BaseModel):
   def update_history(self,
                      prompt: str=None,
                      response: str=None,
-                     custom_entries: dict=None):
+                     custom_entry: dict=None):
     """ Update history with query and response """
 
     if not self.history:
@@ -84,11 +84,8 @@ class UserChat(BaseModel):
     if response:
       self.history.append({CHAT_AI: response})
 
-    if custom_entries:
-      for key, value in custom_entries.items():
-        self.history.append({
-          key: value
-        })
+    if custom_entry:
+      self.history.append(custom_entry)
 
     self.save(merge=True)
 

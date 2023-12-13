@@ -44,7 +44,7 @@ portForward:
 - resourceType: service
   resourceName: jobs-service
   port: 80
-  localPort: 9001 # Change this when adding other microservice.
+  localPort: 9003 # Change this when adding other microservice.
 
 profiles:
 # Profile for building images locally.
