@@ -37,7 +37,7 @@ LANGCHAIN_CHAT_CLASSES = {
   if isinstance(klass, type)
 }
 LANGCHAIN_LLM_CLASSES = {
-  k:klass() for (k, klass) in langchain_llm.get_type_to_cls_dict()
+  k:klass() for (k, klass) in langchain_llm.get_type_to_cls_dict().items()
 }
 LANGCHAIN_EMBEDDING_CLASSES = {
   k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
@@ -187,10 +187,20 @@ class ModelConfig():
           f"Setting model enabled flag for {model_id} to {model_enabled}")
 
   def is_model_enabled(self, model_id: str) -> bool:
-    model_config = self.llm_models.get(model_id)
-    return model_config(KEY_ENABLED)
+    """
+    Get model enabled setting.  We always default to true if there is no key
+    present, so users must set the enable flag = false in config if that is
+    the desired behavior.
+    """
+    model_config = self.get_model_config(model_id)
+    return model_config.get(KEY_ENABLED, True)
 
   def get_model_config(self, model_id: str) -> dict:
+    """
+    Get model config, for any model (llm or embedding).
+    It is an error if the model config is missing for model_id, so raise an
+    exception if so.
+    """
     model_config = self.get_all_model_config().get(model_id, None)
     if model_config is None:
       raise ModelConfigMissingException(model_id)
@@ -214,7 +224,9 @@ class ModelConfig():
 
   def get_all_model_config(self):
     """ return dict of model config and embedding model config combined """
-    return self.llm_models.copy().update(self.llm_embedding_models)
+    model_config = self.llm_models.copy()
+    model_config.update(self.llm_embedding_models)
+    return model_config
 
   def get_api_keys(self) -> dict:
     """ return a dict of model_id: api_key """
@@ -270,14 +282,21 @@ class ModelConfig():
     self.set_model_config()
 
   def get_llm_types(self) -> dict:
-    """ get all supported LLM types, as a list of model identifiers """
-    llm_types = self.llm_models.keys()
+    """ Get all supported and enabled LLM types, as a list of model
+        identifiers.
+    """
+    llm_configured_types = self.llm_models.keys()
+    llm_types = [
+      llm for llm in llm_configured_types if self.is_model_enabled(llm)
+    ]
     return llm_types
 
   def get_chat_llm_types(self) -> dict:
-    """ get all supported LLM types, as a list of model identifiers """
-    chat_llm_types = {
-      k for k,config in self.llm_models.items()
-      if KEY_IS_CHAT in config and config[KEY_IS_CHAT]
-    }
+    """ Get all supported and enabled chat LLM types, as a list of model
+        identifiers.
+    """
+    chat_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and self.is_model_enabled(m)
+    ]
     return chat_llm_types
