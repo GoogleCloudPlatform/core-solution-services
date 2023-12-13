@@ -52,14 +52,20 @@
       "provider": "Langchain",
       "enabled": true,
       "api_key": "openai-api-key",
-      "model_name": "gpt-4"
+      "model_name": "gpt-4",
+      "model_params": {
+       "temperature": 0
+      }
     },
     "OpenAI-GPT3.5": {
       "is_chat": true,
       "provider": "Langchain",
       "enabled": true,
       "api_key": "openai-api-key",
-      "model_name": "gpt-3.5-turbo"
+      "model_name": "gpt-3.5-turbo",
+      "model_params": {
+       "temperature": 0
+      }
     },
     "Cohere": {
       "is_chat": true,
