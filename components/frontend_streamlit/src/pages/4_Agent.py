@@ -18,20 +18,16 @@
 import re
 import streamlit as st
 from api import (
-    get_chat, run_dispatch, get_plan,
+    get_chat, run_agent, run_agent_plan, get_plan,
     run_agent_execute_plan)
 from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-messages = []
 
 CHAT_PAGE_STYLES = """
 <style>
-  .stButton[data-testid="stFormSubmitButton"] {
-    display: none;
-  }
   .stTextInput input {
     color: #555555;
     -webkit-text-fill-color: black;
@@ -50,32 +46,45 @@ st.session_state.input_loading = False
 
 Logger = Logger.get_logger(__file__)
 
-
-def on_submit(user_input):
-  """ Run dispatch agent when adding an user input prompt """
-  st.session_state.input_loading = True
-
+def on_input_change():
+  user_input = st.session_state.user_input
+  agent_name = st.session_state.agent_name
   # Appending messages.
   st.session_state.messages.append({"HumanInput": user_input})
 
   # Send API to llm-service
-  response = run_dispatch(user_input)
-  st.session_state.default_route = response.get("route", None)
+  st.session_state.input_loading = True
+  if agent_name.lower() == "chat":
+    response = run_agent(agent_name, user_input,
+                         chat_id=st.session_state.chat_id)
 
-  if not st.session_state.chat_id:
-    st.session_state.chat_id = response["chat"]["id"]
-    st.session_state.user_chats.insert(0, response["chat"])
+  elif agent_name.lower() == "plan":
+    response = run_agent_plan(agent_name, user_input,
+                              chat_id=st.session_state.chat_id)
+  else:
+    raise ValueError(f"agent_name {agent_name} is not supported.")
 
-  # TODO: Currently the AIOutput vs content are inconsistent across
-  # API response and in a UserChat history.
-  if "content" in response:
-    response["AIOutput"] = response["content"]
-  del response["chat"]
+  st.session_state.input_loading = False
 
-  st.session_state.messages.append(response)
+  st.session_state.chat_id = response["chat"]["id"]
+  st.session_state.messages.append({"AIOutput": response["content"]})
+
+  if "plan" in response:
+    st.session_state.messages.append({"plan": response["plan"]})
 
   # Clean up input field.
-  st.session_state.input_loading = False
+  st.session_state.user_input = ""
+
+
+def init_messages():
+  messages = []
+  if st.session_state.chat_id:
+    chat_data = get_chat(st.session_state.chat_id)
+    messages = chat_data["history"]
+  else:
+    messages.append({"AIOutput": "You can ask me anything."})
+  # Initialize with chat history if any.
+  st.session_state.setdefault("messages", messages)
 
 
 def format_ai_output(text):
@@ -92,11 +101,7 @@ def format_ai_output(text):
   return text
 
 def chat_content():
-  if st.session_state.debug:
-    st.write(st.session_state.messages)
-
-  if st.session_state.chat_id:
-    st.write(f"Chat ID: **{st.session_state.chat_id}**")
+  init_messages()
 
   # Create a placeholder for all chat history.
   chat_placeholder = st.empty()
@@ -108,14 +113,6 @@ def chat_content():
       if "HumanInput" in item:
         with st.chat_message("user"):
           st.write(item["HumanInput"], is_user=True, key=f"human_{index}")
-
-      if "route_name" in item:
-        route_name = item["route_name"]
-        with st.chat_message("ai"):
-          st.write(
-              f"Using route \"**{route_name.capitalize()}**\" to respond.",
-              key=f"ai_{index}",
-          )
 
       if "AIOutput" in item:
         with st.chat_message("ai"):
@@ -160,51 +157,25 @@ def chat_content():
 
       index = index + 1
 
-
-def init_messages():
-  """ Init all messages """
-  if st.session_state.chat_id:
-    chat_data = get_chat(st.session_state.chat_id)
-    st.session_state.messages = chat_data["history"]
-  elif not st.session_state.get("messages", None):
-    st.session_state.messages = [{
-      "AIOutput": "You can ask me anything."
-    }]
+  st.text_input("User Input:", on_change=on_input_change, key="user_input")
 
 
 def chat_page():
+  st.title(st.session_state.agent_name + " Agent")
   st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
-  st.title("Chat")
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
 
-  content_placeholder = st.container()
+  if st.session_state.input_loading:
+    st.spinner("Sending prompt to Agent...")
 
-  with st.form("user_input_form", border=False, clear_on_submit=True):
-    col1, col2 = st.columns([5, 1])
-    with col1:
-      user_input = st.text_input("User Input", key="user_input")
-      submitted = st.form_submit_button("Submit")
-    with col2:
-      st.session_state.default_route = st.selectbox(
-          "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
-
-    if submitted:
-      with st.spinner("Loading..."):
-        on_submit(user_input)
-
-  # Pass prompt from the Landing page if any.
-  if st.session_state.get("landing_user_input", None):
-    with st.spinner("Loading..."):
-      on_submit(st.session_state.landing_user_input)
-      st.session_state.landing_user_input = ""
-
-  with content_placeholder:
+  # Set up columns to mimic a right-side sidebar
+  main_container = st.container()
+  with main_container:
     chat_content()
 
 
 if __name__ == "__main__":
   utils.init_page()
-  init_messages()
   chat_page()

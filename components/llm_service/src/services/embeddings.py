@@ -63,7 +63,7 @@ def get_embeddings(
 
   return is_successful, embeddings
 
-async def _generate_embeddings_batched(embedding_type,
+def _generate_embeddings_batched(embedding_type,
                                  text_chunks):
   embeddings_list: List[List[float]] = []
 
