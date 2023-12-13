@@ -42,11 +42,6 @@ CHAT_PAGE_STYLES = """
 </style>
 """
 
-# For development purpose:
-params = st.experimental_get_query_params()
-st.session_state.auth_token = params.get("auth_token", [None])[0]
-st.session_state.chat_id = params.get("chat_id", [None])[0]
-st.session_state.agent_name = params.get("agent_name", ["Chat"])[0]
 st.session_state.input_loading = False
 
 Logger = Logger.get_logger(__file__)
@@ -182,5 +177,5 @@ def chat_page():
 
 
 if __name__ == "__main__":
-  utils.init_api_base_url()
+  utils.init_page()
   chat_page()

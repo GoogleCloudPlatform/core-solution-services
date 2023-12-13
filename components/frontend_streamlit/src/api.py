@@ -164,7 +164,8 @@ def run_query(query_engine_id: str, prompt: str,
   return output
 
 def build_query_engine(name: str, doc_url: str, embedding_type: str,
-                       vector_store: str, auth_token=None):
+                       vector_store: str, description: str,
+                       auth_token=None):
   """
   Start a query engine build job
   """
@@ -179,8 +180,10 @@ def build_query_engine(name: str, doc_url: str, embedding_type: str,
     "query_engine": name,
     "doc_url": doc_url,
     "embedding_type": embedding_type,
-    "vector_store": vector_store
+    "vector_store": vector_store,
+    "description": description,
   }
+  Logger.info(f"Sending request_body={request_body} to {api_url}")
   resp = post_method(api_url, request_body=request_body, token=auth_token)
   handle_error(resp)
   Logger.info(resp)

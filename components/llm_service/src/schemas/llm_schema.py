@@ -143,6 +143,7 @@ class LLMQueryEngineModel(BaseModel):
   """LLM Query Engine model"""
   doc_url: str
   query_engine: str
+  description: str
   llm_type: Optional[str]
   embedding_type: Optional[str]
   vector_store: Optional[str]
@@ -201,6 +202,23 @@ class LLMUserQueryResponse(BaseModel):
             "message": "Successfully retrieved query",
             "data": None
         }
+    }
+
+
+class LLMQueryEngineURLResponse(BaseModel):
+  """LLM Get Query Engine URL Response model"""
+  success: Optional[bool] = True
+  message: Optional[str] = "Successfully retrieved URLs"
+  data: List[str] = []
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+      "example": {
+        "success": True,
+        "message": "Successfully retrieved URLs",
+        "data": None
+      }
     }
 
 

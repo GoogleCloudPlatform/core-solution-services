@@ -65,8 +65,8 @@ gcloud resource-manager org-policies delete constraints/iam.allowedPolicyMemberD
 
 Clone this repo to your local machine to start. Optionally, you can use Cloud Shell. Run the rest of the commands inside the repo folder.
 ```
-# Clone repo (skip unnecessary history)
-git clone --depth 1 https://github.com/GoogleCloudPlatform/core-solution-services
+# Clone repo
+git clone https://github.com/GoogleCloudPlatform/core-solution-services
 cd core-solution-services
 ```
 
@@ -129,7 +129,7 @@ ls -la /tmp/jumphost_ready
 
 Check out the code in the jump host:
 ```
-git clone --depth 1 https://github.com/GoogleCloudPlatform/core-solution-services
+git clone https://github.com/GoogleCloudPlatform/core-solution-services
 ```
 
 Initialize the jump host and set Project ID:
@@ -185,12 +185,18 @@ sb infra apply 4-llm
 Follow README files for each microservice to set up:
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
 
-### Deploy all microservices and ingress to GKE cluster:
-```
-sb deploy
+### Deploy all microservices to GKE cluster:
+```bash
+NAMESPACE=default
+sb deploy -n $NAMESPACE
 ```
 - This will run `skaffold` commands to deploy all microservices and ingress to the GKE cluster.
 
+### Deploy ingress to GKE cluster:
+```bash
+cd ingress
+skaffold run -p default-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
+```
 ### After deployment
 
 - Follow [components/authentication/README.md#create-users](./components/authentication/README.md#create-users) to create the first user.

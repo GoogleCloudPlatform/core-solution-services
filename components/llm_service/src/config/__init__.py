@@ -71,6 +71,9 @@ from config.config import (
     LLM_SERVICE_MODELS,
     LLM_TRUSS_MODELS,
 
+    # Endpoints
+    MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID,
+
     # agent config
     AGENT_CONFIG_PATH,
     )

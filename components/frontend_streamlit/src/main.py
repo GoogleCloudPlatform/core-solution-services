@@ -15,6 +15,7 @@
   Streamlit app main file
 """
 import importlib
+import utils
 import streamlit as st
 from common.utils.logging_handler import Logger
 
@@ -33,7 +34,7 @@ def app():
   with st.sidebar:
     st.title("GENIE v1.0")
 
-  if st.session_state.get("logged_in", False):
+  if st.session_state.get("auth_token", None):
     landing.landing_page()
   else:
     # TODO: Implement the actual authentication process via API call.
@@ -44,3 +45,6 @@ def app():
 if __name__ == "__main__":
   app()
   Logger.info("Streamlit main page rendered.")
+  #./main.py is used as an entrypoint for the build,
+  # which creates a page that duplicates the Login page named "main".
+  utils.hide_pages(["main"])

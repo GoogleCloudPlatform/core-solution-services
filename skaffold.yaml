@@ -33,9 +33,6 @@ requires:
 - configs:
   - frontend_flutterflow
   path: ./components/frontend_flutterflow
-- configs:
-  - ingress
-  path: ./ingress
 #- configs:
 #  - model_service
 #  path: ./components/model_service
