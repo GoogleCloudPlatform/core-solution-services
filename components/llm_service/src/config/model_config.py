@@ -195,7 +195,7 @@ class ModelConfig():
     if model_config is None:
       raise ModelConfigMissingException(model_id)
     return model_config
-  
+
   def get_provider_config(self, model_id: str) -> Tuple[str, dict]:
     """
     Get provider config for model
@@ -251,14 +251,14 @@ class ModelConfig():
     Instantiate the model class for providers that use them (e.g. Langchain)
     """
     model_class_instance = None
-    provider, provider_config = self.get_provider_config(model_id)
+    provider, _ = self.get_provider_config(model_id)
     model_config = self.get_model_config(model_id)
     model_class_name = self.get_config_value(model_id, KEY_MODEL_CLASS)
     model_name = self.get_config_value(model_id, KEY_MODEL_NAME)
     if provider == "Langchain":
       model_cls = LANGCHAIN_CLASSES.get(model_class_name)
       model_class_instance = model_cls(model_name=model_name, **model_config)
-    
+
     return model_class_instance
 
   def load_model_config(self):

@@ -16,6 +16,7 @@ Unit test for section.py
 """
 # disabling these rules, as they cause issues with pytest fixtures
 # pylint: disable=unused-import,unused-argument,redefined-outer-name
+import os
 import pytest
 from config.model_config import ModelConfig
 from common.testing.firestore_emulator import clean_firestore, firestore_emulator
