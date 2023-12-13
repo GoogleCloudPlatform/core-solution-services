@@ -106,6 +106,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   # TODO: Unify all response structure from all agent/query runs.
   response_data = {
     "route": route,
+    "route_name": route.capitalize(),
   }
 
   # TODO: Fix the hardcoded route types below.
@@ -141,6 +142,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     chat_history_entry["query_references"] = query_references
 
     response_data = {
+      "route_name": f"Query Engine: {route[3:]}",
       "output": query_result.response,
       "query_engine_id": query_result.query_engine_id,
       "query_references": query_references,
