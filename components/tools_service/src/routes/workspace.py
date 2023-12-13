@@ -15,10 +15,11 @@
 """ Email tools endpoints """
 
 from fastapi import APIRouter
+from typing import List, Dict
 from schemas.email import EmailSchema, EmailComposeSchema
 from services.gmail_service import send_email
 from services.email_composer import compose_email
-
+from services.sheets_service import create_spreadsheet
 router = APIRouter(prefix="/workspace", tags=["workspace"])
 
 SUCCESS_RESPONSE = {"status": "Success"}
@@ -65,3 +66,30 @@ def compose_email_subject_and_message(data: EmailComposeSchema):
     "message": result["message"],
     "status": "Success",
   }
+@router.post("/sheets/create")
+async def create_sheets(name: str, columns : List, rows : List,
+                        share_with: List=None) -> Dict:
+  """
+    Create a Google Sheet with the supplied data and return the sheet url 
+    and id
+
+  Args:
+       Name of the spreadsheet name : String
+       List of User emails that this spreadsheet should be shared_with: List
+       Column names of thte spreadsheet and rows as a     
+        List of columns : List
+       Rows containing the values for the speadsheet as 
+        List of Lists rows : List
+    Returns:
+        Spreadsheet url and id type: Dict
+  Raises:
+    HTTPException: 500 Internal Server Error if something fails
+  """
+
+  result = create_spreadsheet (name=name,
+                               columns=columns,
+                               rows = rows,
+                               share_with = share_with)
+  result ["status"] = "Success"
+  print(f"create_sheets:{result}")
+  return result
