@@ -14,9 +14,7 @@
 """
   Streamlit app utils file
 """
-import re
 import streamlit as st
-from streamlit_javascript import st_javascript
 from common.utils.logging_handler import Logger
 from config import API_BASE_URL
 from streamlit.runtime.scriptrunner import RerunData, RerunException

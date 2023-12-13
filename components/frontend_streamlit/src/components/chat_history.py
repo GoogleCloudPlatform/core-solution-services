@@ -95,9 +95,9 @@ def chat_history_panel():
     with col2:
       new_chat_button = st.button("New Chat")
       if new_chat_button:
-          st.session_state.messages = None
-          st.session_state.chat_id = None
-          utils.navigate_to("Chat")
+        st.session_state.messages = None
+        st.session_state.chat_id = None
+        utils.navigate_to("Chat")
 
     all_agents = set()
 
