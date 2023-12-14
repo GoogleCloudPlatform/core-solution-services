@@ -19,6 +19,7 @@ import traceback
 from fastapi import APIRouter, Depends
 from common.models import QueryEngine, User, UserChat
 from common.models.llm import CHAT_HUMAN, CHAT_AI
+from common.models.agent import AgentCapability
 from common.utils.auth_service import validate_token
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
@@ -118,9 +119,14 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     "route": route,
     "route_name": route.capitalize(),
   }
-  if route[:3] == "QE:":
+
+  route_parts = route.split(":", 1)
+  route_type = route_parts[0]
+
+  # Query Engine route
+  if route_type == AgentCapability.AGENT_QUERY_CAPABILITY.value:
     # Run RAG via a specific query engine
-    query_engine_name = route[3:]
+    query_engine_name = route_parts[1]
     Logger.info("Dispatch to Query Engine: {query_engine_name}")
 
     query_engine = QueryEngine.find_by_name(query_engine_name)
@@ -148,7 +154,41 @@ async def run_dispatch(run_config: LLMAgentRunModel,
       "query_references": query_references,
     }
 
-  elif route == "plan":
+  # Database route
+  elif route_type == AgentCapability.AGENT_DATABASE_CAPABILITY.value:
+    # Run a query against a DB dataset. Return a dict of
+    # "columns: column names, "data": row data
+    dataset_name = route_parts[1]
+
+    Logger.info("Dispatch to DB Query: {dataset_name}")
+
+    # data_result = run_db_agent(prompt, llm_type, dataset_name)
+    data_result = {
+      "data": {},
+      "resources": {
+        "Spreadsheet": "https://sheet.new"
+      },
+    }
+
+    Logger.info(f"DB query response="
+                f"[{data_result}]")
+    chat_history_entry["route_name"] = f"Database Query: {dataset_name}"
+    chat_history_entry[CHAT_AI] = data_result.response
+
+    # TODO: Update with the output generated from the LLM.
+    response_output = "Here is the database query result in the attached " \
+                      "resource."
+
+    response_data = {
+      "route_name": f"Database Query: {dataset_name}",
+      "output": response_output,
+      "data": data_result["data"],
+      "dataset": dataset_name,
+      "resources": data_result["resources"],
+    }
+
+  # Plan route
+  elif route_type == AgentCapability.AGENT_PLAN_CAPABILITY.value:
     # Run PlanAgent to generate a plan
     output, user_plan = agent_plan(
         agent_name="Plan", prompt=prompt, user_id=user.id)
@@ -162,6 +202,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
       "plan": plan_data
     }
 
+  # Anything else including Chat route.
   else:
     # Run with the generic ChatAgent for anything else.
     output = run_agent("Chat", prompt)
