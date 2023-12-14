@@ -21,7 +21,6 @@ from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
 from common.utils.logging_handler import Logger
-from common.utils.http_exceptions import InternalServerError
 from config import (LANGCHAIN_LLM, PROJECT_ID,
                     OPENAI_LLM_TYPE_GPT4, AGENT_DATASET_CONFIG_PATH)
 from config.utils import get_dataset_config
@@ -44,7 +43,7 @@ def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> dict:
   else:
     ds_config = get_dataset_config().get(dataset, None)
     if ds_config is None:
-      raise InternalServerError(f"Dataset not found {dataset}")
+      raise RuntimeError(f"Dataset not found {dataset}")
     db_type = ds_config.get("type")
 
   Logger.info(f"querying db dataset {dataset} db type {db_type}")
@@ -52,7 +51,7 @@ def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> dict:
   if db_type == "SQL":
     results = execute_sql_query(prompt, dataset, llm_type)
   else:
-    raise InternalServerError(f"Unsupported agent db type {db_type}")
+    raise RuntimeError(f"Unsupported agent db type {db_type}")
   return results
 
 def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
@@ -124,14 +123,14 @@ def execute_sql_query(prompt: str,
     msg = f"DB Query returned non-json data format. " \
           f"llm_type: {llm_type} prompt {prompt} return {return_val}"
     Logger.error(msg)
-    raise InternalServerError(msg) from e
+    raise RuntimeError(msg) from e
 
   # validate return value
   if not "columns" in output_dict or not "data" in output_dict:
     msg = f"DB Query return data missing columns/data. " \
           f"llm_type: {llm_type} prompt {prompt} return {return_val}"
     Logger.error(msg)
-    raise InternalServerError(msg) from e
+    raise RuntimeError(msg) from e
 
   # generate spreadsheet
   sheet_url = generate_spreadsheet(dataset, output_dict)
