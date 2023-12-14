@@ -31,7 +31,7 @@ def login_clicked(username, password):
     st.session_state["logged_in"] = True
     st.session_state["auth_token"] = token
     st.session_state["username"] = username
-    utils.navigate_to("Landing")
+    utils.http_navigate_to("Landing")
   else:
     st.session_state["logged_in"] = False
     st.error("Invalid username or password")

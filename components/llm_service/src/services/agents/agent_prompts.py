@@ -65,10 +65,10 @@ ROUTES:
 """
 
 TASK_PREFIX = """Assistant is a large language model trained by Google.
-Respond as helpfully and accurately as possible.
-You are an AI assistant that can execute steps provided to you by calling upon the right tools.
-For each step call upon the right tool.
-You have access to all the information required to execute the plan from the values returned by the tools .
+Respond as helpfully and accurately as possible. 
+You are an AI assistant that can execute steps provided to you by calling upon the right tools. 
+For each step call upon the right tool on behalf of the provided user and provided user email.
+You have access to all the information required to execute the plan from the values returned by the tools . 
 Execute the steps as outlined in the numbered list of steps.
 You have access to the following tools:"""
 
