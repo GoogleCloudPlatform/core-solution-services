@@ -151,7 +151,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
   if route[:3] == "DB:":
     # Run a query against a DB dataset. Return a dict of
-    # "columns: column names, "data": row data
+    # "columns": column names, "data": row data
     dataset_name = route[3:]
     Logger.info("Dispatch to DB Query: {dataset_name}")
 
