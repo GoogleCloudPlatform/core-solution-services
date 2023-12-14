@@ -106,18 +106,18 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   # TODO: Unify all response structure from all agent/query runs.
   response_data = {
     "route": route,
+    "route_name": route.capitalize(),
   }
 
   # TODO: Fix the hardcoded route types below.
   route_name = route
   Logger.info(f"Chosen route: {route}")
-  user_chat.update_history(custom_entry={
-    "route": route,
-    "route_name": route.capitalize(),
-  })
 
   # Executing based on the best intent route.
-  chat_history_entry = {}
+  chat_history_entry = {
+    "route": route,
+    "route_name": route.capitalize(),
+  }
   if route[:3] == "QE:":
     # Run RAG via a specific query engine
     query_engine_name = route[3:]
@@ -137,14 +137,16 @@ async def run_dispatch(run_config: LLMAgentRunModel,
           sentence_references=True)
     Logger.info(f"Query response="
                 f"[{query_result}]")
-    response_data = {
-      "query_engine_id": query_result["query_engine_id"],
-      "query_result": query_result["response"],
-      "query_references": query_references
-    }
     chat_history_entry["route_name"] = f"Query Engine: {route[3:]}"
-    chat_history_entry[CHAT_AI] = query_result
+    chat_history_entry[CHAT_AI] = query_result.response
     chat_history_entry["query_references"] = query_references
+
+    response_data = {
+      "route_name": f"Query Engine: {route[3:]}",
+      "output": query_result.response,
+      "query_engine_id": query_result.query_engine_id,
+      "query_references": query_references,
+    }
 
   elif route == "plan":
     # Run PlanAgent to generate a plan
