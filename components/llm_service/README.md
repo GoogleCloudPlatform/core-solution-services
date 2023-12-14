@@ -24,20 +24,46 @@ Optionally deploy Llama2 using Truss following these [instructions]("../../exper
 To use deployed llama2 Endpoint (IP:PORT), set the following environment variable before deploying llm-service:
 
 
-````shell
+```shell
 export ENABLE_TRUSS_LLAMA2=True
 export TRUSS_LLAMA2_ENDPOINT = "truss-llama2-7b-service"
-````
+```
 
 ### Llama2 Vertex AI Deployment
 You can deploy Llama2 using [Model Garden](https://cloud.google.com/model-garden?hl=en) in Vertex AI.
 To use the online prediction endpoint, set the following environment variable before the deployment:
 
-````shell
+```shell
 export REGION=<region-where-endpoint-is-deployed
 export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
-````
-  
+```
+
+## AlloyDB as a vector database
+```shell
+# Create a secret for postgres password
+gcloud secrets create "postgres-user-passwd"
+echo <your-postgres-password> | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+
+# Create an AlloyDB instance
+./utils/alloy_db.sh
+
+# Set the IP address for database host from the output of the above script
+export PG_HOST=<alloydb-ip-address>
+
+# Create an ephemeral pod (auto-deleted) for running psql client
+kubectl run psql-client --rm -i --tty --image ubuntu -- bash
+```
+Once inside the temporary sql pod
+```commandline
+apt update -y && apt install -y postgresql-client
+
+export PGPASSWORD=<your-postgres-password>
+export PGHOST=<alloydb-ip-address>
+psql -U postgres -c "CREATE DATABASE pgvector"
+psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector"
+exit
+```
+
 ## Apply terraform infra for LLM service
 
 Set up Cloud Storage with one sample PDF file for Query Engine to use later:
@@ -121,7 +147,7 @@ Once deployed, it will print logs from the microservice, e.g.
 
 ### Troubleshooting LLM Service - building a query engine
 
-#### Montior the batch job in Kubernetes Workloads
+#### Monitor the batch job in Kubernetes Workloads
 
 Once sending the API call to https://$YOUR_DOMAIN/llm-service/api/v1/query/engine, it will create a Kubernetes Job and a corresponding Firestore record in `batch_jobs` collections.
 - Check the batch_job object in https://console.cloud.google.com/firestore/databases/-default-/data/panel/batch_jobs

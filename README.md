@@ -180,6 +180,13 @@ sb infra apply 4-llm
 
 ## Deploy Backend Microservices
 
+Set up `kubectl` to connect to the provisioned GKE cluster
+```
+export REGION=$(gcloud container clusters list --filter=main-cluster --format="value(location)")
+gcloud container clusters get-credentials main-cluster --region ${REGION} --project ${PROJECT_ID}
+kubectl get nodes
+```
+
 ### Before Deploy
 
 Follow README files for each microservice to set up:
