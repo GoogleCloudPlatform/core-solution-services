@@ -13,32 +13,78 @@
 # limitations under the License.
 
 """ SQL Agent module """
+import json
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
-from config import LANGCHAIN_LLM, PROJECT_ID, OPENAI_LLM_TYPE_GPT4
+from common.utils.http_exceptions import InternalServerError
+from config import (LANGCHAIN_LLM, PROJECT_ID,
+                    OPENAI_LLM_TYPE_GPT4, AGENT_DATASET_CONFIG_PATH)
 from services.agents.agent_prompts import SQL_QUERY_FORMAT_INSTRUCTIONS
 from services.agents.utils import strip_punctuation_from_end
 
-DATASET = "fqhc_medical_transactions"
+DATASETS = None
 
-def execute_sql_query(prompt:str,
-                      llm_type:str=None,
-                      db_creds=None) -> dict:
+def load_datasets(agent_dataset_config_path: str):
+  """ load agent dataset config """
+  global DATASETS
+  try:
+    dataset_config = {}
+    with open(agent_dataset_config_path, "r", encoding="utf-8") as file:
+      dataset_config = json.load(file)
+    DATASETS = dataset_config
+  except Exception as e:
+    raise InternalServerError(
+        f" Error loading agent dataset config: {e}") from e
+
+def get_dataset_config() -> dict:
+  if DATASETS is None:
+    load_datasets(AGENT_DATASET_CONFIG_PATH)
+  return DATASETS
+
+def run_db_agent(prompt: str, llm_type: str) -> dict:
   """
-  Execute a SQL database query based on a human prompt
-
-  Args:
-    prompt: human query
-    llm_type: model id of llm to use to execute the query
-    db_creds: path to service account file (optional)
+  Run the DB agent and return the resulting data. 
 
   Return:
     a dict of "columns: column names, "data": row data
   """
-  db_url = f"bigquery://{PROJECT_ID}/{DATASET}"
-  if db_creds is not None:
-    db_url = db_url + f"?credentials_path={db_creds}"
+  dataset, db_type = map_prompt_to_dataset(prompt, llm_type)
+  if db_type == "SQL":
+    results = execute_sql_query(prompt, dataset, llm_type)
+  else:
+    raise InternalServerError(f"Unsupported agent db type {db_type}")
+  return results
+
+def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
+  """
+  Determine the dataset based on the prompt
+  """
+  datasets = get_dataset_config()
+
+  # TODO: use LLM to map datatype
+  dataset = "fqhc_medical_transactions"
+
+  db_type = datasets.get(dataset).get("type")
+  return dataset, db_type
+
+def execute_sql_query(prompt: str,
+                      dataset: str,
+                      llm_type: str=None,
+                      ) -> dict:
+  """
+  Execute a SQL database query based on a human prompt.
+  Currently hardcoded to target bigquery.
+
+  Args:
+    prompt: human query
+    dataset: dataset id (from agent dataset config)
+    llm_type: model id of llm to use to execute the query
+
+  Return:
+    a dict of "columns: column names, "data": row data
+  """
+  db_url = f"bigquery://{PROJECT_ID}/{dataset}"
 
   db = SQLDatabase.from_uri(db_url)
 
