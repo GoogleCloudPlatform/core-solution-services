@@ -13,63 +13,53 @@
 # limitations under the License.
 
 """ SQL Agent module """
-from common import config 
-from config import (VERTEX_LLM_TYPE_BISON_CHAT,
-                    VERTEX_LLM_TYPE_BISON_TEXT,
-                    VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
-                    OPENAI_LLM_TYPE_GPT3_5,
-                    OPENAI_LLM_TYPE_GPT4,
-                    LLM_BACKEND_ROBOT_USERNAME,
-                    LLM_BACKEND_ROBOT_PASSWORD,
-                    LANGCHAIN_LLM,
-                    REGION)
-from common.utils.token_handler import UserCredentials
-config.TOOLS_SERVICE_BASE_URL = f"https://{PROJECT_ID}.cloudpssolutions.com/tools-service/api/v1"
-config.auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
-                              LLM_BACKEND_ROBOT_PASSWORD,
-                              f"https:/{PROJECT_ID}.cloudpssolutions.com")
-
-from google.cloud import bigquery
+import re
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
-from langchain.llms.openai import OpenAI
-from langchain.chat_models import ChatVertexAI
-from langchain_experimental.sql import SQLDatabaseChain
-
-service_account_file = "./data/gcp-mira-develop-gce-service-account.json"
+from config import LANGCHAIN_LLM, PROJECT_ID, OPENAI_LLM_TYPE_GPT4
+from services.agents.agent_prompts import SQL_QUERY_FORMAT_INSTRUCTIONS
+from services.agents.utils import strip_punctuation_from_end
 
 DATASET = "fqhc_medical_transactions"
 
-
-def execute_sql_query(prompt:str, llm_type:str=None) -> dict:
+def execute_sql_query(prompt:str,
+                      llm_type:str=None,
+                      db_creds=None) -> dict:
   """
   Execute a SQL database query based on a human prompt
 
   Args:
     prompt: human query
     llm_type: model id of llm to use to execute the query
+    db_creds: path to service account file (optional)
 
   Return:
     a dict of "columns: column names, "data": row data
   """
-  sqlalchemy_url = f"bigquery://{PROJECT_ID}/{DATASET}" \
-                    "?credentials_path={service_account_file}"
+  db_url = f"bigquery://{PROJECT_ID}/{DATASET}"
+  if db_creds is not None:
+    db_url = db_url + f"?credentials_path={db_creds}"
 
-  db = SQLDatabase.from_uri(sqlalchemy_url)
-  
+  db = SQLDatabase.from_uri(db_url)
+
   if llm_type is None:
     llm_type = OPENAI_LLM_TYPE_GPT4
   llm = LANGCHAIN_LLM[llm_type]
-  
+
   toolkit = SQLDatabaseToolkit(db=db, llm=llm)
-  
+
   agent_executor = create_sql_agent(
       llm=llm,
       toolkit=toolkit,
       verbose=True,
       top_k=300
   )
-  
-  return_val = agent_executor.run(prompt)
+  clean_prompt = strip_punctuation_from_end(prompt)
+  input_prompt = f"{clean_prompt}? {SQL_QUERY_FORMAT_INSTRUCTIONS}"
+
+  return_val = agent_executor.run(input_prompt)
+
+  return return_val
+
   
