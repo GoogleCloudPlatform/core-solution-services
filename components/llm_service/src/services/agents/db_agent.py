@@ -15,7 +15,9 @@
 """ SQL Agent module """
 # pylint: disable=unused-argument
 
+import datetime
 import json
+from typing import Tuple
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
@@ -25,6 +27,7 @@ from config import (LANGCHAIN_LLM, PROJECT_ID,
                     OPENAI_LLM_TYPE_GPT4, AGENT_DATASET_CONFIG_PATH)
 from services.agents.agent_prompts import SQL_QUERY_FORMAT_INSTRUCTIONS
 from services.agents.utils import strip_punctuation_from_end
+from services.agents.agent_tools import google_sheets_tool
 
 Logger = Logger.get_logger(__file__)
 
@@ -47,7 +50,8 @@ def get_dataset_config() -> dict:
     load_datasets(AGENT_DATASET_CONFIG_PATH)
   return DATASETS
 
-def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> dict:
+def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> \
+    Tuple[str, dict]:
   """
   Run the DB agent and return the resulting data. 
 
@@ -84,8 +88,8 @@ def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
 
 def execute_sql_query(prompt: str,
                       dataset: str,
-                      llm_type: str=None,
-                      ) -> dict:
+                      llm_type: str=None
+                      ) -> Tuple[str, dict]:
   """
   Execute a SQL database query based on a human prompt.
   Currently hardcoded to target bigquery.
@@ -96,33 +100,72 @@ def execute_sql_query(prompt: str,
     llm_type: model id of llm to use to execute the query
 
   Return:
-    a dict of "columns: column names, "data": row data
+    Tuple:
+      sheet URL,
+      a dict of "columns: column names, "data": row data
   """
-  db_url = f"bigquery://{PROJECT_ID}/{dataset}"
-
-  db = SQLDatabase.from_uri(db_url)
-
+  # Get langchain llm.  Since we are using langchain SQL query
+  # toolkit only Langchain LLM objects are supported.
   if llm_type is None:
     llm_type = OPENAI_LLM_TYPE_GPT4
   llm = LANGCHAIN_LLM[llm_type]
   if llm is None:
     raise InternalServerError(f"Unsupported llm type {llm_type}")
 
+  # create langchain SQL db object
+  db_url = f"bigquery://{PROJECT_ID}/{dataset}"
+  db = SQLDatabase.from_uri(db_url)
+
   Logger.info(f"querying db dataset {dataset} "
               f"prompt {prompt} llm_type {llm_type} "
               f"db url {db_url}")
 
+  # create langchain SQL agent
   toolkit = SQLDatabaseToolkit(db=db, llm=llm)
-
   agent_executor = create_sql_agent(
       llm=llm,
       toolkit=toolkit,
       verbose=True,
       top_k=300
   )
+
+  # Format query prompt for agent.  We strip punctuation and add a question
+  # mark to make sure the format instructions are cleanly separated.
   clean_prompt = strip_punctuation_from_end(prompt)
   input_prompt = f"{clean_prompt}? {SQL_QUERY_FORMAT_INSTRUCTIONS}"
 
   return_val = agent_executor.run(input_prompt)
 
-  return return_val
+  # process result
+  try:
+    return_dict = json.loads(return_val)
+  except Exception as e:
+    msg = f"DB Query returned non-json data format. " \
+          f"llm_type: {llm_type} prompt {prompt} return {return_val}"
+    Logger.error(msg)
+    raise InternalServerError(msg) from e
+
+  # validate return value
+  if not "columns" in return_dict or not "data" in return_dict:
+    msg = f"DB Query return data missing columns/data. " \
+          f"llm_type: {llm_type} prompt {prompt} return {return_val}"
+    Logger.error(msg)
+    raise InternalServerError(msg) from e
+
+  # generate spreadsheet
+  sheet_url = generate_spreadsheet(dataset, return_dict)
+
+  return sheet_url, return_dict
+
+
+def generate_spreadsheet(dataset: str, return_dict: dict) -> str:
+  """
+  Generate Workspace Sheet containing return data
+  """
+  now = datetime.datetime.utcnow()
+  sheet_name = f"Dataset {dataset} Query {now}"
+  sheet_output = google_sheets_tool(sheet_name,
+                                    return_dict["columns"],
+                                    return_dict["data"])
+  sheet_url = sheet_output["sheet_url"]
+  return sheet_url
