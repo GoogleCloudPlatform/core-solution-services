@@ -112,6 +112,12 @@ TOOLS:
 
 An AI Planning Assistant has access to the following tools:"""
 
+DATASET_PREFIX= """You are an AI Dataset Assistant. An AI Dataset Assistant
+is an AI agent based on a large language model trained by Google.
+AI Dataset Assistants are designed to assist humans to determine the appropriate
+dataset to query in order to find particular pieces of information.
+"""
+
 
 PLAN_FORMAT_INSTRUCTIONS = """
 Use the following format for your output:
