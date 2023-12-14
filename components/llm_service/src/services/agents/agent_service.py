@@ -178,15 +178,6 @@ def run_intent(
       f" to run a query against a database for data related to " \
       f"these areas: {description} \n"
 
-  # Collect all datasets with their descriptions as topics
-  dataset_list_str = ""
-  datasets = get_dataset_config()
-  for ds, ds_config in datasets.items():
-    dataset_list_str += \
-      f"- [DB:{ds}] to run a query against a database for data related to " \
-      "these areas: " \
-      f" {ds_config['description']} \n"
-
   dispatch_prompt = f"""
     An AI Dispatch Assistant has access to the following routes:
     {intent_list_str}
