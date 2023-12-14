@@ -139,16 +139,16 @@ async def run_dispatch(run_config: LLMAgentRunModel,
           sentence_references=True)
     Logger.info(f"Query response="
                 f"[{query_result}]")
-    chat_history_entry["route_name"] = f"Query Engine: {route[3:]}"
-    chat_history_entry[CHAT_AI] = query_result.response
-    chat_history_entry["query_references"] = query_references
 
     response_data = {
-      "route_name": f"Query Engine: {route[3:]}",
+      "route": route_type,
+      "route_name": f"Query Engine: {query_engine_name}",
       "output": query_result.response,
       "query_engine_id": query_result.query_engine_id,
       "query_references": query_references,
     }
+    chat_history_entry = response_data
+    chat_history_entry[CHAT_AI] = query_result.response
 
   # Database route
   elif route_type == AgentCapability.AGENT_DATABASE_CAPABILITY.value:
@@ -172,16 +172,17 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     # TODO: Update with the output generated from the LLM.
     response_output = "Here is the database query result in the attached " \
                       "resource."
-    chat_history_entry["route_name"] = f"Database Query: {dataset_name}"
-    chat_history_entry[CHAT_AI] = response_output
 
     response_data = {
+      "route": route_type,
       "route_name": f"Database Query: {dataset_name}",
+      f"{CHAT_AI}": response_output,
       "content": response_output,
       "data": data_result["data"],
       "dataset": dataset_name,
       "resources": data_result["resources"],
     }
+    chat_history_entry = response_data
 
   # Plan route
   elif route_type == AgentCapability.AGENT_PLAN_CAPABILITY.value:
