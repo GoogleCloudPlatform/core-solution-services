@@ -30,6 +30,7 @@ from schemas.agent_schema import (LLMAgentRunResponse,
 from services.agents.agent_service import (get_all_agents, run_agent,
                                           agent_plan, run_intent,
                                           get_llm_type_for_agent)
+from services.agents.db_agent import run_db_agent
 from services.langchain_service import langchain_chat_history
 from services.query.query_service import query_generate
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
@@ -146,6 +147,25 @@ async def run_dispatch(run_config: LLMAgentRunModel,
       "output": query_result.response,
       "query_engine_id": query_result.query_engine_id,
       "query_references": query_references,
+    }
+
+  if route[:3] == "DB:":
+    # Run a query against a DB dataset. Return a dict of
+    # "columns: column names, "data": row data
+    dataset_name = route[3:]
+    Logger.info("Dispatch to DB Query: {dataset_name}")
+
+    data_result = run_db_agent(prompt, llm_type, dataset_name)
+
+    Logger.info(f"DB query response="
+                f"[{data_result}]")
+    chat_history_entry["route_name"] = f"Database Query: {route[3:]}"
+    chat_history_entry[CHAT_AI] = data_result.response
+
+    response_data = {
+      "route_name": f"Database Query: {route[3:]}",
+      "output": data_result,
+      "dataset": dataset_name
     }
 
   elif route == "plan":
