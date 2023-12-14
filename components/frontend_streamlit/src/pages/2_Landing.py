@@ -18,32 +18,24 @@
 import streamlit as st
 from api import get_all_query_engines
 from components.chat_history import chat_history_panel
+from components.sidebar_logo import display_logo
+from components.landing_markup import landing_theme
 from common.utils.logging_handler import Logger
 import utils
 
 Logger = Logger.get_logger(__file__)
 
-
-LANDING_PAGE_STYLES = """
-<style>
-  .stButton[data-testid="stFormSubmitButton"] {
-    display: none;
-  }
-</style>
-"""
-
-
 def landing_page():
+  display_logo()
   chat_history_panel()
+  landing_theme()
 
-  st.markdown(LANDING_PAGE_STYLES, unsafe_allow_html=True)
-
-  st.title("Hello again.")
-  st.subheader("You can ask me anything:")
+  st.title("Hello again")
+  st.subheader("Start your journey here or explore the options below:")
   with st.form("user_input_form", border=False, clear_on_submit=True):
     col1, col2 = st.columns([5, 1])
     with col1:
-      user_input = st.text_input("")
+      user_input = st.text_input(placeholder="Enter a prompt here", label="Enter prompt", label_visibility="hidden", key="landing_input")
       submitted = st.form_submit_button("Submit")
     with col2:
       st.session_state.default_route = st.selectbox(

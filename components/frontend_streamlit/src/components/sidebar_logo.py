@@ -6,22 +6,22 @@ def display_logo():
       [data-testid="stSidebarNav"]::before {
         content: "GENIE";
         font-size: 26px;
-        color: #606060;
+        color: #4b4b4b;
         padding-left: 60px;
         font-family: Arial;
       }
       [data-testid="stSidebarNav"] {
         padding-top: 18.5px;
       }
-      [data-testid="stSidebarContent"] button:has(svg)::after {
+      [data-testid="stSidebarContent"] [data-testid="baseButton-header"]::after {
         content: "≡";
         font-size: 35px;
-        color: #606060;
+        color: #4b4b4b;
       }
-      [data-testid="stSidebarContent"] svg {
+      [data-testid="stSidebarContent"] [data-testid="baseButton-header"] svg {
         display: none;
       }
-      [data-testid="stSidebarContent"] div:has(svg) {
+      [data-testid="stSidebarContent"] div:has([data-testid="baseButton-header"]) {
         width: 22px;
         top: 0.8rem;
         right: 0;

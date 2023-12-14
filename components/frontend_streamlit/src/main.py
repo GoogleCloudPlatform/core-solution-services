@@ -17,7 +17,6 @@
 import importlib
 import utils
 import streamlit as st
-from components.sidebar_logo import display_logo
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
@@ -31,8 +30,6 @@ def app():
       layout="wide",
       initial_sidebar_state="expanded",
   )
-
-  display_logo()
   
   with st.sidebar:
     st.title("GENIE v1.0")

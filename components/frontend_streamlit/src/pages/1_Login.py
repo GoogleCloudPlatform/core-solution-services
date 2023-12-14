@@ -19,6 +19,7 @@ import streamlit as st
 import utils
 import api
 from components.sidebar_logo import display_logo
+from components.login_markup import login_theme
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
@@ -55,8 +56,8 @@ def login_page():
   if submit:
     login_clicked(username, password)
 
-
 if __name__ == "__main__":
   utils.init_page(redirect_to_without_auth=False)
   display_logo()
+  login_theme()
   login_page()

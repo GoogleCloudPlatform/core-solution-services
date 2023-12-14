@@ -25,24 +25,45 @@ Logger = Logger.get_logger(__file__)
 
 CHAT_HISTORY_LIST_STYLE = """
 <style>
-  [data-testid=stSidebar] {
+  [data-testid=stSidebarUserContent] {
     .stButton button {
       @media screen and (prefers-color-scheme: dark) {
         background-color: #195;
       }
+      background-color: #c4eed0;
       display: block !important;
       font-weight: bold;
-      border: 0px;
+      border: 0;
+      color: #1F1F1F;
       text-align: left;
       border-radius: 10px;
+      transition: background-color 0.1s ease-in;
     }
 
     .stButton button:hover {
-      background-color:#d3d3d3;
-      color: black;
-      border-radius: 10px;
-      text-align: left;
+      background-color: #b9e2c5;
     }
+  }
+  [data-testid=stSidebarUserContent] h3 {
+    padding-top: .59rem;
+    font-size: 1.05rem;
+    font-weight: 500;
+  }
+  [data-testid=stSidebarUserContent] [data-testid=stHorizontalBlock] .stButton button {
+    background-color: #4285f4;
+    color: white;
+    transition: background-color 0.1s ease-in;
+    float: right;
+  }
+  [data-testid=stSidebarUserContent] [data-testid=stHorizontalBlock] .stButton button:hover {
+    background-color: #6799eb;
+  }
+  [data-testid=stSidebarUserContent] [data-testid=stVerticalBlockBorderWrapper] .stButton p {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: Arial;
+    font-size: .875rem;
   }
 </style>
 """
@@ -67,7 +88,7 @@ def get_agent_chats(selected_agent):
     if "agent_name" in user_chat and (
       selected_agent in (user_chat["agent_name"], "All")):
       agent_name = user_chat.get("agent_name", None)
-      agent_name_str = f"**{agent_name}** " if agent_name else ""
+      agent_name_str = f"**{agent_name}:** " if agent_name else ""
 
       with st.container():
         select_chat = st.button(f"{agent_name_str}{first_question}",
@@ -91,7 +112,7 @@ def chat_history_panel():
   with st.sidebar:
     col1, col2 = st.columns([3, 2])
     with col1:
-      st.subheader("My Chats")
+      st.subheader("Chat History")
     with col2:
       new_chat_button = st.button("New Chat")
       if new_chat_button:
