@@ -24,30 +24,13 @@ from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
 from config import (LANGCHAIN_LLM, PROJECT_ID,
                     OPENAI_LLM_TYPE_GPT4, AGENT_DATASET_CONFIG_PATH)
+from config.utils import get_dataset_config
 from services.agents.agent_prompts import SQL_QUERY_FORMAT_INSTRUCTIONS
 from services.agents.utils import strip_punctuation_from_end
 from services.agents.agent_tools import google_sheets_tool
 
 Logger = Logger.get_logger(__file__)
 
-DATASETS = None
-
-def load_datasets(agent_dataset_config_path: str):
-  """ load agent dataset config """
-  global DATASETS
-  try:
-    dataset_config = {}
-    with open(agent_dataset_config_path, "r", encoding="utf-8") as file:
-      dataset_config = json.load(file)
-    DATASETS = dataset_config
-  except Exception as e:
-    raise InternalServerError(
-        f" Error loading agent dataset config: {e}") from e
-
-def get_dataset_config() -> dict:
-  if DATASETS is None:
-    load_datasets(AGENT_DATASET_CONFIG_PATH)
-  return DATASETS
 
 def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> dict:
   """

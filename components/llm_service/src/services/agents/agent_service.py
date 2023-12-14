@@ -32,7 +32,6 @@ from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
 from config.utils import get_dataset_config
 from services.agents import agents
-from services.agents.db_agent import get_dataset_config
 
 Logger = Logger.get_logger(__file__)
 AGENTS = None
