@@ -164,26 +164,26 @@ def google_sheets_tool(name: str,columns : List, rows : List,
     "rows": rows
     }
 
-    try:
-      response = post_method(url=api_url,
-                             request_body=data,
-                             auth_client=auth_client)
+  try:
+    response = post_method(url=api_url,
+                           request_body=data,
+                           auth_client=auth_client)
 
-      resp_data = response.json()
-      Logger.info(
-        f"[google_sheets_tool] response from google_sheets_service: {response}"
-        )
-      result = resp_data["result"]
-      Logger.info(
-          f"[google_sheets_tool] creating spreadsheet for user: {user_email}."
-          f" Result: {result}")
-      output = {
-        "sheet_url": resp_data["sheet_url"],
-        "sheet_id": resp_data["sheet_id"]
-      }
-    except RuntimeError as e:
-      Logger.error(f"[google_sheets_tool] Unable to create Google Sheets: {e}")
-    return output
+    resp_data = response.json()
+    Logger.info(
+      f"[google_sheets_tool] response from google_sheets_service: {response}"
+      )
+    result = resp_data["result"]
+    Logger.info(
+        f"[google_sheets_tool] creating spreadsheet for user: {user_email}."
+        f" Result: {result}")
+    output = {
+      "sheet_url": resp_data["sheet_url"],
+      "sheet_id": resp_data["sheet_id"]
+    }
+  except RuntimeError as e:
+    Logger.error(f"[google_sheets_tool] Unable to create Google Sheets: {e}")
+  return output
 
 @tool(infer_schema=True)
 def database_tool(database_query: str) -> Dict:

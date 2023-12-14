@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """ SQL Agent module """
-import re
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
