@@ -159,9 +159,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     Logger.info("Dispatch to DB Query: {dataset_name}")
 
-
-    # TODO: unstub the hardcoded result.
-    # data_result = run_db_agent(prompt, llm_type, dataset_name)
+    data_result = run_db_agent(prompt, llm_type, dataset_name)
     data_result = {
       "data": {},
       "resources": {
