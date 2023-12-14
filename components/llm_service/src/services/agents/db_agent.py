@@ -13,15 +13,20 @@
 # limitations under the License.
 
 """ SQL Agent module """
+# pylint: disable=unused-argument
+
 import json
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
+from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
 from config import (LANGCHAIN_LLM, PROJECT_ID,
                     OPENAI_LLM_TYPE_GPT4, AGENT_DATASET_CONFIG_PATH)
 from services.agents.agent_prompts import SQL_QUERY_FORMAT_INSTRUCTIONS
 from services.agents.utils import strip_punctuation_from_end
+
+Logger = Logger.get_logger(__file__)
 
 DATASETS = None
 
@@ -42,14 +47,23 @@ def get_dataset_config() -> dict:
     load_datasets(AGENT_DATASET_CONFIG_PATH)
   return DATASETS
 
-def run_db_agent(prompt: str, llm_type: str=None) -> dict:
+def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> dict:
   """
   Run the DB agent and return the resulting data. 
 
   Return:
     a dict of "columns: column names, "data": row data
   """
-  dataset, db_type = map_prompt_to_dataset(prompt, llm_type)
+  if dataset is None:
+    dataset, db_type = map_prompt_to_dataset(prompt, llm_type)
+  else:
+    ds_config = get_dataset_config().get(dataset, None)
+    if ds_config is None:
+      raise InternalServerError(f"Dataset not found {dataset}")
+    db_type = ds_config.get("type")
+
+  Logger.info(f"querying db dataset {dataset} db type {db_type}")
+
   if db_type == "SQL":
     results = execute_sql_query(prompt, dataset, llm_type)
   else:
@@ -94,6 +108,10 @@ def execute_sql_query(prompt: str,
   if llm is None:
     raise InternalServerError(f"Unsupported llm type {llm_type}")
 
+  Logger.info(f"querying db dataset {dataset} "
+              f"prompt {prompt} llm_type {llm_type} "
+              f"db url {db_url}")
+
   toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 
   agent_executor = create_sql_agent(
@@ -108,5 +126,3 @@ def execute_sql_query(prompt: str,
   return_val = agent_executor.run(input_prompt)
 
   return return_val
-
-  
