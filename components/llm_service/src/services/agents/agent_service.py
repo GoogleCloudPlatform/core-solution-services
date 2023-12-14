@@ -178,6 +178,15 @@ def run_intent(
       f" to run a query against a database for data related to " \
       f"these areas: {description} \n"
 
+  # Collect all datasets with their descriptions as topics
+  dataset_list_str = ""
+  datasets = get_dataset_config()
+  for ds, ds_config in datasets.items():
+    dataset_list_str += \
+      f"- [DB:{ds}] to run a query against a database for data related to " \
+      "these areas: " \
+      f" {ds_config['description']} \n"
+
   dispatch_prompt = f"""
     An AI Dispatch Assistant has access to the following routes:
     {intent_list_str}
@@ -358,14 +367,15 @@ def agent_execute_plan(
     agent=agent,
     tools=tools,
     verbose=True)
-  #Langchain StructedChatAgent takes only one input called input
+
+  # langchain StructedChatAgent takes only one input called input
   plan_steps_string = "".join(plan_steps)
   agent_inputs = {
     "input": prompt +plan_steps_string
   }
   Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
 
-  # Collect print-output to the string.
+  # collect print-output to the string.
   with io.StringIO() as buf, redirect_stdout(buf):
     result = agent_executor.run(agent_inputs)
     agent_process_output = buf.getvalue()

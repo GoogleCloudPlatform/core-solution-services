@@ -166,21 +166,21 @@ def google_sheets_tool(name: str,columns : List, rows : List,
 
   try:
     response = post_method(url=api_url,
-                             request_body=data,
-                             auth_client=auth_client)
+                           request_body=data,
+                           auth_client=auth_client)
 
     resp_data = response.json()
     Logger.info(
-        f"[google_sheets_tool] response from google_sheets_service: {response}"
-        )
+      f"[google_sheets_tool] response from google_sheets_service: {response}"
+      )
     result = resp_data["result"]
     Logger.info(
-          f"[google_sheets_tool] creating spreadsheet for user: {user_email}."
-          f" Result: {result}")
+        f"[google_sheets_tool] creating spreadsheet for user: {user_email}."
+        f" Result: {result}")
     output = {
-        "sheet_url": resp_data["sheet_url"],
-        "sheet_id": resp_data["sheet_id"]
-      }
+      "sheet_url": resp_data["sheet_url"],
+      "sheet_id": resp_data["sheet_id"]
+    }
   except RuntimeError as e:
     Logger.error(f"[google_sheets_tool] Unable to create Google Sheets: {e}")
   return output
@@ -188,13 +188,34 @@ def google_sheets_tool(name: str,columns : List, rows : List,
 @tool(infer_schema=True)
 def database_tool(database_query: str) -> Dict:
   """
-    Accepts a natural language question and queries a database to get definite 
+    Accepts a natural language question and queries a database to get definite
     answer
   """
-  rows = [["New York","sumeetvij@google.com","1234","12/08/2023"],
-            ["New Jersey","jonchen@google.com","5678","12/08/2023"]]
-  output = {
-    "columns": ["FQHC_NAME","FQHC_EMAIL", "CDT_CODE", "TRANSACTION_DATE"],
-    "rows": rows
+  Logger.info(
+    f"[database_tool] executing query:{database_query}")
+  api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
+  api_url = f"{api_url_prefix}/workspace/database/query"
+  output = {}
+  data = {
+    "query": database_query
+  }
+  try:
+    response = post_method(url=api_url,
+                           request_body=data,
+                           auth_client=auth_client)
+
+    resp_data = response.json()
+    Logger.info(
+      f"[database_tool] response from database_service: {response}"
+      )
+    result = resp_data["result"]
+    Logger.info(
+        f"[database_tool] query response:{resp_data}."
+        f" Result: {result}")
+    output = {
+      "columns": resp_data["columns"],
+      "rows": resp_data["rows"]
     }
+  except RuntimeError as e:
+    Logger.error(f"[database_tool] Unable to execute query: {e}")
   return output

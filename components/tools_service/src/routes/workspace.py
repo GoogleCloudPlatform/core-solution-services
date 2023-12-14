@@ -19,7 +19,9 @@ from typing import List, Dict
 from schemas.email import EmailSchema, EmailComposeSchema
 from services.gmail_service import send_email
 from services.email_composer import compose_email
+from services.database_service import execute_query
 from services.sheets_service import create_spreadsheet
+
 router = APIRouter(prefix="/workspace", tags=["workspace"])
 
 SUCCESS_RESPONSE = {"status": "Success"}
@@ -66,6 +68,28 @@ def compose_email_subject_and_message(data: EmailComposeSchema):
     "message": result["message"],
     "status": "Success",
   }
+
+@router.post("/database/query")
+def execute_databasequery(query: str) -> Dict:
+  """Execute a database query.
+
+  Args:
+    query(str): The SQL query that will be executed.
+
+  Raises:
+    HTTPException: 500 Internal Server Error if something fails
+  """
+
+  result = execute_query(query)
+
+  print(result)
+
+  return {
+    "columns": result["columns"],
+    "rows": result["rows"],
+    "status": "Success",
+  }
+
 @router.post("/sheets/create")
 async def create_sheets(name: str, columns : List, rows : List,
                         share_with: List=None) -> Dict:
@@ -85,11 +109,10 @@ async def create_sheets(name: str, columns : List, rows : List,
   Raises:
     HTTPException: 500 Internal Server Error if something fails
   """
-
-  result = create_spreadsheet (name=name,
-                               columns=columns,
-                               rows = rows,
-                               share_with = share_with)
+  result = create_spreadsheet(name=name,
+                              columns=columns,
+                              rows=rows,
+                              share_with=share_with)
   result ["status"] = "Success"
   print(f"create_sheets:{result}")
   return result

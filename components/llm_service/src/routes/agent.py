@@ -31,6 +31,7 @@ from schemas.agent_schema import (LLMAgentRunResponse,
 from services.agents.agent_service import (get_all_agents, run_agent,
                                           agent_plan, run_intent,
                                           get_llm_type_for_agent)
+from services.agents.db_agent import run_db_agent
 from services.langchain_service import langchain_chat_history
 from services.query.query_service import query_generate
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
@@ -158,9 +159,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     Logger.info("Dispatch to DB Query: {dataset_name}")
 
-
-    # TODO: unstub the hardcoded result.
-    # data_result = run_db_agent(prompt, llm_type, dataset_name)
+    data_result = run_db_agent(prompt, llm_type, dataset_name)
     data_result = {
       "data": {},
       "resources": {
