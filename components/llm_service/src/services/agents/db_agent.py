@@ -130,7 +130,7 @@ def execute_sql_query(prompt: str,
     msg = f"DB Query return data missing columns/data. " \
           f"llm_type: {llm_type} prompt {prompt} return {return_val}"
     Logger.error(msg)
-    raise RuntimeError(msg) from e
+    raise RuntimeError(msg)
 
   # generate spreadsheet
   sheet_url = generate_spreadsheet(dataset, output_dict)
