@@ -321,7 +321,8 @@ def agent_execute_plan(
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
   langchain_agent = llm_service_agent.load_agent()
   username = user_email = None
-  #update user information
+
+  # update user information
   if user is not None:
     username = user.first_name +" "+user.last_name
     user_email = user.email
@@ -339,7 +340,8 @@ def agent_execute_plan(
     agent=langchain_agent,
     tools=tools,
     verbose=True)
-  #Langchain StructedChatAgent takes only one input called input
+
+  # langchain StructedChatAgent takes only one input called input
   plan_steps_string = "".join(plan_steps)
   prompt_addition = (
   f"Execute the steps as outlined in this numbered list {plan_steps_string}."
@@ -352,7 +354,7 @@ def agent_execute_plan(
   }
   Logger.info(f"Running agent executor.... input:{prompt} ")
 
-  # Collect print-output to the string.
+  # collect print-output to the string.
   with io.StringIO() as buf, redirect_stdout(buf):
     result = agent_executor.run(agent_inputs)
     agent_process_output = buf.getvalue()
