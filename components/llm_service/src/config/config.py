@@ -87,8 +87,7 @@ def get_environ_flag(env_flag_str, default=True):
   Logger.info(f"{env_flag_str} = {evn_flag}")
   return evn_flag
 
-#set the dataset
-DATASET = "fqhc_medical_transactions"
+
 # VertexAI models are enabled by default
 ENABLE_GOOGLE_LLM = get_environ_flag("ENABLE_GOOGLE_LLM", True)
 ENABLE_GOOGLE_MODEL_GARDEN = get_environ_flag("ENABLE_GOOGLE_MODEL_GARDEN",
