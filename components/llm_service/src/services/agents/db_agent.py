@@ -22,7 +22,7 @@ from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
 from common.utils.logging_handler import Logger
 from config import (LANGCHAIN_LLM, PROJECT_ID,
-                    OPENAI_LLM_TYPE_GPT4, AGENT_DATASET_CONFIG_PATH)
+                    OPENAI_LLM_TYPE_GPT4)
 from config.utils import get_dataset_config
 from services.agents.agent_prompts import SQL_QUERY_FORMAT_INSTRUCTIONS
 from services.agents.utils import strip_punctuation_from_end
@@ -90,7 +90,7 @@ def execute_sql_query(prompt: str,
     llm_type = OPENAI_LLM_TYPE_GPT4
   llm = LANGCHAIN_LLM[llm_type]
   if llm is None:
-    raise InternalServerError(f"Unsupported llm type {llm_type}")
+    raise RuntimeError(f"Unsupported llm type {llm_type}")
 
   # create langchain SQL db object
   db_url = f"bigquery://{PROJECT_ID}/{dataset}"
