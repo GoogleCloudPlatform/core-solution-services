@@ -24,8 +24,10 @@ from config.config import AGENT_DATASET_CONFIG_PATH
 DATASETS = None
 
 def get_dataset_config() -> dict:
+  global DATASETS
+
   if DATASETS is None:
-    load_config_json(AGENT_DATASET_CONFIG_PATH)
+    DATASETS = load_config_json(AGENT_DATASET_CONFIG_PATH)
   return DATASETS
 
 
