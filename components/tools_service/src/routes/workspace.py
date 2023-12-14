@@ -70,7 +70,7 @@ def compose_email_subject_and_message(data: EmailComposeSchema):
   }
 
 @router.post("/database/query")
-def execute_databasequery(query:str) –> Dict:
+def execute_databasequery(query: str) -> Dict:
   """Execute a database query.
 
   Args:

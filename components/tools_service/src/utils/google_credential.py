@@ -49,14 +49,6 @@ def get_google_credential():
   )
   return credentials
 
-def get_bigquery_credential():
-  # TODO:
-  # Write credential files to local tmp as the temporary approach.
-  bigquery_service_token = get_secret("tools-bigquery-serviceaccount-token")
-  token_file_path = "/tmp/bigquery_service_account.json"
-  with open(token_file_path, "w", encoding="utf-8") as file:
-    file.write(bigquery_service_token)
-  return token_file_path
 
 def get_google_sheets_credential():
   # TODO:

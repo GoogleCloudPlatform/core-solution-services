@@ -13,26 +13,13 @@
 # limitations under the License.
 
 """Tools and utils for database"""
+# pylint: disable=unused-argument
 
-
-from sqlalchemy import *
-from sqlalchemy.engine import create_engine
-from sqlalchemy.schema import *
-from langchain.agents import create_sql_agent
-from langchain.agents.agent_toolkits import SQLDatabaseToolkit
-from langchain.sql_database import SQLDatabase
-from langchain.agents import AgentExecutor
-
-
-
-from config import PROJECT_ID, DATASET, LANGCHAIN_LLM,OPENAI_LLM_TYPE_GPT4
-from utils.google_credential import get_bigquery_credential
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
 
-def execute_query(
-    query: str) -> dict:
+def execute_query(query: str) -> dict:
   """
     Execute a new database query.
     Args:
@@ -40,25 +27,5 @@ def execute_query(
     Returns:
         {rows, columns}
   """
-
-  service_account_file = get_bigquery_credential()
-  dataset = DATASET
-
-  sqlalchemy_url = f'bigquery://{PROJECT_ID}/{dataset}?credentials_path={service_account_file}'
-  db = SQLDatabase.from_uri(sqlalchemy_url)
-  # TODO: Add options to use VertexAI and other models.
-  llm = LANGCHAIN_LLM[OPENAI_LLM_TYPE_GPT4]
-  toolkit = SQLDatabaseToolkit(db=db, llm=llm)
-  agent_executor = create_sql_agent(
-    llm=llm,
-    toolkit=toolkit,
-    verbose=True,
-    top_k=200
-  )
-  returnVal = agent_executor.run(query)
-
-
-  return {
-    "columns": returnVal["columns"],
-    "rows":  returnVal["data"]
-  }
+  # TODO implement generic SQL query
+  pass
