@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+  LLM Service utils file
+"""
+# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
+
 import json
 from config.config import AGENT_DATASET_CONFIG_PATH
 
