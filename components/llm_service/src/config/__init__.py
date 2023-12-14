@@ -76,6 +76,7 @@ from config.config import (
 
     # agent config
     AGENT_CONFIG_PATH,
+    AGENT_DATASET_CONFIG_PATH,
     )
 
 from config.vector_store_config import (
