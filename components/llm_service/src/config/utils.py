@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-from config import AGENT_DATASET_CONFIG_PATH
+from config.config import AGENT_DATASET_CONFIG_PATH
 
 
 def get_dataset_config() -> dict:

@@ -167,17 +167,23 @@ def run_intent(
 
   # Collect all datasets with their descriptions as topics
   datasets = get_dataset_config()
+
   for ds_name, ds_config in datasets.items():
+    if ds_name in ["default"]:
+      continue
+
+    description = ds_config["description"]
     intent_list_str += \
       f"- [{AgentCapability.AGENT_DATABASE_CAPABILITY.value}:{ds_name}]" \
       f" to run a query against a database for data related to " \
-      f"these areas: {ds_config['description']} \n"
+      f"these areas: {description} \n"
 
   dispatch_prompt = f"""
     An AI Dispatch Assistant has access to the following routes:
     {intent_list_str}
     Choose one route based on the question below:
     """
+  Logger.info(f"dispatch_prompt: \n{dispatch_prompt}")
 
   agent_inputs = {
     "input": dispatch_prompt + prompt,
@@ -189,10 +195,11 @@ def run_intent(
   Logger.info(f"Agent {agent_name} generated output=[{output}]")
 
   routes = parse_output("Route:", output) or []
+  Logger.info(f"Output routes: {routes}")
 
   # If no best route(s) found, pass to Chat agent.
   if not routes or len(routes) == 0:
-    return run_agent("Chat", prompt, chat_history)
+    return AgentCapability.AGENT_CHAT_CAPABILITY.value
 
   # TODO: Refactor this with DispatchAgentOutputParser
   # Get the route for the best matched (first) returned routes.
@@ -306,7 +313,7 @@ def parse_output(header: str, text: str) -> List[str]:
   # We are using the re.DOTALL flag to match across newlines and
   # re.MULTILINE to treat each line as a separate string
   steps_regex = re.compile(
-      r"^\s*\d+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
+      r"^\s*[\d#]+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
 
   # Find the part of the text after 'Plan:'
   plan_part = re.split(header, text, flags=re.IGNORECASE)[-1]
@@ -321,7 +328,7 @@ def parse_output(header: str, text: str) -> List[str]:
 
 def parse_step(text:str) -> dict:
   step_regex = re.compile(
-      r"\d+\.\s.*\[(.*)\]\s?(.*)", re.DOTALL)
+      r"[\d|#]+\.\s.*\[(.*)\]\s?(.*)", re.DOTALL)
   matches = step_regex.findall(text)
   return matches
 

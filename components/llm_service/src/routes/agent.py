@@ -103,25 +103,21 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   route = run_intent(prompt, chat_history=user_chat.history, user=user)
   Logger.info(f"Agent dispatch chooses this best route: {route}, " \
               f"based on user prompt: {prompt}")
-
-  # TODO: Unify all response structure from all agent/query runs.
-  response_data = {
-    "route": route,
-    "route_name": route.capitalize(),
-  }
-
-  # TODO: Fix the hardcoded route types below.
-  route_name = route
   Logger.info(f"Chosen route: {route}")
-
-  # Executing based on the best intent route.
-  chat_history_entry = {
-    "route": route,
-    "route_name": route.capitalize(),
-  }
 
   route_parts = route.split(":", 1)
   route_type = route_parts[0]
+  route_name = route
+
+  # Executing based on the best intent route.
+  chat_history_entry = {
+    "route": route_type,
+    "route_name": route_name,
+  }
+  response_data = {
+    "route": route_type,
+    "route_name": route_name,
+  }
 
   # Query Engine route
   if route_type == AgentCapability.AGENT_QUERY_CAPABILITY.value:
@@ -162,6 +158,8 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     Logger.info("Dispatch to DB Query: {dataset_name}")
 
+
+    # TODO: unstub the hardcoded result.
     # data_result = run_db_agent(prompt, llm_type, dataset_name)
     data_result = {
       "data": {},
@@ -169,19 +167,17 @@ async def run_dispatch(run_config: LLMAgentRunModel,
         "Spreadsheet": "https://sheet.new"
       },
     }
-
-    Logger.info(f"DB query response="
-                f"[{data_result}]")
-    chat_history_entry["route_name"] = f"Database Query: {dataset_name}"
-    chat_history_entry[CHAT_AI] = data_result.response
+    Logger.info(f"DB query response: \n{data_result}")
 
     # TODO: Update with the output generated from the LLM.
     response_output = "Here is the database query result in the attached " \
                       "resource."
+    chat_history_entry["route_name"] = f"Database Query: {dataset_name}"
+    chat_history_entry[CHAT_AI] = response_output
 
     response_data = {
       "route_name": f"Database Query: {dataset_name}",
-      "output": response_output,
+      "content": response_output,
       "data": data_result["data"],
       "dataset": dataset_name,
       "resources": data_result["resources"],
