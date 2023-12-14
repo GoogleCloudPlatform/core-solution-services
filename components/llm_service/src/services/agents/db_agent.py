@@ -17,7 +17,6 @@
 
 import datetime
 import json
-from typing import Tuple
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
@@ -50,8 +49,7 @@ def get_dataset_config() -> dict:
     load_datasets(AGENT_DATASET_CONFIG_PATH)
   return DATASETS
 
-def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> \
-    Tuple[str, dict]:
+def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> dict:
   """
   Run the DB agent and return the resulting data. 
 
@@ -89,7 +87,7 @@ def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
 def execute_sql_query(prompt: str,
                       dataset: str,
                       llm_type: str=None
-                      ) -> Tuple[str, dict]:
+                      ) -> dict:
   """
   Execute a SQL database query based on a human prompt.
   Currently hardcoded to target bigquery.
@@ -138,7 +136,7 @@ def execute_sql_query(prompt: str,
 
   # process result
   try:
-    return_dict = json.loads(return_val)
+    output_dict = json.loads(return_val)
   except Exception as e:
     msg = f"DB Query returned non-json data format. " \
           f"llm_type: {llm_type} prompt {prompt} return {return_val}"
@@ -146,16 +144,22 @@ def execute_sql_query(prompt: str,
     raise InternalServerError(msg) from e
 
   # validate return value
-  if not "columns" in return_dict or not "data" in return_dict:
+  if not "columns" in output_dict or not "data" in output_dict:
     msg = f"DB Query return data missing columns/data. " \
           f"llm_type: {llm_type} prompt {prompt} return {return_val}"
     Logger.error(msg)
     raise InternalServerError(msg) from e
 
   # generate spreadsheet
-  sheet_url = generate_spreadsheet(dataset, return_dict)
+  sheet_url = generate_spreadsheet(dataset, output_dict)
 
-  return sheet_url, return_dict
+  return_val = {
+    "data": output_dict,
+    "resources": {
+      "Spreadsheet": sheet_url
+    }
+  }
+  return return_val
 
 
 def generate_spreadsheet(dataset: str, return_dict: dict) -> str:
