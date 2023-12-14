@@ -145,7 +145,7 @@ Route:
 """
 
 SQL_QUERY_FORMAT_INSTRUCTIONS = """
-Parse the results into a JSON object with the first value as columns that
-contains the names of all the columns, and the second value as data that
+Parse the results into a JSON object with the first value as "columns" that
+contains the names of all the columns, and the second value as "data" that
 contains the result of the SQL query.
 """
