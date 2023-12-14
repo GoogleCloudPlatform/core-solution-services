@@ -20,9 +20,13 @@
 import json
 from config.config import AGENT_DATASET_CONFIG_PATH
 
+# Global DATASETS as the cache for loading datasets only once.
+DATASETS = None
 
 def get_dataset_config() -> dict:
-  return load_config_json(AGENT_DATASET_CONFIG_PATH)
+  if DATASETS is None:
+    load_config_json(AGENT_DATASET_CONFIG_PATH)
+  return DATASETS
 
 
 def load_config_json(file_path: str):
