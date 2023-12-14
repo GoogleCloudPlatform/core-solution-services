@@ -31,6 +31,7 @@ from common.utils.http_exceptions import BadRequest, InternalServerError
 from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
 from services.agents import agents
+from services.agents.db_agent import get_dataset_config
 
 Logger = Logger.get_logger(__file__)
 AGENTS = None
@@ -150,14 +151,24 @@ def run_intent(
   query_engines = QueryEngine.collection.fetch()
   for qe in query_engines:
     query_engine_list_str += \
-      f"- [QE:{qe.name}] to run a query on a query engine  for topics of " \
+      f"- [QE:{qe.name}] to run a query on a search engine for topics of " \
       f" {qe.description} \n"
+
+  # Collect all datasets with their descriptions as topics
+  dataset_list_str = ""
+  datasets = get_dataset_config()
+  for ds, ds_config in datasets.items():
+    dataset_list_str += \
+      f"- [DB:{ds}] to run a query against a database for data related to " \
+      "these areas: " \
+      f" {ds_config['description']} \n"
 
   dispatch_prompt = f"""
     An AI Dispatch Assistant has access to the following routes:
     - [plan] to compose, generate or create a plan.
     - [chat] to perform generic chat conversation.
     {query_engine_list_str}
+    {dataset_list_str}
     Choose one route based on the question below:
     """
 
