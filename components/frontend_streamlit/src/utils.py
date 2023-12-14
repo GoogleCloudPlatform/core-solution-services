@@ -19,11 +19,23 @@ from common.utils.logging_handler import Logger
 from config import API_BASE_URL
 from streamlit.runtime.scriptrunner import RerunData, RerunException
 from streamlit.source_util import get_pages
+from urllib.parse import urlparse
 
 Logger = Logger.get_logger(__file__)
 
 def http_navigate_to(url):
   """ Navigate to a specific URL. However, this will lose all session_state. """
+
+  query_params_from_session = ["auth_token", "debug"]
+  query_params = [
+      (x + "=" +str(st.session_state.get(x, ""))) \
+      for x in query_params_from_session]
+
+  query_param_str = "&".join(query_params)
+
+  url_ojb = urlparse(url)
+  url = f"{url}?{query_param_str}&{url_ojb.query}"
+
   nav_script = f"""
       <meta http-equiv="refresh" content="0; url='{url}'">
   """

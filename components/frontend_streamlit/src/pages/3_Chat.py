@@ -25,7 +25,6 @@ from common.utils.logging_handler import Logger
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-messages = []
 
 CHAT_PAGE_STYLES = """
 <style>
@@ -46,36 +45,31 @@ CHAT_PAGE_STYLES = """
 </style>
 """
 
-st.session_state.input_loading = False
-
 Logger = Logger.get_logger(__file__)
 
 
 def on_submit(user_input):
   """ Run dispatch agent when adding an user input prompt """
-  st.session_state.input_loading = True
-
   # Appending messages.
   st.session_state.messages.append({"HumanInput": user_input})
 
-  # Send API to llm-service
-  response = run_dispatch(user_input)
-  st.session_state.default_route = response.get("route", None)
+  with st.spinner("Loading..."):
+    # Send API to llm-service
+    response = run_dispatch(user_input,
+                            chat_id=st.session_state.get("chat_id"))
+    st.session_state.default_route = response.get("route", None)
 
-  if not st.session_state.chat_id:
-    st.session_state.chat_id = response["chat"]["id"]
-    st.session_state.user_chats.insert(0, response["chat"])
+    if not st.session_state.chat_id:
+      st.session_state.chat_id = response["chat"]["id"]
+      st.session_state.user_chats.insert(0, response["chat"])
 
-  # TODO: Currently the AIOutput vs content are inconsistent across
-  # API response and in a UserChat history.
-  if "content" in response:
-    response["AIOutput"] = response["content"]
-  del response["chat"]
+    # TODO: Currently the AIOutput vs content are inconsistent across
+    # API response and in a UserChat history.
+    if "content" in response:
+      response["AIOutput"] = response["content"]
+    del response["chat"]
 
-  st.session_state.messages.append(response)
-
-  # Clean up input field.
-  st.session_state.input_loading = False
+    st.session_state.messages.append(response)
 
 
 def format_ai_output(text):
@@ -93,7 +87,8 @@ def format_ai_output(text):
 
 def chat_content():
   if st.session_state.debug:
-    st.write(st.session_state.messages)
+    st.write(st.session_state.get("landing_user_input"))
+    st.write(st.session_state.get("messages"))
 
   if st.session_state.chat_id:
     st.write(f"Chat ID: **{st.session_state.chat_id}**")
@@ -113,7 +108,7 @@ def chat_content():
         route_name = item["route_name"]
         with st.chat_message("ai"):
           st.write(
-              f"Using route \"**{route_name.capitalize()}**\" to respond.",
+              f"Using route **`{route_name}`** to respond.",
               key=f"ai_{index}",
           )
 
@@ -127,6 +122,28 @@ def chat_content():
               unsafe_allow_html=False,
               is_table=False,  # TODO: Detect whether an output content type.
           )
+
+      # Append all resources.
+      if "resources" in item:
+        with st.chat_message("ai"):
+          for name, link in item["resources"].items():
+            st.markdown(f"Resource: [{name}]({link})")
+
+      # Append all query references.
+      query_index = 0
+      if "query_references" in item:
+        with st.chat_message("ai"):
+          st.write("References:")
+          for reference in item["query_references"]:
+            document_url = reference["document_url"]
+            document_text = reference["document_text"]
+            st.markdown(f"**{query_index}.** [{document_url}]({document_url})")
+            st.text_area(
+              f"Reference: {document_url}",
+              document_text,
+              key=f"ref_{query_index}")
+            query_index = query_index + 1
+          st.divider()
 
       if "plan" in item:
         with st.chat_message("ai"):
@@ -191,14 +208,13 @@ def chat_page():
           "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
 
     if submitted:
-      with st.spinner("Loading..."):
-        on_submit(user_input)
+      on_submit(user_input)
 
   # Pass prompt from the Landing page if any.
-  if st.session_state.get("landing_user_input", None):
-    with st.spinner("Loading..."):
-      on_submit(st.session_state.landing_user_input)
-      st.session_state.landing_user_input = ""
+  landing_user_input = st.session_state.get("landing_user_input", None)
+  if not st.session_state.chat_id and landing_user_input:
+    on_submit(st.session_state.landing_user_input)
+    st.session_state.landing_user_input = ""
 
   with content_placeholder:
     chat_content()
