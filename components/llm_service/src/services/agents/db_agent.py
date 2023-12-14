@@ -42,7 +42,7 @@ def get_dataset_config() -> dict:
     load_datasets(AGENT_DATASET_CONFIG_PATH)
   return DATASETS
 
-def run_db_agent(prompt: str, llm_type: str) -> dict:
+def run_db_agent(prompt: str, llm_type: str=None) -> dict:
   """
   Run the DB agent and return the resulting data. 
 
@@ -91,6 +91,8 @@ def execute_sql_query(prompt: str,
   if llm_type is None:
     llm_type = OPENAI_LLM_TYPE_GPT4
   llm = LANGCHAIN_LLM[llm_type]
+  if llm is None:
+    raise InternalServerError(f"Unsupported llm type {llm_type}")
 
   toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 
