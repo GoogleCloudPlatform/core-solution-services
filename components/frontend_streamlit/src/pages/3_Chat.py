@@ -123,6 +123,13 @@ def chat_content():
               is_table=False,  # TODO: Detect whether an output content type.
           )
 
+      # Append all resources.
+      if "resources" in item:
+        with st.chat_message("ai"):
+          for name, link in item["resources"].items():
+            st.markdown(f"Resource: [{name}]({link})")
+
+      # Append all query references.
       query_index = 0
       if "query_references" in item:
         with st.chat_message("ai"):
