@@ -26,6 +26,8 @@ Logger = Logger.get_logger(__file__)
 # vector store types
 VECTOR_STORE_MATCHING_ENGINE = "matching_engine"
 VECTOR_STORE_LANGCHAIN_PGVECTOR = "langchain_pgvector"
+PG_VECTOR_DEFAULT_DBNAME = "pgvector"
+LOCAL_HOST = "127.0.0.1"
 
 VECTOR_STORES = [
   VECTOR_STORE_MATCHING_ENGINE,
@@ -34,21 +36,23 @@ VECTOR_STORES = [
 
 # default vector store used for query engines
 DEFAULT_VECTOR_STORE = os.getenv("DEFAULT_VECTOR_STORE",
-                                  VECTOR_STORE_MATCHING_ENGINE)
+                                  VECTOR_STORE_LANGCHAIN_PGVECTOR)
 Logger.info(f"Default vector store = [{DEFAULT_VECTOR_STORE}]")
 
 # postgres
 # TODO: create secrets for this
-PG_HOST = "10.133.0.2"
+PG_HOST = os.getenv("PG_HOST", LOCAL_HOST)
+PG_DBNAME = os.getenv("PG_DBNAME", PG_VECTOR_DEFAULT_DBNAME)
 PG_PORT = "5432"
-PG_DBNAME = "genie"
 PG_USER = "postgres"
 PG_PASSWD = None
+Logger.info(f"PG_HOST = [{PG_HOST}]")
+Logger.info(f"PG_DBNAME = [{PG_DBNAME}]")
 
 # load secrets
 secrets = secretmanager.SecretManagerServiceClient()
 try:
   PG_PASSWD = get_secret("postgres-user-passwd")
 except Exception as e:
-  Logger.warn("Can't access postgres user password secret")
+  Logger.warning("Can't access postgres user password secret")
   PG_PASSWD = None

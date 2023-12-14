@@ -30,6 +30,7 @@ from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import BadRequest, InternalServerError
 from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
+from config.utils import get_dataset_config
 from services.agents import agents
 from services.agents.db_agent import get_dataset_config
 
@@ -146,13 +147,37 @@ def run_intent(
   agent_executor = AgentExecutor.from_agent_and_tools(
       agent=langchain_agent, tools=[])
 
+  intent_list_str = ""
+  intent_list = [
+    f"- {AgentCapability.AGENT_CHAT_CAPABILITY.value}" \
+    " to to perform generic chat conversation.",
+    f"- {AgentCapability.AGENT_PLAN_CAPABILITY.value}" \
+    " to compose, generate or create a plan.",
+    " - [SQLQuery] - Run SQL query with a database and return the data",
+  ]
+  for intent in intent_list:
+    intent_list_str += \
+      intent + "\n"
+
   # Collect all query engines with their description as topics.
-  query_engine_list_str = ""
   query_engines = QueryEngine.collection.fetch()
   for qe in query_engines:
-    query_engine_list_str += \
-      f"- [QE:{qe.name}] to run a query on a search engine for topics of " \
-      f" {qe.description} \n"
+    intent_list_str += \
+      f"- [{AgentCapability.AGENT_QUERY_CAPABILITY.value}:{qe.name}]" \
+      f" to run a query on a search engine for topics of {qe.description} \n"
+
+  # Collect all datasets with their descriptions as topics
+  datasets = get_dataset_config()
+
+  for ds_name, ds_config in datasets.items():
+    if ds_name in ["default"]:
+      continue
+
+    description = ds_config["description"]
+    intent_list_str += \
+      f"- [{AgentCapability.AGENT_DATABASE_CAPABILITY.value}:{ds_name}]" \
+      f" to run a query against a database for data related to " \
+      f"these areas: {description} \n"
 
   # Collect all datasets with their descriptions as topics
   dataset_list_str = ""
@@ -165,27 +190,26 @@ def run_intent(
 
   dispatch_prompt = f"""
     An AI Dispatch Assistant has access to the following routes:
-    - [plan] to compose, generate or create a plan.
-    - [chat] to perform generic chat conversation.
-    {query_engine_list_str}
-    {dataset_list_str}
+    {intent_list_str}
     Choose one route based on the question below:
     """
+  Logger.info(f"dispatch_prompt: \n{dispatch_prompt}")
 
   agent_inputs = {
     "input": dispatch_prompt + prompt,
     "chat_history": []
   }
 
-  Logger.info("Running agent executor.... ")
+  Logger.info("Running agent executor to get bested matched route.... ")
   output = agent_executor.run(agent_inputs)
   Logger.info(f"Agent {agent_name} generated output=[{output}]")
 
   routes = parse_output("Route:", output) or []
+  Logger.info(f"Output routes: {routes}")
 
   # If no best route(s) found, pass to Chat agent.
   if not routes or len(routes) == 0:
-    return run_agent("Chat", prompt, chat_history)
+    return AgentCapability.AGENT_CHAT_CAPABILITY.value
 
   # TODO: Refactor this with DispatchAgentOutputParser
   # Get the route for the best matched (first) returned routes.
@@ -299,7 +323,7 @@ def parse_output(header: str, text: str) -> List[str]:
   # We are using the re.DOTALL flag to match across newlines and
   # re.MULTILINE to treat each line as a separate string
   steps_regex = re.compile(
-      r"^\s*\d+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
+      r"^\s*[\d#]+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
 
   # Find the part of the text after 'Plan:'
   plan_part = re.split(header, text, flags=re.IGNORECASE)[-1]
@@ -314,29 +338,22 @@ def parse_output(header: str, text: str) -> List[str]:
 
 def parse_step(text:str) -> dict:
   step_regex = re.compile(
-      r"\d+\.\s.*\[(.*)\]\s?(.*)", re.DOTALL)
+      r"[\d|#]+\.\s.*\[(.*)\]\s?(.*)", re.DOTALL)
   matches = step_regex.findall(text)
   return matches
 
 def agent_execute_plan(
-    agent_name:str, prompt:str, user_plan:UserPlan = None,
-    user:User = None) -> str:
+    agent_name:str, prompt:str, user_plan:UserPlan = None) -> str:
   """
   Execute a given plan_steps.
   """
   Logger.info(f"Running {agent_name} agent "
               f"with prompt=[{prompt}] and "
-              f"User={user} and"
               f"user_plan=[{user_plan}]")
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
-  langchain_agent = llm_service_agent.load_agent()
-  username = user_email = None
+  agent = llm_service_agent.load_agent()
 
-  # update user information
-  if user is not None:
-    username = user.first_name +" "+user.last_name
-    user_email = user.email
   tools = llm_service_agent.get_tools()
   tools_str = ", ".join(tool.name for tool in tools)
 
@@ -348,22 +365,16 @@ def agent_execute_plan(
     plan_steps.append(description)
 
   agent_executor = AgentExecutor.from_agent_and_tools(
-    agent=langchain_agent,
+    agent=agent,
     tools=tools,
     verbose=True)
 
   # langchain StructedChatAgent takes only one input called input
   plan_steps_string = "".join(plan_steps)
-  prompt_addition = (
-  f"Execute the steps as outlined in this numbered list {plan_steps_string}."
-  f"You are executing this plan on behalf of User:{username} "
-  f"with user email:{user_email}")
-
-  prompt = prompt + prompt_addition
   agent_inputs = {
-    "input": prompt,
+    "input": prompt +plan_steps_string
   }
-  Logger.info(f"Running agent executor.... input:{prompt} ")
+  Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
 
   # collect print-output to the string.
   with io.StringIO() as buf, redirect_stdout(buf):
