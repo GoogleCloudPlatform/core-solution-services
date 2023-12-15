@@ -17,6 +17,8 @@
 
 import datetime
 import json
+from typing import Tuple
+
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
@@ -25,13 +27,16 @@ from config import (LANGCHAIN_LLM, PROJECT_ID,
                     OPENAI_LLM_TYPE_GPT4)
 from config.utils import get_dataset_config
 from services.agents.agent_prompts import SQL_QUERY_FORMAT_INSTRUCTIONS
-from services.agents.utils import strip_punctuation_from_end
+from services.agents.utils import (
+    strip_punctuation_from_end, agent_executor_run_with_logs)
 from services.agents.agent_tools import google_sheets_tool
+
 
 Logger = Logger.get_logger(__file__)
 
 
-def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> dict:
+def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
+                 user_email:str = None) -> Tuple[dict, str]:
   """
   Run the DB agent and return the resulting data.
 
@@ -49,10 +54,11 @@ def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> dict:
   Logger.info(f"querying db dataset {dataset} db type {db_type}")
 
   if db_type == "SQL":
-    results = execute_sql_query(prompt, dataset, llm_type)
+    results, agent_logs = execute_sql_query(
+        prompt, dataset, llm_type, user_email)
   else:
     raise RuntimeError(f"Unsupported agent db type {db_type}")
-  return results
+  return results, agent_logs
 
 def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
   """
@@ -68,8 +74,8 @@ def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
 
 def execute_sql_query(prompt: str,
                       dataset: str,
-                      llm_type: str=None
-                      ) -> dict:
+                      llm_type: str=None,
+                      user_email: str=None) -> Tuple[dict, str]:
   """
   Execute a SQL database query based on a human prompt.
   Currently hardcoded to target bigquery.
@@ -114,7 +120,9 @@ def execute_sql_query(prompt: str,
   clean_prompt = strip_punctuation_from_end(prompt)
   input_prompt = f"{clean_prompt}? {SQL_QUERY_FORMAT_INSTRUCTIONS}"
 
-  return_val = agent_executor.run(input_prompt)
+  # return_val = agent_executor.run(input_prompt)
+  return_val, agent_logs = agent_executor_run_with_logs(
+      agent_executor, input_prompt)
 
   # process result
   try:
@@ -133,18 +141,19 @@ def execute_sql_query(prompt: str,
     raise RuntimeError(msg)
 
   # generate spreadsheet
-  sheet_url = generate_spreadsheet(dataset, output_dict)
+  sheet_url = generate_spreadsheet(dataset, output_dict, user_email)
 
-  return_val = {
+  output = {
     "data": output_dict,
     "resources": {
       "Spreadsheet": sheet_url
     }
   }
-  return return_val
+  return output, agent_logs
 
 
-def generate_spreadsheet(dataset: str, return_dict: dict) -> str:
+def generate_spreadsheet(
+    dataset: str, return_dict: dict, user_email:list) -> str:
   """
   Generate Workspace Sheet containing return data
   """
@@ -152,6 +161,7 @@ def generate_spreadsheet(dataset: str, return_dict: dict) -> str:
   sheet_name = f"Dataset {dataset} Query {now}"
   sheet_output = google_sheets_tool(sheet_name,
                                     return_dict["columns"],
-                                    return_dict["data"])
+                                    return_dict["data"],
+                                    user_email=user_email)
   sheet_url = sheet_output["sheet_url"]
   return sheet_url

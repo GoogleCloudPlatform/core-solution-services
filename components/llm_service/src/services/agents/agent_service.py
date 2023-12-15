@@ -32,6 +32,7 @@ from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
 from config.utils import get_dataset_config
 from services.agents import agents
+from services.agents.utils import agent_executor_run_with_logs
 
 Logger = Logger.get_logger(__file__)
 AGENTS = None
@@ -120,16 +121,6 @@ def get_all_agents() -> List[dict]:
   ]
   return agent_list
 
-
-def agent_executor_run(agent_executor, agent_inputs):
-  # collect print-output to the string.
-
-  with io.StringIO() as buf, redirect_stdout(buf):
-    result = agent_executor.run(agent_inputs)
-    agent_logs = buf.getvalue()
-    Logger.info(f"Agent process result: \n\n{result}")
-    Logger.info(f"Agent process log: \n\n{agent_logs}")
-    return result, agent_logs
 
 def run_intent(
     prompt:str, chat_history:List = None, user:User = None) -> dict:
@@ -379,7 +370,7 @@ def agent_execute_plan(
   Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
 
   # collect print-output to the string.
-  output, agent_logs = agent_executor_run(agent_executor, agent_inputs)
+  output, agent_logs = agent_executor_run_with_logs(agent_executor, agent_inputs)
 
   Logger.info(f"Agent {agent_name} generated"
               f" output=[{output}]")

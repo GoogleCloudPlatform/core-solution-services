@@ -143,9 +143,9 @@ def query_tool(query: str) -> Dict:
 
   return result
 
-@tool(infer_schema=True)
-def google_sheets_tool(name: str, columns: list, rows: list,
-                       user_email: str=None) -> dict:
+# @tool(infer_schema=True)
+def google_sheets_tool(
+    name: str, columns: list, rows: list, user_email: str=None) -> dict:
   """
   Create a Google Sheet with the supplied data and return the sheet url and
   id
@@ -157,12 +157,14 @@ def google_sheets_tool(name: str, columns: list, rows: list,
   api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
   api_url = f"{api_url_prefix}/workspace/sheets/create"
   output = {}
+
+  # TODO: Add support with multiple emails.
   data = {
     "name": name,
-    "share_with": user_email,
     "columns": columns,
-    "rows": rows
-    }
+    "rows": rows,
+    "share_emails": [user_email],
+  }
 
   try:
     response = post_method(url=api_url,
@@ -171,8 +173,13 @@ def google_sheets_tool(name: str, columns: list, rows: list,
 
     resp_data = response.json()
     Logger.info(
-      f"[google_sheets_tool] response from google_sheets_service: {response}"
+      f"[google_sheets_tool] response from google_sheets_service: \n{resp_data}"
       )
+    success_status = resp_data["success"]
+    if not success_status:
+      raise RuntimeError("[google_sheets_tool] Failed to create google sheet: "
+                         f"{resp_data['message']}")
+
     result = resp_data["result"]
     Logger.info(
         f"[google_sheets_tool] creating spreadsheet for user: {user_email}."

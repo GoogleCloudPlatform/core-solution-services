@@ -87,6 +87,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     return BadRequest("Missing or invalid payload parameters")
 
   user = User.find_by_email(user_data.get("email"))
+  user_email = user_data.get("email")
   user_chat = None
 
   # Retrieve an existing chat or create new chat for user
@@ -161,7 +162,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     Logger.info("Dispatch to DB Query: {dataset_name}")
 
-    data_result = run_db_agent(prompt, llm_type, dataset_name)
+    data_result = run_db_agent(prompt, llm_type, dataset_name, user_email)
     Logger.info(f"DB query response: \n{data_result}")
 
     # TODO: Update with the output generated from the LLM.
