@@ -142,7 +142,8 @@ def chat_content():
           for reference in item["query_references"]:
             document_url = reference["document_url"]
             document_text = reference["document_text"]
-            st.markdown(f"**{reference_index}.** [{document_url}]({document_url})")
+            st.markdown(
+                f"**{reference_index}.** [{document_url}]({document_url})")
             st.text_area(
               f"Reference: {document_url}",
               document_text,
