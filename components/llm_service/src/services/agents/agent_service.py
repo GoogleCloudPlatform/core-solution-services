@@ -121,6 +121,16 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
+def agent_executor_run(agent_executor, agent_inputs):
+  # collect print-output to the string.
+
+  with io.StringIO() as buf, redirect_stdout(buf):
+    result = agent_executor.run(agent_inputs)
+    agent_logs = buf.getvalue()
+    Logger.info(f"Agent process result: \n\n{result}")
+    Logger.info(f"Agent process log: \n\n{agent_logs}")
+    return result, agent_logs
+
 def run_intent(
     prompt:str, chat_history:List = None, user:User = None) -> dict:
   """
@@ -167,7 +177,6 @@ def run_intent(
 
   # Collect all datasets with their descriptions as topics
   datasets = get_dataset_config()
-
   for ds_name, ds_config in datasets.items():
     if ds_name in ["default"]:
       continue
@@ -194,6 +203,9 @@ def run_intent(
   output = agent_executor.run(agent_inputs)
   Logger.info(f"Agent {agent_name} generated output=[{output}]")
 
+  agent_logs = output
+  Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
+
   routes = parse_output("Route:", output) or []
   Logger.info(f"Output routes: {routes}")
 
@@ -206,7 +218,7 @@ def run_intent(
   route, detail = parse_step(routes[0])[0]
   Logger.info(f"route: {route}, {detail}")
 
-  return route
+  return route, agent_logs
 
 
 def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
@@ -367,14 +379,11 @@ def agent_execute_plan(
   Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
 
   # collect print-output to the string.
-  with io.StringIO() as buf, redirect_stdout(buf):
-    result = agent_executor.run(agent_inputs)
-    agent_process_output = buf.getvalue()
-    Logger.info(f"Agent process output: \n\n{agent_process_output}")
+  output, agent_logs = agent_executor_run(agent_executor, agent_inputs)
 
   Logger.info(f"Agent {agent_name} generated"
-              f" result=[{result}]")
-  return result, agent_process_output
+              f" output=[{output}]")
+  return output, agent_logs
 
 
 def get_llm_type_for_agent(agent_name: str) -> str:

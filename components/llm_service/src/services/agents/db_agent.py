@@ -33,7 +33,7 @@ Logger = Logger.get_logger(__file__)
 
 def run_db_agent(prompt: str, llm_type: str=None, dataset=None) -> dict:
   """
-  Run the DB agent and return the resulting data. 
+  Run the DB agent and return the resulting data.
 
   Return:
     a dict of "columns: column names, "data": row data

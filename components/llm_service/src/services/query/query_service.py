@@ -195,7 +195,7 @@ def query_search(q_engine: QueryEngine,
       sentences = [x for x in sentences if x.strip() != ""]
 
       # Only update clean_text when sentences is not empty.
-      Logger.info(f"sentences = {sentences}")
+      Logger.info(f"Processing {len(sentences)} sentences.")
       if sentences and len(sentences) > 0:
         top_sentences = get_top_relevant_sentences(
             q_engine, query_embeddings, sentences,

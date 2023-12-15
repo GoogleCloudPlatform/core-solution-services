@@ -144,10 +144,10 @@ def query_tool(query: str) -> Dict:
   return result
 
 @tool(infer_schema=True)
-def google_sheets_tool(name: str,columns : List, rows : List,
-                      user_email: str=None) -> Dict:
+def google_sheets_tool(name: str, columns: list, rows: list,
+                       user_email: str=None) -> dict:
   """
-  Create a Google Sheet with the supplied data and return the sheet url and 
+  Create a Google Sheet with the supplied data and return the sheet url and
   id
   """
   Logger.info(
@@ -186,7 +186,7 @@ def google_sheets_tool(name: str,columns : List, rows : List,
   return output
 
 @tool(infer_schema=True)
-def database_tool(database_query: str) -> Dict:
+def database_tool(database_query: str) -> dict:
   """
     Accepts a natural language question and queries a database to get definite
     answer

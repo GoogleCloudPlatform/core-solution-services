@@ -101,7 +101,8 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   user_chat.save()
 
   # Get the intent based on prompt.
-  route = run_intent(prompt, chat_history=user_chat.history, user=user)
+  route, route_logs = run_intent(
+      prompt, chat_history=user_chat.history, user=user)
   Logger.info(f"Agent dispatch chooses this best route: {route}, " \
               f"based on user prompt: {prompt}")
   Logger.info(f"Chosen route: {route}")
@@ -109,6 +110,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   route_parts = route.split(":", 1)
   route_type = route_parts[0]
   route_name = route
+  agent_logs = None
 
   # Executing based on the best intent route.
   chat_history_entry = {
@@ -160,12 +162,6 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     Logger.info("Dispatch to DB Query: {dataset_name}")
 
     data_result = run_db_agent(prompt, llm_type, dataset_name)
-    data_result = {
-      "data": {},
-      "resources": {
-        "Spreadsheet": "https://sheet.new"
-      },
-    }
     Logger.info(f"DB query response: \n{data_result}")
 
     # TODO: Update with the output generated from the LLM.
@@ -180,6 +176,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
       "data": data_result["data"],
       "dataset": dataset_name,
       "resources": data_result["resources"],
+      "agent_logs": agent_logs,
     }
     chat_history_entry = response_data
 
@@ -195,7 +192,8 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     response_data = {
       "content": output,
-      "plan": plan_data
+      "plan": plan_data,
+      "agent_logs": agent_logs,
     }
 
   # Anything else including Chat route.
@@ -206,6 +204,14 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     response_data = {
       "content": output,
     }
+
+  # Appending Agent's thought process.
+  if agent_logs:
+    chat_history_entry["agent_logs"] = agent_logs
+    response_data["agent_logs"] = agent_logs
+  if route_logs:
+    chat_history_entry["route_logs"] = route_logs
+    response_data["route_logs"] = route_logs
 
   user_chat.update_history(custom_entry=chat_history_entry)
   user_chat.save()
@@ -256,7 +262,7 @@ def agent_run(agent_name: str,
     user = User.find_by_email(user_data.get("email"))
     llm_type = get_llm_type_for_agent(agent_name)
 
-    output = run_agent(agent_name, prompt)
+    output, agent_logs = run_agent(agent_name, prompt)
     Logger.info(f"Generated output=[{output}]")
 
     # create new chat for user
@@ -272,7 +278,7 @@ def agent_run(agent_name: str,
     response_data = {
       "content": output,
       "chat": chat_data,
-      "agent_thought": output
+      "agent_logs": agent_logs
     }
 
     return {
@@ -321,11 +327,15 @@ def agent_run_chat(agent_name: str, chat_id: str,
   try:
     # run agent to get output
     chat_history = langchain_chat_history(user_chat)
-    output = run_agent(agent_name, prompt, chat_history)
+    output, agent_logs = run_agent(agent_name, prompt, chat_history)
     Logger.info(f"Generated output=[{output}]")
 
     # save chat history
-    user_chat.update_history(prompt, output)
+    user_chat.update_history(custom_entry={
+      f"{CHAT_HUMAN}": prompt,
+      f"{CHAT_AI}": output,
+      "agent_logs": agent_logs,
+    })
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
@@ -333,6 +343,7 @@ def agent_run_chat(agent_name: str, chat_id: str,
     response_data = {
       "content": output,
       "chat": chat_data,
+      "agent_logs": agent_logs,
     }
 
     return {
