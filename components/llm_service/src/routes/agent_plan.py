@@ -200,7 +200,6 @@ async def agent_plan_execute(plan_id: str,
 
   # TODO: Add a check whether this plan belongs to a particular
   # user_id.
-  user = User.find_by_email(user_data.get("email"))
   try:
     # Get the existing Chat data or create a new one.
     user_chat = None

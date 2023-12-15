@@ -18,8 +18,6 @@
 import inspect
 import json
 import re
-import io
-from contextlib import redirect_stdout
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
@@ -369,7 +367,8 @@ def agent_execute_plan(
   Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
 
   # collect print-output to the string.
-  output, agent_logs = agent_executor_run_with_logs(agent_executor, agent_inputs)
+  output, agent_logs = agent_executor_run_with_logs(
+      agent_executor, agent_inputs)
 
   Logger.info(f"Agent {agent_name} generated"
               f" output=[{output}]")
