@@ -150,6 +150,15 @@ def google_sheets_tool(
   Create a Google Sheet with the supplied data and return the sheet url and
   id
   """
+  return create_google_sheet(name, columns, rows, user_email)
+
+def create_google_sheet(name: str,
+                        columns: str,
+                        rows: str,
+                        user_email: str=None) -> dict:
+  """
+  Call tools service to generate spreadsheet
+  """
   Logger.info(
         f"[google_sheets_tool] creating spreadsheet name: '{name}', "
         f" columns: {columns}"

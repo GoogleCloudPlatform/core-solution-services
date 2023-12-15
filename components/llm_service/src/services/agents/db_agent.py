@@ -32,7 +32,7 @@ from services.agents.agent_prompts import (SQL_QUERY_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_PREFIX)
 from services.agents.utils import (
     strip_punctuation_from_end, agent_executor_run_with_logs)
-from services.agents.agent_tools import google_sheets_tool
+from services.agents.agent_tools import create_google_sheet
 import sqlparse
 from sqlparse.sql import IdentifierList, Identifier
 from sqlparse.tokens import Keyword, DML
@@ -146,7 +146,7 @@ def execute_sql_statement(statement: str,
 
   # get columns from the sql statement
   columns = extract_columns(statement)
-  
+
   # generate spreadsheet
   sheet_data = {
     "columns": columns,
@@ -237,16 +237,16 @@ def execute_sql_query(prompt: str,
 
 
 def generate_spreadsheet(
-    dataset: str, return_dict: dict, user_email:list) -> str:
+    dataset: str, return_dict: dict, user_email:str) -> str:
   """
   Generate Workspace Sheet containing return data
   """
   now = datetime.datetime.utcnow()
   sheet_name = f"Dataset {dataset} Query {now}"
-  sheet_output = google_sheets_tool(sheet_name,
-                                    return_dict["columns"],
-                                    return_dict["data"],
-                                    user_email=user_email)
+  sheet_output = create_google_sheet(sheet_name,
+                                     return_dict["columns"],
+                                     return_dict["data"],
+                                     user_email)
   sheet_url = sheet_output["sheet_url"]
   return sheet_url
 
@@ -269,7 +269,7 @@ def extract_columns(sql_query: str) -> List[str]:
       elif token.ttype is Keyword:
         break
 
-    if token.ttype is DML and token.value.upper() == 'SELECT':
+    if token.ttype is DML and token.value.upper() == "SELECT":
       select_part = True
 
   return columns
