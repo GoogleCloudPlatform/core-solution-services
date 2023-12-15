@@ -18,10 +18,13 @@ Utilities for calling other platform microservices
 import json
 import requests
 
+DEFAULT_TIMEOUT = 180
+
 def get_method(url: str,
                query_params=None,
                auth_client=None,
-               token=None) -> json:
+               token=None,
+               timeout=DEFAULT_TIMEOUT) -> json:
   """
   Function for API GET method
   Parameters
@@ -44,13 +47,15 @@ def get_method(url: str,
     headers = {}
 
   return requests.get(
-      url=f"{url}", params=query_params, headers=headers, timeout=60)
+      url=f"{url}", params=query_params,
+      headers=headers, timeout=timeout)
 
 
 def post_method(url: str,
                 request_body=None,
                 auth_client=None,
-                token=None) -> json:
+                token=None,
+                timeout=DEFAULT_TIMEOUT) -> json:
   """
   Function for API POST method
   Parameters
@@ -73,4 +78,5 @@ def post_method(url: str,
     headers = {}
 
   return requests.post(
-      url=f"{url}", json=request_body, headers=headers, timeout=60)
+      url=f"{url}", json=request_body, headers=headers,
+      timeout=timeout)

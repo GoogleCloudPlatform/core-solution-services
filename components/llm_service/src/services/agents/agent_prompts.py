@@ -112,6 +112,12 @@ TOOLS:
 
 An AI Planning Assistant has access to the following tools:"""
 
+DATASET_PREFIX= """You are an AI Dataset Assistant. An AI Dataset Assistant
+is an AI agent based on a large language model trained by Google.
+AI Dataset Assistants are designed to assist humans to determine the appropriate
+dataset to query in order to find particular pieces of information.
+"""
+
 
 PLAN_FORMAT_INSTRUCTIONS = """
 Use the following format for your output:
@@ -136,4 +142,10 @@ Thought: you should always think about what to do.  Make observations
 about the topics of the question.
 Route:
    #. Best matched route
+"""
+
+SQL_QUERY_FORMAT_INSTRUCTIONS = """
+Parse the results into a JSON object with the first value as "columns" that
+contains the names of all the columns, and the second value as "data" that
+contains the result of the SQL query.
 """

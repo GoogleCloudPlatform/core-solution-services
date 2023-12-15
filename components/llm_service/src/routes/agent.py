@@ -19,6 +19,7 @@ import traceback
 from fastapi import APIRouter, Depends
 from common.models import QueryEngine, User, UserChat
 from common.models.llm import CHAT_HUMAN, CHAT_AI
+from common.models.agent import AgentCapability
 from common.utils.auth_service import validate_token
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException,
@@ -30,6 +31,7 @@ from schemas.agent_schema import (LLMAgentRunResponse,
 from services.agents.agent_service import (get_all_agents, run_agent,
                                           agent_plan, run_intent,
                                           get_llm_type_for_agent)
+from services.agents.db_agent import run_db_agent
 from services.langchain_service import langchain_chat_history
 from services.query.query_service import query_generate
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
@@ -85,6 +87,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     return BadRequest("Missing or invalid payload parameters")
 
   user = User.find_by_email(user_data.get("email"))
+  user_email = user_data.get("email")
   user_chat = None
 
   # Retrieve an existing chat or create new chat for user
@@ -99,28 +102,31 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   user_chat.save()
 
   # Get the intent based on prompt.
-  route = run_intent(prompt, chat_history=user_chat.history, user=user)
+  route, route_logs = run_intent(
+      prompt, chat_history=user_chat.history, user=user)
   Logger.info(f"Agent dispatch chooses this best route: {route}, " \
               f"based on user prompt: {prompt}")
-
-  # TODO: Unify all response structure from all agent/query runs.
-  response_data = {
-    "route": route,
-    "route_name": route.capitalize(),
-  }
-
-  # TODO: Fix the hardcoded route types below.
-  route_name = route
   Logger.info(f"Chosen route: {route}")
+
+  route_parts = route.split(":", 1)
+  route_type = route_parts[0]
+  route_name = route
+  agent_logs = None
 
   # Executing based on the best intent route.
   chat_history_entry = {
-    "route": route,
-    "route_name": route.capitalize(),
+    "route": route_type,
+    "route_name": route_name,
   }
-  if route[:3] == "QE:":
+  response_data = {
+    "route": route_type,
+    "route_name": route_name,
+  }
+
+  # Query Engine route
+  if route_type == AgentCapability.AGENT_QUERY_CAPABILITY.value:
     # Run RAG via a specific query engine
-    query_engine_name = route[3:]
+    query_engine_name = route_parts[1]
     Logger.info("Dispatch to Query Engine: {query_engine_name}")
 
     query_engine = QueryEngine.find_by_name(query_engine_name)
@@ -137,18 +143,47 @@ async def run_dispatch(run_config: LLMAgentRunModel,
           sentence_references=True)
     Logger.info(f"Query response="
                 f"[{query_result}]")
-    chat_history_entry["route_name"] = f"Query Engine: {route[3:]}"
-    chat_history_entry[CHAT_AI] = query_result.response
-    chat_history_entry["query_references"] = query_references
 
     response_data = {
-      "route_name": f"Query Engine: {route[3:]}",
+      "route": route_type,
+      "route_name": f"Query Engine: {query_engine_name}",
       "output": query_result.response,
       "query_engine_id": query_result.query_engine_id,
       "query_references": query_references,
     }
+    chat_history_entry = response_data
+    chat_history_entry[CHAT_AI] = query_result.response
 
-  elif route == "plan":
+  # Database route
+  elif route_type == AgentCapability.AGENT_DATABASE_CAPABILITY.value:
+    # Run a query against a DB dataset. Return a dict of
+    # "columns: column names, "data": row data
+    dataset_name = route_parts[1]
+
+    Logger.info("Dispatch to DB Query: {dataset_name}")
+
+    db_result, agent_logs = run_db_agent(
+        prompt, llm_type, dataset_name, user_email)
+    # Logger.info(f"DB query response: \n{db_result}")
+
+    # TODO: Update with the output generated from the LLM.
+    response_output = "Here is the database query result in the attached " \
+                      "resource."
+
+    response_data = {
+      "route": route_type,
+      "route_name": f"Database Query: {dataset_name}",
+      f"{CHAT_AI}": response_output,
+      "content": response_output,
+      # "data": db_result["data"],
+      "dataset": dataset_name,
+      "resources": db_result["resources"],
+      "agent_logs": agent_logs,
+    }
+    chat_history_entry = response_data
+
+  # Plan route
+  elif route_type == AgentCapability.AGENT_PLAN_CAPABILITY.value:
     # Run PlanAgent to generate a plan
     output, user_plan = agent_plan(
         agent_name="Plan", prompt=prompt, user_id=user.id)
@@ -159,9 +194,11 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     response_data = {
       "content": output,
-      "plan": plan_data
+      "plan": plan_data,
+      "agent_logs": agent_logs,
     }
 
+  # Anything else including Chat route.
   else:
     # Run with the generic ChatAgent for anything else.
     output = run_agent("Chat", prompt)
@@ -169,6 +206,14 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     response_data = {
       "content": output,
     }
+
+  # Appending Agent's thought process.
+  if agent_logs:
+    chat_history_entry["agent_logs"] = agent_logs
+    response_data["agent_logs"] = agent_logs
+  if route_logs:
+    chat_history_entry["route_logs"] = route_logs
+    response_data["route_logs"] = route_logs
 
   user_chat.update_history(custom_entry=chat_history_entry)
   user_chat.save()
@@ -219,7 +264,7 @@ def agent_run(agent_name: str,
     user = User.find_by_email(user_data.get("email"))
     llm_type = get_llm_type_for_agent(agent_name)
 
-    output = run_agent(agent_name, prompt)
+    output, agent_logs = run_agent(agent_name, prompt)
     Logger.info(f"Generated output=[{output}]")
 
     # create new chat for user
@@ -235,7 +280,7 @@ def agent_run(agent_name: str,
     response_data = {
       "content": output,
       "chat": chat_data,
-      "agent_thought": output
+      "agent_logs": agent_logs
     }
 
     return {

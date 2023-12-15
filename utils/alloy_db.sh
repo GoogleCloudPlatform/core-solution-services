@@ -18,14 +18,22 @@ if [ -z "${PROJECT_ID}" ]; then
     exit 1;
 fi
 
+export POSTGRES_USER_PASSWD="postgres-user-passwd"
+if [ $(gcloud secrets list | grep -c "${POSTGRES_USER_PASSWD}") == 0 ]; then
+    echo "ERROR: Secret ${POSTGRES_USER_PASSWD} not found"
+    exit 1;
+fi
+
 export INSTANCE_ID=${PROJECT_ID}-db
 export CLUSTER_ID=${PROJECT_ID}-db
 export CPU_COUNT=2
 export NODE_COUNT=1
 export REGION="us-central1"
-export PASSWORD="postgres"
+export PASSWORD="$(gcloud secrets versions access latest --secret=${POSTGRES_USER_PASSWD})"
 export NETWORK="default-vpc"
+
 gcloud services enable alloydb.googleapis.com
+gcloud services enable servicenetworking.googleapis.com
 
 # Reserve an IP block for VPC-peering
 gcloud compute addresses create vpc-peering-ip-${NETWORK} \
@@ -57,3 +65,8 @@ gcloud alloydb instances create ${INSTANCE_ID} \
     --region=${REGION} \
     --cluster=${CLUSTER_ID}
 gcloud alloydb instances list
+
+# Get the IP address for database host
+export PG_HOST=$(gcloud alloydb instances describe ${INSTANCE_ID} \
+ --cluster ${CLUSTER_ID} --region ${REGION} --format="value(ipAddress)")
+echo "AlloyDB Host IP address is ${PG_HOST}"

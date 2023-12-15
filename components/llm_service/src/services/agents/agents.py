@@ -20,8 +20,10 @@ from typing import Union, Type, Callable, List, Optional
 from langchain.agents import (Agent, AgentOutputParser,
                               ConversationalAgent)
 from langchain.agents.structured_chat.base import StructuredChatAgent
-from langchain.agents.structured_chat.output_parser import ( StructuredChatOutputParserWithRetries)
-from langchain.agents.structured_chat.prompt import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
+from langchain.agents.structured_chat.output_parser \
+    import StructuredChatOutputParserWithRetries
+from langchain.agents.structured_chat.prompt \
+    import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from langchain.schema import AgentAction, AgentFinish
 
@@ -33,7 +35,8 @@ from services.agents.agent_prompts import (PREFIX, DISPATCH_PREFIX,
                                            TASK_PREFIX, PLANNING_PREFIX,
                                            PLAN_FORMAT_INSTRUCTIONS,
                                            DISPATCH_FORMAT_INSTRUCTIONS)
-from services.agents.agent_tools import (gmail_tool, docs_tool,database_tool, google_sheets_tool,
+from services.agents.agent_tools import (gmail_tool, docs_tool,database_tool,
+                                         google_sheets_tool,
                                          calendar_tool, search_tool,
                                          query_tool)
 

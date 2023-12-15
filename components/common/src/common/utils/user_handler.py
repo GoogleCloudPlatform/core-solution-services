@@ -19,6 +19,9 @@ from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
 
+DEFAULT_USER_FIRSTNAME = "Test"
+DEFAULT_USER_LASTNAME = "Test"
+DEFAULT_USER_TYPE = "user"
 
 def get_user_by_email(email, check_firestore_user=False):
   Logger.info(f"Find user {email}")
@@ -32,9 +35,9 @@ def create_user_in_firestore(user_data: dict):
   user = User()
   user.user_id = user_data["user_id"]
   user.email = user_data["email"]
-  user.first_name = "Test"
-  user.last_name = "User"
-  user.user_type = "Learner"
+  user.first_name = user_data.get("first_name", DEFAULT_USER_FIRSTNAME)
+  user.last_name = user_data.get("last_name", DEFAULT_USER_LASTNAME)
+  user.user_type = user_data.get("user_type", DEFAULT_USER_TYPE)
   user.status = "active"
   user.save()
   Logger.info(f"Created user {user.email}")
