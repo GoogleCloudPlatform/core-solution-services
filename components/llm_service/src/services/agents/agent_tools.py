@@ -175,15 +175,10 @@ def google_sheets_tool(
     Logger.info(
       f"[google_sheets_tool] response from google_sheets_service: \n{resp_data}"
       )
-    success_status = resp_data["success"]
-    if not success_status:
+    status = resp_data.get("status")
+    if status != "Success":
       raise RuntimeError("[google_sheets_tool] Failed to create google sheet: "
                          f"{resp_data['message']}")
-
-    result = resp_data["result"]
-    Logger.info(
-        f"[google_sheets_tool] creating spreadsheet for user: {user_email}."
-        f" Result: {result}")
     output = {
       "sheet_url": resp_data["sheet_url"],
       "sheet_id": resp_data["sheet_id"]
