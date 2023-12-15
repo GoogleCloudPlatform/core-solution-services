@@ -14,6 +14,12 @@
 
 """ Agent utilities """
 import re
+import io
+from contextlib import redirect_stdout
+from common.utils.logging_handler import Logger
+
+Logger = Logger.get_logger(__file__)
+
 
 def strip_punctuation_from_end(text):
   # Regular expression pattern to match punctuation at the end of the string
@@ -21,3 +27,13 @@ def strip_punctuation_from_end(text):
 
   # Replace the matched punctuation with an empty string
   return re.sub(pattern, "", text)
+
+def agent_executor_run_with_logs(agent_executor, agent_inputs):
+  # collect print-output to the string.
+
+  with io.StringIO() as buf, redirect_stdout(buf):
+    result = agent_executor.run(agent_inputs)
+    agent_logs = buf.getvalue()
+    Logger.info(f"Agent process result: \n\n{result}")
+    Logger.info(f"Agent process log: \n\n{agent_logs}")
+    return result, agent_logs

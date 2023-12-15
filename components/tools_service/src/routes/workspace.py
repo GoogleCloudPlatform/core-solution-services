@@ -15,8 +15,9 @@
 """ Email tools endpoints """
 
 from fastapi import APIRouter
-from typing import List, Dict
+from typing import Dict
 from schemas.email import EmailSchema, EmailComposeSchema
+from schemas.sheets import CreateSheetSchema
 from services.gmail_service import send_email
 from services.email_composer import compose_email
 from services.database_service import execute_query
@@ -91,28 +92,27 @@ def execute_databasequery(query: str) -> Dict:
   }
 
 @router.post("/sheets/create")
-async def create_sheets(name: str, columns : List, rows : List,
-                        share_with: List=None) -> Dict:
+def create_sheet(data: CreateSheetSchema) -> dict:
   """
-    Create a Google Sheet with the supplied data and return the sheet url 
+    Create a Google Sheet with the supplied data and return the sheet url
     and id
 
   Args:
        Name of the spreadsheet name : String
        List of User emails that this spreadsheet should be shared_with: List
-       Column names of thte spreadsheet and rows as a     
+       Column names of thte spreadsheet and rows as a
         List of columns : List
-       Rows containing the values for the speadsheet as 
+       Rows containing the values for the speadsheet as
         List of Lists rows : List
     Returns:
         Spreadsheet url and id type: Dict
   Raises:
     HTTPException: 500 Internal Server Error if something fails
   """
-  result = create_spreadsheet(name=name,
-                              columns=columns,
-                              rows=rows,
-                              share_with=share_with)
+  result = create_spreadsheet(name=data.name,
+                              columns=data.columns,
+                              rows=data.rows,
+                              share_emails=data.share_emails)
   result ["status"] = "Success"
   print(f"create_sheets:{result}")
   return result

@@ -18,8 +18,6 @@
 import inspect
 import json
 import re
-import io
-from contextlib import redirect_stdout
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
@@ -32,6 +30,7 @@ from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
 from config.utils import get_dataset_config
 from services.agents import agents
+from services.agents.utils import agent_executor_run_with_logs
 
 Logger = Logger.get_logger(__file__)
 AGENTS = None
@@ -152,7 +151,6 @@ def run_intent(
     " to to perform generic chat conversation.",
     f"- {AgentCapability.AGENT_PLAN_CAPABILITY.value}" \
     " to compose, generate or create a plan.",
-    " - [SQLQuery] - Run SQL query with a database and return the data",
   ]
   for intent in intent_list:
     intent_list_str += \
@@ -167,7 +165,6 @@ def run_intent(
 
   # Collect all datasets with their descriptions as topics
   datasets = get_dataset_config()
-
   for ds_name, ds_config in datasets.items():
     if ds_name in ["default"]:
       continue
@@ -194,6 +191,9 @@ def run_intent(
   output = agent_executor.run(agent_inputs)
   Logger.info(f"Agent {agent_name} generated output=[{output}]")
 
+  agent_logs = output
+  Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
+
   routes = parse_output("Route:", output) or []
   Logger.info(f"Output routes: {routes}")
 
@@ -206,7 +206,7 @@ def run_intent(
   route, detail = parse_step(routes[0])[0]
   Logger.info(f"route: {route}, {detail}")
 
-  return route
+  return route, agent_logs
 
 
 def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
@@ -367,14 +367,12 @@ def agent_execute_plan(
   Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
 
   # collect print-output to the string.
-  with io.StringIO() as buf, redirect_stdout(buf):
-    result = agent_executor.run(agent_inputs)
-    agent_process_output = buf.getvalue()
-    Logger.info(f"Agent process output: \n\n{agent_process_output}")
+  output, agent_logs = agent_executor_run_with_logs(
+      agent_executor, agent_inputs)
 
   Logger.info(f"Agent {agent_name} generated"
-              f" result=[{result}]")
-  return result, agent_process_output
+              f" output=[{output}]")
+  return output, agent_logs
 
 
 def get_llm_type_for_agent(agent_name: str) -> str:

@@ -87,6 +87,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     return BadRequest("Missing or invalid payload parameters")
 
   user = User.find_by_email(user_data.get("email"))
+  user_email = user_data.get("email")
   user_chat = None
 
   # Retrieve an existing chat or create new chat for user
@@ -101,7 +102,8 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   user_chat.save()
 
   # Get the intent based on prompt.
-  route = run_intent(prompt, chat_history=user_chat.history, user=user)
+  route, route_logs = run_intent(
+      prompt, chat_history=user_chat.history, user=user)
   Logger.info(f"Agent dispatch chooses this best route: {route}, " \
               f"based on user prompt: {prompt}")
   Logger.info(f"Chosen route: {route}")
@@ -109,6 +111,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   route_parts = route.split(":", 1)
   route_type = route_parts[0]
   route_name = route
+  agent_logs = None
 
   # Executing based on the best intent route.
   chat_history_entry = {
@@ -159,14 +162,9 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     Logger.info("Dispatch to DB Query: {dataset_name}")
 
-    data_result = run_db_agent(prompt, llm_type, dataset_name)
-    data_result = {
-      "data": {},
-      "resources": {
-        "Spreadsheet": "https://sheet.new"
-      },
-    }
-    Logger.info(f"DB query response: \n{data_result}")
+    db_result, agent_logs = run_db_agent(
+        prompt, llm_type, dataset_name, user_email)
+    # Logger.info(f"DB query response: \n{db_result}")
 
     # TODO: Update with the output generated from the LLM.
     response_output = "Here is the database query result in the attached " \
@@ -177,9 +175,10 @@ async def run_dispatch(run_config: LLMAgentRunModel,
       "route_name": f"Database Query: {dataset_name}",
       f"{CHAT_AI}": response_output,
       "content": response_output,
-      "data": data_result["data"],
+      # "data": db_result["data"],
       "dataset": dataset_name,
-      "resources": data_result["resources"],
+      "resources": db_result["resources"],
+      "agent_logs": agent_logs,
     }
     chat_history_entry = response_data
 
@@ -195,7 +194,8 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     response_data = {
       "content": output,
-      "plan": plan_data
+      "plan": plan_data,
+      "agent_logs": agent_logs,
     }
 
   # Anything else including Chat route.
@@ -206,6 +206,14 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     response_data = {
       "content": output,
     }
+
+  # Appending Agent's thought process.
+  if agent_logs:
+    chat_history_entry["agent_logs"] = agent_logs
+    response_data["agent_logs"] = agent_logs
+  if route_logs:
+    chat_history_entry["route_logs"] = route_logs
+    response_data["route_logs"] = route_logs
 
   user_chat.update_history(custom_entry=chat_history_entry)
   user_chat.save()
@@ -256,7 +264,7 @@ def agent_run(agent_name: str,
     user = User.find_by_email(user_data.get("email"))
     llm_type = get_llm_type_for_agent(agent_name)
 
-    output = run_agent(agent_name, prompt)
+    output, agent_logs = run_agent(agent_name, prompt)
     Logger.info(f"Generated output=[{output}]")
 
     # create new chat for user
@@ -272,7 +280,7 @@ def agent_run(agent_name: str,
     response_data = {
       "content": output,
       "chat": chat_data,
-      "agent_thought": output
+      "agent_logs": agent_logs
     }
 
     return {

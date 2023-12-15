@@ -1,6 +1,6 @@
 {
   "fqhc_medical_transactions": {
-    "description": "For queries about medicaid billing including CDT codes, FQHC providers and claim transactions.",
+    "description": "For queries about approved medicaid billing including CDT codes, FQHC providers and claim transactions.",
     "type": "SQL"
   },
   "default": "fqhc_medical_transactions"
