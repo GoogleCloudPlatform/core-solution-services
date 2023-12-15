@@ -87,13 +87,15 @@ def format_ai_output(text):
 
 def chat_content():
   if st.session_state.debug:
-    st.write(st.session_state.get("landing_user_input"))
-    st.write(st.session_state.get("messages"))
+    with st.expander("DEBUG: session_state"):
+      st.write(st.session_state.get("landing_user_input"))
+      st.write(st.session_state.get("messages"))
 
   if st.session_state.chat_id:
     st.write(f"Chat ID: **{st.session_state.chat_id}**")
 
   # Create a placeholder for all chat history.
+  reference_index = 0
   chat_placeholder = st.empty()
   with chat_placeholder.container():
     index = 1
@@ -111,6 +113,10 @@ def chat_content():
               f"Using route **`{route_name}`** to respond.",
               key=f"ai_{index}",
           )
+
+      if item.get("route_logs", "").strip() != "":
+        with st.expander("Expand to see Agent's thought process"):
+          st.write(item["route_logs"])
 
       if "AIOutput" in item:
         with st.chat_message("ai"):
@@ -130,19 +136,19 @@ def chat_content():
             st.markdown(f"Resource: [{name}]({link})")
 
       # Append all query references.
-      query_index = 0
       if "query_references" in item:
         with st.chat_message("ai"):
           st.write("References:")
           for reference in item["query_references"]:
             document_url = reference["document_url"]
             document_text = reference["document_text"]
-            st.markdown(f"**{query_index}.** [{document_url}]({document_url})")
+            st.markdown(
+                f"**{reference_index}.** [{document_url}]({document_url})")
             st.text_area(
               f"Reference: {document_url}",
               document_text,
-              key=f"ref_{query_index}")
-            query_index = query_index + 1
+              key=f"ref_{reference_index}")
+            reference_index = reference_index + 1
           st.divider()
 
       if "plan" in item:
@@ -174,6 +180,10 @@ def chat_content():
             st.session_state.messages.append({
               "AIOutput": agent_process_output,
             })
+
+      if item.get("agent_logs", "").strip() != "":
+        with st.expander("Expand to see Agent's thought process"):
+          st.write(item["agent_logs"])
 
       index = index + 1
 
