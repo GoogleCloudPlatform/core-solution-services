@@ -15,7 +15,7 @@
 """ Email tools endpoints """
 
 from fastapi import APIRouter
-from typing import List, Dict
+from typing import Dict
 from schemas.email import EmailSchema, EmailComposeSchema
 from schemas.sheets import CreateSheetSchema
 from services.gmail_service import send_email

@@ -14,7 +14,6 @@
 
 """Tools and utils for Google Sheets"""
 import gspread
-from typing import List, Dict
 from common.utils.logging_handler import Logger
 from utils.google_credential import get_google_sheets_credential
 
