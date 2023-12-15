@@ -143,7 +143,7 @@ def query_tool(query: str) -> Dict:
 
   return result
 
-# @tool(infer_schema=True)
+@tool(infer_schema=True)
 def google_sheets_tool(
     name: str, columns: list, rows: list, user_email: str=None) -> dict:
   """
