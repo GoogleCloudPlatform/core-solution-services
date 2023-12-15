@@ -147,7 +147,7 @@ def generate_agent_plan(agent_name: str,
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
 
-    user_chat.update_history(custom_entries={
+    user_chat.update_history(custom_entry={
       "plan": plan_data,
     })
 
@@ -200,7 +200,6 @@ async def agent_plan_execute(plan_id: str,
 
   # TODO: Add a check whether this plan belongs to a particular
   # user_id.
-
   try:
     # Get the existing Chat data or create a new one.
     user_chat = None
@@ -208,13 +207,13 @@ async def agent_plan_execute(plan_id: str,
       user_chat = UserChat.find_by_id(chat_id)
 
     prompt = """Run the plan in the chat history provided below."""
-    result, agent_process_output = agent_execute_plan(
+    result, agent_logs = agent_execute_plan(
         agent_name, prompt, user_plan)
 
     if user_chat:
       user_chat.update_history(
           response=f"Successfully executed plan {plan_id}")
-      user_chat.update_history(response=agent_process_output)
+      user_chat.update_history(response=agent_logs)
       user_chat.save()
 
     Logger.info(result)
@@ -223,7 +222,7 @@ async def agent_plan_execute(plan_id: str,
       "message": f"Successfully executed plan {plan_id}",
       "data": {
         "result": result,
-        "agent_process_output": agent_process_output
+        "agent_logs": agent_logs
       }
     }
 

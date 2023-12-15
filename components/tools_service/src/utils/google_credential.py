@@ -48,3 +48,13 @@ def get_google_credential():
       client_secrets_file=client_secrets_file_path,
   )
   return credentials
+
+
+def get_google_sheets_credential():
+  # TODO:
+  # Write credential files to local tmp as the temporary approach.
+  sheet_service_token = get_secret("tools-sheets-serviceaccount-token")
+  token_file_path = "/tmp/google_drive_account.json"
+  with open(token_file_path, "w", encoding="utf-8") as file:
+    file.write(sheet_service_token)
+  return token_file_path

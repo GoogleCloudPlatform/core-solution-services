@@ -60,7 +60,7 @@ api = FastAPI(title="User Access Management Service APIs",
               version="latest",
               # docs_url=None,
               # redoc_url=None,
-              # dependencies=[Depends(validate_token)]
+              dependencies=[Depends(validate_token)]
               )
 
 api.include_router(user.router)
