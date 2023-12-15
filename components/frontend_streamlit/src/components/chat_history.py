@@ -76,6 +76,7 @@ def get_agent_chats(selected_agent):
         if select_chat:
           st.session_state.agent_name = agent_name
           st.session_state.chat_id = chat_id
+          st.session_state.landing_user_input = None
           utils.navigate_to("Chat")
     index += 1
 

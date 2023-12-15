@@ -87,8 +87,9 @@ def format_ai_output(text):
 
 def chat_content():
   if st.session_state.debug:
-    st.write(st.session_state.get("landing_user_input"))
-    st.write(st.session_state.get("messages"))
+    with st.expander("DEBUG: session_state"):
+      st.write(st.session_state.get("landing_user_input"))
+      st.write(st.session_state.get("messages"))
 
   if st.session_state.chat_id:
     st.write(f"Chat ID: **{st.session_state.chat_id}**")
@@ -111,6 +112,10 @@ def chat_content():
               f"Using route **`{route_name}`** to respond.",
               key=f"ai_{index}",
           )
+
+      if item.get("route_logs", "").strip() != "":
+        with st.expander("Expand to see Agent's thought process"):
+          st.write(item["route_logs"])
 
       if "AIOutput" in item:
         with st.chat_message("ai"):
@@ -174,6 +179,10 @@ def chat_content():
             st.session_state.messages.append({
               "AIOutput": agent_process_output,
             })
+
+      if item.get("agent_logs", "").strip() != "":
+        with st.expander("Expand to see Agent's thought process"):
+          st.write(item["agent_logs"])
 
       index = index + 1
 
