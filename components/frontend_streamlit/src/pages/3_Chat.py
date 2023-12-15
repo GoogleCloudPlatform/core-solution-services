@@ -95,6 +95,7 @@ def chat_content():
     st.write(f"Chat ID: **{st.session_state.chat_id}**")
 
   # Create a placeholder for all chat history.
+  reference_index = 0
   chat_placeholder = st.empty()
   with chat_placeholder.container():
     index = 1
@@ -135,19 +136,18 @@ def chat_content():
             st.markdown(f"Resource: [{name}]({link})")
 
       # Append all query references.
-      query_index = 0
       if "query_references" in item:
         with st.chat_message("ai"):
           st.write("References:")
           for reference in item["query_references"]:
             document_url = reference["document_url"]
             document_text = reference["document_text"]
-            st.markdown(f"**{query_index}.** [{document_url}]({document_url})")
+            st.markdown(f"**{reference_index}.** [{document_url}]({document_url})")
             st.text_area(
               f"Reference: {document_url}",
               document_text,
-              key=f"ref_{query_index}")
-            query_index = query_index + 1
+              key=f"ref_{reference_index}")
+            reference_index = reference_index + 1
           st.divider()
 
       if "plan" in item:
