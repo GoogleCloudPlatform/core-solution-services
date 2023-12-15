@@ -162,8 +162,9 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     Logger.info("Dispatch to DB Query: {dataset_name}")
 
-    data_result = run_db_agent(prompt, llm_type, dataset_name, user_email)
-    Logger.info(f"DB query response: \n{data_result}")
+    db_result, agent_logs = run_db_agent(
+        prompt, llm_type, dataset_name, user_email)
+    # Logger.info(f"DB query response: \n{db_result}")
 
     # TODO: Update with the output generated from the LLM.
     response_output = "Here is the database query result in the attached " \
@@ -174,9 +175,9 @@ async def run_dispatch(run_config: LLMAgentRunModel,
       "route_name": f"Database Query: {dataset_name}",
       f"{CHAT_AI}": response_output,
       "content": response_output,
-      "data": data_result["data"],
+      # "data": db_result["data"],
       "dataset": dataset_name,
-      "resources": data_result["resources"],
+      "resources": db_result["resources"],
       "agent_logs": agent_logs,
     }
     chat_history_entry = response_data

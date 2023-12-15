@@ -54,11 +54,11 @@ def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
   Logger.info(f"querying db dataset {dataset} db type {db_type}")
 
   if db_type == "SQL":
-    results, agent_logs = execute_sql_query(
+    output, agent_logs = execute_sql_query(
         prompt, dataset, llm_type, user_email)
   else:
     raise RuntimeError(f"Unsupported agent db type {db_type}")
-  return results, agent_logs
+  return output, agent_logs
 
 def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
   """
