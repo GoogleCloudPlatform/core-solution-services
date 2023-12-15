@@ -1,11 +1,12 @@
 import streamlit as st
 
-def display_logo():
+def display_side_logo():
   NAV_STYLES = """
     <style>
       [data-testid="stSidebarNav"]::before {
         content: "GENIE";
         font-size: 26px;
+        font-weight: 500;
         color: #4b4b4b;
         padding-left: 60px;
         font-family: Arial;

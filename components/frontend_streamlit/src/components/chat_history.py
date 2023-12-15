@@ -56,7 +56,7 @@ CHAT_HISTORY_LIST_STYLE = """
     float: right;
   }
   [data-testid=stSidebarUserContent] [data-testid=stHorizontalBlock] .stButton button:hover {
-    background-color: #6799eb;
+    background-color: #2369de;
   }
   [data-testid=stSidebarUserContent] [data-testid=stVerticalBlockBorderWrapper] .stButton p {
     white-space: nowrap;

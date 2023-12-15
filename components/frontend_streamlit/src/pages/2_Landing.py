@@ -16,77 +16,36 @@
 """
 # pylint: disable=invalid-name,pointless-string-statement,unused-variable
 import streamlit as st
-from api import get_all_query_engines
 from components.chat_history import chat_history_panel
-from components.sidebar_logo import display_logo
-from components.landing_markup import landing_theme
+from components.landing_header import display_header
+from components.suggestions import landing_suggestions
+from styles.sidebar_logo import display_side_logo
+from styles.landing_markup import landing_theme
 from common.utils.logging_handler import Logger
 import utils
 
 Logger = Logger.get_logger(__file__)
 
 def landing_page():
-  display_logo()
+  display_side_logo()
   chat_history_panel()
   landing_theme()
 
+  chat_selection = display_header()
+
   st.title("Hello again")
-  st.subheader("Start your journey here or explore the options below:")
+  st.subheader("Start your journey here or explore the options below.")
+
+  landing_suggestions()
+
   with st.form("user_input_form", border=False, clear_on_submit=True):
-    col1, col2 = st.columns([5, 1])
-    with col1:
-      user_input = st.text_input(placeholder="Enter a prompt here", label="Enter prompt", label_visibility="hidden", key="landing_input")
-      submitted = st.form_submit_button("Submit")
-    with col2:
-      st.session_state.default_route = st.selectbox(
-          "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
+    user_input = st.text_input(placeholder="Enter a prompt here", label="Enter prompt", label_visibility="collapsed", key="landing_input")
+    submitted = st.form_submit_button("Submit")
 
     if submitted:
       st.session_state.landing_user_input = user_input
       st.session_state.chat_id = None
       utils.navigate_to("Chat")
-
-  st.divider()
-
-  st.subheader("Or run with a specific Agent or Task:")
-  start_chat, start_query = st.columns((1, 1))
-
-  with start_chat:
-    with st.container():
-      agent_name = st.selectbox(
-          "Agent:",
-          ("Chat", "Plan"))
-      chat_button = st.button("Start", key=2)
-      if chat_button:
-        st.session_state.agent_name = agent_name
-        st.session_state.chat_id = None
-        utils.navigate_to("Agent")
-
-  with start_query:
-    # Get all query engines as a list
-    query_engine_list = get_all_query_engines(
-      auth_token=st.session_state.auth_token)
-
-    if query_engine_list is None or len(query_engine_list) == 0:
-      with st.container():
-        "No Query Engines"
-    else:
-      query_engines = {}
-      for item in query_engine_list:
-        query_engines[item["name"]] = item
-
-      Logger.info(query_engines)
-      with st.container():
-        qe_name = st.selectbox(
-            "Query Engine:",
-            tuple(query_engines.keys()))
-        query_button = st.button("Start", key=3)
-        query_engine_id = query_engines[qe_name]["id"]
-        st.session_state.query_engine_id = query_engine_id
-        if query_button:
-          st.session_state.agent_name = agent_name
-          st.session_state.chat_id = None
-          utils.navigate_to("Query")
 
 if __name__ == "__main__":
   utils.init_page()
