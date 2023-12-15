@@ -114,7 +114,7 @@ def test_run_agent_chat(create_user, create_chat, client_with_emulator):
   url = f"{api_url}/run/Chat/{chatid}"
 
   with mock.patch("routes.agent.run_agent",
-                  return_value=(FAKE_GENERATE_RESPONSE, FAKE_AGENT_LOGS)):
+                  return_value=FAKE_GENERATE_RESPONSE):
     resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
 
   json_response = resp.json()

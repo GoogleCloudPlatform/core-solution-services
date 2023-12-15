@@ -329,15 +329,11 @@ def agent_run_chat(agent_name: str, chat_id: str,
   try:
     # run agent to get output
     chat_history = langchain_chat_history(user_chat)
-    output, agent_logs = run_agent(agent_name, prompt, chat_history)
+    output = run_agent(agent_name, prompt, chat_history)
     Logger.info(f"Generated output=[{output}]")
 
     # save chat history
-    user_chat.update_history(custom_entry={
-      f"{CHAT_HUMAN}": prompt,
-      f"{CHAT_AI}": output,
-      "agent_logs": agent_logs,
-    })
+    user_chat.update_history(prompt, output)
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
@@ -345,7 +341,6 @@ def agent_run_chat(agent_name: str, chat_id: str,
     response_data = {
       "content": output,
       "chat": chat_data,
-      "agent_logs": agent_logs,
     }
 
     return {
