@@ -153,7 +153,6 @@ def run_intent(
     " to to perform generic chat conversation.",
     f"- {AgentCapability.AGENT_PLAN_CAPABILITY.value}" \
     " to compose, generate or create a plan.",
-    " - [SQLQuery] - Run SQL query with a database and return the data",
   ]
   for intent in intent_list:
     intent_list_str += \

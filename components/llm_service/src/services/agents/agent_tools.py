@@ -151,9 +151,9 @@ def google_sheets_tool(
   id
   """
   Logger.info(
-        f"[google_sheets_tool] creating spreadsheet name:{name},"
+        f"[google_sheets_tool] creating spreadsheet name: '{name}', "
         f" columns: {columns}"
-        f"for user: {user_email}.")
+        f" for user: {user_email}\n")
   api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
   api_url = f"{api_url_prefix}/workspace/sheets/create"
   output = {}
