@@ -16,12 +16,15 @@
 
 from fastapi import APIRouter
 from typing import Dict
+from common.utils.logging_handler import Logger
 from schemas.email import EmailSchema, EmailComposeSchema
 from schemas.sheets import CreateSheetSchema
 from services.gmail_service import send_email
 from services.email_composer import compose_email
 from services.database_service import execute_query
 from services.sheets_service import create_spreadsheet
+
+Logger = Logger.get_logger(__file__)
 
 router = APIRouter(prefix="/workspace", tags=["workspace"])
 
@@ -109,10 +112,11 @@ def create_sheet(data: CreateSheetSchema) -> dict:
   Raises:
     HTTPException: 500 Internal Server Error if something fails
   """
+  Logger.info("Creating sheet [{data.name}] for [{data.share_emails}]")
   result = create_spreadsheet(name=data.name,
                               columns=data.columns,
                               rows=data.rows,
                               share_emails=data.share_emails)
   result ["status"] = "Success"
-  print(f"create_sheets:{result}")
+  Logger.info(f"create_sheets result: [{result}]")
   return result

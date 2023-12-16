@@ -21,10 +21,8 @@ from common.utils.request_handler import get_method, post_method
 from langchain.tools import tool
 from config import SERVICES, auth_client
 from typing import List, Dict
+
 Logger = Logger.get_logger(__file__)
-
-
-
 
 
 def rules_engine_get_ruleset_fields(ruleset_name: str):
