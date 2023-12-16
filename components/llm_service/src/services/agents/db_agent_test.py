@@ -30,13 +30,19 @@ os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
 
-FAKE_DB_AGENT_RESULT = "{\"columns\":[\"test\"],\"data\":[1,2,3]}"
+FAKE_SQL_QUERY_RESULT = "{\"columns\":[\"test\"],\"data\":[1,2,3]}"
+
+FAKE_SQL_STATEMENT = "SELECT cdt from testdb"
 
 FAKE_SPREADSHEET_OUTPUT = {"sheet_url": "test url"}
 
 class FakeAgentExecutor():
   def run(self, prompt):
-    return FAKE_DB_AGENT_RESULT
+    return FAKE_SQL_STATEMENT
+
+class FakeQuerySQLDataBaseTool():
+  def run(self, statement):
+    return FAKE_SQL_QUERY_RESULT
 
 def test_run_db_agent():
   dataset_config = get_dataset_config()
@@ -46,8 +52,10 @@ def test_run_db_agent():
     with mock.patch("services.agents.db_agent.SQLStatementDBToolKit"):
       with mock.patch("services.agents.db_agent.create_sql_agent",
                       return_value=FakeAgentExecutor()):
-        with mock.patch("services.agents.db_agent.create_google_sheet",
-                        return_value=FAKE_SPREADSHEET_OUTPUT):
-          output, _ = run_db_agent(prompt, dataset=dataset)
+        with mock.patch("services.agents.db_agent.QuerySQLDataBaseTool",
+                        return_value=FakeQuerySQLDataBaseTool()):
+          with mock.patch("services.agents.db_agent.create_google_sheet",
+                          return_value=FAKE_SPREADSHEET_OUTPUT):
+            output, _ = run_db_agent(prompt, dataset=dataset)
   assert output["data"] == json.loads(FAKE_DB_AGENT_RESULT)
   assert output["resources"]["Spreadsheet"] == "test url"
