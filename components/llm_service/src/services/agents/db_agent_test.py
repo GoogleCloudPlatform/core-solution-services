@@ -46,7 +46,7 @@ def test_run_db_agent():
     with mock.patch("services.agents.db_agent.SQLDatabaseToolkit"):
       with mock.patch("services.agents.db_agent.create_sql_agent",
                       return_value=FakeAgentExecutor()):
-        with mock.patch("services.agents.db_agent.google_sheets_tool",
+        with mock.patch("services.agents.db_agent.create_google_sheet",
                         return_value=FAKE_SPREADSHEET_OUTPUT):
           output, _ = run_db_agent(prompt, dataset=dataset)
   assert output["data"] == json.loads(FAKE_DB_AGENT_RESULT)
