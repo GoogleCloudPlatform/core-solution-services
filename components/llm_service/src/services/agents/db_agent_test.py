@@ -57,5 +57,5 @@ def test_run_db_agent():
           with mock.patch("services.agents.db_agent.create_google_sheet",
                           return_value=FAKE_SPREADSHEET_OUTPUT):
             output, _ = run_db_agent(prompt, dataset=dataset)
-  assert output["data"] == json.loads(FAKE_DB_AGENT_RESULT)
+  assert output["data"] == json.loads(FAKE_SQL_QUERY_RESULT)
   assert output["resources"]["Spreadsheet"] == "test url"
