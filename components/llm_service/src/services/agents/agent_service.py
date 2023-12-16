@@ -161,7 +161,8 @@ def run_intent(
   for qe in query_engines:
     intent_list_str += \
       f"- [{AgentCapability.AGENT_QUERY_CAPABILITY.value}:{qe.name}]" \
-      f" to run a query on a search engine for topics of {qe.description} \n"
+      f" to run a query on a search engine for information (not raw data)" \
+      f" on the topics of {qe.description} \n"
 
   # Collect all datasets with their descriptions as topics
   datasets = get_dataset_config()

@@ -153,14 +153,14 @@ def google_sheets_tool(
   return create_google_sheet(name, columns, rows, user_email)
 
 def create_google_sheet(name: str,
-                        columns: str,
-                        rows: str,
+                        columns: list,
+                        rows: list,
                         user_email: str=None) -> dict:
   """
   Call tools service to generate spreadsheet
   """
   Logger.info(
-        f"[google_sheets_tool] creating spreadsheet name: '{name}', "
+        f"[create_google_sheet] creating spreadsheet name: '{name}', "
         f" columns: {columns}"
         f" for user: {user_email}\n")
   api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]

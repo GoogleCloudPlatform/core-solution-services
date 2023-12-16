@@ -142,7 +142,16 @@ def execute_sql_statement(statement: str,
   query_sql_database_tool = QuerySQLDataBaseTool(
       db=db, description=""
   )
+
+  Logger.info(f"running sql statement [{statement}] for dataset [{dataset}] "
+              f"db url [{db_url}]")
+
   dbdata = query_sql_database_tool.run(statement)
+
+  Logger.info(f"got results [{dbdata}] ")
+
+  # convert result rows into list of lists
+  dbdata = [list(row) for row in dbdata]
 
   # get columns from the sql statement
   columns = extract_columns(statement)
@@ -241,12 +250,14 @@ def generate_spreadsheet(
   """
   Generate Workspace Sheet containing return data
   """
+  Logger.info("Generating spreadsheet for user [{user_email}]")
   now = datetime.datetime.utcnow()
   sheet_name = f"Dataset {dataset} Query {now}"
   sheet_output = create_google_sheet(sheet_name,
                                      return_dict["columns"],
                                      return_dict["data"],
                                      user_email)
+  Logger.info("Got spreadsheet output [{sheet_output}]")
   sheet_url = sheet_output["sheet_url"]
   return sheet_url
 
