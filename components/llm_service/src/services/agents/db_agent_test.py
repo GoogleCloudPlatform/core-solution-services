@@ -30,9 +30,12 @@ os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
 
-FAKE_SQL_QUERY_RESULT = "{\"columns\":[\"test\"],\"data\":[1,2,3]}"
+FAKE_SQL_QUERY_RESULT = {
+  "columns": ["test"],
+  "data": [[1],[2],[3]]
+  }
 
-FAKE_SQL_STATEMENT = "SELECT cdt FROM testdb"
+FAKE_SQL_STATEMENT = "SELECT test FROM testdb"
 
 FAKE_SPREADSHEET_OUTPUT = {"sheet_url": "test url"}
 
@@ -42,7 +45,7 @@ class FakeAgentExecutor():
 
 class FakeQuerySQLDataBaseTool():
   def run(self, statement):
-    return FAKE_SQL_QUERY_RESULT
+    return FAKE_SQL_QUERY_RESULT["data"]
 
 def test_run_db_agent():
   dataset_config = get_dataset_config()
@@ -57,5 +60,5 @@ def test_run_db_agent():
           with mock.patch("services.agents.db_agent.create_google_sheet",
                           return_value=FAKE_SPREADSHEET_OUTPUT):
             output, _ = run_db_agent(prompt, dataset=dataset)
-  assert output["data"] == json.loads(FAKE_SQL_QUERY_RESULT)
+  assert output["data"] == FAKE_SQL_QUERY_RESULT
   assert output["resources"]["Spreadsheet"] == "test url"
