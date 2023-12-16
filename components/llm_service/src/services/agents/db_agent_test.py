@@ -32,7 +32,7 @@ os.environ["COHERE_API_KEY"] = "fake-key"
 
 FAKE_SQL_QUERY_RESULT = "{\"columns\":[\"test\"],\"data\":[1,2,3]}"
 
-FAKE_SQL_STATEMENT = "SELECT cdt from testdb"
+FAKE_SQL_STATEMENT = "SELECT cdt FROM testdb"
 
 FAKE_SPREADSHEET_OUTPUT = {"sheet_url": "test url"}
 

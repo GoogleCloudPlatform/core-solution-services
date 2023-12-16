@@ -118,12 +118,6 @@ def generate_sql_statement(prompt: str,
 
   Logger.info(f"generated SQL statement [{return_val}]")
 
-  # do some basic validation on output
-  return_val = return_val.strip()
-  if not return_val.startswith("SELECT") \
-     or "FROM" not in return_val:
-    raise RuntimeError("invalid SQL statement: {return_val}")
-
   return return_val, agent_logs
 
 def execute_sql_statement(statement: str,
