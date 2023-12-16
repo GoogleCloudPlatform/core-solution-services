@@ -43,7 +43,7 @@ def test_run_db_agent():
   dataset = dataset_config.get("default")
   prompt = "how much data is too much?"
   with mock.patch("services.agents.db_agent.SQLDatabase"):
-    with mock.patch("services.agents.db_agent.SQLStatementToolkit"):
+    with mock.patch("services.agents.db_agent.SQLStatementDBToolKit"):
       with mock.patch("services.agents.db_agent.create_sql_agent",
                       return_value=FakeAgentExecutor()):
         with mock.patch("services.agents.db_agent.create_google_sheet",
