@@ -16,7 +16,7 @@
 """
 # pylint: disable=invalid-name,pointless-string-statement,unused-variable
 import streamlit as st
-from api import get_all_query_engines
+from api import get_all_query_engines, get_all_chat_types
 from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
 import utils
@@ -38,14 +38,19 @@ def landing_page():
 
   st.markdown(LANDING_PAGE_STYLES, unsafe_allow_html=True)
 
+  chat_types = get_all_chat_types()
+
   st.title("Hello again.")
   st.subheader("You can ask me anything:")
   with st.form("user_input_form", border=False, clear_on_submit=True):
-    col1, col2 = st.columns([5, 1])
+    col1, col2, col3 = st.columns([5, 1, 1])
     with col1:
       user_input = st.text_input("")
       submitted = st.form_submit_button("Submit")
     with col2:
+      st.session_state.chat_type = st.selectbox(
+          "Chat Model", chat_types)
+    with col3:
       st.session_state.default_route = st.selectbox(
           "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
 

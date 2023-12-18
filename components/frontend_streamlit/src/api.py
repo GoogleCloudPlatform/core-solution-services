@@ -56,7 +56,7 @@ def get_agents(auth_token=None) -> List[Agent]:
   return agent_list
 
 def run_dispatch(prompt: str, chat_id: str = None,
-                 route=None, auth_token=None):
+                 route=None, llm_type: str=None, auth_token=None):
   """
   Run Agent on human input, and return output
   """
@@ -70,6 +70,7 @@ def run_dispatch(prompt: str, chat_id: str = None,
   request_body = {
     "prompt": prompt,
     "chat_id": chat_id,
+    "llm_type": llm_type
   }
   resp = post_method(api_url, request_body=request_body, token=auth_token)
   handle_error(resp)
@@ -227,6 +228,22 @@ def get_all_embedding_types(auth_token=None):
     auth_token = get_auth_token()
 
   api_url = f"{LLM_SERVICE_API_URL}/llm/embedding_types"
+  Logger.info(f"api_url={api_url}")
+  resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
+
+  json_response = resp.json()
+  output = json_response["data"]
+  return output
+
+def get_all_chat_types(auth_token=None):
+  """
+  Retrieve all supported chat model types
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/chat/chat_types"
   Logger.info(f"api_url={api_url}")
   resp = get_method(api_url, token=auth_token)
   Logger.info(resp)

@@ -19,7 +19,7 @@ import re
 import streamlit as st
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan)
+    run_agent_execute_plan, get_all_chat_types)
 from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
 import utils
@@ -56,7 +56,8 @@ def on_submit(user_input):
   with st.spinner("Loading..."):
     # Send API to llm-service
     response = run_dispatch(user_input,
-                            chat_id=st.session_state.get("chat_id"))
+                            chat_id=st.session_state.get("chat_id"),
+                            llm_type=st.session_state.get("chat_type"))
     st.session_state.default_route = response.get("route", None)
 
     if not st.session_state.chat_id:
@@ -203,17 +204,22 @@ def chat_page():
   st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
   st.title("Chat")
 
+  chat_types = get_all_chat_types()
+  
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
 
   content_placeholder = st.container()
 
   with st.form("user_input_form", border=False, clear_on_submit=True):
-    col1, col2 = st.columns([5, 1])
+    col1, col2, col3 = st.columns([5, 1, 1])
     with col1:
       user_input = st.text_input("User Input", key="user_input")
       submitted = st.form_submit_button("Submit")
     with col2:
+      st.session_state.chat_type = st.selectbox(
+          "Chat Model", chat_types)
+    with col3:
       st.session_state.default_route = st.selectbox(
           "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
 
