@@ -250,7 +250,7 @@ def generate_spreadsheet(
   Logger.info("Generating spreadsheet for user [{user_email}]")
   now = datetime.datetime.utcnow()
   sheet_name = f"Dataset {dataset} Query {now}"
-  
+
   Logger.info(f"sheet data {sheet_data}")
   sheet_output = create_google_sheet(sheet_name,
                                      sheet_data["columns"],
