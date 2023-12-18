@@ -45,7 +45,7 @@ class FakeAgentExecutor():
 
 class FakeQuerySQLDataBaseTool():
   def run(self, statement):
-    return FAKE_SQL_QUERY_RESULT["data"]
+    return str(FAKE_SQL_QUERY_RESULT["data"])
 
 def test_run_db_agent():
   dataset_config = get_dataset_config()

@@ -151,8 +151,8 @@ def google_sheets_tool(
   return create_google_sheet(name, columns, rows, user_email)
 
 def create_google_sheet(name: str,
-                        columns: list,
-                        rows: list,
+                        columns: List[str],
+                        rows: List[List[str]],
                         user_email: str=None) -> dict:
   """
   Call tools service to generate spreadsheet
