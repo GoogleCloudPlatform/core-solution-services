@@ -270,10 +270,9 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
   "/engine/{query_engine_id}",
   name="Update a query engine")
 def update_query_engine(query_engine_id: str,
-                        data_config: LLMQueryEngineModel,
-                        user_data: dict = Depends(validate_token)):
+                        data_config: LLMQueryEngineModel):
   """
-  Update a query engine
+  Update a query engine. It only supports updating description.
 
   Args:
       query_engine_id (LLMQueryEngineModel)
