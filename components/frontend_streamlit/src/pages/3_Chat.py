@@ -205,7 +205,7 @@ def chat_page():
   st.title("Chat")
 
   chat_types = get_all_chat_types()
-  
+
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
 
