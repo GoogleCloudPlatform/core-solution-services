@@ -72,6 +72,8 @@ def run_dispatch(prompt: str, chat_id: str = None,
     "chat_id": chat_id,
     "llm_type": llm_type
   }
+  Logger.info(f"run dispatch request {request_body}")
+
   resp = post_method(api_url, request_body=request_body, token=auth_token)
   handle_error(resp)
   Logger.info(resp)
