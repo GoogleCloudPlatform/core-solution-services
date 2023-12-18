@@ -15,6 +15,7 @@
 """ SQL Agent module """
 # pylint: disable=unused-argument
 
+import ast
 import datetime
 import json
 from typing import Tuple, List
@@ -142,10 +143,12 @@ def execute_sql_statement(statement: str,
 
   dbdata = query_sql_database_tool.run(statement)
 
-  Logger.info(f"got results [{dbdata}] ")
+  Logger.info(f"got results {dbdata}")
 
-  # convert result rows into list of lists
-  dbdata = [list(row) for row in dbdata]
+  # the dbdata is just a string. convert result rows into list of lists
+  row_data = ast.literal_eval(dbdata)
+
+  Logger.info(f"row data {row_data}")
 
   # get columns from the sql statement
   columns = extract_columns(statement)
@@ -153,7 +156,7 @@ def execute_sql_statement(statement: str,
   # generate spreadsheet
   sheet_data = {
     "columns": columns,
-    "data": dbdata
+    "data": row_data
   }
   sheet_url = generate_spreadsheet(dataset, sheet_data, user_email)
 
@@ -240,16 +243,18 @@ def execute_sql_query(prompt: str,
 
 
 def generate_spreadsheet(
-    dataset: str, return_dict: dict, user_email:str) -> str:
+    dataset: str, sheet_data: dict, user_email:str) -> str:
   """
   Generate Workspace Sheet containing return data
   """
   Logger.info("Generating spreadsheet for user [{user_email}]")
   now = datetime.datetime.utcnow()
   sheet_name = f"Dataset {dataset} Query {now}"
+
+  Logger.info(f"sheet data {sheet_data}")
   sheet_output = create_google_sheet(sheet_name,
-                                     return_dict["columns"],
-                                     return_dict["data"],
+                                     sheet_data["columns"],
+                                     sheet_data["data"],
                                      user_email)
   Logger.info("Got spreadsheet output [{sheet_output}]")
   sheet_url = sheet_output["sheet_url"]
