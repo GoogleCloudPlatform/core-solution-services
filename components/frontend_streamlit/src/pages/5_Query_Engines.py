@@ -94,10 +94,8 @@ def query_engine_page():
 
     for qe in qe_list:
       data = [[key, value] for key, value in qe.items()]
-      llm_type = qe["llm_type"]
-      embedding_type = qe["embedding_type"]
-      vector_store = qe["vector_store"]
-      summary = f"{llm_type}, {embedding_type}, vector_store:{vector_store}"
+      summary = f"{qe['llm_type']}, {qe['embedding_type']}, " \
+                f"vector_store:{qe['vector_store']}"
       with st.expander(f"**{qe['name']}** - {summary}"):
         st.table(data)
         with st.form(qe["name"]):
@@ -125,7 +123,7 @@ def query_engine_page():
       ]
       input_data = json.loads(job["input_data"])
       data = [[key, value] for key, value in input_data.items()]
-      query_engine = input_data['query_engine'].strip()
+      query_engine = input_data["query_engine"].strip()
       status = job["status"]
       icon = "🔄"
       if status == "succeeded":
