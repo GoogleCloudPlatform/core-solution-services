@@ -31,7 +31,7 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from common.utils.logging_handler import Logger
 from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_VECTOR_STORE, VECTOR_STORES)
+                    DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST)
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
@@ -355,14 +355,14 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "embedding_type": genconfig_dict.get("embedding_type", None),
       "vector_store": genconfig_dict.get("vector_store", None),
       "description": genconfig_dict.get("description", None),
-
     }
     env_vars = {
       "DATABASE_PREFIX": DATABASE_PREFIX,
       "PROJECT_ID": PROJECT_ID,
       "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
       "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
-      "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE)
+      "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
+      "PG_HOST": PG_HOST,
     }
     response = initiate_batch_job(data, JOB_TYPE_QUERY_ENGINE_BUILD, env_vars)
     Logger.info(f"Batch job response: {response}")

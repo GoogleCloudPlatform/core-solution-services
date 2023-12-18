@@ -81,6 +81,7 @@ from config.config import (
 
 from config.vector_store_config import (
   DEFAULT_VECTOR_STORE,
-  VECTOR_STORES
-  )
+  VECTOR_STORES,
+  PG_HOST
+)
 
