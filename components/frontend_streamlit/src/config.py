@@ -37,3 +37,9 @@ JOBS_SERVICE_API_URL = os.environ.get("JOBS_SERVICE_API_URL",
                                      f"{API_BASE_URL}/{JOBS_SERVICE_PATH}")
 AUTH_SERVICE_API_URL = os.environ.get("AUTH_SERVICE_API_URL",
                                      f"{API_BASE_URL}/{AUTH_SERVICE_PATH}")
+
+print(f"APP_BASE_PATH = {APP_BASE_PATH}")
+print(f"API_BASE_URL = {API_BASE_URL}")
+print(f"LLM_SERVICE_API_URL = {LLM_SERVICE_API_URL}")
+print(f"JOBS_SERVICE_API_URL = {JOBS_SERVICE_API_URL}")
+print(f"AUTH_SERVICE_API_URL = {AUTH_SERVICE_API_URL}")
