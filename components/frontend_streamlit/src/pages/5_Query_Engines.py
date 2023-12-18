@@ -36,7 +36,8 @@ def submit_build(engine_name:str, doc_url:str,
       engine_name, doc_url, embedding_type, vector_store, description)
 
     if output.get("success") is True:
-      st.success("Query Engine build job created.")
+      job_id = output["data"]["job_name"]
+      st.success(f"Query Engine build job created. Job ID: {job_id}")
     else:
       st.error(output.get("message"))
 
@@ -107,6 +108,7 @@ def query_engine_build_page():
       ]
       input_data = json.loads(job["input_data"])
       data = [[key, value] for key, value in input_data.items()]
+      query_engine = input_data['query_engine'].strip()
       status = job["status"]
       icon = "🔄"
       if status == "succeeded":
@@ -115,7 +117,7 @@ def query_engine_build_page():
         icon = "❌"
 
       with st.expander(
-          f"**{icon} [{job['status']}]** QE: {input_data['query_engine'].strip()} - " \
+          f"**{icon} [{job['status']}]** QE: {query_engine} - " \
           f"Job created at {created_at}"):
         # FIXME: Add this to the backend data model.
         job_url = "https://console.cloud.google.com/kubernetes/job/" \

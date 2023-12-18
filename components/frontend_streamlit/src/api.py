@@ -201,8 +201,7 @@ def build_query_engine(name: str, doc_url: str, embedding_type: str,
   Logger.info(resp)
 
   json_response = resp.json()
-  output = json_response["data"]
-  return output
+  return json_response
 
 def update_query_engine(
     query_engine_id: str, name: str, description: str, auth_token=None):
