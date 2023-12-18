@@ -73,12 +73,9 @@ def query_engine_page():
   # Prepare table values
   reload()
 
-  col1, col2 = st.columns([5, 1])
-  with col1:
-    st.title("Query Engine Management")
-  with col2:
-    if st.button("Refresh"):
-      reload()
+  st.title("Query Engine Management")
+  if st.button("Refresh"):
+    reload()
 
   tab_qe, tab_jobs, tab_create_qe = st.tabs([
     "Query Engines",
@@ -152,15 +149,18 @@ def query_engine_page():
         st.write(f"[Link to Kubernetes Job]({job_url})")
         st.table(summary_data + data)
 
-        submit = st.button("Re-run this job", key=f"rerun-job-{job['id']}")
-        if submit:
-          submit_build(
-            input_data["query_engine"],
-            input_data["doc_url"],
-            input_data["embedding_type"],
-            input_data["vector_store"],
-            input_data["description"])
-          st.toast("Job re-submitted with query engine: {job['query_engine']}")
+        if status != "succeeded":
+          submit = st.button(
+              "Re-run this job", key=f"rerun-job-{job['id']}", type="secondary")
+          if submit:
+            submit_build(
+              input_data["query_engine"],
+              input_data["doc_url"],
+              input_data["embedding_type"],
+              input_data["vector_store"],
+              input_data["description"])
+            st.toast(
+                "Job re-submitted with query engine: {job['query_engine']}")
 
   with tab_create_qe:
     st.subheader("Build a new Query Engine")
