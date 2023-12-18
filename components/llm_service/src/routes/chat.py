@@ -39,7 +39,7 @@ Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
 
 @router.get(
-    "chat_types",
+    "/chat_types",
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
 def get_chat_llm_list():
