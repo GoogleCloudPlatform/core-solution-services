@@ -27,6 +27,16 @@ from common.config import PROJECT_ID
 import utils
 
 Logger = Logger.get_logger(__file__)
+qe_list = []
+qe_build_jobs = []
+
+def reload():
+  global qe_list, qe_build_jobs
+
+  # Prepare table values
+  qe_list = get_all_query_engines()
+  qe_build_jobs = get_all_jobs()
+
 
 def submit_build(engine_name:str, doc_url:str,
                   embedding_type:str, vector_store:str,
@@ -53,17 +63,22 @@ def submit_update(query_engine_id:str, name:str, description:str):
     st.error(output["message"])
 
 
-def query_engine_build_page():
+def query_engine_page():
   # Get all embedding types as a list
   embedding_types = get_all_embedding_types()
   # Get all vector stores as a list
   vector_store_list = get_all_vector_stores()
 
   # Prepare table values
-  qe_list = get_all_query_engines()
-  qe_build_jobs = get_all_jobs()
+  reload()
 
-  st.title("Query Engine Management")
+  col1, col2 = st.columns([5, 1])
+  with col1:
+    st.title("Query Engine Management")
+  with col2:
+    if st.button("Refresh"):
+      reload()
+
   tab_qe, tab_jobs, tab_create_qe = st.tabs([
     "Query Engines",
     "Job List",
@@ -79,8 +94,10 @@ def query_engine_build_page():
 
     for qe in qe_list:
       data = [[key, value] for key, value in qe.items()]
-      summary = f"{qe['llm_type']}, {qe['embedding_type']}, " \
-                f"vector_store:{qe['vector_store']}"
+      llm_type = qe["llm_type"]
+      embedding_type = qe["embedding_type"]
+      vector_store = qe["vector_store"]
+      summary = f"{llm_type}, {embedding_type}, vector_store:{vector_store}"
       with st.expander(f"**{qe['name']}** - {summary}"):
         st.table(data)
         with st.form(qe["name"]):
@@ -159,4 +176,4 @@ def query_engine_build_page():
 
 if __name__ == "__main__":
   utils.init_page()
-  query_engine_build_page()
+  query_engine_page()
