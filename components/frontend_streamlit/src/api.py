@@ -227,6 +227,22 @@ def update_query_engine(
   json_response = resp.json()
   return json_response
 
+def get_all_docs_of_query_engine(query_engine_id, auth_token=None):
+  """
+  Retrieve all chats of a specific user.
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/query/urls/{query_engine_id}"
+  Logger.info(f"api_url={api_url}")
+  resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
+
+  json_response = resp.json()
+  output = json_response["data"]
+  return output
+
 def get_all_query_engines(auth_token=None):
   """
   Retrieve all chats of a specific user.

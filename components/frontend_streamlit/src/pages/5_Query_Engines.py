@@ -21,6 +21,7 @@ import streamlit as st
 from api import (build_query_engine, update_query_engine,
                  get_all_embedding_types,
                  get_all_vector_stores, get_all_query_engines,
+                 get_all_docs_of_query_engine,
                  get_all_jobs)
 from common.utils.logging_handler import Logger
 from common.config import PROJECT_ID
@@ -96,13 +97,23 @@ def query_engine_page():
       data = [[key, value] for key, value in qe.items()]
       summary = f"{qe['llm_type']}, {qe['embedding_type']}, " \
                 f"vector_store:{qe['vector_store']}"
+      url_list = get_all_docs_of_query_engine(qe["id"])
+
       with st.expander(f"**{qe['name']}** - {summary}"):
-        st.table(data)
-        with st.form(qe["name"]):
-          description = st.text_area("Description", qe["description"])
-          submit = st.form_submit_button("Update")
-        if submit:
-          submit_update(qe["id"], qe["name"], description)
+        tab_detail, tab_urls = st.tabs([
+            "Query Engine Detail", f"URLs ({len(url_list)})"])
+        with tab_detail:
+          st.table(data)
+          with st.form(qe["name"]):
+            description = st.text_area("Description", qe["description"])
+            submit = st.form_submit_button("Update")
+          if submit:
+            submit_update(qe["id"], qe["name"], description)
+
+        with tab_urls:
+          st.write(f"{len(url_list)} URLs")
+          for url in url_list:
+            st.write(f"- [{url}]({url})")
 
   with tab_jobs:
     st.subheader("Query Engine Jobs")
