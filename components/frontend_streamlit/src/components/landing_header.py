@@ -4,10 +4,6 @@ from components.main_logo import add_logo
 def display_header():
   TOP_STYLES = """
     <style>
-      .main [data-testid="stSelectbox"] {
-        width: 104px !important;
-        float: right;
-      }
       .main [data-testid="stImage"] {
         padding-top: 16px;
       }
@@ -15,7 +11,7 @@ def display_header():
   """
   st.markdown(TOP_STYLES, unsafe_allow_html=True)
 
-  img, chat_mode = st.columns([1, 5])
+  img, chat_mode = st.columns([8.2, 1.8])
   with img:
     add_logo('../assets/rit_logo.png')
   with chat_mode:

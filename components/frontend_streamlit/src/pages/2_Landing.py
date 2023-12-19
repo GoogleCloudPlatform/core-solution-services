@@ -39,8 +39,18 @@ def landing_page():
   landing_suggestions()
 
   with st.form("user_input_form", border=False, clear_on_submit=True):
-    user_input = st.text_input(placeholder="Enter a prompt here", label="Enter prompt", label_visibility="collapsed", key="landing_input")
-    submitted = st.form_submit_button("Submit")
+    input_col, btn_col = st.columns([9.3, .7])
+
+    with input_col:
+      user_input = st.text_input(
+        placeholder="Enter a prompt here",
+        label="Enter prompt",
+        label_visibility="collapsed",
+        key="landing_input"
+      )
+    
+    with btn_col:
+      submitted = st.form_submit_button("Submit")
 
     if submitted:
       st.session_state.landing_user_input = user_input

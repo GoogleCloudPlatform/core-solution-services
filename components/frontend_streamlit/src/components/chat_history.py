@@ -36,7 +36,7 @@ CHAT_HISTORY_LIST_STYLE = """
       border: 0;
       color: #1F1F1F;
       text-align: left;
-      border-radius: 10px;
+      border-radius: 11px;
       transition: background-color 0.1s ease-in;
     }
 
@@ -64,6 +64,21 @@ CHAT_HISTORY_LIST_STYLE = """
     text-overflow: ellipsis;
     font-family: Arial;
     font-size: .875rem;
+  }
+  [data-testid=stSidebarNavSeparator] {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+  [data-testid=stSidebarUserContent] [data-baseweb=select] > div:nth-child(1) {
+    cursor: pointer;
+    border-color: #90989f;
+    border-radius: 0.7rem;
+  }
+  [data-testid=stSidebarUserContent] [data-testid=stSelectbox] svg {
+    color: #5f6368;
+  }
+  [data-testid=stVirtualDropdown] li {
+    background-color: #FFFFFF;
   }
 </style>
 """
@@ -131,5 +146,5 @@ def chat_history_panel():
     agent_options.insert(0, "All")
 
     # Add agent options to dropdown
-    select_agent = st.selectbox("Filter by Agent:", agent_options, key="agent0")
+    select_agent = st.selectbox("Filter by Agent", agent_options, key="agent0")
     get_agent_chats(select_agent)

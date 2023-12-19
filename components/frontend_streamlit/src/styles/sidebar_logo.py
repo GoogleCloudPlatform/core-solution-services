@@ -7,7 +7,7 @@ def display_side_logo():
         content: "GENIE";
         font-size: 26px;
         font-weight: 500;
-        color: #4b4b4b;
+        color: #5f6368;
         padding-left: 60px;
         font-family: Arial;
       }
@@ -17,7 +17,7 @@ def display_side_logo():
       [data-testid="stSidebarContent"] [data-testid="baseButton-header"]::after {
         content: "≡";
         font-size: 35px;
-        color: #4b4b4b;
+        color: #5f6368;
       }
       [data-testid="stSidebarContent"] [data-testid="baseButton-header"] svg {
         display: none;
