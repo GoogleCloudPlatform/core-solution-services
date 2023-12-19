@@ -20,7 +20,8 @@ from typing import List
 import streamlit as st
 
 from common.utils.logging_handler import Logger
-from common.utils.request_handler import get_method, post_method
+from common.utils.request_handler import (
+    get_method, post_method, put_method)
 from common.models import Agent, UserChat, UserPlan
 from config import (
     LLM_SERVICE_API_URL, JOBS_SERVICE_API_URL, AUTH_SERVICE_API_URL)
@@ -200,6 +201,45 @@ def build_query_engine(name: str, doc_url: str, embedding_type: str,
   Logger.info(resp)
 
   json_response = resp.json()
+  return json_response
+
+def update_query_engine(
+    query_engine_id: str, name: str, description: str, auth_token=None):
+  """
+  Update an existing query engine
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/query/engine/{query_engine_id}"
+  Logger.info(f"api_url={api_url}")
+
+  request_body = {
+    "query_engine": name,
+    "description": description,
+    "doc_url": "",
+  }
+  Logger.info(f"Sending request_body={request_body} to {api_url}")
+  resp = put_method(api_url, request_body=request_body, token=auth_token)
+  handle_error(resp)
+  Logger.info(resp)
+
+  json_response = resp.json()
+  return json_response
+
+def get_all_docs_of_query_engine(query_engine_id, auth_token=None):
+  """
+  Retrieve all chats of a specific user.
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/query/urls/{query_engine_id}"
+  Logger.info(f"api_url={api_url}")
+  resp = get_method(api_url, token=auth_token)
+  Logger.info(resp)
+
+  json_response = resp.json()
   output = json_response["data"]
   return output
 
@@ -217,6 +257,7 @@ def get_all_query_engines(auth_token=None):
 
   json_response = resp.json()
   output = json_response["data"]
+  output.sort(key=lambda x: x.get("last_modified_time", 0), reverse=True)
   return output
 
 def get_all_embedding_types(auth_token=None):
@@ -265,6 +306,7 @@ def get_all_jobs(job_type="query_engine_build", auth_token=None):
 
   json_response = resp.json()
   output = json_response["data"]
+  output.sort(key=lambda x: x.get("last_modified_time", 0), reverse=True)
   return output
 
 def get_all_chats(skip=0, limit=20, auth_token=None,
