@@ -23,10 +23,50 @@ from common.utils.logging_handler import Logger
 from common.utils.request_handler import (
     get_method, post_method, put_method)
 from common.models import Agent, UserChat, UserPlan
-from config import (
-    LLM_SERVICE_API_URL, JOBS_SERVICE_API_URL, AUTH_SERVICE_API_URL)
+from config import (APP_BASE_PATH, LLM_SERVICE_API_URL,
+                    JOBS_SERVICE_API_URL, AUTH_SERVICE_API_URL)
 
 Logger = Logger.get_logger(__file__)
+
+
+def api_request(method:str , api_url:str ,
+                request_body:dict=None, auth_token:str=None):
+  """ Make API request with error handling. """
+  try:
+    response = None
+
+    if method.upper() == "GET":
+      response = get_method(api_url, token=auth_token)
+    elif method.upper() == "POST":
+      response =  post_method(
+          api_url, request_body=request_body, token=auth_token)
+    elif method.upper() == "PUT":
+      response =  put_method(
+          api_url, request_body=request_body, token=auth_token)
+    else:
+      raise ValueError(f"method {method} is not supported.")
+
+    resp_dict = response.json()
+    status_code = response.status_code
+
+    if status_code == 401 or resp_dict.get("success", False) is False:
+      Logger.error(
+          f"Unauthorized or token expired when calling API: {api_url}")
+      st.session_state.error_msg = \
+          "Unauthorized or session expired. " \
+          "Please [login]({APP_BASE_PATH}/Login) again."
+
+    if st.session_state.get("debug", False):
+      with st.expander(f"**DEBUG**: API Response for {api_url}"):
+        st.write(f"Status Code: {status_code}")
+        st.write(resp_dict)
+
+    return response
+
+  except Exception as e:
+    Logger.error(e)
+    raise e
+
 
 def get_auth_token():
   return st.session_state.get("auth_token", None)
@@ -35,6 +75,20 @@ def handle_error(response):
   if response.status_code != 200:
     raise RuntimeError(
       f"Error with status {response.status_code}: {str(response)}")
+
+def validate_auth_token():
+  """
+  Validate auth token
+  """
+  auth_token = get_auth_token()
+  api_url = f"{AUTH_SERVICE_API_URL}/validate"
+  response = api_request("GET", api_url, auth_token=auth_token)
+  status_code = response.status_code
+
+  if status_code == 200:
+    return True
+
+  return False
 
 def get_agents(auth_token=None) -> List[Agent]:
   """
@@ -46,7 +100,7 @@ def get_agents(auth_token=None) -> List[Agent]:
   api_url = f"{LLM_SERVICE_API_URL}/agent"
   Logger.info(f"api_url={api_url}")
 
-  resp = get_method(api_url, auth_token)
+  resp = api_request("GET", api_url, auth_token)
   Logger.info(resp)
   json_response = resp.json()
 
@@ -55,6 +109,7 @@ def get_agents(auth_token=None) -> List[Agent]:
   for agent_name in json_response.get("data"):
     agent_list.append(Agent.find_by_name(agent_name))
   return agent_list
+
 
 def run_dispatch(prompt: str, chat_id: str = None,
                  route=None, auth_token=None):
@@ -72,9 +127,9 @@ def run_dispatch(prompt: str, chat_id: str = None,
     "prompt": prompt,
     "chat_id": chat_id,
   }
-  resp = post_method(api_url, request_body=request_body, token=auth_token)
+  resp = api_request("POST", api_url,
+                     request_body=request_body, auth_token=auth_token)
   handle_error(resp)
-  Logger.info(resp)
 
   json_response = resp.json()
   output = json_response["data"]
@@ -97,13 +152,15 @@ def run_agent(agent_name: str, prompt: str,
   request_body = {
     "prompt": prompt
   }
-  resp = post_method(api_url, request_body=request_body, token=auth_token)
+  resp = api_request("POST", api_url,
+                     request_body=request_body, auth_token=auth_token)
   handle_error(resp)
   Logger.info(resp)
 
   json_response = resp.json()
   output = json_response["data"]
   return output
+
 
 def run_agent_plan(agent_name: str, prompt: str,
                    chat_id: str = None, auth_token=None):
@@ -121,7 +178,8 @@ def run_agent_plan(agent_name: str, prompt: str,
   request_body = {
     "prompt": prompt
   }
-  resp = post_method(api_url, request_body=request_body, token=auth_token)
+  resp = api_request("POST", api_url,
+                     request_body=request_body, auth_token=auth_token)
   handle_error(resp)
   Logger.info(resp)
 
@@ -143,7 +201,7 @@ def run_agent_execute_plan(plan_id: str,
             f"{plan_id}/run?chat_id={chat_id}"
   Logger.info(f"api_url={api_url}")
 
-  resp = post_method(api_url, token=auth_token)
+  resp = api_request("POST", api_url, auth_token=auth_token)
   handle_error(resp)
   Logger.info(resp)
 
@@ -168,13 +226,15 @@ def run_query(query_engine_id: str, prompt: str,
     "prompt": prompt,
     "llm_type": "VertexAI-Chat"
   }
-  resp = post_method(api_url, request_body=request_body, token=auth_token)
+  resp = api_request("POST", api_url,
+                     request_body=request_body, auth_token=auth_token)
   handle_error(resp)
   Logger.info(resp)
 
   json_response = resp.json()
   output = json_response["data"]
   return output
+
 
 def build_query_engine(name: str, doc_url: str, embedding_type: str,
                        vector_store: str, description: str,
@@ -196,15 +256,17 @@ def build_query_engine(name: str, doc_url: str, embedding_type: str,
     "description": description,
   }
   Logger.info(f"Sending request_body={request_body} to {api_url}")
-  resp = post_method(api_url, request_body=request_body, token=auth_token)
+  resp = api_request("POST", api_url,
+                     request_body=request_body, auth_token=auth_token)
   handle_error(resp)
   Logger.info(resp)
 
   json_response = resp.json()
   return json_response
 
+
 def update_query_engine(
-    query_engine_id: str, name: str, description: str, auth_token=None):
+        query_engine_id: str, name: str, description: str, auth_token=None):
   """
   Update an existing query engine
   """
@@ -220,12 +282,14 @@ def update_query_engine(
     "doc_url": "",
   }
   Logger.info(f"Sending request_body={request_body} to {api_url}")
-  resp = put_method(api_url, request_body=request_body, token=auth_token)
+  resp = api_request("PUT", api_url,
+                     request_body=request_body, auth_token=auth_token)
   handle_error(resp)
   Logger.info(resp)
 
   json_response = resp.json()
   return json_response
+
 
 def get_all_docs_of_query_engine(query_engine_id, auth_token=None):
   """
@@ -236,12 +300,12 @@ def get_all_docs_of_query_engine(query_engine_id, auth_token=None):
 
   api_url = f"{LLM_SERVICE_API_URL}/query/urls/{query_engine_id}"
   Logger.info(f"api_url={api_url}")
-  resp = get_method(api_url, token=auth_token)
-  Logger.info(resp)
+  resp = api_request("GET", api_url, auth_token=auth_token)
 
   json_response = resp.json()
   output = json_response["data"]
   return output
+
 
 def get_all_query_engines(auth_token=None):
   """
@@ -252,13 +316,12 @@ def get_all_query_engines(auth_token=None):
 
   api_url = f"{LLM_SERVICE_API_URL}/query"
   Logger.info(f"api_url={api_url}")
-  resp = get_method(api_url, token=auth_token)
-  Logger.info(resp)
+  resp = api_request("GET", api_url, auth_token=auth_token)
 
   json_response = resp.json()
   output = json_response["data"]
-  output.sort(key=lambda x: x.get("last_modified_time", 0), reverse=True)
   return output
+
 
 def get_all_embedding_types(auth_token=None):
   """
@@ -269,12 +332,13 @@ def get_all_embedding_types(auth_token=None):
 
   api_url = f"{LLM_SERVICE_API_URL}/llm/embedding_types"
   Logger.info(f"api_url={api_url}")
-  resp = get_method(api_url, token=auth_token)
+  resp = api_request("GET", api_url, auth_token=auth_token)
   Logger.info(resp)
 
   json_response = resp.json()
   output = json_response["data"]
   return output
+
 
 def get_all_vector_stores(auth_token=None):
   """
@@ -285,12 +349,13 @@ def get_all_vector_stores(auth_token=None):
 
   api_url = f"{LLM_SERVICE_API_URL}/query/vectorstore"
   Logger.info(f"api_url={api_url}")
-  resp = get_method(api_url, token=auth_token)
+  resp = api_request("GET", api_url, auth_token=auth_token)
   Logger.info(resp)
 
   json_response = resp.json()
   output = json_response["data"]
   return output
+
 
 def get_all_jobs(job_type="query_engine_build", auth_token=None):
   """
@@ -301,16 +366,17 @@ def get_all_jobs(job_type="query_engine_build", auth_token=None):
 
   api_url = f"{JOBS_SERVICE_API_URL}/jobs/{job_type}"
   Logger.info(f"api_url={api_url}")
-  resp = get_method(api_url, token=auth_token)
+  resp = api_request("GET", api_url, auth_token=auth_token)
   Logger.info(resp)
 
   json_response = resp.json()
-  output = json_response["data"]
+  output = json_response["data"] or []
   output.sort(key=lambda x: x.get("last_modified_time", 0), reverse=True)
   return output
 
+
 def get_all_chats(skip=0, limit=20, auth_token=None,
-                   with_first_history=True) -> List[UserChat]:
+                  with_first_history=True) -> List[UserChat]:
   """
   Retrieve all chats of a specific user.
   """
@@ -321,12 +387,13 @@ def get_all_chats(skip=0, limit=20, auth_token=None,
             &limit={limit}&with_first_history={with_first_history}"""
   Logger.info(f"api_url={api_url}")
 
-  resp = get_method(api_url, token=auth_token)
+  resp = api_request("GET", api_url, auth_token=auth_token)
   Logger.info(resp)
   json_response = resp.json()
 
   output = json_response["data"]
   return output
+
 
 def get_chat(chat_id, auth_token=None) -> UserChat:
   """
@@ -338,11 +405,12 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
   api_url = f"{LLM_SERVICE_API_URL}/chat/{chat_id}"
   Logger.info(f"api_url={api_url}")
 
-  resp = get_method(api_url, token=auth_token)
+  resp = api_request("GET", api_url, auth_token=auth_token)
   Logger.info(resp)
   json_response = resp.json()
   output = json_response["data"]
   return output
+
 
 def get_plan(plan_id, auth_token=None) -> UserPlan:
   """
@@ -355,7 +423,7 @@ def get_plan(plan_id, auth_token=None) -> UserPlan:
             f"{plan_id}"
   Logger.info(f"api_url={api_url}")
 
-  resp = get_method(api_url, token=auth_token)
+  resp = api_request("GET", api_url, auth_token=auth_token)
   Logger.info(resp)
   json_response = resp.json()
   output = json_response["data"]
