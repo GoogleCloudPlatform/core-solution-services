@@ -32,6 +32,8 @@ Logger = Logger.get_logger(__file__)
 def api_request(method:str , api_url:str ,
                 request_body:dict=None, auth_token:str=None):
   """ Make API request with error handling. """
+
+  st.session_state.error_msg = None
   try:
     response = None
 
@@ -56,6 +58,12 @@ def api_request(method:str , api_url:str ,
           "Unauthorized or session expired. " \
           "Please [login]({APP_BASE_PATH}/Login) again."
 
+    if status_code != 200:
+      Logger.error(
+          f"Error with status {status_code}: {str(response)}")
+      st.session_state.error_msg = \
+          f"Error with status {status_code}: {str(response)}"
+
     if st.session_state.get("debug", False):
       with st.expander(f"**DEBUG**: API Response for {api_url}"):
         st.write(f"Status Code: {status_code}")
@@ -63,10 +71,24 @@ def api_request(method:str , api_url:str ,
 
     return response
 
+  except requests.exceptions.ConnectionError as e:
+    Logger.error(e)
+    st.session_state.error_msg = \
+        "Unable to connect to backend APIs. Please try again later."
+
   except Exception as e:
     Logger.error(e)
-    raise e
+    st.session_state.error_msg = str(e)
 
+  finally:
+    if st.session_state.error_msg:
+      st.error(st.session_state.error_msg)
+
+      if st.session_state.get("debug", False):
+        with st.expander("Expand to see detail:"):
+          st.write(f"API URL: {api_url}")
+          st.write(e)
+      st.stop()
 
 def get_auth_token():
   return st.session_state.get("auth_token", None)
@@ -438,7 +460,7 @@ def login_user(user_email, user_password) -> str or None:
   api_url = f"{AUTH_SERVICE_API_URL}/sign-in/credentials"
   Logger.info(f"API url: {api_url}")
 
-  sign_in_req = requests.post(api_url, json=req_body, verify=False, timeout=10)
+  sign_in_req = api_request("POST", api_url, request_body=req_body)
 
   sign_in_res = sign_in_req.json()
   if sign_in_res is None or sign_in_res["data"] is None:

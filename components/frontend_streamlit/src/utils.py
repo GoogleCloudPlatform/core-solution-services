@@ -85,21 +85,23 @@ def init_session_state():
 def init_page(redirect_to_without_auth=True):
   init_session_state()
 
-  # Check auth_token
-  auth_token = st.session_state.get("auth_token", None)
-  if auth_token and not validate_auth_token():
-    st.session_state.error_msg = \
-        "Unauthorized or session expired. " \
-        f"Please [Login]({APP_BASE_PATH}/Login) again."
-
   error_msg = st.session_state.get("error_msg", "")
   if error_msg:
-    with st.container():
-      st.write(error_msg, unsafe_allow_html=True)
+    st.error(error_msg)
 
-  # If still not getting auth_token, redirect back to Login page.
-  if redirect_to_without_auth and not st.session_state.get("auth_token", None):
-    navigate_to("Login")
+  # Check auth token.
+  auth_token = st.session_state.get("auth_token", None)
+  if redirect_to_without_auth:
+    # If still not getting auth_token, redirect back to Login page.
+    if not auth_token:
+      navigate_to("Login")
+      st.stop()
+
+    if not validate_auth_token():
+      st.session_state.error_msg = \
+          "Unauthorized or session expired. " \
+          f"Please [Login]({APP_BASE_PATH}/Login) again."
+
 
   #./main.py is used as an entrypoint for the build,
   # which creates a page that duplicates the Login page named "main".
