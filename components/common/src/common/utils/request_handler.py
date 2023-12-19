@@ -80,3 +80,34 @@ def post_method(url: str,
   return requests.post(
       url=f"{url}", json=request_body, headers=headers,
       timeout=timeout)
+
+
+def put_method(url: str,
+               request_body=None,
+               auth_client=None,
+               token=None,
+               timeout=DEFAULT_TIMEOUT) -> json:
+  """
+  Function for API PUT method
+  Parameters
+  ----------
+  url: str
+  request_body: dict
+  use_bot_account: bool
+  token: token
+  Returns
+  -------
+  JSON Object
+  """
+
+  if auth_client is not None:
+    token = auth_client.get_id_token()
+
+  if token:
+    headers = {"Authorization": f"Bearer {token}"}
+  else:
+    headers = {}
+
+  return requests.put(
+      url=f"{url}", json=request_body, headers=headers,
+      timeout=timeout)
