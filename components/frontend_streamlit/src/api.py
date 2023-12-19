@@ -76,7 +76,7 @@ def api_request(method:str , api_url:str ,
     st.session_state.error_msg = \
         "Unable to connect to backend APIs. Please try again later."
 
-  except Exception as e:
+  except RuntimeError as e:
     Logger.error(e)
     st.session_state.error_msg = str(e)
 

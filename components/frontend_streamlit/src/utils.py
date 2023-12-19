@@ -24,7 +24,7 @@ from api import validate_auth_token
 
 Logger = Logger.get_logger(__file__)
 
-def http_navigate_to(url, query_params={}):
+def http_navigate_to(url, query_params=None):
   """ Navigate to a specific URL. However, this will lose all session_state. """
 
   query_params_from_session = ["auth_token", "debug"]
@@ -32,8 +32,9 @@ def http_navigate_to(url, query_params={}):
       (x + "=" +str(st.session_state.get(x, ""))) \
       for x in query_params_from_session]
 
-  for key, value in query_params.items():
-    query_params_list.append(f"{key}={value}")
+  if query_params:
+    for key, value in query_params.items():
+      query_params_list.append(f"{key}={value}")
 
   query_param_str = "&".join(query_params_list)
 
