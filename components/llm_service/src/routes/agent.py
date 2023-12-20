@@ -188,7 +188,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   # Plan route
   elif route_type == AgentCapability.AGENT_PLAN_CAPABILITY.value:
     # Run PlanAgent to generate a plan
-    output, user_plan = agent_plan(
+    output, user_plan = await agent_plan(
         agent_name="Plan", prompt=prompt, user_id=user.id)
     plan_data = user_plan.get_fields(reformat_datetime=True)
     plan_data["id"] = user_plan.id
@@ -204,7 +204,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   # Anything else including Chat route.
   else:
     # Run with the generic ChatAgent for anything else.
-    output = run_agent("Chat", prompt)
+    output = async run_agent("Chat", prompt)
     chat_history_entry[CHAT_AI] = output
     response_data = {
       "content": output,
@@ -300,7 +300,7 @@ def agent_run(agent_name: str,
     "/run/{agent_name}/{chat_id}",
     name="Run agent on user input with chat history",
     response_model=LLMAgentRunResponse)
-def agent_run_chat(agent_name: str, chat_id: str,
+async def agent_run_chat(agent_name: str, chat_id: str,
                    run_config: LLMAgentRunModel):
   """
   Run agent on user input with prior chat history
@@ -332,7 +332,7 @@ def agent_run_chat(agent_name: str, chat_id: str,
   try:
     # run agent to get output
     chat_history = langchain_chat_history(user_chat)
-    output = run_agent(agent_name, prompt, chat_history)
+    output = await run_agent(agent_name, prompt, chat_history)
     Logger.info(f"Generated output=[{output}]")
 
     # save chat history
