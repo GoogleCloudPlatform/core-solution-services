@@ -16,6 +16,7 @@ API interface for streamlit UX
 """
 # pylint: disable=unused-import,unused-argument
 import requests
+import json
 from typing import List
 import streamlit as st
 
@@ -79,6 +80,12 @@ def api_request(method:str , api_url:str ,
   except RuntimeError as e:
     Logger.error(e)
     st.session_state.error_msg = str(e)
+
+  except json.decoder.JSONDecodeError as e:
+    Logger.error(f"Unable to parse response: {response}")
+    Logger.error(e)
+    st.session_state.error_msg = \
+        f"Unable to decode response from backend APIs: {response}"
 
   finally:
     if st.session_state.error_msg:

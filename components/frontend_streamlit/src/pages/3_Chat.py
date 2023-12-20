@@ -216,6 +216,14 @@ def chat_page():
 
   content_placeholder = st.container()
 
+  # Pass prompt from the Landing page if any.
+  landing_user_input = st.session_state.get("landing_user_input", None)
+  if not st.session_state.chat_id and landing_user_input:
+    user_input = st.session_state.landing_user_input
+    st.session_state.user_input = user_input
+    st.session_state.landing_user_input = None
+    on_submit(user_input)
+
   with st.form("user_input_form", border=False, clear_on_submit=True):
     col1, col2 = st.columns([5, 1])
     with col1:
@@ -227,12 +235,6 @@ def chat_page():
 
     if submitted:
       on_submit(user_input)
-
-  # Pass prompt from the Landing page if any.
-  landing_user_input = st.session_state.get("landing_user_input", None)
-  if not st.session_state.chat_id and landing_user_input:
-    on_submit(st.session_state.landing_user_input)
-    st.session_state.landing_user_input = ""
 
   with content_placeholder:
     chat_content()
