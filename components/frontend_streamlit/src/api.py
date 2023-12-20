@@ -41,6 +41,9 @@ def dispatch_api(method:str , api_url:str ,
   elif method.upper() == "PUT":
     resp = put_method(
         api_url, request_body=request_body, token=auth_token)
+  elif method.upper() == "DELETE":
+    resp = delete_method(
+        api_url, request_body=request_body, token=auth_token)
   else:
     raise ValueError(f"method {method} is not supported.")
 
