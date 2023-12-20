@@ -42,7 +42,7 @@ def get_llm_list():
   Get available LLMs
 
   Returns:
-      LLMGetResponse
+      LLMGetTypesResponse
   """
   try:
     return {

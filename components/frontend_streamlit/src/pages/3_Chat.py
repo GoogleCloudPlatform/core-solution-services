@@ -19,7 +19,7 @@ import re
 import streamlit as st
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan)
+    run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
 import utils
@@ -59,9 +59,22 @@ def on_submit(user_input):
 
   with st.spinner("Loading..."):
     # Send API to llm-service
-    response = run_dispatch(user_input,
-                            chat_id=st.session_state.get("chat_id"))
-    st.session_state.default_route = response.get("route", None)
+    default_route = st.session_state.get("default_route", None)
+    if default_route is None or default_route == "Auto":
+      response = run_dispatch(user_input,
+                              chat_id=st.session_state.get("chat_id"),
+                              llm_type=st.session_state.get("chat_llm_type"))
+      st.session_state.default_route = response.get("route", None)
+    elif default_route == "Chat":
+      response = run_chat(user_input,
+                         chat_id=st.session_state.get("chat_id"),
+                         llm_type=st.session_state.get("chat_llm_type"))
+    elif default_route == "Plan":
+      response = run_agent_plan("Plan", user_input,
+                                chat_id=st.session_state.get("chat_id"),
+                                llm_type=st.session_state.get("chat_llm_type"))
+    else:
+      st.error(f"Unsupported route {default_route}")
 
     if not st.session_state.chat_id:
       st.session_state.chat_id = response["chat"]["id"]
@@ -227,6 +240,8 @@ def chat_page():
   st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
   st.title("Chat")
 
+  chat_llm_types = get_all_chat_llm_types()
+
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
 
@@ -241,11 +256,14 @@ def chat_page():
     on_submit(user_input)
 
   with st.form("user_input_form", border=False, clear_on_submit=True):
-    col1, col2 = st.columns([5, 1])
+    col1, col2, col3 = st.columns([5, 3, 2])
     with col1:
       user_input = st.text_input("User Input", key="user_input")
       submitted = st.form_submit_button("Submit")
     with col2:
+      st.session_state.chat_type = st.selectbox(
+          "Model", chat_llm_types)
+    with col3:
       st.session_state.default_route = st.selectbox(
           "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
 

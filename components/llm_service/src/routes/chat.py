@@ -26,16 +26,37 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
 from common.utils.logging_handler import Logger
-from config import ERROR_RESPONSES
+from config import ERROR_RESPONSES, CHAT_LLM_TYPES
 from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
                                 LLMUserChatResponse,
-                                LLMUserAllChatsResponse)
+                                LLMUserAllChatsResponse,
+                                LLMGetTypesResponse)
 from services.llm_generate import llm_chat
 
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
+
+@router.get(
+    "/chat_types",
+    name="Get all Chat LLM types",
+    response_model=LLMGetTypesResponse)
+def get_chat_llm_list():
+  """
+  Get available Chat LLMs
+
+  Returns:
+      LLMGetTypesResponse
+  """
+  try:
+    return {
+      "success": True,
+      "message": "Successfully retrieved chat llm types",
+      "data": CHAT_LLM_TYPES
+    }
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
 
 
 @router.get(
