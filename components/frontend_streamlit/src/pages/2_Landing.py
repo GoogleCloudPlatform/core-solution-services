@@ -34,12 +34,18 @@ LANDING_PAGE_STYLES = """
 
 
 def landing_page():
+  """
+  Landing Page
+  """
   chat_history_panel()
 
-  st.markdown(LANDING_PAGE_STYLES, unsafe_allow_html=True)
+  # Clean up session.
+  utils.reset_session_state()
 
+  st.markdown(LANDING_PAGE_STYLES, unsafe_allow_html=True)
   st.title("Hello again.")
   st.subheader("You can ask me anything:")
+
   with st.form("user_input_form", border=False, clear_on_submit=True):
     col1, col2 = st.columns([5, 1])
     with col1:
@@ -50,8 +56,8 @@ def landing_page():
           "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
 
     if submitted:
+      utils.reset_session_state()
       st.session_state.landing_user_input = user_input
-      st.session_state.chat_id = None
       utils.navigate_to("Chat")
 
   st.divider()

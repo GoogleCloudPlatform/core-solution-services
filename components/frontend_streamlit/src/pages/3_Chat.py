@@ -51,6 +51,7 @@ Logger = Logger.get_logger(__file__)
 def on_submit(user_input):
   """ Run dispatch agent when adding an user input prompt """
   # Appending messages.
+  st.session_state.error_msg = None
   st.session_state.messages.append({"HumanInput": user_input})
 
   with st.spinner("Loading..."):
@@ -95,7 +96,6 @@ def chat_content():
     st.write(f"Chat ID: **{st.session_state.chat_id}**")
 
   # Create a placeholder for all chat history.
-  reference_index = 0
   chat_placeholder = st.empty()
   with chat_placeholder.container():
     index = 1
@@ -130,17 +130,18 @@ def chat_content():
           )
 
       # Append all resources.
-      if "resources" in item:
+      if item.get("resources", None):
         with st.chat_message("ai"):
           for name, link in item["resources"].items():
             st.markdown(f"Resource: [{name}]({link})")
 
       # Append all query references.
-      if "query_references" in item:
+      if item.get("query_references", None):
         with st.chat_message("ai"):
           st.write("References:")
+          reference_index = 1
           for reference in item["query_references"]:
-            document_url = reference["document_url"]
+            document_url = render_cloud_storage_url(reference["document_url"])
             document_text = reference["document_text"]
             st.markdown(
                 f"**{reference_index}.** [{document_url}]({document_url})")
@@ -188,6 +189,14 @@ def chat_content():
       index = index + 1
 
 
+def render_cloud_storage_url(url):
+  """ Parse a cloud storage url. """
+  if url[:3] == "/b/":
+    url = url.replace("/b/", "https://storage.googleapis.com/")
+    url = url.replace("/o/", "/")
+  return url
+
+
 def init_messages():
   """ Init all messages """
   if st.session_state.chat_id:
@@ -208,6 +217,14 @@ def chat_page():
 
   content_placeholder = st.container()
 
+  # Pass prompt from the Landing page if any.
+  landing_user_input = st.session_state.get("landing_user_input", None)
+  if not st.session_state.chat_id and landing_user_input:
+    user_input = st.session_state.landing_user_input
+    st.session_state.user_input = user_input
+    st.session_state.landing_user_input = None
+    on_submit(user_input)
+
   with st.form("user_input_form", border=False, clear_on_submit=True):
     col1, col2 = st.columns([5, 1])
     with col1:
@@ -219,12 +236,6 @@ def chat_page():
 
     if submitted:
       on_submit(user_input)
-
-  # Pass prompt from the Landing page if any.
-  landing_user_input = st.session_state.get("landing_user_input", None)
-  if not st.session_state.chat_id and landing_user_input:
-    on_submit(st.session_state.landing_user_input)
-    st.session_state.landing_user_input = ""
 
   with content_placeholder:
     chat_content()
