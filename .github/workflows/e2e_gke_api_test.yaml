@@ -262,10 +262,10 @@ jobs:
 
       - name: Remove iam policy binding
         run: |
-          NAMESPACE=e2e-pr-${PR_NUMBER}
+          SKAFFOLD_NAMESPACE=e2e-pr-${PR_NUMBER}
           gcloud iam service-accounts remove-iam-policy-binding \
             --role roles/iam.workloadIdentityUser \
-            --member "serviceAccount:${PROJECT_ID}.svc.id.goog[${NAMESPACE}/ksa]" \
+            --member "serviceAccount:${PROJECT_ID}.svc.id.goog[${SKAFFOLD_NAMESPACE}/ksa]" \
             gke-sa@${PROJECT_ID}.iam.gserviceaccount.com
 
 # copier:endraw
