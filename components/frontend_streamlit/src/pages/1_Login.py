@@ -24,15 +24,12 @@ Logger = Logger.get_logger(__file__)
 
 def login_clicked(username, password):
   Logger.info(f"Logging in as {username}")
+  st.session_state["username"] = username
+  st.session_state["password"] = password
   token = api.login_user(username, password)
   if token:
-    st.session_state["logged_in"] = True
-    st.session_state["auth_token"] = token
-    st.session_state["username"] = username
     utils.http_navigate_to("Landing")
-  else:
-    st.session_state["logged_in"] = False
-    st.error("Invalid username or password")
+
 
 def login_page():
   placeholder = st.empty()

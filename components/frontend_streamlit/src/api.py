@@ -30,6 +30,27 @@ from config import (APP_BASE_PATH, LLM_SERVICE_API_URL,
 Logger = Logger.get_logger(__file__)
 
 
+def dispatch_api(method:str , api_url:str ,
+                request_body:dict=None, auth_token:str=None):
+  """ dispatch api call based on method """
+  if method.upper() == "GET":
+    resp = get_method(api_url, token=auth_token)
+  elif method.upper() == "POST":
+    resp = post_method(
+        api_url, request_body=request_body, token=auth_token)
+  elif method.upper() == "PUT":
+    resp = put_method(
+        api_url, request_body=request_body, token=auth_token)
+  else:
+    raise ValueError(f"method {method} is not supported.")
+
+  resp_dict = get_response_json(resp)
+  status_code = resp.status_code
+  Logger.info(f"status_code={status_code}")
+
+  return resp, resp_dict, status_code
+
+
 def api_request(method:str , api_url:str ,
                 request_body:dict=None, auth_token:str=None):
   """ Make API request with error handling. """
@@ -39,27 +60,28 @@ def api_request(method:str , api_url:str ,
     resp = None
     Logger.info(f"api_url={api_url}")
 
-    if method.upper() == "GET":
-      resp = get_method(api_url, token=auth_token)
-    elif method.upper() == "POST":
-      resp =  post_method(
-          api_url, request_body=request_body, token=auth_token)
-    elif method.upper() == "PUT":
-      resp =  put_method(
-          api_url, request_body=request_body, token=auth_token)
-    else:
-      raise ValueError(f"method {method} is not supported.")
-
-    resp_dict = get_response_json(resp)
-    status_code = resp.status_code
-    Logger.info(f"status_code={status_code}")
+    resp, resp_dict, status_code = dispatch_api(method,
+                                                api_url,
+                                                request_body,
+                                                auth_token)
 
     if status_code == 401 or resp_dict.get("success", False) is False:
-      Logger.error(
-          f"Unauthorized or token expired when calling API: {api_url}")
-      st.session_state.error_msg = \
-          "Unauthorized or session expired. " \
-          "Please [login]({APP_BASE_PATH}/Login) again."
+      # refresh token with existing creds and retry on failure to authenticate
+      username = st.session_state.get("username", None)
+      password = st.session_state.get("password", None)
+      if username and password:
+        login_user(username, password)
+        resp, resp_dict, status_code = dispatch_api(method,
+                                                    api_url,
+                                                    request_body,
+                                                    auth_token)
+
+      if status_code == 401 or resp_dict.get("success", False) is False:
+        Logger.error(
+            f"Unauthorized when calling API: {api_url}")
+        st.session_state.error_msg = \
+            "Unauthorized or session expired. " \
+            "Please [login]({APP_BASE_PATH}/Login) again."
 
     if status_code != 200:
       Logger.error(
@@ -98,6 +120,7 @@ def api_request(method:str , api_url:str ,
           st.write(f"API URL: {api_url}")
           st.write(e)
       st.stop()
+
 
 def get_auth_token():
   return st.session_state.get("auth_token", None)
@@ -449,6 +472,9 @@ def login_user(user_email, user_password) -> str or None:
   resp_dict = get_response_json(resp)
   if resp_dict is None or resp_dict["data"] is None:
     Logger.info("User signed in fail", resp_dict.text)
+    st.session_state["logged_in"] = False
+    st.session_state["auth_token"] = None
+    st.error("Invalid username or password")
     return None
 
   else:
