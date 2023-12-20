@@ -70,7 +70,7 @@ def api_request(method:str , api_url:str ,
       username = st.session_state.get("username", None)
       password = st.session_state.get("password", None)
       if username and password:
-        login_user(username, password)
+        auth_token = login_user(username, password)
         resp, resp_dict, status_code = dispatch_api(method,
                                                     api_url,
                                                     request_body,
