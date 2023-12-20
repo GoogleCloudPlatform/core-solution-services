@@ -120,7 +120,7 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
-def run_intent(
+async def run_intent(
     prompt:str, chat_history:List = None, user:User = None) -> dict:
   """
   Evaluate a prompt to get the intent with best matched route.

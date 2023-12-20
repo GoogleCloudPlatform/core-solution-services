@@ -19,6 +19,7 @@ from contextlib import redirect_stdout
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
+ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
 def strip_punctuation_from_end(text):
@@ -28,6 +29,12 @@ def strip_punctuation_from_end(text):
   # Replace the matched punctuation with an empty string
   return re.sub(pattern, "", text)
 
+def clean_agent_logs(text):
+  text = ansi_escape.sub("", text)
+  text = re.sub(r'\[1;3m', "\n", text)
+  text = re.sub(r'\[[\d;]+m', "", text)
+  return text
+
 def agent_executor_run_with_logs(agent_executor, agent_inputs):
   # collect print-output to the string.
 
@@ -36,4 +43,4 @@ def agent_executor_run_with_logs(agent_executor, agent_inputs):
     agent_logs = buf.getvalue()
     Logger.info(f"Agent process result: \n\n{result}")
     Logger.info(f"Agent process log: \n\n{agent_logs}")
-    return result, agent_logs
+    return result, clean_agent_logs(agent_logs)

@@ -102,7 +102,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   user_chat.save()
 
   # Get the intent based on prompt.
-  route, route_logs = run_intent(
+  route, route_logs = await run_intent(
       prompt, chat_history=user_chat.history, user=user)
   Logger.info(f"Agent dispatch chooses this best route: {route}, " \
               f"based on user prompt: {prompt}")
