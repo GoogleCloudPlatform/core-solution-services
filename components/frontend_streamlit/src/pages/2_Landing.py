@@ -34,6 +34,9 @@ LANDING_PAGE_STYLES = """
 
 
 def landing_page():
+  """
+  Landing Page
+  """
   chat_history_panel()
 
   st.markdown(LANDING_PAGE_STYLES, unsafe_allow_html=True)

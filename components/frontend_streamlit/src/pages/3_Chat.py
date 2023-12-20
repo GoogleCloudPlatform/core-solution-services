@@ -95,7 +95,6 @@ def chat_content():
     st.write(f"Chat ID: **{st.session_state.chat_id}**")
 
   # Create a placeholder for all chat history.
-  reference_index = 0
   chat_placeholder = st.empty()
   with chat_placeholder.container():
     index = 1
@@ -139,8 +138,9 @@ def chat_content():
       if "query_references" in item:
         with st.chat_message("ai"):
           st.write("References:")
+          reference_index = 1
           for reference in item["query_references"]:
-            document_url = reference["document_url"]
+            document_url = render_cloud_storage_url(reference["document_url"])
             document_text = reference["document_text"]
             st.markdown(
                 f"**{reference_index}.** [{document_url}]({document_url})")
@@ -186,6 +186,14 @@ def chat_content():
           st.write(item["agent_logs"])
 
       index = index + 1
+
+
+def render_cloud_storage_url(url):
+  """ Parse a cloud storage url. """
+  if url[:3] == "/b/":
+    url = url.replace("/b/", "https://storage.googleapis.com/")
+    url = url.replace("/o/", "/")
+  return url
 
 
 def init_messages():
