@@ -229,13 +229,13 @@ def chat_page():
     on_submit(user_input)
 
   with st.form("user_input_form", border=False, clear_on_submit=True):
-    col1, col2, col3 = st.columns([5, 2, 1])
+    col1, col2, col3 = st.columns([5, 3, 2])
     with col1:
       user_input = st.text_input("User Input", key="user_input")
       submitted = st.form_submit_button("Submit")
     with col2:
       st.session_state.chat_type = st.selectbox(
-          "Chat Model", chat_types)
+          "Model", chat_types)
     with col3:
       st.session_state.default_route = st.selectbox(
           "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
