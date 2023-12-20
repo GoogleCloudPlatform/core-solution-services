@@ -238,7 +238,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     "/run/{agent_name}",
     name="Run agent on user input",
     response_model=LLMAgentRunResponse)
-def agent_run(agent_name: str,
+async def agent_run(agent_name: str,
               run_config: LLMAgentRunModel,
               user_data: dict = Depends(validate_token)):
   """
@@ -267,7 +267,7 @@ def agent_run(agent_name: str,
     user = User.find_by_email(user_data.get("email"))
     llm_type = get_llm_type_for_agent(agent_name)
 
-    output, agent_logs = run_agent(agent_name, prompt)
+    output, agent_logs = await run_agent(agent_name, prompt)
     Logger.info(f"Generated output=[{output}]")
 
     # create new chat for user
