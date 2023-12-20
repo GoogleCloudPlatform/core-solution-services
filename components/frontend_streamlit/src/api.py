@@ -36,21 +36,23 @@ def api_request(method:str , api_url:str ,
 
   st.session_state.error_msg = None
   try:
-    response = None
+    resp = None
+    Logger.info(f"api_url={api_url}")
 
     if method.upper() == "GET":
-      response = get_method(api_url, token=auth_token)
+      resp = get_method(api_url, token=auth_token)
     elif method.upper() == "POST":
-      response =  post_method(
+      resp =  post_method(
           api_url, request_body=request_body, token=auth_token)
     elif method.upper() == "PUT":
-      response =  put_method(
+      resp =  put_method(
           api_url, request_body=request_body, token=auth_token)
     else:
       raise ValueError(f"method {method} is not supported.")
 
-    resp_dict = response.json()
-    status_code = response.status_code
+    resp_dict = get_response_json(resp)
+    status_code = resp.status_code
+    Logger.info(f"status_code={status_code}")
 
     if status_code == 401 or resp_dict.get("success", False) is False:
       Logger.error(
@@ -61,16 +63,16 @@ def api_request(method:str , api_url:str ,
 
     if status_code != 200:
       Logger.error(
-          f"Error with status {status_code}: {str(response)}")
+          f"Error with status {status_code}: {str(resp)}")
       st.session_state.error_msg = \
-          f"Error with status {status_code}: {str(response)}"
+          f"Error with status {status_code}: {str(resp)}"
 
     if st.session_state.get("debug", False):
       with st.expander(f"**DEBUG**: API Response for {api_url}"):
         st.write(f"Status Code: {status_code}")
         st.write(resp_dict)
 
-    return response
+    return resp
 
   except requests.exceptions.ConnectionError as e:
     Logger.error(e)
@@ -82,10 +84,10 @@ def api_request(method:str , api_url:str ,
     st.session_state.error_msg = str(e)
 
   except json.decoder.JSONDecodeError as e:
-    Logger.error(f"Unable to parse response: {response}")
+    Logger.error(f"Unable to parse response: {resp}")
     Logger.error(e)
     st.session_state.error_msg = \
-        f"Unable to decode response from backend APIs: {response}"
+        f"Unable to decode response from backend APIs: {resp}"
 
   finally:
     if st.session_state.error_msg:
@@ -100,10 +102,20 @@ def api_request(method:str , api_url:str ,
 def get_auth_token():
   return st.session_state.get("auth_token", None)
 
-def handle_error(response):
-  if response.status_code != 200:
+def handle_error(resp):
+  if resp.status_code != 200:
     raise RuntimeError(
-      f"Error with status {response.status_code}: {str(response)}")
+      f"Error with status {resp.status_code}: {str(resp)}")
+
+def get_response_json(resp):
+  try:
+    return resp.json()
+  except json.decoder.JSONDecodeError as e:
+    Logger.error(f"Unable to parse response: {resp}")
+    Logger.error(e)
+    st.session_state.error_msg = \
+        f"Unable to decode response from backend APIs: {resp}"
+    return None
 
 def validate_auth_token():
   """
@@ -111,8 +123,8 @@ def validate_auth_token():
   """
   auth_token = get_auth_token()
   api_url = f"{AUTH_SERVICE_API_URL}/validate"
-  response = api_request("GET", api_url, auth_token=auth_token)
-  status_code = response.status_code
+  resp = api_request("GET", api_url, auth_token=auth_token)
+  status_code = resp.status_code
 
   if status_code == 200:
     return True
@@ -130,12 +142,11 @@ def get_agents(auth_token=None) -> List[Agent]:
   Logger.info(f"api_url={api_url}")
 
   resp = api_request("GET", api_url, auth_token)
-  Logger.info(resp)
-  json_response = resp.json()
+  resp_dict = get_response_json(resp)
 
   # load agent models based on response
   agent_list = []
-  for agent_name in json_response.get("data"):
+  for agent_name in resp_dict.get("data"):
     agent_list.append(Agent.find_by_name(agent_name))
   return agent_list
 
@@ -159,10 +170,8 @@ def run_dispatch(prompt: str, chat_id: str = None,
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
   handle_error(resp)
-
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def run_agent(agent_name: str, prompt: str,
@@ -184,11 +193,8 @@ def run_agent(agent_name: str, prompt: str,
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
   handle_error(resp)
-  Logger.info(resp)
-
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def run_agent_plan(agent_name: str, prompt: str,
@@ -210,11 +216,8 @@ def run_agent_plan(agent_name: str, prompt: str,
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
   handle_error(resp)
-  Logger.info(resp)
-
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def run_agent_execute_plan(plan_id: str,
@@ -232,11 +235,8 @@ def run_agent_execute_plan(plan_id: str,
 
   resp = api_request("POST", api_url, auth_token=auth_token)
   handle_error(resp)
-  Logger.info(resp)
-
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def run_query(query_engine_id: str, prompt: str,
@@ -258,11 +258,8 @@ def run_query(query_engine_id: str, prompt: str,
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
   handle_error(resp)
-  Logger.info(resp)
-
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def build_query_engine(name: str, doc_url: str, embedding_type: str,
@@ -288,10 +285,8 @@ def build_query_engine(name: str, doc_url: str, embedding_type: str,
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
   handle_error(resp)
-  Logger.info(resp)
-
-  json_response = resp.json()
-  return json_response
+  resp_dict = get_response_json(resp)
+  return resp_dict
 
 
 def update_query_engine(
@@ -314,10 +309,8 @@ def update_query_engine(
   resp = api_request("PUT", api_url,
                      request_body=request_body, auth_token=auth_token)
   handle_error(resp)
-  Logger.info(resp)
-
-  json_response = resp.json()
-  return json_response
+  resp_dict = get_response_json(resp)
+  return resp_dict
 
 
 def get_all_docs_of_query_engine(query_engine_id, auth_token=None):
@@ -331,9 +324,8 @@ def get_all_docs_of_query_engine(query_engine_id, auth_token=None):
   Logger.info(f"api_url={api_url}")
   resp = api_request("GET", api_url, auth_token=auth_token)
 
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def get_all_query_engines(auth_token=None):
@@ -346,10 +338,8 @@ def get_all_query_engines(auth_token=None):
   api_url = f"{LLM_SERVICE_API_URL}/query"
   Logger.info(f"api_url={api_url}")
   resp = api_request("GET", api_url, auth_token=auth_token)
-
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def get_all_embedding_types(auth_token=None):
@@ -362,11 +352,8 @@ def get_all_embedding_types(auth_token=None):
   api_url = f"{LLM_SERVICE_API_URL}/llm/embedding_types"
   Logger.info(f"api_url={api_url}")
   resp = api_request("GET", api_url, auth_token=auth_token)
-  Logger.info(resp)
-
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def get_all_vector_stores(auth_token=None):
@@ -379,11 +366,8 @@ def get_all_vector_stores(auth_token=None):
   api_url = f"{LLM_SERVICE_API_URL}/query/vectorstore"
   Logger.info(f"api_url={api_url}")
   resp = api_request("GET", api_url, auth_token=auth_token)
-  Logger.info(resp)
-
-  json_response = resp.json()
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def get_all_jobs(job_type="query_engine_build", auth_token=None):
@@ -396,10 +380,9 @@ def get_all_jobs(job_type="query_engine_build", auth_token=None):
   api_url = f"{JOBS_SERVICE_API_URL}/jobs/{job_type}"
   Logger.info(f"api_url={api_url}")
   resp = api_request("GET", api_url, auth_token=auth_token)
-  Logger.info(resp)
+  resp_dict = get_response_json(resp)
 
-  json_response = resp.json()
-  output = json_response["data"] or []
+  output = resp_dict["data"] or []
   output.sort(key=lambda x: x.get("last_modified_time", 0), reverse=True)
   return output
 
@@ -417,11 +400,8 @@ def get_all_chats(skip=0, limit=20, auth_token=None,
   Logger.info(f"api_url={api_url}")
 
   resp = api_request("GET", api_url, auth_token=auth_token)
-  Logger.info(resp)
-  json_response = resp.json()
-
-  output = json_response["data"]
-  return output
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
 
 
 def get_chat(chat_id, auth_token=None) -> UserChat:
@@ -435,9 +415,8 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
   Logger.info(f"api_url={api_url}")
 
   resp = api_request("GET", api_url, auth_token=auth_token)
-  Logger.info(resp)
-  json_response = resp.json()
-  output = json_response["data"]
+  resp_dict = get_response_json(resp)
+  output = resp_dict["data"]
   return output
 
 
@@ -453,9 +432,8 @@ def get_plan(plan_id, auth_token=None) -> UserPlan:
   Logger.info(f"api_url={api_url}")
 
   resp = api_request("GET", api_url, auth_token=auth_token)
-  Logger.info(resp)
-  json_response = resp.json()
-  output = json_response["data"]
+  resp_dict = get_response_json(resp)
+  output = resp_dict["data"]
   return output
 
 
@@ -467,16 +445,15 @@ def login_user(user_email, user_password) -> str or None:
   api_url = f"{AUTH_SERVICE_API_URL}/sign-in/credentials"
   Logger.info(f"API url: {api_url}")
 
-  sign_in_req = api_request("POST", api_url, request_body=req_body)
-
-  sign_in_res = sign_in_req.json()
-  if sign_in_res is None or sign_in_res["data"] is None:
-    Logger.info("User signed in fail", sign_in_req.text)
+  resp = api_request("POST", api_url, request_body=req_body)
+  resp_dict = get_response_json(resp)
+  if resp_dict is None or resp_dict["data"] is None:
+    Logger.info("User signed in fail", resp_dict.text)
     return None
 
   else:
     Logger.info(f"Signed in with existing user '{user_email}'. ID Token:\n")
-    id_token = sign_in_res["data"]["idToken"]
+    id_token = resp_dict["data"]["idToken"]
     st.session_state["logged_in"] = True
     st.session_state["auth_token"] = id_token
     return id_token
