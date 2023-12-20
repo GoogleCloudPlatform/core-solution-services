@@ -225,7 +225,8 @@ def run_agent(agent_name: str, prompt: str,
 
 
 def run_agent_plan(agent_name: str, prompt: str,
-                   chat_id: str = None, auth_token=None):
+                   chat_id: str = None, llm_type: str = None,
+                   auth_token=None):
   """
   Run Agent on human input, and return output
   """
@@ -238,7 +239,8 @@ def run_agent_plan(agent_name: str, prompt: str,
   Logger.info(f"api_url={api_url}")
 
   request_body = {
-    "prompt": prompt
+    "prompt": prompt,
+    "llm_type": llm_type
   }
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
@@ -274,13 +276,38 @@ def run_query(query_engine_id: str, prompt: str,
   if not auth_token:
     auth_token = get_auth_token()
 
-  Logger.info(chat_id)
+  Logger.info(f"chat id = {chat_id}")
   api_url = f"{LLM_SERVICE_API_URL}/query/engine/{query_engine_id}"
   Logger.info(f"api_url={api_url}")
 
   request_body = {
     "prompt": prompt,
     "llm_type": "VertexAI-Chat"
+  }
+  resp = api_request("POST", api_url,
+                     request_body=request_body, auth_token=auth_token)
+  handle_error(resp)
+  resp_dict = get_response_json(resp)
+  return resp_dict["data"]
+
+
+def run_chat(prompt: str, chat_id: str = None,
+             llm_type: str = None, auth_token=None):
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  Logger.info(f"chat id = {chat_id}")
+
+  if chat_id:
+    api_url = f"{LLM_SERVICE_API_URL}/{chat_id}/generate"
+  else:
+    api_url = f"{LLM_SERVICE_API_URL}/chat"
+
+  Logger.info(f"api_url={api_url}")
+
+  request_body = {
+    "prompt": prompt,
+    "llm_type": llm_type
   }
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
@@ -383,7 +410,7 @@ def get_all_embedding_types(auth_token=None):
   return resp_dict["data"]
 
 
-def get_all_chat_types(auth_token=None):
+def get_all_chat_llm_types(auth_token=None):
   """
   Retrieve all supported chat model types
   """
