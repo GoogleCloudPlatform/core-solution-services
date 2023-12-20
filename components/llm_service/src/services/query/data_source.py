@@ -36,25 +36,23 @@ class DataSource:
   Class for query data sources
   """
 
-  def __init__(self, storage_client):
+  def __init__(self, doc_url: str, storage_client):
     self.storage_client = storage_client
+    self.doc_url = doc_url
     self.docs_not_processed = []
 
-  def download_documents(self, doc_url: str, temp_dir: str) -> \
+  def download_documents(self, temp_dir: str) -> \
         List[Tuple[str, str, str]]:
     """
     Download files from doc_url source to a local tmp directory
-
     Args:
-        doc_url: url pointing to container of documents to be indexed
         temp_dir: Path to temporary directory to download files to
-
     Returns:
         list of tuples (doc name, document url, local file path)
     """
     doc_filepaths = []
-    bucket_name = doc_url.split("gs://")[1].split("/")[0]
-    Logger.info(f"downloading {doc_url} from bucket {bucket_name}")
+    bucket_name = self.doc_url.split("gs://")[1].split("/")[0]
+    Logger.info(f"downloading {self.doc_url} from bucket {bucket_name}")
 
     for blob in self.storage_client.list_blobs(bucket_name):
       # Download the file to the tmp folder flattening all directories
@@ -65,7 +63,7 @@ class DataSource:
 
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(
-          f"No documents can be indexed at url {doc_url}")
+          f"No documents can be indexed at url {self.doc_url}")
 
     return doc_filepaths
 

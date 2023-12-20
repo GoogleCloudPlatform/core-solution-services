@@ -438,7 +438,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
-    doc_filepaths = data_source.download_documents(doc_url, temp_dir)
+    doc_filepaths = data_source.download_documents(temp_dir)
 
     # counter for unique index ids
     index_base = 0
@@ -525,7 +525,7 @@ def datasource_from_url(doc_url: str,
   If not raise an InternalServerError exception.
   """
   if doc_url.startswith("gs://"):
-    return DataSource(storage_client)
+    return DataSource(doc_url, storage_client)
   elif doc_url.startswith("http://") or doc_url.startswith("https://"):
     params = q_engine.params or {}
     if "depth_limit" in params:

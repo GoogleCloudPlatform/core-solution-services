@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-argument,broad-exception-raised
+# pylint: disable=unused-argument,broad-exception-raised,ungrouped-imports
 """
 Web data sources for Query Engines
 """
@@ -30,15 +30,16 @@ from scrapy.spiders import CrawlSpider, Rule, Spider
 from scrapy.http import Response
 from google.cloud import storage
 from config import DEFAULT_WEB_DEPTH_LIMIT
+from config.config import PROJECT_ID
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource
+from urllib.parse import urlparse
 from utils.html_helper import (html_trim_tags,
                                html_to_text,
                                html_to_sentence_list)
-from urllib.parse import urlparse
-from config.config import BUCKET_NAME
 
 Logger = Logger.get_logger(__file__)
+BUCKET_NAME = f"{PROJECT_ID}-downloads-"
 
 def clear_bucket(storage_client: storage.Client, bucket_name: str) -> None:
   """
@@ -82,7 +83,8 @@ def formatted_url(url: str) -> str:
   """
   parsed_url = urlparse(url)
   formatted_str = parsed_url.netloc + "_" + parsed_url.path
-  formatted_str = formatted_str.replace("/", "_").replace(".", "_")
+  formatted_str = (formatted_str.replace("/", "_")
+                   .replace(".", "_")).rstrip("_")
   Logger.info(f"URL {url} formatted to {formatted_str}")
   return formatted_str
 
@@ -234,15 +236,14 @@ class WebDataSource(DataSource):
   """
 
   def __init__(self,
-               start_url,
+               start_urls=None,
                storage_client=None,
                bucket_name=None,
                depth_limit=DEFAULT_WEB_DEPTH_LIMIT):
     """
     Initialize the WebDataSource.
-
     Args:
-      start_url: Base URL to download.
+      start_urls: List of URLs
       bucket_name (str): name of GCS bucket to save downloaded webpages.
                          If None files will not be saved.
       depth_limit (int): depth limit to crawl. 0=don't crawl, just
@@ -250,19 +251,25 @@ class WebDataSource(DataSource):
     """
     if storage_client is None:
       storage_client = storage.Client()
-    super().__init__(storage_client)
     self.depth_limit = depth_limit
+    if len(start_urls) == 0:
+      msg = "URL list is empty"
+      Logger.error(msg)
+      raise Exception(msg)
+    base_url = start_urls[0]
     if bucket_name is None:
-      bucket_name = BUCKET_NAME + formatted_url(start_url)
+      bucket_name = BUCKET_NAME + formatted_url(base_url)
+    self.start_urls = start_urls
     self.bucket_name = bucket_name
     self.doc_data = []
+    super().__init__(base_url, storage_client)
 
   def _item_scraped(self, item, response, spider):
     """Handler for the item_scraped signal."""
     Logger.info(f"Downloaded Response URL: {response.url}")
     content_type = item["content_type"]
     if item["content"] is None:
-      Logger.warn(
+      Logger.warning(
         f"No content from: {response.url}, content type: {content_type}")
     else:
       filepath = os.path.join(item["filepath"], item["filename"])
@@ -270,20 +277,18 @@ class WebDataSource(DataSource):
                             item["url"],
                             filepath))
 
-  def download_documents(self, doc_url: str, temp_dir: str) -> \
+  def download_documents(self, temp_dir: str) -> \
         List[Tuple[str, str, str]]:
     """
     Download files from doc_url source to a local tmp directory
-
     Args:
-        doc_url: url pointing to container of documents to be indexed
         temp_dir: Path to temporary directory to download files to
-
     Returns:
         list of tuples (doc name, document url, local file path)
     """
     # clear bucket
     if self.bucket_name:
+      create_bucket(self.storage_client, self.bucket_name)
       clear_bucket(self.storage_client, self.bucket_name)
 
     if self.depth_limit == 0:
@@ -309,7 +314,7 @@ class WebDataSource(DataSource):
 
     # start the scrapy crawler
     process.crawl(crawler,
-                  start_urls=[doc_url],
+                  start_urls=self.start_urls,
                   storage_client=self.storage_client,
                   bucket_name=self.bucket_name,
                   filepath=temp_dir)
@@ -328,18 +333,17 @@ class WebDataSource(DataSource):
 
 
 def main():
-  args = ["genie-demo-gdch-web", "https://dmv.nv.gov/", 1]
+  args = ["https://dmv.nv.gov/", 1]
   if len(sys.argv) > 1:
     args = sys.argv[1:]
-  bucket, url, depth = args
+  url, depth = args
   start_time = datetime.now()
-  # WebDataSource(start_url="https://www.medicaid.gov/sitemap/index.html",
+  # WebDataSource(start_urls=["https://www.medicaid.gov/sitemap/index.html"],
   #               depth_limit=1, bucket_name="gcp-mira-demo-medicaid-test")
-  web_datasource = WebDataSource(start_url=url,
-                                 bucket_name=bucket,
+  web_datasource = WebDataSource(start_urls=[url],
                                  depth_limit=depth)
   temp_dir = tempfile.mkdtemp()
-  doc_data = web_datasource.download_documents(url, temp_dir)
+  doc_data = web_datasource.download_documents(temp_dir)
   time_elapsed = datetime.now() - start_time
   Logger.info(f"Time elapsed (hh:mm:ss.ms) {time_elapsed}")
   Logger.info(f"Scraped {len(doc_data)} links")
