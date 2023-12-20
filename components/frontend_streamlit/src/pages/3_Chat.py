@@ -42,6 +42,9 @@ CHAT_PAGE_STYLES = """
     color: #555555;
     -webkit-text-fill-color: black;
   }
+  div[data-testid='stExpander'] {
+    margin-left: 3em;
+  }
 </style>
 """
 
@@ -91,6 +94,12 @@ def format_ai_output(text):
   text = text.replace("> Finished chain", "**Finished chain**")
   return text
 
+def dedup_list(items, dedup_key):
+  items_dict = {}
+  for item in items:
+    items_dict[item[dedup_key]] = item
+  return list(items_dict.values())
+
 def chat_content():
   if st.session_state.debug:
     with st.expander("DEBUG: session_state"):
@@ -121,7 +130,7 @@ def chat_content():
 
       if item.get("route_logs", "").strip() != "":
         with st.expander("Expand to see Agent's thought process"):
-          st.write(format_ai_output(item["route_logs"]))
+          st.write(item["route_logs"])
 
       if "AIOutput" in item:
         with st.chat_message("ai"):
@@ -145,7 +154,7 @@ def chat_content():
         with st.chat_message("ai"):
           st.write("References:")
           reference_index = 1
-          for reference in item["query_references"]:
+          for reference in dedup_list(item["query_references"], "document_url"):
             document_url = render_cloud_storage_url(reference["document_url"])
             document_text = reference["document_text"]
             st.markdown(

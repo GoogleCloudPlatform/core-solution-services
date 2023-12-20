@@ -97,13 +97,13 @@ def chat_history_panel():
       new_chat_button = st.button("New Chat", key="new chat")
       if new_chat_button:
         utils.reset_session_state()
-        utils.navigate_to("Chat")
+        utils.http_navigate_to("Chat")
     with col3:
       clear_chats_button = st.button("Clear", key="clear chat")
       if clear_chats_button:
         clear_chat_history()
         utils.reset_session_state()
-        utils.navigate_to("Landing")
+        utils.http_navigate_to("Landing")
 
     all_agents = set()
 
