@@ -76,8 +76,8 @@ def on_submit(user_input):
 def format_ai_output(text):
   # Clean up ASCI code and text formatting code.
   text = ansi_escape.sub("", text)
-  text = re.sub(r'\[1;3m', "\n", text)
-  text = re.sub(r'\[[\d;]+m', "", text)
+  text = re.sub(r"\[1;3m", "\n", text)
+  text = re.sub(r"\[[\d;]+m", "", text)
 
   # Reformat steps.
   text = text.replace("> Entering new AgentExecutor chain",
