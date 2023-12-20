@@ -533,7 +533,7 @@ def datasource_from_url(doc_url: str,
     else:
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
-    return WebDataSource(storage_client, depth_limit=depth_limit)
+    return WebDataSource(doc_url, storage_client, depth_limit=depth_limit)
   else:
     raise InternalServerError(
         f"No datasource available for doc url [{doc_url}]")

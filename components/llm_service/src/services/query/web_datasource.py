@@ -35,11 +35,12 @@ from services.query.data_source import DataSource
 from utils.html_helper import (html_trim_tags,
                                html_to_text,
                                html_to_sentence_list)
+from urllib.parse import urlparse
+from config.config import BUCKET_NAME
 
 Logger = Logger.get_logger(__file__)
 
-
-def clear_bucket(storage_client:storage.Client, bucket_name:str) -> None:
+def clear_bucket(storage_client: storage.Client, bucket_name: str) -> None:
   """
   Delete all the contents of the specified GCS bucket
   """
@@ -52,8 +53,18 @@ def clear_bucket(storage_client:storage.Client, bucket_name:str) -> None:
     index += 1
   Logger.info(f"{index} files deleted")
 
-def upload_to_gcs(storage_client:storage.Client, bucket_name:str,
-                  file_name:str, content:str,
+def create_bucket(storage_client: storage.Client, bucket_name: str) -> None:
+  # Check if the bucket exists
+  bucket = storage_client.bucket(bucket_name)
+  if not bucket.exists():
+    # Create new bucket
+    _ = storage_client.create_bucket(bucket_name)
+    print(f"Bucket {bucket_name} created.")
+  else:
+    print(f"Bucket {bucket_name} already exists.")
+
+def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
+                  file_name: str, content: str,
                   content_type="text/plain") -> None:
   """Upload content to GCS bucket"""
   Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
@@ -65,7 +76,17 @@ def upload_to_gcs(storage_client:storage.Client, bucket_name:str,
   )
   Logger.info(f"Uploaded {len(content)} bytes")
 
-def save_content(filepath:str, file_name:str, content:str) -> None:
+def formatted_url(url: str) -> str:
+  """
+  Format URL string converting periods to underscore
+  """
+  parsed_url = urlparse(url)
+  formatted_str = parsed_url.netloc + "_" + parsed_url.path
+  formatted_str = formatted_str.replace("/", "_").replace(".", "_")
+  Logger.info(f"URL {url} formatted to {formatted_str}")
+  return formatted_str
+
+def save_content(filepath: str, file_name: str, content: str) -> None:
   """
   Save content in a file in a local directory
   """
@@ -213,6 +234,7 @@ class WebDataSource(DataSource):
   """
 
   def __init__(self,
+               start_url,
                storage_client=None,
                bucket_name=None,
                depth_limit=DEFAULT_WEB_DEPTH_LIMIT):
@@ -220,7 +242,7 @@ class WebDataSource(DataSource):
     Initialize the WebDataSource.
 
     Args:
-      start_urls: List of URLs to download.
+      start_url: Base URL to download.
       bucket_name (str): name of GCS bucket to save downloaded webpages.
                          If None files will not be saved.
       depth_limit (int): depth limit to crawl. 0=don't crawl, just
@@ -230,6 +252,8 @@ class WebDataSource(DataSource):
       storage_client = storage.Client()
     super().__init__(storage_client)
     self.depth_limit = depth_limit
+    if bucket_name is None:
+      bucket_name = BUCKET_NAME + formatted_url(start_url)
     self.bucket_name = bucket_name
     self.doc_data = []
 
@@ -304,14 +328,15 @@ class WebDataSource(DataSource):
 
 
 def main():
-  args = ["genie-demo-gdch-web", "https://dmv.nv.gov//", 1]
+  args = ["genie-demo-gdch-web", "https://dmv.nv.gov/", 1]
   if len(sys.argv) > 1:
     args = sys.argv[1:]
-  bucket,url,depth = args
+  bucket, url, depth = args
   start_time = datetime.now()
   # WebDataSource(start_url="https://www.medicaid.gov/sitemap/index.html",
   #               depth_limit=1, bucket_name="gcp-mira-demo-medicaid-test")
-  web_datasource = WebDataSource(bucket_name=bucket,
+  web_datasource = WebDataSource(start_url=url,
+                                 bucket_name=bucket,
                                  depth_limit=depth)
   temp_dir = tempfile.mkdtemp()
   doc_data = web_datasource.download_documents(url, temp_dir)
@@ -321,6 +346,7 @@ def main():
   crawled_urls = [d[1] for d in doc_data]
   print(crawled_urls)
   print(f"*** Pages stored at [{temp_dir}]")
+
 
 if __name__ == "__main__":
   main()
