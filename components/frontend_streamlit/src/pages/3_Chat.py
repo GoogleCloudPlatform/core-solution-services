@@ -130,7 +130,7 @@ def chat_content():
 
       if item.get("route_logs", "").strip() != "":
         with st.expander("Expand to see Agent's thought process"):
-          st.write(item["route_logs"])
+          st.write(format_ai_output(item["route_logs"]))
 
       if "AIOutput" in item:
         with st.chat_message("ai"):
