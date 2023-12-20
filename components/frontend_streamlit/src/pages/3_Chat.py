@@ -130,13 +130,13 @@ def chat_content():
           )
 
       # Append all resources.
-      if "resources" in item:
+      if item.get("resources", None):
         with st.chat_message("ai"):
           for name, link in item["resources"].items():
             st.markdown(f"Resource: [{name}]({link})")
 
       # Append all query references.
-      if "query_references" in item:
+      if item.get("query_references", None):
         with st.chat_message("ai"):
           st.write("References:")
           reference_index = 1
