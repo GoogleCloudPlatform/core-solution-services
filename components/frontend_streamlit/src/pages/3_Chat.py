@@ -19,7 +19,7 @@ import re
 import streamlit as st
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan, get_all_chat_llm_types)
+    run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
 from common.utils.logging_handler import Logger
 import utils
@@ -71,7 +71,7 @@ def on_submit(user_input):
                                 chat_id=st.session_state.get("chat_id"),
                                 llm_type=st.session_state.get("chat_llm_type"))
     else:
-      chat_llm_types(f"Unsupported route {default_route}")
+      st.error(f"Unsupported route {default_route}")
 
     if not st.session_state.chat_id:
       st.session_state.chat_id = response["chat"]["id"]
