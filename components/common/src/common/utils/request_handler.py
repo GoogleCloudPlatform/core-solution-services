@@ -18,7 +18,7 @@ Utilities for calling other platform microservices
 import json
 import requests
 
-DEFAULT_TIMEOUT = 180
+DEFAULT_TIMEOUT = 300
 
 def get_method(url: str,
                query_params=None,
