@@ -266,6 +266,46 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
     Logger.error(e)
     raise InternalServerError(str(e)) from e
 
+@router.put(
+  "/engine/{query_engine_id}",
+  name="Update a query engine")
+def update_query_engine(query_engine_id: str,
+                        data_config: LLMQueryEngineModel):
+  """
+  Update a query engine. It only supports updating description.
+
+  Args:
+      query_engine_id (LLMQueryEngineModel)
+  Returns:
+    [JSON]: {'success': 'True'} if the query engine is deleted,
+    ResourceNotFoundException if the query engine not found,
+    InternalServerErrorResponseModel if the deletion raises an exception
+  """
+  if query_engine_id is None or query_engine_id == "":
+    return BadRequest("Missing or invalid payload parameters: query_engine_id")
+
+  q_engine = QueryEngine.find_by_id(query_engine_id)
+  if q_engine is None:
+    raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
+
+  data_dict = {**data_config.dict()}
+
+  try:
+    Logger.info(f"Updating q_engine=[{q_engine.name}]")
+    q_engine.description = data_dict["description"]
+    q_engine.save()
+    Logger.info(f"Successfully updated q_engine=[{q_engine.name}]")
+
+  except Exception as e:
+    Logger.error(e)
+    raise InternalServerError(str(e)) from e
+
+  return {
+    "success": True,
+    "message": f"Successfully deleted query engine {query_engine_id}",
+  }
+
+
 @router.delete(
   "/engine/{query_engine_id}",
   name="Delete a query engine")
