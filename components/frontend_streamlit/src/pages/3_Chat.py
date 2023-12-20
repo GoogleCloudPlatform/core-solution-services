@@ -151,10 +151,11 @@ def chat_content():
 
       # Append all query references.
       if item.get("query_references", None):
+        st.write(item["query_references"])
         with st.chat_message("ai"):
           st.write("References:")
           reference_index = 1
-          for reference in dedup_list(item["query_references"], "document_url"):
+          for reference in dedup_list(item["query_references"], "chunk_id"):
             document_url = render_cloud_storage_url(reference["document_url"])
             document_text = reference["document_text"]
             st.markdown(
