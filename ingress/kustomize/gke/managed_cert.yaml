@@ -4,4 +4,4 @@ metadata:
   name: default-managed-cert
 spec:
   domains:
-    - gcp-mira-develop.cloudpssolutions.com # sb-var:domain_name
+    - example.com # sb-var:domain_name
