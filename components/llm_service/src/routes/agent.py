@@ -204,7 +204,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
   # Anything else including Chat route.
   else:
     # Run with the generic ChatAgent for anything else.
-    output = async run_agent("Chat", prompt)
+    output = await run_agent("Chat", prompt)
     chat_history_entry[CHAT_AI] = output
     response_data = {
       "content": output,

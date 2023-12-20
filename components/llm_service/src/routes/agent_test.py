@@ -80,6 +80,7 @@ def test_get_agent_list(clean_firestore, client_with_emulator):
 
 
 def test_run_agent(create_user, client_with_emulator):
+  """ Test run_agent """
   userid = CHAT_EXAMPLE["user_id"]
   url = f"{api_url}/run/Chat"
 
@@ -108,7 +109,9 @@ def test_run_agent(create_user, client_with_emulator):
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "retrieved user chat response"
 
+@pytest.mark.asyncio
 def test_run_agent_chat(create_user, create_chat, client_with_emulator):
+  """ Test run_agent_chat """
   chatid = CHAT_EXAMPLE["id"]
 
   url = f"{api_url}/run/Chat/{chatid}"
