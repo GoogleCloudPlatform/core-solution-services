@@ -162,7 +162,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     Logger.info("Dispatch to DB Query: {dataset_name}")
 
-    db_result, agent_logs = run_db_agent(
+    db_result, agent_logs = await run_db_agent(
         prompt, llm_type, dataset_name, user_email)
     # Logger.info(f"DB query response: \n{db_result}")
 

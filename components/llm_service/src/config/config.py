@@ -39,6 +39,8 @@ secrets = secretmanager.SecretManagerServiceClient()
 
 PORT = os.environ["PORT"] if os.environ.get("PORT") is not None else 80
 PROJECT_ID = os.environ.get("PROJECT_ID")
+assert PROJECT_ID, "PROJECT_ID must be set"
+
 os.environ["GOOGLE_CLOUD_PROJECT"] = PROJECT_ID
 GCP_PROJECT = PROJECT_ID
 DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
