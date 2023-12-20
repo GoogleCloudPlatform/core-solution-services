@@ -74,16 +74,21 @@ def on_submit(user_input):
 
 
 def format_ai_output(text):
-  Logger.info(text)
-
+  # Clean up ASCI code and text formatting code.
   text = ansi_escape.sub("", text)
+  text = re.sub(r"\[1;3m", "\n", text)
+  text = re.sub(r"\[[\d;]+m", "", text)
+
+  # Reformat steps.
   text = text.replace("> Entering new AgentExecutor chain",
                       "**Entering new AgentExecutor chain**")
+  text = text.replace("Task:", "- **Task**:")
   text = text.replace("Observation:", "---\n**Observation**:")
   text = text.replace("Thought:", "- **Thought**:")
   text = text.replace("Action:", "- **Action**:")
   text = text.replace("Action Input:", "- **Action Input**:")
-  text = text.replace("> Finished chain:", "**Finished chain**:")
+  text = text.replace("Route:", "- **Route**:")
+  text = text.replace("> Finished chain", "**Finished chain**")
   return text
 
 def chat_content():
@@ -116,7 +121,7 @@ def chat_content():
 
       if item.get("route_logs", "").strip() != "":
         with st.expander("Expand to see Agent's thought process"):
-          st.write(item["route_logs"])
+          st.write(format_ai_output(item["route_logs"]))
 
       if "AIOutput" in item:
         with st.chat_message("ai"):
@@ -184,7 +189,7 @@ def chat_content():
 
       if item.get("agent_logs", "").strip() != "":
         with st.expander("Expand to see Agent's thought process"):
-          st.write(item["agent_logs"])
+          st.write(format_ai_output(item["agent_logs"]))
 
       index = index + 1
 

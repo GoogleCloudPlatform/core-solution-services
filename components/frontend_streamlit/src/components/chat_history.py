@@ -77,7 +77,7 @@ def get_agent_chats(selected_agent):
           st.session_state.agent_name = agent_name
           st.session_state.chat_id = chat_id
           st.session_state.landing_user_input = None
-          utils.navigate_to("Chat")
+          utils.http_navigate_to("Chat", {"chat_id": chat_id})
     index += 1
 
 def chat_history_panel():
