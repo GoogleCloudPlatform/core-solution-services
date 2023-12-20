@@ -51,6 +51,7 @@ Logger = Logger.get_logger(__file__)
 def on_submit(user_input):
   """ Run dispatch agent when adding an user input prompt """
   # Appending messages.
+  st.session_state.error_msg = None
   st.session_state.messages.append({"HumanInput": user_input})
 
   with st.spinner("Loading..."):
