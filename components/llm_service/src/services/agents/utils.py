@@ -31,8 +31,8 @@ def strip_punctuation_from_end(text):
 
 def clean_agent_logs(text):
   text = ansi_escape.sub("", text)
-  text = re.sub(r'\[1;3m', "\n", text)
-  text = re.sub(r'\[[\d;]+m', "", text)
+  text = re.sub(r"\[1;3m", "\n", text)
+  text = re.sub(r"\[[\d;]+m", "", text)
   return text
 
 def agent_executor_run_with_logs(agent_executor, agent_inputs):
