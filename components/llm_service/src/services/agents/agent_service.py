@@ -200,7 +200,7 @@ def run_intent(
 
   # If no best route(s) found, pass to Chat agent.
   if not routes or len(routes) == 0:
-    return AgentCapability.AGENT_CHAT_CAPABILITY.value
+    return AgentCapability.AGENT_CHAT_CAPABILITY.value, agent_logs
 
   # TODO: Refactor this with DispatchAgentOutputParser
   # Get the route for the best matched (first) returned routes.

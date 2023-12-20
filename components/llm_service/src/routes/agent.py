@@ -167,8 +167,11 @@ async def run_dispatch(run_config: LLMAgentRunModel,
     # Logger.info(f"DB query response: \n{db_result}")
 
     # TODO: Update with the output generated from the LLM.
-    response_output = "Here is the database query result in the attached " \
-                      "resource."
+    if db_result.get("data", None):
+      response_output = "Here is the database query result in the attached " \
+                        "resource."
+    else:
+      response_output = "Unable to find the query result from the database."
 
     response_data = {
       "route": route_type,
