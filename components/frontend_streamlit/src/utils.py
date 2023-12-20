@@ -83,7 +83,14 @@ def init_session_state():
     if not st.session_state.get(state_name, None):
       st.session_state[state_name] = query_params.get(state_name, [""])[0]
 
+def reset_session_state():
+  """ Reset critial session states. """
+  st.session_state.landing_user_input = None
+  st.session_state.chat_id = None
+  st.session_state.messages = None
+
 def init_page(redirect_to_without_auth=True):
+  """ Initial setup at each page. """
   init_session_state()
 
   error_msg = st.session_state.get("error_msg", "")
