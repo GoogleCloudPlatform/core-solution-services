@@ -22,7 +22,7 @@ import streamlit as st
 
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import (
-    get_method, post_method, put_method)
+    get_method, post_method, put_method, delete_method)
 from common.models import Agent, UserChat, UserPlan
 from config import (APP_BASE_PATH, LLM_SERVICE_API_URL,
                     JOBS_SERVICE_API_URL, AUTH_SERVICE_API_URL)
@@ -440,6 +440,23 @@ def get_chat(chat_id, auth_token=None) -> UserChat:
   resp = api_request("GET", api_url, auth_token=auth_token)
   resp_dict = get_response_json(resp)
   output = resp_dict["data"]
+  return output
+
+
+def delete_chat(chat_id, auth_token=None):
+  """
+  Delete a specific UserChat object.  We do a hard delete here to be
+  developer friendly.
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/chat/{chat_id}?hard_delete=True"
+  Logger.info(f"api_url={api_url}")
+
+  resp = api_request("DELETE", api_url, auth_token=auth_token)
+  resp_dict = get_response_json(resp)
+  output = resp_dict["success"]
   return output
 
 

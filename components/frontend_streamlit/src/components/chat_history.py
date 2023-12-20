@@ -18,7 +18,7 @@ Chat history panel for UI
 
 import streamlit as st
 from common.utils.logging_handler import Logger
-from api import get_all_chats
+from api import get_all_chats, delete_chat
 import utils
 
 Logger = Logger.get_logger(__file__)
@@ -90,14 +90,20 @@ def chat_history_panel():
   st.markdown(css, unsafe_allow_html=True)
 
   with st.sidebar:
-    col1, col2 = st.columns([3, 2])
+    col1, col2, col3 = st.columns([3, 3, 2])
     with col1:
       st.subheader("My Chats")
     with col2:
-      new_chat_button = st.button("New Chat")
+      new_chat_button = st.button("New Chat", key="new chat")
       if new_chat_button:
         utils.reset_session_state()
         utils.navigate_to("Chat")
+    with col3:
+      clear_chats_button = st.button("Clear", key="clear chat")
+      if clear_chats_button:
+        clear_chat_history()
+        utils.reset_session_state()
+        utils.navigate_to("Landing")
 
     all_agents = set()
 
@@ -110,3 +116,11 @@ def chat_history_panel():
     # Add agent options to dropdown
     select_agent = st.selectbox("Filter by Agent:", agent_options, key="agent0")
     get_agent_chats(select_agent)
+
+
+def clear_chat_history():
+  """
+  Clear user chat history by deleting all chats
+  """
+  for user_chat in (st.session_state.user_chats or []):
+    delete_chat(user_chat["id"])
