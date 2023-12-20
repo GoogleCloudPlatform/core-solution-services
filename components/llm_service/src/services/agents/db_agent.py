@@ -145,6 +145,13 @@ def execute_sql_statement(statement: str,
 
   Logger.info(f"got results {dbdata}")
 
+  if not dbdata or dbdata == "":
+    Logger.error(f"No results returned from sql statement: {statement}")
+    return {
+      "data": None,
+      "resources": None
+    }
+
   # the dbdata is just a string. convert result rows into list of lists
   row_data = ast.literal_eval(dbdata)
 
