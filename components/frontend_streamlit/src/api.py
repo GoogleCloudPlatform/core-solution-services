@@ -428,10 +428,10 @@ def get_all_chat_llm_types(auth_token=None):
 
   json_response = resp.json()
   output = json_response["data"]
-  
+
   # sort output in reverse order (to put Vertex on top)
   output.sort(reverse=True)
-  
+
   return output
 
 def get_all_vector_stores(auth_token=None):
