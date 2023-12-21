@@ -77,6 +77,8 @@ def on_submit(user_input):
 
 
 def format_ai_output(text):
+  text = text.strip()
+
   # Clean up ASCI code and text formatting code.
   text = ansi_escape.sub("", text)
   text = re.sub(r"\[1;3m", "\n", text)
@@ -128,9 +130,10 @@ def chat_content():
               key=f"ai_{index}",
           )
 
-      if item.get("route_logs", "").strip() != "":
+      route_logs = item.get("route_logs", None)
+      if route_logs and route_logs.strip() != "":
         with st.expander("Expand to see Agent's thought process"):
-          st.write(format_ai_output(item["route_logs"]))
+          st.write(format_ai_output(route_logs))
 
       if "AIOutput" in item:
         with st.chat_message("ai"):
@@ -197,9 +200,10 @@ def chat_content():
               "AIOutput": agent_process_output,
             })
 
-      if item.get("agent_logs", "").strip() != "":
+      agent_logs = item.get("agent_logs", None)
+      if agent_logs and agent_logs.strip() != "":
         with st.expander("Expand to see Agent's thought process"):
-          st.write(format_ai_output(item["agent_logs"]))
+          st.write(format_ai_output(agent_logs))
 
       index = index + 1
 
