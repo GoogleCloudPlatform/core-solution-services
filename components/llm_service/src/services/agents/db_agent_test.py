@@ -16,12 +16,10 @@
   Unit tests for LLM Service db agent
 """
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
+# pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports,wrong-import-position
 import os
 import pytest
-import json
 from unittest import mock
-from config.utils import get_dataset_config
 from services.agents.db_agent import run_db_agent
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
@@ -39,6 +37,14 @@ FAKE_SQL_STATEMENT = "SELECT test FROM testdb"
 
 FAKE_SPREADSHEET_OUTPUT = {"sheet_url": "test url"}
 
+FAKE_DATABASE_CONFIG = {
+  "dataset-1": {
+    "description": "Some description about this dataset",
+    "type": "SQL"
+  }
+}
+
+
 class FakeAgentExecutor():
   def run(self, prompt):
     return FAKE_SQL_STATEMENT
@@ -47,18 +53,28 @@ class FakeQuerySQLDataBaseTool():
   def run(self, statement):
     return str(FAKE_SQL_QUERY_RESULT["data"])
 
-def test_run_db_agent():
-  dataset_config = get_dataset_config()
+@pytest.mark.asyncio
+@mock.patch("services.agents.db_agent.SQLDatabase")
+@mock.patch("services.agents.db_agent.SQLStatementDBToolKit")
+@mock.patch("services.agents.db_agent.create_sql_agent")
+@mock.patch("services.agents.db_agent.QuerySQLDataBaseTool")
+@mock.patch("services.agents.db_agent.create_google_sheet")
+async def test_run_db_agent(mock_create_google_sheet,
+                            mock_query_sql_database_tool,
+                            mock_create_sql_agent,
+                            mock_sql_statement_db_toolkit,
+                            mock_sql_database):
+  """Test run_db_agent"""
+  mock_create_google_sheet.return_value = FAKE_SPREADSHEET_OUTPUT
+  mock_query_sql_database_tool.return_value = FakeQuerySQLDataBaseTool()
+  mock_create_sql_agent.return_value = FakeAgentExecutor()
+  mock_sql_statement_db_toolkit.return_value = {}
+  mock_sql_database.return_value = {}
+
+  dataset_config = FAKE_DATABASE_CONFIG
   dataset = dataset_config.get("default")
   prompt = "how much data is too much?"
-  with mock.patch("services.agents.db_agent.SQLDatabase"):
-    with mock.patch("services.agents.db_agent.SQLStatementDBToolKit"):
-      with mock.patch("services.agents.db_agent.create_sql_agent",
-                      return_value=FakeAgentExecutor()):
-        with mock.patch("services.agents.db_agent.QuerySQLDataBaseTool",
-                        return_value=FakeQuerySQLDataBaseTool()):
-          with mock.patch("services.agents.db_agent.create_google_sheet",
-                          return_value=FAKE_SPREADSHEET_OUTPUT):
-            output, _ = run_db_agent(prompt, dataset=dataset)
+  output, _ = await run_db_agent(prompt, dataset=dataset)
+
   assert output["data"] == FAKE_SQL_QUERY_RESULT
   assert output["resources"]["Spreadsheet"] == "test url"

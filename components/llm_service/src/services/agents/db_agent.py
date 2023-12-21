@@ -41,7 +41,7 @@ from sqlparse.tokens import Keyword, DML
 Logger = Logger.get_logger(__file__)
 
 
-def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
+async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
                  user_email:str = None) -> Tuple[dict, str]:
   """
   Run the DB agent and return the resulting data.
@@ -61,7 +61,7 @@ def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
 
   if db_type == "SQL":
     # generate SQL statement
-    statement, agent_logs = generate_sql_statement(
+    statement, agent_logs = await generate_sql_statement(
         prompt, dataset, llm_type, user_email)
 
     # run SQL
@@ -85,7 +85,7 @@ def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
   return dataset, db_type
 
 
-def generate_sql_statement(prompt: str,
+async def generate_sql_statement(prompt: str,
                            dataset: str,
                            llm_type: str=None,
                            user_email: str=None) -> Tuple[dict, str]:
@@ -144,6 +144,13 @@ def execute_sql_statement(statement: str,
   dbdata = query_sql_database_tool.run(statement)
 
   Logger.info(f"got results {dbdata}")
+
+  if not dbdata or dbdata == "":
+    Logger.error(f"No results returned from sql statement: {statement}")
+    return {
+      "data": None,
+      "resources": None
+    }
 
   # the dbdata is just a string. convert result rows into list of lists
   row_data = ast.literal_eval(dbdata)

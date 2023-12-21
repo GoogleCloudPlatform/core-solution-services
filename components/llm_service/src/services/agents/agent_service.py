@@ -120,7 +120,7 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
-def run_intent(
+async def run_intent(
     prompt:str, chat_history:List = None, user:User = None) -> dict:
   """
   Evaluate a prompt to get the intent with best matched route.
@@ -200,7 +200,7 @@ def run_intent(
 
   # If no best route(s) found, pass to Chat agent.
   if not routes or len(routes) == 0:
-    return AgentCapability.AGENT_CHAT_CAPABILITY.value
+    return AgentCapability.AGENT_CHAT_CAPABILITY.value, agent_logs
 
   # TODO: Refactor this with DispatchAgentOutputParser
   # Get the route for the best matched (first) returned routes.
@@ -210,7 +210,9 @@ def run_intent(
   return route, agent_logs
 
 
-def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
+async def run_agent(agent_name:str,
+                    prompt:str,
+                    chat_history:List = None) -> str:
   """
   Run an agent on user input
 
@@ -251,8 +253,10 @@ def run_agent(agent_name:str, prompt:str, chat_history:List = None) -> str:
   return output
 
 
-def agent_plan(agent_name:str, prompt:str,
-               user_id:str, chat_history:List = None) -> Tuple[str, UserPlan]:
+async def agent_plan(agent_name:str,
+                     prompt:str,
+                     user_id:str,
+                     chat_history:List = None) -> Tuple[str, UserPlan]:
   """
   Run an agent on user input to generate a plan
 
@@ -273,7 +277,7 @@ def agent_plan(agent_name:str, prompt:str,
   if not agent_name in planning_agents.keys():
     raise BadRequest(f"{agent_name} is not a planning agent.")
 
-  output = run_agent(agent_name, prompt, chat_history)
+  output = await run_agent(agent_name, prompt, chat_history)
 
   raw_plan_steps = parse_output("Plan:", output)
 

@@ -7,6 +7,12 @@
 Set up API endpoint
 
 ```
+# To unset environment variables:
+unset AUTH_SERVICE_API_URL
+unset LLM_SERVICE_API_URL
+unset JOBS_SERVICE_API_URL
+
+# Set API base URL
 export API_BASE_URL=https://my.domain.com
 ```
 
