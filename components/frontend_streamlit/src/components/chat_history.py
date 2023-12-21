@@ -77,7 +77,7 @@ def get_agent_chats(selected_agent):
           st.session_state.agent_name = agent_name
           st.session_state.chat_id = chat_id
           st.session_state.landing_user_input = None
-          utils.http_navigate_to("Chat", {"chat_id": chat_id})
+          utils.navigate_to("Chat")
     index += 1
 
 def chat_history_panel():
@@ -97,13 +97,13 @@ def chat_history_panel():
       new_chat_button = st.button("New Chat", key="new chat")
       if new_chat_button:
         utils.reset_session_state()
-        utils.http_navigate_to("Chat")
+        utils.navigate_to("Chat")
     with col3:
       clear_chats_button = st.button("Clear", key="clear chat")
       if clear_chats_button:
         clear_chat_history()
         utils.reset_session_state()
-        utils.http_navigate_to("Landing")
+        utils.navigate_to("Landing")
 
     all_agents = set()
 

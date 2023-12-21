@@ -64,7 +64,7 @@ def landing_page():
     if submitted:
       utils.reset_session_state()
       st.session_state.landing_user_input = user_input
-      utils.http_navigate_to("Chat")
+      utils.navigate_to("Chat")
 
   st.divider()
 
@@ -80,7 +80,7 @@ def landing_page():
       if chat_button:
         st.session_state.agent_name = agent_name
         st.session_state.chat_id = None
-        utils.http_navigate_to("Agent")
+        utils.navigate_to("Agent")
 
   with start_query:
     # Get all query engines as a list
@@ -106,7 +106,7 @@ def landing_page():
         if query_button:
           st.session_state.agent_name = agent_name
           st.session_state.chat_id = None
-          utils.http_navigate_to("Query")
+          utils.navigate_to("Query")
 
 if __name__ == "__main__":
   utils.init_page()

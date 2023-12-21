@@ -72,6 +72,7 @@ def api_request(method:str , api_url:str ,
       # refresh token with existing creds and retry on failure to authenticate
       username = st.session_state.get("username", None)
       password = st.session_state.get("password", None)
+      Logger.info(f"got 401. attempting to reauth {username}")
       if username and password:
         auth_token = login_user(username, password)
         resp, resp_dict, status_code = dispatch_api(method,
@@ -184,6 +185,9 @@ def run_dispatch(prompt: str, chat_id: str = None,
   """
   if not auth_token:
     auth_token = get_auth_token()
+
+  # hard code llm_type to the dispatch agent default
+  llm_type = None
 
   api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch"
   Logger.info(f"api_url = {api_url}")
@@ -424,6 +428,10 @@ def get_all_chat_llm_types(auth_token=None):
 
   json_response = resp.json()
   output = json_response["data"]
+
+  # sort output in reverse order (to put Vertex on top)
+  output.sort(reverse=True)
+
   return output
 
 def get_all_vector_stores(auth_token=None):
@@ -530,7 +538,7 @@ def login_user(user_email, user_password) -> str or None:
     "password": user_password
   }
   api_url = f"{AUTH_SERVICE_API_URL}/sign-in/credentials"
-  Logger.info(f"API url: {api_url}")
+  Logger.info(f"login_user: API url: {api_url}")
 
   resp = api_request("POST", api_url, request_body=req_body)
   resp_dict = get_response_json(resp)
@@ -546,4 +554,6 @@ def login_user(user_email, user_password) -> str or None:
     id_token = resp_dict["data"]["idToken"]
     st.session_state["logged_in"] = True
     st.session_state["auth_token"] = id_token
+    st.session_state["username"] = user_email
+    st.session_state["password"] = user_password
     return id_token
