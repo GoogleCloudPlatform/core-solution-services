@@ -3,9 +3,12 @@ import streamlit as st
 def landing_theme():
   LANDING_STYLES = """
     <style>
+      /* Global font family */
       body, div, span, h1, h2, h3, button, p {
         font-family: Arial;
       }
+
+      /* Heading styles */
       .main .stHeadingContainer h1 {
         color: #1F1F1F;
         padding-bottom: 1.6rem;
@@ -18,45 +21,55 @@ def landing_theme():
         color: rgb(0 0 0 / 64%);
         padding-bottom: 2.7rem;
       }
-      [data-testid="stSidebarNavItems"] {
-        padding-top: 1rem;
-      }
-      [data-testid="stDecoration"],
-      [data-testid="stHeader"],
-      .main [data-testid="stFormSubmitButton"] button p {
-        display: none;
-      }
+
+      /* Main container styles */
       .main {
         background-color: #f4f6fc;
-        border-radius: 15px;
+        border-radius: 18px;
         margin-top: 64px;
-        margin-bottom: 25px;
-        margin-right: 35px;
-      }
-      [data-testid="stSidebar"] {
-        background-color: #FFFFFF;
+        margin-bottom: 24px;
+        margin-right: 56px;
       }
       .main [data-testid="stVerticalBlock"]:has([data-testid="stTextInput"]) {
         gap: 0;
       }
       .main [data-testid="block-container"] {
-        padding-top: 1.7rem;
+        padding: 40px 16px;
+        max-width: 60rem;
       }
+
+      /* Sidebar panel color */
+      [data-testid="stSidebar"] {
+        background-color: #FFFFFF;
+      }
+
+      /* Hidden elements */
+      [data-testid="stDecoration"],
+      [data-testid="stHeader"],
+      .main [data-testid="stFormSubmitButton"] button p {
+        display: none;
+      }
+
+      /* Text input positioning */
       .main [data-testid="block-container"],
       .main [data-testid="stVerticalBlockBorderWrapper"],
       .main [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1),
       .main [data-testid="stForm"] {
         height: 100%;
       }
+
       [data-testid="stTextInput"],
       .stButton[data-testid="stFormSubmitButton"] {
         align-self: flex-end;
       }
+
       .main [data-testid="element-container"]:has([data-testid="stTextInput"]),
       .main [data-testid="element-container"]:has([data-testid="stFormSubmitButton"]) {
         display: flex;
         flex: 1;
       }
+
+      /* Text input styling */
       [data-testid="textInputRootElement"] > div:nth-child(1) {
         background-color: #FFFFFF;
       }

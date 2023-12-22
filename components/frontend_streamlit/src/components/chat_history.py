@@ -19,69 +19,10 @@ Chat history panel for UI
 import streamlit as st
 from common.utils.logging_handler import Logger
 from api import get_all_chats, delete_chat
+from styles.chat_history_styles import history_styles
 import utils
 
 Logger = Logger.get_logger(__file__)
-
-CHAT_HISTORY_LIST_STYLE = """
-<style>
-  [data-testid=stSidebarUserContent] {
-    .stButton button {
-      @media screen and (prefers-color-scheme: dark) {
-        background-color: #195;
-      }
-      background-color: #c4eed0;
-      display: block !important;
-      font-weight: bold;
-      border: 0;
-      color: #1F1F1F;
-      text-align: left;
-      border-radius: 11px;
-      transition: background-color 0.1s ease-in;
-    }
-
-    .stButton button:hover {
-      background-color: #b9e2c5;
-    }
-  }
-  [data-testid=stSidebarUserContent] h3 {
-    padding-top: .59rem;
-    font-size: 1.05rem;
-    font-weight: 500;
-  }
-  [data-testid=stSidebarUserContent] [data-testid=stHorizontalBlock] .stButton button {
-    background-color: #4285f4;
-    color: white;
-    transition: background-color 0.1s ease-in;
-    float: right;
-  }
-  [data-testid=stSidebarUserContent] [data-testid=stHorizontalBlock] .stButton button:hover {
-    background-color: #2369de;
-  }
-  [data-testid=stSidebarUserContent] [data-testid=stVerticalBlockBorderWrapper] .stButton p {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-family: Arial;
-    font-size: .875rem;
-  }
-  [data-testid=stSidebarNavSeparator] {
-    margin-left: 20px;
-    margin-right: 20px;
-  }
-  [data-testid=stSidebarUserContent] [data-baseweb=select] > div:nth-child(1) {
-    cursor: pointer;
-    border-color: #90989f;
-    border-radius: 0.7rem;
-  }
-  [data-testid=stSidebarUserContent] [data-testid=stSelectbox] svg {
-    color: #5f6368;
-  }
-  [data-testid=stVirtualDropdown] li {
-    background-color: #FFFFFF;
-  }
-</style>
-"""
 
 def get_agent_chats(selected_agent):
   """
@@ -120,10 +61,10 @@ def chat_history_panel():
   """
   List agent options for retrieving chat history
   """
+  history_styles()
+
   st.session_state.user_chats = get_all_chats(
       auth_token=st.session_state.auth_token)
-  css = CHAT_HISTORY_LIST_STYLE
-  st.markdown(css, unsafe_allow_html=True)
 
   with st.sidebar:
     col1, col2, col3 = st.columns([3, 3, 2])

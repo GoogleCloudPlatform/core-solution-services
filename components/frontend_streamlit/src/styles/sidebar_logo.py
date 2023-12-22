@@ -9,7 +9,6 @@ def display_side_logo():
         font-weight: 500;
         color: #5f6368;
         padding-left: 60px;
-        font-family: Arial;
       }
       [data-testid="stSidebarNav"] {
         padding-top: 18.5px;

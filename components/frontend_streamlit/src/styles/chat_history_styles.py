@@ -26,10 +26,9 @@ def history_styles():
       }
     }
 
-    /* Heading styles */
     h3 {
       padding-top: .59rem;
-      font-size: 1.05rem;
+      font-size: .97rem;
       font-weight: 500;
     }
 
@@ -68,9 +67,13 @@ def history_styles():
     margin-right: 20px;
   }
 
-  /* Styles for virtual dropdown list items */
+  /* Styles for dropdown list items */
   [data-testid=stVirtualDropdown] li {
     background-color: #FFFFFF;
+  }
+
+  [data-testid="stSidebarNavItems"] {
+    padding-top: 1rem;
   }
   </style>"""
   st.markdown(HISTORY_STYLE, unsafe_allow_html=True)
