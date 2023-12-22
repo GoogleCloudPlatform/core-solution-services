@@ -167,7 +167,6 @@ def chat_content():
 
       # Append all query references.
       if item.get("query_references", None):
-        st.write(item["query_references"])
         with st.chat_message("ai"):
           st.write("References:")
           reference_index = 1
@@ -253,6 +252,8 @@ def chat_page():
 
   # Pass prompt from the Landing page if any.
   landing_user_input = st.session_state.get("landing_user_input", None)
+  Logger.info(f"Landing input [{landing_user_input}]")
+
   if not st.session_state.chat_id and landing_user_input:
     user_input = st.session_state.landing_user_input
     st.session_state.user_input = user_input
@@ -265,7 +266,7 @@ def chat_page():
       user_input = st.text_input("User Input", key="user_input")
       submitted = st.form_submit_button("Submit")
     with col2:
-      st.session_state.chat_type = st.selectbox(
+      st.session_state.chat_llm_type = st.selectbox(
           "Model", chat_llm_types)
     with col3:
       st.session_state.default_route = st.selectbox(
