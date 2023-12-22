@@ -18,7 +18,9 @@
 import traceback
 from fastapi import APIRouter, Depends
 
-from common.models import QueryEngine, User, UserQuery, QueryDocument
+from common.models import (QueryEngine,
+                           User, UserQuery, QueryDocument,
+                           QueryDocumentChunk)
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
@@ -309,9 +311,9 @@ def update_query_engine(query_engine_id: str,
 @router.delete(
   "/engine/{query_engine_id}",
   name="Delete a query engine")
-def delete_query_engine(query_engine_id: str):
+def delete_query_engine(query_engine_id: str, hard_delete=False):
   """
-  Delete a query engine
+  Delete a query engine.  By default we do a soft delete.
 
   Args:
       query_engine_id (LLMQueryEngineModel)
@@ -330,9 +332,39 @@ def delete_query_engine(query_engine_id: str):
   try:
     Logger.info(f"Deleting q_engine=[{q_engine.name}]")
 
+    # delete vector store data
     qe_vector_store = vector_store_from_query_engine(q_engine)
     qe_vector_store.delete()
-    QueryEngine.soft_delete_by_id(query_engine_id)
+
+    if hard_delete:
+      Logger.info(f"performing hard delete of query engine {query_engine_id}")
+
+      # delete query docs and chunks
+      for qd in QueryDocument.collection.filter(
+        "query_engine_id", "==", query_engine_id.id):
+        qd.delete()
+
+      for qc in QueryDocumentChunk.collection.filter(
+        "query_engine_id", "==", query_engine_id.id):
+        qc.delete()
+
+      # delete query engine
+      QueryEngine.delete(query_engine_id)
+    else:
+      Logger.info(f"performing soft delete of query engine {query_engine_id}")
+
+      # delete query docs and chunks
+      for qd in QueryDocument.collection.filter(
+        "query_engine_id", "==", query_engine_id.id):
+        qd.soft_delete_by_id(qd.id)
+
+      for qc in QueryDocumentChunk.collection.filter(
+        "query_engine_id", "==", query_engine_id.id):
+        qc.soft_delete_by_id(qc.id)
+
+      # delete query engine
+      QueryEngine.soft_delete_by_id(query_engine_id)
+
     Logger.info(f"Successfully deleted q_engine=[{q_engine.name}]")
   except Exception as e:
     Logger.error(e)
