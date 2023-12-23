@@ -9,6 +9,10 @@ def suggestions_component():
         background-color: #FFFFFF;
         color: rgb(0 0 0 / 64%);
       }
+      .main [data-testid="stExpander"] [data-testid="stText"] {
+        font-family: Arial;
+        text-wrap: wrap;
+      }
       .main [data-testid="stExpander"] summary:hover {
         color: #3b3a3a;
       }

@@ -2,6 +2,9 @@ import streamlit as st
 from components.task_picker import task_picker_display
 from styles.suggestions_markup import suggestions_component
 
+"""
+Center content for landing page
+"""
 def landing_suggestions():
   suggestions_component()
 
@@ -13,12 +16,12 @@ def landing_suggestions():
 
   with plan:
     with st.expander("Plan"):
-      st.text("Test and debug")
+      st.text("Create and execute a plan")
 
   with chat:
     with st.expander("Chat"):
-      st.text("Test and debug")
+      st.text("Get answers with a standard prompt")
 
   with query:
     with st.expander("Query"):
-      st.text("Test and debug")
+      st.text("Utilize a data source to get answers")

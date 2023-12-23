@@ -11,7 +11,7 @@ def history_styles():
       font-weight: bold;
       text-align: left;
       border: 0;
-      border-radius: 11px;
+      border-radius: 12px;
       display: block !important;
       transition: background-color 0.1s ease-in;
 
