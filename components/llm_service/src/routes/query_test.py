@@ -197,11 +197,11 @@ def test_create_query_engine(create_user, client_with_emulator):
   assert query_engine_data == FAKE_QE_BUILD_RESPONSE["data"]
 
 
-@mock.patch("routes.query.vector_store_from_query_engine")
-def test_delete_query_engine(mock_vector_store, create_user,
-                             create_engine, create_query_docs,
-                             create_query_doc_chunks,
-                             client_with_emulator):
+@mock.patch("services.query.query_service.vector_store_from_query_engine")
+def test_delete_query_engine_soft(mock_vector_store, create_user,
+                                  create_engine, create_query_docs,
+                                  create_query_doc_chunks,
+                                  client_with_emulator):
   mock_vector_store = mock.Mock()
   mock_vector_store.delete.return_value = None
   q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
@@ -219,7 +219,36 @@ def test_delete_query_engine(mock_vector_store, create_user,
   with pytest.raises(ResourceNotFoundException):
     QueryDocument.find_by_id(q_doc_id)
   with pytest.raises(ResourceNotFoundException):
-    QueryDocumentChunk.find_by_id(q_chunk_id)  
+    QueryDocumentChunk.find_by_id(q_chunk_id)
+  assert query_engine_before.name == QUERY_ENGINE_EXAMPLE["name"], "valid"
+  assert resp.status_code == 200, "Status 200"
+  assert query_data == (f"Successfully deleted query engine"
+                        f" {q_engine_id}"), "Success"
+
+
+@mock.patch("services.query.query_service.vector_store_from_query_engine")
+def test_delete_query_engine_hard(mock_vector_store, create_user,
+                                  create_engine, create_query_docs,
+                                  create_query_doc_chunks,
+                                  client_with_emulator):
+  mock_vector_store = mock.Mock()
+  mock_vector_store.delete.return_value = None
+  q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
+  q_doc_id = QUERY_DOCUMENT_EXAMPLE_1["id"]
+  q_chunk_id = QUERY_DOCUMENT_CHUNK_EXAMPLE_1["id"]
+  url = f"{api_url}/engine/{q_engine_id}?hard_delete=True"
+
+  query_engine_before = QueryEngine.find_by_id(q_engine_id)
+  resp = client_with_emulator.delete(url)
+  json_response = resp.json()
+  query_data = json_response.get("message")
+
+  with pytest.raises(ResourceNotFoundException):
+    QueryEngine.find_by_id(q_engine_id)
+  with pytest.raises(ResourceNotFoundException):
+    QueryDocument.find_by_id(q_doc_id)
+  with pytest.raises(ResourceNotFoundException):
+    QueryDocumentChunk.find_by_id(q_chunk_id)
   assert query_engine_before.name == QUERY_ENGINE_EXAMPLE["name"], "valid"
   assert resp.status_code == 200, "Status 200"
   assert query_data == (f"Successfully deleted query engine"

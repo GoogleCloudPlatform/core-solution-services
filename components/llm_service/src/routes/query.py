@@ -44,7 +44,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import (query_generate,
-                                          vector_store_from_query_engine)
+                                          delete_engine)
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -332,40 +332,7 @@ def delete_query_engine(query_engine_id: str, hard_delete=False):
   try:
     Logger.info(f"Deleting q_engine=[{q_engine.name}]")
 
-    # delete vector store data
-    qe_vector_store = vector_store_from_query_engine(q_engine)
-    qe_vector_store.delete()
-
-    if hard_delete:
-      Logger.info(f"performing hard delete of query engine {query_engine_id}")
-
-      # delete query docs and chunks
-      QueryDocument.collection.filter(
-        "query_engine_id", "==", q_engine.id
-      ).delete()
-
-      QueryDocumentChunk.collection.filter(
-        "query_engine_id", "==", q_engine.id
-      ).delete()
-
-      # delete query engine
-      QueryEngine.delete(query_engine_id)
-    else:
-      Logger.info(f"performing soft delete of query engine {query_engine_id}")
-
-      # delete query docs and chunks
-      qdocs = QueryDocument.collection.filter(
-        "query_engine_id", "==", query_engine_id).fetch()
-      for qd in qdocs:
-        qd.soft_delete_by_id(qd.id)
-
-      qchunks = QueryDocumentChunk.collection.filter(
-        "query_engine_id", "==", query_engine_id).fetch()
-      for qc in qchunks:
-        qc.soft_delete_by_id(qc.id)
-
-      # delete query engine
-      QueryEngine.soft_delete_by_id(query_engine_id)
+    delete_engine(q_engine, hard_delete)
 
     Logger.info(f"Successfully deleted q_engine=[{q_engine.name}]")
   except Exception as e:
