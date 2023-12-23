@@ -220,6 +220,15 @@ def test_delete_query_engine_soft(mock_vector_store, create_user,
     QueryDocument.find_by_id(q_doc_id)
   with pytest.raises(ResourceNotFoundException):
     QueryDocumentChunk.find_by_id(q_chunk_id)
+
+  qdocs = QueryDocument.collection.filter(
+      "query_engine_id", "==", q_engine_id).fetch()
+  assert len(list(qdocs)) == 2
+
+  qchunks = QueryDocumentChunk.collection.filter(
+      "query_engine_id", "==", q_engine_id).fetch()
+  assert len(list(qchunks)) == 2
+
   assert query_engine_before.name == QUERY_ENGINE_EXAMPLE["name"], "valid"
   assert resp.status_code == 200, "Status 200"
   assert query_data == (f"Successfully deleted query engine"
@@ -249,6 +258,15 @@ def test_delete_query_engine_hard(mock_vector_store, create_user,
     QueryDocument.find_by_id(q_doc_id)
   with pytest.raises(ResourceNotFoundException):
     QueryDocumentChunk.find_by_id(q_chunk_id)
+
+  qdocs = QueryDocument.collection.filter(
+      "query_engine_id", "==", q_engine_id).fetch()
+  assert list(qdocs) == []
+
+  qchunks = QueryDocumentChunk.collection.filter(
+      "query_engine_id", "==", q_engine_id).fetch()
+  assert list(qchunks) == []
+
   assert query_engine_before.name == QUERY_ENGINE_EXAMPLE["name"], "valid"
   assert resp.status_code == 200, "Status 200"
   assert query_data == (f"Successfully deleted query engine"
