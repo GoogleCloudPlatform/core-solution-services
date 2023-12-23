@@ -340,13 +340,13 @@ def delete_query_engine(query_engine_id: str, hard_delete=False):
       Logger.info(f"performing hard delete of query engine {query_engine_id}")
 
       # delete query docs and chunks
-      for qd in QueryDocument.collection.filter(
-        "query_engine_id", "==", query_engine_id.id):
-        qd.delete()
+      QueryDocument.collection.filter(
+        "query_engine_id", "==", q_engine.id
+      ).delete()
 
-      for qc in QueryDocumentChunk.collection.filter(
-        "query_engine_id", "==", query_engine_id.id):
-        qc.delete()
+      QueryDocumentChunk.collection.filter(
+        "query_engine_id", "==", q_engine.id
+      ).delete()
 
       # delete query engine
       QueryEngine.delete(query_engine_id)
@@ -354,12 +354,14 @@ def delete_query_engine(query_engine_id: str, hard_delete=False):
       Logger.info(f"performing soft delete of query engine {query_engine_id}")
 
       # delete query docs and chunks
-      for qd in QueryDocument.collection.filter(
-        "query_engine_id", "==", query_engine_id.id):
+      qdocs = QueryDocument.collection.filter(
+        "query_engine_id", "==", query_engine_id).fetch()
+      for qd in qdocs:
         qd.soft_delete_by_id(qd.id)
 
-      for qc in QueryDocumentChunk.collection.filter(
-        "query_engine_id", "==", query_engine_id.id):
+      qchunks = QueryDocumentChunk.collection.filter(
+        "query_engine_id", "==", query_engine_id).fetch()
+      for qc in qchunks:
         qc.soft_delete_by_id(qc.id)
 
       # delete query engine
