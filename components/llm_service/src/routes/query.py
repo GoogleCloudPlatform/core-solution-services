@@ -19,8 +19,7 @@ import traceback
 from fastapi import APIRouter, Depends
 
 from common.models import (QueryEngine,
-                           User, UserQuery, QueryDocument,
-                           QueryDocumentChunk)
+                           User, UserQuery, QueryDocument)
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job

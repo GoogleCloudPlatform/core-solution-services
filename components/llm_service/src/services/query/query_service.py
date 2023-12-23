@@ -511,7 +511,7 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
   qe_vector_store = vector_store_from_query_engine(q_engine)
   try:
     qe_vector_store.delete()
-  except Exception as e:
+  except Exception:
     Logger.error(
         f"error deleting vector store for query engine {q_engine.id}")
 
