@@ -509,7 +509,7 @@ def delete_chat(chat_id, auth_token=None):
 
 def delete_query_engine(qe_id: str, auth_token=None):
   """
-  Delete a specific UserChat object.  We do a hard delete here to be
+  Delete a specific QueryEngine.  We do a hard delete here to be
   developer friendly.
   """
   if not auth_token:
