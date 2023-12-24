@@ -84,6 +84,9 @@ TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
 class ModelConfigMissingException(Exception):
   pass
 
+class ProviderConfigMissingException(Exception):
+  pass
+
 class ModelConfig():
   """
   Model config class
@@ -171,7 +174,7 @@ class ModelConfig():
       # Validate presence of provider config and determine whether the
       # provider is enabled. By default providers are enabled. If provider
       # config is not present model is disabled.
-      _, provider_config = self.get_provider_config(model_id)
+      _, provider_config = self.get_model_provider_config(model_id)
       if provider_config is None:
         Logger.error(
             f"Provider config for model {model_id} not found: disabling")
@@ -204,7 +207,7 @@ class ModelConfig():
 
   def is_model_enabled(self, model_id: str) -> bool:
     """
-    Get model enabled setting.  We always default to true if there is no key
+    Get model enabled setting.  We default to true if there is no key
     present, so users must set the enable flag = false in config if that is
     the desired behavior.
     """
@@ -222,17 +225,45 @@ class ModelConfig():
       raise ModelConfigMissingException(model_id)
     return model_config
 
-  def get_provider_config(self, model_id: str) -> Tuple[str, dict]:
+  def is_provider_enabled(provider_id: str) -> bool:
+    """ return provider enabled setting """
+    provider_config = get_provider_config(provider_id, None)
+    if provider_config is None:
+      raise ProviderConfigMissingException(provider_id)
+    return provider_config.get(KEY_ENABLED, True)
+
+  def get_provider_llm_types(self, provider_id: str) -> List[str]:
+    """ Get list of model ids (llm only, not embedding) for provider LLMs """
+    provider_llms = [
+      model_id for model_id, model_config in self.llm_models.items()
+      if model_config.get(KEY_PROVIDER) == provider_id
+    ]
+    return provider_llms
+
+  def get_provider_embedding_types(self, provider_id: str) -> List[str]:
+    provider_embeddings = [
+      model_id for model_id, model_config in self.llm_embedding_models.items()
+      if model_config.get(KEY_PROVIDER) == provider_id
+    ]
+    return provider_embeddings
+
+  def get_provider_config(self, provider_id: str) -> dict:
+    """ get provider config for provider """
+    return self.llm_model_providers.get(provider_id, None)
+
+  def get_model_provider_config(self, model_id: str) -> Tuple[str, dict]:
     """
     Get provider config for model
+    Args:
+      model_id: model id
     Returns:
-        tuple of provider id, config
+      tuple of provider id, config
     """
     provider_config = None
     model_config = self.get_model_config(model_id)
     provider = model_config.get(KEY_PROVIDER, None)
     if provider is not None:
-      provider_config = self.llm_model_providers.get(provider, None)
+      provider_config = self.get_provider_config(provider, None)
     return provider, provider_config
 
   def get_config_value(self, model_id: str, key: str) -> Any:
@@ -279,7 +310,7 @@ class ModelConfig():
     Instantiate the model class for providers that use them (e.g. Langchain)
     """
     model_class_instance = None
-    provider, _ = self.get_provider_config(model_id)
+    provider, _ = self.get_model_provider_config(model_id)
     model_config = self.get_model_config(model_id)
     model_class_name = self.get_config_value(model_id, KEY_MODEL_CLASS)
     model_name = self.get_config_value(model_id, KEY_MODEL_NAME)
