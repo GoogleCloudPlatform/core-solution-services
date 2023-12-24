@@ -21,10 +21,8 @@ from common.utils.request_handler import get_method, post_method
 from langchain.tools import tool
 from config import SERVICES, auth_client
 from typing import List, Dict
+
 Logger = Logger.get_logger(__file__)
-
-
-
 
 
 def rules_engine_get_ruleset_fields(ruleset_name: str):
@@ -141,5 +139,92 @@ def query_tool(query: str) -> Dict:
     "recipients": ["sumeetvij@google.com"]
   }
 
-
   return result
+
+@tool(infer_schema=True)
+def google_sheets_tool(
+    name: str, columns: list, rows: list, user_email: str=None) -> dict:
+  """
+  Create a Google Sheet with the supplied data and return the sheet url and
+  id
+  """
+  return create_google_sheet(name, columns, rows, user_email)
+
+def create_google_sheet(name: str,
+                        columns: List[str],
+                        rows: List[List[str]],
+                        user_email: str=None) -> dict:
+  """
+  Call tools service to generate spreadsheet
+  """
+  Logger.info(
+        f"[create_google_sheet] creating spreadsheet name: '{name}', "
+        f" columns: {columns}"
+        f" for user: {user_email}\n")
+  api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
+  api_url = f"{api_url_prefix}/workspace/sheets/create"
+  output = {}
+
+  # TODO: Add support with multiple emails.
+  data = {
+    "name": name,
+    "columns": columns,
+    "rows": rows,
+    "share_emails": [user_email],
+  }
+
+  try:
+    response = post_method(url=api_url,
+                           request_body=data,
+                           auth_client=auth_client)
+
+    resp_data = response.json()
+    Logger.info(
+      f"[google_sheets_tool] response from google_sheets_service: \n{resp_data}"
+      )
+    status = resp_data.get("status")
+    if status != "Success":
+      raise RuntimeError("[google_sheets_tool] Failed to create google sheet: "
+                         f"{resp_data['message']}")
+    output = {
+      "sheet_url": resp_data["sheet_url"],
+      "sheet_id": resp_data["sheet_id"]
+    }
+  except RuntimeError as e:
+    Logger.error(f"[google_sheets_tool] Unable to create Google Sheets: {e}")
+  return output
+
+@tool(infer_schema=True)
+def database_tool(database_query: str) -> dict:
+  """
+    Accepts a natural language question and queries a database to get definite
+    answer
+  """
+  Logger.info(
+    f"[database_tool] executing query:{database_query}")
+  api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
+  api_url = f"{api_url_prefix}/workspace/database/query"
+  output = {}
+  data = {
+    "query": database_query
+  }
+  try:
+    response = post_method(url=api_url,
+                           request_body=data,
+                           auth_client=auth_client)
+
+    resp_data = response.json()
+    Logger.info(
+      f"[database_tool] response from database_service: {response}"
+      )
+    result = resp_data["result"]
+    Logger.info(
+        f"[database_tool] query response:{resp_data}."
+        f" Result: {result}")
+    output = {
+      "columns": resp_data["columns"],
+      "rows": resp_data["rows"]
+    }
+  except RuntimeError as e:
+    Logger.error(f"[database_tool] Unable to execute query: {e}")
+  return output

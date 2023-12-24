@@ -31,7 +31,7 @@ portForward:
 - resourceType: service
   resourceName: tools-service
   port: 80
-  localPort: 9001 # Change this when adding other microservice.
+  localPort: 9004 # Change this when adding other microservice.
 
 profiles:
 # Profile for building images locally.

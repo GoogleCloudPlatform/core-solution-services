@@ -18,7 +18,7 @@ Chat history panel for UI
 
 import streamlit as st
 from common.utils.logging_handler import Logger
-from api import get_all_chats
+from api import get_all_chats, delete_chat
 import utils
 
 Logger = Logger.get_logger(__file__)
@@ -54,22 +54,30 @@ def get_agent_chats(selected_agent):
   index = 0
   Logger.info(f"get_chat_agents with {selected_agent}")
   for user_chat in (st.session_state.user_chats or []):
-    first_question = user_chat["history"][0]["HumanInput"][:50]
-    if len(user_chat["history"][0]["HumanInput"]) > 60:
-      first_question = first_question + "..."
+
+    first_history_item = user_chat["history"][0]
+    if "HumanInput" in first_history_item:
+      first_question = first_history_item["HumanInput"][:50]
+      if len(first_history_item["HumanInput"]) > 60:
+        first_question = first_question + "..."
+    else:
+      first_question = "Chat (No question)"
 
     chat_id = user_chat["id"]
     if "agent_name" in user_chat and (
       selected_agent in (user_chat["agent_name"], "All")):
-      agent_name = user_chat["agent_name"]
+      agent_name = user_chat.get("agent_name", None)
+      agent_name_str = f"**{agent_name}** " if agent_name else ""
+
       with st.container():
-        select_chat = st.button(f"**{agent_name}**: {first_question}",
+        select_chat = st.button(f"{agent_name_str}{first_question}",
                                 use_container_width=True,
                                 key=f"{agent_name}{index}")
         if select_chat:
           st.session_state.agent_name = agent_name
           st.session_state.chat_id = chat_id
-          utils.navigate_to("Chat")
+          st.session_state.landing_user_input = None
+          utils.http_navigate_to("Chat", {"chat_id": chat_id})
     index += 1
 
 def chat_history_panel():
@@ -82,7 +90,21 @@ def chat_history_panel():
   st.markdown(css, unsafe_allow_html=True)
 
   with st.sidebar:
-    st.header("My Chats")
+    col1, col2, col3 = st.columns([3, 3, 2])
+    with col1:
+      st.subheader("My Chats")
+    with col2:
+      new_chat_button = st.button("New Chat", key="new chat")
+      if new_chat_button:
+        utils.reset_session_state()
+        utils.http_navigate_to("Chat")
+    with col3:
+      clear_chats_button = st.button("Clear", key="clear chat")
+      if clear_chats_button:
+        clear_chat_history()
+        utils.reset_session_state()
+        utils.http_navigate_to("Landing")
+
     all_agents = set()
 
     # Iterate through all chats and get available agents
@@ -94,3 +116,11 @@ def chat_history_panel():
     # Add agent options to dropdown
     select_agent = st.selectbox("Filter by Agent:", agent_options, key="agent0")
     get_agent_chats(select_agent)
+
+
+def clear_chat_history():
+  """
+  Clear user chat history by deleting all chats
+  """
+  for user_chat in (st.session_state.user_chats or []):
+    delete_chat(user_chat["id"])

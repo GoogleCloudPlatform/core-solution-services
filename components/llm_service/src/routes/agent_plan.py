@@ -85,10 +85,10 @@ def get_plan(plan_id: str):
     "/{agent_name}",
     name="Generate a plan by agent on user input",
     response_model=LLMAgentPlanResponse)
-def generate_agent_plan(agent_name: str,
-                        plan_config: LLMAgentPlanModel,
-                        chat_id: str = None,
-                        user_data: dict = Depends(validate_token)):
+async def generate_agent_plan(agent_name: str,
+                              plan_config: LLMAgentPlanModel,
+                              chat_id: str = None,
+                              user_data: dict = Depends(validate_token)):
   """
   Run agent on user input to generate a plan.
   Store plan in new UserPlan.
@@ -121,7 +121,7 @@ def generate_agent_plan(agent_name: str,
     llm_type = get_llm_type_for_agent(agent_name)
 
     # Generate the plan
-    output, user_plan = agent_plan(agent_name, prompt, user.id)
+    output, user_plan = await agent_plan(agent_name, prompt, user.id)
 
     # create default name for user plan
     now = datetime.now().strftime("%m-%d-%Y %H:%M")
@@ -200,7 +200,6 @@ async def agent_plan_execute(plan_id: str,
 
   # TODO: Add a check whether this plan belongs to a particular
   # user_id.
-
   try:
     # Get the existing Chat data or create a new one.
     user_chat = None
@@ -208,13 +207,13 @@ async def agent_plan_execute(plan_id: str,
       user_chat = UserChat.find_by_id(chat_id)
 
     prompt = """Run the plan in the chat history provided below."""
-    result, agent_process_output = agent_execute_plan(
+    result, agent_logs = agent_execute_plan(
         agent_name, prompt, user_plan)
 
     if user_chat:
       user_chat.update_history(
           response=f"Successfully executed plan {plan_id}")
-      user_chat.update_history(response=agent_process_output)
+      user_chat.update_history(response=agent_logs)
       user_chat.save()
 
     Logger.info(result)
@@ -223,7 +222,7 @@ async def agent_plan_execute(plan_id: str,
       "message": f"Successfully executed plan {plan_id}",
       "data": {
         "result": result,
-        "agent_process_output": agent_process_output
+        "agent_logs": agent_logs
       }
     }
 

@@ -26,16 +26,37 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
 from common.utils.logging_handler import Logger
-from config import ERROR_RESPONSES
+from config import ERROR_RESPONSES, CHAT_LLM_TYPES
 from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
                                 LLMUserChatResponse,
-                                LLMUserAllChatsResponse)
+                                LLMUserAllChatsResponse,
+                                LLMGetTypesResponse)
 from services.llm_generate import llm_chat
 
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
+
+@router.get(
+    "/chat_types",
+    name="Get all Chat LLM types",
+    response_model=LLMGetTypesResponse)
+def get_chat_llm_list():
+  """
+  Get available Chat LLMs
+
+  Returns:
+      LLMGetTypesResponse
+  """
+  try:
+    return {
+      "success": True,
+      "message": "Successfully retrieved chat llm types",
+      "data": CHAT_LLM_TYPES
+    }
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
 
 
 @router.get(
@@ -167,11 +188,12 @@ def update_chat(chat_id: str, input_chat: ChatUpdateModel):
   "/{chat_id}",
   name="Delete user chat"
 )
-def delete_chat(chat_id: str):
-  """Delete a user chat.
+def delete_chat(chat_id: str, hard_delete=False):
+  """Delete a user chat. We default to soft delete.
 
   Args:
-    chat_id: id of user chat to delete.  We do a soft delete.
+    chat_id: id of user chat to delete.
+    hard_delete: if True delete the chat model permanantly.
 
   Raises:
     ResourceNotFoundException: If the Chat does not exist
@@ -183,11 +205,15 @@ def delete_chat(chat_id: str):
     InternalServerErrorResponseModel if the chat deletion raises an exception
   """
   try:
-    UserChat.soft_delete_by_id(chat_id)
-
+    if hard_delete:
+      UserChat.delete_by_id(chat_id)
+      msg = f"Permanantly deleted user chat {chat_id}"
+    else:
+      UserChat.soft_delete_by_id(chat_id)
+      msg = f"Successfully deleted user chat {chat_id}"
     return {
       "success": True,
-      "message": f"Successfully deleted user chat {chat_id}",
+      "message": msg,
     }
   except ResourceNotFoundException as re:
     raise ResourceNotFound(str(re)) from re

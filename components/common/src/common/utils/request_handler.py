@@ -18,10 +18,13 @@ Utilities for calling other platform microservices
 import json
 import requests
 
+DEFAULT_TIMEOUT = 300
+
 def get_method(url: str,
                query_params=None,
                auth_client=None,
-               token=None) -> json:
+               token=None,
+               timeout=DEFAULT_TIMEOUT) -> json:
   """
   Function for API GET method
   Parameters
@@ -44,13 +47,15 @@ def get_method(url: str,
     headers = {}
 
   return requests.get(
-      url=f"{url}", params=query_params, headers=headers, timeout=60)
+      url=f"{url}", params=query_params,
+      headers=headers, timeout=timeout)
 
 
 def post_method(url: str,
                 request_body=None,
                 auth_client=None,
-                token=None) -> json:
+                token=None,
+                timeout=DEFAULT_TIMEOUT) -> json:
   """
   Function for API POST method
   Parameters
@@ -73,4 +78,67 @@ def post_method(url: str,
     headers = {}
 
   return requests.post(
-      url=f"{url}", json=request_body, headers=headers, timeout=60)
+      url=f"{url}", json=request_body, headers=headers,
+      timeout=timeout)
+
+
+def put_method(url: str,
+               request_body=None,
+               auth_client=None,
+               token=None,
+               timeout=DEFAULT_TIMEOUT) -> json:
+  """
+  Function for API PUT method
+  Parameters
+  ----------
+  url: str
+  request_body: dict
+  use_bot_account: bool
+  token: token
+  Returns
+  -------
+  JSON Object
+  """
+
+  if auth_client is not None:
+    token = auth_client.get_id_token()
+
+  if token:
+    headers = {"Authorization": f"Bearer {token}"}
+  else:
+    headers = {}
+
+  return requests.put(
+      url=f"{url}", json=request_body, headers=headers,
+      timeout=timeout)
+
+
+def delete_method(url: str,
+                  request_body=None,
+                  auth_client=None,
+                  token=None,
+                  timeout=DEFAULT_TIMEOUT) -> json:
+  """
+  Function for API DELETE method
+  Parameters
+  ----------
+  url: str
+  request_body: dict
+  use_bot_account: bool
+  token: token
+  Returns
+  -------
+  JSON Object
+  """
+
+  if auth_client is not None:
+    token = auth_client.get_id_token()
+
+  if token:
+    headers = {"Authorization": f"Bearer {token}"}
+  else:
+    headers = {}
+
+  return requests.delete(
+      url=f"{url}", json=request_body, headers=headers,
+      timeout=timeout)

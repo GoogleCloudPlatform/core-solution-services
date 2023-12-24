@@ -195,7 +195,7 @@ def query_search(q_engine: QueryEngine,
       sentences = [x for x in sentences if x.strip() != ""]
 
       # Only update clean_text when sentences is not empty.
-      Logger.info(f"sentences = {sentences}")
+      Logger.info(f"Processing {len(sentences)} sentences.")
       if sentences and len(sentences) > 0:
         top_sentences = get_top_relevant_sentences(
             q_engine, query_embeddings, sentences,
@@ -298,7 +298,9 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   return result_data
 
 
-def query_engine_build(doc_url: str, query_engine: str, user_id: str,
+def query_engine_build(doc_url: str,
+                       query_engine: str,
+                       user_id: str,
                        is_public: Optional[bool] = True,
                        llm_type: Optional[str] = None,
                        query_description: Optional[str] = None,
@@ -342,7 +344,8 @@ def query_engine_build(doc_url: str, query_engine: str, user_id: str,
                          description=query_description,
                          embedding_type=embedding_type,
                          vector_store=vector_store_type,
-                         is_public=is_public)
+                         is_public=is_public,
+                         doc_url=doc_url)
 
   # retrieve vector store class and store type in q_engine
   qe_vector_store = vector_store_from_query_engine(q_engine)

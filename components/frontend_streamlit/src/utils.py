@@ -14,18 +14,33 @@
 """
   Streamlit app utils file
 """
-import re
 import streamlit as st
-from streamlit_javascript import st_javascript
 from common.utils.logging_handler import Logger
-from config import API_BASE_URL
+from config import API_BASE_URL, APP_BASE_PATH
 from streamlit.runtime.scriptrunner import RerunData, RerunException
 from streamlit.source_util import get_pages
+from urllib.parse import urlparse
+from api import validate_auth_token
 
 Logger = Logger.get_logger(__file__)
 
-def http_navigate_to(url):
+def http_navigate_to(url, query_params=None):
   """ Navigate to a specific URL. However, this will lose all session_state. """
+
+  query_params_from_session = ["auth_token", "debug"]
+  query_params_list = [
+      (x + "=" +str(st.session_state.get(x, ""))) \
+      for x in query_params_from_session]
+
+  if query_params:
+    for key, value in query_params.items():
+      query_params_list.append(f"{key}={value}")
+
+  query_param_str = "&".join(query_params_list)
+
+  url_ojb = urlparse(url)
+  url = f"{url}?{query_param_str}&{url_ojb.query}"
+
   nav_script = f"""
       <meta http-equiv="refresh" content="0; url='{url}'">
   """
@@ -48,37 +63,60 @@ def navigate_to(page_name):
         )
       )
 
-def init_page(redirect_to_without_auth=True):
+
+def init_session_state():
   query_params = st.experimental_get_query_params()
 
   # If set query_param "debug=true"
   if query_params.get("debug", [""])[0].lower() == "true":
-    st.write("query_params: ")
-    st.write(query_params)
-    st.write("st.session_state: ")
-    st.write(st.session_state)
+    st.session_state.debug = True
 
-  # Try to get auth_token from query parameter.
-  if not st.session_state.get("auth_token", None):
-    st.session_state.auth_token = query_params.get("auth_token", [None])[0]
+  error_msg = query_params.get("error_msg", [""])[0]
+  if error_msg:
+    st.session_state.error_msg = error_msg
 
-  # If still not getting auth_token, redirect back to Login page.
-  if redirect_to_without_auth and not st.session_state.get("auth_token", None):
-    navigate_to("Login")
+  # Try to get a state var from query parameter.
+  states_to_init = [
+    "auth_token", "chat_id", "agent_name", "debug"
+  ]
+  for state_name in states_to_init:
+    if not st.session_state.get(state_name, None):
+      st.session_state[state_name] = query_params.get(state_name, [""])[0]
+
+def reset_session_state():
+  """ Reset critial session states. """
+  st.session_state.landing_user_input = None
+  st.session_state.chat_id = None
+  st.session_state.messages = []
+  st.session_state.error_msg = None
+
+def init_page(redirect_to_without_auth=True):
+  """ Initial setup at each page. """
+  init_session_state()
+
+  error_msg = st.session_state.get("error_msg", "")
+  if error_msg:
+    st.error(error_msg)
+
+  # Check auth token.
+  auth_token = st.session_state.get("auth_token", None)
+  if redirect_to_without_auth:
+    # If still not getting auth_token, redirect back to Login page.
+    if not auth_token:
+      navigate_to("Login")
+      st.stop()
+
+    if not validate_auth_token():
+      st.session_state.error_msg = \
+          "Unauthorized or session expired. " \
+          f"Please [Login]({APP_BASE_PATH}/Login) again."
+
 
   #./main.py is used as an entrypoint for the build,
   # which creates a page that duplicates the Login page named "main".
   hide_pages(["main"])
 
   api_base_url = API_BASE_URL
-
-  if not API_BASE_URL:
-    url = st_javascript(
-        "await fetch('').then(r => window.parent.location.href)")
-    match = re.search("(https?://)?(www\\.)?([^/]+)", (url or ""))
-    if match:
-      api_base_url = match.group(1) + match.group(3)
-
   st.session_state.api_base_url = api_base_url.rstrip("/")
   Logger.info("st.session_state.api_base_url = "
               f"{st.session_state.api_base_url}")
