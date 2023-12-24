@@ -25,8 +25,8 @@ from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
 from config import (GOOGLE_LLM, LANGCHAIN_LLM, DEFAULT_QUERY_EMBEDDING_MODEL,
-                    LANGCHAIN_EMBEDDING_MODELS, VERTEX_EMBEDDING_MODELS,
-                    LLM_SERVICE_EMBEDDING_MODELS, LLM_SERVICE_MODELS)
+                    LANGCHAIN_EMBEDDING_TYPES, VERTEX_EMBEDDING_TYPES,
+                    LLM_SERVICE_EMBEDDING_TYPES, LLM_SERVICE_MODELS)
 from langchain.schema.embeddings import Embeddings
 
 # pylint: disable=broad-exception-caught
@@ -47,7 +47,7 @@ def get_embeddings(
 
   Args:
     text_chunks: list of text chunks to generate embeddings for
-    embedding_type: embedding type from config.EMBEDDING_MODELS
+    embedding_type: embedding type from config.EMBEDDING_TYPES
   Returns:
     Tuple of (list of booleans for chunk true if embeddings were generated,
               numpy array of embeddings indexed by chunks)
@@ -106,11 +106,11 @@ def generate_embeddings(batch: List[str], embedding_type: str) -> \
 
   Logger.info(f"generating embeddings for embedding type {embedding_type}")
 
-  if embedding_type in LANGCHAIN_EMBEDDING_MODELS:
+  if embedding_type in LANGCHAIN_EMBEDDING_TYPES:
     embeddings = get_langchain_embeddings(embedding_type, batch)
-  elif embedding_type in VERTEX_EMBEDDING_MODELS:
+  elif embedding_type in VERTEX_EMBEDDING_TYPES:
     embeddings = get_vertex_embeddings(embedding_type, batch)
-  elif embedding_type in LLM_SERVICE_EMBEDDING_MODELS:
+  elif embedding_type in LLM_SERVICE_EMBEDDING_TYPES:
     embeddings = get_llm_service_embeddings(embedding_type, batch)
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")

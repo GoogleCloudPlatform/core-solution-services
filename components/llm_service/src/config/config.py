@@ -170,7 +170,7 @@ GOOGLE_MODEL_GARDEN = model_config.get_provider_config(PROVIDER_MODEL_GARDEN)
 LLM_SERVICE_MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__),
                                              "llm_service_models.json")
 LLM_SERVICE_MODELS = {}
-LLM_SERVICE_EMBEDDING_MODELS = []
+LLM_SERVICE_EMBEDDING_TYPES = []
 try:
   with open(LLM_SERVICE_MODEL_CONFIG_PATH, "r", encoding="utf-8") as file:
     LLM_SERVICE_MODELS = json.load(file)
@@ -182,11 +182,11 @@ try:
 
   LLM_SERVICE_MODEL_TYPES = list(LLM_SERVICE_MODELS.keys())
   LLM_TYPES.extend(LLM_SERVICE_MODEL_TYPES)
-  LLM_SERVICE_EMBEDDING_MODELS = LLM_SERVICE_MODEL_TYPES
+  LLM_SERVICE_EMBEDDING_TYPES = LLM_SERVICE_MODEL_TYPES
   Logger.info(
       f"Loaded LLM Service-provider models: {LLM_SERVICE_MODEL_TYPES}")
   Logger.info(
-      f"Loaded LLM Service-provider embedding models: {LLM_SERVICE_EMBEDDING_MODELS}")
+      f"Loaded LLM Service-provider embedding models: {LLM_SERVICE_EMBEDDING_TYPES}")
 except Exception as e:
   Logger.info(f"Can't load llm_service_models.json: {str(e)}")
 
@@ -199,12 +199,14 @@ Logger.info(f"LLM types loaded {LLM_TYPES}")
 DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
 
 # embedding models
-VERTEX_EMBEDDING_MODELS = model_config.get_provider_embeddings(PROVIDER_VERTEX)
-LANGCHAIN_EMBEDDING_MODELS = model_config.get_provider_embeddings(PROVIDER_LANGCHAIN)
-EMBEDDING_MODELS = model_config.get_embedding_types()
+VERTEX_EMBEDDING_TYPES = \
+    model_config.get_provider_embedding_types(PROVIDER_VERTEX)
+LANGCHAIN_EMBEDDING_TYPES = \
+    model_config.get_provider_embedding_types(PROVIDER_LANGCHAIN)
+EMBEDDING_TYPES = model_config.get_embedding_types()
 
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
-Logger.info(f"Embedding models loaded {EMBEDDING_MODELS}")
+Logger.info(f"Embedding types loaded {EMBEDDING_TYPES}")
 
 # services config
 SERVICES = {
