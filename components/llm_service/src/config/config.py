@@ -28,7 +28,10 @@ from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
 from google.cloud import secretmanager
-from config.model_config import ModelConfig
+from config.model_config import (ModelConfig, PROVIDER_OPENAI, 
+                                PROVIDER_VERTEX, PROVIDER_COHERE,
+                                PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
+                                PROVIDER_TRUSS)
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
@@ -74,41 +77,41 @@ ERROR_RESPONSES = {
     }
 }
 
-# LLM configuration
+# load model config object
 MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "models.json")
 model_config = ModelConfig(MODEL_CONFIG_PATH)
 model_config.load_model_config()
 
-# VertexAI models are enabled by default
+# provider enabled flags
 ENABLE_GOOGLE_LLM = model_config.is_provider_enabled(PROVIDER_VERTEX)
 ENABLE_GOOGLE_MODEL_GARDEN = \
     model_config.is_provider_enabled(PROVIDER_MODEL_GARDEN)
-
-ENABLE_LLAMA2CPP_LLM = get_environ_flag("ENABLE_LLAMA2CPP_LLM", False)
-
 ENABLE_OPENAI_LLM = model_config.is_provider_enabled(PROVIDER_OPENAI)
 ENABLE_COHERE_LLM = model_config.is_provider_enabled(PROVIDER_COHERE)
+
+ENABLE_LLAMA2CPP_LLM = get_environ_flag("ENABLE_LLAMA2CPP_LLM", False)
 
 # truss hosted models
 # TODO: delete
 ENABLE_TRUSS_LLAMA2 = model_config.is_provider_enabled(PROVIDER_TRUSS)
+LLM_TRUSS_MODEL_ENDPOINT = os.getenv("TRUSS_LLAMA2_ENDPOINT", "http://truss-llama2-7b-service:8080")
 
+# API Keys
 OPENAI_API_KEY = model_config.get_api_key(PROVIDER_OPENAI)
 COHERE_API_KEY = model_config.get_api_key(PROVIDER_COHERE)
 
-
-
-LLM_TRUSS_MODEL_ENDPOINT = os.getenv("TRUSS_LLAMA2_ENDPOINT", "http://truss-llama2-7b-service:8080")
-
+# LLM types
 LLM_TYPES = model_config.get_llm_types()
-
-OPENAI_LLM_TYPES = model_config.get_provider_llms(PROVIDER_OPENAI)
-COHERE_LLM_TYPES = model_config.get_provider_llms(PROVIDER_COHERE)
-GOOGLE_LLM_TYPES = mode_config.get_provider_llms(PROVIDER_VERTEX)
-
 CHAT_LLM_TYPES = model_config.get_chat_llm_types()
+OPENAI_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_OPENAI)
+COHERE_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_COHERE)
+GOOGLE_LLM_TYPES = mode_config.get_provider_llm_types(PROVIDER_VERTEX)
 
+# LLM config dicts
 LANGCHAIN_LLM = model_config.get_group_llm_config(LANGCHAIN_GROUP)
+GOOGLE_LLM = model_config.get_provider_config(PROVIDER_VERTEX)
+GOOGLE_MODEL_GARDEN = model_config.get_provider_config(PROVIDER_MODEL_GARDEN)
+LLM_TRUSS_MODELS = model_config.get_provider_config(PROVIDER_TRUSS)
 
 LLAMA2CPP_MODEL_PATH = None
 if ENABLE_LLAMA2CPP_LLM:
@@ -137,7 +140,6 @@ if ENABLE_LLAMA2CPP_LLM:
   })
   LLM_TYPES.append(LLAMA2CPP_LLM_TYPE)
 
-GOOGLE_LLM = model_config.get_provider_config(PROVIDER_VERTEX)
 
 if ENABLE_GOOGLE_LLM:
   # TODO - add vertex langchain models to model config
@@ -151,7 +153,6 @@ if ENABLE_GOOGLE_LLM:
       model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_CHAT], project=PROJECT_ID)
   })
 
-GOOGLE_MODEL_GARDEN = model_config.get_provider_config(PROVIDER_MODEL_GARDEN)
 
 # TODO: fix model garden config
 
@@ -189,10 +190,6 @@ try:
       f"Loaded LLM Service-provider embedding models: {LLM_SERVICE_EMBEDDING_TYPES}")
 except Exception as e:
   Logger.info(f"Can't load llm_service_models.json: {str(e)}")
-
-# truss models
-LLM_TRUSS_MODELS = model_config.get_provider_config(PROVIDER_TRUSS)
-
 
 Logger.info(f"LLM types loaded {LLM_TYPES}")
 
