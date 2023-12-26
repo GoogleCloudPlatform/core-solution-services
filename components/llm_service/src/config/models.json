@@ -93,7 +93,9 @@
     "Llama2cpp": {
       "user": "lramsey@google.com",
       "api_base_url": "http://model-service/api/v1",
-      "provider": "LLMService"
+      "provider": "LLMService",
+      "model_class": "LlamaCpp",
+      "enabled": false
     },
     "VertexAI-Embedding": {
       "provider": "Vertex"

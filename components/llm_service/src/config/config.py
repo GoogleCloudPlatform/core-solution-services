@@ -16,14 +16,11 @@
   LLM Service config file
 """
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
-import json
 import os
 from common.utils.config import get_environ_flag
-from common.utils.gcs_adapter import download_file_from_gcs
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from common.utils.token_handler import UserCredentials
-from common.utils.http_exceptions import InternalServerError
 from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
@@ -117,32 +114,6 @@ GOOGLE_MODEL_GARDEN = model_config.get_provider_config(PROVIDER_MODEL_GARDEN)
 LLM_TRUSS_MODELS = model_config.get_provider_config(PROVIDER_TRUSS)
 LLM_SERVICE_MODELS = model_config.get_provider_config(PROVIDER_LLM_SERVICE)
 
-LLAMA2CPP_MODEL_PATH = None
-if ENABLE_LLAMA2CPP_LLM:
-  LLAMA2CPP_MODEL_FILE = os.getenv("LLAMA2CPP_MODEL_FILE")
-  models_dir = os.path.join(os.path.dirname(__file__), "models/")
-  Logger.info(f"llama2cpp model file = {LLAMA2CPP_MODEL_FILE}")
-
-  # download Llama2cpp model file from GCS
-  try:
-    if LLAMA2CPP_MODEL_FILE.startswith("gs://"):
-      LLAMA2CPP_MODEL_PATH = \
-          download_file_from_gcs(LLAMA2CPP_MODEL_FILE,
-                                 destination_folder_path=models_dir)
-    else:
-      # assume its a file path
-      LLAMA2CPP_MODEL_PATH = LLAMA2CPP_MODEL_FILE
-
-  except Exception as e:
-    raise InternalServerError(
-        f"Failed to download llama2cpp model file {str(e)}") from e
-
-  Logger.info(f"llama2cpp model path = {LLAMA2CPP_MODEL_PATH}")
-
-  LANGCHAIN_LLM.update({
-    LLAMA2CPP_LLM_TYPE: LlamaCpp(model_path=LLAMA2CPP_MODEL_PATH)
-  })
-  LLM_TYPES.append(LLAMA2CPP_LLM_TYPE)
 
 
 # TODO: fix model garden config

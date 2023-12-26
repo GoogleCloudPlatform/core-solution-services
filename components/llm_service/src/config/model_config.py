@@ -21,11 +21,13 @@
 
 import inspect
 import json
+import os
+from pathlib import Path
 from typing import Dict, Any, Callable, Tuple, List
 from common.utils.config import get_environ_flag
+from common.utils.gcs_adapter import download_file_from_gcs
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
-from common.utils.http_exceptions import InternalServerError
 import langchain.chat_models as langchain_chat
 import langchain.llms as langchain_llm
 import langchain.embeddings as langchain_embedding
@@ -58,6 +60,8 @@ KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
 KEY_IS_CHAT = "is_chat"
+KEY_MODEL_URL = "model_url"
+KEY_MODEL_PATH = "model_path"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -70,7 +74,9 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_CLASS,
   KEY_MODEL_NAME,
   KEY_MODEL_PARAMS,
-  KEY_IS_CHAT
+  KEY_IS_CHAT,
+  KEY_MODEL_URL,
+  KEY_MODEL_PATH
 ]
 
 # providers
@@ -168,7 +174,7 @@ class ModelConfig():
       Logger.error(
           "Can't load models config json at"
           f" {self.model_config_path}: {str(e)}")
-      raise InternalServerError(str(e)) from e
+      raise RuntimeError(str(e)) from e
 
   def set_model_config(self):
     """
@@ -232,9 +238,10 @@ class ModelConfig():
       if self.get_config_value(model_id, KEY_API_KEY):
         api_check = api_key is not None
 
+      # set model_enabled flag based on conjuntion of settings
       model_enabled = \
-          api_check and \
           model_enabled and \
+          api_check and \
           provider_enabled and \
           env_flag_setting
 
@@ -244,6 +251,10 @@ class ModelConfig():
       if model_enabled and KEY_MODEL_CLASS in model_config:
         model_instance = self.instantiate_model_class(model_id)
         model_config[KEY_MODEL_CLASS] = model_instance
+
+      # download model file if necessary
+      if KEY_MODEL_URL in model_config and model_enabled:
+        self.download_model_file(model_id, model_config)
 
       Logger.info(
           f"Setting model enabled flag for {model_id} to {model_enabled}")
@@ -391,3 +402,45 @@ class ModelConfig():
       if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and self.is_model_enabled(m)
     ]
     return chat_llm_types
+
+  def download_model_file(self, model_id: str, model_config: dict):
+    """
+    Download model file for model.
+    Args:
+      model_id: model identifier
+      model_config: model config dict
+    
+    Raises:
+      RuntimeError if model download fails
+      InvalidModelConfigException if config is invalid/missing
+    """
+    model_file_url = model_config.get(KEY_MODEL_URL, None)
+    Logger.info(f"{model_id} model file url = {model_file_url}")
+    model_file = Path(model_file_url).name
+    models_dir = os.path.join(os.path.dirname(__file__), "models/")
+    model_file_path = os.path.join(models_dir, model_file)
+    Logger.info(f"{model_id} model file = {model_file_path}")
+    try:
+      if model_file_url.startswith("gs://"):
+        # download model file from GCS
+        Logger.info(f"downloading {model_id} from model file url {model_file_url}")
+        model_file_path = \
+            download_file_from_gcs(model_file_url,
+                                   destination_folder_path=models_dir)
+      elif model_file_url.startswith("file://"):
+        model_file_path = model_file_url
+        if not os.path.exists(model_file_path):
+          raise RuntimeError(
+              "{model_id} model file not present at {model_file_path}")
+        model_file_path = Path(model_file_url).path
+      else:
+        raise InvalidModelConfigException("Invalid model url {model_file_url}")
+    except Exception as e:
+      raise RuntimeError(
+          f"Failed to download model file {str(e)}") from e
+
+    # set model file path in model params
+    model_params = self.get_config_value(model_id, KEY_MODEL_PARAMS)
+    if model_params is None:
+      model_params = {}
+    model_params[KEY_MODEL_PATH] = model_file_path
