@@ -49,7 +49,7 @@
       "model_class": "ChatVertexAI"
     },
     "Truss-Llama2-Chat": {
-      "api_base_url": "34.171.143.157:8080",
+      "model_endpoint": "http://truss-llama2-7b-service:8080",
       "is_chat": true,
       "provider": "Truss",
       "enabled": false

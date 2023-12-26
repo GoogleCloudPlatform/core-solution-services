@@ -60,8 +60,9 @@ KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
 KEY_IS_CHAT = "is_chat"
-KEY_MODEL_URL = "model_url"
+KEY_MODEL_FILE_URL = "model_file_url"
 KEY_MODEL_PATH = "model_path"
+KEY_MODEL_ENDPOINT = "model_endpoint"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -75,8 +76,9 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_NAME,
   KEY_MODEL_PARAMS,
   KEY_IS_CHAT,
-  KEY_MODEL_URL,
-  KEY_MODEL_PATH
+  KEY_MODEL_FILE_URL,
+  KEY_MODEL_PATH,
+  KEY_MODEL_ENDPOINT
 ]
 
 # providers
@@ -253,7 +255,7 @@ class ModelConfig():
         model_config[KEY_MODEL_CLASS] = model_instance
 
       # download model file if necessary
-      if KEY_MODEL_URL in model_config and model_enabled:
+      if KEY_MODEL_FILE_URL in model_config and model_enabled:
         self.download_model_file(model_id, model_config)
 
       Logger.info(
@@ -414,7 +416,7 @@ class ModelConfig():
       RuntimeError if model download fails
       InvalidModelConfigException if config is invalid/missing
     """
-    model_file_url = model_config.get(KEY_MODEL_URL, None)
+    model_file_url = model_config.get(KEY_MODEL_FILE_URL, None)
     Logger.info(f"{model_id} model file url = {model_file_url}")
     model_file = Path(model_file_url).name
     models_dir = os.path.join(os.path.dirname(__file__), "models/")

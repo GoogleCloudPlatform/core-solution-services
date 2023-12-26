@@ -88,13 +88,11 @@ ENABLE_GOOGLE_MODEL_GARDEN = \
     model_config.is_provider_enabled(PROVIDER_MODEL_GARDEN)
 ENABLE_OPENAI_LLM = model_config.is_provider_enabled(PROVIDER_OPENAI)
 ENABLE_COHERE_LLM = model_config.is_provider_enabled(PROVIDER_COHERE)
+ENABLE_TRUSS_LLAMA2 = model_config.is_provider_enabled(PROVIDER_TRUSS)
 
+# TODO: fix
 ENABLE_LLAMA2CPP_LLM = get_environ_flag("ENABLE_LLAMA2CPP_LLM", False)
 
-# truss hosted models
-# TODO: delete
-ENABLE_TRUSS_LLAMA2 = model_config.is_provider_enabled(PROVIDER_TRUSS)
-LLM_TRUSS_MODEL_ENDPOINT = os.getenv("TRUSS_LLAMA2_ENDPOINT", "http://truss-llama2-7b-service:8080")
 
 # API Keys
 OPENAI_API_KEY = model_config.get_api_key(PROVIDER_OPENAI)
@@ -113,7 +111,6 @@ GOOGLE_LLM = model_config.get_provider_config(PROVIDER_VERTEX)
 GOOGLE_MODEL_GARDEN = model_config.get_provider_config(PROVIDER_MODEL_GARDEN)
 LLM_TRUSS_MODELS = model_config.get_provider_config(PROVIDER_TRUSS)
 LLM_SERVICE_MODELS = model_config.get_provider_config(PROVIDER_LLM_SERVICE)
-
 
 
 # TODO: fix model garden config
