@@ -54,7 +54,7 @@ from config.config import (
     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
     TRUSS_LLM_LLAMA2_CHAT,
 
-    # LLM config
+    # LLM vendor config
     ENABLE_OPENAI_LLM,
     ENABLE_COHERE_LLM,
 

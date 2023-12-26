@@ -21,6 +21,18 @@
       "env_flag": "ENABLE_TRUSS_LLAMA2"
     }
   },
+  "vendors": {
+    "OpenAI": {
+      "enabled": true,
+      "api_key": "openai-api-key",
+      "env_flag": "ENABLE_OPENAI_LLM"
+    },
+    "Cohere": {
+      "enabled": true,
+      "api_key": "cohere-api-key",
+      "env_flag": "ENABLE_COHERE_LLM"
+    }    
+  },
   "models": {
     "VertexAI-Text": {
       "is_chat": false,
@@ -60,10 +72,10 @@
       "enabled": false
     },
     "OpenAI-GPT4": {
+      "vendor": "OpenAI",
       "is_chat": true,
       "provider": "Langchain",
       "enabled": true,
-      "api_key": "openai-api-key",
       "model_name": "gpt-4",
       "model_class": "ChatOpenAI",      
       "model_params": {
@@ -71,10 +83,10 @@
       }
     },
     "OpenAI-GPT3.5": {
+      "vendor": "OpenAI",
       "is_chat": true,
       "provider": "Langchain",
       "enabled": true,
-      "api_key": "openai-api-key",
       "model_name": "gpt-3.5-turbo",
       "model_class": "ChatOpenAI",      
       "model_params": {
@@ -82,10 +94,10 @@
       }
     },
     "Cohere": {
+      "vendor": "Cohere",
       "is_chat": true,
       "provider": "Langchain",
       "enabled": true,
-      "api_key": "cohere-api-key",
       "model_class": "ChatCohere"
     }
   },

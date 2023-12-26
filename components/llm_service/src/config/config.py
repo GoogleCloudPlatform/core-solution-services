@@ -25,8 +25,8 @@ from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
 from google.cloud import secretmanager
-from config.model_config import (ModelConfig, PROVIDER_OPENAI,
-                                PROVIDER_VERTEX, PROVIDER_COHERE,
+from config.model_config import (ModelConfig, VENDOR_OPENAI,
+                                PROVIDER_VERTEX, VENDOR_COHERE,
                                 PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
                                 PROVIDER_TRUSS, PROVIDER_LLM_SERVICE,
                                 VERTEX_LLM_TYPE_BISON_CHAT,
@@ -86,24 +86,23 @@ model_config.load_model_config()
 ENABLE_GOOGLE_LLM = model_config.is_provider_enabled(PROVIDER_VERTEX)
 ENABLE_GOOGLE_MODEL_GARDEN = \
     model_config.is_provider_enabled(PROVIDER_MODEL_GARDEN)
-ENABLE_OPENAI_LLM = model_config.is_provider_enabled(PROVIDER_OPENAI)
-ENABLE_COHERE_LLM = model_config.is_provider_enabled(PROVIDER_COHERE)
 ENABLE_TRUSS_LLAMA2 = model_config.is_provider_enabled(PROVIDER_TRUSS)
+
+# vendor enabled flags
+ENABLE_OPENAI_LLM = model_config.is_vendor_enabled(VENDOR_OPENAI)
+ENABLE_COHERE_LLM = model_config.is_vendor_enabled(VENDOR_COHERE)
 
 # TODO: fix
 ENABLE_LLAMA2CPP_LLM = get_environ_flag("ENABLE_LLAMA2CPP_LLM", False)
 
 
 # API Keys
-OPENAI_API_KEY = model_config.get_api_key(PROVIDER_OPENAI)
-COHERE_API_KEY = model_config.get_api_key(PROVIDER_COHERE)
+OPENAI_API_KEY = model_config.get_api_key(VENDOR_OPENAI)
+COHERE_API_KEY = model_config.get_api_key(VENDOR_COHERE)
 
 # LLM types
 LLM_TYPES = model_config.get_llm_types()
 CHAT_LLM_TYPES = model_config.get_chat_llm_types()
-OPENAI_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_OPENAI)
-COHERE_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_COHERE)
-GOOGLE_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_VERTEX)
 
 # LLM provider config dicts
 LANGCHAIN_LLM = model_config.get_provider_config(PROVIDER_LANGCHAIN)
