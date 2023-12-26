@@ -13,13 +13,13 @@
       "env_flag": "ENABLE_LANGCHAIN_LLM"
     },
     "LLMService": {
-      "enabled": true,
-      "env_flag": "ENABLE_LLM_SERVICE_LLM"
+      "enabled": false,
+      "env_flag": "ENABLE_LLM_SERVICE_PROVIDER"
     },
     "Truss": {
       "enabled": true,
       "env_flag": "ENABLE_TRUSS_LLAMA2"
-    }    
+    }
   },
   "models": {
     "VertexAI-Text": {

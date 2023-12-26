@@ -31,7 +31,7 @@ from google.cloud import secretmanager
 from config.model_config import (ModelConfig, PROVIDER_OPENAI,
                                 PROVIDER_VERTEX, PROVIDER_COHERE,
                                 PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
-                                PROVIDER_TRUSS,
+                                PROVIDER_TRUSS, PROVIDER_LLM_SERVICE,
                                 VERTEX_LLM_TYPE_BISON_CHAT,
                                 VERTEX_LLM_TYPE_GECKO_EMBEDDING
                                 )
@@ -115,6 +115,7 @@ LANGCHAIN_LLM = model_config.get_provider_config(PROVIDER_LANGCHAIN)
 GOOGLE_LLM = model_config.get_provider_config(PROVIDER_VERTEX)
 GOOGLE_MODEL_GARDEN = model_config.get_provider_config(PROVIDER_MODEL_GARDEN)
 LLM_TRUSS_MODELS = model_config.get_provider_config(PROVIDER_TRUSS)
+LLM_SERVICE_MODELS = model_config.get_provider_config(PROVIDER_LLM_SERVICE)
 
 LLAMA2CPP_MODEL_PATH = None
 if ENABLE_LLAMA2CPP_LLM:
@@ -157,30 +158,6 @@ if ENABLE_LLAMA2CPP_LLM:
 #    LLM_TYPES.extend(GOOGLE_MODEL_GARDEN_TYPES)
 
 
-# read llm service models from json config file
-LLM_SERVICE_MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__),
-                                             "llm_service_models.json")
-LLM_SERVICE_MODELS = {}
-LLM_SERVICE_EMBEDDING_TYPES = []
-try:
-  with open(LLM_SERVICE_MODEL_CONFIG_PATH, "r", encoding="utf-8") as file:
-    LLM_SERVICE_MODELS = json.load(file)
-
-  # populate credentials in config dict
-  for llm_type, llm_config in LLM_SERVICE_MODELS.items():
-    auth_password = get_secret(f"llm_service_password_{llm_type}")
-    LLM_SERVICE_MODELS[llm_type]["password"] = auth_password
-
-  LLM_SERVICE_MODEL_TYPES = list(LLM_SERVICE_MODELS.keys())
-  LLM_TYPES.extend(LLM_SERVICE_MODEL_TYPES)
-  LLM_SERVICE_EMBEDDING_TYPES = LLM_SERVICE_MODEL_TYPES
-  Logger.info(
-      f"Loaded LLM Service-provider models: {LLM_SERVICE_MODEL_TYPES}")
-  Logger.info(
-      f"Loaded LLM Service-provider embedding models: {LLM_SERVICE_EMBEDDING_TYPES}")
-except Exception as e:
-  Logger.info(f"Can't load llm_service_models.json: {str(e)}")
-
 Logger.info(f"LLM types loaded {LLM_TYPES}")
 
 DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
@@ -190,6 +167,9 @@ VERTEX_EMBEDDING_TYPES = \
     model_config.get_provider_embedding_types(PROVIDER_VERTEX)
 LANGCHAIN_EMBEDDING_TYPES = \
     model_config.get_provider_embedding_types(PROVIDER_LANGCHAIN)
+LLM_SERVICE_EMBEDDING_TYPES = \
+    model_config.get_provider_embedding_types(PROVIDER_LLM_SERVICE)
+
 EMBEDDING_TYPES = model_config.get_embedding_types()
 
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING

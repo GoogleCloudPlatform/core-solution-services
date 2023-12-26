@@ -180,10 +180,10 @@ class ModelConfig():
     
     - Validate model config, by checking model type and keys
     
-    - Set enabled flags for models.  
-      A model is enabled if its config setting
-      is enabled, environment variables (which override config file settings)
-      are set to true if present, the provider of the model is enabled, and the
+    - Set enabled flags for models.
+      A model is enabled if its config setting is enabled, environment
+      variables (which override config file settings) are set to true if
+      present, the provider of the model is enabled, and the
       API key is present (if applicable).
 
     - Set API keys for models.
