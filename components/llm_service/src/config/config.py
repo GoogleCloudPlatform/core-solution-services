@@ -31,7 +31,8 @@ from google.cloud import secretmanager
 from config.model_config import (ModelConfig, PROVIDER_OPENAI, 
                                 PROVIDER_VERTEX, PROVIDER_COHERE,
                                 PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
-                                PROVIDER_TRUSS)
+                                PROVIDER_TRUSS,
+                                )
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
@@ -107,8 +108,8 @@ OPENAI_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_OPENAI)
 COHERE_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_COHERE)
 GOOGLE_LLM_TYPES = mode_config.get_provider_llm_types(PROVIDER_VERTEX)
 
-# LLM config dicts
-LANGCHAIN_LLM = model_config.get_group_llm_config(LANGCHAIN_GROUP)
+# LLM provider config dicts
+LANGCHAIN_LLM = model_config.get_provider_config(PROVIDER_LANGCHAIN)
 GOOGLE_LLM = model_config.get_provider_config(PROVIDER_VERTEX)
 GOOGLE_MODEL_GARDEN = model_config.get_provider_config(PROVIDER_MODEL_GARDEN)
 LLM_TRUSS_MODELS = model_config.get_provider_config(PROVIDER_TRUSS)
@@ -139,19 +140,6 @@ if ENABLE_LLAMA2CPP_LLM:
     LLAMA2CPP_LLM_TYPE: LlamaCpp(model_path=LLAMA2CPP_MODEL_PATH)
   })
   LLM_TYPES.append(LLAMA2CPP_LLM_TYPE)
-
-
-if ENABLE_GOOGLE_LLM:
-  # TODO - add vertex langchain models to model config
-
-  LANGCHAIN_LLM.update({
-    VERTEX_LLM_TYPE_BISON_TEXT: VertexAI(
-      model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_TEXT], project=PROJECT_ID),
-    VERTEX_LLM_TYPE_BISON_V1_CHAT: ChatVertexAI(
-      model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_V1_CHAT], project=PROJECT_ID),
-    VERTEX_LLM_TYPE_BISON_CHAT: ChatVertexAI(
-      model_name=GOOGLE_LLM[VERTEX_LLM_TYPE_BISON_CHAT], project=PROJECT_ID)
-  })
 
 
 # TODO: fix model garden config

@@ -80,6 +80,20 @@ VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
 VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT = "VertexAI-ModelGarden-LLAMA2-Chat"
 TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
 
+MODEL_TYPES = [
+  OPENAI_LLM_TYPE_GPT3_5,
+  OPENAI_LLM_TYPE_GPT4,
+  OPENAI_EMBEDDING_TYPE,
+  COHERE_LLM_TYPE,
+  LLAMA2CPP_LLM_TYPE,
+  LLAMA2CPP_LLM_TYPE_EMBEDDING,
+  VERTEX_LLM_TYPE_BISON_TEXT,
+  VERTEX_LLM_TYPE_BISON_V1_CHAT,
+  VERTEX_LLM_TYPE_BISON_CHAT,
+  VERTEX_LLM_TYPE_GECKO_EMBEDDING,
+  VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
+  TRUSS_LLM_LLAMA2_CHAT
+]
 
 class ModelConfigMissingException(Exception):
   pass
@@ -253,7 +267,7 @@ class ModelConfig():
 
   def get_model_provider_config(self, model_id: str) -> Tuple[str, dict]:
     """
-    Get provider config for model
+    Get provider config for model.
     Args:
       model_id: model id
     Returns:
@@ -317,7 +331,7 @@ class ModelConfig():
     model_params = self.get_config_value(model_id, KEY_MODEL_PARAMS)
     if model_params is None:
       model_params = {}
-    if provider == "Langchain":
+    if provider == PROVIDER_LANGCHAIN:
       model_cls = LANGCHAIN_CLASSES.get(model_class_name)
       model_class_instance = model_cls(model_name=model_name, **model_params)
     return model_class_instance
