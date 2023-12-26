@@ -21,7 +21,7 @@
 
 import inspect
 import json
-from typing import Dict, Any, Callable, Tuple
+from typing import Dict, Any, Callable, Tuple, List
 from common.utils.config import get_environ_flag
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
@@ -239,9 +239,9 @@ class ModelConfig():
       raise ModelConfigMissingException(model_id)
     return model_config
 
-  def is_provider_enabled(provider_id: str) -> bool:
+  def is_provider_enabled(self, provider_id: str) -> bool:
     """ return provider enabled setting """
-    provider_config = get_provider_config(provider_id, None)
+    provider_config = self.get_provider_config(provider_id, None)
     if provider_config is None:
       raise ProviderConfigMissingException(provider_id)
     return provider_config.get(KEY_ENABLED, True)
@@ -261,9 +261,9 @@ class ModelConfig():
     ]
     return provider_embeddings
 
-  def get_provider_config(self, provider_id: str) -> dict:
+  def get_provider_config(self, provider_id: str, default=None) -> dict:
     """ get provider config for provider """
-    return self.llm_model_providers.get(provider_id, None)
+    return self.llm_model_providers.get(provider_id, default)
 
   def get_model_provider_config(self, model_id: str) -> Tuple[str, dict]:
     """
@@ -325,7 +325,6 @@ class ModelConfig():
     """
     model_class_instance = None
     provider, _ = self.get_model_provider_config(model_id)
-    model_config = self.get_model_config(model_id)
     model_class_name = self.get_config_value(model_id, KEY_MODEL_CLASS)
     model_name = self.get_config_value(model_id, KEY_MODEL_NAME)
     model_params = self.get_config_value(model_id, KEY_MODEL_PARAMS)
