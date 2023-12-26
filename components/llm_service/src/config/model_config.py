@@ -59,6 +59,20 @@ KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
 KEY_IS_CHAT = "is_chat"
 
+MODEL_CONFIG_KEYS = [
+  KEY_ENABLED,
+  KEY_MODELS,
+  KEY_PROVIDERS,
+  KEY_PROVIDER,
+  KEY_EMBEDDINGS,
+  KEY_API_KEY,
+  KEY_ENV_FLAG,
+  KEY_MODEL_CLASS,
+  KEY_MODEL_NAME,
+  KEY_MODEL_PARAMS,
+  KEY_IS_CHAT
+]
+
 # providers
 PROVIDER_VERTEX = "Vertex"
 PROVIDER_MODEL_GARDEN = "ModelGarden"
@@ -99,6 +113,9 @@ class ModelConfigMissingException(Exception):
   pass
 
 class ProviderConfigMissingException(Exception):
+  pass
+
+class InvalidModelConfigException(Exception):
   pass
 
 class ModelConfig():
@@ -161,6 +178,8 @@ class ModelConfig():
     
     This method performs the following:
     
+    - Validate model config, by checking model type and keys
+    
     - Set enabled flags for models.  
       A model is enabled if its config setting
       is enabled, environment variables (which override config file settings)
@@ -175,6 +194,16 @@ class ModelConfig():
     We always default to True if a setting or env var is not present.
     """
     for model_id, model_config in self.get_all_model_config().items():
+      # validate model config
+      if model_id not in MODEL_TYPES:
+        raise InvalidModelConfigException(f"{model_id} not in MODEL_TYPES")
+
+      # check keys
+      for key in model_config.keys():
+        if key not in MODEL_CONFIG_KEYS:
+          raise InvalidModelConfigException(
+              f"Invalid key {key} in {model_config}")
+
       # Get enabled boolean setting in model config
       model_enabled = model_config.get(KEY_ENABLED, True)
 
