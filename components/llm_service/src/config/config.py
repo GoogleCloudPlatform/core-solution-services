@@ -28,10 +28,12 @@ from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
 from google.cloud import secretmanager
-from config.model_config import (ModelConfig, PROVIDER_OPENAI, 
+from config.model_config import (ModelConfig, PROVIDER_OPENAI,
                                 PROVIDER_VERTEX, PROVIDER_COHERE,
                                 PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
                                 PROVIDER_TRUSS,
+                                VERTEX_LLM_TYPE_BISON_CHAT,
+                                VERTEX_LLM_TYPE_GECKO_EMBEDDING
                                 )
 
 Logger = Logger.get_logger(__file__)
@@ -106,7 +108,7 @@ LLM_TYPES = model_config.get_llm_types()
 CHAT_LLM_TYPES = model_config.get_chat_llm_types()
 OPENAI_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_OPENAI)
 COHERE_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_COHERE)
-GOOGLE_LLM_TYPES = mode_config.get_provider_llm_types(PROVIDER_VERTEX)
+GOOGLE_LLM_TYPES = model_config.get_provider_llm_types(PROVIDER_VERTEX)
 
 # LLM provider config dicts
 LANGCHAIN_LLM = model_config.get_provider_config(PROVIDER_LANGCHAIN)
