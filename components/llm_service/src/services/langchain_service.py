@@ -82,7 +82,7 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
 def get_model(llm_type: str) -> Any:
   """ return a langchain model given type """
   llm = model_config.get_provider_value(PROVIDER_LANGCHAIN,
-        llm_type, KEY_MODEL_CLASS)
+        KEY_MODEL_CLASS, llm_type)
   return llm
 
 

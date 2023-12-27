@@ -2,11 +2,23 @@
   "providers": {
     "Vertex": {
       "enabled": true,
-      "env_flag": "ENABLE_GOOGLE_LLM"
+      "env_flag": "ENABLE_GOOGLE_LLM",
+      "model_params": {
+        "temperature": 0.2,
+        "max_output_tokens": 1024,
+        "top_p": 0.95,
+        "top_k": 40,
+      }      
     },
     "ModelGarden": {
       "enabled": true,
-      "env_flag": "ENABLE_GOOGLE_MODEL_GARDEN"
+      "env_flag": "ENABLE_GOOGLE_MODEL_GARDEN",
+      "model_params": {
+        "temperature": 0.2,
+        "max_tokens": 900,
+        "top_p": 1.0,
+        "top_k": 10,
+      }      
     },
     "Langchain": {
       "enabled": true,

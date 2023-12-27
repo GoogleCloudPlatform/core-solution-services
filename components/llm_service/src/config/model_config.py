@@ -381,12 +381,17 @@ class ModelConfig():
     }
     return provider_model_config
 
-  def get_provider_value(self, provider_id: str, model_id: str, key: str,
-      default=None) -> Any:
+  def get_provider_value(self, provider_id: str, key: str,
+      model_id: str=None, default=None) -> Any:
     """ get config value from provider model config """
-    provider_config = self.get_provider_model_config(provider_id)
-    model_config = provider_config.get(model_id)
-    value = model_config.get(key, default)
+    if model_id is None:
+      # get global provider value
+      provider_config = self.get_provider_config(provider_id)
+      value = provider_config.get(key, default)
+    else:
+      provider_config = self.get_provider_model_config(provider_id)
+      model_config = provider_config.get(model_id)
+      value = model_config.get(key, default)
     return value
 
   # vendors

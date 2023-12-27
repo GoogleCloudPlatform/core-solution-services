@@ -130,7 +130,7 @@ def get_vertex_embeddings(embedding_type: str,
     list of embedding vectors (each vector is a list of floats)
   """
   google_llm = model_config.get_provider_value(
-      PROVIDER_GOOGLE, embedding_type, KEY_MODEL_NAME)
+      PROVIDER_GOOGLE, KEY_MODEL_NAME, embedding_type)
   vertex_model = TextEmbeddingModel.from_pretrained(google_llm)
   try:
     embeddings = vertex_model.get_embeddings(sentence_list)
@@ -152,7 +152,7 @@ def get_langchain_embeddings(embedding_type: str,
     list of embedding vectors (each vector is a list of floats)
   """
   langchain_embedding = model_config.get_provider_value(
-      PROVIDER_LANGCHAIN, embedding_type, KEY_MODEL_CLASS)
+      PROVIDER_LANGCHAIN, KEY_MODEL_CLASS, embedding_type)
   embeddings = langchain_embedding.embed_documents(sentence_list)
   return embeddings
 

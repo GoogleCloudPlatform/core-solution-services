@@ -64,16 +64,16 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
       response = await llm_service_predict(prompt, is_chat, llm_type)
     elif llm_type in LLM_TRUSS_MODELS:
       model_endpoint = model_config.get_provider_value(
-          PROVIDER_TRUSS, llm_type, KEY_MODEL_ENDPOINT)
+          PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
           llm_type, prompt, model_endpoint)
     elif llm_type in GOOGLE_MODEL_GARDEN:
       aip_endpoint_name = model_config.get_provider_value(
-          PROVIDER_MODEL_GARDEN, llm_type, KEY_MODEL_ENDPOINT)
+          PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
       response = await model_garden_predict(prompt, aip_endpoint_name)
     elif llm_type in GOOGLE_LLM:
       google_llm = model_config.get_provider_value(
-          PROVIDER_GOOGLE, llm_type, KEY_MODEL_NAME)
+          PROVIDER_GOOGLE, KEY_MODEL_NAME, llm_type)
       is_chat = llm_type in CHAT_LLM_TYPES
       response = await google_llm_predict(prompt, is_chat, google_llm)
     elif llm_type in LANGCHAIN_LLM:
@@ -113,16 +113,16 @@ async def llm_chat(prompt: str, llm_type: str,
                                            user_chat)
     elif llm_type in LLM_TRUSS_MODELS:
       model_endpoint = model_config.get_provider_value(
-          PROVIDER_TRUSS, llm_type, KEY_MODEL_ENDPOINT)
+          PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
           llm_type, prompt, model_endpoint)
     elif llm_type in GOOGLE_MODEL_GARDEN:
       aip_endpoint_name = model_config.get_provider_value(
-          PROVIDER_MODEL_GARDEN, llm_type, KEY_MODEL_ENDPOINT)
+          PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
       response = await model_garden_predict(prompt, aip_endpoint_name)
     elif llm_type in GOOGLE_LLM:
       google_llm = model_config.get_provider_value(
-          PROVIDER_GOOGLE, llm_type, KEY_MODEL_NAME)
+          PROVIDER_GOOGLE, KEY_MODEL_NAME, llm_type)
       is_chat = True
       response = await google_llm_predict(prompt, is_chat,
                                           google_llm, user_chat)
@@ -147,7 +147,7 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
   """
   if parameters is None:
     parameters = model_config.get_provider_value(
-        PROVIDER_TRUSS, llm_type, KEY_MODEL_PARAMS)
+        PROVIDER_TRUSS, KEY_MODEL_PARAMS, llm_type)
 
   parameters.update({"prompt": f"'{prompt}'"})
 
@@ -242,15 +242,10 @@ async def model_garden_predict(prompt: str,
               f"parameters=[{parameters}.")
 
   if parameters is None:
-    parameters = {
-        "prompt": f"'{prompt}'",
-        "max_tokens": 900,
-        "temperature": 0.2,
-        "top_p": 1.0,
-        "top_k": 10,
-    }
-  else:
-    parameters.update({"prompt": f"'{prompt}'"})
+    parameters = model_config.get_provider_value(PROVIDER_MODEL_GARDEN,
+      KEY_MODEL_PARAMS)
+
+  parameters.update({"prompt": f"'{prompt}'"})
 
   instances = [parameters, ]
   endpoint_without_peft = google.cloud.aiplatform.Endpoint(aip_endpoint)
@@ -292,18 +287,9 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   prompt_list.append(prompt)
   context_prompt = prompt.join("\n\n")
 
-  # Temperature controls the degree of randomness in token selection.
-  # Token limit determines the maximum amount of text output.
-  # Tokens are selected from most probable to least until the sum of
-  #  their probabilities equals the top_p value.
-  # top_k of 1 means the selected token is the most probable among all tokens.
-
-  parameters = {
-    "temperature": 0.2,
-    "max_output_tokens": 1024,
-    "top_p": 0.95,
-    "top_k": 40,
-  }
+  # get global vertex model params
+  parameters = model_config.get_provider_value(PROVIDER_GOOGLE,
+      KEY_MODEL_PARAMS)
 
   try:
     if is_chat:
