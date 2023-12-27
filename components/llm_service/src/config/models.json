@@ -82,7 +82,7 @@
         "top_p": 0.95,
         "top_k": 40,
         "max_length": 2048
-      },
+      }
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
       "is_chat": true,
