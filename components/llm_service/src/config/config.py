@@ -92,9 +92,6 @@ ENABLE_TRUSS_LLAMA2 = model_config.is_provider_enabled(PROVIDER_TRUSS)
 ENABLE_OPENAI_LLM = model_config.is_vendor_enabled(VENDOR_OPENAI)
 ENABLE_COHERE_LLM = model_config.is_vendor_enabled(VENDOR_COHERE)
 
-# TODO: fix
-ENABLE_LLAMA2CPP_LLM = get_environ_flag("ENABLE_LLAMA2CPP_LLM", False)
-
 # API Keys
 OPENAI_API_KEY = model_config.get_api_key(VENDOR_OPENAI)
 COHERE_API_KEY = model_config.get_api_key(VENDOR_COHERE)
@@ -102,7 +99,6 @@ COHERE_API_KEY = model_config.get_api_key(VENDOR_COHERE)
 # LLM types: list of model ids
 LLM_TYPES = model_config.get_llm_types()
 CHAT_LLM_TYPES = model_config.get_chat_llm_types()
-DEFAULT_LLM_TYPE = VERTEX_LLM_TYPE_BISON_CHAT
 
 # LLM provider model_id lists
 LANGCHAIN_LLM = model_config.get_provider_models(PROVIDER_LANGCHAIN)
@@ -111,23 +107,7 @@ GOOGLE_MODEL_GARDEN = model_config.get_provider_models(PROVIDER_MODEL_GARDEN)
 LLM_TRUSS_MODELS = model_config.get_provider_models(PROVIDER_TRUSS)
 LLM_SERVICE_MODELS = model_config.get_provider_models(PROVIDER_LLM_SERVICE)
 
-
-# TODO: fix model garden config
-
-#if ENABLE_GOOGLE_MODEL_GARDEN:
-#  MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = \
-#    os.getenv("MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID")
-#  if MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID:
-#    GOOGLE_MODEL_GARDEN_TYPES = [VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT]
-#    GOOGLE_MODEL_GARDEN = {
-#        VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT: MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID,
-#    }
-#    LLM_TYPES.extend(GOOGLE_MODEL_GARDEN_TYPES)
-
-
 Logger.info(f"LLM types loaded {LLM_TYPES}")
-
-DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
 
 # embedding models
 VERTEX_EMBEDDING_TYPES = \
@@ -138,9 +118,12 @@ LLM_SERVICE_EMBEDDING_TYPES = \
     model_config.get_provider_embedding_types(PROVIDER_LLM_SERVICE)
 
 EMBEDDING_TYPES = model_config.get_embedding_types()
-
-DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 Logger.info(f"Embedding types loaded {EMBEDDING_TYPES}")
+
+# default models
+DEFAULT_LLM_TYPE = VERTEX_LLM_TYPE_BISON_CHAT
+DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
+DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 
 # services config
 SERVICES = {

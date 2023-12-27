@@ -87,7 +87,8 @@
     "VertexAI-ModelGarden-LLAMA2-Chat": {
       "is_chat": true,
       "provider": "ModelGarden",
-      "enabled": false
+      "enabled": false,
+      "model_endpoint": "xxx"
     },
     "OpenAI-GPT4": {
       "vendor": "OpenAI",
@@ -125,7 +126,8 @@
       "api_base_url": "http://model-service/api/v1",
       "provider": "LLMService",
       "model_class": "LlamaCpp",
-      "enabled": false
+      "enabled": false,
+      "env_flag": "ENABLE_LLAMA2CPP_LLM"
     },
     "VertexAI-Embedding": {
       "provider": "Vertex"
