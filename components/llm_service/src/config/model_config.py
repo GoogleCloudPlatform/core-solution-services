@@ -80,7 +80,8 @@ MODEL_CONFIG_KEYS = [
   KEY_IS_CHAT,
   KEY_MODEL_FILE_URL,
   KEY_MODEL_PATH,
-  KEY_MODEL_ENDPOINT
+  KEY_MODEL_ENDPOINT,
+  KEY_VENDOR
 ]
 
 # model providers
@@ -103,10 +104,13 @@ LLAMA2CPP_LLM_TYPE = "Llama2cpp"
 LLAMA2CPP_LLM_TYPE_EMBEDDING = "Llama2cpp-Embedding"
 VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
 VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat-V1"
-VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat"
+VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat-Palm2V2"
+VERTEX_LLM_TYPE_BISON_CHAT_32K = "VertexAI-Chat-Palm2-32k"
 VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
 VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT = "VertexAI-ModelGarden-LLAMA2-Chat"
 TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
+VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
+VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 
 MODEL_TYPES = [
   OPENAI_LLM_TYPE_GPT3_5,
@@ -120,7 +124,10 @@ MODEL_TYPES = [
   VERTEX_LLM_TYPE_BISON_CHAT,
   VERTEX_LLM_TYPE_GECKO_EMBEDDING,
   VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
-  TRUSS_LLM_LLAMA2_CHAT
+  TRUSS_LLM_LLAMA2_CHAT,
+  VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
+  VERTEX_LLM_TYPE_BISON_CHAT_32K,
+  VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN
 ]
 
 class ModelConfigMissingException(Exception):
@@ -456,21 +463,22 @@ class ModelConfig():
     api_key = None
     if self.is_model_enabled(model_id):
       # get the key secret id from config
-      vendor_config = self.get_model_vendor_config(model_id)
-      api_key_id = vendor_config.get(KEY_API_KEY, None)
-      if api_key_id:
-        # if there is a secret id in config get the key from secrets
-        try:
-          api_key = get_secret(api_key_id)
-        except Exception as e:
-          # Failing to retrieve the key should be a non-fatal error -
-          # it should normally just result in the model being disabled.
-          # Here we will just log an error.
-          Logger.error(
-              f"Unable to get api key secret {api_key_id} "
-              f"for {model_id}: {str(e)}")
+      _, vendor_config = self.get_model_vendor_config(model_id)
+      if vendor_config is not None:
+        api_key_id = vendor_config.get(KEY_API_KEY, None)
+        if api_key_id:
+          # if there is a secret id in config get the key from secrets
+          try:
+            api_key = get_secret(api_key_id)
+          except Exception as e:
+            # Failing to retrieve the key should be a non-fatal error -
+            # it should normally just result in the model being disabled.
+            # Here we will just log an error.
+            Logger.error(
+                f"Unable to get api key secret {api_key_id} "
+                f"for {model_id}: {str(e)}")
 
-    model_config["api_key_value"] = api_key
+    model_config[KEY_API_KEY] = api_key
     return api_key
 
   def instantiate_model_class(self, model_id: str) -> Callable:
