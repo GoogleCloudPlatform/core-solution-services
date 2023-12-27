@@ -7,7 +7,7 @@
         "temperature": 0.2,
         "max_output_tokens": 1024,
         "top_p": 0.95,
-        "top_k": 40,
+        "top_k": 40
       }      
     },
     "ModelGarden": {
@@ -17,7 +17,7 @@
         "temperature": 0.2,
         "max_tokens": 900,
         "top_p": 1.0,
-        "top_k": 10,
+        "top_k": 10
       }      
     },
     "Langchain": {
