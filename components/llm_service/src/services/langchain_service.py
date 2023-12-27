@@ -23,7 +23,8 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 import langchain.agents as langchain_agents
 from langchain.schema import HumanMessage, AIMessage
-from config import LANGCHAIN_LLM, CHAT_LLM_TYPES
+from config import (model_config, CHAT_LLM_TYPES,
+                    PROVIDER_LANGCHAIN, KEY_MODEL_CLASS)
 
 Logger = Logger.get_logger(__file__)
 
@@ -46,8 +47,8 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
   """
   Logger.info(f"Generating text with langchain llm_type {llm_type}")
   try:
-    # get LLM object
-    llm = LANGCHAIN_LLM.get(llm_type)
+    # get langchain LLM class instance
+    llm = get_model(llm_type)
     if llm is None:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -80,7 +81,8 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
 
 def get_model(llm_type: str) -> Any:
   """ return a langchain model given type """
-  llm = LANGCHAIN_LLM.get(llm_type)
+  llm = model_config.get_provider_value(PROVIDER_LANGCHAIN,
+        llm_type, KEY_MODEL_CLASS)
   return llm
 
 

@@ -53,6 +53,7 @@ from config.config import (
     VERTEX_LLM_TYPE_BISON_CHAT,
     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
     TRUSS_LLM_LLAMA2_CHAT,
+    DEFAULT_LLM_TYPE,
 
     # LLM vendor config
     ENABLE_OPENAI_LLM,
@@ -73,6 +74,35 @@ from config.config import (
 
     # Endpoints
     MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID,
+
+    # model config keys
+    KEY_ENABLED,
+    KEY_MODELS,
+    KEY_PROVIDERS,
+    KEY_VENDORS,
+    KEY_PROVIDER,
+    KEY_EMBEDDINGS,
+    KEY_API_KEY,
+    KEY_ENV_FLAG,
+    KEY_MODEL_CLASS,
+    KEY_MODEL_NAME,
+    KEY_MODEL_PARAMS,
+    KEY_IS_CHAT,
+    KEY_MODEL_FILE_URL,
+    KEY_MODEL_PATH,
+    KEY_MODEL_ENDPOINT,
+    KEY_VENDOR,
+
+    # model providers
+    PROVIDER_VERTEX,
+    PROVIDER_MODEL_GARDEN,
+    PROVIDER_LANGCHAIN,
+    PROVIDER_TRUSS,
+    PROVIDER_LLM_SERVICE,
+
+    # model vendors
+    VENDOR_OPENAI,
+    VENDOR_COHERE,
 
     # agent config
     AGENT_CONFIG_PATH,

@@ -25,9 +25,9 @@ from langchain.sql_database import SQLDatabase
 from langchain.tools import BaseTool
 from langchain.tools.sql_database.tool import QuerySQLDataBaseTool
 from common.utils.logging_handler import Logger
-from config import (LANGCHAIN_LLM, PROJECT_ID,
-                    OPENAI_LLM_TYPE_GPT4)
+from config import PROJECT_ID, OPENAI_LLM_TYPE_GPT4
 from config.utils import get_dataset_config
+from services import lanchain_service
 from services.agents.agent_prompts import (SQL_QUERY_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_PREFIX)
@@ -306,7 +306,7 @@ def get_langchain_llm(llm_type: str):
   """
   if llm_type is None:
     llm_type = OPENAI_LLM_TYPE_GPT4
-  llm = LANGCHAIN_LLM[llm_type]
+  llm = lanchain_service.get_model(llm_type)
   if llm is None:
     raise RuntimeError(f"Unsupported llm type {llm_type}")
   return llm

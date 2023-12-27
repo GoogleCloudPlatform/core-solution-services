@@ -30,7 +30,7 @@ from langchain.schema import AgentAction, AgentFinish
 from common.models.agent import AgentCapability
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
-from config import LANGCHAIN_LLM
+from services import lanchain_service
 from services.agents.agent_prompts import (PREFIX, DISPATCH_PREFIX,
                                            TASK_PREFIX, PLANNING_PREFIX,
                                            PLAN_FORMAT_INSTRUCTIONS,
@@ -93,7 +93,7 @@ class BaseAgent(ABC):
     """ load this agent and return an instance of langchain Agent"""
     tools = self.get_tools()
 
-    llm = LANGCHAIN_LLM.get(self.llm_type)
+    llm = lanchain_service.get_model(self.llm_type)
     if llm is None:
       raise InternalServerError(
           f"Agent: cannot find LLM type {self.llm_type}")

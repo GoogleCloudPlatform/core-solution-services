@@ -363,6 +363,32 @@ class ModelConfig():
       provider_config = self.get_provider_config(provider)
     return provider, provider_config
 
+  def get_provider_models(self, provider_id: str) -> List[str]:
+    """ return list of model ids for provider """
+    provider_models = [
+      model_id
+      for model_id, _ in self.get_all_model_config().items()
+      if self.get_config_value(model_id, KEY_PROVIDER) == provider_id
+    ]
+    return provider_models
+
+  def get_provider_model_config(self, provider_id: str) -> List[str]:
+    """ get model config dict for provider models """
+    provider_model_config = {
+      model_id: model_config
+      for model_id, model_config in self.get_all_model_config().items()
+      if self.get_config_value(model_id, KEY_PROVIDER) == provider_id
+    }
+    return provider_model_config
+
+  def get_provider_value(self, provider_id: str, model_id: str, key: str,
+      default=None) -> Any:
+    """ get config value from provider model config """
+    provider_config = self.get_provider_model_config(provider_id)
+    model_config = provider_config.get(model_id)
+    value = model_config.get(key, default)
+    return value
+
   # vendors
 
   def is_vendor_enabled(self, vendor_id: str) -> bool:

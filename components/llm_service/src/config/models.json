@@ -64,7 +64,13 @@
       "model_endpoint": "http://truss-llama2-7b-service:8080",
       "is_chat": true,
       "provider": "Truss",
-      "enabled": false
+      "enabled": false,
+      "model_params": {
+        "temperature": 0.2,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_length": 2048
+      },
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
       "is_chat": true,
@@ -79,7 +85,7 @@
       "model_name": "gpt-4",
       "model_class": "ChatOpenAI",      
       "model_params": {
-       "temperature": 0
+        "temperature": 0
       }
     },
     "OpenAI-GPT3.5": {
@@ -90,7 +96,7 @@
       "model_name": "gpt-3.5-turbo",
       "model_class": "ChatOpenAI",      
       "model_params": {
-       "temperature": 0
+        "temperature": 0
       }
     },
     "Cohere": {

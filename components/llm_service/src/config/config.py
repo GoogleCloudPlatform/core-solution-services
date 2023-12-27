@@ -15,8 +15,9 @@
 """
   LLM Service config file
 """
-# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
+# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught,unused-import
 import os
+from common.config import REGION
 from common.utils.config import get_environ_flag
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
@@ -43,7 +44,6 @@ assert PROJECT_ID, "PROJECT_ID must be set"
 os.environ["GOOGLE_CLOUD_PROJECT"] = PROJECT_ID
 GCP_PROJECT = PROJECT_ID
 DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
-REGION = os.getenv("REGION", "us-central1")
 
 try:
   with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r",
@@ -95,21 +95,21 @@ ENABLE_COHERE_LLM = model_config.is_vendor_enabled(VENDOR_COHERE)
 # TODO: fix
 ENABLE_LLAMA2CPP_LLM = get_environ_flag("ENABLE_LLAMA2CPP_LLM", False)
 
-
 # API Keys
 OPENAI_API_KEY = model_config.get_api_key(VENDOR_OPENAI)
 COHERE_API_KEY = model_config.get_api_key(VENDOR_COHERE)
 
-# LLM types
+# LLM types: list of model ids
 LLM_TYPES = model_config.get_llm_types()
 CHAT_LLM_TYPES = model_config.get_chat_llm_types()
+DEFAULT_LLM_TYPE = VERTEX_LLM_TYPE_BISON_CHAT
 
-# LLM provider config dicts
-LANGCHAIN_LLM = model_config.get_provider_config(PROVIDER_LANGCHAIN)
-GOOGLE_LLM = model_config.get_provider_config(PROVIDER_VERTEX)
-GOOGLE_MODEL_GARDEN = model_config.get_provider_config(PROVIDER_MODEL_GARDEN)
-LLM_TRUSS_MODELS = model_config.get_provider_config(PROVIDER_TRUSS)
-LLM_SERVICE_MODELS = model_config.get_provider_config(PROVIDER_LLM_SERVICE)
+# LLM provider model_id lists
+LANGCHAIN_LLM = model_config.get_provider_models(PROVIDER_LANGCHAIN)
+GOOGLE_LLM = model_config.get_provider_models(PROVIDER_VERTEX)
+GOOGLE_MODEL_GARDEN = model_config.get_provider_models(PROVIDER_MODEL_GARDEN)
+LLM_TRUSS_MODELS = model_config.get_provider_models(PROVIDER_TRUSS)
+LLM_SERVICE_MODELS = model_config.get_provider_models(PROVIDER_LLM_SERVICE)
 
 
 # TODO: fix model garden config

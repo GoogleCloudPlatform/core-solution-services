@@ -44,10 +44,12 @@ async def test_truss_llm_predict():
   }
   #await llm_generate(prompt, "VertexAI-ModelGarden-LLAMA2-Chat")
 
-  response = await llm_truss_service_predict(model_endpoint=os.environ
-                                      ["TRUSS_LLAMA2_ENDPOINT"],
-                                        prompt=prompt,
-                                        parameters=parameters)
+  llm_type = "VertexAI-ModelGarden-LLAMA2-Chat"
+  model_endpoint = os.environ["TRUSS_LLAMA2_ENDPOINT"]
+  response = await llm_truss_service_predict(llm_type,
+                                             prompt=prompt,
+                                             model_endpoint=model_endpoint,
+                                             parameters=parameters)
   print(response)
 
 

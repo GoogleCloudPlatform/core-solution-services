@@ -24,9 +24,12 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
-from config import (GOOGLE_LLM, LANGCHAIN_LLM, DEFAULT_QUERY_EMBEDDING_MODEL,
+from config import (model_config,
+                    KEY_MODEL_NAME, KEY_MODEL_CLASS, KEY_MODEL_ENDPOINT,
+                    PROVIDER_GOOGLE, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
+                    DEFAULT_QUERY_EMBEDDING_MODEL,
                     LANGCHAIN_EMBEDDING_TYPES, VERTEX_EMBEDDING_TYPES,
-                    LLM_SERVICE_EMBEDDING_TYPES, LLM_SERVICE_MODELS)
+                    LLM_SERVICE_EMBEDDING_TYPES)
 from langchain.schema.embeddings import Embeddings
 
 # pylint: disable=broad-exception-caught
@@ -126,8 +129,9 @@ def get_vertex_embeddings(embedding_type: str,
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
-  vertex_model = TextEmbeddingModel.from_pretrained(
-      GOOGLE_LLM.get(embedding_type))
+  google_llm = model_config.get_provider_value(
+      PROVIDER_GOOGLE, embedding_type, KEY_MODEL_NAME)
+  vertex_model = TextEmbeddingModel.from_pretrained(google_llm)
   try:
     embeddings = vertex_model.get_embeddings(sentence_list)
 
@@ -147,7 +151,8 @@ def get_langchain_embeddings(embedding_type: str,
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
-  langchain_embedding = LANGCHAIN_LLM.get(embedding_type)
+  langchain_embedding = model_config.get_provider_value(
+      PROVIDER_LANGCHAIN, embedding_type, KEY_MODEL_CLASS)
   embeddings = langchain_embedding.embed_documents(sentence_list)
   return embeddings
 
@@ -162,13 +167,14 @@ def get_llm_service_embeddings(embedding_type: str,
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
-  llm_service_config = LLM_SERVICE_MODELS.get(embedding_type)
+  llm_service_config = model_config.get_provider_config(
+      PROVIDER_LLM_SERVICE, embedding_type)
   auth_client = UserCredentials(llm_service_config.get("user"),
                                 llm_service_config.get("password"))
   auth_token = auth_client.get_id_token()
 
   # start with base url of the LLM service we are calling
-  api_url = llm_service_config.get("api_base_url")
+  api_url = llm_service_config.get(KEY_MODEL_ENDPOINT)
   path = "/llm/embedding"
   api_url = api_url + path
 
