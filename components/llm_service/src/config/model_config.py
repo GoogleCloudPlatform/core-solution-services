@@ -283,6 +283,7 @@ class ModelConfig():
     model_config = self.get_model_config(model_id)
 
     # check env flag if present
+    model_flag_setting = True
     if KEY_ENV_FLAG in model_config:
       env_flag = model_config[KEY_ENV_FLAG]
       model_flag_setting = get_environ_flag(env_flag)
