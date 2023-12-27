@@ -30,7 +30,6 @@ from config import (LANGCHAIN_LLM, GOOGLE_LLM, GOOGLE_MODEL_GARDEN,
                     LLM_SERVICE_MODELS, OPENAI_LLM_TYPE_GPT3_5,
                     VERTEX_LLM_TYPE_BISON_TEXT, CHAT_LLM_TYPES, REGION,
                     LLM_TRUSS_MODELS)
-from config.model_config import KEY_MODEL_ENDPOINT
 from services.langchain_service import langchain_llm_generate
 
 Logger = Logger.get_logger(__file__)
@@ -58,8 +57,7 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
       is_chat = llm_type in CHAT_LLM_TYPES
       response = await llm_service_predict(prompt, is_chat, llm_type)
     elif llm_type in LLM_TRUSS_MODELS.keys():
-      truss_model_config = LLM_TRUSS_MODELS.get(llm_type)
-      model_endpoint = truss_model_config.get(KEY_MODEL_ENDPOINT, None)
+      model_endpoint = LLM_TRUSS_MODELS.get(llm_type)
       response = await llm_truss_service_predict(prompt, model_endpoint)
     elif llm_type in GOOGLE_MODEL_GARDEN.keys():
       aip_endpoint_name = GOOGLE_MODEL_GARDEN.get(llm_type)

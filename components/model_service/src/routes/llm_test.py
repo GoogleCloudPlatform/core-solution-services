@@ -36,7 +36,7 @@ os.environ["COHERE_API_KEY"] = "fake-key"
 with mock.patch("common.utils.secrets.get_secret"):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
-      from config import LLM_TYPES, EMBEDDING_TYPES
+      from config import LLM_TYPES, EMBEDDING_MODELS
 
 # assigning url
 api_url = f"{API_URL}/llm"
@@ -99,7 +99,7 @@ def test_embedding_types(client_with_emulator):
   resp = client_with_emulator.get(url)
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
-  assert json_response.get("data") == EMBEDDING_TYPES
+  assert json_response.get("data") == EMBEDDING_MODELS
 
 
 def test_generate_embeddings(client_with_emulator):

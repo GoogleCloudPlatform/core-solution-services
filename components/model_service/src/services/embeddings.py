@@ -22,7 +22,7 @@ import numpy as np
 from vertexai.preview.language_models import TextEmbeddingModel
 from common.utils.http_exceptions import InternalServerError
 from config import (GOOGLE_LLM, LANGCHAIN_LLM, DEFAULT_QUERY_EMBEDDING_MODEL,
-                    LANGCHAIN_EMBEDDING_TYPES, VERTEX_EMBEDDING_TYPES)
+                    LANGCHAIN_EMBEDDING_MODELS, VERTEX_EMBEDDING_MODELS)
 from langchain.schema.embeddings import Embeddings
 
 # pylint: disable=broad-exception-caught
@@ -42,7 +42,7 @@ async def get_embeddings(
 
   Args:
     text_chunks: list of text chunks to generate embeddings for
-    embedding_type: embedding type from config.EMBEDDING_TYPES
+    embedding_type: embedding type from config.EMBEDDING_MODELS
   Returns:
     Tuple of (list of booleans for chunk true if embeddings were generated,
               numpy array of embeddings indexed by chunks)
@@ -50,9 +50,9 @@ async def get_embeddings(
   if embedding_type is None or embedding_type == "":
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
-  if embedding_type in LANGCHAIN_EMBEDDING_TYPES:
+  if embedding_type in LANGCHAIN_EMBEDDING_MODELS:
     embedding_generator = get_langchain_embedding_generator(embedding_type)
-  elif embedding_type in VERTEX_EMBEDDING_TYPES:
+  elif embedding_type in VERTEX_EMBEDDING_MODELS:
     embedding_generator = get_vertex_embedding_generator(embedding_type)
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
