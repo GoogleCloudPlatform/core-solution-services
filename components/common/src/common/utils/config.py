@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Config file for utils"""
-
+# pylint: disable=logging-fstring-interpolation
 import os
 from enum import Enum
 from common.utils.logging_handler import Logger
