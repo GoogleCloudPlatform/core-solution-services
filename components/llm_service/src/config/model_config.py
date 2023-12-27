@@ -124,16 +124,14 @@ MODEL_TYPES = [
 ]
 
 class ModelConfigMissingException(Exception):
-  pass
-
-class ProviderConfigMissingException(Exception):
-  pass
-
-class VendorConfigMissingException(Exception):
-  pass
+  def __init__(self, key):
+    self.message = f"Model config missing for {key}."
+    super().__init__(self.message)
 
 class InvalidModelConfigException(Exception):
-  pass
+  def __init__(self, message):
+    self.message = message
+    super().__init__(self.message)
 
 class ModelConfig():
   """
@@ -314,7 +312,7 @@ class ModelConfig():
     """ return provider enabled setting """
     provider_config = self.get_provider_config(provider_id)
     if provider_config is None:
-      raise ProviderConfigMissingException(provider_id)
+      raise ModelConfigMissingException(provider_id)
 
     # check provider enable env flag
     if KEY_ENV_FLAG in provider_config:
