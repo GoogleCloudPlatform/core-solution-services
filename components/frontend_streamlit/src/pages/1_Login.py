@@ -18,6 +18,7 @@
 import streamlit as st
 import utils
 import api
+from styles.login_markup import login_theme
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
@@ -32,6 +33,7 @@ def login_clicked(username, password):
 
 
 def login_page():
+  login_theme()
   placeholder = st.empty()
 
   if "auth_token" not in st.session_state:
@@ -44,10 +46,10 @@ def login_page():
     st.warning("Please enter your username and password")
 
   with placeholder.form("login"):
-    st.title("Login")
+    st.title("Sign in")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    submit = st.form_submit_button("Login")
+    submit = st.form_submit_button("Submit")
   if submit:
     login_clicked(username, password)
 

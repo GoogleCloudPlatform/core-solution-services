@@ -16,7 +16,7 @@ def landing_suggestions():
 
   with plan:
     with st.expander("Plan"):
-      st.text("Create and execute a plan")
+      st.text("Generates and execute a plan to your specification")
 
   with chat:
     with st.expander("Chat"):
