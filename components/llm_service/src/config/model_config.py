@@ -440,6 +440,29 @@ class ModelConfig():
   def get_vendor_config(self, vendor_id: str) -> dict:
     return self.llm_model_vendors.get(vendor_id, None)
 
+  def get_vendor_api_key(self, vendor_id: str) -> Tuple[str, str]:
+    """ get vendor API key name and value """
+    api_key = None
+    api_key_name = None
+    vendor_config = self.get_vendor_config(vendor_id)
+    if vendor_config is not None:
+      api_key_name = vendor_config.get(KEY_API_KEY)
+      if api_key_name:
+        # if there is a secret id in config get the key from secrets
+        try:
+          api_key = get_secret(api_key_name)
+        except Exception as e:
+          # Failing to retrieve the key should be a non-fatal error -
+          # it should normally just result in the model being disabled.
+          # Here we will just log an error.
+          Logger.error(
+              f"Unable to get api key secret {api_key_name} "
+              f"for {vendor_id}: {str(e)}")
+
+        # return the name in proper format as a param name
+        api_key_name = api_key_name.replace("-", "_")
+    return api_key_name, api_key
+
   def get_config_value(self, model_id: str, key: str) -> Any:
     return self.get_model_config(model_id).get(key)
 
@@ -462,21 +485,13 @@ class ModelConfig():
     model_config = self.get_model_config(model_id)
     api_key = None
     if self.is_model_enabled(model_id):
-      # get the key secret id from config
-      _, vendor_config = self.get_model_vendor_config(model_id)
+      # if vendor config exists retrieve api key
+      vendor_id, vendor_config = self.get_model_vendor_config(model_id)
       if vendor_config is not None:
-        api_key_id = vendor_config.get(KEY_API_KEY, None)
-        if api_key_id:
-          # if there is a secret id in config get the key from secrets
-          try:
-            api_key = get_secret(api_key_id)
-          except Exception as e:
-            # Failing to retrieve the key should be a non-fatal error -
-            # it should normally just result in the model being disabled.
-            # Here we will just log an error.
-            Logger.error(
-                f"Unable to get api key secret {api_key_id} "
-                f"for {model_id}: {str(e)}")
+        _, api_key = self.get_vendor_api_key(vendor_id)
+        if api_key is None:
+          # log error if vendor is configured for model but api key not found
+          Logger.error(f"Unable to get api key for {model_id} ")
 
     model_config[KEY_API_KEY] = api_key
     return api_key
@@ -491,16 +506,14 @@ class ModelConfig():
     model_class_name = self.get_config_value(model_id, KEY_MODEL_CLASS)
     model_name = self.get_config_value(model_id, KEY_MODEL_NAME)
     model_params = self.get_config_value(model_id, KEY_MODEL_PARAMS)
-    
+
     if model_params is None:
       model_params = {}
     if provider == PROVIDER_LANGCHAIN:
       vendor_id, vendor_config = self.get_model_vendor_config(model_id)
       if vendor_config is not None:
         # get api key name and value for model vendor
-        api_key_name = vendor_config.get(KEY_API_KEY)
-        api_key_name = api_key_name.replace("-", "_")
-        api_key = self.get_api_key(model_id)
+        api_key_name, api_key = self.get_vendor_api_key(vendor_id)
 
         # add api key to model params
         model_params.update({api_key_name: api_key})
@@ -538,6 +551,16 @@ class ModelConfig():
       if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and self.is_model_enabled(m)
     ]
     return chat_llm_types
+
+  def get_embedding_types(self) -> dict:
+    """ Get all supported and enabled embedding types, as a list of model
+        identifiers.
+    """
+    embedding_types = [
+      m for m,config in self.llm_embedding_models.items()
+      if self.is_model_enabled(m)
+    ]
+    return embedding_types
 
   def download_model_file(self, model_id: str, model_config: dict):
     """

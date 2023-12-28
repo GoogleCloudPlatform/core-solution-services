@@ -93,8 +93,8 @@ ENABLE_OPENAI_LLM = model_config.is_vendor_enabled(VENDOR_OPENAI)
 ENABLE_COHERE_LLM = model_config.is_vendor_enabled(VENDOR_COHERE)
 
 # API Keys
-OPENAI_API_KEY = model_config.get_api_key(VENDOR_OPENAI)
-COHERE_API_KEY = model_config.get_api_key(VENDOR_COHERE)
+_, OPENAI_API_KEY = model_config.get_vendor_api_key(VENDOR_OPENAI)
+_, COHERE_API_KEY = model_config.get_vendor_api_key(VENDOR_COHERE)
 
 # LLM types: list of model ids
 LLM_TYPES = model_config.get_llm_types()
