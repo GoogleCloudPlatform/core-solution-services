@@ -39,6 +39,9 @@ from config.config import (
     JOB_NAMESPACE,
     auth_client,
 
+    # model config object
+    model_config,
+
     # secrets
     LLM_BACKEND_ROBOT_USERNAME,
     LLM_BACKEND_ROBOT_PASSWORD,
