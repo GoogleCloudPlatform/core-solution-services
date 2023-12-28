@@ -122,8 +122,7 @@
   },
   "embeddings": {
     "Llama2cpp": {
-      "user": "lramsey@google.com",
-      "api_base_url": "http://model-service/api/v1",
+      "model_endpoint": "http://model-service/api/v1",
       "provider": "LLMService",
       "model_class": "LlamaCpp",
       "enabled": false,
