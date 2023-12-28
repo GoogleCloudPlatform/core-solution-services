@@ -51,7 +51,7 @@ from config.config import (
     ENABLE_OPENAI_LLM,
     ENABLE_COHERE_LLM,
 
-    # default LLM models 
+    # default LLM models
     DEFAULT_QUERY_CHAT_MODEL,
     DEFAULT_QUERY_EMBEDDING_MODEL,
     DEFAULT_LLM_TYPE,
@@ -71,7 +71,7 @@ from config.config import (
     AGENT_CONFIG_PATH,
     AGENT_DATASET_CONFIG_PATH,
 )
-    
+
 from config.model_config import (
     # llm type constants
     OPENAI_LLM_TYPE_GPT3_5,
