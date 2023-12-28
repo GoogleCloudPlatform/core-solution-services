@@ -46,22 +46,17 @@ from config.config import (
     # LLM types
     LLM_TYPES,
     CHAT_LLM_TYPES,
-    OPENAI_LLM_TYPE_GPT3_5,
-    OPENAI_LLM_TYPE_GPT4,
-    COHERE_LLM_TYPE,
-    VERTEX_LLM_TYPE_BISON_TEXT,
-    VERTEX_LLM_TYPE_BISON_CHAT,
-    VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
-    TRUSS_LLM_LLAMA2_CHAT,
-    DEFAULT_LLM_TYPE,
 
     # LLM vendor config
     ENABLE_OPENAI_LLM,
     ENABLE_COHERE_LLM,
 
-    # LLM models and collections of models
+    # default LLM models 
     DEFAULT_QUERY_CHAT_MODEL,
     DEFAULT_QUERY_EMBEDDING_MODEL,
+    DEFAULT_LLM_TYPE,
+
+    # collections of models
     GOOGLE_LLM,
     LANGCHAIN_LLM,
     EMBEDDING_TYPES,
@@ -72,8 +67,20 @@ from config.config import (
     LLM_SERVICE_MODELS,
     LLM_TRUSS_MODELS,
 
-    # Endpoints
-    MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID,
+    # agent config
+    AGENT_CONFIG_PATH,
+    AGENT_DATASET_CONFIG_PATH,
+)
+    
+from config.model_config import (
+    # llm type constants
+    OPENAI_LLM_TYPE_GPT3_5,
+    OPENAI_LLM_TYPE_GPT4,
+    COHERE_LLM_TYPE,
+    VERTEX_LLM_TYPE_BISON_TEXT,
+    VERTEX_LLM_TYPE_BISON_CHAT,
+    VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
+    TRUSS_LLM_LLAMA2_CHAT,
 
     # model config keys
     KEY_ENABLED,
@@ -103,10 +110,6 @@ from config.config import (
     # model vendors
     VENDOR_OPENAI,
     VENDOR_COHERE,
-
-    # agent config
-    AGENT_CONFIG_PATH,
-    AGENT_DATASET_CONFIG_PATH,
     )
 
 from config.vector_store_config import (
