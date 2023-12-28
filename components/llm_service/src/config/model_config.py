@@ -485,15 +485,29 @@ class ModelConfig():
     """ 
     Instantiate the model class for providers that use them (e.g. Langchain)
     """
+    Logger.info(f"instantiating model class for {model_id}")
     model_class_instance = None
     provider, _ = self.get_model_provider_config(model_id)
     model_class_name = self.get_config_value(model_id, KEY_MODEL_CLASS)
     model_name = self.get_config_value(model_id, KEY_MODEL_NAME)
     model_params = self.get_config_value(model_id, KEY_MODEL_PARAMS)
+    
     if model_params is None:
       model_params = {}
     if provider == PROVIDER_LANGCHAIN:
+      vendor_id, vendor_config = self.get_model_vendor_config(model_id)
+      if vendor_config is not None:
+        # get api key name and value for model vendor
+        api_key_name = vendor_config.get(KEY_API_KEY)
+        api_key_name = api_key_name.replace("-", "_")
+        api_key = self.get_api_key(model_id)
+
+        # add api key to model params
+        model_params.update({api_key_name: api_key})
+
+      # retrieve and instantiate model class
       model_cls = LANGCHAIN_CLASSES.get(model_class_name)
+      Logger.info(f"instantiating langchain model {model_cls} for {model_id}")
       model_class_instance = model_cls(model_name=model_name, **model_params)
     return model_class_instance
 
