@@ -26,7 +26,7 @@ from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
 from config import (model_config,
                     KEY_MODEL_NAME, KEY_MODEL_CLASS, KEY_MODEL_ENDPOINT,
-                    PROVIDER_GOOGLE, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
+                    PROVIDER_VERTEX, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
                     LANGCHAIN_EMBEDDING_TYPES, VERTEX_EMBEDDING_TYPES,
                     LLM_SERVICE_EMBEDDING_TYPES)
@@ -130,7 +130,7 @@ def get_vertex_embeddings(embedding_type: str,
     list of embedding vectors (each vector is a list of floats)
   """
   google_llm = model_config.get_provider_value(
-      PROVIDER_GOOGLE, KEY_MODEL_NAME, embedding_type)
+      PROVIDER_VERTEX, KEY_MODEL_NAME, embedding_type)
   vertex_model = TextEmbeddingModel.from_pretrained(google_llm)
   try:
     embeddings = vertex_model.get_embeddings(sentence_list)
