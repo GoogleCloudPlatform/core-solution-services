@@ -145,7 +145,7 @@ async def test_model_garden_predict(clean_firestore, test_chat):
                       KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER,
                       PROVIDER_MODEL_GARDEN,
                       get_model_config)
-  TEST_MODEL_GARDEN_CONFIG = {    
+  TEST_MODEL_GARDEN_CONFIG = {
     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT: {
         KEY_PROVIDER: PROVIDER_MODEL_GARDEN,
         KEY_MODEL_ENDPOINT: "fake-endpoint",
@@ -163,7 +163,7 @@ async def test_model_garden_predict(clean_firestore, test_chat):
     PROVIDER_MODEL_GARDEN: TEST_MODEL_GARDEN_CONFIG
   }
   get_model_config().llm_models = TEST_MODEL_GARDEN_CONFIG
-  
+
   with mock.patch(
           "google.cloud.aiplatform.Endpoint.predict_async",
           return_value=FAKE_MODEL_GARDEN_RESPONSE):

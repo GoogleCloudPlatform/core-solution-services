@@ -254,7 +254,7 @@ async def model_garden_predict(prompt: str,
   endpoint_without_peft = google.cloud.aiplatform.Endpoint(aip_endpoint)
 
   response = await endpoint_without_peft.predict_async(instances=instances)
-    
+
   predictions_text = "\n".join(response.predictions)
   Logger.info(f"Received response from "
               f"{response.model_resource_name} version="
