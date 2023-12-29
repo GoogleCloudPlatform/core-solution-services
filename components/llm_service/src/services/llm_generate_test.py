@@ -140,13 +140,33 @@ async def test_llm_chat_google_resume(clean_firestore, test_chat):
 
 @pytest.mark.asyncio
 async def test_model_garden_predict(clean_firestore, test_chat):
+  from config import (VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
+                      KEY_MODEL_ENDPOINT, KEY_MODEL_PARAMS,
+                      KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER,
+                      PROVIDER_MODEL_GARDEN,
+                      get_model_config)
+  TEST_MODEL_GARDEN_CONFIG = {    
+    VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT: {
+        KEY_PROVIDER: PROVIDER_MODEL_GARDEN,
+        KEY_MODEL_ENDPOINT: "fake-endpoint",
+        KEY_IS_CHAT: True,
+        KEY_MODEL_PARAMS: {
+          "temperature": 0.2,
+          "max_tokens": 900,
+          "top_p": 1.0,
+          "top_k": 10
+        },
+        KEY_ENABLED: True
+      }
+  }
+  get_model_config().llm_model_providers = {
+    PROVIDER_MODEL_GARDEN: TEST_MODEL_GARDEN_CONFIG
+  }
+  get_model_config().llm_models = TEST_MODEL_GARDEN_CONFIG
+  
   with mock.patch(
           "google.cloud.aiplatform.Endpoint.predict_async",
           return_value=FAKE_MODEL_GARDEN_RESPONSE):
-    from config.config import (GOOGLE_MODEL_GARDEN,
-                               VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
-    GOOGLE_MODEL_GARDEN[VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT] = "fake-endpoint"
-    LLM_TYPES.extend([VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT])
     response = await llm_chat(
       FAKE_PROMPT, VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
 
@@ -159,8 +179,7 @@ async def test_llm_truss_service_predict(clean_firestore, test_chat):
           "services.llm_generate.post_method",
           return_value=mock.Mock(status_code=200,
                                  json=lambda: FAKE_TRUSS_RESPONSE)):
-    from config.config import (LLM_TRUSS_MODELS,
-                               TRUSS_LLM_LLAMA2_CHAT)
+    from config import (LLM_TRUSS_MODELS, TRUSS_LLM_LLAMA2_CHAT)
     LLM_TRUSS_MODELS[TRUSS_LLM_LLAMA2_CHAT] = "fake-endpoint"
     LLM_TYPES.append(TRUSS_LLM_LLAMA2_CHAT)
     response = await llm_chat(

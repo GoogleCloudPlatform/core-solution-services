@@ -34,7 +34,7 @@ from config import (get_model_config, get_provider_models,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
                     KEY_MODEL_PARAMS,
                     DEFAULT_LLM_TYPE, LANGCHAIN_LLM, GOOGLE_LLM,
-                    GOOGLE_MODEL_GARDEN, LLM_SERVICE_MODELS,
+                    LLM_SERVICE_MODELS,
                     LLM_TRUSS_MODELS
                     )
 from services.langchain_service import langchain_llm_generate
@@ -65,16 +65,14 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
       is_chat = llm_type in chat_llm_types
       response = await llm_service_predict(prompt, is_chat, llm_type)
     elif llm_type in LLM_TRUSS_MODELS:
-      model_endpoint = get_model_config().get_provider_value(
+      model_endpoint = get_provider_value(
           PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
           llm_type, prompt, model_endpoint)
-    elif llm_type in GOOGLE_MODEL_GARDEN:
-      aip_endpoint_name = get_model_config().get_provider_value(
-          PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
-      response = await model_garden_predict(prompt, aip_endpoint_name)
+    elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
+      response = await model_garden_predict(prompt, llm_type)
     elif llm_type in GOOGLE_LLM:
-      google_llm = get_model_config().get_provider_value(
+      google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
       is_chat = llm_type in chat_llm_types
       response = await google_llm_predict(prompt, is_chat, google_llm)
@@ -114,16 +112,14 @@ async def llm_chat(prompt: str, llm_type: str,
       response = await llm_service_predict(prompt, is_chat, llm_type,
                                            user_chat)
     elif llm_type in LLM_TRUSS_MODELS:
-      model_endpoint = get_model_config().get_provider_value(
+      model_endpoint = get_provider_value(
           PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
           llm_type, prompt, model_endpoint)
-    elif llm_type in GOOGLE_MODEL_GARDEN:
-      aip_endpoint_name = get_model_config().get_provider_value(
-          PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
-      response = await model_garden_predict(prompt, aip_endpoint_name)
+    elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
+      response = await model_garden_predict(prompt, llm_type)
     elif llm_type in GOOGLE_LLM:
-      google_llm = get_model_config().get_provider_value(
+      google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
       is_chat = True
       response = await google_llm_predict(prompt, is_chat,
@@ -132,6 +128,8 @@ async def llm_chat(prompt: str, llm_type: str,
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
     return response
   except Exception as e:
+    import traceback
+    Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
 async def llm_truss_service_predict(llm_type: str, prompt: str,
@@ -148,7 +146,7 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
     the text response: str
   """
   if parameters is None:
-    parameters = get_model_config().get_provider_value(
+    parameters = get_provider_value(
         PROVIDER_TRUSS, KEY_MODEL_PARAMS, llm_type)
 
   parameters.update({"prompt": f"'{prompt}'"})
@@ -226,7 +224,7 @@ async def llm_service_predict(prompt: str, is_chat: bool,
   return output
 
 async def model_garden_predict(prompt: str,
-                               aip_endpoint_name: str,
+                               llm_type: str,
                                parameters: dict = None) -> str:
   """
   Generate text with a Model Garden model.
@@ -237,6 +235,9 @@ async def model_garden_predict(prompt: str,
   Returns:
     the prediction text.
   """
+  aip_endpoint_name = get_provider_value(
+      PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
+
   aip_endpoint = f"projects/{PROJECT_ID}/locations/" \
                  f"{REGION}/endpoints/{aip_endpoint_name}"
   Logger.info(f"Generating text using Model Garden "
@@ -244,8 +245,8 @@ async def model_garden_predict(prompt: str,
               f"parameters=[{parameters}.")
 
   if parameters is None:
-    parameters = get_model_config().get_provider_value(PROVIDER_MODEL_GARDEN,
-      KEY_MODEL_PARAMS)
+    parameters = get_provider_value(PROVIDER_MODEL_GARDEN,
+      KEY_MODEL_PARAMS, llm_type)
 
   parameters.update({"prompt": f"'{prompt}'"})
 
@@ -253,6 +254,7 @@ async def model_garden_predict(prompt: str,
   endpoint_without_peft = google.cloud.aiplatform.Endpoint(aip_endpoint)
 
   response = await endpoint_without_peft.predict_async(instances=instances)
+    
   predictions_text = "\n".join(response.predictions)
   Logger.info(f"Received response from "
               f"{response.model_resource_name} version="
@@ -290,7 +292,7 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   context_prompt = prompt.join("\n\n")
 
   # get global vertex model params
-  parameters = get_model_config().get_provider_value(PROVIDER_VERTEX,
+  parameters = get_provider_value(PROVIDER_VERTEX,
       KEY_MODEL_PARAMS)
 
   try:
