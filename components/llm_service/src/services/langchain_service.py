@@ -23,7 +23,7 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 import langchain.agents as langchain_agents
 from langchain.schema import HumanMessage, AIMessage
-from config import (model_config, CHAT_LLM_TYPES,
+from config import (get_model_config, CHAT_LLM_TYPES,
                     PROVIDER_LANGCHAIN, KEY_MODEL_CLASS)
 
 Logger = Logger.get_logger(__file__)
@@ -81,7 +81,7 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
 
 def get_model(llm_type: str) -> Any:
   """ return a langchain model given type """
-  llm = model_config.get_provider_value(PROVIDER_LANGCHAIN,
+  llm = get_model_config().get_provider_value(PROVIDER_LANGCHAIN,
         KEY_MODEL_CLASS, llm_type)
   return llm
 

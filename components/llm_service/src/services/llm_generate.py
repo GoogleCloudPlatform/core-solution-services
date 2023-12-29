@@ -27,7 +27,7 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
-from config import (model_config, CHAT_LLM_TYPES,
+from config import (get_model_config, CHAT_LLM_TYPES,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
@@ -63,16 +63,16 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
       is_chat = llm_type in CHAT_LLM_TYPES
       response = await llm_service_predict(prompt, is_chat, llm_type)
     elif llm_type in LLM_TRUSS_MODELS:
-      model_endpoint = model_config.get_provider_value(
+      model_endpoint = get_model_config().get_provider_value(
           PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
           llm_type, prompt, model_endpoint)
     elif llm_type in GOOGLE_MODEL_GARDEN:
-      aip_endpoint_name = model_config.get_provider_value(
+      aip_endpoint_name = get_model_config().get_provider_value(
           PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
       response = await model_garden_predict(prompt, aip_endpoint_name)
     elif llm_type in GOOGLE_LLM:
-      google_llm = model_config.get_provider_value(
+      google_llm = get_model_config().get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
       is_chat = llm_type in CHAT_LLM_TYPES
       response = await google_llm_predict(prompt, is_chat, google_llm)
@@ -112,16 +112,16 @@ async def llm_chat(prompt: str, llm_type: str,
       response = await llm_service_predict(prompt, is_chat, llm_type,
                                            user_chat)
     elif llm_type in LLM_TRUSS_MODELS:
-      model_endpoint = model_config.get_provider_value(
+      model_endpoint = get_model_config().get_provider_value(
           PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
           llm_type, prompt, model_endpoint)
     elif llm_type in GOOGLE_MODEL_GARDEN:
-      aip_endpoint_name = model_config.get_provider_value(
+      aip_endpoint_name = get_model_config().get_provider_value(
           PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
       response = await model_garden_predict(prompt, aip_endpoint_name)
     elif llm_type in GOOGLE_LLM:
-      google_llm = model_config.get_provider_value(
+      google_llm = get_model_config().get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
       is_chat = True
       response = await google_llm_predict(prompt, is_chat,
@@ -146,7 +146,7 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
     the text response: str
   """
   if parameters is None:
-    parameters = model_config.get_provider_value(
+    parameters = get_model_config().get_provider_value(
         PROVIDER_TRUSS, KEY_MODEL_PARAMS, llm_type)
 
   parameters.update({"prompt": f"'{prompt}'"})
@@ -242,7 +242,7 @@ async def model_garden_predict(prompt: str,
               f"parameters=[{parameters}.")
 
   if parameters is None:
-    parameters = model_config.get_provider_value(PROVIDER_MODEL_GARDEN,
+    parameters = get_model_config().get_provider_value(PROVIDER_MODEL_GARDEN,
       KEY_MODEL_PARAMS)
 
   parameters.update({"prompt": f"'{prompt}'"})
@@ -288,7 +288,7 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   context_prompt = prompt.join("\n\n")
 
   # get global vertex model params
-  parameters = model_config.get_provider_value(PROVIDER_VERTEX,
+  parameters = get_model_config().get_provider_value(PROVIDER_VERTEX,
       KEY_MODEL_PARAMS)
 
   try:

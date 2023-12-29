@@ -77,47 +77,61 @@ ERROR_RESPONSES = {
     }
 }
 
-# load model config object
-MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "models.json")
-model_config = ModelConfig(MODEL_CONFIG_PATH)
-model_config.load_model_config()
+# model config 
+model_config = None
+
+def get_model_config() -> ModelConfig:
+  global model_config
+  if model_config is None:
+    MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "models.json")
+    model_config = ModelConfig(MODEL_CONFIG_PATH)
+    model_config.load_model_config()
+  return model_config
+
+mc = get_model_config()
 
 # provider enabled flags
-ENABLE_GOOGLE_LLM = model_config.is_provider_enabled(PROVIDER_VERTEX)
+ENABLE_GOOGLE_LLM = mc.is_provider_enabled(PROVIDER_VERTEX)
 ENABLE_GOOGLE_MODEL_GARDEN = \
-    model_config.is_provider_enabled(PROVIDER_MODEL_GARDEN)
-ENABLE_TRUSS_LLAMA2 = model_config.is_provider_enabled(PROVIDER_TRUSS)
+    mc.is_provider_enabled(PROVIDER_MODEL_GARDEN)
+ENABLE_TRUSS_LLAMA2 = mc.is_provider_enabled(PROVIDER_TRUSS)
 
 # vendor enabled flags
-ENABLE_OPENAI_LLM = model_config.is_vendor_enabled(VENDOR_OPENAI)
-ENABLE_COHERE_LLM = model_config.is_vendor_enabled(VENDOR_COHERE)
+ENABLE_OPENAI_LLM = mc.is_vendor_enabled(VENDOR_OPENAI)
+ENABLE_COHERE_LLM = mc.is_vendor_enabled(VENDOR_COHERE)
+
+Logger.info(f"ENABLE_GOOGLE_LLM = {ENABLE_GOOGLE_LLM}")
+Logger.info(f"ENABLE_OPENAI_LLM = {ENABLE_OPENAI_LLM}")
+Logger.info(f"ENABLE_COHERE_LLM = {ENABLE_COHERE_LLM}")
+Logger.info(f"ENABLE_GOOGLE_MODEL_GARDEN = {ENABLE_GOOGLE_MODEL_GARDEN}")
+Logger.info(f"ENABLE_TRUSS_LLAMA2 = {ENABLE_TRUSS_LLAMA2}")
 
 # API Keys
-_, OPENAI_API_KEY = model_config.get_vendor_api_key(VENDOR_OPENAI)
-_, COHERE_API_KEY = model_config.get_vendor_api_key(VENDOR_COHERE)
+_, OPENAI_API_KEY = mc.get_vendor_api_key(VENDOR_OPENAI)
+_, COHERE_API_KEY = mc.get_vendor_api_key(VENDOR_COHERE)
 
 # LLM types: list of model ids
-LLM_TYPES = model_config.get_llm_types()
-CHAT_LLM_TYPES = model_config.get_chat_llm_types()
+LLM_TYPES = mc.get_llm_types()
+CHAT_LLM_TYPES = mc.get_chat_llm_types()
 
 # LLM provider model_id lists
-LANGCHAIN_LLM = model_config.get_provider_models(PROVIDER_LANGCHAIN)
-GOOGLE_LLM = model_config.get_provider_models(PROVIDER_VERTEX)
-GOOGLE_MODEL_GARDEN = model_config.get_provider_models(PROVIDER_MODEL_GARDEN)
-LLM_TRUSS_MODELS = model_config.get_provider_models(PROVIDER_TRUSS)
-LLM_SERVICE_MODELS = model_config.get_provider_models(PROVIDER_LLM_SERVICE)
+LANGCHAIN_LLM = mc.get_provider_models(PROVIDER_LANGCHAIN)
+GOOGLE_LLM = mc.get_provider_models(PROVIDER_VERTEX)
+GOOGLE_MODEL_GARDEN = mc.get_provider_models(PROVIDER_MODEL_GARDEN)
+LLM_TRUSS_MODELS = mc.get_provider_models(PROVIDER_TRUSS)
+LLM_SERVICE_MODELS = mc.get_provider_models(PROVIDER_LLM_SERVICE)
 
 Logger.info(f"LLM types loaded {LLM_TYPES}")
 
 # embedding models
 VERTEX_EMBEDDING_TYPES = \
-    model_config.get_provider_embedding_types(PROVIDER_VERTEX)
+    mc.get_provider_embedding_types(PROVIDER_VERTEX)
 LANGCHAIN_EMBEDDING_TYPES = \
-    model_config.get_provider_embedding_types(PROVIDER_LANGCHAIN)
+    mc.get_provider_embedding_types(PROVIDER_LANGCHAIN)
 LLM_SERVICE_EMBEDDING_TYPES = \
-    model_config.get_provider_embedding_types(PROVIDER_LLM_SERVICE)
+    mc.get_provider_embedding_types(PROVIDER_LLM_SERVICE)
 
-EMBEDDING_TYPES = model_config.get_embedding_types()
+EMBEDDING_TYPES = mc.get_embedding_types()
 Logger.info(f"Embedding types loaded {EMBEDDING_TYPES}")
 
 # default models

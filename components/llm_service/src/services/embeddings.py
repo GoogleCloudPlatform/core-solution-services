@@ -24,7 +24,7 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
-from config import (model_config,
+from config import (get_model_config,
                     KEY_MODEL_NAME, KEY_MODEL_CLASS, KEY_MODEL_ENDPOINT,
                     PROVIDER_VERTEX, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
@@ -129,7 +129,7 @@ def get_vertex_embeddings(embedding_type: str,
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
-  google_llm = model_config.get_provider_value(
+  google_llm = get_model_config().get_provider_value(
       PROVIDER_VERTEX, KEY_MODEL_NAME, embedding_type)
   vertex_model = TextEmbeddingModel.from_pretrained(google_llm)
   try:
@@ -151,7 +151,7 @@ def get_langchain_embeddings(embedding_type: str,
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
-  langchain_embedding = model_config.get_provider_value(
+  langchain_embedding = get_model_config().get_provider_value(
       PROVIDER_LANGCHAIN, KEY_MODEL_CLASS, embedding_type)
   embeddings = langchain_embedding.embed_documents(sentence_list)
   return embeddings
@@ -167,7 +167,7 @@ def get_llm_service_embeddings(embedding_type: str,
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
-  llm_service_config = model_config.get_provider_config(
+  llm_service_config = get_model_config().get_provider_config(
       PROVIDER_LLM_SERVICE, embedding_type)
   auth_client = UserCredentials(llm_service_config.get("user"),
                                 llm_service_config.get("password"))

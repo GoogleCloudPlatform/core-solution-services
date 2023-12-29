@@ -40,7 +40,7 @@ from config.config import (
     auth_client,
 
     # model config object
-    model_config,
+    get_model_config,
 
     # secrets
     LLM_BACKEND_ROBOT_USERNAME,
