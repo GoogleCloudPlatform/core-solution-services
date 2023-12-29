@@ -78,15 +78,22 @@ ERROR_RESPONSES = {
 }
 
 # model config 
-model_config = None
+_model_config = None
 
 def get_model_config() -> ModelConfig:
-  global model_config
-  if model_config is None:
+  global _model_config
+  if _model_config is None:
     MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "models.json")
-    model_config = ModelConfig(MODEL_CONFIG_PATH)
-    model_config.load_model_config()
-  return model_config
+    _model_config = ModelConfig(MODEL_CONFIG_PATH)
+    _model_config.load_model_config()
+  return _model_config
+
+def get_provider_models(provider_id):
+  return get_model_config().get_provider_models(provider_id)
+
+def get_provider_value(provider_id, key, model_id):
+  return get_model_config().get_provider_value(
+      provider_id, key, model_id)
 
 mc = get_model_config()
 
