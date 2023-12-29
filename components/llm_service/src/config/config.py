@@ -77,7 +77,7 @@ ERROR_RESPONSES = {
     }
 }
 
-# model config 
+# model config
 _model_config = None
 
 def get_model_config() -> ModelConfig:
@@ -87,13 +87,6 @@ def get_model_config() -> ModelConfig:
     _model_config = ModelConfig(MODEL_CONFIG_PATH)
     _model_config.load_model_config()
   return _model_config
-
-def get_provider_models(provider_id):
-  return get_model_config().get_provider_models(provider_id)
-
-def get_provider_value(provider_id, key, model_id):
-  return get_model_config().get_provider_value(
-      provider_id, key, model_id)
 
 mc = get_model_config()
 

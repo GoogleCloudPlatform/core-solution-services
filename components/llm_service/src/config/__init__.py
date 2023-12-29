@@ -41,8 +41,6 @@ from config.config import (
 
     # model config object
     get_model_config,
-    get_provider_models,
-    get_provider_value,
 
     # secrets
     LLM_BACKEND_ROBOT_USERNAME,
@@ -121,3 +119,7 @@ from config.vector_store_config import (
   PG_HOST
 )
 
+from config.utils import (
+  get_provider_models,
+  get_provider_value
+)
