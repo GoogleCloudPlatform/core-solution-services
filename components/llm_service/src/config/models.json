@@ -48,7 +48,8 @@
   "models": {
     "VertexAI-Text": {
       "is_chat": false,
-      "provider": "Vertex"
+      "provider": "Vertex",
+      "model_name": "text-bison@002"
     },
     "VertexAI-Chat-Palm2V2": {
       "is_chat": true,

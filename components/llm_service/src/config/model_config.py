@@ -398,6 +398,8 @@ class ModelConfig():
       provider_config = self.get_provider_model_config(provider_id)
       model_config = provider_config.get(model_id)
       value = model_config.get(key, default)
+    if value is None:
+      Logger.error(f"key {key} for provider {provider_id} is None")
     return value
 
   # vendors
