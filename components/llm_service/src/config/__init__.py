@@ -50,7 +50,6 @@ from config.config import (
 
     # LLM types
     LLM_TYPES,
-    CHAT_LLM_TYPES,
 
     # LLM vendor config
     ENABLE_OPENAI_LLM,

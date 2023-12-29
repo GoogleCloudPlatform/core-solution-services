@@ -23,8 +23,7 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 import langchain.agents as langchain_agents
 from langchain.schema import HumanMessage, AIMessage
-from config import (get_model_config, CHAT_LLM_TYPES,
-                    PROVIDER_LANGCHAIN, KEY_MODEL_CLASS)
+from config import (get_model_config, PROVIDER_LANGCHAIN, KEY_MODEL_CLASS)
 
 Logger = Logger.get_logger(__file__)
 
@@ -52,7 +51,7 @@ async def langchain_llm_generate(prompt: str, llm_type: str,
     if llm is None:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
-    if llm_type in CHAT_LLM_TYPES:
+    if llm_type in get_model_config().get_chat_llm_types():
       # use langchain chat interface for openai
 
       # create msg history for user chat if it exists

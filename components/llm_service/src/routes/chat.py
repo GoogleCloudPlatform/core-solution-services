@@ -26,7 +26,7 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
 from common.utils.logging_handler import Logger
-from config import ERROR_RESPONSES, CHAT_LLM_TYPES
+from config import ERROR_RESPONSES, get_model_config
 from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
                                 LLMUserChatResponse,
@@ -53,7 +53,7 @@ def get_chat_llm_list():
     return {
       "success": True,
       "message": "Successfully retrieved chat llm types",
-      "data": CHAT_LLM_TYPES
+      "data": get_model_config().get_chat_llm_types()
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e

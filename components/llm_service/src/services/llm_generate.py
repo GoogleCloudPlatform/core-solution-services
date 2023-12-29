@@ -27,7 +27,8 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
-from config import (get_model_config, CHAT_LLM_TYPES,
+from config import (get_model_config, get_provider_models,
+                    get_provider_value,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
@@ -59,8 +60,9 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
     start_time = time.time()
 
     # for Google models, prioritize native client over langchain
+    chat_llm_types = get_model_config().get_chat_llm_types()
     if llm_type in LLM_SERVICE_MODELS:
-      is_chat = llm_type in CHAT_LLM_TYPES
+      is_chat = llm_type in chat_llm_types
       response = await llm_service_predict(prompt, is_chat, llm_type)
     elif llm_type in LLM_TRUSS_MODELS:
       model_endpoint = get_model_config().get_provider_value(
@@ -74,7 +76,7 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
     elif llm_type in GOOGLE_LLM:
       google_llm = get_model_config().get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
-      is_chat = llm_type in CHAT_LLM_TYPES
+      is_chat = llm_type in chat_llm_types
       response = await google_llm_predict(prompt, is_chat, google_llm)
     elif llm_type in LANGCHAIN_LLM:
       response = await langchain_llm_generate(prompt, llm_type)
@@ -101,7 +103,7 @@ async def llm_chat(prompt: str, llm_type: str,
   """
   Logger.info(f"Generating chat with llm_type=[{llm_type}].")
   Logger.debug(f"prompt=[{prompt}].")
-  if llm_type not in CHAT_LLM_TYPES:
+  if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
   try:

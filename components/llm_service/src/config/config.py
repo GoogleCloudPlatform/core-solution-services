@@ -119,7 +119,6 @@ _, COHERE_API_KEY = mc.get_vendor_api_key(VENDOR_COHERE)
 
 # LLM types: list of model ids
 LLM_TYPES = mc.get_llm_types()
-CHAT_LLM_TYPES = mc.get_chat_llm_types()
 
 # LLM provider model_id lists
 LANGCHAIN_LLM = mc.get_provider_models(PROVIDER_LANGCHAIN)
