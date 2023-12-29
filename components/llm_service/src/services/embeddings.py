@@ -24,12 +24,10 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
-from config import (get_model_config,
+from config import (get_model_config, get_provider_embedding_types,
                     KEY_MODEL_NAME, KEY_MODEL_CLASS, KEY_MODEL_ENDPOINT,
                     PROVIDER_VERTEX, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
-                    DEFAULT_QUERY_EMBEDDING_MODEL,
-                    LANGCHAIN_EMBEDDING_TYPES, VERTEX_EMBEDDING_TYPES,
-                    LLM_SERVICE_EMBEDDING_TYPES)
+                    DEFAULT_QUERY_EMBEDDING_MODEL)
 from langchain.schema.embeddings import Embeddings
 
 # pylint: disable=broad-exception-caught
@@ -50,7 +48,7 @@ def get_embeddings(
 
   Args:
     text_chunks: list of text chunks to generate embeddings for
-    embedding_type: embedding type from config.EMBEDDING_TYPES
+    embedding_type: embedding model id
   Returns:
     Tuple of (list of booleans for chunk true if embeddings were generated,
               numpy array of embeddings indexed by chunks)
@@ -106,14 +104,22 @@ def _generate_batches(text_chunks: List[str],
 
 def generate_embeddings(batch: List[str], embedding_type: str) -> \
     List[Optional[List[float]]]:
+  """
+  Generate embeddings for a list of strings
+  Args:
+    batch: list of text chunks to generate embeddings for
+    embedding_type: str - model identifier
+  Returns:
+    list of embedding vectors (each vector is a list of floats)
+  """
 
   Logger.info(f"generating embeddings for embedding type {embedding_type}")
 
-  if embedding_type in LANGCHAIN_EMBEDDING_TYPES:
+  if embedding_type in get_provider_embedding_types(PROVIDER_LANGCHAIN):
     embeddings = get_langchain_embeddings(embedding_type, batch)
-  elif embedding_type in VERTEX_EMBEDDING_TYPES:
+  elif embedding_type in get_provider_embedding_types(PROVIDER_VERTEX):
     embeddings = get_vertex_embeddings(embedding_type, batch)
-  elif embedding_type in LLM_SERVICE_EMBEDDING_TYPES:
+  elif embedding_type in get_provider_embedding_types(PROVIDER_LLM_SERVICE):
     embeddings = get_llm_service_embeddings(embedding_type, batch)
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")

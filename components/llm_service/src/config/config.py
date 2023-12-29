@@ -79,9 +79,11 @@ ERROR_RESPONSES = {
 
 # model config
 _model_config = None
+MODEL_CONFIG_PATH = None
 
 def get_model_config() -> ModelConfig:
   global _model_config
+  global MODEL_CONFIG_PATH
   if _model_config is None:
     MODEL_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "models.json")
     _model_config = ModelConfig(MODEL_CONFIG_PATH)
@@ -109,29 +111,6 @@ Logger.info(f"ENABLE_TRUSS_LLAMA2 = {ENABLE_TRUSS_LLAMA2}")
 # API Keys
 _, OPENAI_API_KEY = mc.get_vendor_api_key(VENDOR_OPENAI)
 _, COHERE_API_KEY = mc.get_vendor_api_key(VENDOR_COHERE)
-
-# LLM types: list of model ids
-LLM_TYPES = mc.get_llm_types()
-
-# LLM provider model_id lists
-LANGCHAIN_LLM = mc.get_provider_models(PROVIDER_LANGCHAIN)
-GOOGLE_LLM = mc.get_provider_models(PROVIDER_VERTEX)
-GOOGLE_MODEL_GARDEN = mc.get_provider_models(PROVIDER_MODEL_GARDEN)
-LLM_TRUSS_MODELS = mc.get_provider_models(PROVIDER_TRUSS)
-LLM_SERVICE_MODELS = mc.get_provider_models(PROVIDER_LLM_SERVICE)
-
-Logger.info(f"LLM types loaded {LLM_TYPES}")
-
-# embedding models
-VERTEX_EMBEDDING_TYPES = \
-    mc.get_provider_embedding_types(PROVIDER_VERTEX)
-LANGCHAIN_EMBEDDING_TYPES = \
-    mc.get_provider_embedding_types(PROVIDER_LANGCHAIN)
-LLM_SERVICE_EMBEDDING_TYPES = \
-    mc.get_provider_embedding_types(PROVIDER_LLM_SERVICE)
-
-EMBEDDING_TYPES = mc.get_embedding_types()
-Logger.info(f"Embedding types loaded {EMBEDDING_TYPES}")
 
 # default models
 DEFAULT_LLM_TYPE = VERTEX_LLM_TYPE_BISON_CHAT

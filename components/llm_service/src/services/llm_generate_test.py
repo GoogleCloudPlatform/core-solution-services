@@ -45,11 +45,17 @@ Logger = Logger.get_logger(__file__)
 with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere"):
-      from config import (LLM_TYPES,
+      from config import (get_model_config,
                           COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
-                          VERTEX_LLM_TYPE_BISON_CHAT)
+                          VERTEX_LLM_TYPE_BISON_CHAT,
+                          PROVIDER_TRUSS,
+                          PROVIDER_MODEL_GARDEN,
+                          VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
+                          TRUSS_LLM_LLAMA2_CHAT,
+                          KEY_MODEL_ENDPOINT, KEY_MODEL_PARAMS,
+                          KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER)
 
 FAKE_GOOGLE_RESPONSE = TextGenerationResponse(text=FAKE_GENERATE_RESPONSE,
                                               _prediction_response={})
@@ -61,6 +67,35 @@ FAKE_TRUSS_RESPONSE = {
 
 FAKE_PROMPT = "test prompt"
 
+TEST_MODEL_GARDEN_CONFIG = {
+  VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT: {
+    KEY_PROVIDER: PROVIDER_MODEL_GARDEN,
+    KEY_MODEL_ENDPOINT: "fake-endpoint",
+    KEY_IS_CHAT: True,
+    KEY_MODEL_PARAMS: {
+      "temperature": 0.2,
+      "max_tokens": 900,
+      "top_p": 1.0,
+      "top_k": 10
+    },
+    KEY_ENABLED: True
+  }
+}
+
+TEST_TRUSS_CONFIG = {
+  TRUSS_LLM_LLAMA2_CHAT: {
+    KEY_PROVIDER: PROVIDER_TRUSS,
+    KEY_MODEL_ENDPOINT: "fake-endpoint",
+    KEY_IS_CHAT: True,
+    KEY_MODEL_PARAMS: {
+      "temperature": 0.2,
+      "max_tokens": 900,
+      "top_p": 1.0,
+      "top_k": 10
+    },
+    KEY_ENABLED: True
+  }
+}
 
 @pytest.fixture
 def create_user(firestore_emulator, clean_firestore):
@@ -140,25 +175,6 @@ async def test_llm_chat_google_resume(clean_firestore, test_chat):
 
 @pytest.mark.asyncio
 async def test_model_garden_predict(clean_firestore, test_chat):
-  from config import (VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
-                      KEY_MODEL_ENDPOINT, KEY_MODEL_PARAMS,
-                      KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER,
-                      PROVIDER_MODEL_GARDEN,
-                      get_model_config)
-  TEST_MODEL_GARDEN_CONFIG = {
-    VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT: {
-        KEY_PROVIDER: PROVIDER_MODEL_GARDEN,
-        KEY_MODEL_ENDPOINT: "fake-endpoint",
-        KEY_IS_CHAT: True,
-        KEY_MODEL_PARAMS: {
-          "temperature": 0.2,
-          "max_tokens": 900,
-          "top_p": 1.0,
-          "top_k": 10
-        },
-        KEY_ENABLED: True
-      }
-  }
   get_model_config().llm_model_providers = {
     PROVIDER_MODEL_GARDEN: TEST_MODEL_GARDEN_CONFIG
   }
@@ -175,13 +191,14 @@ async def test_model_garden_predict(clean_firestore, test_chat):
 
 @pytest.mark.asyncio
 async def test_llm_truss_service_predict(clean_firestore, test_chat):
+  get_model_config().llm_model_providers = {
+    PROVIDER_TRUSS: TEST_TRUSS_CONFIG
+  }
+  get_model_config().llm_models = TEST_TRUSS_CONFIG
   with mock.patch(
           "services.llm_generate.post_method",
           return_value=mock.Mock(status_code=200,
                                  json=lambda: FAKE_TRUSS_RESPONSE)):
-    from config import (LLM_TRUSS_MODELS, TRUSS_LLM_LLAMA2_CHAT)
-    LLM_TRUSS_MODELS[TRUSS_LLM_LLAMA2_CHAT] = "fake-endpoint"
-    LLM_TYPES.append(TRUSS_LLM_LLAMA2_CHAT)
     response = await llm_chat(
       FAKE_PROMPT, TRUSS_LLM_LLAMA2_CHAT)
 

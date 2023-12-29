@@ -20,7 +20,7 @@ from fastapi import APIRouter
 from common.utils.errors import (PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
 from config import (PAYLOAD_FILE_SIZE,
-                    ERROR_RESPONSES, LLM_TYPES, EMBEDDING_TYPES)
+                    ERROR_RESPONSES, get_model_config)
 from schemas.llm_schema import (LLMGenerateModel,
                                 LLMGetTypesResponse,
                                 LLMGetEmbeddingTypesResponse,
@@ -48,7 +48,7 @@ def get_llm_list():
     return {
       "success": True,
       "message": "Successfully retrieved llm types",
-      "data": LLM_TYPES
+      "data": get_model_config().get_llm_types()
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -69,7 +69,7 @@ def get_embedding_types():
     return {
       "success": True,
       "message": "Successfully retrieved embedding types",
-      "data": EMBEDDING_TYPES
+      "data": get_model_config().get_embedding_types()
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e

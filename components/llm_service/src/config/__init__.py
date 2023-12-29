@@ -41,15 +41,13 @@ from config.config import (
 
     # model config object
     get_model_config,
+    MODEL_CONFIG_PATH,
 
     # secrets
     LLM_BACKEND_ROBOT_USERNAME,
     LLM_BACKEND_ROBOT_PASSWORD,
 
-    # LLM types
-    LLM_TYPES,
-
-    # LLM vendor config
+    # LLM vendor flags
     ENABLE_OPENAI_LLM,
     ENABLE_COHERE_LLM,
 
@@ -57,16 +55,6 @@ from config.config import (
     DEFAULT_QUERY_CHAT_MODEL,
     DEFAULT_QUERY_EMBEDDING_MODEL,
     DEFAULT_LLM_TYPE,
-
-    # collections of models
-    GOOGLE_LLM,
-    LANGCHAIN_LLM,
-    EMBEDDING_TYPES,
-    LANGCHAIN_EMBEDDING_TYPES,
-    VERTEX_EMBEDDING_TYPES,
-    LLM_SERVICE_EMBEDDING_TYPES,
-    LLM_SERVICE_MODELS,
-    LLM_TRUSS_MODELS,
 
     # agent config
     AGENT_CONFIG_PATH,
@@ -121,5 +109,6 @@ from config.vector_store_config import (
 
 from config.utils import (
   get_provider_models,
-  get_provider_value
+  get_provider_value,
+  get_provider_embedding_types
 )

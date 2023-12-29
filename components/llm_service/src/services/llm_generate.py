@@ -31,11 +31,10 @@ from config import (get_model_config, get_provider_models,
                     get_provider_value,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN,
+                    PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
                     KEY_MODEL_PARAMS,
-                    DEFAULT_LLM_TYPE, LANGCHAIN_LLM, GOOGLE_LLM,
-                    LLM_SERVICE_MODELS,
-                    LLM_TRUSS_MODELS
+                    DEFAULT_LLM_TYPE
                     )
 from services.langchain_service import langchain_llm_generate
 
@@ -61,22 +60,22 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
 
     # for Google models, prioritize native client over langchain
     chat_llm_types = get_model_config().get_chat_llm_types()
-    if llm_type in LLM_SERVICE_MODELS:
+    if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
       is_chat = llm_type in chat_llm_types
       response = await llm_service_predict(prompt, is_chat, llm_type)
-    elif llm_type in LLM_TRUSS_MODELS:
+    elif llm_type in get_provider_models(PROVIDER_TRUSS):
       model_endpoint = get_provider_value(
           PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
           llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
-    elif llm_type in GOOGLE_LLM:
+    elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
       is_chat = llm_type in chat_llm_types
       response = await google_llm_predict(prompt, is_chat, google_llm)
-    elif llm_type in LANGCHAIN_LLM:
+    elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
@@ -107,24 +106,24 @@ async def llm_chat(prompt: str, llm_type: str,
   try:
     response = None
 
-    if llm_type in LLM_SERVICE_MODELS:
+    if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
       is_chat = True
       response = await llm_service_predict(prompt, is_chat, llm_type,
                                            user_chat)
-    elif llm_type in LLM_TRUSS_MODELS:
+    elif llm_type in get_provider_models(PROVIDER_TRUSS):
       model_endpoint = get_provider_value(
           PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
           llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
-    elif llm_type in GOOGLE_LLM:
+    elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
       is_chat = True
       response = await google_llm_predict(prompt, is_chat,
                                           google_llm, user_chat)
-    elif llm_type in LANGCHAIN_LLM:
+    elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
     return response
   except Exception as e:
@@ -185,14 +184,15 @@ async def llm_service_predict(prompt: str, is_chat: bool,
   Returns:
     the text response: str
   """
-  llm_service_config = LLM_SERVICE_MODELS.get(llm_type)
+  llm_service_config = get_model_config().get_provider_config(
+      PROVIDER_LLM_SERVICE, llm_type)
   if not auth_token:
     auth_client = UserCredentials(llm_service_config.get("user"),
                                   llm_service_config.get("password"))
     auth_token = auth_client.get_id_token()
 
   # start with base url of the LLM service we are calling
-  api_url = llm_service_config.get("api_base_url")
+  api_url = llm_service_config.get(KEY_MODEL_ENDPOINT)
 
   if is_chat:
     if user_chat:
