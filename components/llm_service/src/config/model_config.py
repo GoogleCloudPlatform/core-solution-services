@@ -278,9 +278,6 @@ class ModelConfig():
       if KEY_MODEL_FILE_URL in model_config and model_enabled:
         self.download_model_file(model_id, model_config)
 
-      Logger.info(
-          f"Setting model enabled flag for {model_id} to {model_enabled}")
-
   def is_model_enabled(self, model_id: str) -> bool:
     """
     Get model enabled setting.  We default to true if there is no key
@@ -502,7 +499,6 @@ class ModelConfig():
     """ 
     Instantiate the model class for providers that use them (e.g. Langchain)
     """
-    Logger.info(f"instantiating model class for {model_id}")
     model_class_instance = None
     provider, _ = self.get_model_provider_config(model_id)
     model_class_name = self.get_config_value(model_id, KEY_MODEL_CLASS)
@@ -522,7 +518,6 @@ class ModelConfig():
 
       # retrieve and instantiate model class
       model_cls = LANGCHAIN_CLASSES.get(model_class_name)
-      Logger.info(f"instantiating langchain model {model_cls} for {model_id}")
       model_class_instance = model_cls(model_name=model_name, **model_params)
     return model_class_instance
 

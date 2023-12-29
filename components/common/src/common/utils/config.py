@@ -26,7 +26,6 @@ def get_environ_flag(env_flag_str, default=True):
   if evn_val is None or evn_val == "":
     evn_val = default_str
   evn_flag = evn_val.lower() == "true"
-  Logger.info(f"{env_flag_str} = {evn_flag}")
   return evn_flag
 
 IS_CLOUD_LOGGING_ENABLED = bool(
