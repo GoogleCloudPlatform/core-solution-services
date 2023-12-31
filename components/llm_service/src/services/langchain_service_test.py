@@ -39,7 +39,8 @@ with mock.patch(
   with mock.patch("langchain.chat_models.ChatOpenAI"):
     with mock.patch("langchain.chat_models.ChatCohere"):
       from config import (get_model_config,
-                          KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER, KEY_MODEL_CLASS,
+                          KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER,
+                          KEY_MODEL_CLASS,
                           PROVIDER_LANGCHAIN, COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5)
 
