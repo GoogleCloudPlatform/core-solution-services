@@ -46,6 +46,6 @@ def get_provider_models(provider_id):
 def get_provider_embedding_types(provider_id):
   return get_model_config().get_provider_embedding_types(provider_id)
 
-def get_provider_value(provider_id, key, model_id):
+def get_provider_value(provider_id, key, model_id=None, default=None):
   return get_model_config().get_provider_value(
-      provider_id, key, model_id)
+      provider_id, key, model_id, default)
