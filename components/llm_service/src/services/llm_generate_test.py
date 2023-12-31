@@ -106,9 +106,9 @@ TEST_VERTEX_CONFIG = {
   },
   VERTEX_LLM_TYPE_BISON_TEXT: {
     KEY_PROVIDER: PROVIDER_VERTEX,
-    KEY_IS_CHAT: True,
+    KEY_IS_CHAT: False,
     KEY_ENABLED: True,
-    KEY_MODEL_NAME: "text-bison@001"
+    KEY_MODEL_NAME: "text-bison@002"
   }
 }
 
