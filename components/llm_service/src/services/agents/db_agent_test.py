@@ -20,6 +20,10 @@
 import os
 import pytest
 from unittest import mock
+from config import (get_model_config,
+                    KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER, KEY_MODEL_CLASS,
+                    PROVIDER_LANGCHAIN, OPENAI_LLM_TYPE_GPT4)
+
 from services.agents.db_agent import run_db_agent
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
@@ -44,6 +48,17 @@ FAKE_DATABASE_CONFIG = {
   }
 }
 
+class FakeModelClass:
+  pass
+
+TEST_OPENAI_CONFIG = {
+  OPENAI_LLM_TYPE_GPT4: {
+    KEY_PROVIDER: PROVIDER_LANGCHAIN,
+    KEY_IS_CHAT: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_CLASS: FakeModelClass
+  }
+}
 
 class FakeAgentExecutor():
   def run(self, prompt):
@@ -65,6 +80,11 @@ async def test_run_db_agent(mock_create_google_sheet,
                             mock_sql_statement_db_toolkit,
                             mock_sql_database):
   """Test run_db_agent"""
+  get_model_config().llm_model_providers = {
+    PROVIDER_LANGCHAIN: TEST_OPENAI_CONFIG
+  }
+  get_model_config().llm_models = TEST_OPENAI_CONFIG
+
   mock_create_google_sheet.return_value = FAKE_SPREADSHEET_OUTPUT
   mock_query_sql_database_tool.return_value = FakeQuerySQLDataBaseTool()
   mock_create_sql_agent.return_value = FakeAgentExecutor()
