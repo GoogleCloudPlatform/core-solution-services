@@ -44,17 +44,19 @@ Logger = Logger.get_logger(__file__)
 
 with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
-    with mock.patch("langchain.llms.Cohere"):
+    with mock.patch("langchain.chat_models.ChatCohere"):
       from config import (get_model_config,
                           COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
                           VERTEX_LLM_TYPE_BISON_CHAT,
+                          PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
                           PROVIDER_TRUSS,
                           PROVIDER_MODEL_GARDEN,
                           VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
                           TRUSS_LLM_LLAMA2_CHAT,
                           KEY_MODEL_ENDPOINT, KEY_MODEL_PARAMS,
+                          KEY_MODEL_CLASS, KEY_MODEL_NAME,
                           KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER)
 
 FAKE_GOOGLE_RESPONSE = TextGenerationResponse(text=FAKE_GENERATE_RESPONSE,
@@ -66,6 +68,49 @@ FAKE_TRUSS_RESPONSE = {
 }
 
 FAKE_PROMPT = "test prompt"
+
+class FakeModelClass:
+  async def agenerate(self, prompts):
+    return FAKE_CHAT_RESULT
+
+TEST_COHERE_CONFIG = {
+  COHERE_LLM_TYPE: {
+    KEY_PROVIDER: PROVIDER_LANGCHAIN,
+    KEY_IS_CHAT: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_CLASS: FakeModelClass()
+  }
+}
+
+TEST_OPENAI_CONFIG = {
+  OPENAI_LLM_TYPE_GPT3_5: {
+    KEY_PROVIDER: PROVIDER_LANGCHAIN,
+    KEY_IS_CHAT: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_CLASS: FakeModelClass()
+  }
+}
+
+TEST_VERTEX_CONFIG = {
+  KEY_MODEL_PARAMS: {
+    "temperature": 0.2,
+    "max_tokens": 900,
+    "top_p": 1.0,
+    "top_k": 10
+  },
+  VERTEX_LLM_TYPE_BISON_CHAT: {
+    KEY_PROVIDER: PROVIDER_VERTEX,
+    KEY_IS_CHAT: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_NAME: "chat-bison@002"
+  },
+  VERTEX_LLM_TYPE_BISON_TEXT: {
+    KEY_PROVIDER: PROVIDER_VERTEX,
+    KEY_IS_CHAT: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_NAME: "text-bison@001"
+  }
+}
 
 TEST_MODEL_GARDEN_CONFIG = {
   VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT: {
@@ -114,27 +159,34 @@ def test_chat(firestore_emulator, clean_firestore):
 
 @pytest.mark.asyncio
 async def test_llm_generate(clean_firestore):
-  with mock.patch("langchain.llms.Cohere.agenerate",
-                  return_value=FAKE_GENERATE_RESULT):
-    response = await llm_generate(FAKE_PROMPT, COHERE_LLM_TYPE)
+  get_model_config().llm_model_providers = {
+    PROVIDER_LANGCHAIN: TEST_COHERE_CONFIG
+  }
+  get_model_config().llm_models = TEST_COHERE_CONFIG
+
+  response = await llm_generate(FAKE_PROMPT, COHERE_LLM_TYPE)
 
   assert response == FAKE_GENERATE_RESPONSE
 
 
 @pytest.mark.asyncio
 async def test_llm_chat(clean_firestore):
-  with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
-                  return_value=FAKE_CHAT_RESULT):
-    response = await llm_chat(FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5)
+  get_model_config().llm_model_providers = {
+    PROVIDER_LANGCHAIN: TEST_OPENAI_CONFIG
+  }
+  get_model_config().llm_models = TEST_OPENAI_CONFIG
+  response = await llm_chat(FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5)
 
   assert response == FAKE_GENERATE_RESPONSE
 
 
 @pytest.mark.asyncio
 async def test_llm_chat_resume(clean_firestore, test_chat):
-  with mock.patch("langchain.chat_models.ChatOpenAI.agenerate",
-                  return_value=FAKE_CHAT_RESULT):
-    response = await llm_chat(
+  get_model_config().llm_model_providers = {
+    PROVIDER_LANGCHAIN: TEST_OPENAI_CONFIG
+  }
+  get_model_config().llm_models = TEST_OPENAI_CONFIG
+  response = await llm_chat(
       FAKE_PROMPT, OPENAI_LLM_TYPE_GPT3_5, test_chat)
 
   assert response == FAKE_GENERATE_RESPONSE
@@ -142,6 +194,10 @@ async def test_llm_chat_resume(clean_firestore, test_chat):
 
 @pytest.mark.asyncio
 async def test_llm_generate_google(clean_firestore):
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
   with mock.patch(
       "vertexai.preview.language_models.TextGenerationModel.predict_async",
           return_value=FAKE_GOOGLE_RESPONSE):
@@ -153,6 +209,10 @@ async def test_llm_generate_google(clean_firestore):
 
 @pytest.mark.asyncio
 async def test_llm_chat_google(clean_firestore, test_chat):
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
   with mock.patch(
           "vertexai.preview.language_models.ChatSession.send_message_async",
           return_value=FAKE_GOOGLE_RESPONSE):
@@ -164,6 +224,10 @@ async def test_llm_chat_google(clean_firestore, test_chat):
 
 @pytest.mark.asyncio
 async def test_llm_chat_google_resume(clean_firestore, test_chat):
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
   with mock.patch(
           "vertexai.preview.language_models.ChatSession.send_message_async",
           return_value=FAKE_GOOGLE_RESPONSE):
