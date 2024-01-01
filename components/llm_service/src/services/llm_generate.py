@@ -292,6 +292,7 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   context_prompt = prompt.join("\n\n")
 
   # get global vertex model params
+  # TODO don't assume Vertex model params are global
   parameters = get_provider_value(PROVIDER_VERTEX,
       KEY_MODEL_PARAMS)
 
