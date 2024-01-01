@@ -35,16 +35,19 @@ from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
 from common.utils.logging_handler import Logger
 from schemas.schema_examples import (CHAT_EXAMPLE, USER_EXAMPLE)
-from testing.test_config import (FAKE_GENERATE_RESPONSE,
-                                 FAKE_GENERATE_RESULT,
-                                 FAKE_CHAT_RESULT,
-                                 FAKE_PREDICTION_RESPONSE)
 
 Logger = Logger.get_logger(__file__)
 
 with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.chat_models.ChatCohere"):
+      from testing.test_config import (FAKE_GENERATE_RESPONSE,
+                                       FAKE_PREDICTION_RESPONSE,
+                                       TEST_COHERE_CONFIG,
+                                       TEST_OPENAI_CONFIG,
+                                       TEST_VERTEX_CONFIG,
+                                       TEST_MODEL_GARDEN_CONFIG,
+                                       TEST_TRUSS_CONFIG)
       from config import (get_model_config,
                           COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5,
@@ -54,10 +57,7 @@ with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
                           PROVIDER_TRUSS,
                           PROVIDER_MODEL_GARDEN,
                           VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
-                          TRUSS_LLM_LLAMA2_CHAT,
-                          KEY_MODEL_ENDPOINT, KEY_MODEL_PARAMS,
-                          KEY_MODEL_CLASS, KEY_MODEL_NAME,
-                          KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER)
+                          TRUSS_LLM_LLAMA2_CHAT)
 
 FAKE_GOOGLE_RESPONSE = TextGenerationResponse(text=FAKE_GENERATE_RESPONSE,
                                               _prediction_response={})
@@ -69,78 +69,6 @@ FAKE_TRUSS_RESPONSE = {
 
 FAKE_PROMPT = "test prompt"
 
-class FakeModelClass:
-  async def agenerate(self, prompts):
-    return FAKE_CHAT_RESULT
-
-TEST_COHERE_CONFIG = {
-  COHERE_LLM_TYPE: {
-    KEY_PROVIDER: PROVIDER_LANGCHAIN,
-    KEY_IS_CHAT: True,
-    KEY_ENABLED: True,
-    KEY_MODEL_CLASS: FakeModelClass()
-  }
-}
-
-TEST_OPENAI_CONFIG = {
-  OPENAI_LLM_TYPE_GPT3_5: {
-    KEY_PROVIDER: PROVIDER_LANGCHAIN,
-    KEY_IS_CHAT: True,
-    KEY_ENABLED: True,
-    KEY_MODEL_CLASS: FakeModelClass()
-  }
-}
-
-TEST_VERTEX_CONFIG = {
-  KEY_MODEL_PARAMS: {
-    "temperature": 0.2,
-    "max_tokens": 900,
-    "top_p": 1.0,
-    "top_k": 10
-  },
-  VERTEX_LLM_TYPE_BISON_CHAT: {
-    KEY_PROVIDER: PROVIDER_VERTEX,
-    KEY_IS_CHAT: True,
-    KEY_ENABLED: True,
-    KEY_MODEL_NAME: "chat-bison@002"
-  },
-  VERTEX_LLM_TYPE_BISON_TEXT: {
-    KEY_PROVIDER: PROVIDER_VERTEX,
-    KEY_IS_CHAT: False,
-    KEY_ENABLED: True,
-    KEY_MODEL_NAME: "text-bison@002"
-  }
-}
-
-TEST_MODEL_GARDEN_CONFIG = {
-  VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT: {
-    KEY_PROVIDER: PROVIDER_MODEL_GARDEN,
-    KEY_MODEL_ENDPOINT: "fake-endpoint",
-    KEY_IS_CHAT: True,
-    KEY_MODEL_PARAMS: {
-      "temperature": 0.2,
-      "max_tokens": 900,
-      "top_p": 1.0,
-      "top_k": 10
-    },
-    KEY_ENABLED: True
-  }
-}
-
-TEST_TRUSS_CONFIG = {
-  TRUSS_LLM_LLAMA2_CHAT: {
-    KEY_PROVIDER: PROVIDER_TRUSS,
-    KEY_MODEL_ENDPOINT: "fake-endpoint",
-    KEY_IS_CHAT: True,
-    KEY_MODEL_PARAMS: {
-      "temperature": 0.2,
-      "max_tokens": 900,
-      "top_p": 1.0,
-      "top_k": 10
-    },
-    KEY_ENABLED: True
-  }
-}
 
 @pytest.fixture
 def create_user(firestore_emulator, clean_firestore):

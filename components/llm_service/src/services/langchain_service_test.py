@@ -28,9 +28,6 @@ from unittest import mock
 from services.langchain_service import langchain_llm_generate
 from common.models import User, UserChat
 from schemas.schema_examples import (CHAT_EXAMPLE, USER_EXAMPLE)
-from testing.test_config import (FAKE_GENERATE_RESPONSE,
-                                 FAKE_GENERATE_RESULT,
-                                 FAKE_CHAT_RESULT)
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
 with mock.patch(
@@ -38,35 +35,14 @@ with mock.patch(
         side_effect=mock.MagicMock()) as mok:
   with mock.patch("langchain.chat_models.ChatOpenAI"):
     with mock.patch("langchain.chat_models.ChatCohere"):
+      from testing.test_config import (FAKE_GENERATE_RESPONSE,
+                                       TEST_COHERE_CONFIG,
+                                       TEST_OPENAI_CONFIG)
       from config import (get_model_config,
-                          KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER,
-                          KEY_MODEL_CLASS,
                           PROVIDER_LANGCHAIN, COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5)
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-
-class FakeModelClass:
-  async def agenerate(self, prompts):
-    return FAKE_CHAT_RESULT
-
-TEST_COHERE_CONFIG = {
-  COHERE_LLM_TYPE: {
-    KEY_PROVIDER: PROVIDER_LANGCHAIN,
-    KEY_IS_CHAT: True,
-    KEY_ENABLED: True,
-    KEY_MODEL_CLASS: FakeModelClass()
-  }
-}
-
-TEST_OPENAI_CONFIG = {
-  OPENAI_LLM_TYPE_GPT3_5: {
-    KEY_PROVIDER: PROVIDER_LANGCHAIN,
-    KEY_IS_CHAT: True,
-    KEY_ENABLED: True,
-    KEY_MODEL_CLASS: FakeModelClass()
-  }
-}
 
 
 @pytest.fixture

@@ -20,9 +20,8 @@
 import os
 import pytest
 from unittest import mock
-from config import (get_model_config,
-                    KEY_IS_CHAT, KEY_ENABLED, KEY_PROVIDER, KEY_MODEL_CLASS,
-                    PROVIDER_LANGCHAIN, OPENAI_LLM_TYPE_GPT4)
+from config import get_model_config, PROVIDER_LANGCHAIN
+from testing.test_config import TEST_OPENAI_CONFIG
 
 from services.agents.db_agent import run_db_agent
 
@@ -45,18 +44,6 @@ FAKE_DATABASE_CONFIG = {
   "dataset-1": {
     "description": "Some description about this dataset",
     "type": "SQL"
-  }
-}
-
-class FakeModelClass:
-  pass
-
-TEST_OPENAI_CONFIG = {
-  OPENAI_LLM_TYPE_GPT4: {
-    KEY_PROVIDER: PROVIDER_LANGCHAIN,
-    KEY_IS_CHAT: True,
-    KEY_ENABLED: True,
-    KEY_MODEL_CLASS: FakeModelClass
   }
 }
 
