@@ -16,7 +16,7 @@
   Unit tests for LLM Service endpoints
 """
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
+# pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports,use-implicit-booleaness-not-comparison
 import os
 import pytest
 from fastapi import FastAPI
