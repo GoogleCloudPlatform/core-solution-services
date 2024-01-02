@@ -19,6 +19,7 @@ import json
 import moment
 import streamlit as st
 from api import (build_query_engine, update_query_engine,
+                 delete_query_engine,
                  get_all_embedding_types,
                  get_all_vector_stores, get_all_query_engines,
                  get_all_docs_of_query_engine,
@@ -106,6 +107,11 @@ def query_engine_page():
             submit = st.form_submit_button("Update")
           if submit:
             submit_update(qe["id"], qe["name"], description)
+
+          delete = st.button("Delete", key=f"delete_{qe['name']}")
+          if delete:
+            delete_query_engine(qe["id"])
+            reload()
 
         with tab_urls:
           st.write(f"{len(url_list)} URLs")
