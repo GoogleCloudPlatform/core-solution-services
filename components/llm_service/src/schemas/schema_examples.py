@@ -117,6 +117,36 @@ QUERY_DOCUMENT_EXAMPLE_3 = {
   "index_end": 1234
 }
 
+QUERY_DOCUMENT_CHUNK_EXAMPLE_1 = {
+  "id": "asd98798as7dhjhkkjhk1",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
+  "query_document_id": "asd98798as7dhjgkjsdfh1",
+  "index": 0,
+  "text": "<p>query_document_chunk_example_1</p>",
+  "clean_text": "query_document_chunk_example_1",
+  "sentences": ["query_document_chunk_example_1"]
+}
+
+QUERY_DOCUMENT_CHUNK_EXAMPLE_2 = {
+  "id": "asd98798as7dhjhkkjhk12",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
+  "query_document_id": "asd98798as7dhjgkjsdfh1",
+  "index": 1,
+  "text": "<p>query_document_chunk_example_2</p>",
+  "clean_text": "query_document_chunk_example_2",
+  "sentences": ["query_document_chunk_example_2"]
+}
+
+QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
+  "id": "asd98798as7dhjhkkjhk13",
+  "query_engine_id": "asd98798as7dhjgkjs",
+  "query_document_id": "asd98798as7dhjgkjsdfh1",
+  "index": 2,
+  "text": "<p>query_document_chunk_example_3</p>",
+  "clean_text": "query_document_chunk_example_3",
+  "sentences": ["query_document_chunk_example_3"]
+}
+
 CHAT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "user_id": "fake-user-id",

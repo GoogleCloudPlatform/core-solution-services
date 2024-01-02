@@ -515,6 +515,23 @@ def delete_chat(chat_id, auth_token=None):
   return output
 
 
+def delete_query_engine(qe_id: str, auth_token=None):
+  """
+  Delete a specific QueryEngine.  We do a hard delete here to be
+  developer friendly.
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/query/engine/{qe_id}?hard_delete=True"
+  Logger.info(f"api_url={api_url}")
+
+  resp = api_request("DELETE", api_url, auth_token=auth_token)
+  resp_dict = get_response_json(resp)
+  output = resp_dict["success"]
+  return output
+
+
 def get_plan(plan_id, auth_token=None) -> UserPlan:
   """
   Retrieve a specific UserPlan object
