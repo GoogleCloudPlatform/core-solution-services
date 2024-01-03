@@ -37,7 +37,7 @@ def task_picker_display():
 
   if query_engine_list is None or len(query_engine_list) == 0:
     with st.container():
-      "No Query Engines"
+      st.text("No Query Engines")
   else:
     query_engines = {}
     for item in query_engine_list:

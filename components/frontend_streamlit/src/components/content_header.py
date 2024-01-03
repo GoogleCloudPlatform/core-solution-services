@@ -23,9 +23,7 @@ import validators
 import base64
 import os
 
-"""
-Helper to read image from relative path
-"""
+# Helper to read image from relative path
 def add_logo(logo_path):
   logo_url = os.path.join(os.path.dirname(__file__), logo_path)
   if validators.url(logo_url) is True:
@@ -35,9 +33,8 @@ def add_logo(logo_path):
         f"{base64.b64encode(Path(logo_url).read_bytes()).decode()}"
   st.image(logo)
 
-"""
-Includes the logo and selection boxes for LLM type and chat mode
-"""
+
+# Includes the logo and selection boxes for LLM type and chat mode
 def display_header():
   top_content_styles = """
     <style>
@@ -63,7 +60,6 @@ def display_header():
   img, model, chat_mode = st.columns([6, 1.7, 1.7])
   with img:
     add_logo("../assets/rit_logo.png")
-  
   with model:
     selected_model = st.selectbox(
         "Model", chat_llm_types)

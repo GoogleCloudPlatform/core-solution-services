@@ -53,7 +53,6 @@ def landing_page():
         label_visibility="collapsed",
         key="landing_input"
       )
-    
     with btn_col:
       submitted = st.form_submit_button("Submit")
     if submitted:
