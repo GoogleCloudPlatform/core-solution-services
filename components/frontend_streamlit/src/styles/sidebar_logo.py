@@ -5,27 +5,62 @@ def display_side_logo():
     <style>
       [data-testid="stSidebarNav"]::before {
         content: "GENIE";
-        font-size: 26px;
         font-weight: 500;
+        font-family: Arial;
         color: #5f6368;
         padding-left: 60px;
       }
-      [data-testid="stSidebarNav"] {
-        padding-top: 18.5px;
-      }
       [data-testid="stSidebarContent"] [data-testid="baseButton-header"]::after {
         content: "≡";
-        font-size: 35px;
         color: #5f6368;
+        font-size: 35px;
       }
       [data-testid="stSidebarContent"] [data-testid="baseButton-header"] svg {
         display: none;
       }
       [data-testid="stSidebarContent"] div:has([data-testid="baseButton-header"]) {
         width: 22px;
-        top: 0.8rem;
         right: 0;
-        left: 0.85rem;
+        left: 12px;
+      }
+
+      /* Smartphones and small devices */
+      @media screen and (max-width: 1024px) {
+        [data-testid="stSidebarNav"]::before {
+          font-size: 20px;
+        }
+        [data-testid="stSidebarNav"] {
+          padding-top: 12px;
+        }
+        [data-testid="stSidebarContent"] [data-testid="baseButton-header"]::after {
+          font-size: 28px;
+        }
+      }
+
+      /* Laptops and small displays */
+      @media screen and (min-width: 1024px) and (max-width: 1366px) {
+        [data-testid="stSidebarNav"]::before {
+          font-size: 24px;
+        }
+        [data-testid="stSidebarNav"] {
+          padding-top: 14px;
+        }
+        [data-testid="stSidebarContent"] div:has([data-testid="baseButton-header"]) {
+          top: 7px;
+        }
+      }
+
+      /* Large monitors and very large monitors */
+      @media screen and (min-width: 1366px) {
+        [data-testid="stSidebarNav"]::before {
+          font-size: 26px;
+        }
+        [data-testid="stSidebarNav"] {
+          padding-top: 18px;
+        }
+        [data-testid="stSidebarContent"] div:has([data-testid="baseButton-header"]) {
+          top: 13px;
+        }
       }
     </style>
   """

@@ -18,7 +18,7 @@
 import streamlit as st
 import utils
 import api
-from styles.login_markup import login_theme
+from styles.pages.login_markup import login_theme
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)

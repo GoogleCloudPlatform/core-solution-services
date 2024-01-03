@@ -427,7 +427,7 @@ def get_all_chat_llm_types(auth_token=None):
   Logger.info(resp)
 
   json_response = resp.json()
-  output = json_response["data"] or []
+  output = json_response["data"]
 
   # sort output in reverse order (to put Vertex on top)
   output.sort(reverse=True)

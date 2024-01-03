@@ -1,5 +1,5 @@
 import streamlit as st
-from styles.style import colors
+from styles.style_constants import colors, decoration
 
 def history_styles():
   HISTORY_STYLE = f"""<style>
@@ -12,7 +12,7 @@ def history_styles():
       font-weight: bold;
       text-align: left;
       border: 0;
-      border-radius: 12px;
+      border-radius: {decoration['border_radius']};
       display: block !important;
       transition: background-color 0.1s ease-in;
 
@@ -26,13 +26,7 @@ def history_styles():
       }}
     }}
 
-    h3 {{
-      padding-top: .59rem;
-      font-size: .97rem;
-      font-weight: 500;
-    }}
-
-    /* Styles for horizontal block buttons */
+    /* Styles for horizontal block buttons - new chat and clear */
     [data-testid=stHorizontalBlock] .stButton button {{
       background-color: {colors['tint_primary']};
       color: {colors['light_fill']};
@@ -43,7 +37,7 @@ def history_styles():
       }}
     }}
 
-    /* Styles for text in vertical block buttons */
+    /* Styles for text in vertical block chat history buttons */
     [data-testid=stVerticalBlockBorderWrapper] .stButton p {{
       white-space: nowrap;
       overflow: hidden;
@@ -52,12 +46,9 @@ def history_styles():
       font-size: .875rem;
     }}
 
-    /* Styles for select components */
-    [data-baseweb=select] > div:nth-child(1), [data-testid=stSelectbox] svg {{
-      cursor: pointer;
-      border-color: {colors['border_primary']};
-      border-radius: 0.7rem;
-      color: {colors['input_text']};
+    h3 {{
+      padding-top: .52rem;
+      font-weight: 500;
     }}
   }}
 
@@ -65,11 +56,6 @@ def history_styles():
   [data-testid=stSidebarNavSeparator] {{
     margin-left: 20px;
     margin-right: 20px;
-  }}
-
-  /* Styles for dropdown list items */
-  [data-testid=stVirtualDropdown] li {{
-    background-color: {colors['light_fill']};
   }}
 
   [data-testid="stSidebarNavItems"] {{

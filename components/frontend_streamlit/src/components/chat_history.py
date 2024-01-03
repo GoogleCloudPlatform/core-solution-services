@@ -69,7 +69,7 @@ def chat_history_panel():
   with st.sidebar:
     col1, col2, col3 = st.columns([3, 3, 2])
     with col1:
-      st.subheader("Chat History")
+      st.subheader("Recent")
     with col2:
       new_chat_button = st.button("New Chat", key="new chat")
       if new_chat_button:

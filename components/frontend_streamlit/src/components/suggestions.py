@@ -1,13 +1,10 @@
 import streamlit as st
 from components.task_picker import task_picker_display
-from styles.suggestions_markup import suggestions_component
 
 """
 Center content for landing page
 """
 def landing_suggestions():
-  suggestions_component()
-
   info, plan, chat, query = st.columns(4)
 
   with info:

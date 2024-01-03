@@ -17,6 +17,7 @@
 import importlib
 import utils
 import streamlit as st
+from styles.pages.login_markup import login_theme
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
@@ -39,6 +40,7 @@ def app():
   else:
     # TODO: Implement the actual authentication process via API call.
     # Change this to False for testing with the login page.
+    login_theme()
     login.login_page()
 
 

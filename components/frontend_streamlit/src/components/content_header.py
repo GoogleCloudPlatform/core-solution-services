@@ -26,13 +26,23 @@ def display_header():
       .main [data-testid="stImage"] {
         padding-top: 16px;
       }
+      @media screen and (max-width: 1024px) {
+        .main [data-testid="stImage"] img {
+          max-width: 85% !important;
+        }
+      }
+      @media screen and (min-width: 1024px) and (max-width: 1366px) {
+        .main [data-testid="stImage"] img {
+          max-width: 90% !important;
+        }
+      }
     </style>
   """
   st.markdown(TOP_STYLES, unsafe_allow_html=True)
 
   chat_llm_types = get_all_chat_llm_types()
 
-  img, model, chat_mode = st.columns([6.6, 1.7, 1.7])
+  img, model, chat_mode = st.columns([6, 1.7, 1.7])
   with img:
     add_logo('../assets/rit_logo.png')
   

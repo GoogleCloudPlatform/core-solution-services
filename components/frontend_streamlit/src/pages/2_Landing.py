@@ -17,9 +17,9 @@
 # pylint: disable=invalid-name,pointless-string-statement,unused-variable
 import streamlit as st
 from components.chat_history import chat_history_panel
-from components.landing_header import display_header
+from components.content_header import display_header
 from components.suggestions import landing_suggestions
-from styles.landing_markup import landing_theme
+from styles.pages.landing_markup import landing_theme
 from common.utils.logging_handler import Logger
 import utils
 
@@ -34,12 +34,14 @@ def landing_page():
   # Clean up session.
   utils.reset_session_state()
 
+  landing_theme()
+  
   # Returns the values of the select input boxes
   selections = display_header()
 
-  st.title("Hello again")
+  st.title("Welcome")
   st.subheader("Start your journey here or explore the options below.")
-  landing_theme()
+  
   # Center content
   landing_suggestions()
 

@@ -1,5 +1,5 @@
 import streamlit as st
-from styles.style import colors
+from styles.style_constants import colors, decoration
 from styles.sidebar_logo import display_side_logo
 
 def main_styles():
@@ -7,22 +7,16 @@ def main_styles():
 
   SHARED_STYLES = f"""
     <style>
-      /* Global font family */
-      body, div, span, h1, h2, h3, p, button, input {{
-        font-family: Arial;
-      }}
-
       /* Main container styles */
       .main {{
         background-color: {colors['background']};
         border-radius: 18px;
-        margin-top: 64px;
         margin-bottom: 24px;
         margin-right: 56px;
       }}
       .main [data-testid="block-container"] {{
-        padding: 40px 24px;
-        max-width: 60rem;
+        padding-top: 0;
+        padding-bottom: 0;
       }}
 
       /* Sidebar panel color */
@@ -34,6 +28,120 @@ def main_styles():
       [data-testid="stDecoration"],
       [data-testid="stHeader"] {{
         display: none;
+      }}
+      [data-testid="InputInstructions"] {{
+        display: none;
+      }}
+
+      /* Generic button styles */
+      .main .stButton button {{
+        background-color: {colors['tint_primary']};
+        color: {colors['light_fill']};
+        border: none;
+        transition: background-color 0.1s ease-in;
+
+        &:hover {{
+          background-color: {colors['btn_hover']};
+        }}
+
+        &:focus:not(:active) {{
+          color: {colors['light_fill']};
+        }}
+      }}
+
+      /* Select input box styling */
+      [data-baseweb=select] > div:nth-child(1) {{
+        cursor: pointer;
+        border-color: {colors['border_primary']};
+        background-color: {colors['light_fill']};
+        border-radius: {decoration['border_radius']};
+        color: {colors['text_primary']};
+      }}
+      [data-testid=stSelectbox] label p {{
+        color: {colors['text_primary']};
+      }}
+      [data-testid=stSelectbox] svg {{
+        color: #5f6368;
+      }}
+      [data-testid=stVirtualDropdown] li {{
+        background-color: {colors['light_fill']};
+      }}
+
+      /* Expander styling */
+      .main [data-testid="stExpander"] details {{
+        border-color: {colors['light_fill']};
+        border-radius: {decoration['border_radius']};
+        background-color: {colors['light_fill']};
+        color: {colors['dim_text']};
+      }}
+      .main [data-testid="stExpander"] [data-testid="stText"] {{
+        font-family: Arial;
+        text-wrap: wrap;
+      }}
+      .main [data-testid="stExpander"] p {{
+        font-family: Arial;
+      }}
+      .main [data-testid="stExpander"] summary:hover {{
+        color: #3b3a3a;
+      }}
+      .main [data-testid="stExpander"] summary svg {{
+        display: none;
+      }}
+      .main [data-testid="stExpander"] summary p {{
+        font-weight: 600;
+        font-size: .96rem;
+      }}
+      .main [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
+        gap: 1rem !important;
+      }}
+
+      /* Smartphones and small devices */
+      @media screen and (max-width: 1024px) {{
+        .main [data-testid="block-container"] {{
+          max-width: 40rem;
+        }}
+        .main {{
+          margin: 0;
+          border-radius: 0;
+        }}
+      }}
+
+      /* Laptops and small displays */
+      @media screen and (min-width: 1024px) and (max-width: 1366px) {{
+        .main {{
+          margin-top: 56px;
+          margin-right: 48px;
+        }}
+        .main [data-testid="block-container"] {{
+          max-width: 52rem;
+        }}
+        [data-baseweb=select] {{
+          font-size: .95rem;
+        }}
+        [data-baseweb=select] > div:nth-child(1) > div:nth-child(1) {{
+          padding-top: .43rem;
+          padding-bottom: .43rem;
+        }}
+      }}
+
+      /* Large monitors */
+      @media screen and (min-width: 1366px) and (max-width: 1600px) {{
+        .main {{
+          margin-top: 64px;
+        }}
+        .main [data-testid="block-container"] {{
+          max-width: 58rem;
+        }}
+      }}
+
+      /* Very large monitors */
+      @media screen and (min-width: 1600px) {{
+        .main {{
+          margin-top: 64px;
+        }}
+        .main [data-testid="block-container"] {{
+          max-width: 60rem;
+        }}
       }}
     </style>
   """
