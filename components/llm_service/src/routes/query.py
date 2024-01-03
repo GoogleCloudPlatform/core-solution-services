@@ -18,7 +18,8 @@
 import traceback
 from fastapi import APIRouter, Depends
 
-from common.models import QueryEngine, User, UserQuery, QueryDocument
+from common.models import (QueryEngine,
+                           User, UserQuery, QueryDocument)
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
@@ -42,7 +43,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import (query_generate,
-                                          vector_store_from_query_engine)
+                                          delete_engine)
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -309,9 +310,9 @@ def update_query_engine(query_engine_id: str,
 @router.delete(
   "/engine/{query_engine_id}",
   name="Delete a query engine")
-def delete_query_engine(query_engine_id: str):
+def delete_query_engine(query_engine_id: str, hard_delete=False):
   """
-  Delete a query engine
+  Delete a query engine.  By default we do a soft delete.
 
   Args:
       query_engine_id (LLMQueryEngineModel)
@@ -330,9 +331,8 @@ def delete_query_engine(query_engine_id: str):
   try:
     Logger.info(f"Deleting q_engine=[{q_engine.name}]")
 
-    qe_vector_store = vector_store_from_query_engine(q_engine)
-    qe_vector_store.delete()
-    QueryEngine.soft_delete_by_id(query_engine_id)
+    delete_engine(q_engine, hard_delete)
+
     Logger.info(f"Successfully deleted q_engine=[{q_engine.name}]")
   except Exception as e:
     Logger.error(e)

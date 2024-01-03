@@ -358,13 +358,7 @@ def query_engine_build(doc_url: str,
         build_doc_index(doc_url, query_engine, qe_vector_store)
   except Exception as e:
     # delete query engine model if build unsuccessful
-    QueryDocument.collection.filter(
-      "query_engine_id", "==", q_engine.id
-    ).delete()
-    QueryDocumentChunk.collection.filter(
-      "query_engine_id", "==", q_engine.id
-    ).delete()
-    QueryEngine.delete_by_id(q_engine.id)
+    delete_engine(q_engine, hard_delete=True)
     raise InternalServerError(str(e)) from e
 
   Logger.info(f"Completed query engine build for {query_engine}")
@@ -507,3 +501,49 @@ def datasource_from_url(doc_url, storage_client):
   else:
     raise InternalServerError(
         f"No datasource available for doc url [{doc_url}]")
+
+
+def delete_engine(q_engine: QueryEngine, hard_delete=False):
+  """
+  Delete query engine and associated models and vector store data.
+  """
+  # delete vector store data
+  qe_vector_store = vector_store_from_query_engine(q_engine)
+  try:
+    qe_vector_store.delete()
+  except Exception:
+    Logger.error(
+        f"error deleting vector store for query engine {q_engine.id}")
+
+  if hard_delete:
+    Logger.info(f"performing hard delete of query engine {q_engine.id}")
+
+    # delete query docs and chunks
+    QueryDocument.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
+    QueryDocumentChunk.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
+    # delete query engine
+    QueryEngine.delete_by_id(q_engine.id)
+  else:
+    Logger.info(f"performing soft delete of query engine {q_engine.id}")
+
+    # delete query docs and chunks
+    qdocs = QueryDocument.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qd in qdocs:
+      qd.soft_delete_by_id(qd.id)
+
+    qchunks = QueryDocumentChunk.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qc in qchunks:
+      qc.soft_delete_by_id(qc.id)
+
+    # delete query engine
+    QueryEngine.soft_delete_by_id(q_engine.id)
+
+  Logger.info(f"Successfully deleted q_engine=[{q_engine.name}]")
