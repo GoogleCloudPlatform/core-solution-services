@@ -18,7 +18,7 @@
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 
 import json
-from config.config import AGENT_DATASET_CONFIG_PATH
+from config.config import AGENT_DATASET_CONFIG_PATH, get_model_config
 
 # Global DATASETS as the cache for loading datasets only once.
 DATASETS = None
@@ -39,3 +39,14 @@ def load_config_json(file_path: str):
   except Exception as e:
     raise RuntimeError(
         f" Error loading config file {file_path}: {e}") from e
+
+# Helper methods for config retrieval
+def get_provider_models(provider_id):
+  return get_model_config().get_provider_models(provider_id)
+
+def get_provider_embedding_types(provider_id):
+  return get_model_config().get_provider_embedding_types(provider_id)
+
+def get_provider_value(provider_id, key, model_id=None, default=None):
+  return get_model_config().get_provider_value(
+      provider_id, key, model_id, default)

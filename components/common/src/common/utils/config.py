@@ -13,9 +13,20 @@
 # limitations under the License.
 
 """Config file for utils"""
-
+# pylint: disable=logging-fstring-interpolation
 import os
 from enum import Enum
+from common.utils.logging_handler import Logger
+
+Logger = Logger.get_logger(__file__)
+
+def get_environ_flag(env_flag_str, default=True):
+  default_str = str(default)
+  evn_val = os.getenv(env_flag_str, default_str)
+  if evn_val is None or evn_val == "":
+    evn_val = default_str
+  evn_flag = evn_val.lower() == "true"
+  return evn_flag
 
 IS_CLOUD_LOGGING_ENABLED = bool(
   os.getenv("IS_CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))

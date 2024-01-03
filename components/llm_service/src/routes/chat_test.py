@@ -40,7 +40,7 @@ os.environ["COHERE_API_KEY"] = "fake-key"
 with mock.patch("common.utils.secrets.get_secret"):
   with mock.patch("langchain.chat_models.ChatOpenAI", new=mock.AsyncMock()):
     with mock.patch("langchain.llms.Cohere", new=mock.AsyncMock()):
-      from config import LLM_TYPES
+      from config import get_model_config
 
 # assigning url
 api_url = f"{API_URL}/chat"

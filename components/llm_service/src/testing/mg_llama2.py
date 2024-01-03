@@ -18,6 +18,9 @@ import asyncio
 import os
 import sys
 from google.cloud import aiplatform_v1
+from config import (get_model_config,
+                    KEY_MODEL_ENDPOINT,
+                    VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../../common/src"))
 from services.llm_generate import model_garden_predict
@@ -29,8 +32,10 @@ REGION = "us-central1"
 os.environ["PROJECT_ID"] = PROJECT_ID
 os.environ["REGION"] = REGION
 
-# Endpoint ID from Online Prediction/vertex AI page
-os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "3894402015861669888"
+
+mg_llama2_config = \
+    get_model_config().get_model_config(VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT)
+mg_llama2_config[KEY_MODEL_ENDPOINT] = "3894402015861669888"
 
 client = aiplatform_v1.EndpointServiceClient()
 prompt = "What is a Medicaid?"
@@ -45,10 +50,10 @@ async def test_model_garden_predict():
   }
   #await llm_generate(prompt, "VertexAI-ModelGarden-LLAMA2-Chat")
 
-  response = await model_garden_predict(aip_endpoint_name=os.environ
-                                      ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"],
-                                        prompt=prompt,
-                                        parameters=parameters)
+  response = await model_garden_predict(
+      prompt=prompt,
+      llm_type="VertexAI-ModelGarden-LLAMA2-Chat",
+      parameters=parameters)
   print(response)
 
 
