@@ -35,13 +35,11 @@ def landing_page():
   utils.reset_session_state()
 
   landing_theme()
-  
   # Returns the values of the select input boxes
   selections = display_header()
 
   st.title("Welcome")
   st.subheader("Start your journey here or explore the options below.")
-  
   # Center content
   landing_suggestions()
 
@@ -58,7 +56,6 @@ def landing_page():
     
     with btn_col:
       submitted = st.form_submit_button("Submit")
-
     if submitted:
       utils.reset_session_state()
       st.session_state.landing_user_input = user_input

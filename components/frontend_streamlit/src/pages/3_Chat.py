@@ -14,15 +14,15 @@
 """
   Streamlit app Chat Page
 """
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,unused-variable
 import re
 import streamlit as st
 from api import (
     get_chat, run_dispatch, get_plan,
     run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
-from styles.pages.chat_markup import chat_theme
 from components.content_header import display_header
+from styles.pages.chat_markup import chat_theme
 from common.utils.logging_handler import Logger
 import utils
 
@@ -253,7 +253,6 @@ def chat_page():
         label_visibility="collapsed",
         key="user_input"
       )
-    
     with btn_col:
       submitted = st.form_submit_button("Submit")
 

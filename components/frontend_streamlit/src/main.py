@@ -31,7 +31,6 @@ def app():
       layout="wide",
       initial_sidebar_state="expanded",
   )
-  
   with st.sidebar:
     st.title("GENIE v1.0")
 

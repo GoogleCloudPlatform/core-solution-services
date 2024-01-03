@@ -1,8 +1,26 @@
+# Copyright 2023 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+Contains the styles for the sidebar content and chat history
+"""
+
 import streamlit as st
 from styles.style_constants import colors, decoration
 
 def history_styles():
-  HISTORY_STYLE = f"""<style>
+  chat_history_style = f"""<style>
   /* General styles for sidebar content */
   [data-testid=stSidebarUserContent] {{
     /* Button styles */
@@ -62,5 +80,5 @@ def history_styles():
     padding-top: 1rem;
   }}
   </style>"""
-  st.markdown(HISTORY_STYLE, unsafe_allow_html=True)
+  st.markdown(chat_history_style, unsafe_allow_html=True)
   
