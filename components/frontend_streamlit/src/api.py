@@ -427,7 +427,7 @@ def get_all_chat_llm_types(auth_token=None):
   Logger.info(resp)
 
   json_response = resp.json()
-  output = json_response["data"]
+  output = json_response["data"] or []
 
   # sort output in reverse order (to put Vertex on top)
   output.sort(reverse=True)
@@ -574,3 +574,4 @@ def login_user(user_email, user_password) -> str or None:
     st.session_state["username"] = user_email
     st.session_state["password"] = user_password
     return id_token
+  

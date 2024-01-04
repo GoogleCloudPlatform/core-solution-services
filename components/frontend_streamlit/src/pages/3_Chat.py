@@ -14,42 +14,21 @@
 """
   Streamlit app Chat Page
 """
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,unused-variable
 import re
 import streamlit as st
 from api import (
     get_chat, run_dispatch, get_plan,
     run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
+from components.content_header import display_header
+from styles.pages.chat_markup import chat_theme
 from common.utils.logging_handler import Logger
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
-CHAT_PAGE_STYLES = """
-<style>
-  .stButton[data-testid="stFormSubmitButton"] {
-    display: none;
-  }
-  .stTextInput input {
-    color: #555555;
-    -webkit-text-fill-color: black;
-  }
-  .stTextArea label {
-    display: none !important;
-  }
-  .stTextArea textarea {
-    color: #555555;
-    -webkit-text-fill-color: black;
-  }
-  div[data-testid='stExpander'] {
-    margin-left: 3em;
-  }
-</style>
-"""
-
 Logger = Logger.get_logger(__file__)
-
 
 def on_submit(user_input):
   """ Run dispatch agent when adding an user input prompt """
@@ -240,7 +219,11 @@ def init_messages():
 
 
 def chat_page():
-  st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
+  chat_theme()
+
+  # Returns the values of the select input boxes
+  selections = display_header()
+
   st.title("Chat")
 
   chat_llm_types = get_all_chat_llm_types()
@@ -261,16 +244,17 @@ def chat_page():
     on_submit(user_input)
 
   with st.form("user_input_form", border=False, clear_on_submit=True):
-    col1, col2, col3 = st.columns([5, 3, 2])
-    with col1:
-      user_input = st.text_input("User Input", key="user_input")
+    input_col, btn_col = st.columns([9.4, .6])
+
+    with input_col:
+      user_input = st.text_input(
+        placeholder="Enter a prompt here",
+        label="Enter prompt",
+        label_visibility="collapsed",
+        key="user_input"
+      )
+    with btn_col:
       submitted = st.form_submit_button("Submit")
-    with col2:
-      st.session_state.chat_llm_type = st.selectbox(
-          "Model", chat_llm_types)
-    with col3:
-      st.session_state.default_route = st.selectbox(
-          "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
 
     if submitted:
       on_submit(user_input)
