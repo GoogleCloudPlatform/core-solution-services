@@ -18,34 +18,11 @@ Chat history panel for UI
 
 import streamlit as st
 from common.utils.logging_handler import Logger
-from api import get_all_chats
+from api import get_all_chats, delete_chat
+from styles.chat_history_styles import history_styles
 import utils
 
 Logger = Logger.get_logger(__file__)
-
-CHAT_HISTORY_LIST_STYLE = """
-<style>
-  [data-testid=stSidebar] {
-    .stButton button {
-      @media screen and (prefers-color-scheme: dark) {
-        background-color: #195;
-      }
-      display: block !important;
-      font-weight: bold;
-      border: 0px;
-      text-align: left;
-      border-radius: 10px;
-    }
-
-    .stButton button:hover {
-      background-color:#d3d3d3;
-      color: black;
-      border-radius: 10px;
-      text-align: left;
-    }
-  }
-</style>
-"""
 
 def get_agent_chats(selected_agent):
   """
@@ -67,7 +44,7 @@ def get_agent_chats(selected_agent):
     if "agent_name" in user_chat and (
       selected_agent in (user_chat["agent_name"], "All")):
       agent_name = user_chat.get("agent_name", None)
-      agent_name_str = f"**{agent_name}** " if agent_name else ""
+      agent_name_str = f"**{agent_name}:** " if agent_name else ""
 
       with st.container():
         select_chat = st.button(f"{agent_name_str}{first_question}",
@@ -84,22 +61,26 @@ def chat_history_panel():
   """
   List agent options for retrieving chat history
   """
+  history_styles()
+
   st.session_state.user_chats = get_all_chats(
       auth_token=st.session_state.auth_token)
-  css = CHAT_HISTORY_LIST_STYLE
-  st.markdown(css, unsafe_allow_html=True)
 
   with st.sidebar:
-    col1, col2 = st.columns([3, 2])
+    col1, col2, col3 = st.columns([3, 3, 2])
     with col1:
-      st.subheader("My Chats")
+      st.subheader("Recent")
     with col2:
-      new_chat_button = st.button("New Chat")
+      new_chat_button = st.button("New Chat", key="new chat")
       if new_chat_button:
-        st.session_state.messages = None
-        st.session_state.chat_id = None
-        st.session_state.landing_user_input = None
+        utils.reset_session_state()
         utils.navigate_to("Chat")
+    with col3:
+      clear_chats_button = st.button("Clear", key="clear chat")
+      if clear_chats_button:
+        clear_chat_history()
+        utils.reset_session_state()
+        utils.navigate_to("Landing")
 
     all_agents = set()
 
@@ -110,5 +91,13 @@ def chat_history_panel():
     agent_options.insert(0, "All")
 
     # Add agent options to dropdown
-    select_agent = st.selectbox("Filter by Agent:", agent_options, key="agent0")
+    select_agent = st.selectbox("Filter by Agent", agent_options, key="agent0")
     get_agent_chats(select_agent)
+
+
+def clear_chat_history():
+  """
+  Clear user chat history by deleting all chats
+  """
+  for user_chat in (st.session_state.user_chats or []):
+    delete_chat(user_chat["id"])

@@ -20,17 +20,22 @@ from typing import Optional
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
 
-from common.config import PROJECT_ID
+from common.config import PROJECT_ID, REGION
 from common.models import UserChat
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
-from config import (LANGCHAIN_LLM, GOOGLE_LLM, GOOGLE_MODEL_GARDEN,
-                    LLM_SERVICE_MODELS, OPENAI_LLM_TYPE_GPT3_5,
-                    VERTEX_LLM_TYPE_BISON_TEXT, CHAT_LLM_TYPES, REGION,
-                    LLM_TRUSS_MODELS)
+from config import (get_model_config, get_provider_models,
+                    get_provider_value,
+                    PROVIDER_VERTEX, PROVIDER_TRUSS,
+                    PROVIDER_MODEL_GARDEN,
+                    PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
+                    KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
+                    KEY_MODEL_PARAMS,
+                    DEFAULT_LLM_TYPE
+                    )
 from services.langchain_service import langchain_llm_generate
 
 Logger = Logger.get_logger(__file__)
@@ -48,26 +53,29 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
               f" llm_type={llm_type}")
   # default to openai LLM
   if llm_type is None:
-    llm_type = OPENAI_LLM_TYPE_GPT3_5
+    llm_type = DEFAULT_LLM_TYPE
 
   try:
     start_time = time.time()
 
     # for Google models, prioritize native client over langchain
-    if llm_type in LLM_SERVICE_MODELS.keys():
-      is_chat = llm_type in CHAT_LLM_TYPES
+    chat_llm_types = get_model_config().get_chat_llm_types()
+    if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
+      is_chat = llm_type in chat_llm_types
       response = await llm_service_predict(prompt, is_chat, llm_type)
-    elif llm_type in LLM_TRUSS_MODELS.keys():
-      model_endpoint = LLM_TRUSS_MODELS.get(llm_type)
-      response = await llm_truss_service_predict(prompt, model_endpoint)
-    elif llm_type in GOOGLE_MODEL_GARDEN.keys():
-      aip_endpoint_name = GOOGLE_MODEL_GARDEN.get(llm_type)
-      response = await model_garden_predict(prompt, aip_endpoint_name)
-    elif llm_type in GOOGLE_LLM.keys():
-      google_llm = GOOGLE_LLM.get(llm_type, VERTEX_LLM_TYPE_BISON_TEXT)
-      is_chat = llm_type in CHAT_LLM_TYPES
+    elif llm_type in get_provider_models(PROVIDER_TRUSS):
+      model_endpoint = get_provider_value(
+          PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
+      response = await llm_truss_service_predict(
+          llm_type, prompt, model_endpoint)
+    elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
+      response = await model_garden_predict(prompt, llm_type)
+    elif llm_type in get_provider_models(PROVIDER_VERTEX):
+      google_llm = get_provider_value(
+          PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
+      is_chat = llm_type in chat_llm_types
       response = await google_llm_predict(prompt, is_chat, google_llm)
-    elif llm_type in LANGCHAIN_LLM.keys():
+    elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
@@ -92,34 +100,38 @@ async def llm_chat(prompt: str, llm_type: str,
   """
   Logger.info(f"Generating chat with llm_type=[{llm_type}].")
   Logger.debug(f"prompt=[{prompt}].")
-  if llm_type not in CHAT_LLM_TYPES:
+  if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
   try:
     response = None
 
-    if llm_type in LLM_SERVICE_MODELS.keys():
+    if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
       is_chat = True
       response = await llm_service_predict(prompt, is_chat, llm_type,
                                            user_chat)
-    elif llm_type in LLM_TRUSS_MODELS.keys():
-      model_endpoint = LLM_TRUSS_MODELS.get(llm_type)
-      response = await llm_truss_service_predict(prompt, model_endpoint)
-    elif llm_type in GOOGLE_MODEL_GARDEN.keys():
-      aip_endpoint_name = GOOGLE_MODEL_GARDEN.get(llm_type)
-      response = await model_garden_predict(prompt, aip_endpoint_name)
-    elif llm_type in GOOGLE_LLM.keys():
-      google_llm = GOOGLE_LLM.get(llm_type)
+    elif llm_type in get_provider_models(PROVIDER_TRUSS):
+      model_endpoint = get_provider_value(
+          PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
+      response = await llm_truss_service_predict(
+          llm_type, prompt, model_endpoint)
+    elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
+      response = await model_garden_predict(prompt, llm_type)
+    elif llm_type in get_provider_models(PROVIDER_VERTEX):
+      google_llm = get_provider_value(
+          PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
       is_chat = True
       response = await google_llm_predict(prompt, is_chat,
                                           google_llm, user_chat)
-    elif llm_type in LANGCHAIN_LLM.keys():
+    elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
     return response
   except Exception as e:
+    import traceback
+    Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
-async def llm_truss_service_predict(prompt: str,
+async def llm_truss_service_predict(llm_type: str, prompt: str,
                                     model_endpoint: str,
                                     parameters: dict = None) -> str:
   """
@@ -133,15 +145,10 @@ async def llm_truss_service_predict(prompt: str,
     the text response: str
   """
   if parameters is None:
-    parameters = {
-        "prompt": f"'{prompt}'",
-        "temperature": 0.2,
-        "top_p": 0.95,
-        "top_k": 40,
-        "max_length": 2048
-    }
-  else:
-    parameters.update({"prompt": f"'{prompt}'"})
+    parameters = get_provider_value(
+        PROVIDER_TRUSS, KEY_MODEL_PARAMS, llm_type)
+
+  parameters.update({"prompt": f"'{prompt}'"})
 
   api_url = f"http://{model_endpoint}/v1/models/model:predict"
   Logger.info(f"Generating text using Truss Hosted Model "
@@ -177,14 +184,15 @@ async def llm_service_predict(prompt: str, is_chat: bool,
   Returns:
     the text response: str
   """
-  llm_service_config = LLM_SERVICE_MODELS.get(llm_type)
+  llm_service_config = get_model_config().get_provider_config(
+      PROVIDER_LLM_SERVICE, llm_type)
   if not auth_token:
     auth_client = UserCredentials(llm_service_config.get("user"),
                                   llm_service_config.get("password"))
     auth_token = auth_client.get_id_token()
 
   # start with base url of the LLM service we are calling
-  api_url = llm_service_config.get("api_base_url")
+  api_url = llm_service_config.get(KEY_MODEL_ENDPOINT)
 
   if is_chat:
     if user_chat:
@@ -216,7 +224,7 @@ async def llm_service_predict(prompt: str, is_chat: bool,
   return output
 
 async def model_garden_predict(prompt: str,
-                               aip_endpoint_name: str,
+                               llm_type: str,
                                parameters: dict = None) -> str:
   """
   Generate text with a Model Garden model.
@@ -227,6 +235,9 @@ async def model_garden_predict(prompt: str,
   Returns:
     the prediction text.
   """
+  aip_endpoint_name = get_provider_value(
+      PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
+
   aip_endpoint = f"projects/{PROJECT_ID}/locations/" \
                  f"{REGION}/endpoints/{aip_endpoint_name}"
   Logger.info(f"Generating text using Model Garden "
@@ -234,20 +245,16 @@ async def model_garden_predict(prompt: str,
               f"parameters=[{parameters}.")
 
   if parameters is None:
-    parameters = {
-        "prompt": f"'{prompt}'",
-        "max_tokens": 900,
-        "temperature": 0.2,
-        "top_p": 1.0,
-        "top_k": 10,
-    }
-  else:
-    parameters.update({"prompt": f"'{prompt}'"})
+    parameters = get_provider_value(PROVIDER_MODEL_GARDEN,
+      KEY_MODEL_PARAMS, llm_type)
+
+  parameters.update({"prompt": f"'{prompt}'"})
 
   instances = [parameters, ]
   endpoint_without_peft = google.cloud.aiplatform.Endpoint(aip_endpoint)
 
   response = await endpoint_without_peft.predict_async(instances=instances)
+
   predictions_text = "\n".join(response.predictions)
   Logger.info(f"Received response from "
               f"{response.model_resource_name} version="
@@ -284,18 +291,10 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   prompt_list.append(prompt)
   context_prompt = prompt.join("\n\n")
 
-  # Temperature controls the degree of randomness in token selection.
-  # Token limit determines the maximum amount of text output.
-  # Tokens are selected from most probable to least until the sum of
-  #  their probabilities equals the top_p value.
-  # top_k of 1 means the selected token is the most probable among all tokens.
-
-  parameters = {
-    "temperature": 0.2,
-    "max_output_tokens": 1024,
-    "top_p": 0.95,
-    "top_k": 40,
-  }
+  # get global vertex model params
+  # TODO don't assume Vertex model params are global
+  parameters = get_provider_value(PROVIDER_VERTEX,
+      KEY_MODEL_PARAMS)
 
   try:
     if is_chat:

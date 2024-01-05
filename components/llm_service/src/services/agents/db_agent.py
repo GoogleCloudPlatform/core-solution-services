@@ -25,9 +25,9 @@ from langchain.sql_database import SQLDatabase
 from langchain.tools import BaseTool
 from langchain.tools.sql_database.tool import QuerySQLDataBaseTool
 from common.utils.logging_handler import Logger
-from config import (LANGCHAIN_LLM, PROJECT_ID,
-                    OPENAI_LLM_TYPE_GPT4)
+from config import PROJECT_ID, OPENAI_LLM_TYPE_GPT4
 from config.utils import get_dataset_config
+from services import langchain_service
 from services.agents.agent_prompts import (SQL_QUERY_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_PREFIX)
@@ -41,11 +41,17 @@ from sqlparse.tokens import Keyword, DML
 Logger = Logger.get_logger(__file__)
 
 
-def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
+async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
                  user_email:str = None) -> Tuple[dict, str]:
   """
-  Run the DB agent and return the resulting data.
+  Run the DB agent on a user prompt and return the resulting data.
 
+  Args:
+    prompt: user query
+    llm_type: model id of LLM to use to generate SQL
+    dataset: dataset ID if known.  If dataset is not known we will
+             attempt to determine the dataset from the prompt.
+    user_email: if present, send the resulting data to this email in a Sheet.
   Return:
     a dict of "columns: column names, "data": row data
   """
@@ -61,7 +67,7 @@ def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
 
   if db_type == "SQL":
     # generate SQL statement
-    statement, agent_logs = generate_sql_statement(
+    statement, agent_logs = await generate_sql_statement(
         prompt, dataset, llm_type, user_email)
 
     # run SQL
@@ -85,10 +91,21 @@ def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
   return dataset, db_type
 
 
-def generate_sql_statement(prompt: str,
+async def generate_sql_statement(prompt: str,
                            dataset: str,
                            llm_type: str=None,
-                           user_email: str=None) -> Tuple[dict, str]:
+                           user_email: str=None) -> Tuple[str, dict]:
+  """
+  Given a prompt and a dataset, generate a SQL statement to retrieve
+  the data requested in the prompt from the dataset.
+
+  Args:
+    prompt: user query
+    llm_type: model id of LLM to use to generate SQL
+    dataset: dataset ID
+  Returns:
+    tuple of (SQL statement as string, dict of agent logs)
+  """
 
   llm = get_langchain_llm(llm_type)
 
@@ -125,7 +142,15 @@ def execute_sql_statement(statement: str,
                           dataset: str,
                           user_email: str=None) -> Tuple[dict, str]:
   """
-  Execute a SQL database statement on the dataset
+  Execute a SQL database statement on the dataset, and send the resulting
+  data to the user in a Sheet.
+
+  Args:
+    statement: validated SQL statement
+    dataset: dataset ID
+    user_email: if present, send the resulting data to this email in a Sheet.
+  Returns:
+    tuple of (SQL statement as string, dict of agent logs)
   """
   # create langchain SQL db object
   db_url = f"bigquery://{PROJECT_ID}/{dataset}"
@@ -144,6 +169,13 @@ def execute_sql_statement(statement: str,
   dbdata = query_sql_database_tool.run(statement)
 
   Logger.info(f"got results {dbdata}")
+
+  if not dbdata or dbdata == "":
+    Logger.error(f"No results returned from sql statement: {statement}")
+    return {
+      "data": None,
+      "resources": None
+    }
 
   # the dbdata is just a string. convert result rows into list of lists
   row_data = ast.literal_eval(dbdata)
@@ -299,7 +331,7 @@ def get_langchain_llm(llm_type: str):
   """
   if llm_type is None:
     llm_type = OPENAI_LLM_TYPE_GPT4
-  llm = LANGCHAIN_LLM[llm_type]
+  llm = langchain_service.get_model(llm_type)
   if llm is None:
     raise RuntimeError(f"Unsupported llm type {llm_type}")
   return llm
