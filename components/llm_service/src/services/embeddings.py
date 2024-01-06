@@ -137,6 +137,9 @@ def get_vertex_embeddings(embedding_type: str,
   """
   google_llm = get_model_config().get_provider_value(
       PROVIDER_VERTEX, KEY_MODEL_NAME, embedding_type)
+  if google_llm is None:
+    raise RuntimeError(
+        f"Vertex model name not found for embedding type {embedding_type}")
   vertex_model = TextEmbeddingModel.from_pretrained(google_llm)
   try:
     embeddings = vertex_model.get_embeddings(sentence_list)

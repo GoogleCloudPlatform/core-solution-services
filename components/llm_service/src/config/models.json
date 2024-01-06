@@ -130,7 +130,8 @@
       "env_flag": "ENABLE_LLAMA2CPP_LLM"
     },
     "VertexAI-Embedding": {
-      "provider": "Vertex"
+      "provider": "Vertex",
+      "model_name": "textembedding-gecko"
     },
     "OpenAI-Embedding": {
       "provider": "Langchain"
