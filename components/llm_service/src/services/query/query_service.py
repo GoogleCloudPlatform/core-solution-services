@@ -275,7 +275,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"query description: [{description}]")
   Logger.info(f"llm type: [{llm_type}]")
-  Logger.info(f"vector store type: [{embedding_type}]")
+  Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"vector store type: [{vector_store_type}]")
 
   q_engine, docs_processed, docs_not_processed = \
@@ -432,6 +432,8 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
     index_base = 0
 
     for doc_name, index_doc_url, doc_filepath in doc_filepaths:
+      Logger.info(f"processing [{doc_name}]")
+
       text_chunks = data_source.chunk_document(doc_name,
                                                index_doc_url,
                                                doc_filepath)
@@ -440,9 +442,13 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
         # unable to process this doc; skip
         continue
 
+      Logger.info(f"doc chunks extracted for [{doc_name}]")
+
       # generate embedding data and store in vector store
       new_index_base = \
           qe_vector_store.index_document(doc_name, text_chunks, index_base)
+
+      Logger.info(f"doc successfully indexed [{doc_name}]")
 
       # cleanup temp local file
       os.remove(doc_filepath)
@@ -466,6 +472,8 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
                               clean_text=clean_text,
                               sentences=sentences)
         query_doc_chunk.save()
+
+      Logger.info(f"doc chunk models created for [{doc_name}]")
 
       index_base = new_index_base
       docs_processed.append(query_doc)
