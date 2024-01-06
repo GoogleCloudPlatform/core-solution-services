@@ -15,6 +15,7 @@
 Query Data Sources
 """
 import os
+import re
 from typing import List, Tuple
 from pathlib import Path
 from common.utils.logging_handler import Logger
@@ -22,6 +23,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import CSVLoader
 from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
+from w3lib.html import replace_escape_chars
 
 # pylint: disable=broad-exception-caught
 
@@ -110,10 +112,26 @@ class DataSource:
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
         self.docs_not_processed.append(doc_url)
 
-      # Clean up text_chunks with empty items.
+      # clean up text_chunks with empty items.
       text_chunks = [x for x in text_chunks if x.strip() != ""]
 
+      # clean text of escape and other unprintable chars
+      text_chunks = [self.clean_text(x) for x in text_chunks]
+
     return text_chunks
+
+  @staticmethod
+  def clean_text(text):
+    # Replace specific unprocessable characters
+    cleaned_text = text.replace("\x00", "")
+
+    # replace escape characters
+    cleaned_text = replace_escape_chars(cleaned_text)
+
+    # remove all non-printable characters
+    cleaned_text = re.sub(r"[^\x20-\x7E]", "", cleaned_text)
+
+    return cleaned_text
 
   @staticmethod
   def read_doc(doc_name: str, doc_filepath: str) -> List[str]:
