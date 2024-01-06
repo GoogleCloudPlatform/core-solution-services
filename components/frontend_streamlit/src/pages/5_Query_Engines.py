@@ -94,7 +94,7 @@ def query_engine_page():
     for qe in qe_list:
       data = [[key, value] for key, value in qe.items()]
       summary = f"{qe['llm_type']}, {qe['embedding_type']}, " \
-                f"vector_store:{qe['vector_store']}"
+                f"{qe['vector_store']}"
       url_list = get_all_docs_of_query_engine(qe["id"])
 
       with st.expander(f"**{qe['name']}** - {summary}"):
