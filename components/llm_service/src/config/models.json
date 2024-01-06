@@ -56,6 +56,11 @@
       "provider": "Vertex",
       "model_name": "chat-bison@002"
     },
+    "VertexAI-Gemini-Pro": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "gemini-pro"
+    },
     "VertexAI-Chat-Palm2V2-Langchain": {
       "is_chat": true,
       "provider": "Langchain",
