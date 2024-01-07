@@ -40,7 +40,8 @@ from services.query.web_datasource import WebDataSource
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
-                    DEFAULT_QUERY_EMBEDDING_MODEL)
+                    DEFAULT_QUERY_EMBEDDING_MODEL,
+                    DEFAULT_WEB_DEPTH_LIMIT)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
@@ -431,7 +432,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
         list of doc urls of docs not processed
   """
   # get datasource class for doc_url
-  data_source = datasource_from_url(doc_url, storage_client)
+  data_source = datasource_from_url(doc_url, q_engine, storage_client)
 
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
@@ -513,7 +514,9 @@ def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
   return qe_vector_store
 
 
-def datasource_from_url(doc_url: str, storage_client) -> DataSource:
+def datasource_from_url(doc_url: str,
+                        q_engine: QueryEngine,
+                        storage_client) -> DataSource:
   """
   Check if doc_url is supported as a data source.  If so return
   a DataSource class to handle the url.
@@ -522,7 +525,12 @@ def datasource_from_url(doc_url: str, storage_client) -> DataSource:
   if doc_url.startswith("gs://"):
     return DataSource(storage_client)
   elif doc_url.startswith("http://") or doc_url.startswith("https://"):
-    return WebDataSource(storage_client)
+    params = q_engine.params or {}
+    if "depth_limit" in params:
+      depth_limit = params["depth_limit"]
+    else:
+      depth_limit = DEFAULT_WEB_DEPTH_LIMIT
+    return WebDataSource(storage_client, depth_limit=depth_limit)
   else:
     raise InternalServerError(
         f"No datasource available for doc url [{doc_url}]")

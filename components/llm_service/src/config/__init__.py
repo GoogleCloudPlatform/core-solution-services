@@ -56,6 +56,9 @@ from config.config import (
     DEFAULT_QUERY_EMBEDDING_MODEL,
     DEFAULT_LLM_TYPE,
 
+    # query engine and other defaults
+    DEFAULT_WEB_DEPTH_LIMIT,
+
     # agent config
     AGENT_CONFIG_PATH,
     AGENT_DATASET_CONFIG_PATH,
