@@ -15,6 +15,7 @@
 Query Engine Service
 """
 import tempfile
+import traceback
 import os
 from numpy.linalg import norm
 import numpy as np
@@ -482,6 +483,12 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
 
 def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
+  """ 
+  Retrieve Vector Store object for a Query Engine.
+  
+  A Query Engine is configured for the vector store it uses when it is
+  built.  If there is no configured vector store the default is used.
+  """
   qe_vector_store_type = q_engine.vector_store
   if qe_vector_store_type is None:
     # set to default vector store
@@ -496,7 +503,7 @@ def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
   return qe_vector_store
 
 
-def datasource_from_url(doc_url, storage_client):
+def datasource_from_url(doc_url: str, storage_client) -> DataSource:
   """
   Check if doc_url is supported as a data source.  If so return
   a DataSource class to handle the url.
@@ -520,8 +527,10 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
   try:
     qe_vector_store.delete()
   except Exception:
+    # we make this error non-fatal as we want to delete the models
     Logger.error(
         f"error deleting vector store for query engine {q_engine.id}")
+    Logger.error(traceback.print_exc())
 
   if hard_delete:
     Logger.info(f"performing hard delete of query engine {q_engine.id}")
