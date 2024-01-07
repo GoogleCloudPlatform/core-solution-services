@@ -12,24 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Text processing helper functions.
+"""
+# pylint: disable=broad-exception-caught
+
 import re
 from typing import List
 import spacy
 from w3lib.html import replace_escape_chars
 
-"""
-Text processing helper functions.
-"""
-
 # global spacy object for nlp processes
-nlp = spacy.load("en_core_web_sm")
+nlp = None
+try:
+  # to use this model one must execute
+  # python -m spacy download en_core_web_sm
+  # in deployed llm_service this is done in the docker container build
+  nlp = spacy.load("en_core_web_sm")
+except Exception:
+  # we fallback to sentencizer which doesn't require a download
+  from spacy.lang.en import English
+
+  nlp = English()
+  nlp.add_pipe("sentencizer")
+
 
 def clean_text(text):
   # Replace specific unprocessable characters
   cleaned_text = text.replace("\x00", "")
-
-  # replace escape characters
-  cleaned_text = replace_escape_chars(cleaned_text)
 
   # remove all non-printable characters
   cleaned_text = re.sub(r"[^\x20-\x7E]", "", cleaned_text)
@@ -41,6 +51,6 @@ def text_to_sentence_list(text: str) -> List[str]:
   cleaned_text = clean_text(text)
   document = nlp(cleaned_text)
   sentences = document.sents
-  sentences = [x for x in sentences if x.strip() != ""]
+  sentences = [str(x) for x in list(sentences)]
   return sentences
 

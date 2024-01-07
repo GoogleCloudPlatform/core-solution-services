@@ -100,5 +100,5 @@ def html_to_sentence_list(text: str) -> List[str]:
   clean_text = html_to_text(text)
   document = nlp(clean_text)
   sentences = document.sents
-  sentences = [x for x in sentences if x.strip() != ""]
+  sentences = [str(x) for x in sentences]
   return sentences
