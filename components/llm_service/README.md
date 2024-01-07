@@ -103,8 +103,7 @@ curl --location "$BASE_URL/llm-service/api/v1/query/engine" \
 --data "{
     \"doc_url\": \"gs://$PROJECT_ID-llm-docs\",
     \"query_engine\": \"$QUERY_ENGINE_NAME\",
-    \"llm_type\": \"VertexAI-Chat\",
-    \"is_public\": true
+    \"llm_type\": \"VertexAI-Chat\"
 }"
 ```
 
@@ -189,7 +188,7 @@ Traceback (most recent call last):
   File "/opt/run_batch_job.py", line 43, in main
     _ = batch_build_query_engine(request_body, job)
   File "/opt/services/query_service.py", line 189, in batch_build_query_engine
-    query_engine_build(doc_url, query_engine, user_id, is_public, llm_type)
+    query_engine_build(doc_url, query_engine, user_id, llm_type)
   File "/opt/services/query_service.py", line 255, in query_engine_build
     raise InternalServerError(e) from e
 common.utils.http_exceptions.InternalServerError: 403 GET https://storage.googleapis.com/storage/v1/b/query-engine-test-me-data/o?maxResults=257&projection=noAcl&prettyPrint=false: gke-sa@test-project.iam.gserviceaccount.com does not have storage.objects.list access to the Google Cloud Storage bucket. Permission 'storage.objects.list' denied on resource (or it may not exist).

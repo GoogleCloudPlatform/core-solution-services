@@ -16,7 +16,7 @@ Models for LLM Query Engines
 """
 from typing import List
 from fireo.fields import (TextField, ListField, IDField,
-                          BooleanField, NumberField)
+                          BooleanField, NumberField, MapField)
 from common.models import BaseModel
 
 # constants used as tags for query history
@@ -93,6 +93,7 @@ class QueryEngine(BaseModel):
   index_name = TextField(required=False)
   endpoint = TextField(required=False)
   doc_url = TextField(required=False)
+  params = MapField(default={})
 
   class Meta:
     ignore_none_field = False

@@ -265,10 +265,10 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   query_engine = request_body.get("query_engine")
   description = request_body.get("description")
   user_id = request_body.get("user_id")
-  is_public = request_body.get("is_public")
   llm_type = request_body.get("llm_type")
   embedding_type = request_body.get("embedding_type")
   vector_store_type = request_body.get("vector_store")
+  params = request_body.get("params")
 
   Logger.info(f"Starting batch job for query engine [{query_engine}] "
               f"job id [{job.id}], request_body=[{request_body}]")
@@ -278,11 +278,12 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"llm type: [{llm_type}]")
   Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"vector store type: [{vector_store_type}]")
+  Logger.info(f"params: [{params}]")
 
   q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, query_engine, user_id, is_public,
+      query_engine_build(doc_url, query_engine, user_id,
                          llm_type, description,
-                         embedding_type, vector_store_type)
+                         embedding_type, vector_store_type, params)
 
   # update result data in batch job model
   docs_processed_urls = [doc.doc_url for doc in docs_processed]
@@ -302,12 +303,12 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
 def query_engine_build(doc_url: str,
                        query_engine: str,
                        user_id: str,
-                       is_public: Optional[bool] = True,
                        llm_type: Optional[str] = None,
                        query_description: Optional[str] = None,
                        embedding_type: Optional[str] = None,
-                       vector_store_type: Optional[str] = None) -> \
-                       Tuple[str, List[QueryDocument], List[str]]:
+                       vector_store_type: Optional[str] = None,
+                       params: Optional[dict] = {}
+                       ) -> Tuple[str, List[QueryDocument], List[str]]:
   """
   Build a new query engine.
 
@@ -315,11 +316,11 @@ def query_engine_build(doc_url: str,
     doc_url: the URL to the set of documents to be indexed
     query_engine: the name of the query engine to create
     user_id: user id of engine creator
-    is_public: is query engine publicly usable?
     llm_type: llm used for query answer generation
     embedding_type: LLM used for query embeddings
     query_description: description of the query engine
     vector_store_type: vector store type (from config.vector_store_config)
+    params: query engine build params
 
   Returns:
     Tuple of QueryEngine id, list of QueryDocument objects of docs processed,
@@ -339,6 +340,12 @@ def query_engine_build(doc_url: str,
   if embedding_type is None:
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
+  is_public = True
+  if "is_public" in params:
+    is_public = params["is_public"]
+    if isinstance(is_public, str):
+      is_public = is_public.lower() == "true"
+
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
                          llm_type=llm_type,
@@ -346,7 +353,8 @@ def query_engine_build(doc_url: str,
                          embedding_type=embedding_type,
                          vector_store=vector_store_type,
                          is_public=is_public,
-                         doc_url=doc_url)
+                         doc_url=doc_url,
+                         params=params)
 
   # retrieve vector store class and store type in q_engine
   qe_vector_store = vector_store_from_query_engine(q_engine)
