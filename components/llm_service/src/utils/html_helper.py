@@ -17,8 +17,10 @@
 HTML helper functions.
 """
 
+from typing import List
 from w3lib.html import replace_escape_chars
 from bs4 import BeautifulSoup, Comment
+from utils.text_helper import nlp
 
 TAGS_TO_REMOVE = ["script", "style", "footer", "nav", "aside", "form", "meta",
                   "iframe", "header", "button", "input", "select", "textarea",
@@ -74,27 +76,6 @@ def html_to_text(html_content:str, tags_to_trim:list = None) -> str:
   clean_text = replace_escape_chars(soup.get_text(separator=" "))
   return clean_text
 
-def html_to_sentence_list(html_content:str, tags_to_trim:list = None) -> list:
-  # TODO: Replace this with better splitter, e.g.
-  # https://python.langchain.com/docs/modules/data_connection/document_transformers/text_splitters/split_by_token
-
-  sentence_tags = ["p", "ul"]
-  soup = get_clean_html_soup(html_content, tags_to_trim)
-
-  sentences = []
-  for element in soup.find_all(sentence_tags):
-    if element.name == "ul":
-      items = []
-      for li in element.find_all("li"):
-        items.append(li.get_text())
-      sentences.append(" ".join(items))
-    else:
-      sentences.append(element.get_text())
-
-  # Remove empty sentences.
-  sentences = [x for x in sentences if x.strip() != ""]
-
-  return sentences
 
 def html_trim_tags(html_content:str, tags_to_trim:list = None) -> str:
   """
@@ -112,3 +93,12 @@ def html_trim_tags(html_content:str, tags_to_trim:list = None) -> str:
   # Replace HTML escape characters with their equivalents
   clean_text = replace_escape_chars(str(soup))
   return clean_text
+
+
+def html_to_sentence_list(text: str) -> List[str]:
+  # use spacy to split text into sentences
+  clean_text = html_to_text(text)
+  document = nlp(clean_text)
+  sentences = document.sents
+  sentences = [x for x in sentences if x.strip() != ""]
+  return sentences

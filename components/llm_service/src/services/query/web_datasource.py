@@ -31,9 +31,12 @@ from scrapy.http import Response
 from google.cloud import storage
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource
-from utils.html_helper import html_trim_tags
+from utils.html_helper import (html_trim_tags,
+                               html_to_text,
+                               html_to_sentence_list)
 
 Logger = Logger.get_logger(__file__)
+
 
 def clear_bucket(storage_client:storage.Client, bucket_name:str) -> None:
   """
@@ -243,6 +246,16 @@ class WebDataSource(DataSource):
     process.start()
 
     return self.doc_data
+
+  @classmethod
+  def text_to_sentence_list(cls, text: str) -> List[str]:
+    return html_to_sentence_list(text)
+
+  @classmethod
+  def clean_text(cls, text: str) -> List[str]:
+    html_text = html_to_text(text)
+    return cls.clean_text(html_text)
+
 
 def main():
   args = ["genie-demo-gdch-web", "https://dmv.nv.gov//", 1]

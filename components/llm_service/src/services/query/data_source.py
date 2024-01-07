@@ -15,7 +15,6 @@
 Query Data Sources
 """
 import os
-import re
 from typing import List, Tuple
 from pathlib import Path
 from common.utils.logging_handler import Logger
@@ -23,13 +22,14 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import CSVLoader
 from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
-from w3lib.html import replace_escape_chars
+from utils import text_helper
 
 # pylint: disable=broad-exception-caught
 
 # text chunk size for embedding data
 Logger = Logger.get_logger(__file__)
 CHUNK_SIZE = 1000
+
 
 class DataSource:
   """
@@ -120,18 +120,23 @@ class DataSource:
 
     return text_chunks
 
-  @staticmethod
-  def clean_text(text):
-    # Replace specific unprocessable characters
-    cleaned_text = text.replace("\x00", "")
+  @classmethod
+  def text_to_sentence_list(cls, text: str) -> List[str]:
+    """
+    Split text into sentences. 
+    In this class we assume generic text.
+    Subclasses may do additional transformation (e.g. html to text).
+    """
+    return text_helper.text_to_sentence_list(text)
 
-    # replace escape characters
-    cleaned_text = replace_escape_chars(cleaned_text)
-
-    # remove all non-printable characters
-    cleaned_text = re.sub(r"[^\x20-\x7E]", "", cleaned_text)
-
-    return cleaned_text
+  @classmethod
+  def clean_text(cls, text: str) -> List[str]:
+    """
+    Produce clean text from text extracted from source document. 
+    In this class we assume generic text.
+    Subclasses may do additional transformation (e.g. html to text).
+    """
+    return text_helper.clean_text(text)
 
   @staticmethod
   def read_doc(doc_name: str, doc_filepath: str) -> List[str]:

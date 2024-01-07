@@ -21,8 +21,10 @@ pyarrow==14.0.1
 pypdf==3.17.0
 Scrapy==2.11.0
 shapely==1.8.5.post1
+spacy==3.7.2
 SQLAlchemy==1.4.50
 sqlalchemy-bigquery==1.8.0
 sqlparse==0.4.4
 tiktoken==0.5.2
 uvicorn==0.19.0
+w3lib==2.1.2

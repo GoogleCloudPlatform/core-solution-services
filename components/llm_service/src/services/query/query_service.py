@@ -38,14 +38,14 @@ from services.query.vector_store import (VectorStore,
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
 from utils.errors import NoDocumentsIndexedException
-from utils.html_helper import html_to_text, html_to_sentence_list
+from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
 
-# pylint: disable=broad-exception-caught,ungrouped-imports,unused-import
+# pylint: disable=broad-exception-caught,ungrouped-imports
 
 Logger = Logger.get_logger(__file__)
 
@@ -183,17 +183,17 @@ def query_search(q_engine: QueryEngine,
 
     clean_text = doc_chunk.clean_text
     if not clean_text:
-      clean_text = html_to_text(doc_chunk.text)
+      # for backwards compatibility with existing query engines
+      clean_text = text_helper.clean_text(doc_chunk.text)
 
     if sentence_references:
       # Assemble sentences from a document chunk. Currently it gets the
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
-
+      # for backwards compatibility with legacy engines break chunks
+      # into sentences here
       if not sentences or len(sentences) == 0:
-        sentences = html_to_sentence_list(doc_chunk.text)
-      # Remove empty sentences.
-      sentences = [x for x in sentences if x.strip() != ""]
+        sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
       # Only update clean_text when sentences is not empty.
       Logger.info(f"Processing {len(sentences)} sentences.")
@@ -463,8 +463,10 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       query_doc.save()
 
       for i in range(0, len(text_chunks)):
-        clean_text = html_to_text(text_chunks[i])
-        sentences = html_to_sentence_list(text_chunks[i])
+        # break chunks into sentences and store in chunk model
+        clean_text = data_source.clean_text(text_chunks[i])
+        sentences = data_source.text_to_sentence_list(text_chunks[i])
+
         query_doc_chunk = QueryDocumentChunk(
                               query_engine_id=q_engine.id,
                               query_document_id=query_doc.id,
