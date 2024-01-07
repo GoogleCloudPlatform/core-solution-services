@@ -320,7 +320,8 @@ def run_chat(prompt: str, chat_id: str = None,
   return resp_dict["data"]
 
 
-def build_query_engine(name: str, doc_url: str, embedding_type: str,
+def build_query_engine(name: str, doc_url: str, depth_limit: int,
+                       embedding_type: str,
                        vector_store: str, description: str,
                        auth_token=None):
   """
@@ -338,6 +339,9 @@ def build_query_engine(name: str, doc_url: str, embedding_type: str,
     "embedding_type": embedding_type,
     "vector_store": vector_store,
     "description": description,
+    "params": {
+      "depth_limit": depth_limit
+    }
   }
   Logger.info(f"Sending request_body={request_body} to {api_url}")
   resp = api_request("POST", api_url,
