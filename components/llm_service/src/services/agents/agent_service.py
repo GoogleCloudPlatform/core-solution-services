@@ -21,14 +21,13 @@ import re
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
-from common.models import BatchJobModel, QueryEngine
+from common.models import BatchJobModel
 from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import BadRequest, InternalServerError
 from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
-from config.utils import get_dataset_config
 from services.agents import agents
 from services.agents.utils import agent_executor_run_with_logs
 
@@ -120,97 +119,6 @@ def get_all_agents() -> List[dict]:
   return agent_list
 
 
-async def run_intent(
-    agent_name: str, prompt: str, chat_history:List = None) -> dict:
-  """
-  Evaluate a prompt to get the intent with best matched route.
-
-  Args:
-      prompt(str): the user input prompt
-      agent_name(str): the name of the routing agent
-      chat_history(List): any previous chat history for context
-
-  Returns:
-      output(str): the output of the agent on the user input
-      action_steps: the list of action steps take by the agent for the run
-  """
-
-  Logger.info(f"Running dispatch "
-              f"with prompt=[{prompt}] and "
-              f"chat_history=[{chat_history}]")
-
-  agent_params = get_agent_config()[agent_name]
-  llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
-
-  langchain_agent = llm_service_agent.load_agent()
-  agent_executor = AgentExecutor.from_agent_and_tools(
-      agent=langchain_agent, tools=[])
-
-  intent_list_str = ""
-  intent_list = [
-    f"- {AgentCapability.AGENT_CHAT_CAPABILITY.value}" \
-    " to to perform generic chat conversation.",
-    f"- {AgentCapability.AGENT_PLAN_CAPABILITY.value}" \
-    " to compose, generate or create a plan.",
-  ]
-  for intent in intent_list:
-    intent_list_str += \
-      intent + "\n"
-
-  # Collect all query engines with their description as topics.
-  query_engines = QueryEngine.collection.fetch()
-  for qe in query_engines:
-    intent_list_str += \
-      f"- [{AgentCapability.AGENT_QUERY_CAPABILITY.value}:{qe.name}]" \
-      f" to run a query on a search engine for information (not raw data)" \
-      f" on the topics of {qe.description} \n"
-
-  # Collect all datasets with their descriptions as topics
-  datasets = get_dataset_config()
-  for ds_name, ds_config in datasets.items():
-    if ds_name in ["default"]:
-      continue
-
-    description = ds_config["description"]
-    intent_list_str += \
-      f"- [{AgentCapability.AGENT_DATABASE_CAPABILITY.value}:{ds_name}]" \
-      f" to run a query against a database for data related to " \
-      f"these areas: {description} \n"
-
-  dispatch_prompt = f"""
-    An AI Routing Assistant has access to the following routes:
-    {intent_list_str}
-    Choose one route based on the question below:
-    """
-  Logger.info(f"dispatch_prompt: \n{dispatch_prompt}")
-
-  agent_inputs = {
-    "input": dispatch_prompt + prompt,
-    "chat_history": []
-  }
-
-  Logger.info("Running agent executor to get bested matched route.... ")
-  output = agent_executor.run(agent_inputs)
-  Logger.info(f"Agent {agent_name} generated output=[{output}]")
-
-  agent_logs = output
-  Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
-
-  routes = parse_output("Route:", output) or []
-  Logger.info(f"Output routes: {routes}")
-
-  # If no best route(s) found, pass to Chat agent.
-  if not routes or len(routes) == 0:
-    return AgentCapability.AGENT_CHAT_CAPABILITY.value, agent_logs
-
-  # TODO: Refactor this with RoutingAgentOutputParser
-  # Get the route for the best matched (first) returned routes.
-  route, detail = parse_step(routes[0])[0]
-  Logger.info(f"route: {route}, {detail}")
-
-  return route, agent_logs
-
-
 async def run_agent(agent_name:str,
                     prompt:str,
                     chat_history:List = None) -> str:
@@ -280,7 +188,7 @@ async def agent_plan(agent_name:str,
 
   output = await run_agent(agent_name, prompt, chat_history)
 
-  raw_plan_steps = parse_output("Plan:", output)
+  raw_plan_steps = parse_plan_output("Plan:", output)
 
   # create user plan
   print(f"user_id = {user_id}")
@@ -309,7 +217,7 @@ async def agent_plan(agent_name:str,
   return output, user_plan
 
 
-def parse_output(header: str, text: str) -> List[str]:
+def parse_plan_output(header: str, text: str) -> List[str]:
   """
   Parse plan steps from agent output
   """
@@ -332,7 +240,7 @@ def parse_output(header: str, text: str) -> List[str]:
 
   return steps
 
-def parse_step(text:str) -> dict:
+def parse_plan_step(text:str) -> dict:
   step_regex = re.compile(
       r"[\d|#]+\.\s.*\[(.*)\]\s?(.*)", re.DOTALL)
   matches = step_regex.findall(text)
