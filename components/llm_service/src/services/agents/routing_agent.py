@@ -13,20 +13,11 @@
 # limitations under the License.
 
 """ Routing Agent """
-# pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-argument
 
-import inspect
-from typing import List, Tuple, Dict
-
-from common.models import QueryEngine, User
+from common.models import QueryEngine, User, UserChat
 from common.models.agent import AgentCapability
-from common.models.llm import CHAT_HUMAN, CHAT_AI
-from common.utils.errors import ResourceNotFoundException
-from common.utils.http_exceptions import BadRequest, InternalServerError
+from common.models.llm import CHAT_AI
 from common.utils.logging_handler import Logger
-from config.utils import get_dataset_config
-from services.agents import agents
-from services.agents.utils import agent_executor_run_with_logs
 from services.agents.agent_service import run_intent
 from services.agents.db_agent import run_db_agent
 from services.agents.agent_service import agent_plan, run_agent
@@ -163,6 +154,6 @@ async def run_routing_agent(prompt: str,
   chat_data["id"] = user_chat.id
   response_data["chat"] = chat_data
   response_data["route_name"] = route_name
-  
+
   return route, response_data
 
