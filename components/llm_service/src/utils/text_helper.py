@@ -21,7 +21,6 @@ import re
 from typing import List
 from common.utils.logging_handler import Logger
 import spacy
-from w3lib.html import replace_escape_chars
 
 Logger = Logger.get_logger(__file__)
 

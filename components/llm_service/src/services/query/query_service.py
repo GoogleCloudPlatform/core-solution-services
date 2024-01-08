@@ -308,7 +308,7 @@ def query_engine_build(doc_url: str,
                        query_description: Optional[str] = None,
                        embedding_type: Optional[str] = None,
                        vector_store_type: Optional[str] = None,
-                       params: Optional[dict] = {}
+                       params: Optional[dict] = None
                        ) -> Tuple[str, List[QueryDocument], List[str]]:
   """
   Build a new query engine.
@@ -341,6 +341,8 @@ def query_engine_build(doc_url: str,
   if embedding_type is None:
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
+  # process special params
+  params = params or {}
   is_public = True
   if "is_public" in params:
     is_public = params["is_public"]
