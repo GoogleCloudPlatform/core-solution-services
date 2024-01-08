@@ -300,7 +300,7 @@ class WebDataSource(DataSource):
   @classmethod
   def clean_text(cls, text: str) -> List[str]:
     html_text = html_to_text(text)
-    return cls.clean_text(html_text)
+    return super().clean_text(html_text)
 
 
 def main():
