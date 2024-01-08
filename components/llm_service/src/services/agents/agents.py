@@ -31,10 +31,10 @@ from common.models.agent import AgentCapability
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from services import langchain_service
-from services.agents.agent_prompts import (PREFIX, DISPATCH_PREFIX,
+from services.agents.agent_prompts import (PREFIX, ROUTING_PREFIX,
                                            TASK_PREFIX, PLANNING_PREFIX,
                                            PLAN_FORMAT_INSTRUCTIONS,
-                                           DISPATCH_FORMAT_INSTRUCTIONS)
+                                           ROUTING_FORMAT_INSTRUCTIONS)
 from services.agents.agent_tools import (gmail_tool, docs_tool,database_tool,
                                          google_sheets_tool,
                                          calendar_tool, search_tool,
@@ -140,24 +140,24 @@ class ChatAgent(BaseAgent):
     return [search_tool, query_tool]
 
 
-class DispatchAgent(BaseAgent):
+class RoutingAgent(BaseAgent):
   """
-  Dispatch Agent.  This is an agent configured for dispatching
+  Routing Agent.  This is an agent configured for dispatching
   a given prompt to the best route with given list of choices.
   """
   def __init__(self, llm_type: str):
     super().__init__(llm_type)
-    self.name = "DispatchAgent"
+    self.name = "RoutingAgent"
     self.agent_class = ConversationalAgent
-    self.prefix = DISPATCH_PREFIX
+    self.prefix = ROUTING_PREFIX
 
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
-    return DispatchAgentOutputParser
+    return RoutingAgentOutputParser
 
   @property
   def format_instructions(self) -> str:
-    return DISPATCH_FORMAT_INSTRUCTIONS
+    return ROUTING_FORMAT_INSTRUCTIONS
 
   @classmethod
   def capabilities(cls) -> List[str]:
@@ -255,14 +255,14 @@ class PlanAgent(BaseAgent):
     return tools
 
 
-class DispatchAgentOutputParser(AgentOutputParser):
+class RoutingAgentOutputParser(AgentOutputParser):
   """Output parser for a agent that makes plans."""
 
   ai_prefix: str = "AI"
   """Prefix to use before AI output."""
 
   def get_format_instructions(self) -> str:
-    return DISPATCH_FORMAT_INSTRUCTIONS
+    return ROUTING_FORMAT_INSTRUCTIONS
 
   def parse(self, text: str) -> Union[AgentAction, AgentFinish]:
     regex = r"Action: (.*?)[\n]*Action Input: (.*)"

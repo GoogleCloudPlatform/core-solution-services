@@ -1,10 +1,15 @@
 {
   "Agents":
   {
-    "Dispatch": {
+    "MediKateRouter": {
       "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_ZeroShot",
-      "agent_class": "DispatchAgent"
+      "agent_class": "RoutingAgent"
+    },
+    "CaseyRouter": {
+      "llm_type": "OpenAI-GPT4",
+      "agent_type": "langchain_ZeroShot",
+      "agent_class": "RoutingAgent"
     },
     "Chat": {
       "llm_type": "VertexAI-Chat-Palm2V2-Langchain",

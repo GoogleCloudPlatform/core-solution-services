@@ -121,7 +121,8 @@ def get_all_agents() -> List[dict]:
 
 
 async def run_intent(
-    prompt:str, chat_history:List = None, user:User = None) -> dict:
+    prompt:str, agent_name: str, chat_history:List = None,
+    user:User = None) -> dict:
   """
   Evaluate a prompt to get the intent with best matched route.
 
@@ -137,7 +138,7 @@ async def run_intent(
   Logger.info(f"Running dispatch "
               f"with prompt=[{prompt}] and "
               f"chat_history=[{chat_history}]")
-  agent_name = "Dispatch"
+
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
 
@@ -177,7 +178,7 @@ async def run_intent(
       f"these areas: {description} \n"
 
   dispatch_prompt = f"""
-    An AI Dispatch Assistant has access to the following routes:
+    An AI Routing Assistant has access to the following routes:
     {intent_list_str}
     Choose one route based on the question below:
     """
@@ -202,7 +203,7 @@ async def run_intent(
   if not routes or len(routes) == 0:
     return AgentCapability.AGENT_CHAT_CAPABILITY.value, agent_logs
 
-  # TODO: Refactor this with DispatchAgentOutputParser
+  # TODO: Refactor this with RoutingAgentOutputParser
   # Get the route for the best matched (first) returned routes.
   route, detail = parse_step(routes[0])[0]
   Logger.info(f"route: {route}, {detail}")

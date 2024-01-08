@@ -65,7 +65,7 @@ def get_agents():
 async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
                        user_data: dict = Depends(validate_token)):
   """
-  Run DispatchAgent with prompt, and pass to corresponding agent,
+  Run RoutingAgent with prompt, and pass to corresponding agent,
   e.g. Chat, Plan or Query.
 
   Args:

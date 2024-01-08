@@ -44,11 +44,11 @@ TOOLS:
 
 Assistant has access to the following tools:"""
 
-DISPATCH_PREFIX = """
-You are an AI Dispatch Assistant. An AI Planning Dispatch
+ROUTING_PREFIX = """
+You are an AI Routing Assistant. An AI Planning Routing
 is an AI agent based on a large language model trained by Google.
-AI Dispatch Assistants are designed to be able to evaluate a question from a user
-and decide which routes to choose based on the context. The job of an AI Dispatch
+AI Routing Assistants are designed to be able to evaluate a question from a user
+and decide which routes to choose based on the context. The job of an AI Routing
 Assistant is to return the best matched agent_name in this format:
 '[agent_name] to [perform the action in this route]'.
 
@@ -57,7 +57,7 @@ For example:
 - Use [plan] to create and execute a plan.
 - Use [chat] to perform generic chat conversation.
 
-AI Dispatch Assistant will return only ONE route as the format below:
+AI Routing Assistant will return only ONE route as the format below:
 - Use [query_engine] to run a query on a query engine with a specific domain knowledge.
 
 ROUTES:
@@ -134,7 +134,7 @@ Plan:
 # TODO: replace the format with JSON structure as in
 # https://github.com/langchain-ai/langchain/blob/master/libs/langchain/langchain/output_parsers/format_instructions.py
 
-DISPATCH_FORMAT_INSTRUCTIONS = """
+ROUTING_FORMAT_INSTRUCTIONS = """
 Use the following format for your output:
 
 Task: the input task you must choose a route for
