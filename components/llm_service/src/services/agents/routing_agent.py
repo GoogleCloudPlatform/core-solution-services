@@ -32,7 +32,7 @@ async def run_routing_agent(prompt: str,
 
   # Get the intent based on prompt.
   route, route_logs = await run_intent(
-      prompt, chat_history=user_chat.history)
+      agent_name, prompt, chat_history=user_chat.history)
 
   Logger.info(f"Intent chooses this best route: {route}, " \
               f"based on user prompt: {prompt}")
