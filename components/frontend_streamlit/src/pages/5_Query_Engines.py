@@ -40,12 +40,13 @@ def reload():
   qe_build_jobs = get_all_jobs()
 
 
-def submit_build(engine_name:str, doc_url:str,
-                  embedding_type:str, vector_store:str,
-                  description:str):
+def submit_build(engine_name:str, doc_url:str, depth_limit: int,
+                 embedding_type:str, vector_store:str,
+                 description:str):
   try:
     output = build_query_engine(
-      engine_name, doc_url, embedding_type, vector_store, description)
+      engine_name,
+      doc_url, depth_limit, embedding_type, vector_store, description)
 
     if output.get("success") is True:
       job_id = output["data"]["job_name"]
@@ -94,7 +95,7 @@ def query_engine_page():
     for qe in qe_list:
       data = [[key, value] for key, value in qe.items()]
       summary = f"{qe['llm_type']}, {qe['embedding_type']}, " \
-                f"vector_store:{qe['vector_store']}"
+                f"{qe['vector_store']}"
       url_list = get_all_docs_of_query_engine(qe["id"])
 
       with st.expander(f"**{qe['name']}** - {summary}"):
@@ -162,6 +163,7 @@ def query_engine_page():
             submit_build(
               input_data["query_engine"],
               input_data["doc_url"],
+              input_data["depth_limit"],
               input_data["embedding_type"],
               input_data["vector_store"],
               input_data["description"])
@@ -175,6 +177,9 @@ def query_engine_page():
   with placeholder_build_qe.form("build"):
     engine_name = st.text_input("Name")
     doc_url = st.text_input("Document URL")
+    depth_limit = st.selectbox(
+        "Web depth limit:",
+        [0,1,2,3])
     embedding_type = st.selectbox(
         "Embedding:",
         embedding_types)
@@ -186,7 +191,9 @@ def query_engine_page():
     submit = st.form_submit_button("Build")
   if submit:
     submit_build(
-      engine_name, doc_url, embedding_type, vector_store, description)
+      engine_name,
+      doc_url, depth_limit, embedding_type, vector_store, description
+    )
 
 
 if __name__ == "__main__":

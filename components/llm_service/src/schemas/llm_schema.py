@@ -147,7 +147,7 @@ class LLMQueryEngineModel(BaseModel):
   llm_type: Optional[str]
   embedding_type: Optional[str]
   vector_store: Optional[str]
-  is_public: Optional[bool]
+  params: Optional[dict]
 
   class Config():
     orm_mode = True

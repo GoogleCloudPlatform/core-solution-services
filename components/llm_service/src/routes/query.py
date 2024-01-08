@@ -381,20 +381,20 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
   if query_engine is None or query_engine == "":
     return BadRequest("Missing or invalid payload parameters: query_engine")
 
-  is_public = genconfig_dict.get("is_public", True)
-
   user_id = user_data.get("user_id")
+
+  params = genconfig_dict.get("params", {})
 
   try:
     data = {
       "doc_url": doc_url,
       "query_engine": query_engine,
       "user_id": user_id,
-      "is_public": is_public,
       "llm_type": genconfig_dict.get("llm_type", None),
       "embedding_type": genconfig_dict.get("embedding_type", None),
       "vector_store": genconfig_dict.get("vector_store", None),
       "description": genconfig_dict.get("description", None),
+      "params": params,
     }
     env_vars = {
       "DATABASE_PREFIX": DATABASE_PREFIX,

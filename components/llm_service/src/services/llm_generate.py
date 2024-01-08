@@ -73,6 +73,9 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
+      if google_llm is None:
+        raise RuntimeError(
+            f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
       response = await google_llm_predict(prompt, is_chat, google_llm)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
@@ -120,6 +123,9 @@ async def llm_chat(prompt: str, llm_type: str,
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
+      if google_llm is None:
+        raise RuntimeError(
+            f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
       response = await google_llm_predict(prompt, is_chat,
                                           google_llm, user_chat)

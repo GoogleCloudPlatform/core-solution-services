@@ -22,12 +22,14 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import CSVLoader
 from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
+from utils import text_helper
 
 # pylint: disable=broad-exception-caught
 
 # text chunk size for embedding data
 Logger = Logger.get_logger(__file__)
 CHUNK_SIZE = 1000
+
 
 class DataSource:
   """
@@ -110,10 +112,31 @@ class DataSource:
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
         self.docs_not_processed.append(doc_url)
 
-      # Clean up text_chunks with empty items.
+      # clean up text_chunks with empty items.
       text_chunks = [x for x in text_chunks if x.strip() != ""]
 
+      # clean text of escape and other unprintable chars
+      text_chunks = [self.clean_text(x) for x in text_chunks]
+
     return text_chunks
+
+  @classmethod
+  def text_to_sentence_list(cls, text: str) -> List[str]:
+    """
+    Split text into sentences. 
+    In this class we assume generic text.
+    Subclasses may do additional transformation (e.g. html to text).
+    """
+    return text_helper.text_to_sentence_list(text)
+
+  @classmethod
+  def clean_text(cls, text: str) -> List[str]:
+    """
+    Produce clean text from text extracted from source document. 
+    In this class we assume generic text.
+    Subclasses may do additional transformation (e.g. html to text).
+    """
+    return text_helper.clean_text(text)
 
   @staticmethod
   def read_doc(doc_name: str, doc_filepath: str) -> List[str]:

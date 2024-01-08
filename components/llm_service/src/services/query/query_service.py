@@ -15,6 +15,7 @@
 Query Engine Service
 """
 import tempfile
+import traceback
 import os
 from numpy.linalg import norm
 import numpy as np
@@ -37,14 +38,15 @@ from services.query.vector_store import (VectorStore,
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
 from utils.errors import NoDocumentsIndexedException
-from utils.html_helper import html_to_text, html_to_sentence_list
+from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
-                    DEFAULT_QUERY_EMBEDDING_MODEL)
+                    DEFAULT_QUERY_EMBEDDING_MODEL,
+                    DEFAULT_WEB_DEPTH_LIMIT)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
 
-# pylint: disable=broad-exception-caught,ungrouped-imports,unused-import
+# pylint: disable=broad-exception-caught,ungrouped-imports
 
 Logger = Logger.get_logger(__file__)
 
@@ -182,17 +184,17 @@ def query_search(q_engine: QueryEngine,
 
     clean_text = doc_chunk.clean_text
     if not clean_text:
-      clean_text = html_to_text(doc_chunk.text)
+      # for backwards compatibility with existing query engines
+      clean_text = text_helper.clean_text(doc_chunk.text)
 
     if sentence_references:
       # Assemble sentences from a document chunk. Currently it gets the
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
-
+      # for backwards compatibility with legacy engines break chunks
+      # into sentences here
       if not sentences or len(sentences) == 0:
-        sentences = html_to_sentence_list(doc_chunk.text)
-      # Remove empty sentences.
-      sentences = [x for x in sentences if x.strip() != ""]
+        sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
       # Only update clean_text when sentences is not empty.
       Logger.info(f"Processing {len(sentences)} sentences.")
@@ -264,10 +266,10 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   query_engine = request_body.get("query_engine")
   description = request_body.get("description")
   user_id = request_body.get("user_id")
-  is_public = request_body.get("is_public")
   llm_type = request_body.get("llm_type")
   embedding_type = request_body.get("embedding_type")
   vector_store_type = request_body.get("vector_store")
+  params = request_body.get("params")
 
   Logger.info(f"Starting batch job for query engine [{query_engine}] "
               f"job id [{job.id}], request_body=[{request_body}]")
@@ -275,13 +277,14 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"query description: [{description}]")
   Logger.info(f"llm type: [{llm_type}]")
-  Logger.info(f"vector store type: [{embedding_type}]")
+  Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"vector store type: [{vector_store_type}]")
+  Logger.info(f"params: [{params}]")
 
   q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, query_engine, user_id, is_public,
+      query_engine_build(doc_url, query_engine, user_id,
                          llm_type, description,
-                         embedding_type, vector_store_type)
+                         embedding_type, vector_store_type, params)
 
   # update result data in batch job model
   docs_processed_urls = [doc.doc_url for doc in docs_processed]
@@ -301,12 +304,12 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
 def query_engine_build(doc_url: str,
                        query_engine: str,
                        user_id: str,
-                       is_public: Optional[bool] = True,
                        llm_type: Optional[str] = None,
                        query_description: Optional[str] = None,
                        embedding_type: Optional[str] = None,
-                       vector_store_type: Optional[str] = None) -> \
-                       Tuple[str, List[QueryDocument], List[str]]:
+                       vector_store_type: Optional[str] = None,
+                       params: Optional[dict] = None
+                       ) -> Tuple[str, List[QueryDocument], List[str]]:
   """
   Build a new query engine.
 
@@ -314,11 +317,11 @@ def query_engine_build(doc_url: str,
     doc_url: the URL to the set of documents to be indexed
     query_engine: the name of the query engine to create
     user_id: user id of engine creator
-    is_public: is query engine publicly usable?
     llm_type: llm used for query answer generation
     embedding_type: LLM used for query embeddings
     query_description: description of the query engine
     vector_store_type: vector store type (from config.vector_store_config)
+    params: query engine build params
 
   Returns:
     Tuple of QueryEngine id, list of QueryDocument objects of docs processed,
@@ -338,6 +341,14 @@ def query_engine_build(doc_url: str,
   if embedding_type is None:
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
+  # process special params
+  params = params or {}
+  is_public = True
+  if "is_public" in params:
+    is_public = params["is_public"]
+    if isinstance(is_public, str):
+      is_public = is_public.lower() == "true"
+
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
                          llm_type=llm_type,
@@ -345,7 +356,8 @@ def query_engine_build(doc_url: str,
                          embedding_type=embedding_type,
                          vector_store=vector_store_type,
                          is_public=is_public,
-                         doc_url=doc_url)
+                         doc_url=doc_url,
+                         params=params)
 
   # retrieve vector store class and store type in q_engine
   qe_vector_store = vector_store_from_query_engine(q_engine)
@@ -422,7 +434,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
         list of doc urls of docs not processed
   """
   # get datasource class for doc_url
-  data_source = datasource_from_url(doc_url, storage_client)
+  data_source = datasource_from_url(doc_url, q_engine, storage_client)
 
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
@@ -432,6 +444,8 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
     index_base = 0
 
     for doc_name, index_doc_url, doc_filepath in doc_filepaths:
+      Logger.info(f"processing [{doc_name}]")
+
       text_chunks = data_source.chunk_document(doc_name,
                                                index_doc_url,
                                                doc_filepath)
@@ -440,9 +454,13 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
         # unable to process this doc; skip
         continue
 
+      Logger.info(f"doc chunks extracted for [{doc_name}]")
+
       # generate embedding data and store in vector store
       new_index_base = \
           qe_vector_store.index_document(doc_name, text_chunks, index_base)
+
+      Logger.info(f"doc successfully indexed [{doc_name}]")
 
       # cleanup temp local file
       os.remove(doc_filepath)
@@ -456,8 +474,10 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       query_doc.save()
 
       for i in range(0, len(text_chunks)):
-        clean_text = html_to_text(text_chunks[i])
-        sentences = html_to_sentence_list(text_chunks[i])
+        # break chunks into sentences and store in chunk model
+        clean_text = data_source.clean_text(text_chunks[i])
+        sentences = data_source.text_to_sentence_list(text_chunks[i])
+
         query_doc_chunk = QueryDocumentChunk(
                               query_engine_id=q_engine.id,
                               query_document_id=query_doc.id,
@@ -467,6 +487,8 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
                               sentences=sentences)
         query_doc_chunk.save()
 
+      Logger.info(f"doc chunk models created for [{doc_name}]")
+
       index_base = new_index_base
       docs_processed.append(query_doc)
 
@@ -474,6 +496,12 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
 
 def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
+  """ 
+  Retrieve Vector Store object for a Query Engine.
+  
+  A Query Engine is configured for the vector store it uses when it is
+  built.  If there is no configured vector store the default is used.
+  """
   qe_vector_store_type = q_engine.vector_store
   if qe_vector_store_type is None:
     # set to default vector store
@@ -488,7 +516,9 @@ def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
   return qe_vector_store
 
 
-def datasource_from_url(doc_url, storage_client):
+def datasource_from_url(doc_url: str,
+                        q_engine: QueryEngine,
+                        storage_client) -> DataSource:
   """
   Check if doc_url is supported as a data source.  If so return
   a DataSource class to handle the url.
@@ -497,7 +527,13 @@ def datasource_from_url(doc_url, storage_client):
   if doc_url.startswith("gs://"):
     return DataSource(storage_client)
   elif doc_url.startswith("http://") or doc_url.startswith("https://"):
-    return WebDataSource(storage_client)
+    params = q_engine.params or {}
+    if "depth_limit" in params:
+      depth_limit = params["depth_limit"]
+    else:
+      depth_limit = DEFAULT_WEB_DEPTH_LIMIT
+    Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
+    return WebDataSource(storage_client, depth_limit=depth_limit)
   else:
     raise InternalServerError(
         f"No datasource available for doc url [{doc_url}]")
@@ -512,8 +548,10 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
   try:
     qe_vector_store.delete()
   except Exception:
+    # we make this error non-fatal as we want to delete the models
     Logger.error(
         f"error deleting vector store for query engine {q_engine.id}")
+    Logger.error(traceback.print_exc())
 
   if hard_delete:
     Logger.info(f"performing hard delete of query engine {q_engine.id}")
