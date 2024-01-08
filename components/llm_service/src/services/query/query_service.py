@@ -530,6 +530,7 @@ def datasource_from_url(doc_url: str,
       depth_limit = params["depth_limit"]
     else:
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
+    Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
     return WebDataSource(storage_client, depth_limit=depth_limit)
   else:
     raise InternalServerError(
