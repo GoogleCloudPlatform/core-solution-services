@@ -21,7 +21,7 @@ import re
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
-from common.models import BatchJobModel, QueryEngine, User
+from common.models import BatchJobModel, QueryEngine
 from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.errors import ResourceNotFoundException
