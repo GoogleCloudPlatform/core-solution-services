@@ -27,7 +27,7 @@ from routes.session import router
 from testing.test_config import API_URL
 from schemas.schema_examples import (BASIC_USER_MODEL_EXAMPLE,
                                      BASIC_SESSION_EXAMPLE)
-from common.models import Session, User, Achievement
+from common.models import Session, User
 from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
 from common.utils.http_exceptions import add_exception_handlers

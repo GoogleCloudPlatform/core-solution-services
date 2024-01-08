@@ -16,7 +16,7 @@
 from traceback import print_exc
 from fastapi import APIRouter, Query
 from typing import Optional
-from common.models import AssociationGroup, CurriculumPathway, User
+from common.models import AssociationGroup, User
 from common.utils.logging_handler import Logger
 from common.utils.errors import (ResourceNotFoundException, ValidationError,
                                  ConflictError)
@@ -27,8 +27,6 @@ from schemas.association_group_schema import (
                   GetAssociationGroupResponseModel,
                   ImmutableAssociationGroupModel,
                   PostImmutableAssociationGroupResponseModel,
-                  AutoUpdateAllAssociationGroupDisciplines,
-                  AutoUpdateAllAssociationGroupsResponseModel,
                   UserTypeResponseModel)
 from schemas.error_schema import (NotFoundErrorResponseModel,
                                   ConflictResponseModel)
@@ -191,88 +189,6 @@ def create_immutable_association_group(input_group:
     raise Conflict(str(e)) from e
   except Exception as e:
     Logger.error(e)
-    Logger.error(print_exc())
-    raise InternalServerError(str(e)) from e
-
-
-@router.put(
-    "/active-curriculum-pathway/update-all",
-    response_model=AutoUpdateAllAssociationGroupsResponseModel,
-    responses={404: {
-        "model": NotFoundErrorResponseModel
-    }})
-def update_disciplines_with_active_pathway(
-                nodes: AutoUpdateAllAssociationGroupDisciplines):
-  """Update curriculum_pathway_id across all association groups
-
-  ### Args:
-      nodes: List of nodes of alias type
-
-  ### Raises:
-      ResourceNotFoundException: If the pathway does not exists
-      ValidationError: If the pathway does not have alias as program
-      Exception: 500 Internal Server Error if something went wrong
-
-  ### Returns:
-      updated_groups: List of Association Groups that have been updated
-        Object
-  """
-  try:
-    nodes = {**nodes.dict()}
-    program_id = nodes["program_id"]
-    nodes = nodes.get("disciplines", [])
-    program = CurriculumPathway.find_by_uuid(program_id)
-
-    if not program.is_active:
-      raise ValidationError("Input program_id is not active")
-    if program.alias != "program":
-      raise ValidationError(f"Input pathway has alias as {program.alias} "
-                            "instead of program")
-
-    # Update All Learner Association Groups
-    association_groups = AssociationGroup.collection.filter(
-      "association_type", "==", "learner").fetch()
-    update_groups = []
-    for group in association_groups:
-      associations = group.associations
-      associations["curriculum_pathway_id"] = program_id
-      # Update Instructor and Discipline Associations in Learner Group
-      for i, instructor_data in enumerate(associations["instructors"]):
-        old_discipline = CurriculumPathway.find_by_uuid(
-          instructor_data["curriculum_pathway_id"])
-        for node in nodes:
-          if old_discipline.name == node["name"]:
-            associations["instructors"][i][
-              "curriculum_pathway_id"] = node["uuid"]
-      group.associations = associations
-      group.update()
-      update_groups.append(group.id)
-
-    # Update all discipline Association Groups
-    association_groups = AssociationGroup.collection.filter(
-      "association_type", "==", "discipline").fetch()
-
-    new_associations = [{"curriculum_pathway_id": node["uuid"],
-                         "status": "active"} for node in nodes]
-    new_associations = {"curriculum_pathways": new_associations}
-    for group in association_groups:
-      group.associations = new_associations
-      group.update()
-      update_groups.append(group.id)
-
-    return {
-          "success": True,
-          "message": "Successfully updated the following association groups",
-          "data": update_groups
-    }
-
-  except ResourceNotFoundException as e:
-    Logger.error(print_exc())
-    raise ResourceNotFound(str(e)) from e
-  except ValidationError as e:
-    Logger.error(print_exc())
-    raise BadRequest(str(e)) from e
-  except Exception as e:
     Logger.error(print_exc())
     raise InternalServerError(str(e)) from e
 

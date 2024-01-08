@@ -29,9 +29,7 @@ import config
 from fastapi import FastAPI, Depends
 
 from routes import (user_event, user, permission, action, user_group, staff,
-                    module, session, application, association_group,
-                    learner_association_group,
-                    discipline_association_group)
+                    module, session, application, association_group)
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_token
 
@@ -74,8 +72,6 @@ api.include_router(application.router)
 api.include_router(session.router)
 api.include_router(staff.router)
 api.include_router(association_group.router)
-api.include_router(learner_association_group.router)
-api.include_router(discipline_association_group.router)
 add_exception_handlers(api)
 
 api_v2 = FastAPI(title="User Access Management Service APIs",

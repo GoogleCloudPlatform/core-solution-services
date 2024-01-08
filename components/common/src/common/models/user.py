@@ -16,9 +16,9 @@ User Data Model
 """
 import regex
 from common.config import USER_TYPES
-from common.models import BaseModel, NodeItem, LearningUnit
+from common.models import BaseModel, NodeItem
 from common.utils.errors import ResourceNotFoundException
-from fireo.fields import (ReferenceField, TextField, NumberField, MapField,
+from fireo.fields import (TextField, NumberField, MapField,
                           ListField, BooleanField)
 
 
@@ -400,23 +400,6 @@ class UserEvent(NodeItem):
 
   class Meta:
     collection_name = BaseModel.DATABASE_PREFIX + "user_events"
-    ignore_none_field = False
-
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    # leaf node
-    self.children_nodes = None
-
-
-class UserAbility(BaseModel):
-  """UserAbility model class"""
-
-  learning_unit = ReferenceField(LearningUnit, required=True, auto_load=False)
-  ability = NumberField(default=0)
-  user = ReferenceField(User, auto_load=False, required=True)
-
-  class Meta:
-    collection_name = BaseModel.DATABASE_PREFIX + "user_abilities"
     ignore_none_field = False
 
   def __init__(self, *args, **kwargs):
