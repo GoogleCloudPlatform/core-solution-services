@@ -26,9 +26,10 @@ from typing import List, Tuple
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import CrawlSpider, Rule
+from scrapy.spiders import CrawlSpider, Rule, Spider
 from scrapy.http import Response
 from google.cloud import storage
+from config import DEFAULT_WEB_DEPTH_LIMIT
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource
 from utils.html_helper import (html_trim_tags,
@@ -95,51 +96,14 @@ def sanitize_url(url) -> str:
 
   return safe_filename
 
+class WebDataSourceParser:
+  """ This class is used a parser for all our scrapy spider classes """
 
-class WebDataSourceSpider(CrawlSpider):
-  """Scrapy spider to crawl and download webpages."""
-
-  name = "web_data_source_spider"
-
-  def __init__(self, *args, start_urls=None, restrict_domain=True,
-               storage_client=None, bucket_name=None, filepath="/tmp",
-               **kwargs):
-    """
-    Initialize the spider.
-    Args:
-      start_urls: List of URLs to download
-      restrict_domain: Restrict domain to the original URL
-      storage_client: Python Storage client for GCS
-      bucket_name: GCS bucket save downloaded webpages
-      filepath: Used mainly for testing (if bucket_name is empty)
-    """
-    super().__init__(*args, **kwargs)
-    self.start_urls = start_urls
-    if len(start_urls) == 0:
-      msg = "URL list is empty"
-      Logger.error(msg)
-      raise Exception(msg)
-
-    if restrict_domain:
-      start_url = start_urls[0]
-      domain = re.findall(r"://(.*?)/", start_url + "/")[0]
-      self.allowed_domains = [domain]
-
+  def __init__(self, storage_client=None, bucket_name=None, filepath="/tmp"):
     self.storage_client = storage_client
     self.bucket_name = bucket_name
     self.filepath = filepath
     self.crawled_urls = []
-    self.rules = (
-      Rule(LinkExtractor(allow_domains=self.allowed_domains),
-           callback="parse", follow=True),
-    )
-    super()._compile_rules()
-
-  def closed(self, reason: str):
-    print(reason)
-    for url in self.crawled_urls:
-      print(url)
-    pass
 
   def parse(self, response: Response, **kwargs) -> dict:
     content_type = response.headers.get("Content-Type").decode("utf-8")
@@ -174,12 +138,84 @@ class WebDataSourceSpider(CrawlSpider):
     return item
 
 
+class WebDataSourcePageSpider(Spider):
+  """Scrapy spider to download individual webpages."""
+  name = "web_data_source_page_spider"
+
+  def __init__(self, *args, start_urls=None,
+               storage_client=None, bucket_name=None, filepath="/tmp",
+               **kwargs):
+    super().__init__(*args, **kwargs)
+    self.start_urls = start_urls
+    self.parser = WebDataSourceParser(
+        storage_client=storage_client,
+        bucket_name=bucket_name,
+        filepath=filepath)
+
+  def parse(self, response: Response, **kwargs) -> dict:
+    return self.parser.parse(response, **kwargs)
+
+
+class WebDataSourceSpider(CrawlSpider):
+  """Scrapy spider to crawl and download webpages."""
+
+  name = "web_data_source_crawl_spider"
+
+  def __init__(self, *args, start_urls=None, restrict_domain=True,
+               storage_client=None, bucket_name=None, filepath="/tmp",
+               **kwargs):
+    """
+    Initialize the spider.
+    Args:
+      start_urls: List of URLs to download
+      restrict_domain: Restrict domain to the original URL
+      storage_client: Python Storage client for GCS
+      bucket_name: GCS bucket save downloaded webpages
+      filepath: Used mainly for testing (if bucket_name is empty)
+    """
+    super().__init__(*args, **kwargs)
+    self.parser = WebDataSourceParser(
+        storage_client=storage_client,
+        bucket_name=bucket_name,
+        filepath=filepath)
+
+    self.start_urls = start_urls
+    if len(start_urls) == 0:
+      msg = "URL list is empty"
+      Logger.error(msg)
+      raise Exception(msg)
+
+    if restrict_domain:
+      start_url = start_urls[0]
+      domain = re.findall(r"://(.*?)/", start_url + "/")[0]
+      self.allowed_domains = [domain]
+
+    self.rules = (
+      Rule(LinkExtractor(allow_domains=self.allowed_domains),
+           callback="parse", follow=True),
+    )
+    super()._compile_rules()
+
+  def closed(self, reason: str):
+    print(reason)
+    for url in self.parser.crawled_urls:
+      print(url)
+    pass
+
+  def parse(self, response: Response, **kwargs) -> dict:
+    return self.parser.parse(response, **kwargs)
+
+
+
 class WebDataSource(DataSource):
   """
    Web site data source.
   """
 
-  def __init__(self, storage_client=None, bucket_name=None, depth_limit=1):
+  def __init__(self,
+               storage_client=None,
+               bucket_name=None,
+               depth_limit=DEFAULT_WEB_DEPTH_LIMIT):
     """
     Initialize the WebDataSource.
 
@@ -187,7 +223,8 @@ class WebDataSource(DataSource):
       start_urls: List of URLs to download.
       bucket_name (str): name of GCS bucket to save downloaded webpages.
                          If None files will not be saved.
-      depth_limit (int): depth limit to crawl
+      depth_limit (int): depth limit to crawl. 0=don't crawl, just
+                         download provided URLs
     """
     if storage_client is None:
       storage_client = storage.Client()
@@ -221,23 +258,32 @@ class WebDataSource(DataSource):
     Returns:
         list of tuples (doc name, document url, local file path)
     """
-    #
+    # clear bucket
     if self.bucket_name:
       clear_bucket(self.storage_client, self.bucket_name)
 
-    # Define the Scrapy settings
+    if self.depth_limit == 0:
+      # for this class, depth_limit=0 means don't crawl, just download the
+      # web page(s) supplied.  (for scrapy depth_limit=0 means no limit).
+      spider_class = WebDataSourcePageSpider
+    elif self.depth_limit > 0:
+      spider_class = WebDataSourceSpider
+
+    # define Scrapy settings
     settings = {
       "ROBOTSTXT_OBEY": False,
       "DEPTH_LIMIT": self.depth_limit,
       "LOG_LEVEL": "INFO"
     }
-    # Start the Scrapy process
+    # create the Scrapy crawler process
     process = CrawlerProcess(settings=settings)
-    crawler = process.create_crawler(WebDataSourceSpider)
+    crawler = process.create_crawler(spider_class)
 
     # Connect the item_scraped signal to the handler
     crawler.signals.connect(self._item_scraped,
                             signal=signals.item_scraped)
+
+    # start the scrapy crawler
     process.crawl(crawler,
                   start_urls=[doc_url],
                   storage_client=self.storage_client,
