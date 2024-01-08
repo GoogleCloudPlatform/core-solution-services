@@ -92,6 +92,7 @@ class QueryEngine(BaseModel):
   index_id = TextField(required=False)
   index_name = TextField(required=False)
   endpoint = TextField(required=False)
+  doc_url = TextField(required=False)
 
   class Meta:
     ignore_none_field = False

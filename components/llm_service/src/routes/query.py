@@ -18,7 +18,8 @@
 import traceback
 from fastapi import APIRouter, Depends
 
-from common.models import QueryEngine, User, UserQuery, QueryDocument
+from common.models import (QueryEngine,
+                           User, UserQuery, QueryDocument)
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
@@ -31,7 +32,7 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from common.utils.logging_handler import Logger
 from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_VECTOR_STORE, VECTOR_STORES)
+                    DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST)
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
@@ -42,7 +43,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import (query_generate,
-                                          vector_store_from_query_engine)
+                                          delete_engine)
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -266,12 +267,52 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
     Logger.error(e)
     raise InternalServerError(str(e)) from e
 
+@router.put(
+  "/engine/{query_engine_id}",
+  name="Update a query engine")
+def update_query_engine(query_engine_id: str,
+                        data_config: LLMQueryEngineModel):
+  """
+  Update a query engine. It only supports updating description.
+
+  Args:
+      query_engine_id (LLMQueryEngineModel)
+  Returns:
+    [JSON]: {'success': 'True'} if the query engine is deleted,
+    ResourceNotFoundException if the query engine not found,
+    InternalServerErrorResponseModel if the deletion raises an exception
+  """
+  if query_engine_id is None or query_engine_id == "":
+    return BadRequest("Missing or invalid payload parameters: query_engine_id")
+
+  q_engine = QueryEngine.find_by_id(query_engine_id)
+  if q_engine is None:
+    raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
+
+  data_dict = {**data_config.dict()}
+
+  try:
+    Logger.info(f"Updating q_engine=[{q_engine.name}]")
+    q_engine.description = data_dict["description"]
+    q_engine.save()
+    Logger.info(f"Successfully updated q_engine=[{q_engine.name}]")
+
+  except Exception as e:
+    Logger.error(e)
+    raise InternalServerError(str(e)) from e
+
+  return {
+    "success": True,
+    "message": f"Successfully deleted query engine {query_engine_id}",
+  }
+
+
 @router.delete(
   "/engine/{query_engine_id}",
   name="Delete a query engine")
-def delete_query_engine(query_engine_id: str):
+def delete_query_engine(query_engine_id: str, hard_delete=False):
   """
-  Delete a query engine
+  Delete a query engine.  By default we do a soft delete.
 
   Args:
       query_engine_id (LLMQueryEngineModel)
@@ -290,9 +331,8 @@ def delete_query_engine(query_engine_id: str):
   try:
     Logger.info(f"Deleting q_engine=[{q_engine.name}]")
 
-    qe_vector_store = vector_store_from_query_engine(q_engine)
-    qe_vector_store.delete()
-    QueryEngine.soft_delete_by_id(query_engine_id)
+    delete_engine(q_engine, hard_delete)
+
     Logger.info(f"Successfully deleted q_engine=[{q_engine.name}]")
   except Exception as e:
     Logger.error(e)
@@ -355,14 +395,14 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "embedding_type": genconfig_dict.get("embedding_type", None),
       "vector_store": genconfig_dict.get("vector_store", None),
       "description": genconfig_dict.get("description", None),
-
     }
     env_vars = {
       "DATABASE_PREFIX": DATABASE_PREFIX,
       "PROJECT_ID": PROJECT_ID,
       "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
       "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
-      "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE)
+      "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
+      "PG_HOST": PG_HOST,
     }
     response = initiate_batch_job(data, JOB_TYPE_QUERY_ENGINE_BUILD, env_vars)
     Logger.info(f"Batch job response: {response}")

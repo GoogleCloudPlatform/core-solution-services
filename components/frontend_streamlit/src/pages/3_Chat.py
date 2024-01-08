@@ -14,50 +14,46 @@
 """
   Streamlit app Chat Page
 """
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,unused-variable
 import re
 import streamlit as st
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan)
+    run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
+from components.content_header import display_header
+from styles.pages.chat_markup import chat_theme
 from common.utils.logging_handler import Logger
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
-CHAT_PAGE_STYLES = """
-<style>
-  .stButton[data-testid="stFormSubmitButton"] {
-    display: none;
-  }
-  .stTextInput input {
-    color: #555555;
-    -webkit-text-fill-color: black;
-  }
-  .stTextArea label {
-    display: none !important;
-  }
-  .stTextArea textarea {
-    color: #555555;
-    -webkit-text-fill-color: black;
-  }
-</style>
-"""
-
 Logger = Logger.get_logger(__file__)
-
 
 def on_submit(user_input):
   """ Run dispatch agent when adding an user input prompt """
   # Appending messages.
+  st.session_state.error_msg = None
   st.session_state.messages.append({"HumanInput": user_input})
 
   with st.spinner("Loading..."):
     # Send API to llm-service
-    response = run_dispatch(user_input,
-                            chat_id=st.session_state.get("chat_id"))
-    st.session_state.default_route = response.get("route", None)
+    default_route = st.session_state.get("default_route", None)
+    if default_route is None or default_route == "Auto":
+      response = run_dispatch(user_input,
+                              chat_id=st.session_state.get("chat_id"),
+                              llm_type=st.session_state.get("chat_llm_type"))
+      st.session_state.default_route = response.get("route", None)
+    elif default_route == "Chat":
+      response = run_chat(user_input,
+                         chat_id=st.session_state.get("chat_id"),
+                         llm_type=st.session_state.get("chat_llm_type"))
+    elif default_route == "Plan":
+      response = run_agent_plan("Plan", user_input,
+                                chat_id=st.session_state.get("chat_id"),
+                                llm_type=st.session_state.get("chat_llm_type"))
+    else:
+      st.error(f"Unsupported route {default_route}")
 
     if not st.session_state.chat_id:
       st.session_state.chat_id = response["chat"]["id"]
@@ -73,17 +69,30 @@ def on_submit(user_input):
 
 
 def format_ai_output(text):
-  Logger.info(text)
+  text = text.strip()
 
+  # Clean up ASCI code and text formatting code.
   text = ansi_escape.sub("", text)
+  text = re.sub(r"\[1;3m", "\n", text)
+  text = re.sub(r"\[[\d;]+m", "", text)
+
+  # Reformat steps.
   text = text.replace("> Entering new AgentExecutor chain",
                       "**Entering new AgentExecutor chain**")
+  text = text.replace("Task:", "- **Task**:")
   text = text.replace("Observation:", "---\n**Observation**:")
   text = text.replace("Thought:", "- **Thought**:")
   text = text.replace("Action:", "- **Action**:")
   text = text.replace("Action Input:", "- **Action Input**:")
-  text = text.replace("> Finished chain:", "**Finished chain**:")
+  text = text.replace("Route:", "- **Route**:")
+  text = text.replace("> Finished chain", "**Finished chain**")
   return text
+
+def dedup_list(items, dedup_key):
+  items_dict = {}
+  for item in items:
+    items_dict[item[dedup_key]] = item
+  return list(items_dict.values())
 
 def chat_content():
   if st.session_state.debug:
@@ -95,7 +104,6 @@ def chat_content():
     st.write(f"Chat ID: **{st.session_state.chat_id}**")
 
   # Create a placeholder for all chat history.
-  reference_index = 0
   chat_placeholder = st.empty()
   with chat_placeholder.container():
     index = 1
@@ -114,9 +122,10 @@ def chat_content():
               key=f"ai_{index}",
           )
 
-      if item.get("route_logs", "").strip() != "":
+      route_logs = item.get("route_logs", None)
+      if route_logs and route_logs.strip() != "":
         with st.expander("Expand to see Agent's thought process"):
-          st.write(item["route_logs"])
+          st.write(format_ai_output(route_logs))
 
       if "AIOutput" in item:
         with st.chat_message("ai"):
@@ -130,17 +139,18 @@ def chat_content():
           )
 
       # Append all resources.
-      if "resources" in item:
+      if item.get("resources", None):
         with st.chat_message("ai"):
           for name, link in item["resources"].items():
             st.markdown(f"Resource: [{name}]({link})")
 
       # Append all query references.
-      if "query_references" in item:
+      if item.get("query_references", None):
         with st.chat_message("ai"):
           st.write("References:")
-          for reference in item["query_references"]:
-            document_url = reference["document_url"]
+          reference_index = 1
+          for reference in dedup_list(item["query_references"], "chunk_id"):
+            document_url = render_cloud_storage_url(reference["document_url"])
             document_text = reference["document_text"]
             st.markdown(
                 f"**{reference_index}.** [{document_url}]({document_url})")
@@ -181,11 +191,20 @@ def chat_content():
               "AIOutput": agent_process_output,
             })
 
-      if item.get("agent_logs", "").strip() != "":
+      agent_logs = item.get("agent_logs", None)
+      if agent_logs and agent_logs.strip() != "":
         with st.expander("Expand to see Agent's thought process"):
-          st.write(item["agent_logs"])
+          st.write(format_ai_output(agent_logs))
 
       index = index + 1
+
+
+def render_cloud_storage_url(url):
+  """ Parse a cloud storage url. """
+  if url[:3] == "/b/":
+    url = url.replace("/b/", "https://storage.googleapis.com/")
+    url = url.replace("/o/", "/")
+  return url
 
 
 def init_messages():
@@ -200,31 +219,45 @@ def init_messages():
 
 
 def chat_page():
-  st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
+  chat_theme()
+
+  # Returns the values of the select input boxes
+  selections = display_header()
+
   st.title("Chat")
+
+  chat_llm_types = get_all_chat_llm_types()
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
 
   content_placeholder = st.container()
 
+  # Pass prompt from the Landing page if any.
+  landing_user_input = st.session_state.get("landing_user_input", None)
+  Logger.info(f"Landing input [{landing_user_input}]")
+
+  if not st.session_state.chat_id and landing_user_input:
+    user_input = st.session_state.landing_user_input
+    st.session_state.user_input = user_input
+    st.session_state.landing_user_input = None
+    on_submit(user_input)
+
   with st.form("user_input_form", border=False, clear_on_submit=True):
-    col1, col2 = st.columns([5, 1])
-    with col1:
-      user_input = st.text_input("User Input", key="user_input")
+    input_col, btn_col = st.columns([9.4, .6])
+
+    with input_col:
+      user_input = st.text_input(
+        placeholder="Enter a prompt here",
+        label="Enter prompt",
+        label_visibility="collapsed",
+        key="user_input"
+      )
+    with btn_col:
       submitted = st.form_submit_button("Submit")
-    with col2:
-      st.session_state.default_route = st.selectbox(
-          "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
 
     if submitted:
       on_submit(user_input)
-
-  # Pass prompt from the Landing page if any.
-  landing_user_input = st.session_state.get("landing_user_input", None)
-  if not st.session_state.chat_id and landing_user_input:
-    on_submit(st.session_state.landing_user_input)
-    st.session_state.landing_user_input = ""
 
   with content_placeholder:
     chat_content()

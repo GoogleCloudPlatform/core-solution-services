@@ -16,114 +16,159 @@
 """
 # pylint: disable=invalid-name
 import json
+import moment
 import streamlit as st
-from api import (build_query_engine, get_all_embedding_types,
+from api import (build_query_engine, update_query_engine,
+                 delete_query_engine,
+                 get_all_embedding_types,
                  get_all_vector_stores, get_all_query_engines,
+                 get_all_docs_of_query_engine,
                  get_all_jobs)
 from common.utils.logging_handler import Logger
+from common.config import PROJECT_ID
 import utils
 
 Logger = Logger.get_logger(__file__)
+qe_list = []
+qe_build_jobs = []
 
-def build_clicked(engine_name:str, doc_url:str,
+def reload():
+  global qe_list, qe_build_jobs
+
+  # Prepare table values
+  qe_list = get_all_query_engines()
+  qe_build_jobs = get_all_jobs()
+
+
+def submit_build(engine_name:str, doc_url:str,
                   embedding_type:str, vector_store:str,
                   description:str):
-  build_query_engine(
-    engine_name, doc_url, embedding_type, vector_store, description)
+  try:
+    output = build_query_engine(
+      engine_name, doc_url, embedding_type, vector_store, description)
+
+    if output.get("success") is True:
+      job_id = output["data"]["job_name"]
+      st.success(f"Query Engine build job created. Job ID: {job_id}")
+    else:
+      st.error(output.get("message"))
+
+  except RuntimeError as e:
+    st.error(e)
+
+def submit_update(query_engine_id:str, name:str, description:str):
+  output = update_query_engine(query_engine_id, name, description)
+
+  if output.get("success") is True:
+    st.success(f"Query Engine {name} updated successfully.")
+  else:
+    st.error(output["message"])
 
 
-def get_qe_table_data() -> list:
-  qe_list = get_all_query_engines()
-  if not qe_list:
-    Logger.error("No query engine found.")
-    st.write("No query engine found.")
-    return
-
-  qe_list.sort(key=lambda x: x["name"], reverse=True)
-
-  # Reformat list of dict to nested arrays for table.
-  table_data = [[
-    "Engine Name",
-    "Description",
-    "LLM type",
-    "Embeddings Type",
-    "Vector Store",
-    "Created Timestamp"
-  ]]
-  for qe in qe_list:
-    table_data.append([
-      qe["name"],
-      qe.get("description"),
-      qe.get("llm_type"),
-      qe.get("embedding_type"),
-      qe.get("vector_store"),
-      qe.get("created_time"),
-    ])
-  return table_data
-
-
-def get_jobs_table_data():
-  # Get all query_engine_build jobs
-  qe_build_jobs = get_all_jobs()
-  if not qe_build_jobs:
-    Logger.error("No query engine build jobs")
-    st.write("No query engine build jobs")
-    return
-  qe_build_jobs.sort(key=lambda x: x["last_modified_time"], reverse=True)
-
-  # Reformat list of dict to nested arrays for table.
-  jobs_table_data = [[
-    "Job ID",
-    "Engine Name",
-    "Status",
-    "LLM type",
-    "Embeddings Type",
-    "Vector Store",
-    "Doc URL",
-    "Errors",
-    "Last Modified"
-  ]]
-  for job in qe_build_jobs:
-    input_data = json.loads(job["input_data"])
-    jobs_table_data.append([
-      job["name"],
-      input_data.get("query_engine"),
-      job["status"],
-      input_data.get("llm_type"),
-      input_data.get("embedding_type"),
-      input_data.get("vector_store"),
-      input_data.get("doc_url"),
-      job.get("errors", {}).get("error_message", ""),
-      job["last_modified_time"]
-    ])
-  return jobs_table_data
-
-def query_engine_build_page():
+def query_engine_page():
   # Get all embedding types as a list
   embedding_types = get_all_embedding_types()
   # Get all vector stores as a list
   vector_store_list = get_all_vector_stores()
 
   # Prepare table values
-  qe_table_data = get_qe_table_data()
-  jobs_table_data = get_jobs_table_data()
+  reload()
 
   st.title("Query Engine Management")
-  tab1, tab2, tab3 = st.tabs([
+  if st.button("Refresh"):
+    reload()
+
+  tab_qe, tab_jobs, tab_create_qe = st.tabs([
     "Query Engines",
     "Job List",
     "Build Query Engine",
   ])
 
-  with tab1:
+  with tab_qe:
     st.subheader("Query Engines")
-    st.table(qe_table_data)
+    if not qe_list:
+      Logger.error("No query engine found.")
+      st.write("No query engine found.")
+      return
 
-  with tab2:
+    for qe in qe_list:
+      data = [[key, value] for key, value in qe.items()]
+      summary = f"{qe['llm_type']}, {qe['embedding_type']}, " \
+                f"vector_store:{qe['vector_store']}"
+      url_list = get_all_docs_of_query_engine(qe["id"])
+
+      with st.expander(f"**{qe['name']}** - {summary}"):
+        tab_detail, tab_urls = st.tabs([
+            "Query Engine Detail", f"URLs ({len(url_list)})"])
+        with tab_detail:
+          st.table(data)
+          with st.form(qe["name"]):
+            description = st.text_area("Description", qe["description"])
+            submit = st.form_submit_button("Update")
+          if submit:
+            submit_update(qe["id"], qe["name"], description)
+
+          delete = st.button("Delete", key=f"delete_{qe['name']}")
+          if delete:
+            delete_query_engine(qe["id"])
+            reload()
+
+        with tab_urls:
+          st.write(f"{len(url_list)} URLs")
+          for url in url_list:
+            st.write(f"- [{url}]({url})")
+
+  with tab_jobs:
     st.subheader("Query Engine Jobs")
-    st.table(jobs_table_data)
 
-  with tab3:
+    if not qe_build_jobs:
+      Logger.error("No query engine build jobs")
+      st.write("No query engine build jobs")
+      return
+
+    for job in qe_build_jobs:
+      created_at = moment.date(
+          job["created_time"]).format("YYYY-M-D h:m A")
+      summary_data = [
+        ["Job ID", job["id"]],
+        ["Status", job["status"]],
+        ["Created at", created_at],
+        ["Errors", job.get("errors", {}).get("error_message", "")]
+      ]
+      input_data = json.loads(job["input_data"])
+      data = [[key, value] for key, value in input_data.items()]
+      query_engine = input_data["query_engine"].strip()
+      status = job["status"]
+      icon = "🔄"
+      if status == "succeeded":
+        icon = "✅"
+      elif status == "failed":
+        icon = "❌"
+
+      with st.expander(
+          f"**{icon} [{job['status']}]** QE: {query_engine} - " \
+          f"Job created at {created_at}"):
+        # FIXME: Add this to the backend data model.
+        job_url = "https://console.cloud.google.com/kubernetes/job/" \
+                  f"us-central1/main-cluster/default/{job['id']}/details" \
+                  f"?project={PROJECT_ID}"
+        st.write(f"[Link to Kubernetes Job]({job_url})")
+        st.table(summary_data + data)
+
+        if status != "succeeded":
+          submit = st.button(
+              "Re-run this job", key=f"rerun-job-{job['id']}", type="secondary")
+          if submit:
+            submit_build(
+              input_data["query_engine"],
+              input_data["doc_url"],
+              input_data["embedding_type"],
+              input_data["vector_store"],
+              input_data["description"])
+            st.toast(
+                "Job re-submitted with query engine: {job['query_engine']}")
+
+  with tab_create_qe:
     st.subheader("Build a new Query Engine")
     placeholder_build_qe = st.empty()
 
@@ -136,14 +181,14 @@ def query_engine_build_page():
     vector_store = st.selectbox(
         "Vector Store:",
         vector_store_list)
-    description = st.text_area("description")
+    description = st.text_area("Description")
 
     submit = st.form_submit_button("Build")
   if submit:
-    build_clicked(
+    submit_build(
       engine_name, doc_url, embedding_type, vector_store, description)
 
 
 if __name__ == "__main__":
   utils.init_page()
-  query_engine_build_page()
+  query_engine_page()

@@ -1,0 +1,144 @@
+{
+  "providers": {
+    "Vertex": {
+      "enabled": true,
+      "env_flag": "ENABLE_GOOGLE_LLM",
+      "model_params": {
+        "temperature": 0.2,
+        "max_output_tokens": 1024,
+        "top_p": 0.95,
+        "top_k": 40
+      }      
+    },
+    "ModelGarden": {
+      "enabled": true,
+      "env_flag": "ENABLE_GOOGLE_MODEL_GARDEN",
+      "model_params": {
+        "temperature": 0.2,
+        "max_tokens": 900,
+        "top_p": 1.0,
+        "top_k": 10
+      }      
+    },
+    "Langchain": {
+      "enabled": true,
+      "env_flag": "ENABLE_LANGCHAIN_LLM"
+    },
+    "LLMService": {
+      "enabled": false,
+      "env_flag": "ENABLE_LLM_SERVICE_PROVIDER"
+    },
+    "Truss": {
+      "enabled": true,
+      "env_flag": "ENABLE_TRUSS_LLAMA2"
+    }
+  },
+  "vendors": {
+    "OpenAI": {
+      "enabled": true,
+      "api_key": "openai-api-key",
+      "env_flag": "ENABLE_OPENAI_LLM"
+    },
+    "Cohere": {
+      "enabled": true,
+      "api_key": "cohere-api-key",
+      "env_flag": "ENABLE_COHERE_LLM"
+    }    
+  },
+  "models": {
+    "VertexAI-Text": {
+      "is_chat": false,
+      "provider": "Vertex",
+      "model_name": "text-bison@002"
+    },
+    "VertexAI-Chat-Palm2V2": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "chat-bison@002"
+    },
+    "VertexAI-Gemini-Pro": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "gemini-pro"
+    },
+    "VertexAI-Chat-Palm2V2-Langchain": {
+      "is_chat": true,
+      "provider": "Langchain",
+      "model_name": "chat-bison@002",
+      "model_class": "ChatVertexAI"
+    },
+    "VertexAI-Chat-Palm2-32k": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "chat-bison-32k"
+    },
+    "VertexAI-Chat-Palm2-32k-Langchain": {
+      "is_chat": true,
+      "provider": "Langchain",
+      "model_name": "chat-bison-32k",
+      "model_class": "ChatVertexAI"
+    },
+    "Truss-Llama2-Chat": {
+      "model_endpoint": "http://truss-llama2-7b-service:8080",
+      "is_chat": true,
+      "provider": "Truss",
+      "enabled": false,
+      "model_params": {
+        "temperature": 0.2,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_length": 2048
+      }
+    },
+    "VertexAI-ModelGarden-LLAMA2-Chat": {
+      "is_chat": true,
+      "provider": "ModelGarden",
+      "enabled": false,
+      "model_endpoint": "xxx"
+    },
+    "OpenAI-GPT4": {
+      "vendor": "OpenAI",
+      "is_chat": true,
+      "provider": "Langchain",
+      "enabled": true,
+      "model_name": "gpt-4",
+      "model_class": "ChatOpenAI",      
+      "model_params": {
+        "temperature": 0
+      }
+    },
+    "OpenAI-GPT3.5": {
+      "vendor": "OpenAI",
+      "is_chat": true,
+      "provider": "Langchain",
+      "enabled": true,
+      "model_name": "gpt-3.5-turbo",
+      "model_class": "ChatOpenAI",      
+      "model_params": {
+        "temperature": 0
+      }
+    },
+    "Cohere": {
+      "vendor": "Cohere",
+      "is_chat": true,
+      "provider": "Langchain",
+      "enabled": true,
+      "model_class": "ChatCohere"
+    }
+  },
+  "embeddings": {
+    "Llama2cpp": {
+      "model_endpoint": "http://model-service/api/v1",
+      "provider": "LLMService",
+      "model_class": "LlamaCpp",
+      "enabled": false,
+      "env_flag": "ENABLE_LLAMA2CPP_LLM"
+    },
+    "VertexAI-Embedding": {
+      "provider": "Vertex"
+    },
+    "OpenAI-Embedding": {
+      "provider": "Langchain"
+    }
+  }
+}

@@ -18,23 +18,22 @@
 import streamlit as st
 import utils
 import api
+from styles.pages.login_markup import login_theme
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
 
 def login_clicked(username, password):
   Logger.info(f"Logging in as {username}")
+  st.session_state["username"] = username
+  st.session_state["password"] = password
   token = api.login_user(username, password)
   if token:
-    st.session_state["logged_in"] = True
-    st.session_state["auth_token"] = token
-    st.session_state["username"] = username
     utils.http_navigate_to("Landing")
-  else:
-    st.session_state["logged_in"] = False
-    st.error("Invalid username or password")
+
 
 def login_page():
+  login_theme()
   placeholder = st.empty()
 
   if "auth_token" not in st.session_state:
@@ -47,13 +46,12 @@ def login_page():
     st.warning("Please enter your username and password")
 
   with placeholder.form("login"):
-    st.title("Login")
+    st.title("Sign in")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    submit = st.form_submit_button("Login")
+    submit = st.form_submit_button("Submit")
   if submit:
     login_clicked(username, password)
-
 
 if __name__ == "__main__":
   utils.init_page(redirect_to_without_auth=False)

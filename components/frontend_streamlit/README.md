@@ -7,6 +7,12 @@
 Set up API endpoint
 
 ```
+# To unset environment variables:
+unset AUTH_SERVICE_API_URL
+unset LLM_SERVICE_API_URL
+unset JOBS_SERVICE_API_URL
+
+# Set API base URL
 export API_BASE_URL=https://my.domain.com
 ```
 
@@ -28,6 +34,27 @@ pip install -r components/frontend_streamlit/requirements.txt
 PYTHONPATH=components/common/src streamlit run components/frontend_streamlit/src/main.py \
   --server.baseUrlPath=$APP_BASE_PATH
 ```
+
+### Test local Streamlit with remote API, bypassing CORS
+
+By default, browsers prevent cross-domain API calls from a web page/javascript, which includes calling a remote APIs from
+the Streamlit UI hosted locally.
+
+To bypass the CORS, run a Chrome browser instance separately with security setting disabled. Open a new terminal and run
+commands below:
+
+OSX:
+```
+open -n -a /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --args --user-data-dir="/tmp/chrome-user-data" --disable-web-security
+```
+
+Or on Windows:
+```
+"[PATH_TO_CHROME]\chrome.exe" --disable-web-security --disable-gpu --user-data-dir=~/chromeTemp
+```
+
+Once a new Chrome instance is up, copy and paste the Streamlit localhost and port.
+
 
 ### Run Streamlit locally with deployed microservices with local port forwording:
 

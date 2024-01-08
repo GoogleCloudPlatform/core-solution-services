@@ -48,6 +48,8 @@ router = APIRouter(
 def sign_in_with_token(token: auth_scheme = Depends()):
   """This endpoint will take the Google oauth token as an Authorization header
   and returns the firebase id_token and refresh token.
+  
+  If the user does not exist in the user store a user model will be created.
   """
 
   try:
@@ -107,7 +109,9 @@ def sign_in_with_token(token: auth_scheme = Depends()):
 @router.post("/credentials", response_model=SignInWithCredentialsResponseModel)
 def sign_in_with_credentials(credentials: SignInWithCredentialsModel):
   """This endpoint will take the user email and password as an input
-  and returns an id token and refresh token from the IDP
+  and returns an id token and refresh token from the IDP.
+  
+  If the user does not exist in the user store a user model will be created.
   """
   try:
     user = get_user_by_email(

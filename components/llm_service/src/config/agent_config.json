@@ -7,7 +7,7 @@
       "agent_class": "DispatchAgent"
     },
     "Chat": {
-      "llm_type": "VertexAI-Chat",
+      "llm_type": "VertexAI-Chat-Palm2V2-Langchain",
       "agent_type": "langchain_Conversational",
       "agent_class": "ChatAgent"
     },

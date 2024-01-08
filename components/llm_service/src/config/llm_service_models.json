@@ -1,8 +1,0 @@
-{
-  "Llama2cpp": {
-    "user": "lramsey@google.com",
-    "api_base_url": "http://model-service/api/v1",
-    "has_embeddings": "True",
-    "is_chat": "True"
-  }
-}

@@ -16,7 +16,7 @@
   Unit tests for LLM Service endpoints
 """
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
+# pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports,use-implicit-booleaness-not-comparison
 import os
 import pytest
 from fastapi import FastAPI
@@ -31,12 +31,16 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
                                      QUERY_DOCUMENT_EXAMPLE_1,
                                      QUERY_DOCUMENT_EXAMPLE_2,
                                      QUERY_DOCUMENT_EXAMPLE_3,
+                                     QUERY_DOCUMENT_CHUNK_EXAMPLE_1,
+                                     QUERY_DOCUMENT_CHUNK_EXAMPLE_2,
+                                     QUERY_DOCUMENT_CHUNK_EXAMPLE_3,
                                      QUERY_RESULT_EXAMPLE)
 from common.models import (UserQuery, QueryResult, QueryEngine,
-                           User, QueryDocument)
+                           User, QueryDocument, QueryDocumentChunk)
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
+from common.utils.errors import ResourceNotFoundException
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
@@ -147,6 +151,16 @@ def create_query_docs(client_with_emulator):
   query_doc3.save()
 
 
+@pytest.fixture
+def create_query_doc_chunks(client_with_emulator):
+  qdoc_chunk1 = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_1)
+  qdoc_chunk1.save()
+  qdoc_chunk2 = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_2)
+  qdoc_chunk2.save()
+  qdoc_chunk3 = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_3)
+  qdoc_chunk3.save()
+
+
 def test_get_query_engine_list(create_engine, client_with_emulator):
   url = f"{api_url}"
   resp = client_with_emulator.get(url)
@@ -183,24 +197,80 @@ def test_create_query_engine(create_user, client_with_emulator):
   assert query_engine_data == FAKE_QE_BUILD_RESPONSE["data"]
 
 
-@mock.patch("routes.query.vector_store_from_query_engine")
-def test_delete_query_engine(mock_vector_store, create_user,
-                             create_engine, client_with_emulator):
+@mock.patch("services.query.query_service.vector_store_from_query_engine")
+def test_delete_query_engine_soft(mock_vector_store, create_user,
+                                  create_engine, create_query_docs,
+                                  create_query_doc_chunks,
+                                  client_with_emulator):
   mock_vector_store = mock.Mock()
   mock_vector_store.delete.return_value = None
   q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
+  q_doc_id = QUERY_DOCUMENT_EXAMPLE_1["id"]
+  q_chunk_id = QUERY_DOCUMENT_CHUNK_EXAMPLE_1["id"]
   url = f"{api_url}/engine/{q_engine_id}"
 
   query_engine_before = QueryEngine.find_by_id(q_engine_id)
   resp = client_with_emulator.delete(url)
   json_response = resp.json()
   query_data = json_response.get("message")
-  query_engine_after = QueryEngine.find_by_name(q_engine_id)
+
+  with pytest.raises(ResourceNotFoundException):
+    QueryEngine.find_by_id(q_engine_id)
+  with pytest.raises(ResourceNotFoundException):
+    QueryDocument.find_by_id(q_doc_id)
+  with pytest.raises(ResourceNotFoundException):
+    QueryDocumentChunk.find_by_id(q_chunk_id)
+
+  qdocs = QueryDocument.collection.filter(
+      "query_engine_id", "==", q_engine_id).fetch()
+  assert len(list(qdocs)) == 2
+
+  qchunks = QueryDocumentChunk.collection.filter(
+      "query_engine_id", "==", q_engine_id).fetch()
+  assert len(list(qchunks)) == 2
+
   assert query_engine_before.name == QUERY_ENGINE_EXAMPLE["name"], "valid"
   assert resp.status_code == 200, "Status 200"
   assert query_data == (f"Successfully deleted query engine"
                         f" {q_engine_id}"), "Success"
-  assert query_engine_after is None, "query engine deleted"
+
+
+@mock.patch("services.query.query_service.vector_store_from_query_engine")
+def test_delete_query_engine_hard(mock_vector_store, create_user,
+                                  create_engine, create_query_docs,
+                                  create_query_doc_chunks,
+                                  client_with_emulator):
+  mock_vector_store = mock.Mock()
+  mock_vector_store.delete.return_value = None
+  q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
+  q_doc_id = QUERY_DOCUMENT_EXAMPLE_1["id"]
+  q_chunk_id = QUERY_DOCUMENT_CHUNK_EXAMPLE_1["id"]
+  url = f"{api_url}/engine/{q_engine_id}?hard_delete=True"
+
+  query_engine_before = QueryEngine.find_by_id(q_engine_id)
+  resp = client_with_emulator.delete(url)
+  json_response = resp.json()
+  query_data = json_response.get("message")
+
+  with pytest.raises(ResourceNotFoundException):
+    QueryEngine.find_by_id(q_engine_id)
+  with pytest.raises(ResourceNotFoundException):
+    QueryDocument.find_by_id(q_doc_id)
+  with pytest.raises(ResourceNotFoundException):
+    QueryDocumentChunk.find_by_id(q_chunk_id)
+
+  qdocs = QueryDocument.collection.filter(
+      "query_engine_id", "==", q_engine_id).fetch()
+  assert list(qdocs) == []
+
+  qchunks = QueryDocumentChunk.collection.filter(
+      "query_engine_id", "==", q_engine_id).fetch()
+  assert list(qchunks) == []
+
+  assert query_engine_before.name == QUERY_ENGINE_EXAMPLE["name"], "valid"
+  assert resp.status_code == 200, "Status 200"
+  assert query_data == (f"Successfully deleted query engine"
+                        f" {q_engine_id}"), "Success"
 
 
 def test_query(create_user, create_engine,

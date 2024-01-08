@@ -39,13 +39,30 @@ from config.config import (
     JOB_NAMESPACE,
     auth_client,
 
+    # model config object
+    get_model_config,
+    MODEL_CONFIG_PATH,
+
     # secrets
     LLM_BACKEND_ROBOT_USERNAME,
     LLM_BACKEND_ROBOT_PASSWORD,
 
-    # LLM types
-    LLM_TYPES,
-    CHAT_LLM_TYPES,
+    # LLM vendor flags
+    ENABLE_OPENAI_LLM,
+    ENABLE_COHERE_LLM,
+
+    # default LLM models
+    DEFAULT_QUERY_CHAT_MODEL,
+    DEFAULT_QUERY_EMBEDDING_MODEL,
+    DEFAULT_LLM_TYPE,
+
+    # agent config
+    AGENT_CONFIG_PATH,
+    AGENT_DATASET_CONFIG_PATH,
+)
+
+from config.model_config import (
+    # llm type constants
     OPENAI_LLM_TYPE_GPT3_5,
     OPENAI_LLM_TYPE_GPT4,
     COHERE_LLM_TYPE,
@@ -54,33 +71,44 @@ from config.config import (
     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
     TRUSS_LLM_LLAMA2_CHAT,
 
-    # LLM config
-    ENABLE_OPENAI_LLM,
-    ENABLE_COHERE_LLM,
+    # model config keys
+    KEY_ENABLED,
+    KEY_MODELS,
+    KEY_PROVIDERS,
+    KEY_VENDORS,
+    KEY_PROVIDER,
+    KEY_EMBEDDINGS,
+    KEY_API_KEY,
+    KEY_ENV_FLAG,
+    KEY_MODEL_CLASS,
+    KEY_MODEL_NAME,
+    KEY_MODEL_PARAMS,
+    KEY_IS_CHAT,
+    KEY_MODEL_FILE_URL,
+    KEY_MODEL_PATH,
+    KEY_MODEL_ENDPOINT,
+    KEY_VENDOR,
 
-    # LLM models and collections of models
-    DEFAULT_QUERY_CHAT_MODEL,
-    DEFAULT_QUERY_EMBEDDING_MODEL,
-    GOOGLE_LLM,
-    LANGCHAIN_LLM,
-    EMBEDDING_MODELS,
-    LANGCHAIN_EMBEDDING_MODELS,
-    VERTEX_EMBEDDING_MODELS,
-    LLM_SERVICE_EMBEDDING_MODELS,
-    GOOGLE_MODEL_GARDEN,
-    LLM_SERVICE_MODELS,
-    LLM_TRUSS_MODELS,
+    # model providers
+    PROVIDER_VERTEX,
+    PROVIDER_MODEL_GARDEN,
+    PROVIDER_LANGCHAIN,
+    PROVIDER_TRUSS,
+    PROVIDER_LLM_SERVICE,
 
-    # Endpoints
-    MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID,
-
-    # agent config
-    AGENT_CONFIG_PATH,
-    AGENT_DATASET_CONFIG_PATH,
+    # model vendors
+    VENDOR_OPENAI,
+    VENDOR_COHERE,
     )
 
 from config.vector_store_config import (
   DEFAULT_VECTOR_STORE,
-  VECTOR_STORES
-  )
+  VECTOR_STORES,
+  PG_HOST
+)
 
+from config.utils import (
+  get_provider_models,
+  get_provider_value,
+  get_provider_embedding_types
+)

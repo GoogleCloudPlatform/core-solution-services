@@ -24,9 +24,10 @@ from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
-from config import (GOOGLE_LLM, LANGCHAIN_LLM, DEFAULT_QUERY_EMBEDDING_MODEL,
-                    LANGCHAIN_EMBEDDING_MODELS, VERTEX_EMBEDDING_MODELS,
-                    LLM_SERVICE_EMBEDDING_MODELS, LLM_SERVICE_MODELS)
+from config import (get_model_config, get_provider_embedding_types,
+                    KEY_MODEL_NAME, KEY_MODEL_CLASS, KEY_MODEL_ENDPOINT,
+                    PROVIDER_VERTEX, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
+                    DEFAULT_QUERY_EMBEDDING_MODEL)
 from langchain.schema.embeddings import Embeddings
 
 # pylint: disable=broad-exception-caught
@@ -47,7 +48,7 @@ def get_embeddings(
 
   Args:
     text_chunks: list of text chunks to generate embeddings for
-    embedding_type: embedding type from config.EMBEDDING_MODELS
+    embedding_type: embedding model id
   Returns:
     Tuple of (list of booleans for chunk true if embeddings were generated,
               numpy array of embeddings indexed by chunks)
@@ -103,14 +104,22 @@ def _generate_batches(text_chunks: List[str],
 
 def generate_embeddings(batch: List[str], embedding_type: str) -> \
     List[Optional[List[float]]]:
+  """
+  Generate embeddings for a list of strings
+  Args:
+    batch: list of text chunks to generate embeddings for
+    embedding_type: str - model identifier
+  Returns:
+    list of embedding vectors (each vector is a list of floats)
+  """
 
   Logger.info(f"generating embeddings for embedding type {embedding_type}")
 
-  if embedding_type in LANGCHAIN_EMBEDDING_MODELS:
+  if embedding_type in get_provider_embedding_types(PROVIDER_LANGCHAIN):
     embeddings = get_langchain_embeddings(embedding_type, batch)
-  elif embedding_type in VERTEX_EMBEDDING_MODELS:
+  elif embedding_type in get_provider_embedding_types(PROVIDER_VERTEX):
     embeddings = get_vertex_embeddings(embedding_type, batch)
-  elif embedding_type in LLM_SERVICE_EMBEDDING_MODELS:
+  elif embedding_type in get_provider_embedding_types(PROVIDER_LLM_SERVICE):
     embeddings = get_llm_service_embeddings(embedding_type, batch)
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
@@ -126,8 +135,9 @@ def get_vertex_embeddings(embedding_type: str,
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
-  vertex_model = TextEmbeddingModel.from_pretrained(
-      GOOGLE_LLM.get(embedding_type))
+  google_llm = get_model_config().get_provider_value(
+      PROVIDER_VERTEX, KEY_MODEL_NAME, embedding_type)
+  vertex_model = TextEmbeddingModel.from_pretrained(google_llm)
   try:
     embeddings = vertex_model.get_embeddings(sentence_list)
 
@@ -147,7 +157,8 @@ def get_langchain_embeddings(embedding_type: str,
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
-  langchain_embedding = LANGCHAIN_LLM.get(embedding_type)
+  langchain_embedding = get_model_config().get_provider_value(
+      PROVIDER_LANGCHAIN, KEY_MODEL_CLASS, embedding_type)
   embeddings = langchain_embedding.embed_documents(sentence_list)
   return embeddings
 
@@ -162,13 +173,14 @@ def get_llm_service_embeddings(embedding_type: str,
   Returns:
     list of embedding vectors (each vector is a list of floats)
   """
-  llm_service_config = LLM_SERVICE_MODELS.get(embedding_type)
+  llm_service_config = get_model_config().get_provider_config(
+      PROVIDER_LLM_SERVICE, embedding_type)
   auth_client = UserCredentials(llm_service_config.get("user"),
                                 llm_service_config.get("password"))
   auth_token = auth_client.get_id_token()
 
   # start with base url of the LLM service we are calling
-  api_url = llm_service_config.get("api_base_url")
+  api_url = llm_service_config.get(KEY_MODEL_ENDPOINT)
   path = "/llm/embedding"
   api_url = api_url + path
 

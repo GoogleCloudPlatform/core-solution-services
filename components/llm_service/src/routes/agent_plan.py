@@ -85,10 +85,10 @@ def get_plan(plan_id: str):
     "/{agent_name}",
     name="Generate a plan by agent on user input",
     response_model=LLMAgentPlanResponse)
-def generate_agent_plan(agent_name: str,
-                        plan_config: LLMAgentPlanModel,
-                        chat_id: str = None,
-                        user_data: dict = Depends(validate_token)):
+async def generate_agent_plan(agent_name: str,
+                              plan_config: LLMAgentPlanModel,
+                              chat_id: str = None,
+                              user_data: dict = Depends(validate_token)):
   """
   Run agent on user input to generate a plan.
   Store plan in new UserPlan.
@@ -121,7 +121,7 @@ def generate_agent_plan(agent_name: str,
     llm_type = get_llm_type_for_agent(agent_name)
 
     # Generate the plan
-    output, user_plan = agent_plan(agent_name, prompt, user.id)
+    output, user_plan = await agent_plan(agent_name, prompt, user.id)
 
     # create default name for user plan
     now = datetime.now().strftime("%m-%d-%Y %H:%M")

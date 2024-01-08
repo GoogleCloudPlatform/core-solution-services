@@ -15,31 +15,43 @@
 """ SQL Agent module """
 # pylint: disable=unused-argument
 
+import ast
 import datetime
 import json
-from typing import Tuple
-
+from typing import Tuple, List
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
+from langchain.tools import BaseTool
+from langchain.tools.sql_database.tool import QuerySQLDataBaseTool
 from common.utils.logging_handler import Logger
-from config import (LANGCHAIN_LLM, PROJECT_ID,
-                    OPENAI_LLM_TYPE_GPT4)
+from config import PROJECT_ID, OPENAI_LLM_TYPE_GPT4
 from config.utils import get_dataset_config
-from services.agents.agent_prompts import SQL_QUERY_FORMAT_INSTRUCTIONS
+from services import langchain_service
+from services.agents.agent_prompts import (SQL_QUERY_FORMAT_INSTRUCTIONS,
+                                           SQL_STATEMENT_FORMAT_INSTRUCTIONS,
+                                           SQL_STATEMENT_PREFIX)
 from services.agents.utils import (
     strip_punctuation_from_end, agent_executor_run_with_logs)
-from services.agents.agent_tools import google_sheets_tool
-
+from services.agents.agent_tools import create_google_sheet
+import sqlparse
+from sqlparse.sql import IdentifierList, Identifier
+from sqlparse.tokens import Keyword, DML
 
 Logger = Logger.get_logger(__file__)
 
 
-def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
+async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
                  user_email:str = None) -> Tuple[dict, str]:
   """
-  Run the DB agent and return the resulting data.
+  Run the DB agent on a user prompt and return the resulting data.
 
+  Args:
+    prompt: user query
+    llm_type: model id of LLM to use to generate SQL
+    dataset: dataset ID if known.  If dataset is not known we will
+             attempt to determine the dataset from the prompt.
+    user_email: if present, send the resulting data to this email in a Sheet.
   Return:
     a dict of "columns: column names, "data": row data
   """
@@ -54,11 +66,17 @@ def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
   Logger.info(f"querying db dataset {dataset} db type {db_type}")
 
   if db_type == "SQL":
-    output, agent_logs = execute_sql_query(
+    # generate SQL statement
+    statement, agent_logs = await generate_sql_statement(
         prompt, dataset, llm_type, user_email)
+
+    # run SQL
+    output = execute_sql_statement(statement, dataset, user_email)
+
   else:
     raise RuntimeError(f"Unsupported agent db type {db_type}")
   return output, agent_logs
+
 
 def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
   """
@@ -71,6 +89,119 @@ def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
 
   db_type = datasets.get(dataset).get("type")
   return dataset, db_type
+
+
+async def generate_sql_statement(prompt: str,
+                           dataset: str,
+                           llm_type: str=None,
+                           user_email: str=None) -> Tuple[str, dict]:
+  """
+  Given a prompt and a dataset, generate a SQL statement to retrieve
+  the data requested in the prompt from the dataset.
+
+  Args:
+    prompt: user query
+    llm_type: model id of LLM to use to generate SQL
+    dataset: dataset ID
+  Returns:
+    tuple of (SQL statement as string, dict of agent logs)
+  """
+
+  llm = get_langchain_llm(llm_type)
+
+  # get langchain SQL db object
+  db, db_url = get_langchain_db(dataset)
+
+  Logger.info(f"generating sql statement for dataset [{dataset}] "
+              f"prompt [{prompt}] llm_type [{llm_type}] "
+              f"db url [{db_url}]")
+
+  # create langchain SQL agent to generate SQL statement
+  toolkit = SQLStatementDBToolKit(db=db, llm=llm)
+
+  agent_executor = create_sql_agent(
+      llm=llm,
+      toolkit=toolkit,
+      verbose=True,
+      top_k=100,
+      prefix=SQL_STATEMENT_PREFIX
+  )
+
+  # get query prompt for agent
+  input_prompt = format_prompt(prompt, SQL_STATEMENT_FORMAT_INSTRUCTIONS)
+
+  # return_val = agent_executor.run(input_prompt)
+  return_val, agent_logs = agent_executor_run_with_logs(
+      agent_executor, input_prompt)
+
+  Logger.info(f"generated SQL statement [{return_val}]")
+
+  return return_val, agent_logs
+
+def execute_sql_statement(statement: str,
+                          dataset: str,
+                          user_email: str=None) -> Tuple[dict, str]:
+  """
+  Execute a SQL database statement on the dataset, and send the resulting
+  data to the user in a Sheet.
+
+  Args:
+    statement: validated SQL statement
+    dataset: dataset ID
+    user_email: if present, send the resulting data to this email in a Sheet.
+  Returns:
+    tuple of (SQL statement as string, dict of agent logs)
+  """
+  # create langchain SQL db object
+  db_url = f"bigquery://{PROJECT_ID}/{dataset}"
+  db = SQLDatabase.from_uri(db_url)
+
+  # instantiate the langchain db tool to run the query.
+  # we don't need a description since the tool is not being
+  # executed by an agent.
+  query_sql_database_tool = QuerySQLDataBaseTool(
+      db=db, description=""
+  )
+
+  Logger.info(f"running sql statement [{statement}] for dataset [{dataset}] "
+              f"db url [{db_url}]")
+
+  dbdata = query_sql_database_tool.run(statement)
+
+  Logger.info(f"got results {dbdata}")
+
+  if not dbdata or dbdata == "":
+    Logger.error(f"No results returned from sql statement: {statement}")
+    return {
+      "data": None,
+      "resources": None
+    }
+
+  # the dbdata is just a string. convert result rows into list of lists
+  row_data = ast.literal_eval(dbdata)
+
+  Logger.info(f"row data {row_data}")
+
+  # get columns from the sql statement
+  columns = extract_columns(statement)
+
+  # generate spreadsheet
+  sheet_data = {
+    "columns": columns,
+    "data": row_data
+  }
+  sheet_url = generate_spreadsheet(dataset, sheet_data, user_email)
+
+  # format output
+  output = {
+    "data": sheet_data,
+    "resources": {
+      "Spreadsheet": sheet_url
+    }
+  }
+
+  return output
+
 
 def execute_sql_query(prompt: str,
                       dataset: str,
@@ -90,35 +221,26 @@ def execute_sql_query(prompt: str,
       sheet URL,
       a dict of "columns: column names, "data": row data
   """
-  # Get langchain llm.  Since we are using langchain SQL query
-  # toolkit only Langchain LLM objects are supported.
-  if llm_type is None:
-    llm_type = OPENAI_LLM_TYPE_GPT4
-  llm = LANGCHAIN_LLM[llm_type]
-  if llm is None:
-    raise RuntimeError(f"Unsupported llm type {llm_type}")
+  llm = get_langchain_llm(llm_type)
 
-  # create langchain SQL db object
-  db_url = f"bigquery://{PROJECT_ID}/{dataset}"
-  db = SQLDatabase.from_uri(db_url)
+  # get langchain SQL db object
+  db, db_url = get_langchain_db(dataset)
 
-  Logger.info(f"querying db dataset {dataset} "
-              f"prompt {prompt} llm_type {llm_type} "
-              f"db url {db_url}")
+  Logger.info(f"querying db dataset [{dataset}] "
+              f"prompt [{prompt}] llm_type [{llm_type}] "
+              f"db url [{db_url}]")
 
-  # create langchain SQL agent
+  # create langchain SQL agent to perform db query
   toolkit = SQLDatabaseToolkit(db=db, llm=llm)
   agent_executor = create_sql_agent(
       llm=llm,
       toolkit=toolkit,
       verbose=True,
-      top_k=300
+      top_k=100
   )
 
-  # Format query prompt for agent.  We strip punctuation and add a question
-  # mark to make sure the format instructions are cleanly separated.
-  clean_prompt = strip_punctuation_from_end(prompt)
-  input_prompt = f"{clean_prompt}? {SQL_QUERY_FORMAT_INSTRUCTIONS}"
+  # Format query prompt for agent
+  input_prompt = format_prompt(prompt, SQL_QUERY_FORMAT_INSTRUCTIONS)
 
   # return_val = agent_executor.run(input_prompt)
   return_val, agent_logs = agent_executor_run_with_logs(
@@ -153,15 +275,79 @@ def execute_sql_query(prompt: str,
 
 
 def generate_spreadsheet(
-    dataset: str, return_dict: dict, user_email:list) -> str:
+    dataset: str, sheet_data: dict, user_email:str) -> str:
   """
   Generate Workspace Sheet containing return data
   """
+  Logger.info("Generating spreadsheet for user [{user_email}]")
   now = datetime.datetime.utcnow()
   sheet_name = f"Dataset {dataset} Query {now}"
-  sheet_output = google_sheets_tool(sheet_name,
-                                    return_dict["columns"],
-                                    return_dict["data"],
-                                    user_email=user_email)
+
+  Logger.info(f"sheet data {sheet_data}")
+  sheet_output = create_google_sheet(sheet_name,
+                                     sheet_data["columns"],
+                                     sheet_data["data"],
+                                     user_email)
+  Logger.info("Got spreadsheet output [{sheet_output}]")
   sheet_url = sheet_output["sheet_url"]
   return sheet_url
+
+def extract_columns(sql_query: str) -> List[str]:
+  """ Use sqlparse to extract columns from a SQL statement """
+  # Parse the SQL query
+  parsed = sqlparse.parse(sql_query)[0]
+
+  # Flag to indicate if we are in the SELECT part
+  select_part = False
+  columns = []
+
+  for token in parsed.tokens:
+    if select_part:
+      if isinstance(token, IdentifierList):
+        for identifier in token.get_identifiers():
+          columns.append(str(identifier))
+      elif isinstance(token, Identifier):
+        columns.append(str(token))
+      elif token.ttype is Keyword:
+        break
+
+    if token.ttype is DML and token.value.upper() == "SELECT":
+      select_part = True
+
+  return columns
+
+class SQLStatementDBToolKit(SQLDatabaseToolkit):
+  """ override SQLDatabaseToolkit to remove the SQL query tool """
+  def get_tools(self) -> List[BaseTool]:
+    tools = super().get_tools()
+    my_tools = [tool for tool in tools
+                if not isinstance(tool, QuerySQLDataBaseTool)]
+    return my_tools
+
+def get_langchain_llm(llm_type: str):
+  """
+  Get langchain llm.  Since we are using langchain SQL query
+  toolkit only Langchain LLM objects are supported.
+  """
+  if llm_type is None:
+    llm_type = OPENAI_LLM_TYPE_GPT4
+  llm = langchain_service.get_model(llm_type)
+  if llm is None:
+    raise RuntimeError(f"Unsupported llm type {llm_type}")
+  return llm
+
+
+def get_langchain_db(dataset: str):
+  # create langchain SQL db object
+  db_url = f"bigquery://{PROJECT_ID}/{dataset}"
+  db = SQLDatabase.from_uri(db_url)
+  return db, db_url
+
+
+def format_prompt(prompt: str, format_instructions: str) -> str:
+  """ Format query prompt for agent.  We strip punctuation and add a question
+  mark to make sure the format instructions are cleanly separated. """
+  clean_prompt = strip_punctuation_from_end(prompt)
+  input_prompt = f"{clean_prompt}? {format_instructions}"
+  return input_prompt
+
