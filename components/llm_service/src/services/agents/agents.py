@@ -35,7 +35,7 @@ from services.agents.agent_prompts import (PREFIX, ROUTING_PREFIX,
                                            TASK_PREFIX, PLANNING_PREFIX,
                                            PLAN_FORMAT_INSTRUCTIONS,
                                            ROUTING_FORMAT_INSTRUCTIONS)
-from services.agents.agent_tools import (gmail_tool, docs_tool,database_tool,
+from services.agents.agent_tools import (gmail_tool, docs_tool, database_tool,
                                          google_sheets_tool,
                                          calendar_tool, search_tool,
                                          query_tool)
