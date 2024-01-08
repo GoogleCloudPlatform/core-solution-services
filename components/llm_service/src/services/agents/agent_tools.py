@@ -36,6 +36,44 @@ def rules_engine_get_ruleset_fields(ruleset_name: str):
   fields = response.json().get("fields", {})
   return fields
 
+def rules_engine_execute_tool(ruleset_name: str, rule_inputs: dict):
+  """
+  Call the rules engine to get the fields for a record
+  """
+  api_url_prefix = SERVICES["rules-engine"]["api_url_prefix"]
+  api_url = f"{api_url_prefix}/ruleset/{ruleset_name}/evaluate"
+
+  post_data = {
+
+  }
+
+  response = post_method(url=api_url,
+                         request_body=post_data,
+                         auth_client=auth_client)
+  fields = response.json().get("fields", {})
+  return fields
+
+@tool(infer_schema=True)
+def ruleset_input_tool(ruleset_name: str) -> dict:
+  """
+  Get the list of required inputs to run a set of rules (a 'ruleset').
+  The current available ruleset is a ruleset for medicaid eligibility.
+  The output of this tool is a dict of input keys and corresponding data types.
+  """
+  return rules_engine_get_ruleset_fields(ruleset_name)
+
+
+@tool(infer_schema=True)
+def ruleset_execute_tool(ruleset_name: str, rule_inputs: dict) -> dict:
+  """
+  Run a business rules engine to make determinations about medicaid
+  eligibility. Takes a dict of constituent attributes as input (such as
+  income level, demographic data etc - the full set of input keys is
+  retrieved using the ruleset_input_tool).  Outputs an eligibility decision.
+  """
+  return rules_engine_execute_tool(ruleset_name, rule_inputs)
+
+
 @tool(infer_schema=True)
 def gmail_tool(recipients: List, subject: str, message: str) -> str:
   """
