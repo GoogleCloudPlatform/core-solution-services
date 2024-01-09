@@ -20,7 +20,6 @@ from common.models import QueryEngine, User, UserChat
 from common.models.agent import AgentCapability
 from common.models.llm import CHAT_AI
 from common.utils.logging_handler import Logger
-from config.utils import get_dataset_config
 from services.agents.db_agent import run_db_agent
 from services.agents.agent_service import (
     get_agent_config,
@@ -203,20 +202,19 @@ async def run_intent(
     intent_list_str += \
       intent + "\n"
 
-  # Collect all query engines with their description as topics.
-  query_engines = QueryEngine.collection.fetch()
+  # get query engines for this agent with their description as topics.
+  query_engines = llm_service_agent.get_query_engines(agent_name, agent_params)
+  Logger.info(f"query_engines for {agent_name}: {query_engines}")
   for qe in query_engines:
     intent_list_str += \
       f"- [{AgentCapability.AGENT_QUERY_CAPABILITY.value}:{qe.name}]" \
       f" to run a query on a search engine for information (not raw data)" \
       f" on the topics of {qe.description} \n"
 
-  # Collect all datasets with their descriptions as topics
-  datasets = get_dataset_config()
+  # get datasets for this with their descriptions as topics
+  datasets = llm_service_agent.get_datasets(agent_params)
+  Logger.info(f"datasets for {agent_name}: {datasets}")
   for ds_name, ds_config in datasets.items():
-    if ds_name in ["default"]:
-      continue
-
     description = ds_config["description"]
     intent_list_str += \
       f"- [{AgentCapability.AGENT_DATABASE_CAPABILITY.value}:{ds_name}]" \
@@ -224,7 +222,7 @@ async def run_intent(
       f"these areas: {description} \n"
 
   dispatch_prompt = f"""
-    An AI Routing Assistant has access to the following routes:
+    The AI Routing Assistant has access to the following routes for a user prompt:
     {intent_list_str}
     Choose one route based on the question below:
     """
@@ -235,7 +233,7 @@ async def run_intent(
     "chat_history": []
   }
 
-  Logger.info("Running agent executor to get bested matched route.... ")
+  Logger.info("Running agent executor to get best matched route.... ")
   output = agent_executor.run(agent_inputs)
   Logger.info(f"Agent {agent_name} generated output=[{output}]")
 

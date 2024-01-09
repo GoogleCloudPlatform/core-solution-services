@@ -26,7 +26,8 @@ from langchain.agents.structured_chat.prompt \
     import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from langchain.schema import AgentAction, AgentFinish
-
+from config.utils import get_dataset_config
+from common.models import QueryEngine
 from common.models.agent import AgentCapability
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
@@ -60,6 +61,7 @@ class BaseAgent(ABC):
 
   name:str = None
   """ The name of the agent """
+
   prefix: str = PREFIX
   """ The prefix prompt of the agent """
 
@@ -89,7 +91,7 @@ class BaseAgent(ABC):
   def get_tools(self) -> List[Callable]:
     """ return tools used by this agent """
 
-  def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
+  def load_agent(self, input_variables: Optional[List[str]] = None) -> Agent:
     """ load this agent and return an instance of langchain Agent"""
     tools = self.get_tools()
 
@@ -112,6 +114,47 @@ class BaseAgent(ABC):
                  f"format_instructions=[{self.format_instructions}]",
                  f"input_variables=[{input_variables}]")
     return self.agent
+
+  @classmethod
+  def get_query_engines(cls, agent_name, agent_params: dict) -> \
+      List[QueryEngine]:
+    """ 
+    Get list of query engines available to this agent.  Agent
+    query engines can be configured in agent config, or tagged
+    in query engine data models.
+    """
+    agent_query_engines = []
+
+    if "query_engines" in agent_params:
+      agent_qe_names = agent_params["query_engines"].split(",")
+      agent_qe_names = [qe.strip() for qe in agent_qe_names]
+      agent_query_engines = QueryEngine.collection.filter(
+        "name", "in", agent_qe_names).fetch()
+
+    tagged_query_engines = QueryEngine.collection.filter(
+        agent_name, "in", "agents"
+    ).fetch()
+    tagged_query_engines = tagged_query_engines or []
+
+    query_engines = agent_query_engines | tagged_query_engines
+    return query_engines
+
+  @classmethod
+  def get_datasets(cls, agent_params) -> dict:
+    """
+    Agent datasets are configured in agent config
+    """
+    agent_datasets = {}
+    agent_dataset_names = []
+    if "datasets" in agent_params:
+      agent_dataset_names = agent_params["datasets"].split(",")
+      agent_dataset_names = [ds.strip() for ds in agent_dataset_names]
+    datasets = get_dataset_config()
+    agent_datasets = {
+      ds_name: ds_config for ds_name, ds_config in datasets.items()
+      if ds_name in agent_dataset_names
+    }
+    return agent_datasets
 
 
 class ChatAgent(BaseAgent):
