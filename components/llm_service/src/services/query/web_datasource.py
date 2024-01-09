@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-argument,broad-exception-raised,ungrouped-imports
+# pylint: disable=unused-argument,broad-exception-raised
 """
 Web data sources for Query Engines
 """
@@ -193,17 +193,16 @@ class WebDataSource(DataSource):
     Initialize the WebDataSource.
 
     Args:
+      storage_client: Google cloud storage client instance
       bucket_name (str): name of GCS bucket to save downloaded webpages.
                          If None files will not be saved.
       depth_limit (int): depth limit to crawl. 0=don't crawl, just
                          download provided URLs
     """
-    if storage_client is None:
-      storage_client = storage.Client()
+    super().__init__(storage_client)
     self.depth_limit = depth_limit
     self.bucket_name = bucket_name
     self.doc_data = []
-    super().__init__(storage_client)
 
   def _item_scraped(self, item, response, spider):
     """Handler for the item_scraped signal."""
@@ -230,10 +229,10 @@ class WebDataSource(DataSource):
     Returns:
         list of tuples (doc name, document url, local file path)
     """
-    # The scraped files will not be uploaded to GCS if the bucket_name is not set
+    # The scraped files won't be uploaded to GCS if the bucket_name is not set
     if self.bucket_name is None:
       Logger.error(f"ERROR: Bucket name for WebDataSource {doc_url} not set. "
-                   f"Cleaned HTML files will not be uploaded to Google Cloud Storage")
+                   f"Scraped files not uploaded to Google Cloud Storage")
 
     spider_class = WebDataSourceSpider
     if self.depth_limit == 0:
@@ -284,7 +283,8 @@ def main():
   start_time = datetime.now()
   storage_client = storage.Client(project=PROJECT_ID)
   create_bucket(storage_client, bucket_name)
-  web_datasource = WebDataSource(bucket_name=bucket_name,
+  web_datasource = WebDataSource(storage_client=storage_client,
+                                 bucket_name=bucket_name,
                                  depth_limit=depth)
   temp_dir = tempfile.mkdtemp()
   doc_data = web_datasource.download_documents(url, temp_dir)
