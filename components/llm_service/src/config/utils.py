@@ -35,7 +35,7 @@ def get_dataset_config() -> dict:
     DATASETS = load_config_json(AGENT_DATASET_CONFIG_PATH)
   return DATASETS
 
-def load_agents(agent_config_path: str):
+def load_agent_config(agent_config_path: str):
   global AGENTS
   try:
     agent_config = load_config_json(agent_config_path)
@@ -58,7 +58,7 @@ def load_agents(agent_config_path: str):
 
 def get_agent_config() -> dict:
   if AGENTS is None:
-    load_agents(AGENT_CONFIG_PATH)
+    load_agent_config(AGENT_CONFIG_PATH)
   return AGENTS
 
 

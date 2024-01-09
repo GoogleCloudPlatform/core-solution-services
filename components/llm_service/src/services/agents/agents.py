@@ -17,7 +17,8 @@ import re
 from abc import ABC, abstractmethod
 from typing import Union, Type, Callable, List, Optional
 
-from langchain.agents import (Agent, AgentOutputParser,
+from langchain.agents import Agent as LangchainAgent
+from langchain.agents import (AgentOutputParser,
                               ConversationalAgent)
 from langchain.agents.structured_chat.base import StructuredChatAgent
 from langchain.agents.structured_chat.output_parser \
@@ -53,10 +54,10 @@ class BaseAgent(ABC):
   llm_type: str = None
   """ the LLM Service llm type used to power the agent """
 
-  agent: Agent = None
+  agent: LangchainAgent = None
   """ the langchain agent instance """
 
-  agent_class: Type[Agent] = None
+  agent_class: Type[LangchainAgent] = None
   """ the langchain agent class """
 
   name:str = None
@@ -103,7 +104,8 @@ class BaseAgent(ABC):
     return llm_service_agent
 
   def load_langchain_agent(self,
-                           input_variables: Optional[List[str]]=None) -> Agent:
+                           input_variables: Optional[List[str]]=None) -> \
+                           LangchainAgent:
     """ load this agent and return an instance of langchain Agent"""
     tools = self.get_tools()
 
@@ -255,13 +257,6 @@ class TaskAgent(BaseAgent):
   def __init__(self, llm_type: str):
     super().__init__(llm_type, "TaskAgent")
     self.agent_class = StructuredChatAgent
-
-  def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
-    """ load this agent and return an instance of langchain Agent"""
-    #This is the list of variables defined in the associated prompt
-    #input_variables = ["input", "user", "user_email", "task_plan",
-    # "agent_scratchpad"]
-    return super().load_agent()
 
   @property
   def prefix(self) -> str:
