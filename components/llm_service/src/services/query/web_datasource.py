@@ -230,9 +230,10 @@ class WebDataSource(DataSource):
     Returns:
         list of tuples (doc name, document url, local file path)
     """
-    # create a bucket based on doc_url
+    # The scraped files will not be uploaded to GCS if the bucket_name is not set
     if self.bucket_name is None:
-      Logger.error(f"ERROR: Bucket name for WebDataSource {doc_url} not set")
+      Logger.error(f"ERROR: Bucket name for WebDataSource {doc_url} not set. "
+                   f"Cleaned HTML files will not be uploaded to Google Cloud Storage")
 
     spider_class = WebDataSourceSpider
     if self.depth_limit == 0:
