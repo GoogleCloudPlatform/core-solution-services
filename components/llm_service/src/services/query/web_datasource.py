@@ -229,21 +229,19 @@ class WebDataSourceSpider(CrawlSpider):
     return self.parser.parse(response, **kwargs)
 
 
-
 class WebDataSource(DataSource):
   """
    Web site data source.
   """
 
   def __init__(self,
-               start_urls=None,
                storage_client=None,
                bucket_name=None,
                depth_limit=DEFAULT_WEB_DEPTH_LIMIT):
     """
     Initialize the WebDataSource.
+
     Args:
-      start_urls: List of URLs
       bucket_name (str): name of GCS bucket to save downloaded webpages.
                          If None files will not be saved.
       depth_limit (int): depth limit to crawl. 0=don't crawl, just
@@ -252,17 +250,9 @@ class WebDataSource(DataSource):
     if storage_client is None:
       storage_client = storage.Client()
     self.depth_limit = depth_limit
-    if len(start_urls) == 0:
-      msg = "URL list is empty"
-      Logger.error(msg)
-      raise Exception(msg)
-    base_url = start_urls[0]
-    if bucket_name is None:
-      bucket_name = BUCKET_NAME + formatted_url(base_url)
-    self.start_urls = start_urls
     self.bucket_name = bucket_name
     self.doc_data = []
-    super().__init__(base_url, storage_client)
+    super().__init__(storage_client)
 
   def _item_scraped(self, item, response, spider):
     """Handler for the item_scraped signal."""
@@ -277,26 +267,29 @@ class WebDataSource(DataSource):
                             item["url"],
                             filepath))
 
-  def download_documents(self, temp_dir: str) -> \
+  def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[Tuple[str, str, str]]:
     """
     Download files from doc_url source to a local tmp directory
+
     Args:
+        doc_url: url pointing to container of documents to be indexed
         temp_dir: Path to temporary directory to download files to
+
     Returns:
         list of tuples (doc name, document url, local file path)
     """
-    # clear bucket
-    if self.bucket_name:
-      create_bucket(self.storage_client, self.bucket_name)
-      clear_bucket(self.storage_client, self.bucket_name)
+    # create a bucket based on doc_url
+    if self.bucket_name is None:
+      self.bucket_name = BUCKET_NAME + formatted_url(doc_url)
+    create_bucket(self.storage_client, self.bucket_name)
+    clear_bucket(self.storage_client, self.bucket_name)
 
+    spider_class = WebDataSourceSpider
     if self.depth_limit == 0:
       # for this class, depth_limit=0 means don't crawl, just download the
       # web page(s) supplied.  (for scrapy depth_limit=0 means no limit).
       spider_class = WebDataSourcePageSpider
-    elif self.depth_limit > 0:
-      spider_class = WebDataSourceSpider
 
     # define Scrapy settings
     settings = {
@@ -314,7 +307,7 @@ class WebDataSource(DataSource):
 
     # start the scrapy crawler
     process.crawl(crawler,
-                  start_urls=self.start_urls,
+                  start_urls=[doc_url],
                   storage_client=self.storage_client,
                   bucket_name=self.bucket_name,
                   filepath=temp_dir)
@@ -338,12 +331,9 @@ def main():
     args = sys.argv[1:]
   url, depth = args
   start_time = datetime.now()
-  # WebDataSource(start_urls=["https://www.medicaid.gov/sitemap/index.html"],
-  #               depth_limit=1, bucket_name="gcp-mira-demo-medicaid-test")
-  web_datasource = WebDataSource(start_urls=[url],
-                                 depth_limit=depth)
+  web_datasource = WebDataSource(depth_limit=depth)
   temp_dir = tempfile.mkdtemp()
-  doc_data = web_datasource.download_documents(temp_dir)
+  doc_data = web_datasource.download_documents(url, temp_dir)
   time_elapsed = datetime.now() - start_time
   Logger.info(f"Time elapsed (hh:mm:ss.ms) {time_elapsed}")
   Logger.info(f"Scraped {len(doc_data)} links")
