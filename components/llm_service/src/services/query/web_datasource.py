@@ -29,64 +29,15 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule, Spider
 from scrapy.http import Response
 from google.cloud import storage
-from config import DEFAULT_WEB_DEPTH_LIMIT
-from config.config import PROJECT_ID
+from config import DEFAULT_WEB_DEPTH_LIMIT, PROJECT_ID
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource
-from urllib.parse import urlparse
+from utils.gcs_helper import create_bucket, upload_to_gcs
 from utils.html_helper import (html_trim_tags,
                                html_to_text,
                                html_to_sentence_list)
 
 Logger = Logger.get_logger(__file__)
-BUCKET_NAME = f"{PROJECT_ID}-downloads-"
-
-def clear_bucket(storage_client: storage.Client, bucket_name: str) -> None:
-  """
-  Delete all the contents of the specified GCS bucket
-  """
-  Logger.info(f"Deleting all objects from GCS bucket {bucket_name}")
-  bucket = storage_client.bucket(bucket_name)
-  blobs = bucket.list_blobs()
-  index = 0
-  for blob in blobs:
-    blob.delete()
-    index += 1
-  Logger.info(f"{index} files deleted")
-
-def create_bucket(storage_client: storage.Client, bucket_name: str) -> None:
-  # Check if the bucket exists
-  bucket = storage_client.bucket(bucket_name)
-  if not bucket.exists():
-    # Create new bucket
-    _ = storage_client.create_bucket(bucket_name)
-    print(f"Bucket {bucket_name} created.")
-  else:
-    print(f"Bucket {bucket_name} already exists.")
-
-def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
-                  file_name: str, content: str,
-                  content_type="text/plain") -> None:
-  """Upload content to GCS bucket"""
-  Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
-  bucket = storage_client.bucket(bucket_name)
-  blob = bucket.blob(file_name)
-  blob.upload_from_string(
-    data=content,
-    content_type=content_type
-  )
-  Logger.info(f"Uploaded {len(content)} bytes")
-
-def formatted_url(url: str) -> str:
-  """
-  Format URL string converting periods to underscore
-  """
-  parsed_url = urlparse(url)
-  formatted_str = parsed_url.netloc + "_" + parsed_url.path
-  formatted_str = (formatted_str.replace("/", "_")
-                   .replace(".", "_")).rstrip("_")
-  Logger.info(f"URL {url} formatted to {formatted_str}")
-  return formatted_str
 
 def save_content(filepath: str, file_name: str, content: str) -> None:
   """
@@ -281,9 +232,7 @@ class WebDataSource(DataSource):
     """
     # create a bucket based on doc_url
     if self.bucket_name is None:
-      self.bucket_name = BUCKET_NAME + formatted_url(doc_url)
-    create_bucket(self.storage_client, self.bucket_name)
-    clear_bucket(self.storage_client, self.bucket_name)
+      Logger.error(f"ERROR: Bucket name for WebDataSource {doc_url} not set")
 
     spider_class = WebDataSourceSpider
     if self.depth_limit == 0:
@@ -313,6 +262,7 @@ class WebDataSource(DataSource):
                   filepath=temp_dir)
     process.start()
 
+    Logger.info(f"Scraped {len(self.doc_data)} links")
     return self.doc_data
 
   @classmethod
@@ -326,20 +276,22 @@ class WebDataSource(DataSource):
 
 
 def main():
-  args = ["https://dmv.nv.gov/", 1]
+  args = [f"{PROJECT_ID}-downloads-dmv_nv_gov", "https://dmv.nv.gov/", 1]
   if len(sys.argv) > 1:
     args = sys.argv[1:]
-  url, depth = args
+  bucket_name, url, depth = args
   start_time = datetime.now()
-  web_datasource = WebDataSource(depth_limit=depth)
+  storage_client = storage.Client(project=PROJECT_ID)
+  create_bucket(storage_client, bucket_name)
+  web_datasource = WebDataSource(bucket_name=bucket_name,
+                                 depth_limit=depth)
   temp_dir = tempfile.mkdtemp()
   doc_data = web_datasource.download_documents(url, temp_dir)
   time_elapsed = datetime.now() - start_time
   Logger.info(f"Time elapsed (hh:mm:ss.ms) {time_elapsed}")
-  Logger.info(f"Scraped {len(doc_data)} links")
   crawled_urls = [d[1] for d in doc_data]
-  print(crawled_urls)
-  print(f"*** Pages stored at [{temp_dir}]")
+  print(f"Crawled URLS = {crawled_urls}")
+  print(f"*** Local pages stored at [{temp_dir}]")
 
 
 if __name__ == "__main__":

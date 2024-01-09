@@ -26,7 +26,6 @@ import numpy as np
 from pathlib import Path
 from typing import List, Tuple, Any
 from google.cloud import aiplatform, storage
-from google.cloud.exceptions import Conflict
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
@@ -40,6 +39,7 @@ from config.vector_store_config import (PG_HOST, PG_PORT,
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
 from langchain.vectorstores.pgvector import PGVector
 from langchain.docstore.document import Document
+from utils.gcs_helper import create_bucket
 
 Logger = Logger.get_logger(__file__)
 
@@ -123,15 +123,7 @@ class MatchingEngineVectorStore(VectorStore):
 
   def init_index(self):
     # create bucket for ME index data
-    try:
-      bucket = self.storage_client.create_bucket(self.bucket_name,
-                                                 location=REGION)
-    except Conflict:
-      # if bucket already exists, delete and recreate
-      bucket = self.storage_client.bucket(self.bucket_name)
-      bucket.delete(force=True)
-      bucket = self.storage_client.create_bucket(self.bucket_name,
-                                                 location=REGION)
+    create_bucket(self.storage_client, self.bucket_name, location=REGION)
 
   @property
   def vector_store_type(self):
