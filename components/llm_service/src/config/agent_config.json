@@ -1,15 +1,18 @@
 {
   "Agents":
   {
-    "MediKateRouter": {
+    "MediKate": {
       "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_ZeroShot",
-      "agent_class": "RoutingAgent"
+      "agent_class": "RoutingAgent",
+      "tools": "search_tool,query_tool,rules_engine_execute_tool,ruleset_input_tool"
     },
-    "CaseyRouter": {
+    "Casey": {
       "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_ZeroShot",
-      "agent_class": "RoutingAgent"
+      "agent_class": "RoutingAgent",
+      "tools": "ALL",
+      "datasets": "fqhc_medical_transactions"
     },
     "Chat": {
       "llm_type": "VertexAI-Chat-Palm2V2-Langchain",
