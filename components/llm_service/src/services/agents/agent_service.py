@@ -15,8 +15,6 @@
 """ Agent service """
 # pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-argument
 
-import inspect
-import json
 import re
 from typing import List, Tuple, Dict
 
@@ -24,47 +22,17 @@ from langchain.agents import AgentExecutor
 from common.models import BatchJobModel
 from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
-from common.utils.errors import ResourceNotFoundException
-from common.utils.http_exceptions import BadRequest, InternalServerError
+from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
-from config import AGENT_CONFIG_PATH
-from services.agents import agents
+from config.utils import get_agent_config
+from services.agents.agents import BaseAgent
 from services.agents.utils import agent_executor_run_with_logs
 
 Logger = Logger.get_logger(__file__)
-AGENTS = None
 
 def batch_execute_plan(request_body: Dict, job: BatchJobModel) -> Dict:
   # TODO
   pass
-
-def load_agents(agent_config_path: str):
-  global AGENTS
-  try:
-    agent_config = {}
-    with open(agent_config_path, "r", encoding="utf-8") as file:
-      agent_config = json.load(file)
-    agent_config = agent_config.get("Agents")
-
-    # add agent class and capabilities
-    agent_classes = {
-      k:klass for (k, klass) in inspect.getmembers(agents)
-      if isinstance(klass, type)
-    }
-    for values in agent_config.values():
-      agent_class = agent_classes.get(values["agent_class"])
-      values["agent_class"] = agent_class
-      values["capabilities"] = [c.value for c in agent_class.capabilities()]
-
-    AGENTS = agent_config
-  except Exception as e:
-    raise InternalServerError(f" Error loading agent config: {e}") from e
-
-def get_agent_config() -> dict:
-  if AGENTS is None:
-    load_agents(AGENT_CONFIG_PATH)
-  return AGENTS
-
 
 def get_agent_config_by_name(agent_name: str) -> dict:
   if agent_name in get_agent_config():
@@ -137,14 +105,13 @@ async def run_agent(agent_name:str,
   Logger.info(f"Running {agent_name} agent "
               f"with prompt=[{prompt}] and "
               f"chat_history=[{chat_history}]")
-  agent_params = get_agent_config()[agent_name]
-  llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
+  llm_service_agent = BaseAgent.load_llm_service_agent(agent_name)
 
   tools = llm_service_agent.get_tools()
   tools_str = ", ".join(tool.name for tool in tools)
 
   Logger.info(f"Available tools=[{tools_str}]")
-  langchain_agent = llm_service_agent.load_agent()
+  langchain_agent = llm_service_agent.load_langchain_agent()
 
   agent_executor = AgentExecutor.from_agent_and_tools(
       agent=langchain_agent, tools=tools)
@@ -254,9 +221,8 @@ def agent_execute_plan(
   Logger.info(f"Running {agent_name} agent "
               f"with prompt=[{prompt}] and "
               f"user_plan=[{user_plan}]")
-  agent_params = get_agent_config()[agent_name]
-  llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
-  agent = llm_service_agent.load_agent()
+  llm_service_agent = BaseAgent.load_llm_service_agent(agent_name)
+  langchain_agent = llm_service_agent.load_langchain_agent()
 
   tools = llm_service_agent.get_tools()
   tools_str = ", ".join(tool.name for tool in tools)
@@ -269,7 +235,7 @@ def agent_execute_plan(
     plan_steps.append(description)
 
   agent_executor = AgentExecutor.from_agent_and_tools(
-    agent=agent,
+    agent=langchain_agent,
     tools=tools,
     verbose=True)
 
@@ -287,21 +253,3 @@ def agent_execute_plan(
   Logger.info(f"Agent {agent_name} generated"
               f" output=[{output}]")
   return output, agent_logs
-
-
-def get_llm_type_for_agent(agent_name: str) -> str:
-  """
-  Return agent llm_type given agent name
-
-  Args:
-    agent_name: str
-  Returns:
-    llm_type: str
-  Raises:
-    ResourceNotFoundException if agent_name not found
-  """
-  agent_config = get_agent_config()
-  for agent in agent_config.keys():
-    if agent_name == agent:
-      return agent_config[agent]["llm_type"]
-  raise ResourceNotFoundException(f"can't find agent name {agent_name}")

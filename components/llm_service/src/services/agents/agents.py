@@ -26,10 +26,10 @@ from langchain.agents.structured_chat.prompt \
     import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from langchain.schema import AgentAction, AgentFinish
-from config.utils import get_dataset_config
+from config.utils import get_dataset_config, get_agent_config
 from common.models import QueryEngine
 from common.models.agent import AgentCapability
-from common.utils.http_exceptions import InternalServerError
+from common.utils.errors import ResourceNotFoundException
 from common.utils.logging_handler import Logger
 from services import langchain_service
 from services.agents.agent_prompts import (PREFIX, ROUTING_PREFIX,
@@ -45,7 +45,7 @@ Logger = Logger.get_logger(__file__)
 
 class BaseAgent(ABC):
   """
-  Base Agent for LLM Service agents.  All agents are based on Langchain
+  Base Class for LLM Service agents.  All agents are based on Langchain
   agents and basically specify the configuration for a particular variant
   of Langchain agent.
   """
@@ -65,9 +65,14 @@ class BaseAgent(ABC):
   prefix: str = PREFIX
   """ The prefix prompt of the agent """
 
-  def __init__(self, llm_type: str):
+  config: dict = {}
+  """ Agent config dict from config file """
+
+  def __init__(self, llm_type: str, name: str):
     self.llm_type = llm_type
+    self.name = name
     self.agent = None
+    self.config = get_agent_config()[self.name]
 
   def set_prefix(self, prefix) -> str:
     self.prefix = prefix
@@ -91,13 +96,20 @@ class BaseAgent(ABC):
   def get_tools(self) -> List[Callable]:
     """ return tools used by this agent """
 
-  def load_agent(self, input_variables: Optional[List[str]] = None) -> Agent:
+  @classmethod
+  def load_llm_service_agent(cls, agent_name: str):
+    agent_config = get_agent_config()[agent_name]
+    llm_service_agent = agent_config["agent_class"](agent_config["llm_type"])
+    return llm_service_agent
+
+  def load_langchain_agent(self,
+                           input_variables: Optional[List[str]]=None) -> Agent:
     """ load this agent and return an instance of langchain Agent"""
     tools = self.get_tools()
 
     llm = langchain_service.get_model(self.llm_type)
     if llm is None:
-      raise InternalServerError(
+      raise RuntimeError(
           f"Agent: cannot find LLM type {self.llm_type}")
 
     output_parser = self.output_parser_class()
@@ -116,17 +128,18 @@ class BaseAgent(ABC):
     return self.agent
 
   @classmethod
-  def get_query_engines(cls, agent_name, agent_params: dict) -> \
+  def get_query_engines(cls, agent_name: str) -> \
       List[QueryEngine]:
     """ 
     Get list of query engines available to this agent.  Agent
     query engines can be configured in agent config, or tagged
     in query engine data models.
     """
+    agent_config = get_agent_config()[agent_name]
     agent_query_engines = []
 
-    if "query_engines" in agent_params:
-      agent_qe_names = agent_params["query_engines"].split(",")
+    if "query_engines" in agent_config:
+      agent_qe_names = agent_config["query_engines"].split(",")
       agent_qe_names = [qe.strip() for qe in agent_qe_names]
       agent_query_engines = QueryEngine.collection.filter(
         "name", "in", agent_qe_names).fetch()
@@ -140,14 +153,15 @@ class BaseAgent(ABC):
     return query_engines
 
   @classmethod
-  def get_datasets(cls, agent_params) -> dict:
+  def get_datasets(cls, agent_name: str) -> dict:
     """
     Agent datasets are configured in agent config
     """
+    agent_config = get_agent_config()[agent_name]
     agent_datasets = {}
     agent_dataset_names = []
-    if "datasets" in agent_params:
-      agent_dataset_names = agent_params["datasets"].split(",")
+    if "datasets" in agent_config:
+      agent_dataset_names = agent_config["datasets"].split(",")
       agent_dataset_names = [ds.strip() for ds in agent_dataset_names]
     datasets = get_dataset_config()
     agent_datasets = {
@@ -156,6 +170,23 @@ class BaseAgent(ABC):
     }
     return agent_datasets
 
+  @classmethod
+  def get_llm_type_for_agent(cls, agent_name: str) -> str:
+    """
+    Return agent llm_type given agent name
+    Args:
+      agent_name: str
+    Returns:
+      llm_type: str
+    Raises:
+      ResourceNotFoundException if agent_name not found
+    """
+    agent_config = get_agent_config()
+    for agent in agent_config.keys():
+      if agent_name == agent:
+        return agent_config[agent]["llm_type"]
+    raise ResourceNotFoundException(f"can't find agent name {agent_name}")
+
 
 class ChatAgent(BaseAgent):
   """
@@ -163,8 +194,7 @@ class ChatAgent(BaseAgent):
   human.  It includes search and query tools.
   """
   def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "ChatAgent"
+    super().__init__(llm_type, "ChatAgent")
     self.agent_class = ConversationalAgent
 
   @property
@@ -189,8 +219,7 @@ class RoutingAgent(BaseAgent):
   a given prompt to the best route with given list of choices.
   """
   def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "RoutingAgent"
+    super().__init__(llm_type, "RoutingAgent")
     self.agent_class = ConversationalAgent
     self.prefix = ROUTING_PREFIX
 
@@ -224,8 +253,7 @@ class TaskAgent(BaseAgent):
   """
 
   def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "TaskAgent"
+    super().__init__(llm_type, "TaskAgent")
     self.agent_class = StructuredChatAgent
 
   def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
@@ -273,8 +301,7 @@ class PlanAgent(BaseAgent):
   """
 
   def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "PlanAgent"
+    super().__init__(llm_type, "PlanAgent")
     self.agent_class = StructuredChatAgent
     self.prefix = PLANNING_PREFIX
 

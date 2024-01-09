@@ -21,6 +21,7 @@ from common.models.agent import AgentCapability
 from common.models.llm import CHAT_AI
 from common.utils.logging_handler import Logger
 from services.agents.db_agent import run_db_agent
+from services.agents.agents import BaseAgent
 from services.agents.agent_service import (
     get_agent_config,
     parse_plan_output,
@@ -186,8 +187,9 @@ async def run_intent(
 
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
+  llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
-  langchain_agent = llm_service_agent.load_agent()
+  langchain_agent = llm_service_agent.load_langchain_agent()
   agent_executor = AgentExecutor.from_agent_and_tools(
       agent=langchain_agent, tools=[])
 
@@ -203,7 +205,7 @@ async def run_intent(
       intent + "\n"
 
   # get query engines for this agent with their description as topics.
-  query_engines = llm_service_agent.get_query_engines(agent_name, agent_params)
+  query_engines = llm_service_agent.get_query_engines(agent_name)
   Logger.info(f"query_engines for {agent_name}: {query_engines}")
   for qe in query_engines:
     intent_list_str += \
@@ -212,7 +214,7 @@ async def run_intent(
       f" on the topics of {qe.description} \n"
 
   # get datasets for this with their descriptions as topics
-  datasets = llm_service_agent.get_datasets(agent_params)
+  datasets = llm_service_agent.get_datasets(agent_name)
   Logger.info(f"datasets for {agent_name}: {datasets}")
   for ds_name, ds_config in datasets.items():
     description = ds_config["description"]

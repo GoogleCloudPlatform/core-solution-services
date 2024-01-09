@@ -27,8 +27,8 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest)
 from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentRunModel,
                                  LLMAgentGetAllResponse)
-from services.agents.agent_service import (get_all_agents, run_agent,
-                                          get_llm_type_for_agent)
+from services.agents.agent_service import (get_all_agents, run_agent)
+from services.agents.agents import BaseAgent
 from services.agents.routing_agent import run_routing_agent
 from services.langchain_service import langchain_chat_history
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
@@ -139,7 +139,7 @@ async def agent_run(agent_name: str,
 
   try:
     user = User.find_by_email(user_data.get("email"))
-    llm_type = get_llm_type_for_agent(agent_name)
+    llm_type = BaseAgent.get_llm_type_for_agent(agent_name)
 
     output, agent_logs = await run_agent(agent_name, prompt)
     Logger.info(f"Generated output=[{output}]")
