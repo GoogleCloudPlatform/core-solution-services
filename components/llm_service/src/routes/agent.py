@@ -58,6 +58,29 @@ def get_agents():
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
+@router.get(
+    "types/{agent_type}",
+    name="Get all Agents of a specific type",
+    response_model=LLMAgentGetAllResponse)
+def get_agent_types(agent_type: str):
+  """
+  Get all agents of a specific agent type (which corresponds
+  to "agent capability")
+
+  Returns:
+      LLMGetAgentResponse
+  """
+  agents = BaseAgent.get_agents_by_capability(agent_type)
+
+  try:
+    return {
+      "success": True,
+      "message": "Successfully retrieved agents",
+      "data": agents
+    }
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
 
 @router.post(
     "/dispatch/{agent_name}",

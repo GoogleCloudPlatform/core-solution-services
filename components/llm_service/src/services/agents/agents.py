@@ -100,7 +100,10 @@ class BaseAgent(ABC):
   @classmethod
   def load_llm_service_agent(cls, agent_name: str):
     agent_config = get_agent_config()[agent_name]
-    llm_service_agent = agent_config["agent_class"](agent_config["llm_type"])
+    llm_service_agent = agent_config["agent_class"](
+        agent_config["llm_type"],
+        agent_name
+        )
     return llm_service_agent
 
   def load_langchain_agent(self,
@@ -188,6 +191,20 @@ class BaseAgent(ABC):
       if agent_name == agent:
         return agent_config[agent]["llm_type"]
     raise ResourceNotFoundException(f"can't find agent name {agent_name}")
+
+  @classmethod
+  def get_agents_by_capability(cls, capability: str) -> List[str]:
+    """
+    Return the names of agents that support a specified capability
+    """
+    agent_config = get_agent_config()
+    agent_list = []
+    for agent_name, agent_config in agent_config.items():
+      agent_class = agent_config.get["agent_class"]
+      capabilities = [ac.value for ac in agent_class.capabilities]
+      if capability in capabilities:
+        agent_list.append(agent_name)
+    return agent_list
 
 
 class ChatAgent(BaseAgent):
