@@ -38,6 +38,7 @@ class AgentCapability(str, Enum):
   AGENT_TASK_CAPABILITY = "Task"
   AGENT_PLAN_CAPABILITY = "Plan"
   AGENT_DATABASE_CAPABILITY = "Database"
+  AGENT_ROUTE_CAPABILITY = "Route"
 
 
 class Agent(BaseModel):

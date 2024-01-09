@@ -254,7 +254,9 @@ class RoutingAgent(BaseAgent):
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
     capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
-                    AgentCapability.AGENT_QUERY_CAPABILITY]
+                    AgentCapability.AGENT_QUERY_CAPABILITY,
+                    AgentCapability.AGENT_PLAN_CAPABILITY,
+                    AgentCapability.AGENT_ROUTE_CAPABILITY]
     return capabilities
 
   def get_tools(self) -> List[Callable]:
