@@ -70,6 +70,7 @@ def get_agent_types(agent_type: str):
   Returns:
       LLMGetAgentResponse
   """
+  agent_type = agent_type.lower().capitalize()
   agents = BaseAgent.get_agents_by_capability(agent_type)
 
   try:
@@ -101,7 +102,8 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
   runconfig_dict = {**run_config.dict()}
   prompt = runconfig_dict.get("prompt")
   chat_id = runconfig_dict.get("chat_id")
-  Logger.info(f"Choosing a dispatch route based on {runconfig_dict}")
+  Logger.info(
+      f"Agent {agent_name} Choosing route based on {runconfig_dict}")
 
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
