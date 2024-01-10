@@ -242,13 +242,6 @@ class ChatAgent(BaseAgent):
                     AgentCapability.AGENT_QUERY_CAPABILITY]
     return capabilities
 
-  def get_tools(self) -> List[Callable]:
-    """ return tools used by this agent """
-    configured_tools = super().get_tools()
-    my_tools = configured_tools + [search_tool, query_tool]
-    my_tools = list(set(my_tools))
-    return my_tools
-
 
 class RoutingAgent(BaseAgent):
   """
@@ -276,10 +269,6 @@ class RoutingAgent(BaseAgent):
                     AgentCapability.AGENT_PLAN_CAPABILITY,
                     AgentCapability.AGENT_ROUTE_CAPABILITY]
     return capabilities
-
-  def get_tools(self) -> List[Callable]:
-    """ return tools used by this agent """
-    return super().get_tools()
 
 
 class TaskAgent(BaseAgent):
@@ -314,14 +303,6 @@ class TaskAgent(BaseAgent):
                     AgentCapability.AGENT_TASK_CAPABILITY]
     return capabilities
 
-  def get_tools(self):
-    configured_tools = super().get_tools()
-    my_tools = [gmail_tool, database_tool,  google_sheets_tool, docs_tool,
-      calendar_tool, search_tool, query_tool]
-    my_tools = configured_tools + my_tools
-    my_tools = list(set(my_tools))
-    return my_tools
-
   def get_planning_agent(self) -> str:
     """
     This is the agent used by this agent to create plans for tasks.
@@ -353,14 +334,6 @@ class PlanAgent(BaseAgent):
     """ return capabilities of this agent class """
     capabilities = [AgentCapability.AGENT_PLAN_CAPABILITY]
     return capabilities
-
-  def get_tools(self):
-    configured_tools = super().get_tools()
-    my_tools = [gmail_tool, database_tool, google_sheets_tool, docs_tool,
-      calendar_tool, search_tool, query_tool]
-    my_tools = configured_tools + my_tools
-    my_tools = list(set(my_tools))
-    return my_tools
 
 
 class RoutingAgentOutputParser(AgentOutputParser):
