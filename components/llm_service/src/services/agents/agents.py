@@ -102,10 +102,9 @@ class BaseAgent(ABC):
     """
     agent_tools = []
     agent_config = get_agent_config()[self.name]
-    tool_config = agent_config.get("tools", None)
-    tool_config = tool_config or []
-    if isinstance(tool_config, str) and tool_config == "ALL":
-      agent_tools = agent_tool_registry.values()
+    tool_config = agent_config.get("tools", "")
+    if tool_config == "ALL":
+      agent_tools = list(agent_tool_registry.values())
     else:
       tool_config_list = tool_config.split(",")
       tool_config_list = [t.strip() for t in tool_config_list]
@@ -170,7 +169,7 @@ class BaseAgent(ABC):
     ).fetch()
     tagged_query_engines = tagged_query_engines or []
 
-    query_engines = agent_query_engines | tagged_query_engines
+    query_engines = agent_query_engines + tagged_query_engines
     return query_engines
 
   @classmethod
@@ -228,8 +227,8 @@ class ChatAgent(BaseAgent):
   Chat Agent.  This is an agent configured for basic informational chat with a
   human.  It includes search and query tools.
   """
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type, "ChatAgent")
+  def __init__(self, llm_type: str, name: str):
+    super().__init__(llm_type, name)
     self.agent_class = ConversationalAgent
 
   @property
@@ -256,8 +255,8 @@ class RoutingAgent(BaseAgent):
   Routing Agent.  This is an agent configured for dispatching
   a given prompt to the best route with given list of choices.
   """
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type, "RoutingAgent")
+  def __init__(self, llm_type: str, name: str):
+    super().__init__(llm_type, name)
     self.agent_class = ConversationalAgent
     self.prefix = ROUTING_PREFIX
 
@@ -292,8 +291,8 @@ class TaskAgent(BaseAgent):
   agent.
   """
 
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type, "TaskAgent")
+  def __init__(self, llm_type: str, name: str):
+    super().__init__(llm_type, name)
     self.agent_class = StructuredChatAgent
 
   @property
@@ -336,8 +335,8 @@ class PlanAgent(BaseAgent):
   Plans will be executed using a different agent.
   """
 
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type, "PlanAgent")
+  def __init__(self, llm_type: str, name: str):
+    super().__init__(llm_type, name)
     self.agent_class = StructuredChatAgent
     self.prefix = PLANNING_PREFIX
 
