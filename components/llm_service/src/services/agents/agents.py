@@ -37,7 +37,8 @@ from services.agents.agent_prompts import (PREFIX, ROUTING_PREFIX,
                                            TASK_PREFIX, PLANNING_PREFIX,
                                            PLAN_FORMAT_INSTRUCTIONS,
                                            ROUTING_FORMAT_INSTRUCTIONS)
-from services.agents.agent_tools import (gmail_tool, docs_tool, database_tool,
+from services.agents.agent_tools import (agent_tool_registry,
+                                         gmail_tool, docs_tool, database_tool,
                                          google_sheets_tool,
                                          calendar_tool, search_tool,
                                          query_tool)
@@ -93,9 +94,24 @@ class BaseAgent(ABC):
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
 
-  @abstractmethod
   def get_tools(self) -> List[Callable]:
-    """ return tools used by this agent """
+    """ 
+    Return tools used by this agent. The base method reads tools from
+    agent config.  It supports special config like "ALL", specifying
+    that the agent uses all tools.
+    """
+    agent_tools = []
+    agent_config = get_agent_config()[self.name]
+    tool_config = agent_config.get("tools", None)
+    tool_config = tool_config or []
+    if isinstance(tool_config, str) and tool_config == "ALL":
+      agent_tools = agent_tool_registry.values()
+    else:
+      tool_config_list = tool_config.split(",")
+      tool_config_list = [t.strip() for t in tool_config_list]
+      agent_tools = [tool for tool_name, tool in agent_tool_registry.items()
+                     if tool_name in tool_config_list]
+    return agent_tools
 
   @classmethod
   def load_llm_service_agent(cls, agent_name: str):
@@ -229,7 +245,10 @@ class ChatAgent(BaseAgent):
 
   def get_tools(self) -> List[Callable]:
     """ return tools used by this agent """
-    return [search_tool, query_tool]
+    configured_tools = super().get_tools()
+    my_tools = configured_tools + [search_tool, query_tool]
+    my_tools = list(set(my_tools))
+    return my_tools
 
 
 class RoutingAgent(BaseAgent):
@@ -261,7 +280,7 @@ class RoutingAgent(BaseAgent):
 
   def get_tools(self) -> List[Callable]:
     """ return tools used by this agent """
-    return []
+    return super().get_tools()
 
 
 class TaskAgent(BaseAgent):
@@ -297,9 +316,12 @@ class TaskAgent(BaseAgent):
     return capabilities
 
   def get_tools(self):
-    tools = [gmail_tool, database_tool,  google_sheets_tool, docs_tool,
+    configured_tools = super().get_tools()
+    my_tools = [gmail_tool, database_tool,  google_sheets_tool, docs_tool,
       calendar_tool, search_tool, query_tool]
-    return tools
+    my_tools = configured_tools + my_tools
+    my_tools = list(set(my_tools))
+    return my_tools
 
   def get_planning_agent(self) -> str:
     """
@@ -334,9 +356,12 @@ class PlanAgent(BaseAgent):
     return capabilities
 
   def get_tools(self):
-    tools = [gmail_tool, database_tool, google_sheets_tool, docs_tool,
+    configured_tools = super().get_tools()
+    my_tools = [gmail_tool, database_tool, google_sheets_tool, docs_tool,
       calendar_tool, search_tool, query_tool]
-    return tools
+    my_tools = configured_tools + my_tools
+    my_tools = list(set(my_tools))
+    return my_tools
 
 
 class RoutingAgentOutputParser(AgentOutputParser):

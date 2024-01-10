@@ -18,12 +18,38 @@
 
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
-from langchain.tools import tool
+from langchain.tools import tool as langchain_tool
 from config import SERVICES, auth_client
 from typing import List, Dict
 
 Logger = Logger.get_logger(__file__)
 
+# the agent tool decorator adds tools to this dict
+# {
+#    "tool_1 function name": langchain-wrapped-tool-function,
+#    "tool_2 function name": langchain-wrapped-tool-function,
+#    ...
+# }
+agent_tool_registry = {}
+
+def agent_tool(*dec_args, **dec_kwargs):
+  """ Extend langchain tool decorator to allow us to manage tools """
+
+  def decorator(func):
+    # call the langchain tool decorator on the tool function
+    tool_func = langchain_tool(*dec_args, **dec_kwargs)(func)
+
+    # add the tool to our registry
+    agent_tool_registry.update({func.__name__: tool_func})
+
+    def wrapper(*args, **kwargs):
+      return tool_func(*args,  **kwargs)
+
+    return wrapper
+
+  return decorator
+
+# Tool definitions
 
 def rules_engine_get_ruleset_fields(ruleset_name: str):
   """
@@ -36,7 +62,7 @@ def rules_engine_get_ruleset_fields(ruleset_name: str):
   fields = response.json().get("fields", {})
   return fields
 
-def rules_engine_execute_tool(ruleset_name: str, rule_inputs: dict):
+def rules_engine_execute_ruleset(ruleset_name: str, rule_inputs: dict):
   """
   Call the rules engine to get the fields for a record
   """
@@ -53,7 +79,7 @@ def rules_engine_execute_tool(ruleset_name: str, rule_inputs: dict):
   fields = response.json().get("fields", {})
   return fields
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def ruleset_input_tool(ruleset_name: str) -> dict:
   """
   Get the list of required inputs to run a set of rules (a 'ruleset').
@@ -63,7 +89,7 @@ def ruleset_input_tool(ruleset_name: str) -> dict:
   return rules_engine_get_ruleset_fields(ruleset_name)
 
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def ruleset_execute_tool(ruleset_name: str, rule_inputs: dict) -> dict:
   """
   Run a business rules engine to make determinations about medicaid
@@ -71,10 +97,10 @@ def ruleset_execute_tool(ruleset_name: str, rule_inputs: dict) -> dict:
   income level, demographic data etc - the full set of input keys is
   retrieved using the ruleset_input_tool).  Outputs an eligibility decision.
   """
-  return rules_engine_execute_tool(ruleset_name, rule_inputs)
+  return rules_engine_execute_ruleset(ruleset_name, rule_inputs)
 
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def gmail_tool(recipients: List, subject: str, message: str) -> str:
   """
   Send an email to a list of recipients
@@ -106,7 +132,7 @@ def gmail_tool(recipients: List, subject: str, message: str) -> str:
 
   return output
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def docs_tool(recipients: List, content: str) -> Dict:
   """
   Compose or create a document using Google Docs
@@ -149,7 +175,7 @@ def docs_tool(recipients: List, content: str) -> Dict:
     Logger.error(f"[gmail_tool] Unable to send email: {e}")
   return output
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def calendar_tool(date: str) -> str:
   """
   Create and update meetings using Google Calendar
@@ -157,7 +183,7 @@ def calendar_tool(date: str) -> str:
   print("[calendar_tool] calendar tool called:" + date)
   return ""
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def search_tool(query: str) -> str:
   """
   Perform an internet search.
@@ -165,7 +191,7 @@ def search_tool(query: str) -> str:
   print("[search_tool] search tool called: " + query)
   return ""
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def query_tool(query: str) -> Dict:
   """
   Perform a query and craft an answer using one of the available query engines.
@@ -179,7 +205,7 @@ def query_tool(query: str) -> Dict:
 
   return result
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def google_sheets_tool(
     name: str, columns: list, rows: list, user_email: str=None) -> dict:
   """
@@ -232,7 +258,7 @@ def create_google_sheet(name: str,
     Logger.error(f"[google_sheets_tool] Unable to create Google Sheets: {e}")
   return output
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def database_tool(database_query: str) -> dict:
   """
     Accepts a natural language question and queries a database to get definite
