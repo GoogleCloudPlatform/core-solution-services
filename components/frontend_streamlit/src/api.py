@@ -177,8 +177,26 @@ def get_agents(auth_token=None) -> List[Agent]:
     agent_list.append(Agent.find_by_name(agent_name))
   return agent_list
 
+def get_all_routing_agent_types(auth_token=None) -> List[Agent]:
+  """
+  Return list of Routing Agent models from LLM Service
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
 
-def run_dispatch(prompt: str, chat_id: str = None,
+  api_url = f"{LLM_SERVICE_API_URL}/agent/types/route"
+  Logger.info(f"api_url={api_url}")
+
+  resp = api_request("GET", api_url, auth_token)
+  resp_dict = get_response_json(resp)
+
+  # load agent models based on response
+  agent_list = []
+  for agent_name in resp_dict.get("data"):
+    agent_list.append(Agent.find_by_name(agent_name))
+  return agent_list
+
+def run_dispatch(prompt: str, agent_name: str, chat_id: str = None,
                  route=None, llm_type: str=None, auth_token=None):
   """
   Run Agent on human input, and return output
@@ -189,7 +207,7 @@ def run_dispatch(prompt: str, chat_id: str = None,
   # hard code llm_type to the dispatch agent default
   llm_type = None
 
-  api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch"
+  api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch/{agent_name}"
   Logger.info(f"api_url = {api_url}")
   Logger.info(f"chat_id = {chat_id}")
 

@@ -19,9 +19,10 @@ import re
 import streamlit as st
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
+    run_agent_execute_plan, get_all_chat_llm_types,
+    get_all_routing_agent_types, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
-from components.content_header import display_header
+from components.content_header import chat_header
 from styles.pages.chat_markup import chat_theme
 from common.utils.logging_handler import Logger
 import utils
@@ -39,11 +40,26 @@ def on_submit(user_input):
   with st.spinner("Loading..."):
     # Send API to llm-service
     default_route = st.session_state.get("default_route", None)
+    routing_agent_types = get_all_routing_agent_types()
     if default_route is None or default_route == "Auto":
+      # pick the first routing agent as default
+      if routing_agent_types:
+        routing_agent = routing_agent_types[0]
+      else:
+        routing_agent = "default"
       response = run_dispatch(user_input,
+                              routing_agent,
                               chat_id=st.session_state.get("chat_id"),
                               llm_type=st.session_state.get("chat_llm_type"))
       st.session_state.default_route = response.get("route", None)
+
+    elif default_route in routing_agent_types:
+      response = run_dispatch(user_input,
+                              default_route,
+                              chat_id=st.session_state.get("chat_id"),
+                              llm_type=st.session_state.get("chat_llm_type"))
+      st.session_state.default_route = response.get("route", None)
+
     elif default_route == "Chat":
       response = run_chat(user_input,
                          chat_id=st.session_state.get("chat_id"),
@@ -222,7 +238,7 @@ def chat_page():
   chat_theme()
 
   # Returns the values of the select input boxes
-  selections = display_header()
+  selections = chat_header()
 
   st.title("Chat")
 
