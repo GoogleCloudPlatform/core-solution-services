@@ -42,10 +42,7 @@ def agent_tool(*dec_args, **dec_kwargs):
     # add the tool to our registry
     agent_tool_registry.update({func.__name__: tool_func})
 
-    def wrapper(*args, **kwargs):
-      return tool_func(*args,  **kwargs)
-
-    return wrapper
+    return tool_func
 
   return decorator
 
