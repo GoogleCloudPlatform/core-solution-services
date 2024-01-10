@@ -13,8 +13,7 @@
 # limitations under the License.
 
 """ Routing Agent """
-from typing import List
-
+from typing import List, Tuple
 from langchain.agents import AgentExecutor
 from common.models import QueryEngine, User, UserChat
 from common.models.agent import AgentCapability
@@ -23,11 +22,10 @@ from common.utils.logging_handler import Logger
 from services.agents.db_agent import run_db_agent
 from services.agents.agents import BaseAgent
 from services.agents.agent_service import (
-    get_agent_config,
-    parse_plan_output,
     agent_plan,
-    run_agent,
-    parse_plan_step)
+    parse_plan_output,
+    parse_plan_step,
+    run_agent)
 from services.query.query_service import query_generate
 
 Logger = Logger.get_logger(__file__)
@@ -35,9 +33,21 @@ Logger = Logger.get_logger(__file__)
 async def run_routing_agent(prompt: str,
                             agent_name: str,
                             user: User,
-                            user_chat: UserChat = None):
+                            user_chat: UserChat = None) -> \
+    Tuple(str, dict):
+  """
+  Determine intent from user prompt for best route to fulfill user
+  input.  Then execute that route.
+  Args:
+    prompt: user prompt
+    agent_name: routing agent name
+    user: User model for user making request
+    user_chat: optional existing user chat object for previous chat history
+  Returns:
+    tuple of route (AgentCapability value), response data dict
+  """
 
-  # Get the intent based on prompt.
+  # get the intent based on prompt by running intent agent
   route, route_logs = await run_intent(
       agent_name, prompt, chat_history=user_chat.history)
 
@@ -185,8 +195,6 @@ async def run_intent(
               f"with prompt=[{prompt}] and "
               f"chat_history=[{chat_history}]")
 
-  agent_params = get_agent_config()[agent_name]
-  llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
   llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
   langchain_agent = llm_service_agent.load_langchain_agent()
