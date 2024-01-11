@@ -348,6 +348,9 @@ def query_engine_build(doc_url: str,
     is_public = params["is_public"]
     if isinstance(is_public, str):
       is_public = is_public.lower() == "true"
+  associated_agents = []
+  if "agents" in params and isinstance(str, params["agents"]):
+    associated_agents = params["agents"].split(",")
 
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
@@ -357,6 +360,7 @@ def query_engine_build(doc_url: str,
                          vector_store=vector_store_type,
                          is_public=is_public,
                          doc_url=doc_url,
+                         agents=assosciated_agents,
                          params=params)
 
   # retrieve vector store class and store type in q_engine

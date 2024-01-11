@@ -42,11 +42,11 @@ def reload():
 
 def submit_build(engine_name:str, doc_url:str, depth_limit: int,
                  embedding_type:str, vector_store:str,
-                 description:str):
+                 description:str, agents:str):
   try:
     output = build_query_engine(
-      engine_name,
-      doc_url, depth_limit, embedding_type, vector_store, description)
+      engine_name, doc_url,
+      depth_limit, embedding_type, vector_store, description, agents)
 
     if output.get("success") is True:
       job_id = output["data"]["job_name"]
@@ -166,7 +166,8 @@ def query_engine_page():
               input_data["depth_limit"],
               input_data["embedding_type"],
               input_data["vector_store"],
-              input_data["description"])
+              input_data["description"]),
+              input_data["agents"])
             st.toast(
                 "Job re-submitted with query engine: {job['query_engine']}")
 
@@ -187,12 +188,13 @@ def query_engine_page():
         "Vector Store:",
         vector_store_list)
     description = st.text_area("Description")
+    agents = st.text_area("Agents")
 
     submit = st.form_submit_button("Build")
   if submit:
     submit_build(
       engine_name,
-      doc_url, depth_limit, embedding_type, vector_store, description
+      doc_url, depth_limit, embedding_type, vector_store, description, agents
     )
 
 
