@@ -157,8 +157,11 @@ class BaseAgent(ABC):
     if "query_engines" in agent_config:
       agent_qe_names = agent_config["query_engines"].split(",")
       agent_qe_names = [qe.strip() for qe in agent_qe_names]
-      agent_query_engines = QueryEngine.collection.filter(
-        "name", "in", agent_qe_names).fetch()
+      if "ALL" in agent_qe_names:
+        agent_query_engines = QueryEngine.fetch_all()
+      else:
+        agent_query_engines = QueryEngine.collection.filter(
+          "name", "in", agent_qe_names).fetch()
 
     tagged_query_engines = QueryEngine.collection.filter(
         agent_name, "in", "agents"

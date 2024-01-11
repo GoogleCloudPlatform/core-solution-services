@@ -59,7 +59,7 @@ def get_engine_list():
   Returns:
       LLMGetQueryEnginesResponse
   """
-  query_engines = QueryEngine.collection.fetch()
+  query_engines = QueryEngine.fetch_all()
   query_engine_data = [{
     "id": qe.id,
     "name": qe.name,
