@@ -166,7 +166,7 @@ def query_engine_page():
               input_data["depth_limit"],
               input_data["embedding_type"],
               input_data["vector_store"],
-              input_data["description"]),
+              input_data["description"],
               input_data["agents"])
             st.toast(
                 "Job re-submitted with query engine: {job['query_engine']}")
