@@ -33,8 +33,7 @@ Logger = Logger.get_logger(__file__)
 async def run_routing_agent(prompt: str,
                             agent_name: str,
                             user: User,
-                            user_chat: UserChat = None) -> \
-    Tuple(str, dict):
+                            user_chat: UserChat = None) -> Tuple[str, dict]:
   """
   Determine intent from user prompt for best route to fulfill user
   input.  Then execute that route.
