@@ -360,7 +360,7 @@ def query_engine_build(doc_url: str,
                          vector_store=vector_store_type,
                          is_public=is_public,
                          doc_url=doc_url,
-                         agents=assosciated_agents,
+                         agents=associated_agents,
                          params=params)
 
   # retrieve vector store class and store type in q_engine
