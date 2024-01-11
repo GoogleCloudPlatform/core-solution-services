@@ -14,7 +14,7 @@
 
 """ Agent tools """
 
-# pylint: disable=unused-argument,unused-import
+# pylint: disable=unused-argument,unused-import,import-outside-toplevel
 
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
@@ -195,36 +195,22 @@ def create_google_sheet(name: str,
   return output
 
 @tool(infer_schema=True)
-def database_tool(database_query: str) -> dict:
+def database_tool(database_query_prompt: str) -> dict:
   """
-    Accepts a natural language question and queries a database to get definite
-    answer
+    Accepts a natural language question and queries a database to get an
+    answer in the form of data.
   """
-  Logger.info(
-    f"[database_tool] executing query:{database_query}")
-  api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
-  api_url = f"{api_url_prefix}/workspace/database/query"
-  output = {}
-  data = {
-    "query": database_query
-  }
-  try:
-    response = post_method(url=api_url,
-                           request_body=data,
-                           auth_client=auth_client)
+  return execute_db_query(database_query_prompt)
 
-    resp_data = response.json()
-    Logger.info(
-      f"[database_tool] response from database_service: {response}"
-      )
-    result = resp_data["result"]
-    Logger.info(
-        f"[database_tool] query response:{resp_data}."
-        f" Result: {result}")
-    output = {
-      "columns": resp_data["columns"],
-      "rows": resp_data["rows"]
-    }
+def execute_db_query(database_query_prompt: str) -> dict:
+  Logger.info(
+    f"[database_tool] executing query:{database_query_prompt}")
+  output = {}
+  try:
+    from services.agents.db_agent import run_db_agent
+    resp_data = run_db_agent(database_query_prompt)
+
+    output = resp_data
   except RuntimeError as e:
     Logger.error(f"[database_tool] Unable to execute query: {e}")
   return output
