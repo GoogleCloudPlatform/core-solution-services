@@ -18,7 +18,8 @@
       "llm_type": "VertexAI-Chat-Palm2V2-Langchain",
       "agent_type": "langchain_Conversational",
       "agent_class": "ChatAgent",
-      "tools": "search_tool,query_tool"
+      "tools": "search_tool,query_tool",
+      "query_engines": "ALL"
     },
     "Task": {
       "llm_type": "OpenAI-GPT4",
@@ -30,6 +31,7 @@
       "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_ZeroShot",
       "agent_class": "PlanAgent",
+      "query_engines": "ALL",
       "tools": "ALL"
     }
   }
