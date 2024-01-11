@@ -344,13 +344,13 @@ def query_engine_build(doc_url: str,
   # process special params
   params = params or {}
   is_public = True
-  if "is_public" in params:
-    is_public = params["is_public"]
-    if isinstance(is_public, str):
-      is_public = is_public.lower() == "true"
+  if "is_public" in params and isinstance(params["is_public"], str):
+    is_public = params["is_public"].lower()
+    is_public = is_public == "true"
   associated_agents = []
-  if "agents" in params and isinstance(str, params["agents"]):
+  if "agents" in params and isinstance(params["agents"], str):
     associated_agents = params["agents"].split(",")
+    associated_agents = [qe.strip() for qe in associated_agents]
 
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
