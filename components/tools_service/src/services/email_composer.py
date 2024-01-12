@@ -43,7 +43,8 @@ def compose_email(
   subject_prompt = ChatPromptTemplate.from_template(subject_template)
 
   # TODO: Add options to use VertexAI and other models.
-  llm = OpenAI(temperature=0, openai_api_key=OPENAI_API_KEY)
+  llm = OpenAI(temperature=0, openai_api_key=OPENAI_API_KEY,
+               model_name="gpt-3.5-turbo-instruct")
 
   # Generate email content.
   llm_chain = LLMChain(prompt=email_body_prompt, llm=llm)
