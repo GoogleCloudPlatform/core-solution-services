@@ -55,9 +55,8 @@ def on_submit(user_input):
     else:
       st.error(f"Unsupported route {default_route}")
 
-    if not st.session_state.chat_id:
-      st.session_state.chat_id = response["chat"]["id"]
-      st.session_state.user_chats.insert(0, response["chat"])
+    st.session_state.chat_id = response["chat"]["id"]
+    st.session_state.user_chats.insert(0, response["chat"])
 
     # TODO: Currently the AIOutput vs content are inconsistent across
     # API response and in a UserChat history.
