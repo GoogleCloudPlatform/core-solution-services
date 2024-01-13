@@ -17,6 +17,7 @@
 # pylint: disable=invalid-name,unused-variable
 import re
 import streamlit as st
+from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
     run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
@@ -155,10 +156,49 @@ def chat_content():
             document_text = reference["document_text"]
             st.markdown(
                 f"**{reference_index}.** [{document_url}]({document_url})")
-            st.text_area(
-              f"Reference: {document_url}",
-              document_text,
-              key=f"ref_{reference_index}")
+            markdown_content = re.sub(
+                r"<b>(.*?)</b>", r"**\1**", document_text, flags=re.IGNORECASE)
+            
+            #st.text_area(
+            #  f"Reference: {document_url}",
+            #  document_text,
+            #  key=f"ref_{reference_index}")
+            
+            with stylable_container(
+              key=f"ref_{reference_index}",
+              css_styles = """
+              {
+                font-weight: 400;
+                line-height: 1.6;
+                text-size-adjust: 100%;
+                -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+                -webkit-font-smoothing: auto;
+                color-scheme: light;
+                color: rgb(49, 51, 63);
+                box-sizing: border-box;
+                width: 100%;
+                max-width: 100%;
+                border-top-left-radius: 0.5rem;
+                border-bottom-left-radius: 0.5rem;
+                border-top-right-radius: 0.5rem;
+                border-bottom-right-radius: 0.5rem;
+                overflow: scroll;
+                display: inline-block;
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+                background-color: #FFFFFF;
+                border: none;
+                border-width: 1px;              
+                resize: vertical;
+                min-height: 95px;
+                height: 100px;
+              }
+              """
+            ):
+              st.markdown(markdown_content)
+              
             reference_index = reference_index + 1
           st.divider()
 
