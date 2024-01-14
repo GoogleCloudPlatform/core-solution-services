@@ -56,3 +56,22 @@ try:
 except Exception as e:
   Logger.warning("Can't access postgres user password secret")
   PG_PASSWD = None
+
+# test postgres connection
+if PG_PASSWD and PG_HOST:
+  import sqlalchemy
+  from langchain.vectorstores.pgvector import PGVector as LangchainPGVector
+  try:
+    connection_string = LangchainPGVector.connection_string_from_db_params(
+        driver="psycopg2",
+        host=PG_HOST,
+        port=PG_PORT,
+        database=PG_DBNAME,
+        user=PG_USER,
+        password=PG_PASSWD
+    )
+    engine = sqlalchemy.create_engine(connection_string)
+    conn = engine.connect()
+    Logger.info(f"Connected successfully to pgvector instance at {PG_HOST}")
+  except Exception as e:
+    Logger.error(f"Cannot connect to pgvector instance at {PG_HOST}: {str(e)}")
