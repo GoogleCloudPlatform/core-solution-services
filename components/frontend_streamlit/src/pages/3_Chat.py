@@ -158,12 +158,12 @@ def chat_content():
                 f"**{reference_index}.** [{document_url}]({document_url})")
             markdown_content = re.sub(
                 r"<b>(.*?)</b>", r"**\1**", document_text, flags=re.IGNORECASE)
-            
+
             #st.text_area(
             #  f"Reference: {document_url}",
             #  document_text,
             #  key=f"ref_{reference_index}")
-            
+
             with stylable_container(
               key=f"ref_{reference_index}",
               css_styles = """
@@ -198,7 +198,7 @@ def chat_content():
               """
             ):
               st.markdown(markdown_content)
-              
+
             reference_index = reference_index + 1
           st.divider()
 
