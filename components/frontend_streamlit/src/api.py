@@ -390,9 +390,10 @@ def get_all_docs_of_query_engine(query_engine_id, auth_token=None):
   return resp_dict["data"]
 
 
-def get_all_query_engines(auth_token=None):
+def get_all_query_engines(auth_token=None) -> List[dict]:
   """
-  Retrieve all chats of a specific user.
+  Retrieve all query engines.  Return a list of dicts containing
+  Query Engine model fields.
   """
   if not auth_token:
     auth_token = get_auth_token()
@@ -401,7 +402,10 @@ def get_all_query_engines(auth_token=None):
   Logger.info(f"api_url={api_url}")
   resp = api_request("GET", api_url, auth_token=auth_token)
   resp_dict = get_response_json(resp)
-  return resp_dict["data"]
+  qe_list = resp_dict["data"]
+  if qe_list is None:
+    qe_list = []
+  return qe_list
 
 
 def get_all_embedding_types(auth_token=None):
