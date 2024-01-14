@@ -29,10 +29,10 @@ def get_environ_flag(env_flag_str, default=True):
   return evn_flag
 
 def get_env_setting(env_var_str, default):
-  evn_val = os.getenv(env_var_str, default)
-  if isinstance(evn_val, str) and evn_val.strip() == "":
-    evn_val = default
-  return evn_val
+  env_val = os.getenv(env_var_str, default)
+  if isinstance(env_val, str) and env_val.strip() == "":
+    env_val = default
+  return env_val
 
 
 IS_CLOUD_LOGGING_ENABLED = bool(
