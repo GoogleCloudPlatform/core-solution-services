@@ -42,7 +42,9 @@ export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
 ```shell
 # Create a secret for postgres password
 gcloud secrets create "postgres-user-passwd"
-echo <your-postgres-password> | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+# Please use single quotes to enclose the password below (esp.
+# if the password contains special characters like $)
+echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
 
 # Create an AlloyDB instance
 ./utils/alloy_db.sh
