@@ -18,6 +18,7 @@
 import streamlit as st
 from api import get_chat, run_query
 from components.chat_history import chat_history_panel
+from components.query_engine_select import query_engine_select
 from common.utils.logging_handler import Logger
 import utils
 
@@ -100,7 +101,6 @@ def chat_content():
 
 def chat_page():
   st.title("Query")
-  st.write(f"Engine: {st.session_state.query_engine_id}")
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
@@ -108,7 +108,9 @@ def chat_page():
   # Set up columns to mimic a right-side sidebar
   main_container = st.container()
   with main_container:
+    query_engine_select()
     chat_content()
+    
 
 
 if __name__ == "__main__":
