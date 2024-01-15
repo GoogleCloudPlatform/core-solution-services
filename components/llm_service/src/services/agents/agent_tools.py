@@ -18,7 +18,7 @@
 
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
-from langchain.tools import tool
+from langchain.tools import tool, StructuredTool
 from config import SERVICES, auth_client
 from typing import List, Dict
 
@@ -200,15 +200,29 @@ def database_tool(database_query_prompt: str) -> dict:
     Accepts a natural language question and queries a database to get an
     answer in the form of data.
   """
-  return execute_db_query(database_query_prompt)
+  tool_description = """
+  Accepts a natural language question and queries a relational database using
+  SQL to get an answer, in the form of rows of data."
+  """
+  langchain_database_tool = StructuredTool.from_function(
+      name="database_tool",
+      description=tool_description,
+      coroutine=execute_db_query
+  )
 
-def execute_db_query(database_query_prompt: str) -> dict:
+  # run the tool
+  response = langchain_database_tool.run(database_query_prompt)
+
+  return response
+
+
+async def execute_db_query(database_query_prompt: str) -> dict:
   Logger.info(
     f"[database_tool] executing query:{database_query_prompt}")
   output = {}
   try:
     from services.agents.db_agent import run_db_agent
-    resp_data = run_db_agent(database_query_prompt)
+    resp_data = await run_db_agent(database_query_prompt)
 
     output = resp_data
   except RuntimeError as e:
