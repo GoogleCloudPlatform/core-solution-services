@@ -19,6 +19,7 @@ from langchain.schema import (Generation, ChatGeneration, LLMResult)
 from langchain.schema.messages import AIMessage
 from config import (COHERE_LLM_TYPE,
                     OPENAI_LLM_TYPE_GPT3_5, OPENAI_LLM_TYPE_GPT4,
+                    OPENAI_LLM_TYPE_GPT4_LATEST,
                     VERTEX_LLM_TYPE_BISON_TEXT,
                     VERTEX_LLM_TYPE_BISON_CHAT,
                     PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
@@ -68,6 +69,12 @@ TEST_OPENAI_CONFIG = {
     KEY_MODEL_CLASS: FakeModelClass()
   },
   OPENAI_LLM_TYPE_GPT4: {
+    KEY_PROVIDER: PROVIDER_LANGCHAIN,
+    KEY_IS_CHAT: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_CLASS: FakeModelClass()
+  },
+  OPENAI_LLM_TYPE_GPT4_LATEST: {
     KEY_PROVIDER: PROVIDER_LANGCHAIN,
     KEY_IS_CHAT: True,
     KEY_ENABLED: True,
