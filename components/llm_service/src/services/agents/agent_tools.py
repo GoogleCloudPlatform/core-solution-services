@@ -166,11 +166,14 @@ def create_google_sheet(name: str,
   output = {}
 
   # TODO: Add support with multiple emails.
+  share_emails = []
+  if user_email is not None:
+    share_emails = [user_email]
   data = {
     "name": name,
     "columns": columns,
     "rows": rows,
-    "share_emails": [user_email],
+    "share_emails": share_emails
   }
 
   try:

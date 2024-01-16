@@ -89,6 +89,8 @@ class UserPlan(BaseModel):
   id = IDField()
   name = TextField()
   user_id = TextField(required=True)
+  task_prompt = TextField(required=True)
+  task_response = TextField(required=True)
   agent_name = TextField(required=True)
   plan_steps = ListField() # list of plan step ids
 

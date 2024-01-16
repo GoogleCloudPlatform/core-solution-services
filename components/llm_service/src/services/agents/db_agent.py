@@ -280,16 +280,15 @@ def generate_spreadsheet(
   """
   Generate Workspace Sheet containing return data
   """
-  Logger.info("Generating spreadsheet for user [{user_email}]")
+  Logger.info(f"Generating spreadsheet for user [{user_email}]")
   now = datetime.datetime.utcnow()
   sheet_name = f"Dataset {dataset} Query {now}"
 
-  Logger.info(f"sheet data {sheet_data}")
   sheet_output = create_google_sheet(sheet_name,
                                      sheet_data["columns"],
                                      sheet_data["data"],
                                      user_email)
-  Logger.info("Got spreadsheet output [{sheet_output}]")
+  Logger.info(f"Got spreadsheet output [{sheet_output}]")
   sheet_url = sheet_output["sheet_url"]
   return sheet_url
 
