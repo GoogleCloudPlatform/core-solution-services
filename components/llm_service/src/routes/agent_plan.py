@@ -207,7 +207,7 @@ async def agent_plan_execute(plan_id: str,
       user_chat = UserChat.find_by_id(chat_id)
 
     prompt = """Run the plan in the chat history provided below."""
-    result, agent_logs = agent_execute_plan(
+    result, agent_logs = await agent_execute_plan(
         agent_name, prompt, user_plan)
 
     if user_chat:

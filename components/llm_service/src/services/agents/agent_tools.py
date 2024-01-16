@@ -195,7 +195,7 @@ def create_google_sheet(name: str,
   return output
 
 @tool(infer_schema=True)
-def database_tool(database_query_prompt: str) -> dict:
+async def database_tool(database_query_prompt: str) -> dict:
   """
     Accepts a natural language question and queries a database to get an
     answer in the form of data.
@@ -211,7 +211,7 @@ def database_tool(database_query_prompt: str) -> dict:
   )
 
   # run the tool
-  response = langchain_database_tool.run(database_query_prompt)
+  response = await langchain_database_tool.arun(database_query_prompt)
 
   return response
 

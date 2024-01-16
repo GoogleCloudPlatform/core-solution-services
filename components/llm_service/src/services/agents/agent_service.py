@@ -30,7 +30,7 @@ from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
 from config.utils import get_dataset_config
 from services.agents import agents
-from services.agents.utils import agent_executor_run_with_logs
+from services.agents.utils import agent_executor_arun_with_logs
 
 Logger = Logger.get_logger(__file__)
 AGENTS = None
@@ -337,7 +337,7 @@ def parse_step(text:str) -> dict:
   matches = step_regex.findall(text)
   return matches
 
-def agent_execute_plan(
+async def agent_execute_plan(
     agent_name:str, prompt:str, user_plan:UserPlan = None) -> str:
   """
   Execute a given plan_steps.
@@ -365,14 +365,14 @@ def agent_execute_plan(
     verbose=True)
 
   # langchain StructedChatAgent takes only one input called input
-  plan_steps_string = "".join(plan_steps)
+  plan_steps_string = " ".join(plan_steps)
   agent_inputs = {
-    "input": prompt +plan_steps_string
+    "input": prompt + plan_steps_string
   }
   Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
 
   # collect print-output to the string.
-  output, agent_logs = agent_executor_run_with_logs(
+  output, agent_logs = await agent_executor_arun_with_logs(
       agent_executor, agent_inputs)
 
   Logger.info(f"Agent {agent_name} generated"

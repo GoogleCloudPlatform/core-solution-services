@@ -32,7 +32,8 @@ from services.agents.agent_prompts import (SQL_QUERY_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_PREFIX)
 from services.agents.utils import (
-    strip_punctuation_from_end, agent_executor_run_with_logs)
+    strip_punctuation_from_end, agent_executor_run_with_logs,
+    agent_executor_arun_with_logs)
 from services.agents.agent_tools import create_google_sheet
 import sqlparse
 from sqlparse.sql import IdentifierList, Identifier
@@ -131,7 +132,7 @@ async def generate_sql_statement(prompt: str,
   input_prompt = format_prompt(prompt, SQL_STATEMENT_FORMAT_INSTRUCTIONS)
 
   # return_val = agent_executor.run(input_prompt)
-  return_val, agent_logs = agent_executor_run_with_logs(
+  return_val, agent_logs = await agent_executor_arun_with_logs(
       agent_executor, input_prompt)
 
   Logger.info(f"generated SQL statement [{return_val}]")
