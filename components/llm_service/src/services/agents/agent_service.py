@@ -30,7 +30,7 @@ from common.utils.logging_handler import Logger
 from config import AGENT_CONFIG_PATH
 from config.utils import get_dataset_config
 from services.agents import agents
-from services.agents.utils import agent_executor_run_with_logs
+from services.agents.utils import agent_executor_arun_with_logs
 
 Logger = Logger.get_logger(__file__)
 AGENTS = None
@@ -195,7 +195,7 @@ async def run_intent(
   agent_logs = output
   Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
 
-  routes = parse_output("Route:", output) or []
+  routes = parse_action_output("Route:", output) or []
   Logger.info(f"Output routes: {routes}")
 
   # If no best route(s) found, pass to Chat agent.
@@ -279,12 +279,16 @@ async def agent_plan(agent_name:str,
 
   output = await run_agent(agent_name, prompt, chat_history)
 
-  raw_plan_steps = parse_output("Plan:", output)
+  task_response = parse_agent_response("Plan:", output)
+  raw_plan_steps = parse_action_output("Plan:", output)
 
   # create user plan
-  print(f"user_id = {user_id}")
 
-  user_plan = UserPlan(user_id=user_id, agent_name=agent_name)
+  user_plan = UserPlan(
+      user_id=user_id,
+      task_prompt=prompt,
+      task_response=task_response,
+      agent_name=agent_name)
   user_plan.save()
 
   # create PlanStep models
@@ -307,8 +311,17 @@ async def agent_plan(agent_name:str,
               f"raw_plan_steps={raw_plan_steps}")
   return output, user_plan
 
+def parse_agent_response(header: str, text: str) -> str:
+  """
+  Parse agent response prior to action header
+  """
+  header_index = text.find(header)
+  if header_index != -1:
+    return text[:header_index]
+  else:
+    return text
 
-def parse_output(header: str, text: str) -> List[str]:
+def parse_action_output(header: str, text: str) -> List[str]:
   """
   Parse plan steps from agent output
   """
@@ -320,7 +333,7 @@ def parse_output(header: str, text: str) -> List[str]:
   steps_regex = re.compile(
       r"^\s*[\d#]+\..+?(?=\n\s*\d+|\Z)", re.MULTILINE | re.DOTALL)
 
-  # Find the part of the text after 'Plan:'
+  # Find the part of the text after header
   plan_part = re.split(header, text, flags=re.IGNORECASE)[-1]
 
   # Find all the steps within the 'Plan:' part
@@ -337,13 +350,12 @@ def parse_step(text:str) -> dict:
   matches = step_regex.findall(text)
   return matches
 
-def agent_execute_plan(
-    agent_name:str, prompt:str, user_plan:UserPlan = None) -> str:
+async def agent_execute_plan(
+    agent_name: str, user_plan: UserPlan=None) -> str:
   """
   Execute a given plan_steps.
   """
   Logger.info(f"Running {agent_name} agent "
-              f"with prompt=[{prompt}] and "
               f"user_plan=[{user_plan}]")
   agent_params = get_agent_config()[agent_name]
   llm_service_agent = agent_params["agent_class"](agent_params["llm_type"])
@@ -354,25 +366,34 @@ def agent_execute_plan(
 
   Logger.info(f"Available tools=[{tools_str}]")
 
-  plan_steps = []
-  for step in user_plan.plan_steps:
-    description = PlanStep.find_by_id(step).description
-    plan_steps.append(description)
-
   agent_executor = AgentExecutor.from_agent_and_tools(
     agent=agent,
     tools=tools,
     verbose=True)
 
-  # langchain StructedChatAgent takes only one input called input
-  plan_steps_string = "".join(plan_steps)
+  task_prompt = user_plan.task_prompt
+  task_response = user_plan.task_response
+  prompt = "Execute the plan provided below. "
+  prompt += \
+    f"The plan was created by an AI Planning Assistant." \
+    f"The original task request by the human user was \"{task_prompt}\".\n" \
+    f"The response of the planning agent was \"{task_response}\", \n" \
+    f"followed by the plan listed below.\n" \
+    f"Plan: \n"
+
+  plan_steps = []
+  for step in user_plan.plan_steps:
+    description = PlanStep.find_by_id(step).description
+    plan_steps.append(description)
+  plan_steps_string = " ".join(plan_steps)
+  agent_prompt = prompt + plan_steps_string
   agent_inputs = {
-    "input": prompt +plan_steps_string
+    "input": agent_prompt
   }
-  Logger.info(f"Running agent executor.... input:{agent_inputs['input']} ")
+  Logger.info(f"Running agent executor.... input:{agent_prompt} ")
 
   # collect print-output to the string.
-  output, agent_logs = agent_executor_run_with_logs(
+  output, agent_logs = await agent_executor_arun_with_logs(
       agent_executor, agent_inputs)
 
   Logger.info(f"Agent {agent_name} generated"
