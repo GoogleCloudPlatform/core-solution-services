@@ -199,7 +199,7 @@ def parse_agent_response(header: str, text: str) -> str:
 
 def parse_action_output(header: str, text: str) -> List[str]:
   """
-  Parse plan steps from agent output
+  Parse plans or routes from agent output, as delimited by a header.
   """
   Logger.info(f"Parsing agent output: {header}, {text}")
 

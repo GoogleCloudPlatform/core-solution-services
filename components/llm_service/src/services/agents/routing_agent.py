@@ -23,7 +23,7 @@ from services.agents.db_agent import run_db_agent
 from services.agents.agents import BaseAgent
 from services.agents.agent_service import (
     agent_plan,
-    parse_plan_output,
+    parse_action_output,
     parse_plan_step,
     run_agent)
 from services.query.query_service import query_generate
@@ -249,7 +249,7 @@ async def run_intent(
   agent_logs = output
   Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
 
-  routes = parse_plan_output("Route:", output) or []
+  routes = parse_action_output("Route:", output) or []
   Logger.info(f"Output routes: {routes}")
 
   # If no best route(s) found, pass to Chat agent.
