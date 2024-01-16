@@ -179,7 +179,7 @@ USER_PLAN_EXAMPLE = {
   "name": "example plan",
   "user_id": "fake-user-id",
   "task_prompt": "fake task prompt",
-  "task_request": "fake task response",
+  "task_response": "fake task response",
   "agent_name": "Task",
   "plan_steps": ["fake-planstep-id-1", "fake-planstep-id-2"]
 }
