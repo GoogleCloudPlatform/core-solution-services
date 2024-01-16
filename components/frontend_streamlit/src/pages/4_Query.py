@@ -110,7 +110,7 @@ def chat_page():
   with main_container:
     query_engine_select()
     chat_content()
-    
+
 
 
 if __name__ == "__main__":

@@ -48,7 +48,8 @@ def landing_suggestions():
 
   with query:
     with st.container(border=True):
-      query_button = st.button("Query", type="primary", use_container_width=True)
+      query_button = st.button("Query", type="primary",
+                               use_container_width=True)
       st.caption("Utilize a data source to get answers.")
       if query_button:
         st.switch_page("pages/4_Query.py")
