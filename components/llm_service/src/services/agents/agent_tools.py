@@ -14,11 +14,11 @@
 
 """ Agent tools """
 
-# pylint: disable=unused-argument,unused-import
+# pylint: disable=unused-argument,unused-import,import-outside-toplevel
 
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
-from langchain.tools import tool as langchain_tool
+from langchain.tools import tool as langchain_tool, StructuredTool
 from config import SERVICES, auth_client
 from typing import List, Dict
 
@@ -227,11 +227,14 @@ def create_google_sheet(name: str,
   output = {}
 
   # TODO: Add support with multiple emails.
+  share_emails = []
+  if user_email is not None:
+    share_emails = [user_email]
   data = {
     "name": name,
     "columns": columns,
     "rows": rows,
-    "share_emails": [user_email],
+    "share_emails": share_emails
   }
 
   try:
@@ -256,36 +259,36 @@ def create_google_sheet(name: str,
   return output
 
 @agent_tool(infer_schema=True)
-def database_tool(database_query: str) -> dict:
+async def database_tool(database_query_prompt: str) -> dict:
   """
-    Accepts a natural language question and queries a database to get definite
-    answer
+    Accepts a natural language question and queries a database to get an
+    answer in the form of data.
   """
-  Logger.info(
-    f"[database_tool] executing query:{database_query}")
-  api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
-  api_url = f"{api_url_prefix}/workspace/database/query"
-  output = {}
-  data = {
-    "query": database_query
-  }
-  try:
-    response = post_method(url=api_url,
-                           request_body=data,
-                           auth_client=auth_client)
+  tool_description = """
+  Accepts a natural language question and queries a relational database using
+  SQL to get an answer, in the form of rows of data."
+  """
+  langchain_database_tool = StructuredTool.from_function(
+      name="database_tool",
+      description=tool_description,
+      coroutine=execute_db_query
+  )
 
-    resp_data = response.json()
-    Logger.info(
-      f"[database_tool] response from database_service: {response}"
-      )
-    result = resp_data["result"]
-    Logger.info(
-        f"[database_tool] query response:{resp_data}."
-        f" Result: {result}")
-    output = {
-      "columns": resp_data["columns"],
-      "rows": resp_data["rows"]
-    }
+  # run the tool
+  response = await langchain_database_tool.arun(database_query_prompt)
+
+  return response
+
+
+async def execute_db_query(database_query_prompt: str) -> dict:
+  Logger.info(
+    f"[database_tool] executing query:{database_query_prompt}")
+  output = {}
+  try:
+    from services.agents.db_agent import run_db_agent
+    resp_data = await run_db_agent(database_query_prompt)
+
+    output = resp_data
   except RuntimeError as e:
     Logger.error(f"[database_tool] Unable to execute query: {e}")
   return output

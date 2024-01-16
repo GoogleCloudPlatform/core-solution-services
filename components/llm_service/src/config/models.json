@@ -107,6 +107,17 @@
         "temperature": 0
       }
     },
+    "OpenAI-GPT4-latest": {
+      "vendor": "OpenAI",
+      "is_chat": true,
+      "provider": "Langchain",
+      "enabled": true,
+      "model_name": "gpt-4-1106-preview",
+      "model_class": "ChatOpenAI",      
+      "model_params": {
+        "temperature": 0
+      }
+    },
     "OpenAI-GPT3.5": {
       "vendor": "OpenAI",
       "is_chat": true,

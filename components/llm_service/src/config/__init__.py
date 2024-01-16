@@ -68,6 +68,7 @@ from config.model_config import (
     # llm type constants
     OPENAI_LLM_TYPE_GPT3_5,
     OPENAI_LLM_TYPE_GPT4,
+    OPENAI_LLM_TYPE_GPT4_LATEST,
     COHERE_LLM_TYPE,
     VERTEX_LLM_TYPE_BISON_TEXT,
     VERTEX_LLM_TYPE_BISON_CHAT,

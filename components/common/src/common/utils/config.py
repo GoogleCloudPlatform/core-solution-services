@@ -28,6 +28,13 @@ def get_environ_flag(env_flag_str, default=True):
   evn_flag = evn_val.lower() == "true"
   return evn_flag
 
+def get_env_setting(env_var_str, default):
+  env_val = os.getenv(env_var_str, default)
+  if isinstance(env_val, str) and env_val.strip() == "":
+    env_val = default
+  return env_val
+
+
 IS_CLOUD_LOGGING_ENABLED = bool(
   os.getenv("IS_CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))
 

@@ -38,7 +38,7 @@ from config.vector_store_config import (PG_HOST, PG_PORT,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
-from langchain.vectorstores.pgvector import PGVector
+from langchain.vectorstores.pgvector import PGVector as LangchainPGVector
 from langchain.docstore.document import Document
 
 Logger = Logger.get_logger(__file__)
@@ -362,7 +362,7 @@ class LangChainVectorStore(VectorStore):
     """ Create matching engine index and endpoint """
     pass
 
-class LLMServicePGVector(PGVector):
+class LLMServicePGVector(LangchainPGVector):
   """
   Our version of langchain PGVector with override for result processing.
   """
@@ -396,8 +396,8 @@ class PostgresVectorStore(LangChainVectorStore):
 
   def _get_langchain_vector_store(self) -> LCVectorStore:
 
-    # get postgres connection string using PGVector utility method
-    connection_string = PGVector.connection_string_from_db_params(
+    # get postgres connection string using LangchainPGVector utility method
+    connection_string = LangchainPGVector.connection_string_from_db_params(
         driver="psycopg2",
         host=PG_HOST,
         port=PG_PORT,

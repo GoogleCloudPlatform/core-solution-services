@@ -88,9 +88,8 @@ def query_engine_page():
   with tab_qe:
     st.subheader("Query Engines")
     if not qe_list:
-      Logger.error("No query engine found.")
-      st.write("No query engine found.")
-      return
+      Logger.error("No query engines found.")
+      st.write("No query engines found.")
 
     for qe in qe_list:
       data = [[key, value] for key, value in qe.items()]
