@@ -48,7 +48,7 @@ FAKE_DATABASE_CONFIG = {
 }
 
 class FakeAgentExecutor():
-  def run(self, prompt):
+  async def arun(self, prompt):
     return FAKE_SQL_STATEMENT
 
 class FakeQuerySQLDataBaseTool():
