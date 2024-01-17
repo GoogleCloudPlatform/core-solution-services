@@ -12,7 +12,7 @@
       "agent_class": "ChatAgent"
     },
     "Task": {
-      "llm_type": "OpenAI-GPT4",
+      "llm_type": "OpenAI-GPT4-latest",
       "agent_type": "langchain_StructuredChatAgent",
       "agent_class": "TaskAgent"
     },

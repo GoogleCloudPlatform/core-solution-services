@@ -13,30 +13,33 @@
 # limitations under the License.
 
 """ SQL Agent module """
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,broad-exception-caught
 
 import ast
 import datetime
 import json
+import re
 from typing import Tuple, List
 from langchain.agents import create_sql_agent
-from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
 from langchain.tools import BaseTool
-from langchain.tools.sql_database.tool import QuerySQLDataBaseTool
+from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
+from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
 from common.utils.logging_handler import Logger
-from config import PROJECT_ID, OPENAI_LLM_TYPE_GPT4
+from config import PROJECT_ID, OPENAI_LLM_TYPE_GPT4_LATEST
 from config.utils import get_dataset_config
 from services import langchain_service
 from services.agents.agent_prompts import (SQL_QUERY_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_PREFIX)
 from services.agents.utils import (
-    strip_punctuation_from_end, agent_executor_run_with_logs)
+    strip_punctuation_from_end, agent_executor_run_with_logs,
+    agent_executor_arun_with_logs)
 from services.agents.agent_tools import create_google_sheet
 import sqlparse
 from sqlparse.sql import IdentifierList, Identifier
 from sqlparse.tokens import Keyword, DML
+import sqlvalidator
 
 Logger = Logger.get_logger(__file__)
 
@@ -69,6 +72,11 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
     # generate SQL statement
     statement, agent_logs = await generate_sql_statement(
         prompt, dataset, llm_type, user_email)
+
+    # check if valid SQL was produced
+    if not validate_sql(statement):
+      # if SQL not produced return the agent output and logs
+      return statement, agent_logs
 
     # run SQL
     output = execute_sql_statement(statement, dataset, user_email)
@@ -131,12 +139,15 @@ async def generate_sql_statement(prompt: str,
   input_prompt = format_prompt(prompt, SQL_STATEMENT_FORMAT_INSTRUCTIONS)
 
   # return_val = agent_executor.run(input_prompt)
-  return_val, agent_logs = agent_executor_run_with_logs(
+  return_val, agent_logs = await agent_executor_arun_with_logs(
       agent_executor, input_prompt)
 
   Logger.info(f"generated SQL statement [{return_val}]")
 
-  return return_val, agent_logs
+  # clean the SQL
+  clean_sql = clean_sql_statement(return_val)
+
+  return clean_sql, agent_logs
 
 def execute_sql_statement(statement: str,
                           dataset: str,
@@ -152,6 +163,10 @@ def execute_sql_statement(statement: str,
   Returns:
     tuple of (SQL statement as string, dict of agent logs)
   """
+  # check for valid SQL
+  if not validate_sql(statement):
+    raise RuntimeError(f"Invalid SQL statement {statement}")
+
   # create langchain SQL db object
   db_url = f"bigquery://{PROJECT_ID}/{dataset}"
   db = SQLDatabase.from_uri(db_url)
@@ -178,7 +193,14 @@ def execute_sql_statement(statement: str,
     }
 
   # the dbdata is just a string. convert result rows into list of lists
-  row_data = ast.literal_eval(dbdata)
+  try:
+    row_data = ast.literal_eval(dbdata)
+  except Exception as e:
+    Logger.error(f"Invalid data from sql statement: {statement} {str(e)}")
+    return {
+      "data": None,
+      "resources": None
+    }
 
   Logger.info(f"row data {row_data}")
 
@@ -279,18 +301,36 @@ def generate_spreadsheet(
   """
   Generate Workspace Sheet containing return data
   """
-  Logger.info("Generating spreadsheet for user [{user_email}]")
+  Logger.info(f"Generating spreadsheet for user [{user_email}]")
   now = datetime.datetime.utcnow()
   sheet_name = f"Dataset {dataset} Query {now}"
 
-  Logger.info(f"sheet data {sheet_data}")
   sheet_output = create_google_sheet(sheet_name,
                                      sheet_data["columns"],
                                      sheet_data["data"],
                                      user_email)
-  Logger.info("Got spreadsheet output [{sheet_output}]")
+  Logger.info(f"Got spreadsheet output [{sheet_output}]")
   sheet_url = sheet_output["sheet_url"]
   return sheet_url
+
+def validate_sql(sql_query: str) -> bool:
+  """ Use sqlvalidator to validate SQL statement """
+  sql_check = sqlvalidator.parse(sql_query)
+  if not sql_check.is_valid():
+    Logger.error(f"invalid SQL: {sql_check.errors}")
+  return sql_check.is_valid()
+
+def clean_sql_statement(statement: str) -> str:
+  """ clean SQL statement to remove \n and enclosing backticks """
+  # Regular expression pattern to match text enclosed in triple backticks
+  # with an optional language designator
+  pattern = r"```(?:\w+\s*)?\n?(.*?)\n?```"
+
+  # Using DOTALL flag to make '.' match newlines as well
+  cleaned_statement = re.sub(pattern, r"\1", statement, flags=re.DOTALL)
+
+  # Strip leading and trailing whitespaces and newlines from the cleaned text
+  return cleaned_statement.strip()
 
 def extract_columns(sql_query: str) -> List[str]:
   """ Use sqlparse to extract columns from a SQL statement """
@@ -330,7 +370,7 @@ def get_langchain_llm(llm_type: str):
   toolkit only Langchain LLM objects are supported.
   """
   if llm_type is None:
-    llm_type = OPENAI_LLM_TYPE_GPT4
+    llm_type = OPENAI_LLM_TYPE_GPT4_LATEST
   llm = langchain_service.get_model(llm_type)
   if llm is None:
     raise RuntimeError(f"Unsupported llm type {llm_type}")
@@ -350,4 +390,3 @@ def format_prompt(prompt: str, format_instructions: str) -> str:
   clean_prompt = strip_punctuation_from_end(prompt)
   input_prompt = f"{clean_prompt}? {format_instructions}"
   return input_prompt
-

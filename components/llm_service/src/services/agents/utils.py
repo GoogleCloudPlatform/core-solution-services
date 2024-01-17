@@ -44,3 +44,13 @@ def agent_executor_run_with_logs(agent_executor, agent_inputs):
     Logger.info(f"Agent process result: \n\n{result}")
     Logger.info(f"Agent process log: \n\n{agent_logs}")
     return result, clean_agent_logs(agent_logs)
+
+async def agent_executor_arun_with_logs(agent_executor, agent_inputs):
+  # collect print-output to the string.
+
+  with io.StringIO() as buf, redirect_stdout(buf):
+    result = await agent_executor.arun(agent_inputs)
+    agent_logs = buf.getvalue()
+    Logger.info(f"Agent process result: \n\n{result}")
+    Logger.info(f"Agent process log: \n\n{agent_logs}")
+    return result, clean_agent_logs(agent_logs)
