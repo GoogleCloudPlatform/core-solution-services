@@ -55,7 +55,7 @@ def landing_suggestions():
 
 
 def task_picker_display():
-  with container():
+  with st.container():
     agent_name = st.selectbox(
         "Agent:",
         ("Chat", "Plan"))
