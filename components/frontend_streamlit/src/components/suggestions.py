@@ -20,7 +20,6 @@ import streamlit as st
 from api import get_all_query_engines
 import utils
 
-#from components.task_picker import task_picker_display
 
 def landing_suggestions():
   info, plan, chat, query = st.columns(4)
@@ -56,14 +55,15 @@ def landing_suggestions():
 
 
 def task_picker_display():
-  agent_name = st.selectbox(
-      "Agent:",
-      ("Chat", "Plan"))
-  chat_button = st.button("Start", key=2)
-  if chat_button:
-    st.session_state.agent_name = agent_name
-    st.session_state.chat_id = None
-    utils.navigate_to("Chat")
+  with container():
+    agent_name = st.selectbox(
+        "Agent:",
+        ("Chat", "Plan"))
+    chat_button = st.button("Start", key=2)
+    if chat_button:
+      st.session_state.agent_name = agent_name
+      st.session_state.chat_id = None
+      utils.navigate_to("Chat")
 
   # Get all query engines as a list
   query_engine_list = get_all_query_engines(
