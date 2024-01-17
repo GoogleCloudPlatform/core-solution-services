@@ -19,7 +19,11 @@ import time
 from typing import Optional
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-
+from vertexai.preview.generative_models import GenerativeModel
+from vertexai.preview.generative_models import (
+    HarmCategory,
+    HarmBlockThreshold)
+from google.cloud.aiplatform_v1beta1.types.content import SafetySetting
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat
 from common.utils.errors import ResourceNotFoundException
@@ -28,7 +32,7 @@ from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
 from config import (get_model_config, get_provider_models,
-                    get_provider_value,
+                    get_provider_value, get_provider_model_config,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
@@ -297,16 +301,48 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   prompt_list.append(prompt)
   context_prompt = prompt.join("\n\n")
 
-  # get global vertex model params
-  # TODO don't assume Vertex model params are global
-  parameters = get_provider_value(PROVIDER_VERTEX,
-      KEY_MODEL_PARAMS)
+  # Get model params. If params are set at the model level
+  # use those else use global vertex params.
+  parameters = {}
+  provider_config = get_provider_model_config(PROVIDER_VERTEX)
+  for _, model_config in provider_config.items():
+    model_name = model_config.get(KEY_MODEL_NAME)
+    if model_name == google_llm and KEY_MODEL_PARAMS in model_config:
+      parameters = model_config.get(KEY_MODEL_PARAMS)
+  else:
+    parameters = get_provider_value(PROVIDER_VERTEX,
+        KEY_MODEL_PARAMS)
 
   try:
     if is_chat:
-      chat_model = ChatModel.from_pretrained(google_llm)
-      chat = chat_model.start_chat(max_output_tokens=1024)
-      response = await chat.send_message_async(context_prompt, **parameters)
+      # gemini uses new "GenerativeModel" class and requires different params
+      if "gemini" in google_llm:
+        chat_model = GenerativeModel(google_llm)
+        chat = chat_model.start_chat()
+        safety_settings = [
+             SafetySetting(
+                 category=HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                 threshold=HarmBlockThreshold.BLOCK_NONE,
+             ),
+             SafetySetting(
+                 category=HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                 threshold=HarmBlockThreshold.BLOCK_NONE,
+             ),
+             SafetySetting(
+                 category=HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                 threshold=HarmBlockThreshold.BLOCK_NONE,
+             ),
+             SafetySetting(
+                 category=HarmCategory.HARM_CATEGORY_HARASSMENT,
+                 threshold=HarmBlockThreshold.BLOCK_NONE,
+             ),
+        ]
+        response = await chat.send_message_async(context_prompt,
+            generation_config=parameters, safety_settings=safety_settings)
+      else:
+        chat_model = ChatModel.from_pretrained(google_llm)
+        chat = chat_model.start_chat()
+        response = await chat.send_message_async(context_prompt, **parameters)
     else:
       text_model = TextGenerationModel.from_pretrained(google_llm)
       response = await text_model.predict_async(
