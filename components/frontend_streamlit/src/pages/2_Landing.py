@@ -41,6 +41,7 @@ def landing_page():
 
   st.title("Welcome")
   st.subheader("Start your journey here or explore the options below.")
+
   # Center content
   landing_suggestions()
 

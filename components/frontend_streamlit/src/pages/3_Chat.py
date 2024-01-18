@@ -84,7 +84,8 @@ def on_submit(user_input):
     st.session_state.messages.append(response)
 
   # reload page after exiting from spinner
-  st.rerun()
+  utils.navigate_to("Chat")
+
 
 def format_ai_output(text):
   text = text.strip()

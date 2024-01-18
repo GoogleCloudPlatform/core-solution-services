@@ -67,13 +67,13 @@ def navigate_to(page_name):
 
 
 def init_session_state():
-  query_params = st.experimental_get_query_params()
+  query_params = st.query_params
 
   # If set query_param "debug=true"
-  if query_params.get("debug", [""])[0].lower() == "true":
+  if query_params.get("debug", "").lower() == "true":
     st.session_state.debug = True
 
-  error_msg = query_params.get("error_msg", [""])[0]
+  error_msg = query_params.get("error_msg", "")
   if error_msg:
     st.session_state.error_msg = error_msg
 
@@ -83,7 +83,7 @@ def init_session_state():
   ]
   for state_name in states_to_init:
     if not st.session_state.get(state_name, None):
-      st.session_state[state_name] = query_params.get(state_name, [""])[0]
+      st.session_state[state_name] = query_params.get(state_name, "")
 
 def reset_session_state():
   """ Reset critial session states. """

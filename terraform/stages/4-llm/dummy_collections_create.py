@@ -25,3 +25,4 @@ data = {"name": "Dummy"}
 db.collection("batch_jobs").document("batch_jobs_dummy").set(data)
 db.collection("user_chats").document("user_chats_dummy").set(data)
 db.collection("user_queries").document("user_queries_dummy").set(data)
+db.collection("query_documents").document("query_documents_dummy").set(data)
