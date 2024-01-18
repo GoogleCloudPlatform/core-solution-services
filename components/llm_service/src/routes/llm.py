@@ -22,12 +22,13 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest)
 from config import (PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, get_model_config)
 from schemas.llm_schema import (LLMGenerateModel,
+                                LLMMultiGenerateModel,
                                 LLMGetTypesResponse,
                                 LLMGetEmbeddingTypesResponse,
                                 LLMGenerateResponse,
                                 LLMEmbeddingsResponse,
                                 LLMEmbeddingsModel)
-from services.llm_generate import llm_generate
+from services.llm_generate import llm_generate, llm_generate_multi
 from services.embeddings import get_embeddings
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
@@ -141,6 +142,45 @@ async def generate(gen_config: LLMGenerateModel):
 
   try:
     result = await llm_generate(prompt, llm_type)
+
+    return {
+        "success": True,
+        "message": "Successfully generated text",
+        "content": result
+    }
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
+@router.post(
+    "/generate/multi",
+    name="Generate text with a multimodal LLM",
+    response_model=LLMGenerateResponse)
+async def generate_multi(gen_config: LLMMultiGenerateModel):
+  """
+  Generate text with a multimodal LLM
+
+  Args:
+      gen_config: Input config dictionary,
+        including file(UploadFile) prompt(str) and llm_type(str) type for model
+
+  Returns:
+      LLMMultiGenerateResponse
+  """
+  genconfig_dict = {**gen_config.dict()}
+
+  user_file = genconfig_dict.get("user_file")
+  prompt = genconfig_dict.get("prompt")
+  if user_file is None or user_file == "" or prompt is None or prompt == "":
+    return BadRequest("Missing or invalid payload parameters")
+
+  if len(prompt) > PAYLOAD_FILE_SIZE:
+    return PayloadTooLargeError(
+      f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
+
+  llm_type = genconfig_dict.get("llm_type")
+
+  try:
+    result = await llm_generate_multi(user_file, prompt, llm_type)
 
     return {
         "success": True,

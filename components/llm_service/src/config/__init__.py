@@ -55,6 +55,7 @@ from config.config import (
     DEFAULT_QUERY_CHAT_MODEL,
     DEFAULT_QUERY_EMBEDDING_MODEL,
     DEFAULT_LLM_TYPE,
+    DEFAULT_MULTI_LLM_TYPE,
 
     # query engine and other defaults
     DEFAULT_WEB_DEPTH_LIMIT,
@@ -73,6 +74,7 @@ from config.model_config import (
     VERTEX_LLM_TYPE_BISON_TEXT,
     VERTEX_LLM_TYPE_BISON_CHAT,
     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
+    VERTEX_LLM_TYPE_GEMINI_PRO,
     TRUSS_LLM_LLAMA2_CHAT,
 
     # model config keys
@@ -88,6 +90,7 @@ from config.model_config import (
     KEY_MODEL_NAME,
     KEY_MODEL_PARAMS,
     KEY_IS_CHAT,
+    KEY_IS_MULTI,
     KEY_MODEL_FILE_URL,
     KEY_MODEL_PATH,
     KEY_MODEL_ENDPOINT,

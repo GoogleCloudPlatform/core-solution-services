@@ -14,13 +14,15 @@
 """
 Pydantic Model for LLM API's
 """
-from typing import List, Optional
+from typing import List, Optional, Annotated
 from pydantic import BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
+                                     LLM_MULTI_GENERATE_EXAMPLE,
                                      QUERY_EXAMPLE,
                                      QUERY_ENGINE_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
                                      LLM_EMBEDDINGS_EXAMPLE)
+from fastapi import File, UploadFile, Form
 
 class ChatModel(BaseModel):
   id: Optional[str] = None
@@ -112,6 +114,18 @@ class LLMGenerateModel(BaseModel):
     orm_mode = True
     schema_extra = {
         "example": LLM_GENERATE_EXAMPLE
+    }
+
+class LLMMultiGenerateModel(BaseModel):
+  """LLM Multi Generate request model"""
+  user_file: Annotated[UploadFile, File()]
+  prompt: Annotated[str, Form()]
+  llm_type: Annotated[Optional[str], Form()] = None
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": LLM_MULTI_GENERATE_EXAMPLE
     }
 
 class LLMEmbeddingsModel(BaseModel):

@@ -19,6 +19,7 @@ protobuf==4.23.3
 psycopg2-binary==2.9.9
 pyarrow==14.0.1
 pypdf==3.17.0
+python-multipart==0.0.6
 Scrapy==2.11.0
 shapely==1.8.5.post1
 spacy==3.7.2

@@ -64,27 +64,32 @@
     },
     "VertexAI-Chat-Palm2-V2": {
       "is_chat": true,
+      "is_multi": false,
       "provider": "Vertex",
       "model_name": "chat-bison@002"
     },
     "VertexAI-Gemini-Pro": {
       "is_chat": true,
+      "is_multi": true,
       "provider": "Vertex",
       "model_name": "gemini-pro"
     },
     "VertexAI-Chat-Palm2V2-Langchain": {
       "is_chat": true,
+      "is_multi": false,
       "provider": "Langchain",
       "model_name": "chat-bison@002",
       "model_class": "ChatVertexAI"
     },
     "VertexAI-Chat-Palm2-32k": {
       "is_chat": true,
+      "is_multi": false,
       "provider": "Vertex",
       "model_name": "chat-bison-32k"
     },
     "VertexAI-Chat-Palm2-32k-Langchain": {
       "is_chat": true,
+      "is_multi": false,
       "provider": "Langchain",
       "model_name": "chat-bison-32k",
       "model_class": "ChatVertexAI"
@@ -92,6 +97,7 @@
     "Truss-Llama2-Chat": {
       "model_endpoint": "http://truss-llama2-7b-service:8080",
       "is_chat": true,
+      "is_multi": false,
       "provider": "Truss",
       "enabled": false,
       "model_params": {
@@ -103,6 +109,7 @@
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
       "is_chat": true,
+      "is_multi": false,
       "provider": "ModelGarden",
       "enabled": false,
       "model_endpoint": "xxx"
@@ -110,6 +117,7 @@
     "OpenAI-GPT4": {
       "vendor": "OpenAI",
       "is_chat": true,
+      "is_multi": false,
       "provider": "Langchain",
       "enabled": true,
       "model_name": "gpt-4",
@@ -132,6 +140,7 @@
     "OpenAI-GPT3.5": {
       "vendor": "OpenAI",
       "is_chat": true,
+      "is_multi": false,
       "provider": "Langchain",
       "enabled": true,
       "model_name": "gpt-3.5-turbo",
@@ -143,6 +152,7 @@
     "Cohere": {
       "vendor": "Cohere",
       "is_chat": true,
+      "is_multi": false,
       "provider": "Langchain",
       "enabled": true,
       "model_class": "ChatCohere"

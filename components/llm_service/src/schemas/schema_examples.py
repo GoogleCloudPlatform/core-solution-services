@@ -20,6 +20,12 @@ LLM_GENERATE_EXAMPLE = {
   "prompt": "",
 }
 
+LLM_MULTI_GENERATE_EXAMPLE = {
+  "llm_type": "",
+  "prompt": "",
+  "user_file": "",
+}
+
 LLM_EMBEDDINGS_EXAMPLE = {
   "embedding_type": "",
   "text": "",

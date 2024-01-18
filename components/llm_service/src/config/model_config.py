@@ -61,6 +61,7 @@ KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
 KEY_IS_CHAT = "is_chat"
+KEY_IS_MULTI = "is_multi"
 KEY_MODEL_FILE_URL = "model_file_url"
 KEY_MODEL_PATH = "model_path"
 KEY_MODEL_ENDPOINT = "model_endpoint"
@@ -78,6 +79,7 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_NAME,
   KEY_MODEL_PARAMS,
   KEY_IS_CHAT,
+  KEY_IS_MULTI,
   KEY_MODEL_FILE_URL,
   KEY_MODEL_PATH,
   KEY_MODEL_ENDPOINT,
@@ -554,6 +556,16 @@ class ModelConfig():
       if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and self.is_model_enabled(m)
     ]
     return chat_llm_types
+
+  def get_multi_llm_types(self) -> dict:
+    """ Get all supported and enabled multimodal LLM types, as a list of model
+        identifiers.
+    """
+    multi_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and self.is_model_enabled(m)
+    ]
+    return multi_llm_types
 
   def get_embedding_types(self) -> dict:
     """ Get all supported and enabled embedding types, as a list of model

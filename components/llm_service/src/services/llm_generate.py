@@ -17,6 +17,7 @@ LLM Generation Service
 # pylint: disable=import-outside-toplevel
 import time
 from typing import Optional
+from fastapi import UploadFile
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
 from vertexai.preview.generative_models import GenerativeModel
@@ -38,7 +39,8 @@ from config import (get_model_config, get_provider_models,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
                     KEY_MODEL_PARAMS,
-                    DEFAULT_LLM_TYPE
+                    DEFAULT_LLM_TYPE,
+                    DEFAULT_MULTI_LLM_TYPE
                     )
 from services.langchain_service import langchain_llm_generate
 
@@ -84,6 +86,42 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
       response = await google_llm_predict(prompt, is_chat, google_llm)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type)
+    else:
+      raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
+
+    process_time = round(time.time() - start_time)
+    Logger.info(f"Received response in {process_time} seconds from "
+                f"model with llm_type={llm_type}.")
+    return response
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
+async def llm_generate_multi(user_file: UploadFile, prompt: str, llm_type: str) -> str:
+  """
+  Generate text with an LLM given a file and a prompt.
+  Args:
+    user_file: the file provided by the user to pass to the LLM
+    prompt: the text prompt to pass to the LLM
+    llm_type: the type of LLM to use (default to gemini)
+  Returns:
+    the text response: str
+  """
+  Logger.info(f"Generating text with an LLM given an image={user_file.filename},"
+              f" prompt={prompt}, llm_type={llm_type}")
+  # default to openai LLM
+  if llm_type is None:
+    llm_type = DEFAULT_MULTI_LLM_TYPE
+
+  try:
+    start_time = time.time()
+
+    # for Google models, prioritize native client over langchain
+    chat_llm_types = get_model_config().get_chat_llm_types()
+    multi_llm_types = get_model_config().get_multi_llm_types()
+    if llm_type in get_provider_models(PROVIDER_VERTEX):
+      is_chat = llm_type in chat_llm_types
+      is_multi = llm_type in multi_llm_types
+      response = await google_multi_llm_predict(user_file, prompt, is_chat, is_multi, llm_type)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -357,3 +395,71 @@ async def google_llm_predict(prompt: str, is_chat: bool,
   response = response.text
 
   return response
+
+async def google_multi_llm_predict(user_file: UploadFile, prompt: str, is_chat: bool, is_multi: bool,
+                             google_llm: str, user_chat=None) -> str:
+  """
+  Generate text with a Google multimodal LLM given a prompt.
+  Args:
+    user_file: the user provided file to pass to the LLM
+    prompt: the text prompt to pass to the LLM
+    is_chat: true if the model is a chat model
+    is_multi: true if the model is a multimodal model
+    google_llm: name of the vertex llm model
+    user_chat: chat history
+  Returns:
+    the text response.
+  """
+  Logger.info(f"Generating text with a Google multimodal LLM given a file and a prompt,"
+              f" is_chat=[{is_chat}], is_multi=[{is_multi}], google_llm=[{google_llm}]")
+  Logger.debug(f"user_file=[{user_file.filename}].")
+  Logger.debug(f"prompt=[{prompt}].")
+
+  try:
+    # TODO: Implement a real request
+    response = {
+      "candidates": [
+        {
+          "content": {
+            "role": "model",
+            "parts": [
+              {
+                "text": f"The file {user_file.filename} shows a foo doing bar in a way that only a foo could bar."
+              }
+            ]
+          },
+          "finishReason": "STOP",
+          "safetyRatings": [
+            {
+              "category": "HARM_CATEGORY_HARASSMENT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_HATE_SPEECH",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              "probability": "NEGLIGIBLE"
+            },
+            {
+              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+              "probability": "NEGLIGIBLE"
+            }
+          ]
+        }
+      ],
+      "usageMetadata": {
+        "promptTokenCount": 123,
+        "candidatesTokenCount": 123,
+        "totalTokenCount": 123
+      }
+    }
+    response_text = response.candidates[0].content.parts[0].text
+
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
+  Logger.info(f"Received response from the Model [{response_text}]")
+
+  return response_text
