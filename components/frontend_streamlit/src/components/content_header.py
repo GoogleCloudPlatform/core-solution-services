@@ -16,7 +16,7 @@
 Main page top content, includes logo img and select boxes
 """
 
-from api import get_all_chat_llm_types, get_all_routing_agent_types
+from api import get_all_chat_llm_types, get_all_routing_agents
 from pathlib import Path
 import streamlit as st
 import validators
@@ -56,7 +56,8 @@ def add_logo(logo_path):
 def landing_header():
   st.markdown(top_content_styles, unsafe_allow_html=True)
 
-  routing_agent_types = get_all_routing_agent_types()
+  routing_agents = get_all_routing_agents()
+  routing_agent_names = [agent.name for agent in routing_agents]
 
   img, chat_mode = st.columns([6, 1.7])
   with img:
@@ -77,7 +78,7 @@ def landing_header():
 def chat_header():
   st.markdown(top_content_styles, unsafe_allow_html=True)
 
-  routing_agent_types = get_all_routing_agent_types()
+  routing_agent_types = get_all_routing_agents()
 
   chat_llm_types = get_all_chat_llm_types()
 

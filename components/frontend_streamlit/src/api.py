@@ -178,7 +178,7 @@ def get_agents(auth_token=None) -> List[Agent]:
     agent_list.append(Agent.find_by_name(agent_name))
   return agent_list
 
-def get_all_routing_agent_types(auth_token=None) -> List[Agent]:
+def get_all_routing_agents(auth_token=None) -> List[Agent]:
   """
   Return list of Routing Agent models from LLM Service
   """

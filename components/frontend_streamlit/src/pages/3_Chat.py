@@ -21,7 +21,7 @@ from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
     run_agent_execute_plan, get_all_chat_llm_types,
-    get_all_routing_agent_types, run_agent_plan, run_chat)
+    get_all_routing_agents, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
 from components.content_header import chat_header
 from styles.pages.chat_markup import chat_theme
@@ -41,10 +41,11 @@ def on_submit(user_input):
   with st.spinner("Loading..."):
     # Send API to llm-service
     default_route = st.session_state.get("default_route", None)
-    routing_agent_types = get_all_routing_agent_types()
+    routing_agents = get_all_routing_agents()
+    routing_agent_names = [agent.name for agent in routing_agents]
     if default_route is None or default_route == "Auto":
       # pick the first routing agent as default
-      if routing_agent_types:
+      if routing_agent_names:
         routing_agent = routing_agent_types[0]
       else:
         routing_agent = "default"
