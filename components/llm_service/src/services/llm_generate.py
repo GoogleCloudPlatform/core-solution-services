@@ -20,7 +20,7 @@ from typing import Optional
 from fastapi import UploadFile
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-from vertexai.preview.generative_models import GenerativeModel
+from vertexai.preview.generative_models import GenerativeModel, Image
 from vertexai.preview.generative_models import (
     HarmCategory,
     HarmBlockThreshold)
@@ -420,47 +420,72 @@ async def google_llm_predict_multi(user_file: UploadFile, prompt: str,
   Logger.debug(f"user_file=[{user_file.filename}].")
   Logger.debug(f"prompt=[{prompt}].")
 
+  # Get file data and package in Gemini Image class
+  user_file_bytes = user_file.read()
+  user_file_image = Image.from_bytes(user_file_bytes)
+
+  # TODO: Consider images in chat
+  prompt_list = []
+  if user_chat is not None:
+    history = user_chat.history
+    for entry in history:
+      content = UserChat.entry_content(entry)
+      if UserChat.is_human(entry):
+        prompt_list.append(f"Human input: {content}")
+      elif UserChat.is_ai(entry):
+        prompt_list.append(f"AI response: {content}")
+  prompt_list.append(prompt)
+  context_prompt = prompt.join("\n\n")
+
+  # Get model params. If params are set at the model level
+  # use those else use global vertex params.
+  parameters = {}
+  provider_config = get_provider_model_config(PROVIDER_VERTEX)
+  for _, model_config in provider_config.items():
+    model_name = model_config.get(KEY_MODEL_NAME)
+    if model_name == google_llm and KEY_MODEL_PARAMS in model_config:
+      parameters = model_config.get(KEY_MODEL_PARAMS)
+  else:
+    parameters = get_provider_value(PROVIDER_VERTEX,
+        KEY_MODEL_PARAMS)
+
   try:
-    # TODO: Implement a real request
-    response = {
-      "candidates": [
-        {
-          "content": {
-            "role": "model",
-            "parts": [
-              {
-                "text": f"The file {user_file.filename} shows a foobar."
-              }
-            ]
-          },
-          "finishReason": "STOP",
-          "safetyRatings": [
-            {
-              "category": "HARM_CATEGORY_HARASSMENT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_HATE_SPEECH",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              "probability": "NEGLIGIBLE"
-            },
-            {
-              "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-              "probability": "NEGLIGIBLE"
-            }
-          ]
-        }
-      ],
-      "usageMetadata": {
-        "promptTokenCount": 123,
-        "candidatesTokenCount": 123,
-        "totalTokenCount": 123
-      }
-    }
-    response_text = response['candidates'][0]['content']['parts'][0]['text']
+    if is_chat:
+      # gemini uses new "GenerativeModel" class and requires different params
+      if "gemini" in google_llm:
+        chat_model = GenerativeModel(google_llm)
+        chat = chat_model.start_chat()
+        context_list = [user_file_image, context_prompt]
+        safety_settings = [
+             SafetySetting(
+                 category=HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                 threshold=HarmBlockThreshold.BLOCK_NONE,
+             ),
+             SafetySetting(
+                 category=HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                 threshold=HarmBlockThreshold.BLOCK_NONE,
+             ),
+             SafetySetting(
+                 category=HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                 threshold=HarmBlockThreshold.BLOCK_NONE,
+             ),
+             SafetySetting(
+                 category=HarmCategory.HARM_CATEGORY_HARASSMENT,
+                 threshold=HarmBlockThreshold.BLOCK_NONE,
+             ),
+        ]
+        response = await chat.send_message_async(context_list,
+            generation_config=parameters, safety_settings=safety_settings)
+      else:
+        chat_model = ChatModel.from_pretrained(google_llm)
+        chat = chat_model.start_chat()
+        response = await chat.send_message_async(context_prompt, **parameters)
+    else:
+      text_model = TextGenerationModel.from_pretrained(google_llm)
+      response = await text_model.predict_async(
+          context_prompt,
+          **parameters,
+      )
 
   except Exception as e:
     raise InternalServerError(str(e)) from e

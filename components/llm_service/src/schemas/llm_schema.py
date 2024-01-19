@@ -14,7 +14,7 @@
 """
 Pydantic Model for LLM API's
 """
-from typing import List, Optional, Annotated
+from typing import List, Optional
 from pydantic import BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      LLM_MULTI_GENERATE_EXAMPLE,
@@ -117,9 +117,9 @@ class LLMGenerateModel(BaseModel):
     }
 
 class LLMMultiGenerateModel(BaseModel):
-  """LLM Multi Generate request model"""
+  """LLM Multi Generate request model. Not currently in use"""
   prompt: str = Form(...),
-  llm_type: str = Form(...)
+  llm_type: Optional[str] = Form(None)
 
   class Config():
     orm_mode = True
