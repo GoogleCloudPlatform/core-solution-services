@@ -118,9 +118,8 @@ class LLMGenerateModel(BaseModel):
 
 class LLMMultiGenerateModel(BaseModel):
   """LLM Multi Generate request model"""
-  user_file: Annotated[UploadFile, File()]
-  prompt: Annotated[str, Form()]
-  llm_type: Annotated[Optional[str], Form()] = None
+  prompt: str = Form(...),
+  llm_type: str = Form(...)
 
   class Config():
     orm_mode = True

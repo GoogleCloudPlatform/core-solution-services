@@ -15,7 +15,8 @@
 # pylint: disable = broad-except
 
 """ LLM endpoints """
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File, Form
+from typing import List, Optional
 
 from common.utils.errors import (PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
@@ -155,7 +156,9 @@ async def generate(gen_config: LLMGenerateModel):
     "/generate/multi",
     name="Generate text with a multimodal LLM",
     response_model=LLMGenerateResponse)
-async def generate_multi(gen_config: LLMMultiGenerateModel):
+async def generate_multi(prompt: str = Form(...), 
+                        llm_type: Optional[str] = Form(None), 
+                        user_file: UploadFile = File(...)):
   """
   Generate text with a multimodal LLM
 
@@ -167,10 +170,10 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
   Returns:
       LLMMultiGenerateResponse
   """
-  genconfig_dict = {**gen_config.dict()}
+  # genconfig_dict = {**data.dict()}
 
-  user_file = genconfig_dict.get("user_file")
-  prompt = genconfig_dict.get("prompt")
+  # user_file = genconfig_dict.get("user_file")
+  # prompt = genconfig_dict.get("prompt")
   if user_file is None or user_file == "" or prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
 
@@ -178,7 +181,7 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
     return PayloadTooLargeError(
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
-  llm_type = genconfig_dict.get("llm_type")
+  # llm_type = genconfig_dict.get("llm_type")
 
   try:
     result = await llm_generate_multi(user_file, prompt, llm_type)

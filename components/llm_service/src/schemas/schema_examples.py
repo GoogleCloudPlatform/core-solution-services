@@ -22,8 +22,7 @@ LLM_GENERATE_EXAMPLE = {
 
 LLM_MULTI_GENERATE_EXAMPLE = {
   "llm_type": "",
-  "prompt": "",
-  "user_file": "",
+  "prompt": ""
 }
 
 LLM_EMBEDDINGS_EXAMPLE = {
