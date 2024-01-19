@@ -100,6 +100,13 @@ TEST_VERTEX_CONFIG = {
     KEY_IS_CHAT: False,
     KEY_ENABLED: True,
     KEY_MODEL_NAME: "text-bison@002"
+  },
+  VERTEX_LLM_TYPE_GEMINI_PRO: {
+    KEY_PROVIDER: PROVIDER_VERTEX,
+    KEY_IS_CHAT: True,
+    KEY_IS_MULTI: False,
+    KEY_ENABLED: True,
+    KEY_MODEL_NAME: "gemini-pro"
   }
 }
 

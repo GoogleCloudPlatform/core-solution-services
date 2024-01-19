@@ -53,6 +53,7 @@ with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
                           VERTEX_LLM_TYPE_BISON_CHAT,
+                          VERTEX_LLM_TYPE_GEMINI_PRO,
                           PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
                           PROVIDER_TRUSS,
                           PROVIDER_MODEL_GARDEN,
@@ -67,6 +68,7 @@ FAKE_TRUSS_RESPONSE = {
   "data": {"generated_text": FAKE_GENERATE_RESPONSE}
 }
 
+FAKE_USER_FILE = {"filename": "test.png"}
 FAKE_PROMPT = "test prompt"
 
 
@@ -131,6 +133,21 @@ async def test_llm_generate_google(clean_firestore):
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate(
       FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_TEXT)
+
+  assert response == FAKE_GENERATE_RESPONSE
+
+
+@pytest.mark.asyncio
+async def test_llm_generate_multi(clean_firestore):
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
+  with mock.patch(
+      "vertexai.preview.language_models.TextGenerationModel.predict_async",
+          return_value=FAKE_GOOGLE_RESPONSE):
+    response = await llm_generate_multi(
+      FAKE_USER_FILE, FAKE_PROMPT, VERTEX_LLM_TYPE_GEMINI_PRO)
 
   assert response == FAKE_GENERATE_RESPONSE
 
