@@ -17,7 +17,7 @@ Main styles for the landing page
 """
 
 import streamlit as st
-from styles.style_constants import colors
+from styles.style_constants import colors, decoration
 from styles.shared_styles import main_styles
 
 def landing_theme():
@@ -69,6 +69,7 @@ def landing_theme():
       [data-testid="textInputRootElement"] input {{
         color: {colors['input_text']};
         -webkit-text-fill-color: {colors['input_text']};
+        caret-color: {colors['input_text']};
       }}
 
       /* Input button styling */
@@ -86,6 +87,34 @@ def landing_theme():
         content: "➤";
         font-size: 26px;
         transition: color 0.2s ease-in;
+      }}
+
+      /* Expander styling */
+      .main [data-testid="stExpander"] details {{
+        border-color: {colors['light_fill']};
+        border-radius: {decoration['border_radius']};
+        background-color: {colors['light_fill']};
+        color: {colors['dim_text']};
+      }}
+      .main [data-testid="stExpander"] [data-testid="stText"] {{
+        font-family: Arial;
+        text-wrap: wrap;
+      }}
+      .main [data-testid="stExpander"] p {{
+        font-family: Arial;
+      }}
+      .main [data-testid="stExpander"] summary:hover {{
+        color: #3b3a3a;
+      }}
+      .main [data-testid="stExpander"] summary svg {{
+        display: none;
+      }}
+      .main [data-testid="stExpander"] summary p {{
+        font-weight: 600;
+        font-size: .96rem;
+      }}
+      .main [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
+        gap: 1rem !important;
       }}
 
       /* Smartphones and small devices */
