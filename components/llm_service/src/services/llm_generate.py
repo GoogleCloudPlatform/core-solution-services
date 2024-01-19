@@ -96,7 +96,8 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-async def llm_generate_multi(user_file: UploadFile, prompt: str, llm_type: str) -> str:
+async def llm_generate_multi(user_file: UploadFile, prompt: str,
+                            llm_type: str) -> str:
   """
   Generate text with an LLM given a file and a prompt.
   Args:
@@ -106,8 +107,9 @@ async def llm_generate_multi(user_file: UploadFile, prompt: str, llm_type: str) 
   Returns:
     the text response: str
   """
-  Logger.info(f"Generating text with an LLM given an image={user_file.filename},"
-              f" prompt={prompt}, llm_type={llm_type}")
+  Logger.info(f"Generating text with an LLM given an"
+              f" image={user_file.filename}, prompt={prompt},"
+              f" llm_type={llm_type}")
   # default to openai LLM
   if llm_type is None:
     llm_type = DEFAULT_MULTI_LLM_TYPE
@@ -121,7 +123,8 @@ async def llm_generate_multi(user_file: UploadFile, prompt: str, llm_type: str) 
     if llm_type in get_provider_models(PROVIDER_VERTEX):
       is_chat = llm_type in chat_llm_types
       is_multi = llm_type in multi_llm_types
-      response = await google_multi_llm_predict(user_file, prompt, is_chat, is_multi, llm_type)
+      response = await google_multi_llm_predict(user_file, prompt, 
+                                                is_chat, is_multi, llm_type)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -396,8 +399,9 @@ async def google_llm_predict(prompt: str, is_chat: bool,
 
   return response
 
-async def google_multi_llm_predict(user_file: UploadFile, prompt: str, is_chat: bool, is_multi: bool,
-                             google_llm: str, user_chat=None) -> str:
+async def google_multi_llm_predict(user_file: UploadFile, prompt: str,
+                                  is_chat: bool, is_multi: bool, 
+                                  google_llm: str, user_chat=None) -> str:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
@@ -410,8 +414,9 @@ async def google_multi_llm_predict(user_file: UploadFile, prompt: str, is_chat: 
   Returns:
     the text response.
   """
-  Logger.info(f"Generating text with a Google multimodal LLM given a file and a prompt,"
-              f" is_chat=[{is_chat}], is_multi=[{is_multi}], google_llm=[{google_llm}]")
+  Logger.info(f"Generating text with a Google multimodal LLM given a"
+              f" file and a prompt, is_chat=[{is_chat}],"
+              f" is_multi=[{is_multi}], google_llm=[{google_llm}]")
   Logger.debug(f"user_file=[{user_file.filename}].")
   Logger.debug(f"prompt=[{prompt}].")
 
@@ -424,7 +429,7 @@ async def google_multi_llm_predict(user_file: UploadFile, prompt: str, is_chat: 
             "role": "model",
             "parts": [
               {
-                "text": f"The file {user_file.filename} shows a foo doing bar in a way that only a foo could bar."
+                "text": f"The file {user_file.filename} shows a foobar."
               }
             ]
           },

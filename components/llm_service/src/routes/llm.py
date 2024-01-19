@@ -161,7 +161,8 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
 
   Args:
       gen_config: Input config dictionary,
-        including user_file(UploadFile) prompt(str) and llm_type(str) type for model
+        including user_file(UploadFile) prompt(str) 
+        and llm_type(str) type for model
 
   Returns:
       LLMMultiGenerateResponse

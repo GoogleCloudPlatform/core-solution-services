@@ -27,7 +27,7 @@ os.environ["COHERE_API_KEY"] = "fake-key"
 os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
 os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 
-from services.llm_generate import llm_generate, llm_chat
+from services.llm_generate import llm_generate, llm_chat, llm_generate_multi
 from google.cloud.aiplatform.models import Prediction
 from vertexai.preview.language_models import TextGenerationResponse
 from common.models import User, UserChat
