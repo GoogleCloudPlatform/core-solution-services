@@ -173,7 +173,8 @@ def get_agents(auth_token=None) -> List[Agent]:
 
   # load agent models based on response
   agent_list = []
-  for agent_name in resp_dict.get("data"):
+  agent_config = get_response_json(resp_dict.get("data"))
+  for agent_name, _ in agent_config.items():
     agent_list.append(Agent.find_by_name(agent_name))
   return agent_list
 
@@ -184,7 +185,7 @@ def get_all_routing_agent_types(auth_token=None) -> List[Agent]:
   if not auth_token:
     auth_token = get_auth_token()
 
-  api_url = f"{LLM_SERVICE_API_URL}/agent/types/route"
+  api_url = f"{LLM_SERVICE_API_URL}/agent/route"
   Logger.info(f"api_url={api_url}")
 
   resp = api_request("GET", api_url, auth_token)
@@ -192,7 +193,8 @@ def get_all_routing_agent_types(auth_token=None) -> List[Agent]:
 
   # load agent models based on response
   agent_list = []
-  for agent_name in resp_dict.get("data"):
+  agent_config = get_response_json(resp_dict.get("data"))
+  for agent_name, _ in agent_config.items():
     agent_list.append(Agent.find_by_name(agent_name))
   return agent_list
 

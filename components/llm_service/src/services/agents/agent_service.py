@@ -67,24 +67,13 @@ def get_task_agent_config() -> dict:
   }
   return planning_agents
 
-def get_all_agents() -> List[dict]:
+def get_all_agents() -> dict:
   """
-  Return list of available agents, where each agent is represented
-  as a dict of:
-    agent_name: {"llm_type": <llm_type>, "capabilities": <capabilities>}
+  Return config dict for available agents
   """
   agent_config = get_agent_config()
   agent_config.update(get_plan_agent_config())
-  agent_list = [
-    {
-      agent: {
-        "llm_type": values["llm_type"],
-        "capabilities": values["capabilities"],
-      }
-    }
-    for agent, values in agent_config.items()
-  ]
-  return agent_list
+  return agent_config
 
 
 async def run_agent(agent_name:str,

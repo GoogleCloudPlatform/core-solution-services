@@ -26,7 +26,8 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
 from schemas.agent_schema import (LLMAgentRunResponse,
                                  LLMAgentRunModel,
-                                 LLMAgentGetAllResponse)
+                                 LLMAgentGetAllResponse,
+                                 LLMAgentGetTypeResponse)
 from services.agents.agent_service import (get_all_agents, run_agent)
 from services.agents.agents import BaseAgent
 from services.agents.routing_agent import run_routing_agent
@@ -47,37 +48,49 @@ def get_agents():
   Returns:
       LLMGetAgentResponse
   """
-  agents = get_all_agents()
+  agent_config = get_all_agents()
+
+  # convert config vals to str
+  agent_config = {
+    agent: {k:str(v) for k,v in ac.items()}
+    for agent,ac in agent_config.items()
+  }
 
   try:
     return {
       "success": True,
       "message": "Successfully retrieved agents",
-      "data": agents
+      "data": agent_config
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
 @router.get(
-    "types/{agent_type}",
+    "/{agent_type}",
     name="Get all Agents of a specific type",
-    response_model=LLMAgentGetAllResponse)
+    response_model=LLMAgentGetTypeResponse)
 def get_agent_types(agent_type: str):
   """
   Get all agents of a specific agent type (which corresponds
   to "agent capability")
 
   Returns:
-      LLMGetAgentResponse
+      LLMAgentGetTypeResponse
   """
   agent_type = agent_type.lower().capitalize()
-  agents = BaseAgent.get_agents_by_capability(agent_type)
+  agent_config = BaseAgent.get_agents_by_capability(agent_type)
+
+  # convert config vals to str
+  agent_config = {
+    agent: {k:str(v) for k,v in ac.items()}
+    for agent,ac in agent_config.items()
+  }
 
   try:
     return {
       "success": True,
       "message": "Successfully retrieved agents",
-      "data": agents
+      "data": agent_config
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e

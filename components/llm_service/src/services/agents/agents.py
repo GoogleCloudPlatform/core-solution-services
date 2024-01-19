@@ -209,16 +209,18 @@ class BaseAgent(ABC):
   @classmethod
   def get_agents_by_capability(cls, capability: str) -> List[str]:
     """
-    Return the names of agents that support a specified capability
+    Return config dicts for agents that support a specified capability
     """
     agent_config = get_agent_config()
-    agent_list = []
+    agent_capability_config = {}
     for agent_name, agent_config in agent_config.items():
-      agent_class = agent_config.get["agent_class"]
-      capabilities = [ac.value for ac in agent_class.capabilities]
+      agent_class = agent_config.get("agent_class", None)
+      if agent_class is None:
+        raise RuntimeError(f"agent class not set for agent {agent_name}")
+      capabilities = [ac.value for ac in agent_class.capabilities()]
       if capability in capabilities:
-        agent_list.append(agent_name)
-    return agent_list
+        agent_capability_config.update({agent_name: agent_config})
+    return agent_capability_config
 
 
 class ChatAgent(BaseAgent):
