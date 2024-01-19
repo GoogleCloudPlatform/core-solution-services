@@ -82,6 +82,22 @@ class Agent(BaseModel):
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
 
+  @classmethod
+  def find_by_name(cls, name):
+    """
+    Fetch agent by name
+
+    Args:
+        name (str): Agent name
+
+    Returns:
+        Agent or None if not found
+
+    """
+    object = cls.collection.filter(
+        "name", "==", name).get()
+    return object
+
 
 class UserPlan(BaseModel):
   """
