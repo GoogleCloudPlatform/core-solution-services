@@ -64,7 +64,7 @@ def landing_header():
     add_logo("../assets/rit_logo.png")
 
   with chat_mode:
-    chat_modes = routing_agent_types + ["Chat", "Plan", "Query"]
+    chat_modes = routing_agent_names + ["Chat", "Plan", "Query"]
     selected_chat = st.selectbox(
         "Chat Mode", chat_modes)
     st.session_state.default_route = selected_chat
@@ -78,7 +78,8 @@ def landing_header():
 def chat_header():
   st.markdown(top_content_styles, unsafe_allow_html=True)
 
-  routing_agent_types = get_all_routing_agents()
+  routing_agents = get_all_routing_agents()
+  routing_agent_names = [agent.name for agent in routing_agents]
 
   chat_llm_types = get_all_chat_llm_types()
 
@@ -90,7 +91,7 @@ def chat_header():
         "Model", chat_llm_types)
     st.session_state.chat_llm_type = selected_model
   with chat_mode:
-    chat_modes = routing_agent_types + ["Chat", "Plan", "Query"]
+    chat_modes = routing_agent_names + ["Chat", "Plan", "Query"]
     selected_chat = st.selectbox(
         "Chat Mode", chat_modes)
 

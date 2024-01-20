@@ -46,7 +46,7 @@ def on_submit(user_input):
     if default_route is None or default_route == "Auto":
       # pick the first routing agent as default
       if routing_agent_names:
-        routing_agent = routing_agent_types[0]
+        routing_agent = routing_agent_names[0]
       else:
         routing_agent = "default"
       response = run_dispatch(user_input,
@@ -55,7 +55,7 @@ def on_submit(user_input):
                               llm_type=st.session_state.get("chat_llm_type"))
       st.session_state.default_route = response.get("route", None)
 
-    elif default_route in routing_agent_types:
+    elif default_route in routing_agent_names:
       response = run_dispatch(user_input,
                               default_route,
                               chat_id=st.session_state.get("chat_id"),
