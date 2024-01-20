@@ -39,7 +39,7 @@ async def run_routing_agent(prompt: str,
   input.  Then execute that route.
   Args:
     prompt: user prompt
-    agent_name: routing agent name
+    agent_name: routing agent name.  "default": use the first routing agent
     user: User model for user making request
     user_chat: optional existing user chat object for previous chat history
   Returns:
@@ -182,7 +182,8 @@ async def run_intent(
 
   Args:
       prompt(str): the user input prompt
-      agent_name(str): the name of the routing agent
+      agent_name(str): the name of the routing agent, or "default" to
+                       use the first in the list
       chat_history(List): any previous chat history for context
 
   Returns:
@@ -193,6 +194,13 @@ async def run_intent(
   Logger.info(f"Running dispatch "
               f"with prompt=[{prompt}] and "
               f"chat_history=[{chat_history}]")
+
+  # check for default routing agent
+  if agent_name == "default":
+    routing_agents = BaseAgent.get_agents_by_capability(
+      AgentCapability.AGENT_ROUTE_CAPABILITY.value
+    )
+    agent_name = routing_agents.keys()[0]
 
   llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
