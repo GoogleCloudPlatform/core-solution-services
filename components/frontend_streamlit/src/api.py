@@ -175,7 +175,11 @@ def get_agents(auth_token=None) -> List[Agent]:
   agent_list = []
   agent_config = resp_dict.get("data")
   for agent_name, _ in agent_config.items():
-    agent_list.append(Agent.find_by_name(agent_name))
+    agent = Agent.find_by_name(agent_name)
+    if agent:
+      agent_list.append(agent)
+    else:
+      Logger.error(f"can't find agent {agent_name}")
   return agent_list
 
 def get_all_routing_agents(auth_token=None) -> List[Agent]:
@@ -195,7 +199,11 @@ def get_all_routing_agents(auth_token=None) -> List[Agent]:
   agent_list = []
   agent_config = resp_dict.get("data")
   for agent_name, _ in agent_config.items():
-    agent_list.append(Agent.find_by_name(agent_name))
+    agent = Agent.find_by_name(agent_name)
+    if agent:
+      agent_list.append(agent)
+    else:
+      Logger.error(f"can't find agent {agent_name}")
   return agent_list
 
 def run_dispatch(prompt: str, agent_name: str, chat_id: str = None,
