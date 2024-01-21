@@ -15,7 +15,7 @@
 Base class for Node items
 """
 import sys
-from common.models import BaseModel
+from common.models import BaseModel, NodeItem
 from fireo.fields import TextField, NumberField, MapField
 
 class UserEvent(NodeItem):
