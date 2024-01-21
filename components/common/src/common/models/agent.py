@@ -50,7 +50,7 @@ class Agent(BaseModel):
   user_id = TextField(required=False)
   agent_type = TextField(required=True)
   llm_type = TextField(required=True)
-  capabilities = ListField()
+  capabilities = ListField(required=True)
   tools = ListField()
 
   class Meta:
@@ -94,9 +94,9 @@ class Agent(BaseModel):
         Agent or None if not found
 
     """
-    object = cls.collection.filter(
+    obj = cls.collection.filter(
         "name", "==", name).get()
-    return object
+    return obj
 
 
 class UserPlan(BaseModel):
