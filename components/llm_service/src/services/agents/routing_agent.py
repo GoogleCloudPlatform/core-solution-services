@@ -255,7 +255,8 @@ async def run_intent(
   }
 
   Logger.info("Running agent executor to get best matched route.... ")
-  output, agent_logs = await agent_executor_arun_with_logs(agent_executor, agent_inputs)
+  output, agent_logs = await agent_executor_arun_with_logs(
+      agent_executor, agent_inputs)
 
   Logger.info(f"Agent {agent_name} generated output=[{output}]")
   Logger.info(f"run_intent - agent_logs: \n{agent_logs}")

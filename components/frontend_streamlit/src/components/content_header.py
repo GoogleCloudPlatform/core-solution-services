@@ -90,7 +90,7 @@ def chat_header():
     selected_model = st.selectbox(
         "Model", chat_llm_types)
     st.session_state.chat_llm_type = selected_model
-  
+
   chat_modes = routing_agent_names + ["Chat", "Plan", "Query"]
   chat_mode_index = 0
   if st.session_state.default_route:
@@ -100,7 +100,7 @@ def chat_header():
       chat_mode_index += 1
     if chat_mode_index >= len(chat_modes):
       chat_mode_index = 0
-      
+
   with chat_mode:
     selected_chat = st.selectbox(
         "Chat Mode", chat_modes, index=chat_mode_index)
