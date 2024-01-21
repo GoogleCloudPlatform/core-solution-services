@@ -161,9 +161,9 @@ class BaseAgent(ABC):
           "name", "in", agent_qe_names).fetch()
 
     tagged_query_engines = QueryEngine.collection.filter(
-        agent_name, "in", "agents"
+        "agents", "array_contains", agent_name
     ).fetch()
-    tagged_query_engines = tagged_query_engines or []
+    tagged_query_engines = list(tagged_query_engines) or []
 
     query_engines = agent_query_engines + tagged_query_engines
     return query_engines
