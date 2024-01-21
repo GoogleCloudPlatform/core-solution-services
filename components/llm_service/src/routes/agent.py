@@ -136,7 +136,8 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
   user_chat.save()
 
   # execute routing agent
-  route, response_data = await run_routing_agent(prompt, agent_name, user, user_chat)
+  route, response_data = await run_routing_agent(
+      prompt, agent_name, user, user_chat)
 
   return {
     "success": True,
