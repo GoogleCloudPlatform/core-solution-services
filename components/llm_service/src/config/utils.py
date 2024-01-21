@@ -38,6 +38,9 @@ def get_dataset_config() -> dict:
   return DATASETS
 
 def load_agent_config(agent_config_path: str):
+  """
+  Load and validate agent config
+  """
   global AGENTS
   try:
     agent_config = load_config_json(agent_config_path)
@@ -49,6 +52,7 @@ def load_agent_config(agent_config_path: str):
       k:klass for (k, klass) in inspect.getmembers(agents)
       if isinstance(klass, type)
     }
+    # update agent config dict for each agent
     for values in agent_config.values():
       agent_class_val = values["agent_class"]
       agent_class = agent_classes.get(agent_class_val)
@@ -57,13 +61,9 @@ def load_agent_config(agent_config_path: str):
       values["agent_class"] = agent_class
       values["capabilities"] = [c.value for c in agent_class.capabilities()]
 
-    # update agent config dict for each agent, and update Agent data models
+    # validate config according to Agent model
+    # for each agent, save or update model according to config
     for agent_name, ac_dict in agent_config.items():
-      agent_class = agent_classes.get(ac_dict["agent_class"])
-      ac_dict["agent_class"] = agent_class
-      ac_dict["capabilities"] = [c.value for c in agent_class.capabilities()]
-
-      # save Agent model for each agent, or update existing model if present
       agent_model = Agent.find_by_name(agent_name)
       if not agent_model:
         agent_model = Agent()
