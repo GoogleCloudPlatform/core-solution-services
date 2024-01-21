@@ -26,6 +26,7 @@ from services.agents.agent_service import (
     parse_action_output,
     parse_plan_step,
     run_agent)
+from services.agents.utils import agent_executor_arun_with_logs
 from services.query.query_service import query_generate
 
 Logger = Logger.get_logger(__file__)
@@ -202,11 +203,13 @@ async def run_intent(
     )
     agent_name = routing_agents.keys()[0]
 
+  # get llm service routing agent
   llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
+  # load corresponding langchain agent and instantiate agent_executor
   langchain_agent = llm_service_agent.load_langchain_agent()
   agent_executor = AgentExecutor.from_agent_and_tools(
-      agent=langchain_agent, tools=[])
+      agent=langchain_agent, tools=llm_service_agent.get_tools())
 
   intent_list_str = ""
   intent_list = [
@@ -235,8 +238,8 @@ async def run_intent(
     description = ds_config["description"]
     intent_list_str += \
       f"- [{AgentCapability.AGENT_DATABASE_CAPABILITY.value}:{ds_name}]" \
-      f" to run a query against a database for data related to " \
-      f"these areas: {description} \n"
+      f" to use SQL to retrieve rows of data from a database for data " \
+      f"related to these areas: {description} \n"
 
   dispatch_prompt = f"""
     The AI Routing Assistant has access to the following routes for a user prompt:
@@ -251,10 +254,9 @@ async def run_intent(
   }
 
   Logger.info("Running agent executor to get best matched route.... ")
-  output = agent_executor.run(agent_inputs)
-  Logger.info(f"Agent {agent_name} generated output=[{output}]")
+  output, agent_logs = await agent_executor_arun_with_logs(agent_executor, agent_inputs)
 
-  agent_logs = output
+  Logger.info(f"Agent {agent_name} generated output=[{output}]")
   Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
 
   routes = parse_action_output("Route:", output) or []
