@@ -95,7 +95,9 @@ class Agent(BaseModel):
 
     """
     obj = cls.collection.filter(
-        "name", "==", name).get()
+        "name", "==", name).filter(
+        "deleted_at_timestamp", "==",
+        None).get()
     return obj
 
 
