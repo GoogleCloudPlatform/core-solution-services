@@ -177,6 +177,7 @@ def calendar_tool(date: str) -> str:
   """
   Create and update meetings using Google Calendar
   """
+  # TODO: implement this tool
   print("[calendar_tool] calendar tool called:" + date)
   return ""
 
@@ -185,11 +186,12 @@ def search_tool(query: str) -> str:
   """
   Perform an internet search.
   """
+  # TODO: implement this tool
   print("[search_tool] search tool called: " + query)
   return ""
 
 @agent_tool(infer_schema=True)
-def query_tool(query: str, query_engine: str) -> Dict:
+def query_tool(query: str) -> Dict:
   """
   Perform a query and craft an answer using one of the available query engines,
   with the name passed in as a argument.
