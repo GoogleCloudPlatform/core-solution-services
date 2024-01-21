@@ -27,7 +27,7 @@ from langchain.agents.structured_chat.prompt \
     import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from langchain.schema import AgentAction, AgentFinish
-from config.utils import get_dataset_config, get_agent_config
+from config.utils import get_dataset_config, get_agent_config, get_config_list
 from common.models import QueryEngine
 from common.models.agent import AgentCapability
 from common.utils.errors import ResourceNotFoundException
@@ -102,8 +102,7 @@ class BaseAgent(ABC):
     if tool_config == "ALL":
       agent_tools = list(agent_tool_registry.values())
     else:
-      tool_config_list = tool_config.split(",")
-      tool_config_list = [t.strip() for t in tool_config_list]
+      tool_config_list = get_config_list(tool_config)
       agent_tools = [tool for tool_name, tool in agent_tool_registry.items()
                      if tool_name in tool_config_list]
     return agent_tools
@@ -155,8 +154,7 @@ class BaseAgent(ABC):
     agent_query_engines = []
 
     if "query_engines" in agent_config:
-      agent_qe_names = agent_config["query_engines"].split(",")
-      agent_qe_names = [qe.strip() for qe in agent_qe_names]
+      agent_qe_names = get_config_list(agent_config["query_engines"])
       if "ALL" in agent_qe_names:
         agent_query_engines = QueryEngine.fetch_all()
       else:
@@ -180,8 +178,7 @@ class BaseAgent(ABC):
     agent_datasets = {}
     agent_dataset_names = []
     if "datasets" in agent_config:
-      agent_dataset_names = agent_config["datasets"].split(",")
-      agent_dataset_names = [ds.strip() for ds in agent_dataset_names]
+      agent_dataset_names = get_config_list(agent_config["datasets"])
     datasets = get_dataset_config()
     agent_datasets = {
       ds_name: ds_config for ds_name, ds_config in datasets.items()

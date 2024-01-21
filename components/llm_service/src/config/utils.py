@@ -61,6 +61,13 @@ def get_agent_config() -> dict:
     load_agent_config(AGENT_CONFIG_PATH)
   return AGENTS
 
+def get_config_list(config_str: str) -> List[str]:
+  """ get a list of items from config """
+  if config_str is None:
+    return []
+  config_list = config_str.split(",")
+  config_list = [s.strip() for s in config_list]
+  return config_list
 
 def load_config_json(file_path: str):
   """ load a config JSON file """
