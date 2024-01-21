@@ -253,17 +253,17 @@ class BaseModel(Model):
       field_attribute = field.field_attribute
       try:
         field_attribute.parse(val, ignore_required=False, ignore_default=False,
-                              run_only=False)
+                              run_only=None)
       except RequiredField as e:
         valid = False
-        errors.append(str(e))
+        errors.append(f"field '{field_name}': {str(e)}")
       except UnSupportedAttribute as e:
         valid = False
-        errors.append(str(e))
+        errors.append(f"field '{field_name}': {str(e)}")
       except FieldValidationFailed as e:
         valid = False
-        errors.append(str(e))
+        errors.append(f"field '{field_name}': {str(e)}")
       except ValidatorNotCallable as e:
         valid = False
-        errors.append(str(e))
+        errors.append(f"field '{field_name}': {str(e)}")
     return valid, errors
