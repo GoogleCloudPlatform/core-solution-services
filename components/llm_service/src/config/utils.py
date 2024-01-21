@@ -20,6 +20,8 @@
 
 import inspect
 import json
+from typing import List
+from common.models import Agent
 from config.config import (AGENT_DATASET_CONFIG_PATH,
                            AGENT_CONFIG_PATH,
                            get_model_config)
@@ -51,6 +53,23 @@ def load_agent_config(agent_config_path: str):
       agent_class = agent_classes.get(values["agent_class"])
       values["agent_class"] = agent_class
       values["capabilities"] = [c.value for c in agent_class.capabilities()]
+
+    # update agent config dict for each agent, and update Agent data models
+    for agent_name, ac_dict in agent_config.items():
+      agent_class = agent_classes.get(ac_dict["agent_class"])
+      ac_dict["agent_class"] = agent_class
+      ac_dict["capabilities"] = [c.value for c in agent_class.capabilities()]
+
+      # save Agent model for each agent, or update existing model if present
+      agent_model = Agent.find_by_name(agent_name)
+      if not agent_model:
+        agent_model = Agent()
+      agent_model.name = agent_name
+      agent_model.tools = get_config_list(ac_dict.get("tools"))
+      agent_model.llm_type = ac_dict.get("llm_type")
+      agent_model.capabilities = ac_dict["capabilities"]
+      agent_model.agent_type = ac_dict.get("agent_type")
+      agent_model.save(merge=True)
 
     AGENTS = agent_config
   except Exception as e:
