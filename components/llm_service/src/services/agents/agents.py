@@ -108,7 +108,7 @@ class BaseAgent(ABC):
     return agent_tools
 
   @classmethod
-  def load_llm_service_agent(cls, agent_name: str):
+  def get_llm_service_agent(cls, agent_name: str):
     agent_config = get_agent_config()[agent_name]
     llm_service_agent = agent_config["agent_class"](
         agent_config["llm_type"],

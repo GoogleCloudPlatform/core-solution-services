@@ -94,7 +94,7 @@ async def run_agent(agent_name:str,
   Logger.info(f"Running {agent_name} agent "
               f"with prompt=[{prompt}] and "
               f"chat_history=[{chat_history}]")
-  llm_service_agent = BaseAgent.load_llm_service_agent(agent_name)
+  llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
   tools = llm_service_agent.get_tools()
   tools_str = ", ".join(tool.name for tool in tools)
@@ -222,7 +222,7 @@ async def agent_execute_plan(
   """
   Logger.info(f"Running {agent_name} agent "
               f"user_plan=[{user_plan}]")
-  llm_service_agent = BaseAgent.load_llm_service_agent(agent_name)
+  llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
   langchain_agent = llm_service_agent.load_langchain_agent()
 
   tools = llm_service_agent.get_tools()
