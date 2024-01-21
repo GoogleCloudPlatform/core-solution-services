@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from typing import Union, Type, Callable, List, Optional
 
 from langchain.agents import Agent as LangchainAgent
-from langchain.agents import AgentOutputParser
+from langchain.agents import AgentOutputParser, ConversationalAgent
 from langchain.agents.structured_chat.base import StructuredChatAgent
 from langchain.agents.structured_chat.output_parser \
     import StructuredChatOutputParserWithRetries
@@ -226,7 +226,7 @@ class ChatAgent(BaseAgent):
   """
   def __init__(self, llm_type: str, name: str):
     super().__init__(llm_type, name)
-    self.agent_class = StructuredChatAgent
+    self.agent_class = ConversationalAgent
 
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
