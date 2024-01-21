@@ -20,6 +20,10 @@ from common.utils.errors import ResourceNotFoundException
 from fireo.fields import (TextField, NumberField, MapField,
                           ListField, BooleanField)
 
+# Define custom user types as a list below.
+# TODO: Clean up unused user types.
+USER_TYPES = ["user", "learner", "faculty", "assessor", "admin", "coach",
+              "instructor", "lxe", "curriculum_designer", "robot"]
 
 def validate_name(name):
   """Validator method to validate name"""

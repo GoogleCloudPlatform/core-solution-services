@@ -19,7 +19,7 @@ import regex
 from typing import List, Optional
 from typing_extensions import Literal
 from pydantic import BaseModel, constr, Extra, validator
-from common.models import USER_TYPES
+from common.models.user import USER_TYPES
 from schemas.schema_examples import (BASIC_USER_MODEL_EXAMPLE,
                                      FULL_USER_MODEL_EXAMPLE,
                                      UPDATE_USER_MODEL_EXAMPLE,
