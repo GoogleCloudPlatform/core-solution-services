@@ -50,7 +50,10 @@ def load_agent_config(agent_config_path: str):
       if isinstance(klass, type)
     }
     for values in agent_config.values():
-      agent_class = agent_classes.get(values["agent_class"])
+      agent_class_val = values["agent_class"]
+      agent_class = agent_classes.get(agent_class_val)
+      if agent_class is None:
+        raise RuntimeError(f"Cannot find agent class {agent_class_val}")
       values["agent_class"] = agent_class
       values["capabilities"] = [c.value for c in agent_class.capabilities()]
 
