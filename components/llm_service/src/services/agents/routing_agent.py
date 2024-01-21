@@ -208,8 +208,9 @@ async def run_intent(
 
   # load corresponding langchain agent and instantiate agent_executor
   langchain_agent = llm_service_agent.load_langchain_agent()
+  intent_agent_tools = llm_service_agent.get_tools()
   agent_executor = AgentExecutor.from_agent_and_tools(
-      agent=langchain_agent, tools=llm_service_agent.get_tools())
+      agent=langchain_agent, tools=intent_agent_tools)
 
   intent_list_str = ""
   intent_list = [

@@ -189,13 +189,12 @@ def search_tool(query: str) -> str:
   return ""
 
 @agent_tool(infer_schema=True)
-def query_tool(query: str) -> Dict:
+def query_tool(query: str, query_engine: str) -> Dict:
   """
-  Perform a query and craft an answer using one of the available query engines.
+  Perform a query and craft an answer using one of the available query engines,
+  with the name passed in as a argument.
   """
-
-
-  # Use StructuredTool to let agent to pass output from previous tool..
+  # TODO: implement this tool
   result = {
     "recipients": ["sumeetvij@google.com"]
   }
