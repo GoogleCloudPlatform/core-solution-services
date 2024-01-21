@@ -18,6 +18,7 @@ Flatten import namespace for models
 from .base_model import *
 from .node_item import *
 from .user import *
+from .user_event import *
 from .learning_record import *
 from .llm import *
 from .llm_query import *
