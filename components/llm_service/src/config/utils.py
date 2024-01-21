@@ -69,6 +69,14 @@ def load_agent_config(agent_config_path: str):
       agent_model.llm_type = ac_dict.get("llm_type")
       agent_model.capabilities = ac_dict["capabilities"]
       agent_model.agent_type = ac_dict.get("agent_type")
+
+      # validate agent model in case config is invalid
+      valid, validation_errors = agent_model.validate()
+      if not valid:
+        raise RuntimeError(
+            f"Invalid Agent config for {agent_name}: {validation_errors}")
+
+      # update agent model
       agent_model.save(merge=True)
 
     AGENTS = agent_config
