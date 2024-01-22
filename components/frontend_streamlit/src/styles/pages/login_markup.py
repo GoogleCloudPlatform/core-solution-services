@@ -41,6 +41,7 @@ def login_theme():
         color: {colors['input_text']};
         -webkit-text-fill-color: {colors['input_text']};
         padding: 0.58rem;
+        caret-color: {colors['input_text']};
       }}
       [data-testid="InputInstructions"] {{
         display: none;
@@ -53,6 +54,9 @@ def login_theme():
       }}
 
       /* Main container styles */
+      .stApp {{
+        background-color: {colors['light_fill']};
+      }}
       .main {{
         margin-top: 3.5vh;
       }}
@@ -89,6 +93,26 @@ def login_theme():
 
       .stAlert p {{
         color: {colors['dim_text']};
+      }}
+
+      /* Sidebar panel color */
+      [data-testid="stSidebar"] {{
+        background-color: rgb(240, 242, 246);
+      }}
+
+      @media (prefers-color-scheme: dark) {{
+        [data-testid=stSidebarNavLink] span {{
+          color: {colors['text_primary']};
+        }}
+        [data-testid=stForm] {{
+          border-color: rgb(49 51 63 / 20%);
+        }}
+        .stTextInput p {{
+          color: rgb(49, 51, 63);
+        }}
+        [data-baseweb="base-input"] button {{
+          color: rgb(49, 51, 63);
+        }}
       }}
 
       [data-testid="stSidebarNavItems"] {{
