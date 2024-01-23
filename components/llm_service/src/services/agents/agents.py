@@ -125,6 +125,7 @@ class BaseAgent(ABC):
     if llm is None:
       raise RuntimeError(
           f"Agent: cannot find LLM type {self.llm_type}")
+    Logger.info(f"Using LLM type {self.llm_type} for {self.name} agent.")
 
     output_parser = self.output_parser_class()
     self.agent = self.agent_class.from_llm_and_tools(
@@ -247,7 +248,7 @@ class RoutingAgent(BaseAgent):
   """
   def __init__(self, llm_type: str, name: str):
     super().__init__(llm_type, name)
-    self.agent_class = StructuredChatAgent
+    self.agent_class = ConversationalAgent
     self.prefix = ROUTING_PREFIX
 
   @property
