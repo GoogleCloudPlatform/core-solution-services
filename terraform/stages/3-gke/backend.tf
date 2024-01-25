@@ -17,7 +17,7 @@
 
 terraform {
   backend "gcs" {
-    bucket = "gcp-mira-develop-tfstate" # sb-var:project_id:{{project_id}}-tfstate
+    bucket = "your-project-id-tfstate" # sb-var:project_id:{{project_id}}-tfstate
     prefix = "stage/2-gke"
   }
 }

@@ -1,5 +1,5 @@
-project_id              = "gcp-mira-develop" # sb-var:project_id
-project_number          = "877759600672" # sb-var:project_number
+project_id              = "your-project-id" # sb-var:project_id
+project_number          = "your-project-number" # sb-var:project_number
 region                  = "us-central1"         # sb-var:gcp_region
 storage_multiregion     = "US"
 vpc_network             = "default-vpc"
