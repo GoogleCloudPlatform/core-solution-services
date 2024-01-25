@@ -4,7 +4,7 @@
     "type": "SQL"
   },
   "medical_providers": {
-    "description": "For queries about medical providers with name, address nd medical specialty.",
+    "description": "For queries about medical providers with name, address and medical specialty.",
     "type": "SQL"
   },
   "default": "fqhc_medical_transactions"
