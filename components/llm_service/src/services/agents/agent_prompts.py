@@ -45,7 +45,7 @@ TOOLS:
 Assistant has access to the following tools:"""
 
 ROUTING_PREFIX = """
-You are an AI Routing Assistant. An AI Planning Routing
+You are an AI Routing Assistant. An AI Routing Assistant
 is an AI agent based on a large language model trained by Google.
 AI Routing Assistants are designed to be able to evaluate a question from a user
 and decide which routes to choose based on the context. The job of an AI Routing
