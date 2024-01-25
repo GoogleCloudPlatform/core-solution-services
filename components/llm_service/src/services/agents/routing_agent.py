@@ -15,7 +15,7 @@
 """ Routing Agent """
 from typing import List, Tuple
 from langchain.agents import AgentExecutor
-from common.models import QueryEngine, User, UserChat
+from common.models import QueryEngine, User, UserChat, Agent
 from common.models.agent import AgentCapability
 from common.models.llm import CHAT_AI
 from common.utils.logging_handler import Logger
@@ -70,6 +70,10 @@ async def run_routing_agent(prompt: str,
     "route_name": route_name,
   }
 
+  routing_agent = Agent.find_by_name(agent_name)
+  if not routing_agent:
+    raise RuntimeError(f"Cannot find model for {agent_name}")
+
   # Query Engine route
   if route_type == AgentCapability.AGENT_QUERY_CAPABILITY.value:
     # Run RAG via a specific query engine
@@ -79,7 +83,11 @@ async def run_routing_agent(prompt: str,
     query_engine = QueryEngine.find_by_name(query_engine_name)
     Logger.info("Query Engine: {query_engine}")
 
+    llm_type = routing_agent.llm_type
     if not llm_type:
+      # llm_type should be set for all agents, but if for some reason it is
+      # not set fall back to the setting for the query engine
+      Logger.error("Agent {agent_name} does not have llm_type set.")
       llm_type = query_engine.llm_type
 
     query_result, query_references = await query_generate(
