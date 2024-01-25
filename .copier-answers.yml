@@ -7,9 +7,9 @@ has_common: false
 ip_cidr_range: 10.0.0.0/16
 jump_host_zone: us-central1-a
 master_ipv4_cidr_block: 172.16.0.0/28
-project_id: your-project-id
+project_id: gcp-mira-develop
 project_name: Core Solution Services
-project_number: your-project-number
+project_number: 877759600672
 secondary_pod_ip_cidr_range: 10.1.0.0/16
 secondary_service_ip_cidr_range: 10.2.0.0/16
 terraform_backend_gcs: true

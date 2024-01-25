@@ -1,4 +1,4 @@
-project_id                = "your-project-id" # sb-var:project_id
+project_id                = "gcp-mira-develop" # sb-var:project_id
 region                    = "us-central1"     # sb-var:gcp_region
 cluster_name              = "main-cluster"
 cluster_external_endpoint = ""                # sb-var:cluster_external_endpoint
