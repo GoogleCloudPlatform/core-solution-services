@@ -32,6 +32,11 @@ export REGION="us-central1"
 export PASSWORD="$(gcloud secrets versions access latest --secret=${POSTGRES_USER_PASSWD})"
 export NETWORK="default-vpc"
 
+if [ $(gcloud compute networks list | grep -c ${NETWORK}) == 0 ]; then
+    echo "ERROR: Network ${NETWORK} not found"
+    exit 1;
+fi
+
 gcloud services enable alloydb.googleapis.com
 gcloud services enable servicenetworking.googleapis.com
 
