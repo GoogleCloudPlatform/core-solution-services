@@ -3,13 +3,13 @@
   {
     "MediKate": {
       "llm_type": "OpenAI-GPT4",
-      "agent_type": "langchain_ZeroShot",
+      "agent_type": "langchain_Conversational",
       "agent_class": "RoutingAgent",
       "tools": ""
     },
     "Casey": {
       "llm_type": "OpenAI-GPT4",
-      "agent_type": "langchain_ZeroShot",
+      "agent_type": "langchain_Conversational",
       "agent_class": "RoutingAgent",
       "tools": "",
       "datasets": "fqhc_medical_transactions"
@@ -28,7 +28,7 @@
       "tools": "ALL"
     },
     "Plan": {
-      "llm_type": "OpenAI-GPT4",
+      "llm_type": "OpenAI-GPT4-latest",
       "agent_type": "langchain_ZeroShot",
       "agent_class": "PlanAgent",
       "query_engines": "ALL",
