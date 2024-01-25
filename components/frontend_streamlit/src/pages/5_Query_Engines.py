@@ -124,7 +124,6 @@ def query_engine_page():
     if not qe_build_jobs:
       Logger.error("No query engine build jobs")
       st.write("No query engine build jobs")
-      return
 
     for job in qe_build_jobs:
       created_at = moment.date(
