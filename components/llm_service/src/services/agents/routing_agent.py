@@ -149,6 +149,7 @@ async def run_routing_agent(prompt: str,
     plan_data["id"] = user_plan.id
     chat_history_entry[CHAT_AI] = output
     chat_history_entry["plan"] = plan_data
+    agent_logs = output
 
     response_data = {
       "content": output,
