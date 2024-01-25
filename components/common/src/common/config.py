@@ -55,3 +55,5 @@ SERVICES = {
         "port": 80
     },
 }
+
+CORS_ALLOW_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "").split(",")
