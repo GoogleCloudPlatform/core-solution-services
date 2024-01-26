@@ -36,13 +36,14 @@ def action_buttons():
     "edit_btn": False,
     "translate_btn": False,
     "info_btn": False,
+    "refresh_btn": False,
     "more_btn": False
   }
 
   if "btn_states" not in st.session_state:
     st.session_state.btn_states = icon_states
 
-  extra1, like, dislike, share, edit, translate, info, more, extra2 = st.columns([.05, .05, .05, .05, .05, .05, .05, .05, .6])
+  extra1, like, dislike, share, edit, translate, info, refresh, more, extra2 = st.columns([.05, .05, .05, .05, .05, .05, .05, .05, .05, .55])
 
   with like:
     st.button("Like", type="primary", help="Good response", on_click=handle_click, args=["like_btn"])
@@ -92,6 +93,14 @@ def action_buttons():
     else:
       info_state = "action_btn"
 
+  with refresh:
+    st.button("Refresh", type="primary", help="Reload chat", on_click=handle_click, args=["refresh_btn"])
+
+    if st.session_state.btn_states["refresh_btn"]:
+      refresh_state = "action_btn_on"
+    else:
+      refresh_state = "action_btn"
+
   with more:
     st.button("More", type="primary", help="More", on_click=handle_click, args=["more_btn"])
 
@@ -125,9 +134,12 @@ def action_buttons():
         content: url('{icon_base}info-outline.svg?color={colors[info_state]}&{icon_size}');
       }}
       [data-testid="column"]:nth-child(8) [data-testid="baseButton-primary"] div::after {{
+        content: url('{icon_base}refresh-rounded.svg?color={colors[refresh_state]}&{icon_size}');
+      }}
+      [data-testid="column"]:nth-child(9) [data-testid="baseButton-primary"] div::after {{
         content: url('{icon_base}more-vert.svg?color={colors[more_state]}&{icon_size}');
       }}
-      [data-testid="column"]:nth-child(8) [data-testid="baseButton-primary"] {{
+      [data-testid="column"]:nth-child(9) [data-testid="baseButton-primary"] {{
         padding-left: .45rem;
         padding-bottom: 0.14rem;
       }}

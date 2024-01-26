@@ -222,7 +222,10 @@ def chat_content():
               "AIOutput": agent_process_output,
             })
 
-        # Position chat option buttons for plan output    
+        # Position chat option buttons for plan output  
+          # action_buttons()
+
+      if "HumanInput" in item and "AIOutput" in item:
         action_buttons()
 
       agent_logs = item.get("agent_logs", None)
@@ -288,12 +291,8 @@ def chat_page():
   with content_placeholder:
     chat_content()
   
-  ref_col, plan_col, options, help = st.columns(3)
+  plan_col, ref_col, options = st.columns(3)
 
-  with ref_col:
-    with st.expander("References"):
-      st.text('test')
-  
   with plan_col:
     for item in st.session_state.messages:
       if "plan" in item:
@@ -301,6 +300,10 @@ def chat_page():
         with st.expander("Plan Steps"):
           for step in plan["plan_steps"]:
             st.write(step["description"])
+
+  with ref_col:
+    with st.expander("References"):
+      st.text('test')
   
   with options:
     with st.expander("Advanced Settings"):

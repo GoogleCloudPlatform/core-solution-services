@@ -143,7 +143,7 @@ def custom_chat_theme():
         width: 426px;
         right: 12px;
         top: 12px;
-        gap: 6px;
+        gap: 0;
       }}
       [data-testid="stForm"] + div [data-testid="column"] {{
         width: 100%;
@@ -151,6 +151,7 @@ def custom_chat_theme():
 
       [data-testid="stForm"] + div [data-testid="stExpander"] {{
         margin-left: 0;
+        padding-bottom: 12px;
       }}
 
       /* Chat styling */
