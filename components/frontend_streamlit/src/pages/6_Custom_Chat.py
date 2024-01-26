@@ -21,7 +21,6 @@ from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
     run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
-from components.chat_history import chat_history_panel
 from components.chat_options import action_buttons
 from styles.pages.custom_chat_markup import custom_chat_theme
 from common.utils.logging_handler import Logger
@@ -107,10 +106,12 @@ def chat_content():
   chat_placeholder = st.empty()
   with chat_placeholder.container():
     index = 1
+    has_input = False
     for item in st.session_state.messages:
       Logger.info(item)
 
       if "HumanInput" in item:
+        has_input = True
         with st.chat_message("user"):
           st.write(item["HumanInput"], is_user=True, key=f"human_{index}")
 
@@ -222,12 +223,6 @@ def chat_content():
               "AIOutput": agent_process_output,
             })
 
-        # Position chat option buttons for plan output  
-          # action_buttons()
-
-      if "HumanInput" in item and "AIOutput" in item:
-        action_buttons()
-
       agent_logs = item.get("agent_logs", None)
       if agent_logs and agent_logs.strip() != "":
         with st.expander("Expand to see Agent's thought process"):
@@ -235,6 +230,9 @@ def chat_content():
 
       index = index + 1
 
+    # Position chat option buttons
+    if has_input:
+      action_buttons()
 
 def render_cloud_storage_url(url):
   """ Parse a cloud storage url. """
@@ -257,8 +255,6 @@ def init_messages():
 
 def chat_page():
   custom_chat_theme()
-
-  chat_history_panel()
 
   content_placeholder = st.container()
 

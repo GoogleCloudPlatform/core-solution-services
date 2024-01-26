@@ -17,7 +17,7 @@ Main styles for the chat page
 """
 
 import streamlit as st
-from styles.custom_style_constants import colors, decoration
+from styles.style_constants import colors, decoration
 from styles.custom_shared_styles import main_styles
 
 def custom_chat_theme():

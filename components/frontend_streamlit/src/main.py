@@ -48,4 +48,4 @@ if __name__ == "__main__":
   Logger.info("Streamlit main page rendered.")
   #./main.py is used as an entrypoint for the build,
   # which creates a page that duplicates the Login page named "main".
-  utils.hide_pages(["main"])
+  utils.hide_pages(["main", "Custom_Chat"])

@@ -17,7 +17,7 @@ Chat action buttons
 """
 
 import streamlit as st
-from styles.custom_style_constants import colors
+from styles.style_constants import colors
 
 def handle_click(option):
   st.session_state.btn_states[option] = not st.session_state.btn_states[option]
