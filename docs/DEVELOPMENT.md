@@ -400,6 +400,7 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
 
   # If this component depends on the common folder:
   pip install -r ../common/requirements.txt
+  pip install -r ../common/requirements-test.txt
   ```
 * Run unit tests locally:
   ```
