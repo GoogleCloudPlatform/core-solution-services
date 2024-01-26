@@ -56,7 +56,6 @@ def on_submit(user_input):
       st.error(f"Unsupported route {default_route}")
 
     st.session_state.chat_id = response["chat"]["id"]
-    st.session_state.user_chats.insert(0, response["chat"])
 
     # TODO: Currently the AIOutput vs content are inconsistent across
     # API response and in a UserChat history.
@@ -230,9 +229,9 @@ def chat_content():
 
       index = index + 1
 
-    # Position chat option buttons
-    if has_input:
-      action_buttons()
+  # Position chat option buttons
+  if has_input:
+    action_buttons()
 
 def render_cloud_storage_url(url):
   """ Parse a cloud storage url. """
@@ -286,7 +285,7 @@ def chat_page():
 
   with content_placeholder:
     chat_content()
-  
+
   plan_col, ref_col, options = st.columns(3)
 
   with plan_col:
@@ -299,8 +298,8 @@ def chat_page():
 
   with ref_col:
     with st.expander("References"):
-      st.text('test')
-  
+      st.text("test")
+
   with options:
     with st.expander("Advanced Settings"):
       chat_llm_types = get_all_chat_llm_types()

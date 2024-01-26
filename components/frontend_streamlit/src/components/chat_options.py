@@ -15,17 +15,17 @@
 """
 Chat action buttons
 """
-
+# pylint: disable=unused-variable
 import streamlit as st
 from styles.style_constants import colors
 
 def handle_click(option):
   st.session_state.btn_states[option] = not st.session_state.btn_states[option]
 
-  if option == "dislike_btn" and st.session_state.btn_states["like_btn"] == True:
+  if option == "dislike_btn" and st.session_state.btn_states["like_btn"]:
     st.session_state.btn_states["like_btn"] = False
 
-  if option == "like_btn" and st.session_state.btn_states["dislike_btn"] == True:
+  if option == "like_btn" and st.session_state.btn_states["dislike_btn"]:
     st.session_state.btn_states["dislike_btn"] = False
 
 def action_buttons():
@@ -43,10 +43,13 @@ def action_buttons():
   if "btn_states" not in st.session_state:
     st.session_state.btn_states = icon_states
 
-  extra1, like, dislike, share, edit, translate, info, refresh, more, extra2 = st.columns([.05, .05, .05, .05, .05, .05, .05, .05, .05, .55])
+  extra1, like, dislike, share, edit, translate,\
+  info, refresh, more, extra2\
+  = st.columns([.05, .05, .05, .05, .05, .05, .05, .05, .05, .55])
 
   with like:
-    st.button("Like", type="primary", help="Good response", on_click=handle_click, args=["like_btn"])
+    st.button("Like", type="primary", help="Good response",
+                on_click=handle_click, args=["like_btn"])
 
     if st.session_state.btn_states["like_btn"]:
       like_state = "action_btn_on"
@@ -54,7 +57,8 @@ def action_buttons():
       like_state = "action_btn"
 
   with dislike:
-    st.button("Dislike", type="primary", help="Bad response", on_click=handle_click, args=["dislike_btn"])
+    st.button("Dislike", type="primary", help="Bad response",
+                on_click=handle_click, args=["dislike_btn"])
 
     if st.session_state.btn_states["dislike_btn"]:
       dislike_state = "action_btn_on"
@@ -62,7 +66,8 @@ def action_buttons():
       dislike_state = "action_btn"
 
   with share:
-    st.button("Share", type="primary", help="Share & export", on_click=handle_click, args=["share_btn"])
+    st.button("Share", type="primary", help="Share & export",
+                on_click=handle_click, args=["share_btn"])
 
     if st.session_state.btn_states["share_btn"]:
       share_state = "action_btn_on"
@@ -70,15 +75,17 @@ def action_buttons():
       share_state = "action_btn"
 
   with edit:
-    st.button("Edit", type="primary", help="Modify response", on_click=handle_click, args=["edit_btn"])
+    st.button("Edit", type="primary", help="Modify response",
+                on_click=handle_click, args=["edit_btn"])
 
     if st.session_state.btn_states["edit_btn"]:
       edit_state = "action_btn_on"
     else:
       edit_state = "action_btn"
-  
+
   with translate:
-    st.button("Translate", type="primary", help="Translate response", on_click=handle_click, args=["translate_btn"])
+    st.button("Translate", type="primary", help="Translate response",
+                on_click=handle_click, args=["translate_btn"])
 
     if st.session_state.btn_states["translate_btn"]:
       translate_state = "action_btn_on"
@@ -86,7 +93,8 @@ def action_buttons():
       translate_state = "action_btn"
 
   with info:
-    st.button("Info", type="primary", help="Get more info", on_click=handle_click, args=["info_btn"])
+    st.button("Info", type="primary", help="Get more info",
+                on_click=handle_click, args=["info_btn"])
 
     if st.session_state.btn_states["info_btn"]:
       info_state = "action_btn_on"
@@ -94,7 +102,8 @@ def action_buttons():
       info_state = "action_btn"
 
   with refresh:
-    st.button("Refresh", type="primary", help="Reload chat", on_click=handle_click, args=["refresh_btn"])
+    st.button("Refresh", type="primary", help="Reload chat",
+                on_click=handle_click, args=["refresh_btn"])
 
     if st.session_state.btn_states["refresh_btn"]:
       refresh_state = "action_btn_on"
@@ -102,7 +111,8 @@ def action_buttons():
       refresh_state = "action_btn"
 
   with more:
-    st.button("More", type="primary", help="More", on_click=handle_click, args=["more_btn"])
+    st.button("More", type="primary", help="More",
+                on_click=handle_click, args=["more_btn"])
 
     if st.session_state.btn_states["more_btn"]:
       more_state = "action_btn_on"
@@ -146,3 +156,4 @@ def action_buttons():
     </style>
   """
   st.markdown(action_btn_styles, unsafe_allow_html=True)
+  
