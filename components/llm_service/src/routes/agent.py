@@ -164,7 +164,7 @@ async def run_dispatch(run_config: LLMAgentRunModel,
 
     db_result, agent_logs = await run_db_agent(
         prompt, llm_type, dataset_name, user_email)
-    # Logger.info(f"DB query response: \n{db_result}")
+    Logger.info(f"DB query response: \n{db_result}")
 
     # TODO: Update with the output generated from the LLM.
     if db_result.get("data", None):
