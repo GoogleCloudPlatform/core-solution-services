@@ -222,9 +222,44 @@ async def run_intent(
   langchain_agent = llm_service_agent.load_langchain_agent()
   intent_agent_tools = llm_service_agent.get_tools()
   Logger.info(f"Dispatch agent tools [{intent_agent_tools}]")
-  
+
   agent_executor = AgentExecutor.from_agent_and_tools(
       agent=langchain_agent, tools=intent_agent_tools)
+
+  # get dispatch prompt
+  dispatch_prompt = get_dispatch_prompt(llm_service_agent)
+
+  agent_inputs = {
+    "input": dispatch_prompt + prompt,
+    "chat_history": []
+  }
+
+  Logger.info("Running agent executor to get best matched route.... ")
+  output, agent_logs = await agent_executor_arun_with_logs(
+      agent_executor, agent_inputs)
+
+  Logger.info(f"Agent {agent_name} generated output=[{output}]")
+  Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
+
+  routes = parse_action_output("Route:", output) or []
+  Logger.info(f"Output routes: {routes}")
+
+  # If no best route(s) found, pass to Chat agent.
+  if not routes or len(routes) == 0:
+    return AgentCapability.AGENT_CHAT_CAPABILITY.value, agent_logs
+
+  # TODO: Refactor this with RoutingAgentOutputParser
+  # Get the route for the best matched (first) returned routes.
+  route, detail = parse_plan_step(routes[0])[0]
+  Logger.info(f"route: {route}, {detail}")
+
+  return route, agent_logs
+
+
+def get_dispatch_prompt(llm_service_agent: BaseAgent) -> str:
+  """ Construct dispatch prompt for intent agent """
+
+  agent_name = llm_service_agent.name
 
   intent_list_str = ""
   intent_list = [
@@ -263,29 +298,5 @@ async def run_intent(
     """
   Logger.info(f"dispatch_prompt: \n{dispatch_prompt}")
 
-  agent_inputs = {
-    "input": dispatch_prompt + prompt,
-    "chat_history": []
-  }
-
-  Logger.info("Running agent executor to get best matched route.... ")
-  output, agent_logs = await agent_executor_arun_with_logs(
-      agent_executor, agent_inputs)
-
-  Logger.info(f"Agent {agent_name} generated output=[{output}]")
-  Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
-
-  routes = parse_action_output("Route:", output) or []
-  Logger.info(f"Output routes: {routes}")
-
-  # If no best route(s) found, pass to Chat agent.
-  if not routes or len(routes) == 0:
-    return AgentCapability.AGENT_CHAT_CAPABILITY.value, agent_logs
-
-  # TODO: Refactor this with RoutingAgentOutputParser
-  # Get the route for the best matched (first) returned routes.
-  route, detail = parse_plan_step(routes[0])[0]
-  Logger.info(f"route: {route}, {detail}")
-
-  return route, agent_logs
-
+  return dispatch_prompt
+  
