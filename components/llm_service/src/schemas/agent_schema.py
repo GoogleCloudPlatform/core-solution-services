@@ -57,6 +57,7 @@ class LLMAgentRunModel(BaseModel):
   """LLM Agent run model"""
   prompt: str
   chat_id: str = None
+  llm_type: str = None
 
   class Config():
     orm_mode = True

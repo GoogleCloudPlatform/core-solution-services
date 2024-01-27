@@ -34,7 +34,8 @@ Logger = Logger.get_logger(__file__)
 async def run_routing_agent(prompt: str,
                             agent_name: str,
                             user: User,
-                            user_chat: UserChat) -> Tuple[str, dict]:
+                            user_chat: UserChat,
+                            llm_type: str=None) -> Tuple[str, dict]:
   """
   Determine intent from user prompt for best route to fulfill user
   input.  Then execute that route.
@@ -43,6 +44,8 @@ async def run_routing_agent(prompt: str,
     agent_name: routing agent name.  "default": use the first routing agent
     user: User model for user making request
     user_chat: optional existing user chat object for previous chat history
+    llm_type: optional llm_type to use for agents, otherwise llm_type of
+      routing agent is used
   Returns:
     tuple of route (AgentCapability value), response data dict
   """
@@ -70,6 +73,13 @@ async def run_routing_agent(prompt: str,
   if not routing_agent:
     raise RuntimeError(f"Cannot find model for {agent_name}")
 
+  # llm_type can be passed as an argument
+  # otherwise llm_type is whatever is set for routing agent
+  if llm_type is None:
+    llm_type = routing_agent.llm_type
+  if not llm_type:
+    raise RuntimeError("Agent {agent_name} does not have llm_type set.")
+
   # Query Engine route
   if route_type == AgentCapability.QUERY.value:
     # Run RAG via a specific query engine
@@ -78,13 +88,6 @@ async def run_routing_agent(prompt: str,
 
     query_engine = QueryEngine.find_by_name(query_engine_name)
     Logger.info("Query Engine: {query_engine}")
-
-    llm_type = routing_agent.llm_type
-    if not llm_type:
-      # llm_type should be set for all agents, but if for some reason it is
-      # not set fall back to the setting for the query engine
-      Logger.error("Agent {agent_name} does not have llm_type set.")
-      llm_type = query_engine.llm_type
 
     query_result, query_references = await query_generate(
           user.id,
@@ -111,7 +114,7 @@ async def run_routing_agent(prompt: str,
     # "columns: column names, "data": row data
     dataset_name = route_parts[1]
 
-    Logger.info("Dispatch to DB Query: {dataset_name}")
+    Logger.info(f"Dispatch to DB Query: {dataset_name}")
 
     db_result, agent_logs = await run_db_agent(
         prompt, llm_type, dataset_name, user.email)
@@ -130,7 +133,6 @@ async def run_routing_agent(prompt: str,
       "content": response_output,
       "dataset": dataset_name,
       "resources": db_result["resources"],
-      "agent_logs": agent_logs,
     }
     chat_history_entry = response_data
 
@@ -150,7 +152,6 @@ async def run_routing_agent(prompt: str,
       "route_name": AgentCapability.PLAN.value,
       "content": output,
       "plan": plan_data,
-      "agent_logs": agent_logs,
     }
 
   # Anything else including Chat route.
@@ -161,7 +162,7 @@ async def run_routing_agent(prompt: str,
     response_data = {
       "route": AgentCapability.CHAT.value,
       "route_name": AgentCapability.CHAT.value,
-      "content": output,
+      "content": output
     }
 
   # Appending Agent's thought process.

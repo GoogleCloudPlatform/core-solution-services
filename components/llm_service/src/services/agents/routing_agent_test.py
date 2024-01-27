@@ -25,6 +25,7 @@ from unittest import mock
 from config.utils import set_agent_config
 from common.models import (User, UserChat, QueryResult,
                            QueryEngine, UserPlan, PlanStep)
+from common.models.llm import CHAT_AI
 from common.models.agent import AgentCapability
 from common.utils.logging_handler import Logger
 from config import (get_model_config, PROVIDER_LANGCHAIN,
@@ -52,13 +53,20 @@ os.environ["COHERE_API_KEY"] = "fake-key"
 
 FAKE_QUERY_ROUTE = f"Query:{QUERY_ENGINE_EXAMPLE['name']}"
 FAKE_PLAN_ROUTE = "Plan"
-FAKE_DB_ROUTE = "Database"
+FAKE_DATASET = "fake-dataset"
+FAKE_DB_ROUTE = f"Database:{FAKE_DATASET}"
+FAKE_CHAT_ROUTE = "Chat"
 
 FAKE_AGENT_LOGS = "fake logs"
 FAKE_AGENT_OUTPUT = "fake agent output"
 FAKE_ROUTING_AGENT = "Router"
 
-FAKE_DB_AGENT_RESULT = {}
+FAKE_INTENT_OUTPUT = f"Route: {FAKE_DB_ROUTE}"
+
+FAKE_DB_AGENT_RESULT = {
+  "data": "fake-data",
+  "resources": {"Spreadsheet": "https://example.com"}
+}
 
 TEST_AGENT_CONFIG = {
   "Agents":
@@ -147,7 +155,11 @@ def test_agent_config(firestore_emulator, clean_firestore):
 
 class FakeAgentExecutor():
   async def arun(self, prompt):
-    return ""
+    return FAKE_INTENT_OUTPUT
+
+class FakeAgentExecutorBuilder():
+  def from_agent_and_tools(agent=None, tools=None):
+    return FakeAgentExecutor()
 
 class FakeQueryTool():
   def run(self, statement):
@@ -231,17 +243,80 @@ async def test_db_route(mock_run_intent,
   """ Test run_routing_agent with db route """
 
   mock_run_intent.return_value = FAKE_DB_ROUTE, FAKE_AGENT_LOGS
-  mock_run_db_agent.return_value = FAKE_DB_AGENT_RESULT
+  mock_run_db_agent.return_value = FAKE_DB_AGENT_RESULT, FAKE_AGENT_LOGS
   mock_get_agent_config.return_value = TEST_AGENT_CONFIG
 
   agent_name = FAKE_ROUTING_AGENT
-  prompt = "when does a chicken start laying eggs?"
+  prompt = "who are the most popular chickens?"
 
   route, response_data = await run_routing_agent(
       prompt, agent_name, create_user, create_chat)
 
-#
-  #assert route == AgentCapability.QUERY.value
+  assert route == FAKE_DB_ROUTE
+  assert response_data["route"] == AgentCapability.DATABASE.value
+  assert response_data["route_name"] == f"Database Query: {FAKE_DATASET}"
+  assert response_data["content"]
+  assert response_data["dataset"] == FAKE_DATASET
+  assert response_data["agent_logs"] == FAKE_AGENT_LOGS
+  assert response_data[CHAT_AI]
+  assert response_data["resources"]
 
-  #assert response_data["resources"]["Spreadsheet"] == "test url"
+
+@pytest.mark.asyncio
+@mock.patch("config.utils.get_agent_config")
+@mock.patch("services.agents.agent_service.run_agent")
+@mock.patch("services.agents.routing_agent.run_intent")
+async def test_chat_route(mock_run_intent,
+                          mock_run_agent,
+                          mock_get_agent_config,
+                          test_model_config,
+                          test_agent_config,
+                          create_user, create_chat):
+  """ Test run_routing_agent with chat route """
+
+  mock_run_intent.return_value = FAKE_CHAT_ROUTE, FAKE_AGENT_LOGS
+  mock_run_agent.return_value = FAKE_AGENT_OUTPUT
+  mock_get_agent_config.return_value = TEST_AGENT_CONFIG
+
+  agent_name = FAKE_ROUTING_AGENT
+  prompt = "how can I raise the best chickens?"
+
+  route, response_data = await run_routing_agent(
+      prompt, agent_name, create_user, create_chat)
+
+  assert route == AgentCapability.DATABASE.value
+  assert response_data["route"] == AgentCapability.DATABASE.value
+  assert response_data["route_name"] == FAKE_DB_ROUTE
+  assert response_data["content"] == FAKE_AGENT_OUTPUT
+  assert "agent_logs" not in response_data
+
+
+@pytest.mark.asyncio
+@mock.patch("config.utils.get_agent_config")
+@mock.patch("services.agents.routing_agent.agent_executor_arun_with_logs")
+@mock.patch("services.agents.routing_agent.AgentExecutor")
+async def test_run_intent(mock_agent_executor,
+                          mock_agent_executor_arun,
+                          mock_get_agent_config,
+                          test_model_config,
+                          test_agent_config,
+                          create_user, create_chat):
+  """ Test run_routing_agent with chat route """
+
+  
+  mock_agent_executor = FakeAgentExecutorBuilder()
+  mock_agent_executor_arun.return_value = FAKE_INTENT_OUTPUT
+  mock_get_agent_config.return_value = TEST_AGENT_CONFIG
+
+  agent_name = FAKE_ROUTING_AGENT
+  prompt = "how can I raise the best chickens?"
+
+  chat_history = create_chat.history
+  route, route_logs = await run_intent(agent_name, prompt, chat_history)
+
+  assert route == FAKE_DB_ROUTE
+  assert response_data["route"] == AgentCapability.DATABASE.value
+  assert response_data["route_name"] == FAKE_DB_ROUTE
+  assert response_data["content"] == FAKE_AGENT_OUTPUT
+  assert "agent_logs" not in response_data
 
