@@ -42,7 +42,9 @@ export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
 ```shell
 # Create a secret for postgres password
 gcloud secrets create "postgres-user-passwd"
-echo <your-postgres-password> | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+# Please use single quotes to enclose the password below (esp.
+# if the password contains special characters like $)
+echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
 
 # Create an AlloyDB instance
 ./utils/alloy_db.sh
@@ -116,6 +118,18 @@ Once finished, you shall see the following artifacts:
 - A corresponding document metadata in `query_documents` collection in Firestore.
 - A record in `query_document_chunk` collection in Firestore.
 - A Vertex AI Matching Engine.
+
+### Deploy with CORS origin allows
+
+Set the CORS origin environment variable:
+```
+CORS_ALLOW_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173,https://your-domain.com
+```
+
+Deploy microservice to GKE cluster as usual.
+```
+sb deploy -n default -m llm_service
+```
 
 ## Troubleshoot
 

@@ -29,6 +29,7 @@ resource "google_apikeys_key" "idp_api_key" {
 
 
 resource "google_secret_manager_secret" "firebase-api-key" {
+  depends_on = [time_sleep.wait_60_seconds]
   secret_id = var.firebase_api_secret_id
   replication {
     auto {}
