@@ -78,7 +78,7 @@ TEST_AGENT_CONFIG = {
       "tools": ""
     },
     "Chat": {
-      "llm_type": VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
+      "llm_type": OPENAI_LLM_TYPE_GPT4,
       "agent_type": "langchain_Conversational",
       "agent_class": "ChatAgent",
       "tools": "search_tool,query_tool",
@@ -157,13 +157,6 @@ class FakeAgentExecutor():
   async def arun(self, prompt):
     return FAKE_INTENT_OUTPUT
 
-class FakeAgentExecutorBuilder():
-  def from_agent_and_tools(agent=None, tools=None):
-    return FakeAgentExecutor()
-
-class FakeQueryTool():
-  def run(self, statement):
-    return ""
 
 @pytest.mark.asyncio
 @mock.patch("config.utils.get_agent_config")
@@ -264,7 +257,7 @@ async def test_db_route(mock_run_intent,
 
 @pytest.mark.asyncio
 @mock.patch("config.utils.get_agent_config")
-@mock.patch("services.agents.agent_service.run_agent")
+@mock.patch("services.agents.routing_agent.run_agent")
 @mock.patch("services.agents.routing_agent.run_intent")
 async def test_chat_route(mock_run_intent,
                           mock_run_agent,
@@ -284,9 +277,9 @@ async def test_chat_route(mock_run_intent,
   route, response_data = await run_routing_agent(
       prompt, agent_name, create_user, create_chat)
 
-  assert route == AgentCapability.DATABASE.value
-  assert response_data["route"] == AgentCapability.DATABASE.value
-  assert response_data["route_name"] == FAKE_DB_ROUTE
+  assert route == AgentCapability.CHAT.value
+  assert response_data["route"] == AgentCapability.CHAT.value
+  assert response_data["route_name"] == AgentCapability.CHAT.value
   assert response_data["content"] == FAKE_AGENT_OUTPUT
   assert "agent_logs" not in response_data
 
@@ -294,17 +287,16 @@ async def test_chat_route(mock_run_intent,
 @pytest.mark.asyncio
 @mock.patch("config.utils.get_agent_config")
 @mock.patch("services.agents.routing_agent.agent_executor_arun_with_logs")
-@mock.patch("services.agents.routing_agent.AgentExecutor")
+@mock.patch("services.agents.routing_agent.AgentExecutor.from_agent_and_tools")
 async def test_run_intent(mock_agent_executor,
                           mock_agent_executor_arun,
                           mock_get_agent_config,
                           test_model_config,
                           test_agent_config,
                           create_user, create_chat):
-  """ Test run_routing_agent with chat route """
+  """ Test run_intent """
 
-  
-  mock_agent_executor = FakeAgentExecutorBuilder()
+  mock_agent_executor.return_value = FakeAgentExecutor()
   mock_agent_executor_arun.return_value = FAKE_INTENT_OUTPUT
   mock_get_agent_config.return_value = TEST_AGENT_CONFIG
 
