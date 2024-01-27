@@ -43,6 +43,7 @@ USER_QUERY_EXAMPLE = {
       "AIResponse": "test response 1",
       "AIReferences": [
         {
+          "query_engine": "query-engine-test",
           "query_engine_id": "asd98798as7dhjgkjsdfh",
           "query_engine": "query-engine-test",
           "document_id": "efghxxzzyy1234",
@@ -55,6 +56,7 @@ USER_QUERY_EXAMPLE = {
       "AIResponse": "test response 2",
       "AIReferences": [
         {
+          "query_engine": "query-engine-test",
           "query_engine_id": "asd98798as7dhjgkjsdfh",
           "query_engine": "query-engine-test",
           "document_id": "efghxxzzyy5678",

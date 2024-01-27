@@ -22,7 +22,8 @@ import json
 import pytest
 import tempfile
 from unittest import mock
-from common.models import User, UserChat, QueryResult
+from config.utils import set_agent_config
+from common.models import User, UserChat, QueryResult, QueryEngine
 from common.models.agent import AgentCapability
 from common.utils.logging_handler import Logger
 from config import (get_model_config, PROVIDER_LANGCHAIN,
@@ -30,8 +31,11 @@ from config import (get_model_config, PROVIDER_LANGCHAIN,
                     VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
                     OPENAI_LLM_TYPE_GPT4_LATEST)
 from testing.test_config import TEST_OPENAI_CONFIG
-from schemas.schema_examples import (CHAT_EXAMPLE, USER_EXAMPLE,
-                                     QUERY_RESULT_EXAMPLE)
+from schemas.schema_examples import (CHAT_EXAMPLE,
+                                     USER_EXAMPLE,
+                                     QUERY_RESULT_EXAMPLE,
+                                     QUERY_ENGINE_EXAMPLE,
+                                     USER_QUERY_EXAMPLE)
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 from services.agents.routing_agent import run_intent, run_routing_agent
 
@@ -42,7 +46,7 @@ os.environ["PROJECT_ID"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
-FAKE_QUERY_ROUTE = "Query"
+FAKE_QUERY_ROUTE = f"Query:{QUERY_ENGINE_EXAMPLE['name']}"
 FAKE_PLAN_ROUTE = "Plan"
 FAKE_DB_ROUTE = "Database"
 
@@ -84,6 +88,9 @@ TEST_AGENT_CONFIG = {
   }
 }
 
+FAKE_REFERENCES = USER_QUERY_EXAMPLE["history"][1]["AIReferences"]
+
+
 @pytest.fixture
 def create_user(firestore_emulator, clean_firestore):
   user_dict = USER_EXAMPLE
@@ -106,12 +113,22 @@ def create_query_result(firestore_emulator, clean_firestore):
   return query_result
 
 @pytest.fixture
+def create_query_engine(firestore_emulator, clean_firestore):
+  query_engine_dict = QUERY_ENGINE_EXAMPLE
+  q_engine = QueryEngine.from_dict(query_engine_dict)
+  q_engine.save()
+  return q_engine
+
+@pytest.fixture
 def test_model_config(firestore_emulator, clean_firestore):
   get_model_config().llm_model_providers = {
     PROVIDER_LANGCHAIN: TEST_OPENAI_CONFIG
   }
   get_model_config().llm_models = TEST_OPENAI_CONFIG
-  
+
+@pytest.fixture
+def test_agent_config(firestore_emulator, clean_firestore):
+  set_agent_config(TEST_AGENT_CONFIG)
 
 class FakeAgentExecutor():
   async def arun(self, prompt):
@@ -123,17 +140,19 @@ class FakeQueryTool():
 
 @pytest.mark.asyncio
 @mock.patch("config.utils.get_agent_config")
-@mock.patch("services.agents.routing_agent.agent_plan")
+@mock.patch("services.agents.routing_agent.query_generate")
 @mock.patch("services.agents.routing_agent.run_intent")
 async def test_query_route(mock_run_intent,
                            mock_query_generate,
                            mock_get_agent_config,
                            test_model_config,
-                           create_user, create_chat, create_query_result):
+                           test_agent_config,
+                           create_user, create_chat,
+                           create_query_engine, create_query_result):
   """ Test run_routing_agent with query route """
 
   mock_run_intent.return_value = FAKE_QUERY_ROUTE, FAKE_AGENT_LOGS
-  mock_query_generate.return_value = create_query_result
+  mock_query_generate.return_value = create_query_result, FAKE_REFERENCES
   mock_get_agent_config.return_value = TEST_AGENT_CONFIG
 
   agent_name = FAKE_ROUTING_AGENT
@@ -141,10 +160,14 @@ async def test_query_route(mock_run_intent,
     
   route, response_data = await run_routing_agent(
       prompt, agent_name, create_user, create_chat)
-#
-  #assert route == AgentCapability.AGENT_QUERY_CAPABILITY.value
-  
-  #assert response_data["resources"]["Spreadsheet"] == "test url"
+
+  assert route == FAKE_QUERY_ROUTE
+  assert response_data["route"] == AgentCapability.QUERY.value
+  assert response_data["route_name"] == FAKE_QUERY_ROUTE
+  assert response_data["output"] == create_query_result.response
+  assert response_data["query_engine_id"] == create_query_engine.id
+  assert response_data["query_references"] == FAKE_REFERENCES
+
 
 @pytest.mark.asyncio
 @mock.patch("config.utils.get_agent_config")
@@ -154,7 +177,8 @@ async def test_plan_route(mock_run_intent,
                            mock_agent_plan,
                            mock_get_agent_config,
                            test_model_config,
-                           create_user, create_chat, create_query_result):
+                           test_agent_config,                           
+                           create_user, create_chat):
   """ Test run_routing_agent with plan route """
 
   mock_run_intent.return_value = FAKE_PLAN_ROUTE, FAKE_AGENT_LOGS
@@ -167,19 +191,20 @@ async def test_plan_route(mock_run_intent,
   route, response_data = await run_routing_agent(
       prompt, agent_name, create_user, create_chat)
 #
-  #assert route == AgentCapability.AGENT_QUERY_CAPABILITY.value
+  #assert route == AgentCapability.QUERY.value
   
   #assert response_data["resources"]["Spreadsheet"] == "test url"
 
 @pytest.mark.asyncio
 @mock.patch("config.utils.get_agent_config")
-@mock.patch("services.agents.routing_agent.agent_plan")
+@mock.patch("services.agents.routing_agent.run_db_agent")
 @mock.patch("services.agents.routing_agent.run_intent")
 async def test_db_route(mock_run_intent,
                         mock_run_db_agent,
                         mock_get_agent_config,
                         test_model_config,
-                        create_user, create_chat, create_query_result):
+                        test_agent_config,
+                        create_user, create_chat):
   """ Test run_routing_agent with db route """
 
   mock_run_intent.return_value = FAKE_DB_ROUTE, FAKE_AGENT_LOGS
@@ -193,7 +218,7 @@ async def test_db_route(mock_run_intent,
       prompt, agent_name, create_user, create_chat)
 
 #
-  #assert route == AgentCapability.AGENT_QUERY_CAPABILITY.value
+  #assert route == AgentCapability.QUERY.value
   
   #assert response_data["resources"]["Spreadsheet"] == "test url"
 
