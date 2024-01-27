@@ -57,17 +57,12 @@ async def run_routing_agent(prompt: str,
 
   route_parts = route.split(":", 1)
   route_type = route_parts[0]
-  route_name = route
   agent_logs = None
 
-  # create default chat_history_entry and response_data
+  # create default chat_history_entry
   chat_history_entry = {
     "route": route_type,
-    "route_name": route_name,
-  }
-  response_data = {
-    "route": route_type,
-    "route_name": route_name,
+    "route_name": route,
   }
 
   # get routing agent model
@@ -151,6 +146,8 @@ async def run_routing_agent(prompt: str,
     agent_logs = output
 
     response_data = {
+      "route": route_type,
+      "route_name": AgentCapability.PLAN.value,
       "content": output,
       "plan": plan_data,
       "agent_logs": agent_logs,
@@ -162,6 +159,8 @@ async def run_routing_agent(prompt: str,
     output = await run_agent("Chat", prompt)
     chat_history_entry[CHAT_AI] = output
     response_data = {
+      "route": AgentCapability.CHAT.value,
+      "route_name": AgentCapability.CHAT.value,
       "content": output,
     }
 
@@ -173,16 +172,15 @@ async def run_routing_agent(prompt: str,
     chat_history_entry["route_logs"] = route_logs
     response_data["route_logs"] = route_logs
 
+  # update chat data in response
   user_chat.update_history(custom_entry=chat_history_entry)
   user_chat.save()
-
   chat_data = user_chat.get_fields(reformat_datetime=True)
   chat_data["id"] = user_chat.id
   response_data["chat"] = chat_data
-  response_data["route_name"] = route_name
 
   Logger.info(f"Dispatch agent {agent_name} response: "
-              f"route {route} response {response_data}")
+              f"route [{route}] response {response_data}")
 
   return route, response_data
 
