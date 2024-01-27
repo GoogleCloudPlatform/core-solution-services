@@ -34,7 +34,7 @@ Logger = Logger.get_logger(__file__)
 async def run_routing_agent(prompt: str,
                             agent_name: str,
                             user: User,
-                            user_chat: UserChat = None) -> Tuple[str, dict]:
+                            user_chat: UserChat) -> Tuple[str, dict]:
   """
   Determine intent from user prompt for best route to fulfill user
   input.  Then execute that route.
@@ -60,7 +60,7 @@ async def run_routing_agent(prompt: str,
   route_name = route
   agent_logs = None
 
-  # Executing based on the best intent route.
+  # create default chat_history_entry and response_data
   chat_history_entry = {
     "route": route_type,
     "route_name": route_name,
@@ -70,6 +70,7 @@ async def run_routing_agent(prompt: str,
     "route_name": route_name,
   }
 
+  # get routing agent model
   routing_agent = Agent.find_by_name(agent_name)
   if not routing_agent:
     raise RuntimeError(f"Cannot find model for {agent_name}")
@@ -119,7 +120,6 @@ async def run_routing_agent(prompt: str,
 
     db_result, agent_logs = await run_db_agent(
         prompt, llm_type, dataset_name, user.email)
-    # Logger.info(f"DB query response: \n{db_result}")
 
     # TODO: Update with the output generated from the LLM.
     if db_result.get("data", None):
@@ -133,7 +133,6 @@ async def run_routing_agent(prompt: str,
       "route_name": f"Database Query: {dataset_name}",
       f"{CHAT_AI}": response_output,
       "content": response_output,
-      # "data": db_result["data"],
       "dataset": dataset_name,
       "resources": db_result["resources"],
       "agent_logs": agent_logs,

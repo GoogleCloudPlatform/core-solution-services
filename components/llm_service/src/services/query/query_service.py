@@ -79,8 +79,9 @@ async def query_generate(
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
 
-  Returns:
-    QueryResult: the query result object
+  Returns:    
+    QueryResult object, 
+    list of dicts of query reference metadata (see query_search)
 
   Raises:
     ResourceNotFoundException if the named query engine doesn't exist
