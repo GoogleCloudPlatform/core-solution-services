@@ -44,7 +44,7 @@ def get_model_garden_agent_config() -> dict:
   agent_config = get_agent_config()
   planning_agents = {
       agent: agent_config for agent, agent_config in agent_config.items()
-      if AgentCapability.AGENT_PLAN_CAPABILITY.value \
+      if AgentCapability.PLAN.value \
          in agent_config["capabilities"]
   }
   return planning_agents
@@ -53,7 +53,7 @@ def get_plan_agent_config() -> dict:
   agent_config = get_agent_config()
   planning_agents = {
       agent: agent_config for agent, agent_config in agent_config.items()
-      if AgentCapability.AGENT_PLAN_CAPABILITY.value \
+      if AgentCapability.PLAN.value \
           in agent_config["capabilities"]
   }
   return planning_agents
@@ -62,7 +62,7 @@ def get_task_agent_config() -> dict:
   agent_config = get_agent_config()
   planning_agents = {
       agent: agent_config for agent, agent_config in agent_config.items()
-      if AgentCapability.AGENT_TASK_CAPABILITY.value \
+      if AgentCapability.TASK.value \
          in agent_config["capabilities"]
   }
   return planning_agents

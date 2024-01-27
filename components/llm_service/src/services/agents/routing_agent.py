@@ -75,7 +75,7 @@ async def run_routing_agent(prompt: str,
     raise RuntimeError(f"Cannot find model for {agent_name}")
 
   # Query Engine route
-  if route_type == AgentCapability.AGENT_QUERY_CAPABILITY.value:
+  if route_type == AgentCapability.QUERY.value:
     # Run RAG via a specific query engine
     query_engine_name = route_parts[1]
     Logger.info("Dispatch to Query Engine: {query_engine_name}")
@@ -110,7 +110,7 @@ async def run_routing_agent(prompt: str,
     chat_history_entry[CHAT_AI] = query_result.response
 
   # Database route
-  elif route_type == AgentCapability.AGENT_DATABASE_CAPABILITY.value:
+  elif route_type == AgentCapability.DATABASE.value:
     # Run a query against a DB dataset. Return a dict of
     # "columns: column names, "data": row data
     dataset_name = route_parts[1]
@@ -141,7 +141,7 @@ async def run_routing_agent(prompt: str,
     chat_history_entry = response_data
 
   # Plan route
-  elif route_type == AgentCapability.AGENT_PLAN_CAPABILITY.value:
+  elif route_type == AgentCapability.PLAN.value:
     # Run PlanAgent to generate a plan
     output, user_plan = await agent_plan(
         agent_name="Plan", prompt=prompt, user_id=user.id)
@@ -211,7 +211,7 @@ async def run_intent(
   # check for default routing agent
   if agent_name == "default":
     routing_agents = BaseAgent.get_agents_by_capability(
-      AgentCapability.AGENT_ROUTE_CAPABILITY.value
+      AgentCapability.ROUTE.value
     )
     agent_name = routing_agents.keys()[0]
 
@@ -246,7 +246,7 @@ async def run_intent(
 
   # If no best route(s) found, pass to Chat agent.
   if not routes or len(routes) == 0:
-    return AgentCapability.AGENT_CHAT_CAPABILITY.value, agent_logs
+    return AgentCapability.CHAT.value, agent_logs
 
   # TODO: Refactor this with RoutingAgentOutputParser
   # Get the route for the best matched (first) returned routes.
@@ -263,9 +263,9 @@ def get_dispatch_prompt(llm_service_agent: BaseAgent) -> str:
 
   intent_list_str = ""
   intent_list = [
-    f"- {AgentCapability.AGENT_CHAT_CAPABILITY.value}" \
+    f"- {AgentCapability.CHAT.value}" \
     " to to perform generic chat conversation.",
-    f"- {AgentCapability.AGENT_PLAN_CAPABILITY.value}" \
+    f"- {AgentCapability.PLAN.value}" \
     " to compose, generate or create a plan.",
   ]
   for intent in intent_list:
@@ -277,7 +277,7 @@ def get_dispatch_prompt(llm_service_agent: BaseAgent) -> str:
   Logger.info(f"query_engines for {agent_name}: {query_engines}")
   for qe in query_engines:
     intent_list_str += \
-      f"- [{AgentCapability.AGENT_QUERY_CAPABILITY.value}:{qe.name}]" \
+      f"- [{AgentCapability.QUERY.value}:{qe.name}]" \
       f" to run a query on a search engine for information (not raw data)" \
       f" on the topics of {qe.description} \n"
 
@@ -287,7 +287,7 @@ def get_dispatch_prompt(llm_service_agent: BaseAgent) -> str:
   for ds_name, ds_config in datasets.items():
     description = ds_config["description"]
     intent_list_str += \
-      f"- [{AgentCapability.AGENT_DATABASE_CAPABILITY.value}:{ds_name}]" \
+      f"- [{AgentCapability.DATABASE.value}:{ds_name}]" \
       f" to use SQL to retrieve rows of data from a database for data " \
       f"related to these areas: {description} \n"
 

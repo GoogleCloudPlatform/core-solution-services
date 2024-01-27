@@ -236,8 +236,8 @@ class ChatAgent(BaseAgent):
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
-    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
-                    AgentCapability.AGENT_QUERY_CAPABILITY]
+    capabilities = [AgentCapability.CHAT,
+                    AgentCapability.QUERY]
     return capabilities
 
 
@@ -262,10 +262,10 @@ class RoutingAgent(BaseAgent):
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
-    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
-                    AgentCapability.AGENT_QUERY_CAPABILITY,
-                    AgentCapability.AGENT_PLAN_CAPABILITY,
-                    AgentCapability.AGENT_ROUTE_CAPABILITY]
+    capabilities = [AgentCapability.CHAT,
+                    AgentCapability.QUERY,
+                    AgentCapability.PLAN,
+                    AgentCapability.ROUTE]
     return capabilities
 
 
@@ -296,9 +296,9 @@ class TaskAgent(BaseAgent):
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
-    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
-                    AgentCapability.AGENT_QUERY_CAPABILITY,
-                    AgentCapability.AGENT_TASK_CAPABILITY]
+    capabilities = [AgentCapability.CHAT,
+                    AgentCapability.QUERY,
+                    AgentCapability.TASK]
     return capabilities
 
   def get_planning_agent(self) -> str:
@@ -330,7 +330,7 @@ class PlanAgent(BaseAgent):
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
-    capabilities = [AgentCapability.AGENT_PLAN_CAPABILITY]
+    capabilities = [AgentCapability.PLAN]
     return capabilities
 
 
