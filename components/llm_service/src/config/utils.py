@@ -45,7 +45,7 @@ def load_agent_config(agent_config_path: str):
     agent_config = load_config_json(agent_config_path)
     set_agent_config(agent_config)
   except Exception as e:
-    raise RuntimeError(f" Error loading agent config: {e}") from e    
+    raise RuntimeError(f" Error loading agent config: {e}") from e
 
 def set_agent_config(agent_config: dict):
   """
@@ -55,7 +55,7 @@ def set_agent_config(agent_config: dict):
 
   agent_config = agent_config.get("Agents", None)
   if agent_config is None:
-    raise RuntimeError(f"Missing agent config")
+    raise RuntimeError("Missing agent config")
 
   # add agent class and capabilities
   from services.agents import agents
