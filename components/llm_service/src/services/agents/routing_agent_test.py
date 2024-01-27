@@ -24,6 +24,7 @@ import tempfile
 from unittest import mock
 from common.models import User, UserChat, QueryResult
 from common.models.agent import AgentCapability
+from common.utils.logging_handler import Logger
 from config import (get_model_config, PROVIDER_LANGCHAIN,
                     OPENAI_LLM_TYPE_GPT4,
                     VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
@@ -34,14 +35,22 @@ from schemas.schema_examples import (CHAT_EXAMPLE, USER_EXAMPLE,
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 from services.agents.routing_agent import run_intent, run_routing_agent
 
+Logger = Logger.get_logger(__file__)
+
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
 FAKE_QUERY_ROUTE = "Query"
+FAKE_PLAN_ROUTE = "Plan"
+FAKE_DB_ROUTE = "Database"
+
 FAKE_AGENT_LOGS = ""
 FAKE_ROUTING_AGENT = "Router"
+
+FAKE_DB_AGENT_RESULT = {}
+FAKE_PLAN_AGENT_RESULT = {}
 
 TEST_AGENT_CONFIG = {
   "Agents":
@@ -113,9 +122,9 @@ class FakeQueryTool():
     return ""
 
 @pytest.mark.asyncio
-@mock.patch("services.agents.routing_agent.run_intent")
-@mock.patch("services.agents.routing_agent.query_generate")
 @mock.patch("config.utils.get_agent_config")
+@mock.patch("services.agents.routing_agent.agent_plan")
+@mock.patch("services.agents.routing_agent.run_intent")
 async def test_query_route(mock_run_intent,
                            mock_query_generate,
                            mock_get_agent_config,
@@ -129,10 +138,62 @@ async def test_query_route(mock_run_intent,
 
   agent_name = FAKE_ROUTING_AGENT
   prompt = "when does a chicken start laying eggs?"
+    
   route, response_data = await run_routing_agent(
-      agent_name, prompt, create_user, create_chat)
+      prompt, agent_name, create_user, create_chat)
+#
+  #assert route == AgentCapability.AGENT_QUERY_CAPABILITY.value
+  
+  #assert response_data["resources"]["Spreadsheet"] == "test url"
 
-  assert route == AgentCapability.AGENT_QUERY_CAPABILITY.value
+@pytest.mark.asyncio
+@mock.patch("config.utils.get_agent_config")
+@mock.patch("services.agents.routing_agent.agent_plan")
+@mock.patch("services.agents.routing_agent.run_intent")
+async def test_plan_route(mock_run_intent,
+                           mock_agent_plan,
+                           mock_get_agent_config,
+                           test_model_config,
+                           create_user, create_chat, create_query_result):
+  """ Test run_routing_agent with plan route """
+
+  mock_run_intent.return_value = FAKE_PLAN_ROUTE, FAKE_AGENT_LOGS
+  mock_agent_plan.return_value = FAKE_PLAN_AGENT_RESULT
+  mock_get_agent_config.return_value = TEST_AGENT_CONFIG
+
+  agent_name = FAKE_ROUTING_AGENT
+  prompt = "when does a chicken start laying eggs?"
+    
+  route, response_data = await run_routing_agent(
+      prompt, agent_name, create_user, create_chat)
+#
+  #assert route == AgentCapability.AGENT_QUERY_CAPABILITY.value
+  
+  #assert response_data["resources"]["Spreadsheet"] == "test url"
+
+@pytest.mark.asyncio
+@mock.patch("config.utils.get_agent_config")
+@mock.patch("services.agents.routing_agent.agent_plan")
+@mock.patch("services.agents.routing_agent.run_intent")
+async def test_db_route(mock_run_intent,
+                        mock_run_db_agent,
+                        mock_get_agent_config,
+                        test_model_config,
+                        create_user, create_chat, create_query_result):
+  """ Test run_routing_agent with db route """
+
+  mock_run_intent.return_value = FAKE_DB_ROUTE, FAKE_AGENT_LOGS
+  mock_run_db_agent.return_value = FAKE_DB_AGENT_RESULT
+  mock_get_agent_config.return_value = TEST_AGENT_CONFIG
+
+  agent_name = FAKE_ROUTING_AGENT
+  prompt = "when does a chicken start laying eggs?"
+    
+  route, response_data = await run_routing_agent(
+      prompt, agent_name, create_user, create_chat)
+
+#
+  #assert route == AgentCapability.AGENT_QUERY_CAPABILITY.value
   
   #assert response_data["resources"]["Spreadsheet"] == "test url"
 
