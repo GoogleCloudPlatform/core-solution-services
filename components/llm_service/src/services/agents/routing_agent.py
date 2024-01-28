@@ -289,8 +289,8 @@ def get_dispatch_prompt(llm_service_agent: BaseAgent) -> str:
       f" to use SQL to retrieve rows of data from a database for data " \
       f"related to these areas: {description} \n"
 
-  dispatch_prompt = f"""
-    The AI Routing Assistant has access to the following routes for a user prompt:
+  dispatch_prompt = \
+    """The AI Routing Assistant has access to the following routes for a user prompt:
     {intent_list_str}
     Choose one route based on the question below:
     """

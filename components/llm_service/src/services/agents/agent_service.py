@@ -192,7 +192,7 @@ def parse_action_output(header: str, text: str) -> List[str]:
   """
   Logger.info(f"Parsing agent output: {header}, {text}")
 
-  # Regex pattern to match the steps after 'Plan:'
+  # Regex pattern to match the steps after '<header>'
   # We are using the re.DOTALL flag to match across newlines and
   # re.MULTILINE to treat each line as a separate string
   steps_regex = re.compile(
@@ -201,7 +201,7 @@ def parse_action_output(header: str, text: str) -> List[str]:
   # Find the part of the text after header
   plan_part = re.split(header, text, flags=re.IGNORECASE)[-1]
 
-  # Find all the steps within the 'Plan:' part
+  # Find all the steps within the '<header>' part
   steps = steps_regex.findall(plan_part)
 
   # strip whitespace

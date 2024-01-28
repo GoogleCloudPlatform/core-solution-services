@@ -54,6 +54,7 @@ os.environ["COHERE_API_KEY"] = "fake-key"
 FAKE_QUERY_ROUTE = f"Query:{QUERY_ENGINE_EXAMPLE['name']}"
 FAKE_PLAN_ROUTE = "Plan"
 FAKE_DATASET = "fake-dataset"
+FAKE_DATASET_DESCRIPTION = "fake dataset description"
 FAKE_DB_ROUTE = f"Database:{FAKE_DATASET}"
 FAKE_CHAT_ROUTE = "Chat"
 
@@ -61,7 +62,7 @@ FAKE_AGENT_LOGS = "fake logs"
 FAKE_AGENT_OUTPUT = "fake agent output"
 FAKE_ROUTING_AGENT = "Router"
 
-FAKE_INTENT_OUTPUT = f"Route: {FAKE_DB_ROUTE}"
+FAKE_INTENT_OUTPUT = f"Route:\n1. {FAKE_DB_ROUTE}"
 
 FAKE_DB_AGENT_RESULT = {
   "data": "fake-data",
@@ -157,6 +158,23 @@ class FakeAgentExecutor():
   async def arun(self, prompt):
     return FAKE_INTENT_OUTPUT
 
+class FakeLangchainAgent():
+  pass
+
+class FakeAgent():
+  def __init__(self, query_engines):
+    self.name = FAKE_ROUTING_AGENT
+    self.query_engines = query_engines
+    self.datasets = {FAKE_DATASET: {"description": FAKE_DATASET_DESCRIPTION}}
+  def get_tools(self):
+    return []
+  def load_langchain_agent(self):
+    return FakeLangchainAgent()
+  def get_query_engines(self, agent_name):
+    return self.query_engines
+  def get_datasets(self, agent_name):
+    return self.datasets
+  
 
 @pytest.mark.asyncio
 @mock.patch("config.utils.get_agent_config")
@@ -288,16 +306,19 @@ async def test_chat_route(mock_run_intent,
 @mock.patch("config.utils.get_agent_config")
 @mock.patch("services.agents.routing_agent.agent_executor_arun_with_logs")
 @mock.patch("services.agents.routing_agent.AgentExecutor.from_agent_and_tools")
-async def test_run_intent(mock_agent_executor,
+@mock.patch("services.agents.routing_agent.BaseAgent.get_llm_service_agent")
+async def test_run_intent(mock_get_agent,
+                          mock_agent_executor,
                           mock_agent_executor_arun,
                           mock_get_agent_config,
                           test_model_config,
                           test_agent_config,
-                          create_user, create_chat):
+                          create_user, create_chat, create_query_engine):
   """ Test run_intent """
 
+  mock_get_agent.return_value = FakeAgent([create_query_engine])
   mock_agent_executor.return_value = FakeAgentExecutor()
-  mock_agent_executor_arun.return_value = FAKE_INTENT_OUTPUT
+  mock_agent_executor_arun.return_value = FAKE_INTENT_OUTPUT, FAKE_AGENT_LOGS
   mock_get_agent_config.return_value = TEST_AGENT_CONFIG
 
   agent_name = FAKE_ROUTING_AGENT
