@@ -158,7 +158,7 @@ def load_langchain_classes() -> dict:
   # imported in community packages
   langchain_chat_classes["ChatOpenAI"] = ChatOpenAI
   langchain_chat_classes["ChatVertexAI"] = ChatVertexAI
-  
+
   langchain_classes = langchain_chat_classes | langchain_llm_classes \
                       | langchain_embedding_classes
 
