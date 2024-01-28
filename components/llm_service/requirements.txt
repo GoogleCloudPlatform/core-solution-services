@@ -25,7 +25,7 @@ Scrapy==2.11.0
 shapely==1.8.5.post1
 spacy==3.7.2
 SQLAlchemy==2.0.25
-#sqlalchemy-bigquery==1.10.0 TODO: uncomment when sqlalchemy-bigquery v.1.10.0 is released
+sqlalchemy-bigquery @ https://github.com/googleapis/python-bigquery-sqlalchemy/archive/refs/tags/v1.10.0rc1.zip
 sqlparse==0.4.4
 sqlvalidator==0.0.20
 tiktoken==0.5.2
