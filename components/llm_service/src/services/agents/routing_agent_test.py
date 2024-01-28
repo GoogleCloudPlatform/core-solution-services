@@ -62,7 +62,7 @@ FAKE_AGENT_LOGS = "fake logs"
 FAKE_AGENT_OUTPUT = "fake agent output"
 FAKE_ROUTING_AGENT = "Router"
 
-FAKE_INTENT_OUTPUT = f"Route:\n1. {FAKE_DB_ROUTE}"
+FAKE_INTENT_OUTPUT = f"Route:\n1. Use [Database] to query a database"
 
 FAKE_DB_AGENT_RESULT = {
   "data": "fake-data",

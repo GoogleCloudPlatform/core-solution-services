@@ -219,7 +219,7 @@ async def run_intent(
   # load corresponding langchain agent and instantiate agent_executor
   langchain_agent = llm_service_agent.load_langchain_agent()
   intent_agent_tools = llm_service_agent.get_tools()
-  Logger.info(f"Dispatch agent tools [{intent_agent_tools}]")
+  Logger.info(f"Routing agent tools [{intent_agent_tools}]")
 
   agent_executor = AgentExecutor.from_agent_and_tools(
       agent=langchain_agent, tools=intent_agent_tools)
