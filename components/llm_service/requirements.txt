@@ -7,9 +7,9 @@ google-cloud-bigquery-storage==2.24.0
 google-cloud-resource-manager==1.9.1
 google-cloud-storage==2.10.0
 invoke==2.0.0
-langchain==0.0.350
-langchain-community==0.0.7
-langchain-core==0.1.4
+langchain==0.1.4
+langchain-community==0.0.16
+langchain-core==0.1.16
 numpy==1.25.0
 openai==0.28.1
 packaging==23.2
@@ -22,8 +22,8 @@ pypdf==3.17.0
 Scrapy==2.11.0
 shapely==1.8.5.post1
 spacy==3.7.2
-SQLAlchemy==1.4.50
-sqlalchemy-bigquery==1.8.0
+SQLAlchemy==2.0.25
+sqlalchemy-bigquery==1.9.0
 sqlparse==0.4.4
 sqlvalidator==0.0.20
 tiktoken==0.5.2
