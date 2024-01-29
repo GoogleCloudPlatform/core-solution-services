@@ -17,7 +17,7 @@ Common and generic styles used throughout various main pages
 """
 
 import streamlit as st
-from styles.style_constants import colors, decoration
+from styles.style_constants import colors
 
 def main_styles():
 
@@ -66,11 +66,11 @@ def main_styles():
         cursor: pointer;
         border-color: {colors['border_primary']};
         background-color: {colors['light_fill']};
-        border-radius: {decoration['border_radius']};
         color: {colors['text_primary']};
       }}
       [data-testid=stSelectbox] label p {{
         color: {colors['text_primary']};
+        font-size: 15px;
       }}
       [data-testid=stSelectbox] svg {{
         color: #5f6368;
@@ -88,10 +88,6 @@ def main_styles():
       [data-baseweb="tooltip"] > div:nth-child(1) {{
         background-color: {colors['light_fill']};
         color: {colors['text_primary']};
-      }}
-      [data-baseweb="popover"] {{
-        top: 409px;
-        left: 394px;
       }}
 
       /* Smartphones and small devices */

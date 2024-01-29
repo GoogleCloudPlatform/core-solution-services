@@ -75,12 +75,6 @@ def custom_chat_theme():
       .main [data-testid="block-container"] {{
         overflow: auto;
       }}
-      
-      /* Text input positioning */
-      .main [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1) > div:nth-child(1) {{
-        position: fixed;
-        bottom: 50px;
-      }}
 
       /* Text area styling */
       .stTextArea {{
@@ -125,7 +119,7 @@ def custom_chat_theme():
         flex-grow: 0;
       }}
       .main [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
-        gap: 1rem !important;
+        gap: 1rem;
       }}
       .main [data-testid="stExpander"] svg {{
         margin-top: 1.5px;
@@ -148,10 +142,24 @@ def custom_chat_theme():
       [data-testid="stForm"] + div [data-testid="column"] {{
         width: 100%;
       }}
-
       [data-testid="stForm"] + div [data-testid="stExpander"] {{
         margin-left: 0;
         padding-bottom: 12px;
+      }}
+      [data-testid="stForm"] + div [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
+        gap: .5rem;
+      }}
+      [data-testid="stForm"] + div [data-testid="stExpander"] a {{
+        color: {colors['tint_primary']};
+      }}
+      [data-testid="stForm"] + div [data-testid="stExpander"] a::after {{
+        content: url('{icon_base}open-in-new-rounded.svg?height=17&color=%234285f4');
+        margin-left: 7px;
+        vertical-align: sub;
+      }}
+      [data-testid="stForm"] + div [data-testid="stExpander"] hr {{
+        margin-top: 1em;
+        margin-bottom: 1.5em;
       }}
 
       /* Chat styling */
@@ -190,7 +198,6 @@ def custom_chat_theme():
         background-color: {colors['light_fill']};
         border: 1px solid {colors['border_primary']};
         transition: border-color 0.1s ease-in, border-width 0.2s ease-in;
-        border-radius: 18px;
       }}
       [data-testid="textInputRootElement"]:has(input:focus) {{
         border: 2px solid {colors['tint_primary']};
@@ -199,6 +206,18 @@ def custom_chat_theme():
         color: {colors['input_text']};
         -webkit-text-fill-color: {colors['input_text']};
         caret-color: {colors['input_text']};
+      }}
+      [data-testid="stTextInput"] label p {{
+        font-size: 15px;
+      }}
+
+      /* Bottom text input styles and positioning */
+      .main [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1) > div:nth-child(1) {{
+        position: fixed;
+        bottom: 50px;
+      }}
+      .main [data-testid="stForm"] [data-testid="textInputRootElement"] {{
+        border-radius: 18px;
       }}
 
       /* Input button styling */
@@ -229,7 +248,7 @@ def custom_chat_theme():
         .main {{
           padding-bottom: 30px;
         }}
-        [data-testid="textInputRootElement"] input {{
+        .main [data-testid="stForm"] [data-testid="textInputRootElement"] input {{
           padding: 0.7rem;
         }}
         .main [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1) > div:nth-child(1) {{
@@ -242,7 +261,7 @@ def custom_chat_theme():
         .main {{
           padding-bottom: 94px;
         }}
-        [data-testid="textInputRootElement"] input {{
+        .main [data-testid="stForm"] [data-testid="textInputRootElement"] input {{
           padding: 0.72rem;
         }}
         .main [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1) > div:nth-child(1) {{
@@ -258,7 +277,7 @@ def custom_chat_theme():
         .main {{
           padding-bottom: 114px;
         }}
-        [data-testid="textInputRootElement"] input {{
+        .main [data-testid="stForm"] [data-testid="textInputRootElement"] input {{
           padding: 0.83rem;
         }}
         .main [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1) > div:nth-child(1) {{
@@ -274,7 +293,7 @@ def custom_chat_theme():
         .main {{
           padding-bottom: 124px;
         }}
-        [data-testid="textInputRootElement"] input {{
+        .main [data-testid="stForm"] [data-testid="textInputRootElement"] input {{
           padding: 0.85rem;
         }}
         .main [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1) > div:nth-child(1) {{
