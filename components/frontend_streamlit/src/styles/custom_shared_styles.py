@@ -17,7 +17,7 @@ Common and generic styles used throughout various main pages
 """
 
 import streamlit as st
-from styles.style_constants import colors, decoration
+from styles.style_constants import colors
 
 def main_styles():
 

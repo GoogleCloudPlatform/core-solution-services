@@ -126,7 +126,8 @@ def chat_content():
           if st.session_state.help_state is False:
             with st.chat_message("ai"):
               st.write(
-                  "If it's an emergency, please dial 911. Otherwise, complete the form below",
+                  "If it's an emergency, please dial 911."\
+                  " Otherwise, complete the form below",
                   key=f"em_{index}"
               )
             with st.expander("Get Further Assistance", expanded=True):
@@ -135,9 +136,10 @@ def chat_content():
             with st.chat_message("ai"):
               st.markdown(
                   "Your ticket number is: **5010**<br>"\
-                  "You will receive an **email notification** within 48 hours.<br>"\
-                  "You may continue to utilize the chat assistant, or can close or "\
-                  "navigate away from this window.",
+                  "You will receive an **email notification** "\
+                  "within 48 hours.<br>"\
+                  "You may continue to utilize the chat assistant, "\
+                  "or can close or navigate away from this window.",
                   unsafe_allow_html=True
               )
 
@@ -320,19 +322,19 @@ def chat_page():
     with st.expander("References", expanded=True):
       url_name = "Medicaid"
       document_url = "https://www.medicaid.gov/"
-      document_text = "New York's Medicaid program provides comprehensive health coverage"
+      doc_text = "New York's Medicaid program provides total health coverage"
 
       st.write("**Site:**")
       st.markdown(f"[{url_name}]({document_url})")
       st.write("**Overview:**")
-      st.write(document_text)
+      st.write(doc_text)
 
       st.divider()
 
       st.write("**Site:**")
       st.markdown(f"[{url_name}]({document_url})")
       st.write("**Overview:**")
-      st.write(document_text)
+      st.write(doc_text)
 
   with plan_col:
     for item in st.session_state.messages:

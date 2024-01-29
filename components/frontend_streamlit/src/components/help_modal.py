@@ -25,7 +25,7 @@ def help_form():
   name_col, pref_col = st.columns(2)
 
   with name_col:
-    name = st.text_input("Name")
+    st.text_input("Name")
 
   with pref_col:
     pref = st.selectbox(
@@ -35,12 +35,12 @@ def help_form():
 
   with contact_col:
     if pref == "Email":
-      email = st.text_input("Email")
+      st.text_input("Email")
     else:
-      phone = st.text_input("Phone Number")
+      st.text_input("Phone Number")
 
   with issue_col:
-    issue = st.text_input("Detail Your Issue")
+    st.text_input("Detail Your Issue")
 
   st.button("Send", on_click=handle_click)
 
