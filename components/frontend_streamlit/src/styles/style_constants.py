@@ -25,7 +25,11 @@ colors = {
   "btn_hover": "#2369de",
   "dim_text": "rgb(0 0 0 / 64%)",
   "input_text": "#4a4d50",
-  "border_primary": "#90989f"
+  "border_primary": "#90989f",
+  "casey_tint": "#eaf0fd",
+  "medikate_tint": "#e9e1f6",
+  "action_btn": "%234a4d50",
+  "action_btn_on": "%234285f4"
 }
 
 decoration = {

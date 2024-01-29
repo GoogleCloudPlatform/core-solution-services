@@ -116,7 +116,7 @@ def init_page(redirect_to_without_auth=True):
 
   #./main.py is used as an entrypoint for the build,
   # which creates a page that duplicates the Login page named "main".
-  hide_pages(["main"])
+  hide_pages(["main", "Custom_Chat"])
 
   api_base_url = API_BASE_URL
   st.session_state.api_base_url = api_base_url.rstrip("/")
