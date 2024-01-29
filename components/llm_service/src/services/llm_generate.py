@@ -417,8 +417,8 @@ async def google_llm_predict_multi(user_file: UploadFile, prompt: str,
   Logger.info(f"Generating text with a Google multimodal LLM given a"
               f" file and a prompt, is_chat=[{is_chat}],"
               f" is_multi=[{is_multi}], google_llm=[{google_llm}]")
-  Logger.debug(f"user_file=[{user_file.filename}].")
-  Logger.debug(f"prompt=[{prompt}].")
+  Logger.info(f"user_file=[{user_file.filename}].")
+  Logger.info(f"prompt=[{prompt}].")
 
   # Get file data and package in Gemini Image class
   user_file_bytes = user_file.read()
@@ -490,6 +490,7 @@ async def google_llm_predict_multi(user_file: UploadFile, prompt: str,
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-  Logger.info(f"Received response from the Model [{response_text}]")
+  Logger.info(f"Received response from the Model [{response.text}]")
+  response = response.text
 
-  return response_text
+  return response
