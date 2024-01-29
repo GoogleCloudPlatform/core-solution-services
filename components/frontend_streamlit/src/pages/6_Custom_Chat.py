@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-  Streamlit app Chat Page
+  Streamlit app custom Chat Page
 """
 # pylint: disable=invalid-name,unused-variable
 import re
@@ -22,6 +22,7 @@ from api import (
     get_chat, run_dispatch, get_plan,
     run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
 from components.chat_options import action_buttons
+from components.help_modal import help_form
 from styles.pages.custom_chat_markup import custom_chat_theme
 from common.utils.logging_handler import Logger
 import utils
@@ -106,24 +107,51 @@ def chat_content():
   with chat_placeholder.container():
     index = 1
     has_input = False
+    needs_help = False
     for item in st.session_state.messages:
       Logger.info(item)
 
       if "HumanInput" in item:
         has_input = True
+        if item["HumanInput"] == "I need help":
+          needs_help = True
         with st.chat_message("user"):
           st.write(item["HumanInput"], is_user=True, key=f"human_{index}")
 
       if "AIOutput" in item:
-        with st.chat_message("ai"):
-          ai_output = item["AIOutput"]
-          ai_output = format_ai_output(ai_output)
-          st.write(
-              ai_output,
-              key=f"ai_{index}",
-              unsafe_allow_html=False,
-              is_table=False,  # TODO: Detect whether an output content type.
-          )
+        if needs_help:
+          if "help_state" not in st.session_state:
+            st.session_state.help_state = False
+
+          if st.session_state.help_state is False:
+            with st.chat_message("ai"):
+              st.write(
+                  "If it's an emergency, please dial 911. Otherwise, complete the form below",
+                  key=f"em_{index}"
+              )
+            with st.expander("Get Further Assistance", expanded=True):
+              help_form()
+          else:
+            with st.chat_message("ai"):
+              st.markdown(
+                  "Your ticket number is: **5010**<br>"\
+                  "You will receive an **email notification** within 48 hours.<br>"\
+                  "You may continue to utilize the chat assistant, or can close or "\
+                  "navigate away from this window.",
+                  unsafe_allow_html=True
+              )
+
+          needs_help = False
+        else:
+          with st.chat_message("ai"):
+            ai_output = item["AIOutput"]
+            ai_output = format_ai_output(ai_output)
+            st.write(
+                ai_output,
+                key=f"ai_{index}",
+                unsafe_allow_html=False,
+                is_table=False,  # TODO: Detect whether an output content type.
+            )
 
       route_logs = item.get("route_logs", None)
       if route_logs and route_logs.strip() != "":
@@ -286,7 +314,25 @@ def chat_page():
   with content_placeholder:
     chat_content()
 
-  plan_col, ref_col, options = st.columns(3)
+  ref_col, plan_col, options = st.columns(3)
+
+  with ref_col:
+    with st.expander("References", expanded=True):
+      url_name = "Medicaid"
+      document_url = "https://www.medicaid.gov/"
+      document_text = "New York's Medicaid program provides comprehensive health coverage"
+
+      st.write("**Site:**")
+      st.markdown(f"[{url_name}]({document_url})")
+      st.write("**Overview:**")
+      st.write(document_text)
+
+      st.divider()
+
+      st.write("**Site:**")
+      st.markdown(f"[{url_name}]({document_url})")
+      st.write("**Overview:**")
+      st.write(document_text)
 
   with plan_col:
     for item in st.session_state.messages:
@@ -295,10 +341,6 @@ def chat_page():
         with st.expander("Plan Steps"):
           for step in plan["plan_steps"]:
             st.write(step["description"])
-
-  with ref_col:
-    with st.expander("References"):
-      st.text("test")
 
   with options:
     with st.expander("Advanced Settings"):
