@@ -1,13 +1,7 @@
 {
   "Agents":
   {
-    "MediKate": {
-      "llm_type": "OpenAI-GPT4",
-      "agent_type": "langchain_Conversational",
-      "agent_class": "RoutingAgent",
-      "tools": ""
-    },
-    "Casey": {
+    "Router": {
       "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_Conversational",
       "agent_class": "RoutingAgent",

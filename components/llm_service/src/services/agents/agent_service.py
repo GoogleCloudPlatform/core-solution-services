@@ -24,7 +24,7 @@ from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
-from config.utils import get_agent_config
+from config.agent_config import get_agent_config
 from services.agents.agents import BaseAgent
 from services.agents.utils import agent_executor_arun_with_logs
 

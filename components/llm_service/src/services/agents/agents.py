@@ -26,7 +26,7 @@ from langchain.agents.structured_chat.prompt \
     import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from langchain.schema import AgentAction, AgentFinish
-from config.utils import get_dataset_config, get_agent_config, get_config_list
+from config.agent_config import get_dataset_config, get_agent_config, get_config_list
 from common.models import QueryEngine
 from common.models.agent import AgentCapability
 from common.utils.errors import ResourceNotFoundException

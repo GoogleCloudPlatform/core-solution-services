@@ -17,12 +17,12 @@
 """
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports,wrong-import-position
+
 import os
 import json
 import pytest
 import tempfile
 from unittest import mock
-from config.utils import set_agent_config
 from common.models import (User, UserChat, QueryResult,
                            QueryEngine, UserPlan, PlanStep)
 from common.models.llm import CHAT_AI
@@ -63,47 +63,14 @@ FAKE_AGENT_LOGS = "fake logs"
 FAKE_AGENT_OUTPUT = "fake agent output"
 FAKE_ROUTING_AGENT = "Router"
 
-FAKE_INTENT_OUTPUT = f"Route:\n1. Use [Database] to query a database"
+FAKE_INTENT_OUTPUT = "Route:\n1. Use [Database] to query a database"
 
 FAKE_DB_AGENT_RESULT = {
   "data": "fake-data",
   "resources": {"Spreadsheet": "https://example.com"}
 }
 
-TEST_AGENT_CONFIG = {
-  "Agents":
-  {
-    FAKE_ROUTING_AGENT: {
-      "llm_type": OPENAI_LLM_TYPE_GPT4,
-      "agent_type": "langchain_Conversational",
-      "agent_class": "RoutingAgent",
-      "tools": ""
-    },
-    "Chat": {
-      "llm_type": OPENAI_LLM_TYPE_GPT4,
-      "agent_type": "langchain_Conversational",
-      "agent_class": "ChatAgent",
-      "tools": "search_tool,query_tool",
-      "query_engines": "ALL"
-    },
-    "Task": {
-      "llm_type": OPENAI_LLM_TYPE_GPT4_LATEST,
-      "agent_type": "langchain_StructuredChatAgent",
-      "agent_class": "TaskAgent",
-      "tools": "ALL"
-    },
-    "Plan": {
-      "llm_type": OPENAI_LLM_TYPE_GPT4_LATEST,
-      "agent_type": "langchain_ZeroShot",
-      "agent_class": "PlanAgent",
-      "query_engines": "ALL",
-      "tools": "ALL"
-    }
-  }
-}
-
 FAKE_REFERENCES = USER_QUERY_EXAMPLE["history"][1]["AIReferences"]
-
 
 @pytest.fixture
 def create_user(firestore_emulator, clean_firestore):
@@ -151,9 +118,6 @@ def test_model_config(firestore_emulator, clean_firestore):
   }
   get_model_config().llm_models = TEST_OPENAI_CONFIG
 
-@pytest.fixture
-def test_agent_config(firestore_emulator, clean_firestore):
-  set_agent_config(TEST_AGENT_CONFIG)
 
 class FakeAgentExecutor():
   async def arun(self, prompt):
@@ -163,6 +127,7 @@ class FakeLangchainAgent():
   pass
 
 class FakeAgent():
+  """ Fake agent class """
   def __init__(self, query_engines):
     self.name = FAKE_ROUTING_AGENT
     self.query_engines = query_engines
@@ -175,24 +140,20 @@ class FakeAgent():
     return self.query_engines
   def get_datasets(self, agent_name):
     return self.datasets
-  
+
 
 @pytest.mark.asyncio
-@mock.patch("config.utils.get_agent_config")
 @mock.patch("services.agents.routing_agent.query_generate")
 @mock.patch("services.agents.routing_agent.run_intent")
 async def test_query_route(mock_run_intent,
                            mock_query_generate,
-                           mock_get_agent_config,
                            test_model_config,
-                           test_agent_config,
                            create_user, create_chat,
                            create_query_engine, create_query_result):
   """ Test run_routing_agent with query route """
 
   mock_run_intent.return_value = FAKE_QUERY_ROUTE, FAKE_AGENT_LOGS
   mock_query_generate.return_value = create_query_result, FAKE_REFERENCES
-  mock_get_agent_config.return_value = TEST_AGENT_CONFIG
 
   agent_name = FAKE_ROUTING_AGENT
   prompt = "when does a chicken start laying eggs?"
@@ -210,14 +171,11 @@ async def test_query_route(mock_run_intent,
 
 
 @pytest.mark.asyncio
-@mock.patch("config.utils.get_agent_config")
 @mock.patch("services.agents.routing_agent.agent_plan")
 @mock.patch("services.agents.routing_agent.run_intent")
 async def test_plan_route(mock_run_intent,
                           mock_agent_plan,
-                          mock_get_agent_config,
                           test_model_config,
-                          test_agent_config,
                           create_user, create_chat, create_plan):
   """ Test run_routing_agent with plan route """
 
@@ -226,7 +184,6 @@ async def test_plan_route(mock_run_intent,
 
   mock_run_intent.return_value = FAKE_PLAN_ROUTE, FAKE_AGENT_LOGS
   mock_agent_plan.return_value = FAKE_AGENT_OUTPUT, create_plan
-  mock_get_agent_config.return_value = TEST_AGENT_CONFIG
 
   agent_name = FAKE_ROUTING_AGENT
   prompt = "make a plan to get some chickens"
@@ -243,20 +200,17 @@ async def test_plan_route(mock_run_intent,
 
 
 @pytest.mark.asyncio
-@mock.patch("config.utils.get_agent_config")
 @mock.patch("services.agents.routing_agent.run_db_agent")
 @mock.patch("services.agents.routing_agent.run_intent")
 async def test_db_route(mock_run_intent,
                         mock_run_db_agent,
                         mock_get_agent_config,
                         test_model_config,
-                        test_agent_config,
                         create_user, create_chat):
   """ Test run_routing_agent with db route """
 
   mock_run_intent.return_value = FAKE_DB_ROUTE, FAKE_AGENT_LOGS
   mock_run_db_agent.return_value = FAKE_DB_AGENT_RESULT, FAKE_AGENT_LOGS
-  mock_get_agent_config.return_value = TEST_AGENT_CONFIG
 
   agent_name = FAKE_ROUTING_AGENT
   prompt = "who are the most popular chickens?"
@@ -275,20 +229,16 @@ async def test_db_route(mock_run_intent,
 
 
 @pytest.mark.asyncio
-@mock.patch("config.utils.get_agent_config")
 @mock.patch("services.agents.routing_agent.run_agent")
 @mock.patch("services.agents.routing_agent.run_intent")
 async def test_chat_route(mock_run_intent,
                           mock_run_agent,
-                          mock_get_agent_config,
                           test_model_config,
-                          test_agent_config,
                           create_user, create_chat):
   """ Test run_routing_agent with chat route """
 
   mock_run_intent.return_value = FAKE_CHAT_ROUTE, FAKE_AGENT_LOGS
   mock_run_agent.return_value = FAKE_AGENT_OUTPUT
-  mock_get_agent_config.return_value = TEST_AGENT_CONFIG
 
   agent_name = FAKE_ROUTING_AGENT
   prompt = "how can I raise the best chickens?"
@@ -304,23 +254,19 @@ async def test_chat_route(mock_run_intent,
 
 
 @pytest.mark.asyncio
-@mock.patch("config.utils.get_agent_config")
 @mock.patch("services.agents.routing_agent.agent_executor_arun_with_logs")
 @mock.patch("services.agents.routing_agent.AgentExecutor.from_agent_and_tools")
 @mock.patch("services.agents.routing_agent.BaseAgent.get_llm_service_agent")
 async def test_run_intent(mock_get_agent,
                           mock_agent_executor,
                           mock_agent_executor_arun,
-                          mock_get_agent_config,
                           test_model_config,
-                          test_agent_config,
                           create_user, create_chat, create_query_engine):
   """ Test run_intent """
 
   mock_get_agent.return_value = FakeAgent([create_query_engine])
   mock_agent_executor.return_value = FakeAgentExecutor()
   mock_agent_executor_arun.return_value = FAKE_INTENT_OUTPUT, FAKE_AGENT_LOGS
-  mock_get_agent_config.return_value = TEST_AGENT_CONFIG
 
   agent_name = FAKE_ROUTING_AGENT
   prompt = "how can I raise the best chickens?"
@@ -329,8 +275,5 @@ async def test_run_intent(mock_get_agent,
   route, route_logs = await run_intent(agent_name, prompt, chat_history)
 
   assert route == FAKE_DB_ROUTE
-  assert response_data["route"] == AgentCapability.DATABASE.value
-  assert response_data["route_name"] == FAKE_DB_ROUTE
-  assert response_data["content"] == FAKE_AGENT_OUTPUT
-  assert "agent_logs" not in response_data
+  assert route_logs == FAKE_AGENT_LOGS
 

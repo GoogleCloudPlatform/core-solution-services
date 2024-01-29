@@ -178,9 +178,3 @@ except Exception as e:
 
 auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
                               LLM_BACKEND_ROBOT_PASSWORD)
-
-# agent config
-AGENT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "agent_config.json")
-
-AGENT_DATASET_CONFIG_PATH = \
-    os.path.join(os.path.dirname(__file__), "agent_datasets.json")

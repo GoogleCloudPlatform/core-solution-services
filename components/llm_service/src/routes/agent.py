@@ -116,7 +116,7 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
   prompt = runconfig_dict.get("prompt")
   chat_id = runconfig_dict.get("chat_id")
   llm_type = runconfig_dict.get("llm_type")
-  
+
   Logger.info(
       f"Agent {agent_name} Choosing route based on {runconfig_dict}")
 
