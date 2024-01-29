@@ -52,6 +52,7 @@ os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
 FAKE_QUERY_ROUTE = f"Query:{QUERY_ENGINE_EXAMPLE['name']}"
+FAKE_QUERY_ROUTE_NAME = f"Query Engine: {QUERY_ENGINE_EXAMPLE['name']}"
 FAKE_PLAN_ROUTE = "Plan"
 FAKE_DATASET = "fake-dataset"
 FAKE_DATASET_DESCRIPTION = "fake dataset description"
@@ -201,7 +202,7 @@ async def test_query_route(mock_run_intent,
 
   assert route == FAKE_QUERY_ROUTE
   assert response_data["route"] == AgentCapability.QUERY.value
-  assert response_data["route_name"] == FAKE_QUERY_ROUTE
+  assert response_data["route_name"] == FAKE_QUERY_ROUTE_NAME
   assert response_data["output"] == create_query_result.response
   assert response_data["query_engine_id"] == create_query_engine.id
   assert response_data["query_references"] == FAKE_REFERENCES

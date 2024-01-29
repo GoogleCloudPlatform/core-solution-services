@@ -107,6 +107,7 @@ async def run_routing_agent(prompt: str,
     }
     chat_history_entry = response_data
     chat_history_entry[CHAT_AI] = query_result.response
+    agent_logs = route_logs
 
   # Database route
   elif route_type == AgentCapability.DATABASE.value:
@@ -169,6 +170,7 @@ async def run_routing_agent(prompt: str,
   if agent_logs:
     chat_history_entry["agent_logs"] = agent_logs
     response_data["agent_logs"] = agent_logs
+
   if route_logs:
     chat_history_entry["route_logs"] = route_logs
     response_data["route_logs"] = route_logs
