@@ -43,7 +43,7 @@ def on_submit(user_input):
     default_route = st.session_state.get("default_route", None)
     routing_agents = get_all_routing_agents()
     routing_agent_names = routing_agents.keys()
-    if default_route is None or default_route == "Auto":
+    if default_route is None:
       # pick the first routing agent as default
       if routing_agent_names:
         routing_agent = routing_agent_names[0]
