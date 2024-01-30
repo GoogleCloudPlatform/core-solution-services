@@ -23,7 +23,7 @@ import streamlit as st
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import (
     get_method, post_method, put_method, delete_method)
-from common.models import Agent, UserChat, UserPlan
+from common.models import UserChat, UserPlan
 from config import (APP_BASE_PATH, LLM_SERVICE_API_URL,
                     JOBS_SERVICE_API_URL, AUTH_SERVICE_API_URL)
 
@@ -158,7 +158,7 @@ def validate_auth_token():
 
   return False
 
-def get_agents(auth_token=None) -> List[Agent]:
+def get_agents(auth_token=None) -> List[dict]:
   """
   Return list of Agent models from LLM Service
   """
@@ -171,14 +171,27 @@ def get_agents(auth_token=None) -> List[Agent]:
   resp = api_request("GET", api_url, auth_token)
   resp_dict = get_response_json(resp)
 
+  agent_config = resp_dict.get("data")
+  return agent_config
+
+def get_all_routing_agents(auth_token=None) -> List[dict]:
+  """
+  Return list of Routing Agent models from LLM Service
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/agent/route"
+  Logger.info(f"api_url={api_url}")
+
+  resp = api_request("GET", api_url, auth_token)
+  resp_dict = get_response_json(resp)
+
   # load agent models based on response
-  agent_list = []
-  for agent_name in resp_dict.get("data"):
-    agent_list.append(Agent.find_by_name(agent_name))
-  return agent_list
+  agent_config = resp_dict.get("data")
+  return agent_config
 
-
-def run_dispatch(prompt: str, chat_id: str = None,
+def run_dispatch(prompt: str, agent_name: str, chat_id: str = None,
                  route=None, llm_type: str=None, auth_token=None):
   """
   Run Agent on human input, and return output
@@ -189,7 +202,7 @@ def run_dispatch(prompt: str, chat_id: str = None,
   # hard code llm_type to the dispatch agent default
   llm_type = None
 
-  api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch"
+  api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch/{agent_name}"
   Logger.info(f"api_url = {api_url}")
   Logger.info(f"chat_id = {chat_id}")
 
@@ -322,7 +335,7 @@ def run_chat(prompt: str, chat_id: str = None,
 
 def build_query_engine(name: str, doc_url: str, depth_limit: int,
                        embedding_type: str,
-                       vector_store: str, description: str,
+                       vector_store: str, description: str, agents: str,
                        auth_token=None):
   """
   Start a query engine build job
@@ -340,7 +353,8 @@ def build_query_engine(name: str, doc_url: str, depth_limit: int,
     "vector_store": vector_store,
     "description": description,
     "params": {
-      "depth_limit": depth_limit
+      "depth_limit": depth_limit,
+      "agents": agents
     }
   }
   Logger.info(f"Sending request_body={request_body} to {api_url}")

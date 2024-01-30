@@ -33,11 +33,12 @@ class AgentType(str, Enum):
 
 class AgentCapability(str, Enum):
   """ Enum class for Agent capabilities """
-  AGENT_CHAT_CAPABILITY = "Chat"
-  AGENT_QUERY_CAPABILITY = "Query"
-  AGENT_TASK_CAPABILITY = "Task"
-  AGENT_PLAN_CAPABILITY = "Plan"
-  AGENT_DATABASE_CAPABILITY = "Database"
+  CHAT = "Chat"
+  QUERY = "Query"
+  TASK = "Task"
+  PLAN = "Plan"
+  DATABASE = "Database"
+  ROUTE = "Route"
 
 
 class Agent(BaseModel):
@@ -46,10 +47,10 @@ class Agent(BaseModel):
   """
   id = IDField()
   name = TextField(required=True)
-  user_id = TextField(required=True)
+  user_id = TextField(required=False)
   agent_type = TextField(required=True)
   llm_type = TextField(required=True)
-  capabilities = ListField()
+  capabilities = ListField(required=True)
   tools = ListField()
 
   class Meta:
@@ -80,6 +81,24 @@ class Agent(BaseModel):
             "deleted_at_timestamp", "==",
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
+
+  @classmethod
+  def find_by_name(cls, name):
+    """
+    Fetch agent by name
+
+    Args:
+        name (str): Agent name
+
+    Returns:
+        Agent or None if not found
+
+    """
+    obj = cls.collection.filter(
+        "name", "==", name).filter(
+        "deleted_at_timestamp", "==",
+        None).get()
+    return obj
 
 
 class UserPlan(BaseModel):

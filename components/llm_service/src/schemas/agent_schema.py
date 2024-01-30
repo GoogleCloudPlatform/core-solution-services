@@ -14,7 +14,6 @@
 """
 Pydantic Model for LLM Agent API's
 """
-from typing import Optional
 from pydantic import BaseModel
 from schemas.schema_examples import (AGENT_RUN_EXAMPLE,
                                      AGENT_RUN_RESPONSE_EXAMPLE,
@@ -24,9 +23,9 @@ from schemas.schema_examples import (AGENT_RUN_EXAMPLE,
 
 class LLMAgentGetAllResponse(BaseModel):
   """Agent Get all model"""
-  success: Optional[bool] = True
-  message: Optional[str] = "Successfully retrieved agents"
-  data: Optional[list[dict]] = []
+  success: bool = True
+  message: str = "Successfully retrieved agents"
+  data: dict = {}
 
   class Config():
     orm_mode = True
@@ -34,7 +33,23 @@ class LLMAgentGetAllResponse(BaseModel):
         "example": {
             "success": True,
             "message": "Successfully retrieved agents",
-            "data": []
+            "data": {}
+        }
+    }
+
+class LLMAgentGetTypeResponse(BaseModel):
+  """Agent Get all model"""
+  success: bool = True
+  message: str = "Successfully retrieved agents"
+  data: dict = {}
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": {
+            "success": True,
+            "message": "Successfully retrieved agents",
+            "data": {}
         }
     }
 
@@ -42,6 +57,7 @@ class LLMAgentRunModel(BaseModel):
   """LLM Agent run model"""
   prompt: str
   chat_id: str = None
+  llm_type: str = None
 
   class Config():
     orm_mode = True

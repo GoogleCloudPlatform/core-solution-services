@@ -40,7 +40,7 @@ def on_submit(user_input):
   with st.spinner("Loading..."):
     # Send API to llm-service
     default_route = st.session_state.get("default_route", None)
-    if default_route is None or default_route == "Auto":
+    if default_route is None:
       response = run_dispatch(user_input,
                               chat_id=st.session_state.get("chat_id"),
                               llm_type=st.session_state.get("chat_llm_type"))
@@ -350,7 +350,7 @@ def chat_page():
       st.session_state.chat_llm_type = st.selectbox("Model", chat_llm_types)
 
       st.session_state.default_route = st.selectbox(
-        "Chat Mode", ["Auto", "Chat", "Plan", "Query"])
+        "Chat Mode", ["Chat", "Plan", "Query"])
 
 
 if __name__ == "__main__":

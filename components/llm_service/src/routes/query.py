@@ -59,7 +59,7 @@ def get_engine_list():
   Returns:
       LLMGetQueryEnginesResponse
   """
-  query_engines = QueryEngine.collection.fetch()
+  query_engines = QueryEngine.fetch_all()
   query_engine_data = [{
     "id": qe.id,
     "name": qe.name,
@@ -67,6 +67,7 @@ def get_engine_list():
     "llm_type": qe.llm_type,
     "embedding_type": qe.embedding_type,
     "vector_store": qe.vector_store,
+    "params": qe.params,
     "created_time": qe.created_time,
     "last_modified_time": qe.last_modified_time,
   } for qe in query_engines]
