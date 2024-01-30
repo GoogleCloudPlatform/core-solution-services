@@ -15,9 +15,10 @@
  *
  */
 
+
 resource "google_apikeys_key" "idp_api_key" {
   depends_on   = [time_sleep.wait_60_seconds]
-  name         = "idp-api-key"
+  name         = "idp-api-key-${random_id.key_suffix.hex}"
   display_name = "API Key for Identity Platform"
 
   restrictions {
@@ -25,6 +26,10 @@ resource "google_apikeys_key" "idp_api_key" {
       service = "identitytoolkit.googleapis.com"
     }
   }
+}
+
+resource "random_id" "key_suffix" {
+  byte_length = 8
 }
 
 
