@@ -70,14 +70,14 @@ async def run_routing_agent(prompt: str,
   }
 
   # get routing agent model
-  routing_agent = get_agent_config()[agent_name]
-  if not routing_agent:
-    raise RuntimeError(f"Cannot find model for {agent_name}")
+  routing_agent_config = get_agent_config()[agent_name]
+  if not routing_agent_config:
+    raise RuntimeError(f"Cannot find {agent_name}")
 
   # llm_type can be passed as an argument
   # otherwise llm_type is whatever is set for routing agent
   if llm_type is None:
-    llm_type = routing_agent.llm_type
+    llm_type = routing_agent_config["llm_type"]
   if not llm_type:
     raise RuntimeError("Agent {agent_name} does not have llm_type set.")
 

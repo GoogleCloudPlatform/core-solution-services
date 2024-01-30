@@ -158,7 +158,7 @@ def validate_auth_token():
 
   return False
 
-def get_agents(auth_token=None) -> List[Agent]:
+def get_agents(auth_token=None) -> List[dict]:
   """
   Return list of Agent models from LLM Service
   """
@@ -171,16 +171,8 @@ def get_agents(auth_token=None) -> List[Agent]:
   resp = api_request("GET", api_url, auth_token)
   resp_dict = get_response_json(resp)
 
-  # load agent models based on response
-  agent_list = []
   agent_config = resp_dict.get("data")
-  for agent_name, _ in agent_config.items():
-    agent = Agent.find_by_name(agent_name)
-    if agent:
-      agent_list.append(agent)
-    else:
-      Logger.error(f"can't find agent {agent_name}")
-  return agent_list
+  return agent_config
 
 def get_all_routing_agents(auth_token=None) -> List[Agent]:
   """
