@@ -15,7 +15,13 @@
  *
  */
 
+#added so we can append random suffix to the IDP key
+resource "random_id" "key_suffix" {
+  byte_length = 8
+}
 
+#adding random suffix to avid the problem caused when you do a destroy.  The Key 
+#is deleted, but remains for 30 days so its name can't be reused.  
 resource "google_apikeys_key" "idp_api_key" {
   depends_on   = [time_sleep.wait_60_seconds]
   name         = "idp-api-key-${random_id.key_suffix.hex}"
@@ -27,11 +33,6 @@ resource "google_apikeys_key" "idp_api_key" {
     }
   }
 }
-
-resource "random_id" "key_suffix" {
-  byte_length = 8
-}
-
 
 resource "google_secret_manager_secret" "firebase-api-key" {
   depends_on = [time_sleep.wait_60_seconds]
