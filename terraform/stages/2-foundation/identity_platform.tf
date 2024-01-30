@@ -45,3 +45,4 @@ resource "google_secret_manager_secret_version" "secret_api_key" {
   secret = google_secret_manager_secret.firebase-api-key.id
   secret_data = google_apikeys_key.idp_api_key.key_string
 }
+
