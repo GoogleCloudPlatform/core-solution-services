@@ -23,7 +23,7 @@ import streamlit as st
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import (
     get_method, post_method, put_method, delete_method)
-from common.models import Agent, UserChat, UserPlan
+from common.models import UserChat, UserPlan
 from config import (APP_BASE_PATH, LLM_SERVICE_API_URL,
                     JOBS_SERVICE_API_URL, AUTH_SERVICE_API_URL)
 
@@ -174,7 +174,7 @@ def get_agents(auth_token=None) -> List[dict]:
   agent_config = resp_dict.get("data")
   return agent_config
 
-def get_all_routing_agents(auth_token=None) -> List[Agent]:
+def get_all_routing_agents(auth_token=None) -> List[dict]:
   """
   Return list of Routing Agent models from LLM Service
   """
@@ -188,15 +188,8 @@ def get_all_routing_agents(auth_token=None) -> List[Agent]:
   resp_dict = get_response_json(resp)
 
   # load agent models based on response
-  agent_list = []
   agent_config = resp_dict.get("data")
-  for agent_name, _ in agent_config.items():
-    agent = Agent.find_by_name(agent_name)
-    if agent:
-      agent_list.append(agent)
-    else:
-      Logger.error(f"can't find agent {agent_name}")
-  return agent_list
+  return agent_config
 
 def run_dispatch(prompt: str, agent_name: str, chat_id: str = None,
                  route=None, llm_type: str=None, auth_token=None):

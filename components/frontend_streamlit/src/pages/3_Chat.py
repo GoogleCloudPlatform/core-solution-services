@@ -42,7 +42,7 @@ def on_submit(user_input):
     # Send API to llm-service
     default_route = st.session_state.get("default_route", None)
     routing_agents = get_all_routing_agents()
-    routing_agent_names = [agent.name for agent in routing_agents]
+    routing_agent_names = routing_agents.keys()
     if default_route is None or default_route == "Auto":
       # pick the first routing agent as default
       if routing_agent_names:
