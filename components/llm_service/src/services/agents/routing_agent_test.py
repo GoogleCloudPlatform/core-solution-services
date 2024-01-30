@@ -61,7 +61,7 @@ FAKE_CHAT_ROUTE = "Chat"
 
 FAKE_AGENT_LOGS = "fake logs"
 FAKE_AGENT_OUTPUT = "fake agent output"
-FAKE_ROUTING_AGENT = "Router"
+ROUTING_AGENT = "Routing"
 
 FAKE_INTENT_OUTPUT = \
     f"Route:\n1. Use [Database:{FAKE_DATASET}] to query a database"
@@ -130,7 +130,7 @@ class FakeLangchainAgent():
 class FakeAgent():
   """ Fake agent class """
   def __init__(self, query_engines):
-    self.name = FAKE_ROUTING_AGENT
+    self.name = ROUTING_AGENT
     self.query_engines = query_engines
     self.datasets = {FAKE_DATASET: {"description": FAKE_DATASET_DESCRIPTION}}
   def get_tools(self):
@@ -156,7 +156,7 @@ async def test_query_route(mock_run_intent,
   mock_run_intent.return_value = FAKE_QUERY_ROUTE, FAKE_AGENT_LOGS
   mock_query_generate.return_value = create_query_result, FAKE_REFERENCES
 
-  agent_name = FAKE_ROUTING_AGENT
+  agent_name = ROUTING_AGENT
   prompt = "when does a chicken start laying eggs?"
 
   route, response_data = await run_routing_agent(
@@ -186,7 +186,7 @@ async def test_plan_route(mock_run_intent,
   mock_run_intent.return_value = FAKE_PLAN_ROUTE, FAKE_AGENT_LOGS
   mock_agent_plan.return_value = FAKE_AGENT_OUTPUT, create_plan
 
-  agent_name = FAKE_ROUTING_AGENT
+  agent_name = ROUTING_AGENT
   prompt = "make a plan to get some chickens"
 
   route, response_data = await run_routing_agent(
@@ -212,7 +212,7 @@ async def test_db_route(mock_run_intent,
   mock_run_intent.return_value = FAKE_DB_ROUTE, FAKE_AGENT_LOGS
   mock_run_db_agent.return_value = FAKE_DB_AGENT_RESULT, FAKE_AGENT_LOGS
 
-  agent_name = FAKE_ROUTING_AGENT
+  agent_name = ROUTING_AGENT
   prompt = "who are the most popular chickens?"
 
   route, response_data = await run_routing_agent(
@@ -240,7 +240,7 @@ async def test_chat_route(mock_run_intent,
   mock_run_intent.return_value = FAKE_CHAT_ROUTE, FAKE_AGENT_LOGS
   mock_run_agent.return_value = FAKE_AGENT_OUTPUT
 
-  agent_name = FAKE_ROUTING_AGENT
+  agent_name = ROUTING_AGENT
   prompt = "how can I raise the best chickens?"
 
   route, response_data = await run_routing_agent(
@@ -268,7 +268,7 @@ async def test_run_intent(mock_get_agent,
   mock_agent_executor.return_value = FakeAgentExecutor()
   mock_agent_executor_arun.return_value = FAKE_INTENT_OUTPUT, FAKE_AGENT_LOGS
 
-  agent_name = FAKE_ROUTING_AGENT
+  agent_name = ROUTING_AGENT
   prompt = "how can I raise the best chickens?"
 
   chat_history = create_chat.history

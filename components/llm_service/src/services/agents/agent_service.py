@@ -42,17 +42,17 @@ def get_agent_config_by_name(agent_name: str) -> dict:
 
 def get_model_garden_agent_config() -> dict:
   planning_agents = \
-      BaseAgent.get_agents_by_capabilities(AgentCapability.PLAN.value)
+      BaseAgent.get_agents_by_capability(AgentCapability.PLAN.value)
   return planning_agents
 
 def get_plan_agent_config() -> dict:
   planning_agents = \
-      BaseAgent.get_agents_by_capabilities(AgentCapability.PLAN.value)
+      BaseAgent.get_agents_by_capability(AgentCapability.PLAN.value)
   return planning_agents
 
 def get_task_agent_config() -> dict:
   task_agents = \
-      BaseAgent.get_agents_by_capabilities(AgentCapability.TASK.value)
+      BaseAgent.get_agents_by_capability(AgentCapability.TASK.value)
   return task_agents
 
 

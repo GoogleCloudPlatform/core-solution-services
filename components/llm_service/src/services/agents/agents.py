@@ -42,15 +42,15 @@ from services.agents.agent_tools import agent_tool_registry
 Logger = Logger.get_logger(__file__)
 
 
-def get_agent_class(agent_class_name):
+def get_agent_class_from_name(agent_name):
   """ Get agent class from name """
-  if agent_class_name == "RoutingAgent":
+  if agent_name == "Routing":
     return RoutingAgent
-  elif agent_class_name == "ChatAgent":
+  elif agent_name == "Chat":
     return ChatAgent
-  elif agent_class_name == "TaskAgent":
+  elif agent_name == "Task":
     return TaskAgent
-  elif agent_class_name == "PlanAgent":
+  elif agent_name == "Plan":
     return PlanAgent
   raise RuntimeError(f"Cannot find agent class {agent_class_name}")
 
@@ -124,7 +124,7 @@ class BaseAgent(ABC):
   @classmethod
   def get_llm_service_agent(cls, agent_name: str):
     agent_config = get_agent_config()[agent_name]
-    agent_class = get_agent_class(agent_config["agent_class"])
+    agent_class = get_agent_class_from_name(agent_name)
     llm_service_agent = agent_class(
         agent_config["llm_type"],
         agent_name
@@ -224,12 +224,13 @@ class BaseAgent(ABC):
     """
     Return config dicts for agents that support a specified capability
     """
+    agent_name = capability
     agent_config = get_agent_config()
     agent_capability_config = {}
     for agent_name, agent_config in agent_config.items():
-      agent_class = get_agent_class(agent_name)
+      agent_class = get_agent_class_from_name(agent_name)
       if agent_class is None:
-        raise RuntimeError(f"agent class not set for agent {agent_name}")
+        raise RuntimeError(f"agent class not found for agent {agent_name}")
       capabilities = [ac.value for ac in agent_class.capabilities()]
       if capability in capabilities:
         agent_capability_config.update({agent_name: agent_config})
