@@ -14,8 +14,10 @@
 
 """Config file for utils"""
 # pylint: disable=logging-fstring-interpolation
+import json
 import os
 from enum import Enum
+from typing import List
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
@@ -34,6 +36,22 @@ def get_env_setting(env_var_str, default):
     env_val = default
   return env_val
 
+def load_config_json(file_path: str):
+  """ load a config JSON file """
+  try:
+    with open(file_path, "r", encoding="utf-8") as file:
+      return json.load(file)
+  except Exception as e:
+    raise RuntimeError(
+        f" Error loading config file {file_path}: {e}") from e
+
+def get_config_list(config_str: str) -> List[str]:
+  """ get a list of items from config """
+  if config_str is None:
+    return []
+  config_list = config_str.split(",")
+  config_list = [s.strip() for s in config_list]
+  return config_list
 
 IS_CLOUD_LOGGING_ENABLED = bool(
   os.getenv("IS_CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))
