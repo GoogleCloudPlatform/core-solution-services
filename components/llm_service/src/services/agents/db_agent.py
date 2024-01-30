@@ -27,7 +27,7 @@ from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
 from common.utils.logging_handler import Logger
 from config import PROJECT_ID, OPENAI_LLM_TYPE_GPT4_LATEST
-from config.agent_config import get_dataset_config
+from config import get_dataset_config
 from services import langchain_service
 from services.agents.agent_prompts import (SQL_QUERY_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_FORMAT_INSTRUCTIONS,

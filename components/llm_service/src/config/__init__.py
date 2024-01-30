@@ -43,6 +43,12 @@ from config.config import (
     get_model_config,
     MODEL_CONFIG_PATH,
 
+    # agent config
+    AGENT_CONFIG_PATH,
+    AGENT_DATASET_CONFIG_PATH,
+    get_agent_config,
+    get_dataset_config,
+
     # secrets
     LLM_BACKEND_ROBOT_USERNAME,
     LLM_BACKEND_ROBOT_PASSWORD,
@@ -58,11 +64,7 @@ from config.config import (
 
     # query engine and other defaults
     DEFAULT_WEB_DEPTH_LIMIT,
-
-    # agent config
-    AGENT_CONFIG_PATH,
-    AGENT_DATASET_CONFIG_PATH,
-)
+    )
 
 from config.model_config import (
     # llm type constants

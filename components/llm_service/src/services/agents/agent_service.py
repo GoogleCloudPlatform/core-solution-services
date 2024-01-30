@@ -24,7 +24,7 @@ from common.models.agent import (AgentCapability,
                                  UserPlan, PlanStep)
 from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
-from config.agent_config import get_agent_config
+from config import get_agent_config
 from services.agents.agents import BaseAgent
 from services.agents.utils import agent_executor_arun_with_logs
 
@@ -41,31 +41,20 @@ def get_agent_config_by_name(agent_name: str) -> dict:
 
 
 def get_model_garden_agent_config() -> dict:
-  agent_config = get_agent_config()
-  planning_agents = {
-      agent: agent_config for agent, agent_config in agent_config.items()
-      if AgentCapability.PLAN.value \
-         in agent_config["capabilities"]
-  }
+  planning_agents = \
+      BaseAgent.get_agents_by_capabilities(AgentCapability.PLAN.value)
   return planning_agents
 
 def get_plan_agent_config() -> dict:
-  agent_config = get_agent_config()
-  planning_agents = {
-      agent: agent_config for agent, agent_config in agent_config.items()
-      if AgentCapability.PLAN.value \
-          in agent_config["capabilities"]
-  }
+  planning_agents = \
+      BaseAgent.get_agents_by_capabilities(AgentCapability.PLAN.value)
   return planning_agents
 
 def get_task_agent_config() -> dict:
-  agent_config = get_agent_config()
-  planning_agents = {
-      agent: agent_config for agent, agent_config in agent_config.items()
-      if AgentCapability.TASK.value \
-         in agent_config["capabilities"]
-  }
-  return planning_agents
+  task_agents = \
+      BaseAgent.get_agents_by_capabilities(AgentCapability.TASK.value)
+  return task_agents
+
 
 def get_all_agents() -> dict:
   """

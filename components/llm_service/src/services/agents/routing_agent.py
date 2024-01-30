@@ -15,10 +15,11 @@
 """ Routing Agent """
 from typing import List, Tuple
 from langchain.agents import AgentExecutor
-from common.models import QueryEngine, User, UserChat, Agent
+from common.models import QueryEngine, User, UserChat
 from common.models.agent import AgentCapability
 from common.models.llm import CHAT_AI
 from common.utils.logging_handler import Logger
+from config import get_agent_config
 from services.agents.db_agent import run_db_agent
 from services.agents.agents import BaseAgent
 from services.agents.agent_service import (
@@ -69,7 +70,7 @@ async def run_routing_agent(prompt: str,
   }
 
   # get routing agent model
-  routing_agent = Agent.find_by_name(agent_name)
+  routing_agent = get_agent_config()[agent_name]
   if not routing_agent:
     raise RuntimeError(f"Cannot find model for {agent_name}")
 

@@ -26,9 +26,10 @@ from langchain.agents.structured_chat.prompt \
     import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from langchain.schema import AgentAction, AgentFinish
-from config.agent_config import get_dataset_config, get_agent_config, get_config_list
+from config import get_dataset_config, get_agent_config
 from common.models import QueryEngine
 from common.models.agent import AgentCapability
+from common.utils.config import get_config_list
 from common.utils.errors import ResourceNotFoundException
 from common.utils.logging_handler import Logger
 from services import langchain_service
@@ -39,6 +40,20 @@ from services.agents.agent_prompts import (PREFIX, ROUTING_PREFIX,
 from services.agents.agent_tools import agent_tool_registry
 
 Logger = Logger.get_logger(__file__)
+
+
+def get_agent_class(agent_class_name):
+  """ Get agent class from name """
+  if agent_class_name == "RoutingAgent":
+    return RoutingAgent
+  elif agent_class_name == "ChatAgent":
+    return ChatAgent
+  elif agent_class_name == "TaskAgent":
+    return TaskAgent
+  elif agent_class_name == "PlanAgent":
+    return PlanAgent
+  raise RuntimeError(f"Cannot find agent class {agent_class_name}")
+
 
 class BaseAgent(ABC):
   """
@@ -109,7 +124,8 @@ class BaseAgent(ABC):
   @classmethod
   def get_llm_service_agent(cls, agent_name: str):
     agent_config = get_agent_config()[agent_name]
-    llm_service_agent = agent_config["agent_class"](
+    agent_class = get_agent_class(agent_config["agent_class"])
+    llm_service_agent = agent_class(
         agent_config["llm_type"],
         agent_name
         )
@@ -211,7 +227,7 @@ class BaseAgent(ABC):
     agent_config = get_agent_config()
     agent_capability_config = {}
     for agent_name, agent_config in agent_config.items():
-      agent_class = agent_config.get("agent_class", None)
+      agent_class = get_agent_class(agent_name)
       if agent_class is None:
         raise RuntimeError(f"agent class not set for agent {agent_name}")
       capabilities = [ac.value for ac in agent_class.capabilities()]
