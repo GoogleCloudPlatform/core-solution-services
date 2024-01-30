@@ -57,7 +57,7 @@ def landing_header():
   st.markdown(top_content_styles, unsafe_allow_html=True)
 
   routing_agents = get_all_routing_agents()
-  routing_agent_names = routing_agents.keys()
+  routing_agent_names = list(routing_agents.keys())
 
   img, chat_mode = st.columns([6, 1.7])
   with img:
@@ -79,7 +79,7 @@ def chat_header():
   st.markdown(top_content_styles, unsafe_allow_html=True)
 
   routing_agents = get_all_routing_agents()
-  routing_agent_names = routing_agents.keys()
+  routing_agent_names = list(routing_agents.keys())
 
   chat_llm_types = get_all_chat_llm_types()
 
