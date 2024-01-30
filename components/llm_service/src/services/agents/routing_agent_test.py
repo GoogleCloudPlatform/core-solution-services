@@ -204,7 +204,6 @@ async def test_plan_route(mock_run_intent,
 @mock.patch("services.agents.routing_agent.run_intent")
 async def test_db_route(mock_run_intent,
                         mock_run_db_agent,
-                        mock_get_agent_config,
                         test_model_config,
                         create_user, create_chat):
   """ Test run_routing_agent with db route """

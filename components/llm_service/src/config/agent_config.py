@@ -15,13 +15,12 @@
 """
   LLM Service agent config
 """
-# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
+# pylint: disable=import-outside-toplevel
 
 import inspect
-import json
 import os
-from typing import List
 from common.models import Agent
+from config.utils import load_config_json, get_config_list
 
 # agent config
 AGENT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "agent_config.json")
