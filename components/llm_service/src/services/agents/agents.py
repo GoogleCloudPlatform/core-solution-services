@@ -52,7 +52,7 @@ def get_agent_class_from_name(agent_name):
     return TaskAgent
   elif agent_name == "Plan":
     return PlanAgent
-  raise RuntimeError(f"Cannot find agent class {agent_class_name}")
+  raise RuntimeError(f"Cannot find agent class {agent_name}")
 
 
 class BaseAgent(ABC):
