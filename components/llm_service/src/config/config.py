@@ -17,10 +17,12 @@
 """
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught,unused-import
 import os
+import json
 from common.config import REGION
 from common.utils.config import get_environ_flag, load_config_json
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
+from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.utils.token_handler import UserCredentials
 from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
@@ -128,6 +130,7 @@ AGENT_DATASET_CONFIG_PATH = \
 
 DATASETS = None
 AGENTS = None
+AGENT_CONFIG_GCS_PATH = os.environ.get("AGENT_CONFIG_GCS_PATH")
 
 def get_dataset_config() -> dict:
   global DATASETS
@@ -140,7 +143,11 @@ def get_agent_config() -> dict:
   global AGENTS
 
   if AGENTS is None:
-    agent_config = load_config_json(AGENT_CONFIG_PATH)
+    if AGENT_CONFIG_GCS_PATH:
+      blob = get_blob_from_gcs_path(AGENT_CONFIG_PATH)
+      agent_config = json.load(blob)
+    else:
+      agent_config = load_config_json(AGENT_CONFIG_PATH)
     agent_config = agent_config["Agents"]
     AGENTS = agent_config
   return AGENTS

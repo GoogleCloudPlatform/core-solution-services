@@ -131,6 +131,34 @@ Deploy microservice to GKE cluster as usual.
 sb deploy -n default -m llm_service
 ```
 
+### Deploy with custom agent_config.json stored in a GCS bucket path.
+
+Create a GCS bucket if it doesn't exist.
+```
+gcloud storage buckets create gs://${PROJECT_ID}-configs
+```
+
+Upload the `agent_config.json` to a GCS bucket path:
+```
+gcloud storage cp /path/to/agent_config.json gs://${PROJECT_ID}-configs
+```
+- You can refer to the `components/llm_service/src/config/agent_config.json` as the template to start with.
+
+Verify if the file has uploaded correctly to the bucket.
+```
+gsutil list gs://${PROJECT_ID}-configs/agent_config.json
+```
+
+Set up the environment variable `AGENT_CONFIG_GCS_PATH` accordingly:
+- When deploying locally, set AGENT_CONFIG_GCS_PATH to the GCS path.
+  ```
+  export AGENT_CONFIG_GCS_PATH=gs://${PROJECT_ID}-configs/agent_config.json
+  ```
+- When deploying with CI/CD like Github action, set the AGENT_CONFIG_GCS_PATH in the CI/CD's env vars.
+
+> If AGENT_CONFIG_GCS_PATH is not set, it will fall back to use the default agent_config.json in
+> `components/llm_service/src/config/agent_config.json`.
+
 ## Troubleshoot
 
 ### Deploy the microservice with live logs output in local terminal
