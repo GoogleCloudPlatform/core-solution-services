@@ -33,8 +33,8 @@ os.environ["COHERE_API_KEY"] = "fake-key"
 
 FAKE_SQL_QUERY_RESULT = {
   "columns": ["test"],
-  "data": [[1],[2],[3]]
-  }
+  "rows": [[1],[2],[3]]
+}
 
 FAKE_SQL_STATEMENT = "SELECT test FROM testdb"
 
@@ -53,7 +53,7 @@ class FakeAgentExecutor():
 
 class FakeQuerySQLDataBaseTool():
   def run(self, statement):
-    return str(FAKE_SQL_QUERY_RESULT["data"])
+    return str(FAKE_SQL_QUERY_RESULT["rows"])
 
 @pytest.mark.asyncio
 @mock.patch("services.agents.db_agent.SQLDatabase")

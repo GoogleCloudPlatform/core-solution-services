@@ -41,18 +41,31 @@ from services.agents.agent_tools import agent_tool_registry
 
 Logger = Logger.get_logger(__file__)
 
+AGENT_CONFIG = get_agent_config()
+
+def get_agent_class(agent_class):
+  if agent_class in ["Routing", "RoutingAgent"]:
+    return RoutingAgent
+  elif agent_class in ["Chat", "ChatAgent"]:
+    return ChatAgent
+  elif agent_class in ["Task", "TaskAgent"]:
+    return TaskAgent
+  elif agent_class in ["Plan", "PlanAgent"]:
+    return PlanAgent
+
+  raise RuntimeError(f"Agent class {agent_class} is not supported.")
 
 def get_agent_class_from_name(agent_name):
   """ Get agent class from name """
-  if agent_name == "Routing":
-    return RoutingAgent
-  elif agent_name == "Chat":
-    return ChatAgent
-  elif agent_name == "Task":
-    return TaskAgent
-  elif agent_name == "Plan":
-    return PlanAgent
-  raise RuntimeError(f"Cannot find agent class {agent_name}")
+  if agent_name in ["Routing", "Chat", "Task", "Plan"]:
+    return get_agent_class(agent_name)
+  else:
+    # For other custom agent config.
+    if agent_name not in AGENT_CONFIG:
+      raise RuntimeError(f"Cannot find agent config for {agent_name}")
+
+    agent_class = AGENT_CONFIG[agent_name]["agent_class"]
+    return get_agent_class(agent_class)
 
 
 class BaseAgent(ABC):
@@ -105,7 +118,7 @@ class BaseAgent(ABC):
     """ return capabilities of this agent class """
 
   def get_tools(self) -> List[Callable]:
-    """ 
+    """
     Return tools used by this agent. The base method reads tools from
     agent config.  It supports special config like "ALL", specifying
     that the agent uses all tools.
@@ -161,7 +174,7 @@ class BaseAgent(ABC):
   @classmethod
   def get_query_engines(cls, agent_name: str) -> \
       List[QueryEngine]:
-    """ 
+    """
     Get list of query engines available to this agent.  Agent
     query engines can be configured in agent config, or tagged
     in query engine data models.

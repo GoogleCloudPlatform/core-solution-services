@@ -32,6 +32,37 @@ ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 Logger = Logger.get_logger(__file__)
 
+REFERENCE_CSS_STYLE = """
+{
+  font-weight: 400;
+  line-height: 1.6;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -webkit-font-smoothing: auto;
+  color-scheme: light;
+  color: rgb(49, 51, 63);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  border-top-left-radius: 0.5rem;
+  border-bottom-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  overflow: scroll;
+  display: inline-block;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  background-color: #FFFFFF;
+  border: none;
+  border-width: 1px;
+  resize: vertical;
+  min-height: 1rem;
+  margin-top: 0.4rem;
+}
+"""
+
 def on_submit(user_input):
   """ Run dispatch agent when adding an user input prompt """
   # Appending messages.
@@ -72,17 +103,18 @@ def on_submit(user_input):
                                 llm_type=st.session_state.get("chat_llm_type"))
     else:
       st.error(f"Unsupported route {default_route}")
+      response = None
 
-    st.session_state.chat_id = response["chat"]["id"]
-    st.session_state.user_chats.insert(0, response["chat"])
+    if response:
+      st.session_state.chat_id = response["chat"]["id"]
+      st.session_state.user_chats.insert(0, response["chat"])
 
-    # TODO: Currently the AIOutput vs content are inconsistent across
-    # API response and in a UserChat history.
-    if "content" in response:
-      response["AIOutput"] = response["content"]
-    del response["chat"]
-
-    st.session_state.messages.append(response)
+      # TODO: Currently the AIOutput vs content are inconsistent across
+      # API response and in a UserChat history.
+      if "content" in response:
+        response["AIOutput"] = response["content"]
+      del response["chat"]
+      st.session_state.messages.append(response)
 
   # reload page after exiting from spinner
   utils.navigate_to("Chat")
@@ -158,6 +190,24 @@ def chat_content():
               is_table=False,  # TODO: Detect whether an output content type.
           )
 
+      # Append all query references.
+      if item.get("db_result", None):
+        with st.chat_message("ai"):
+          st.write("Query result:")
+          result_index = 1
+          for result in item["db_result"]:
+            values = list(result.values())
+            markdown_content = f"{result_index}. **{values[0]}**"
+            markdown_content += " - " + ", ".join(values[1:])
+
+            with stylable_container(
+              key=f"ref_{result_index}",
+              css_styles = REFERENCE_CSS_STYLE
+            ):
+              st.markdown(markdown_content)
+
+            result_index = result_index + 1
+
       # Append all resources.
       if item.get("resources", None):
         with st.chat_message("ai"):
@@ -177,43 +227,9 @@ def chat_content():
             markdown_content = re.sub(
                 r"<b>(.*?)</b>", r"**\1**", document_text, flags=re.IGNORECASE)
 
-            #st.text_area(
-            #  f"Reference: {document_url}",
-            #  document_text,
-            #  key=f"ref_{reference_index}")
-
             with stylable_container(
               key=f"ref_{reference_index}",
-              css_styles = """
-              {
-                font-weight: 400;
-                line-height: 1.6;
-                text-size-adjust: 100%;
-                -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-                -webkit-font-smoothing: auto;
-                color-scheme: light;
-                color: rgb(49, 51, 63);
-                box-sizing: border-box;
-                width: 100%;
-                max-width: 100%;
-                border-top-left-radius: 0.5rem;
-                border-bottom-left-radius: 0.5rem;
-                border-top-right-radius: 0.5rem;
-                border-bottom-right-radius: 0.5rem;
-                overflow: scroll;
-                display: inline-block;
-                padding-top: 1rem;
-                padding-bottom: 1rem;
-                padding-left: 1rem;
-                padding-right: 1rem;
-                background-color: #FFFFFF;
-                border: none;
-                border-width: 1px;              
-                resize: vertical;
-                min-height: 95px;
-                height: 100px;
-              }
-              """
+              css_styles = REFERENCE_CSS_STYLE
             ):
               st.markdown(markdown_content)
 
@@ -281,7 +297,7 @@ def chat_page():
   chat_theme()
 
   # Returns the values of the select input boxes
-  selections = chat_header()
+  selections = chat_header(refresh_func=init_messages)
 
   st.title("Chat")
 

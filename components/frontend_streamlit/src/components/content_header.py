@@ -38,6 +38,10 @@ top_content_styles = """
         max-width: 89% !important;
       }
     }
+    .main .stButton button {
+      margin-top: 28px;
+      background-color: #fff;
+    }
   </style>
 """
 
@@ -75,7 +79,7 @@ def landing_header():
 
 
 # Includes the logo and selection boxes for LLM type and chat model
-def chat_header():
+def chat_header(refresh_func=None):
   st.markdown(top_content_styles, unsafe_allow_html=True)
 
   routing_agents = get_all_routing_agents()
@@ -83,13 +87,21 @@ def chat_header():
 
   chat_llm_types = get_all_chat_llm_types()
 
-  img, model, chat_mode = st.columns([6, 1.7, 1.7])
+  img, model, chat_mode, refresh_button = st.columns([5, 3, 3, 2])
   with img:
     add_logo("../assets/rit_logo.png")
   with model:
+    try:
+      selected_model_index = chat_llm_types.index(
+          st.session_state.get("chat_llm_type"))
+    except ValueError:
+      selected_model_index = 0
     selected_model = st.selectbox(
-        "Model", chat_llm_types)
+        "Model", chat_llm_types, index=selected_model_index)
     st.session_state.chat_llm_type = selected_model
+  with refresh_button:
+    if refresh_func and st.button("Refresh"):
+      refresh_func()
 
   chat_modes = routing_agent_names + ["Chat", "Plan", "Query"]
   chat_mode_index = 0
@@ -104,5 +116,6 @@ def chat_header():
   with chat_mode:
     selected_chat = st.selectbox(
         "Chat Mode", chat_modes, index=chat_mode_index)
+    st.session_state.default_route = selected_chat
 
   return {"model": selected_model, "chat_mode": selected_chat}

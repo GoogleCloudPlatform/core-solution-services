@@ -28,22 +28,28 @@ from config import (APP_BASE_PATH, LLM_SERVICE_API_URL,
                     JOBS_SERVICE_API_URL, AUTH_SERVICE_API_URL)
 
 Logger = Logger.get_logger(__file__)
-
+API_TIMEOUT = 600
 
 def dispatch_api(method:str , api_url:str ,
                 request_body:dict=None, auth_token:str=None):
   """ dispatch api call based on method """
+  if not auth_token:
+    auth_token = st.session_state.get("auth_token")
+
   if method.upper() == "GET":
-    resp = get_method(api_url, token=auth_token)
+    resp = get_method(api_url, token=auth_token, timeout=API_TIMEOUT)
   elif method.upper() == "POST":
     resp = post_method(
-        api_url, request_body=request_body, token=auth_token)
+        api_url, request_body=request_body, token=auth_token,
+        timeout=API_TIMEOUT)
   elif method.upper() == "PUT":
     resp = put_method(
-        api_url, request_body=request_body, token=auth_token)
+        api_url, request_body=request_body, token=auth_token,
+        timeout=API_TIMEOUT)
   elif method.upper() == "DELETE":
     resp = delete_method(
-        api_url, request_body=request_body, token=auth_token)
+        api_url, request_body=request_body, token=auth_token,
+        timeout=API_TIMEOUT)
   else:
     raise ValueError(f"method {method} is not supported.")
 
@@ -61,7 +67,7 @@ def api_request(method:str , api_url:str ,
   st.session_state.error_msg = None
   try:
     resp = None
-    Logger.info(f"api_url={api_url}")
+    Logger.info(f"api_url={api_url}, auth_token={auth_token}")
 
     resp, resp_dict, status_code = dispatch_api(method,
                                                 api_url,
@@ -72,7 +78,8 @@ def api_request(method:str , api_url:str ,
       # refresh token with existing creds and retry on failure to authenticate
       username = st.session_state.get("username", None)
       password = st.session_state.get("password", None)
-      Logger.info(f"got 401. attempting to reauth {username}")
+      Logger.info(f"API responds 401 error. attempting to reauth with "
+                  f"username: {username}")
       if username and password:
         auth_token = login_user(username, password)
         resp, resp_dict, status_code = dispatch_api(method,
@@ -316,7 +323,7 @@ def run_chat(prompt: str, chat_id: str = None,
   Logger.info(f"chat id = {chat_id}")
 
   if chat_id:
-    api_url = f"{LLM_SERVICE_API_URL}/{chat_id}/generate"
+    api_url = f"{LLM_SERVICE_API_URL}/chat/{chat_id}/generate"
   else:
     api_url = f"{LLM_SERVICE_API_URL}/chat"
 
@@ -589,11 +596,11 @@ def login_user(user_email, user_password) -> str or None:
     return None
 
   else:
-    Logger.info(f"Signed in with existing user '{user_email}'. ID Token:\n")
     id_token = resp_dict["data"]["idToken"]
     st.session_state["logged_in"] = True
     st.session_state["auth_token"] = id_token
     st.session_state["username"] = user_email
     st.session_state["password"] = user_password
+    Logger.info(
+        f"Signed in with existing user '{user_email}'. ID Token:\n{id_token}")
     return id_token
-  

@@ -67,7 +67,13 @@ FAKE_INTENT_OUTPUT = \
     f"Route:\n1. Use [Database:{FAKE_DATASET}] to query a database"
 
 FAKE_DB_AGENT_RESULT = {
-  "data": "fake-data",
+  "data": {
+    "columns": ["column-a", "column-b"],
+    "rows": [
+      ["fake-a1", "fake-b1"],
+      ["fake-a2", "fake-b2"],
+    ],
+  },
   "resources": {"Spreadsheet": "https://example.com"}
 }
 

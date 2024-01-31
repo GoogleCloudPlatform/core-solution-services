@@ -116,6 +116,7 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
   prompt = runconfig_dict.get("prompt")
   chat_id = runconfig_dict.get("chat_id")
   llm_type = runconfig_dict.get("llm_type")
+  db_result_limit = runconfig_dict.get("db_result_limit")
 
   Logger.info(
       f"Agent {agent_name} Choosing route based on {runconfig_dict}")
@@ -139,7 +140,8 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
 
   # execute routing agent
   route, response_data = await run_routing_agent(
-      prompt, agent_name, user, user_chat, llm_type)
+      prompt, agent_name, user, user_chat, llm_type,
+      db_result_limit=db_result_limit)
 
   return {
     "success": True,
