@@ -22,7 +22,7 @@ from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      QUERY_ENGINE_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
                                      LLM_EMBEDDINGS_EXAMPLE)
-from fastapi import File, UploadFile, Form
+from fastapi import Form
 
 class ChatModel(BaseModel):
   id: Optional[str] = None
@@ -118,7 +118,7 @@ class LLMGenerateModel(BaseModel):
 
 class LLMMultiGenerateModel(BaseModel):
   """LLM Multi Generate request model. Not currently in use"""
-  prompt: str = Form(...),
+  prompt: str = Form(...)
   llm_type: Optional[str] = Form(None)
 
   class Config():
