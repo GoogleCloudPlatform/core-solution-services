@@ -7,6 +7,20 @@
       "tools": "",
       "datasets": "fqhc_medical_transactions"
     },
+    "MediKate": {
+      "llm_type": "OpenAI-GPT4",
+      "agent_type": "langchain_Conversational",
+      "agent_class": "RoutingAgent",
+      "tools": "",
+      "datasets": "medical_providers"
+    },
+    "Casey": {
+      "llm_type": "OpenAI-GPT4",
+      "agent_type": "langchain_Conversational",
+      "agent_class": "RoutingAgent",
+      "tools": "",
+      "datasets": "fqhc_medical_transactions"
+    },
     "Chat": {
       "llm_type": "VertexAI-Chat-Palm2V2-Langchain",
       "agent_type": "langchain_Conversational",

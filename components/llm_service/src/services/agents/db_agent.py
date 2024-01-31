@@ -56,7 +56,9 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
              attempt to determine the dataset from the prompt.
     user_email: if present, send the resulting data to this email in a Sheet.
   Return:
-    a dict of "columns: column names, "data": row data
+    a dict of "columns: column names, "data": row data. If the db_agent can't
+        produce a valid statement and result, the data will be the db_agent's
+        explanation.
   """
   if dataset is None:
     dataset, db_type = map_prompt_to_dataset(prompt, llm_type)
@@ -76,7 +78,10 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
     # check if valid SQL was produced
     if not validate_sql(statement):
       # if SQL not produced return the agent output and logs
-      return statement, agent_logs
+      output = {
+        "error": statement,
+      }
+      return output, agent_logs
 
     # run SQL
     output = execute_sql_statement(statement, dataset, user_email)
@@ -183,7 +188,7 @@ def execute_sql_statement(statement: str,
 
   dbdata = query_sql_database_tool.run(statement)
 
-  Logger.info(f"got results {dbdata}")
+  Logger.info(f"Database query results: {dbdata}")
 
   if not dbdata or dbdata == "":
     Logger.error(f"No results returned from sql statement: {statement}")

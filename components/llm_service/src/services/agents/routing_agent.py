@@ -36,7 +36,8 @@ async def run_routing_agent(prompt: str,
                             agent_name: str,
                             user: User,
                             user_chat: UserChat,
-                            llm_type: str=None) -> Tuple[str, dict]:
+                            llm_type: str=None,
+                            db_result_limit: int = 10) -> Tuple[str, dict]:
   """
   Determine intent from user prompt for best route to fulfill user
   input.  Then execute that route.
@@ -121,18 +122,41 @@ async def run_routing_agent(prompt: str,
     db_result, agent_logs = await run_db_agent(
         prompt, llm_type, dataset_name, user.email)
 
-    # TODO: Update with the output generated from the LLM.
-    if db_result.get("data", None):
-      response_output = "Here is the database query result in the attached " \
-                        "resource."
+    print(f"db_result: {db_result}")
+    if "error" not in db_result:
+      db_result_data = db_result.get("data", None)
+      db_result_output = None
+      if db_result_data:
+        response_output = "Here is the database query result in the attached " \
+                          "resource."
+        db_result_output = []
+        db_result_columns = db_result_data["columns"]
+        Logger.info(f"db_result columns: {db_result_columns}")
+
+        # Convert db_result data, from list of tuple to list of dicts.
+        for row_entry in db_result_data["data"]:
+          row_entry = list(row_entry)
+          row_dict = {}
+          for index, column in enumerate(db_result_columns):
+            row_dict[column] = row_entry[index]
+          db_result_output.append(row_dict)
+
+          if len(db_result_output) > db_result_limit:
+            break
+      else:
+        response_output = "Unable to find the query result from the database."
+
     else:
-      response_output = "Unable to find the query result from the database."
+      # Error in the db_agent's return.
+      response_output = db_result["error"]
+      db_result_output = []
 
     response_data = {
       "route": route_type,
       "route_name": f"Database Query: {dataset_name}",
       f"{CHAT_AI}": response_output,
       "content": response_output,
+      "db_result": db_result_output,
       "dataset": dataset_name,
       "resources": db_result["resources"],
     }
@@ -300,4 +324,3 @@ def get_dispatch_prompt(llm_service_agent: BaseAgent) -> str:
   Logger.info(f"dispatch_prompt: \n{dispatch_prompt}")
 
   return dispatch_prompt
-  

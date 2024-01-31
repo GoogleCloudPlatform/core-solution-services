@@ -58,6 +58,7 @@ class LLMAgentRunModel(BaseModel):
   prompt: str
   chat_id: str = None
   llm_type: str = None
+  db_result_limit: int = 10
 
   class Config():
     orm_mode = True

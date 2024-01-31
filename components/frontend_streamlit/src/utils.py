@@ -79,11 +79,14 @@ def init_session_state():
 
   # Try to get a state var from query parameter.
   states_to_init = [
-    "auth_token", "chat_id", "agent_name", "debug"
+    "auth_token", "chat_id", "agent_name", "debug", "chat_llm_type",
+    "default_route"
   ]
   for state_name in states_to_init:
     if not st.session_state.get(state_name, None):
       st.session_state[state_name] = query_params.get(state_name, "")
+
+  print(f"st.session_state: {st.session_state}")
 
 def reset_session_state():
   """ Reset critial session states. """
