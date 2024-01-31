@@ -40,13 +40,16 @@ def dispatch_api(method:str , api_url:str ,
     resp = get_method(api_url, token=auth_token, timeout=API_TIMEOUT)
   elif method.upper() == "POST":
     resp = post_method(
-        api_url, request_body=request_body, token=auth_token, timeout=API_TIMEOUT)
+        api_url, request_body=request_body, token=auth_token,
+        timeout=API_TIMEOUT)
   elif method.upper() == "PUT":
     resp = put_method(
-        api_url, request_body=request_body, token=auth_token, timeout=API_TIMEOUT)
+        api_url, request_body=request_body, token=auth_token,
+        timeout=API_TIMEOUT)
   elif method.upper() == "DELETE":
     resp = delete_method(
-        api_url, request_body=request_body, token=auth_token, timeout=API_TIMEOUT)
+        api_url, request_body=request_body, token=auth_token,
+        timeout=API_TIMEOUT)
   else:
     raise ValueError(f"method {method} is not supported.")
 
