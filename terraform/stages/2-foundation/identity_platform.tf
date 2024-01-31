@@ -20,8 +20,10 @@ resource "random_id" "key_suffix" {
   byte_length = 8
 }
 
-#adding random suffix to avid the problem caused when you do a destroy.  The Key 
+#adding random suffix to avoid the problem caused when you do a destroy.  The Key 
 #is deleted, but remains for 30 days so its name can't be reused.  
+#https://cloud.google.com/api-keys/docs/create-manage-api-keys#delete
+
 resource "google_apikeys_key" "idp_api_key" {
   depends_on   = [time_sleep.wait_60_seconds]
   name         = "idp-api-key-${random_id.key_suffix.hex}"
