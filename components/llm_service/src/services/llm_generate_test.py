@@ -28,6 +28,7 @@ os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
 os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 
 from services.llm_generate import llm_generate, llm_chat, llm_generate_multi
+from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
 from vertexai.preview.language_models import TextGenerationResponse
 from common.models import User, UserChat
@@ -69,7 +70,7 @@ FAKE_TRUSS_RESPONSE = {
   "data": {"generated_text": FAKE_GENERATE_RESPONSE}
 }
 
-FAKE_USER_FILE = {"filename": "test.png"}
+FAKE_FILENAME = "test.png"
 FAKE_PROMPT = "test prompt"
 
 
@@ -144,12 +145,20 @@ async def test_llm_generate_multi(clean_firestore):
     PROVIDER_VERTEX: TEST_VERTEX_CONFIG
   }
   get_model_config().llm_models = TEST_VERTEX_CONFIG
+
+  with open(FAKE_FILENAME, "w", encoding="utf-8") as f:
+    f.write("")
+  with open(FAKE_FILENAME, "rb") as f:
+    image_bytes = f.read()
+  fake_upload_file = UploadFile.write(image_bytes)
+
   with mock.patch(
       "vertexai.preview.language_models.TextGenerationModel.predict_async",
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate_multi(
-      FAKE_USER_FILE, FAKE_PROMPT, VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
+      fake_upload_file, FAKE_PROMPT, VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
 
+  os.remove(FAKE_FILENAME)
   assert response == FAKE_GENERATE_RESPONSE
 
 
