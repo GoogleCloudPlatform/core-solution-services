@@ -54,6 +54,7 @@ with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
                           VERTEX_LLM_TYPE_BISON_TEXT,
                           VERTEX_LLM_TYPE_BISON_CHAT,
                           VERTEX_LLM_TYPE_GEMINI_PRO,
+                          VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                           PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
                           PROVIDER_TRUSS,
                           PROVIDER_MODEL_GARDEN,
@@ -147,7 +148,7 @@ async def test_llm_generate_multi(clean_firestore):
       "vertexai.preview.language_models.TextGenerationModel.predict_async",
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate_multi(
-      FAKE_USER_FILE, FAKE_PROMPT, VERTEX_LLM_TYPE_GEMINI_PRO)
+      FAKE_USER_FILE, FAKE_PROMPT, VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
 
   assert response == FAKE_GENERATE_RESPONSE
 

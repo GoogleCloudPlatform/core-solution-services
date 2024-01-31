@@ -8,7 +8,7 @@
         "max_output_tokens": 1024,
         "top_p": 0.95,
         "top_k": 40
-      }      
+      }
     },
     "ModelGarden": {
       "enabled": true,
@@ -18,7 +18,7 @@
         "max_tokens": 900,
         "top_p": 1.0,
         "top_k": 10
-      }      
+      }
     },
     "Langchain": {
       "enabled": true,
@@ -43,7 +43,7 @@
       "enabled": true,
       "api_key": "cohere-api-key",
       "env_flag": "ENABLE_COHERE_LLM"
-    }    
+    }
   },
   "models": {
     "VertexAI-Text": {
@@ -72,6 +72,12 @@
       "is_multi": true,
       "provider": "Vertex",
       "model_name": "gemini-pro"
+    },
+    "VertexAI-Gemini-Pro-Vision": {
+      "is_chat": true,
+      "is_multi": true,
+      "provider": "Vertex",
+      "model_name": "gemini-pro-vision"
     },
     "VertexAI-Chat-Palm2V2-Langchain": {
       "is_chat": true,
@@ -114,7 +120,7 @@
       "provider": "Langchain",
       "enabled": true,
       "model_name": "gpt-4",
-      "model_class": "ChatOpenAI",      
+      "model_class": "ChatOpenAI",
       "model_params": {
         "temperature": 0
       }
@@ -125,7 +131,7 @@
       "provider": "Langchain",
       "enabled": true,
       "model_name": "gpt-4-1106-preview",
-      "model_class": "ChatOpenAI",      
+      "model_class": "ChatOpenAI",
       "model_params": {
         "temperature": 0
       }
@@ -136,7 +142,7 @@
       "provider": "Langchain",
       "enabled": true,
       "model_name": "gpt-3.5-turbo",
-      "model_class": "ChatOpenAI",      
+      "model_class": "ChatOpenAI",
       "model_params": {
         "temperature": 0
       }

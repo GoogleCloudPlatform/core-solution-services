@@ -75,6 +75,7 @@ from config.model_config import (
     VERTEX_LLM_TYPE_BISON_CHAT,
     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
     VERTEX_LLM_TYPE_GEMINI_PRO,
+    VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
     TRUSS_LLM_LLAMA2_CHAT,
 
     # model config keys

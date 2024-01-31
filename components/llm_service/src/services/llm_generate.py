@@ -120,11 +120,26 @@ async def llm_generate_multi(user_file: UploadFile, prompt: str,
     # for Google models, prioritize native client over langchain
     chat_llm_types = get_model_config().get_chat_llm_types()
     multi_llm_types = get_model_config().get_multi_llm_types()
-    if llm_type in get_provider_models(PROVIDER_VERTEX):
+    if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
+      is_chat = llm_type in chat_llm_types
+      response = await llm_service_predict(prompt, is_chat, llm_type)
+    elif llm_type in get_provider_models(PROVIDER_TRUSS):
+      model_endpoint = get_provider_value(
+          PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
+      response = await llm_truss_service_predict(
+          llm_type, prompt, model_endpoint)
+    elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
+      response = await model_garden_predict(prompt, llm_type)
+    elif llm_type in get_provider_models(PROVIDER_VERTEX):
+      google_llm = get_provider_value(
+          PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
+      if google_llm is None:
+        raise RuntimeError(
+            f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
       is_multi = llm_type in multi_llm_types
       response = await google_llm_predict_multi(user_file, prompt,
-                                                is_chat, is_multi, llm_type)
+                                                is_chat, is_multi, google_llm)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -421,7 +436,7 @@ async def google_llm_predict_multi(user_file: UploadFile, prompt: str,
   Logger.info(f"prompt=[{prompt}].")
 
   # Get file data and package in Gemini Image class
-  user_file_bytes = user_file.read()
+  user_file_bytes = await user_file.read()
   user_file_image = Image.from_bytes(user_file_bytes)
 
   # TODO: Consider images in chat
@@ -453,8 +468,7 @@ async def google_llm_predict_multi(user_file: UploadFile, prompt: str,
     if is_chat:
       # gemini uses new "GenerativeModel" class and requires different params
       if "gemini" in google_llm:
-        chat_model = GenerativeModel(google_llm)
-        chat = chat_model.start_chat()
+        multi_model = GenerativeModel(google_llm)
         context_list = [user_file_image, context_prompt]
         safety_settings = [
              SafetySetting(
@@ -474,7 +488,8 @@ async def google_llm_predict_multi(user_file: UploadFile, prompt: str,
                  threshold=HarmBlockThreshold.BLOCK_NONE,
              ),
         ]
-        response = await chat.send_message_async(context_list,
+
+        response = await multi_model.generate_content_async(context_list,
             generation_config=parameters, safety_settings=safety_settings)
       else:
         chat_model = ChatModel.from_pretrained(google_llm)
