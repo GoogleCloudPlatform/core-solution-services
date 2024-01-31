@@ -122,8 +122,9 @@ async def run_routing_agent(prompt: str,
     db_result, agent_logs = await run_db_agent(
         prompt, llm_type, dataset_name, user.email)
 
-    print(f"db_result: {db_result}")
     if "error" not in db_result:
+      print(f"db_result: {db_result}")
+
       db_result_data = db_result.get("data", None)
       db_result_output = None
       if db_result_data:
@@ -134,7 +135,7 @@ async def run_routing_agent(prompt: str,
         Logger.info(f"db_result columns: {db_result_columns}")
 
         # Convert db_result data, from list of tuple to list of dicts.
-        for row_entry in db_result_data["data"]:
+        for row_entry in db_result_data["rows"]:
           row_entry = list(row_entry)
           row_dict = {}
           for index, column in enumerate(db_result_columns):

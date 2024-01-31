@@ -312,7 +312,7 @@ def generate_spreadsheet(
 
   sheet_output = create_google_sheet(sheet_name,
                                      sheet_data["columns"],
-                                     sheet_data["data"],
+                                     sheet_data["rows"],
                                      user_email)
   Logger.info(f"Got spreadsheet output [{sheet_output}]")
   sheet_url = sheet_output["sheet_url"]

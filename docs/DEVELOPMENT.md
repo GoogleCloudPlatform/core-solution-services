@@ -386,6 +386,12 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
   curl -sL https://firebase.tools | bash
   firebase setup:emulators:firestore
   ```
+
+* Set up quota project:
+  ```
+  gcloud auth application-default set-quota-project $PROJECT_ID
+  ```
+
 * Install Virtualenv and pip requirements
   ```
   # Start in the root folder
@@ -401,9 +407,22 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
   # If this component depends on the common folder:
   pip install -r ../common/requirements.txt
   ```
-* Run unit tests locally:
+* Run unit tests locally for the entire codebase:
   ```
-  PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest
+  cd components/<component_name>/src
+  PYTHONPATH=../../common/src python -m pytest
+  ```
+
+  Or run the unit tests with code coverage:
+  ```
+  cd components/<component_name>/src
+  PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=../../common/src python -m pytest
+  ```
+
+* Run unit tests locally for a particular test file
+  ```
+  cd components/<component_name>/src
+  PYTHONPATH=../../common/src python -m pytest path/to/target_test.py
   ```
 
 ###  7.2. <a name='Testfilenameconventionandformat'></a>Test filename convention and format
