@@ -123,9 +123,10 @@ DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 DEFAULT_WEB_DEPTH_LIMIT = 1
 
 # config for agents and datasets
-AGENT_CONFIG_PATH = os.environ.get(
-    "AGENT_CONFIG_PATH",
-    os.path.join(os.path.dirname(__file__), "agent_config.json"))
+AGENT_CONFIG_PATH = os.environ.get("AGENT_CONFIG_PATH")
+if not AGENT_CONFIG_PATH and AGENT_CONFIG_PATH != "":
+  AGENT_CONFIG_PATH = os.path.join(
+      os.path.dirname(__file__), "agent_config.json")
 
 AGENT_DATASET_CONFIG_PATH = \
     os.path.join(os.path.dirname(__file__), "agent_datasets.json")
