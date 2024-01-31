@@ -45,8 +45,8 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
   ```
   git remote -v
   # This will display the detailed remote list like below.
-  origin  https://github.com/${YOUR_GITHUB_NAME}/${YOUR_FORKED_REPO_NAME}.git (fetch)
-  origin  https://github.com/${YOUR_GITHUB_NAME}${YOUR_FORKED_REPO_NAME}.git (push)
+  origin  https://github.com/<your-github-name>/<your-forked-repo-name>.git (fetch)
+  origin  https://github.com/<your-github-name><your-forked-repo-name>.git (push)
   ```
   - If for some reason your local git copy does not have the correct remotes, run the following:
     ```
