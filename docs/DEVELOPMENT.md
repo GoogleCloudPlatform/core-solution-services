@@ -34,23 +34,23 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
 * Choose your own GitHub profile to create this fork under your name.
 * Clone the repo to your local computer.
   ```
-  export YOUR_GITHUB_ID=<your-github-id>
+  export YOUR_GITHUB_NAME=<your-github-name>
   cd ~/workspace
-  git clone https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git
+  git clone https://github.com/${YOUR_GITHUB_NAME}/core-solution-services.git
   cd core-solution-services
   ```
 * Verify if the local git copy has the right remote endpoint.
   ```
   git remote -v
   # This will display the detailed remote list like below.
-  origin  https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git (fetch)
-  origin  https://github.com/${YOUR_GITHUB_ID}core-solution-services.git (push)
+  origin  https://github.com/${YOUR_GITHUB_NAME}/core-solution-services.git (fetch)
+  origin  https://github.com/${YOUR_GITHUB_NAME}core-solution-services.git (push)
   ```
   - If for some reason your local git copy does not have the correct remotes, run the following:
     ```
-    git remote add origin https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git
+    git remote add origin https://github.com/${YOUR_GITHUB_NAME}/core-solution-services.git
     # Or, to reset the URL if origin remote exists
-    git remote set-url origin https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git
+    git remote set-url origin https://github.com/${YOUR_GITHUB_NAME}/core-solution-services.git
     ```
 * Add the upstream repo to the remote list as **upstream**.
   ```
@@ -263,7 +263,7 @@ pip install -r requirements.txt
 
 * Run the following to create a Kubernetes namespace for your development
   ```
-  export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
+  export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_NAME
   kubectl create ns $SKAFFOLD_NAMESPACE
   ```
 
@@ -287,7 +287,7 @@ pip install -r requirements.txt
 
 To build and deploy:
 ```
-export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
+export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_NAME
 
 # In the solution folder:
 sb deploy
