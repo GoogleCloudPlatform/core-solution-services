@@ -147,7 +147,7 @@ def get_agent_config() -> dict:
   if AGENTS is None:
     if AGENT_CONFIG_PATH[:5] == "gs://":
       blob = get_blob_from_gcs_path(AGENT_CONFIG_PATH)
-      agent_config = json.loads(blob)
+      agent_config = json.loads(blob.download_as_string())
     else:
       agent_config = load_config_json(AGENT_CONFIG_PATH)
     agent_config = agent_config["Agents"]
