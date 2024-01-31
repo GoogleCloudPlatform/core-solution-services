@@ -123,14 +123,15 @@ DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 DEFAULT_WEB_DEPTH_LIMIT = 1
 
 # config for agents and datasets
-AGENT_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "agent_config.json")
+AGENT_CONFIG_PATH = os.environ.get(
+    "AGENT_CONFIG_PATH",
+    os.path.join(os.path.dirname(__file__), "agent_config.json"))
 
 AGENT_DATASET_CONFIG_PATH = \
     os.path.join(os.path.dirname(__file__), "agent_datasets.json")
 
 DATASETS = None
 AGENTS = None
-AGENT_CONFIG_GCS_PATH = os.environ.get("AGENT_CONFIG_GCS_PATH")
 
 def get_dataset_config() -> dict:
   global DATASETS
@@ -143,7 +144,7 @@ def get_agent_config() -> dict:
   global AGENTS
 
   if AGENTS is None:
-    if AGENT_CONFIG_GCS_PATH:
+    if AGENT_CONFIG_PATH[:5] == "gs://":
       blob = get_blob_from_gcs_path(AGENT_CONFIG_PATH)
       agent_config = json.load(blob)
     else:

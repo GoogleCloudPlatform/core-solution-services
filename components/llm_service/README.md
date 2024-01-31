@@ -149,14 +149,14 @@ Verify if the file has uploaded correctly to the bucket.
 gsutil list gs://${PROJECT_ID}-configs/agent_config.json
 ```
 
-Set up the environment variable `AGENT_CONFIG_GCS_PATH` accordingly:
-- When deploying locally, set AGENT_CONFIG_GCS_PATH to the GCS path.
+Set up the environment variable `AGENT_CONFIG_PATH` accordingly:
+- When deploying locally, set AGENT_CONFIG_PATH to the GCS path.
   ```
-  export AGENT_CONFIG_GCS_PATH=gs://${PROJECT_ID}-configs/agent_config.json
+  export AGENT_CONFIG_PATH=gs://${PROJECT_ID}-configs/agent_config.json
   ```
-- When deploying with CI/CD like Github action, set the AGENT_CONFIG_GCS_PATH in the CI/CD's env vars.
+- When deploying with CI/CD like Github action, set the AGENT_CONFIG_PATH in the CI/CD's env vars.
 
-> If AGENT_CONFIG_GCS_PATH is not set, it will fall back to use the default agent_config.json in
+> If AGENT_CONFIG_PATH is not set, it will fall back to use the default agent_config.json in
 > `components/llm_service/src/config/agent_config.json`.
 
 ## Troubleshoot
