@@ -215,7 +215,7 @@ def execute_sql_statement(statement: str,
   # generate spreadsheet
   sheet_data = {
     "columns": columns,
-    "data": row_data
+    "rows": row_data
   }
   sheet_url = generate_spreadsheet(dataset, sheet_data, user_email)
 

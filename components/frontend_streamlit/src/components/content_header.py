@@ -87,7 +87,7 @@ def chat_header(refresh_func=None):
 
   chat_llm_types = get_all_chat_llm_types()
 
-  img, model, chat_mode, refresh_button = st.columns([6, 1.7, 1.7, 1.7])
+  img, model, chat_mode, refresh_button = st.columns([5, 3, 3, 2])
   with img:
     add_logo("../assets/rit_logo.png")
   with model:
