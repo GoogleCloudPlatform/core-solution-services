@@ -32,25 +32,27 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
 ###  2.1. <a name='Forthefirst-timesetup:'></a>For the first-time setup:
 * Create a fork of a Git repository (using the button on the right corner of the page)
 * Choose your own GitHub profile to create this fork under your name.
-* Clone the repo to your local computer.
+* You may want to slightly alter the name of your forked repo to make it easier to distinguish from the original repo (e.g., gps-core-solution-services is forked from the original repo core-solution-services)
+* Clone the forked repo to your local computer.
   ```
   export YOUR_GITHUB_NAME=<your-github-name>
+  export YOUR_FORKED_REPO_NAME=<your-forked-repo-name>
   cd ~/workspace
-  git clone https://github.com/${YOUR_GITHUB_NAME}/core-solution-services.git
-  cd core-solution-services
+  git clone https://github.com/${YOUR_GITHUB_NAME}/${YOUR_FORKED_REPO_NAME}.git
+  cd ${YOUR_FORKED_REPO_NAME}
   ```
 * Verify if the local git copy has the right remote endpoint.
   ```
   git remote -v
   # This will display the detailed remote list like below.
-  origin  https://github.com/${YOUR_GITHUB_NAME}/core-solution-services.git (fetch)
-  origin  https://github.com/${YOUR_GITHUB_NAME}core-solution-services.git (push)
+  origin  https://github.com/${YOUR_GITHUB_NAME}/${YOUR_FORKED_REPO_NAME}.git (fetch)
+  origin  https://github.com/${YOUR_GITHUB_NAME}${YOUR_FORKED_REPO_NAME}.git (push)
   ```
   - If for some reason your local git copy does not have the correct remotes, run the following:
     ```
-    git remote add origin https://github.com/${YOUR_GITHUB_NAME}/core-solution-services.git
+    git remote add origin https://github.com/${YOUR_GITHUB_NAME}/${YOUR_FORKED_REPO_NAME}.git
     # Or, to reset the URL if origin remote exists
-    git remote set-url origin https://github.com/${YOUR_GITHUB_NAME}/core-solution-services.git
+    git remote set-url origin https://github.com/${YOUR_GITHUB_NAME}/${YOUR_FORKED_REPO_NAME}.git
     ```
 * Add the upstream repo to the remote list as **upstream**.
   ```
