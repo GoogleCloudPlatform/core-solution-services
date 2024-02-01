@@ -35,7 +35,7 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
 * You may want to slightly alter the name of your forked repo to make it easier to distinguish from the original repo (e.g., gps-core-solution-services is forked from the original repo core-solution-services)
 * Clone the forked repo to your local computer.
   ```
-  export YOUR_GITHUB_USERNAME=<your-github-name>
+  export YOUR_GITHUB_USERNAME=<your-github-username>
   export YOUR_FORKED_REPO_NAME=<your-forked-repo-name>
   cd ~/workspace
   git clone https://github.com/${YOUR_GITHUB_USERNAME}/${YOUR_FORKED_REPO_NAME}.git
@@ -45,8 +45,8 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
   ```
   git remote -v
   # This will display the detailed remote list like below.
-  origin  https://github.com/<your-github-name>/<your-forked-repo-name>.git (fetch)
-  origin  https://github.com/<your-github-name>/<your-forked-repo-name>.git (push)
+  origin  https://github.com/<your-github-username>/<your-forked-repo-name>.git (fetch)
+  origin  https://github.com/<your-github-username>/<your-forked-repo-name>.git (push)
   ```
   - If for some reason your local git copy does not have the correct remotes, run the following:
     ```
