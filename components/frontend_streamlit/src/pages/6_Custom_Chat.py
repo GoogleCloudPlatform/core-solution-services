@@ -165,7 +165,7 @@ def chat_content():
 
       if "HumanInput" in item:
         has_input = True
-        if item["HumanInput"] == "I need help" or\
+        if item["HumanInput"].lower() == "i need help":
             item["HumanInput"] == "i need help":
           needs_help = True
         with st.chat_message("user"):
