@@ -74,6 +74,9 @@ def on_submit(user_input):
     default_route = st.session_state.get("default_route", None)
     routing_agents = get_all_routing_agents()
     routing_agent_names = list(routing_agents.keys())
+    chat_llm_type = st.session_state.get("chat_llm_type")
+    Logger.info(f"llm_type in session {chat_llm_type}")
+
     if default_route is None:
       # pick the first routing agent as default
       if routing_agent_names:
@@ -83,24 +86,24 @@ def on_submit(user_input):
       response = run_dispatch(user_input,
                               routing_agent,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=st.session_state.get("chat_llm_type"))
+                              llm_type=chat_llm_type)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route in routing_agent_names:
       response = run_dispatch(user_input,
                               default_route,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=st.session_state.get("chat_llm_type"))
+                              llm_type=chat_llm_type)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route == "Chat":
       response = run_chat(user_input,
                          chat_id=st.session_state.get("chat_id"),
-                         llm_type=st.session_state.get("chat_llm_type"))
+                         llm_type=chat_llm_type)
     elif default_route == "Plan":
       response = run_agent_plan("Plan", user_input,
                                 chat_id=st.session_state.get("chat_id"),
-                                llm_type=st.session_state.get("chat_llm_type"))
+                                llm_type=chat_llm_type)
     else:
       st.error(f"Unsupported route {default_route}")
       response = None

@@ -212,9 +212,6 @@ def run_dispatch(prompt: str, agent_name: str, chat_id: str = None,
   if not auth_token:
     auth_token = get_auth_token()
 
-  # hard code llm_type to the dispatch agent default
-  llm_type = None
-
   api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch/{agent_name}"
   Logger.info(f"api_url = {api_url}")
   Logger.info(f"chat_id = {chat_id}")
