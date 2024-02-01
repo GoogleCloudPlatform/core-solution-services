@@ -136,7 +136,7 @@ def get_dataset_config() -> dict:
 
 def get_agent_config() -> dict:
   global AGENTS
-
+  global DATASETS
   if AGENTS is None:
     if AGENT_CONFIG_PATH[:5] == "gs://":
       blob = get_blob_from_gcs_path(AGENT_CONFIG_PATH)
@@ -150,7 +150,7 @@ def get_agent_config() -> dict:
     if "Datasets" in agent_config:
       DATASETS = agent_config["Datasets"]
     else:
-      DATASETS = {}  
+      DATASETS = {}
   return AGENTS
 
 # load agent config
