@@ -16,7 +16,8 @@
 Main page top content, includes logo img and select boxes
 """
 
-from api import get_all_chat_llm_types, get_all_routing_agents
+from api import get_all_routing_agents
+from components.chat_model_select import chat_model_select
 from pathlib import Path
 import streamlit as st
 import validators
@@ -85,20 +86,11 @@ def chat_header(refresh_func=None):
   routing_agents = get_all_routing_agents()
   routing_agent_names = list(routing_agents.keys())
 
-  chat_llm_types = get_all_chat_llm_types()
-
   img, model, chat_mode, refresh_button = st.columns([5, 3, 3, 2])
   with img:
     add_logo("../assets/rit_logo.png")
   with model:
-    try:
-      selected_model_index = chat_llm_types.index(
-          st.session_state.get("chat_llm_type"))
-    except ValueError:
-      selected_model_index = 0
-    selected_model = st.selectbox(
-        "Model", chat_llm_types, index=selected_model_index)
-    st.session_state.chat_llm_type = selected_model
+    chat_model_select()
   with refresh_button:
     if refresh_func and st.button("Refresh"):
       refresh_func()
@@ -117,5 +109,3 @@ def chat_header(refresh_func=None):
     selected_chat = st.selectbox(
         "Chat Mode", chat_modes, index=chat_mode_index)
     st.session_state.default_route = selected_chat
-
-  return {"model": selected_model, "chat_mode": selected_chat}

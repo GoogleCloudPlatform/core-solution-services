@@ -20,8 +20,9 @@ import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
+    run_agent_execute_plan, run_agent_plan, run_chat)
 from components.chat_options import action_buttons
+from components.chat_model_select import chat_model_select
 from components.help_modal import help_form
 from styles.pages.custom_chat_markup import custom_chat_theme
 from common.utils.logging_handler import Logger
@@ -346,8 +347,7 @@ def chat_page():
 
   with options:
     with st.expander("Advanced Settings"):
-      chat_llm_types = get_all_chat_llm_types()
-      st.session_state.chat_llm_type = st.selectbox("Model", chat_llm_types)
+      chat_model_select()
 
       st.session_state.default_route = st.selectbox(
         "Chat Mode", ["Chat", "Plan", "Query"])
