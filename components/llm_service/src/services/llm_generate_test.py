@@ -154,7 +154,7 @@ async def test_llm_generate_multi(clean_firestore):
   fake_upload_file = UploadFile(file=image_bytes, filename=FAKE_FILENAME)
 
   with mock.patch(
-      "vertexai.preview.language_models.GenerativeModel.generate_content_async",
+      "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate_multi(
       fake_upload_file, FAKE_PROMPT, VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
