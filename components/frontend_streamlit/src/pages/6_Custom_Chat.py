@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-  Streamlit app Chat Page
+  Streamlit app custom Chat Page
 """
 # pylint: disable=invalid-name,unused-variable
 import re
@@ -20,48 +20,16 @@ import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan, get_all_chat_llm_types,
-    get_all_routing_agents, run_agent_plan, run_chat)
-from components.chat_history import chat_history_panel
-from components.content_header import chat_header
-from styles.pages.chat_markup import chat_theme
+    run_agent_execute_plan, get_all_chat_llm_types, run_agent_plan, run_chat)
+from components.chat_options import action_buttons
+from components.help_modal import help_form
+from styles.pages.custom_chat_markup import custom_chat_theme
 from common.utils.logging_handler import Logger
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 Logger = Logger.get_logger(__file__)
-
-REFERENCE_CSS_STYLE = """
-{
-  font-weight: 400;
-  line-height: 1.6;
-  text-size-adjust: 100%;
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-  -webkit-font-smoothing: auto;
-  color-scheme: light;
-  color: rgb(49, 51, 63);
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  border-top-left-radius: 0.5rem;
-  border-bottom-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
-  border-bottom-right-radius: 0.5rem;
-  overflow: scroll;
-  display: inline-block;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  background-color: #FFFFFF;
-  border: none;
-  border-width: 1px;
-  resize: vertical;
-  min-height: 1rem;
-  margin-top: 0.4rem;
-}
-"""
 
 def on_submit(user_input):
   """ Run dispatch agent when adding an user input prompt """
@@ -72,27 +40,11 @@ def on_submit(user_input):
   with st.spinner("Loading..."):
     # Send API to llm-service
     default_route = st.session_state.get("default_route", None)
-    routing_agents = get_all_routing_agents()
-    routing_agent_names = list(routing_agents.keys())
     if default_route is None:
-      # pick the first routing agent as default
-      if routing_agent_names:
-        routing_agent = routing_agent_names[0]
-      else:
-        routing_agent = "default"
       response = run_dispatch(user_input,
-                              routing_agent,
                               chat_id=st.session_state.get("chat_id"),
                               llm_type=st.session_state.get("chat_llm_type"))
       st.session_state.default_route = response.get("route", None)
-
-    elif default_route in routing_agent_names:
-      response = run_dispatch(user_input,
-                              default_route,
-                              chat_id=st.session_state.get("chat_id"),
-                              llm_type=st.session_state.get("chat_llm_type"))
-      st.session_state.default_route = response.get("route", None)
-
     elif default_route == "Chat":
       response = run_chat(user_input,
                          chat_id=st.session_state.get("chat_id"),
@@ -103,21 +55,19 @@ def on_submit(user_input):
                                 llm_type=st.session_state.get("chat_llm_type"))
     else:
       st.error(f"Unsupported route {default_route}")
-      response = None
 
-    if response:
-      st.session_state.chat_id = response["chat"]["id"]
-      st.session_state.user_chats.insert(0, response["chat"])
+    st.session_state.chat_id = response["chat"]["id"]
 
-      # TODO: Currently the AIOutput vs content are inconsistent across
-      # API response and in a UserChat history.
-      if "content" in response:
-        response["AIOutput"] = response["content"]
-      del response["chat"]
-      st.session_state.messages.append(response)
+    # TODO: Currently the AIOutput vs content are inconsistent across
+    # API response and in a UserChat history.
+    if "content" in response:
+      response["AIOutput"] = response["content"]
+    del response["chat"]
+
+    st.session_state.messages.append(response)
 
   # reload page after exiting from spinner
-  utils.navigate_to("Chat")
+  utils.navigate_to("Custom_Chat")
 
 
 def format_ai_output(text):
@@ -152,61 +102,63 @@ def chat_content():
       st.write(st.session_state.get("landing_user_input"))
       st.write(st.session_state.get("messages"))
 
-  if st.session_state.chat_id:
-    st.write(f"Chat ID: **{st.session_state.chat_id}**")
-
   # Create a placeholder for all chat history.
   chat_placeholder = st.empty()
   with chat_placeholder.container():
     index = 1
+    has_input = False
+    needs_help = False
     for item in st.session_state.messages:
       Logger.info(item)
 
       if "HumanInput" in item:
+        has_input = True
+        if item["HumanInput"] == "I need help":
+          needs_help = True
         with st.chat_message("user"):
           st.write(item["HumanInput"], is_user=True, key=f"human_{index}")
 
-      if "route_name" in item:
-        route_name = item["route_name"]
-        with st.chat_message("ai"):
-          st.write(
-              f"Using route **`{route_name}`** to respond.",
-              key=f"ai_{index}",
-          )
+      if "AIOutput" in item:
+        if needs_help:
+          if "help_state" not in st.session_state:
+            st.session_state.help_state = False
+
+          if st.session_state.help_state is False:
+            with st.chat_message("ai"):
+              st.write(
+                  "If it's an emergency, please dial 911."\
+                  " Otherwise, complete the form below",
+                  key=f"em_{index}"
+              )
+            with st.expander("Get Further Assistance", expanded=True):
+              help_form()
+          else:
+            with st.chat_message("ai"):
+              st.markdown(
+                  "Your ticket number is: **5010**<br>"\
+                  "You will receive an **email notification** "\
+                  "within 48 hours.<br>"\
+                  "You may continue to utilize the chat assistant, "\
+                  "or can close or navigate away from this window.",
+                  unsafe_allow_html=True
+              )
+
+          needs_help = False
+        else:
+          with st.chat_message("ai"):
+            ai_output = item["AIOutput"]
+            ai_output = format_ai_output(ai_output)
+            st.write(
+                ai_output,
+                key=f"ai_{index}",
+                unsafe_allow_html=False,
+                is_table=False,  # TODO: Detect whether an output content type.
+            )
 
       route_logs = item.get("route_logs", None)
       if route_logs and route_logs.strip() != "":
-        with st.expander("Expand to see Agent's thought process"):
+        with st.expander("Thought Process"):
           st.write(format_ai_output(route_logs))
-
-      if "AIOutput" in item:
-        with st.chat_message("ai"):
-          ai_output = item["AIOutput"]
-          ai_output = format_ai_output(ai_output)
-          st.write(
-              ai_output,
-              key=f"ai_{index}",
-              unsafe_allow_html=False,
-              is_table=False,  # TODO: Detect whether an output content type.
-          )
-
-      # Append all query references.
-      if item.get("db_result", None):
-        with st.chat_message("ai"):
-          st.write("Query result:")
-          result_index = 1
-          for result in item["db_result"]:
-            values = list(result.values())
-            markdown_content = f"{result_index}. **{values[0]}**"
-            markdown_content += " - " + ", ".join(values[1:])
-
-            with stylable_container(
-              key=f"ref_{result_index}",
-              css_styles = REFERENCE_CSS_STYLE
-            ):
-              st.markdown(markdown_content)
-
-            result_index = result_index + 1
 
       # Append all resources.
       if item.get("resources", None):
@@ -227,9 +179,43 @@ def chat_content():
             markdown_content = re.sub(
                 r"<b>(.*?)</b>", r"**\1**", document_text, flags=re.IGNORECASE)
 
+            #st.text_area(
+            #  f"Reference: {document_url}",
+            #  document_text,
+            #  key=f"ref_{reference_index}")
+
             with stylable_container(
               key=f"ref_{reference_index}",
-              css_styles = REFERENCE_CSS_STYLE
+              css_styles = """
+              {
+                font-weight: 400;
+                line-height: 1.6;
+                text-size-adjust: 100%;
+                -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+                -webkit-font-smoothing: auto;
+                color-scheme: light;
+                color: rgb(49, 51, 63);
+                box-sizing: border-box;
+                width: 100%;
+                max-width: 100%;
+                border-top-left-radius: 0.5rem;
+                border-bottom-left-radius: 0.5rem;
+                border-top-right-radius: 0.5rem;
+                border-bottom-right-radius: 0.5rem;
+                overflow: scroll;
+                display: inline-block;
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+                background-color: #FFFFFF;
+                border: none;
+                border-width: 1px;              
+                resize: vertical;
+                min-height: 95px;
+                height: 100px;
+              }
+              """
             ):
               st.markdown(markdown_content)
 
@@ -250,7 +236,7 @@ def chat_content():
             index = index + 1
 
           plan_id = plan["id"]
-          if st.button("Execute this plan", key=f"plan-{plan_id}"):
+          if st.button("Execute plan", key=f"plan-{plan_id}"):
             with st.spinner("Executing the plan..."):
               output = run_agent_execute_plan(
                 plan_id=plan_id,
@@ -273,6 +259,9 @@ def chat_content():
 
       index = index + 1
 
+  # Position chat option buttons
+  if has_input:
+    action_buttons()
 
 def render_cloud_storage_url(url):
   """ Parse a cloud storage url. """
@@ -294,17 +283,7 @@ def init_messages():
 
 
 def chat_page():
-  chat_theme()
-
-  # Returns the values of the select input boxes
-  selections = chat_header(refresh_func=init_messages)
-
-  st.title("Chat")
-
-  chat_llm_types = get_all_chat_llm_types()
-
-  # List all existing chats if any. (data model: UserChat)
-  chat_history_panel()
+  custom_chat_theme()
 
   content_placeholder = st.container()
 
@@ -337,8 +316,45 @@ def chat_page():
   with content_placeholder:
     chat_content()
 
+  ref_col, plan_col, options = st.columns(3)
+
+  with ref_col:
+    with st.expander("References", expanded=True):
+      url_name = "Medicaid"
+      document_url = "https://www.medicaid.gov/"
+      doc_text = "New York's Medicaid program provides total health coverage"
+
+      st.write("**Site:**")
+      st.markdown(f"[{url_name}]({document_url})")
+      st.write("**Overview:**")
+      st.write(doc_text)
+
+      st.divider()
+
+      st.write("**Site:**")
+      st.markdown(f"[{url_name}]({document_url})")
+      st.write("**Overview:**")
+      st.write(doc_text)
+
+  with plan_col:
+    for item in st.session_state.messages:
+      if "plan" in item:
+        plan = get_plan(item["plan"]["id"])
+        with st.expander("Plan Steps"):
+          for step in plan["plan_steps"]:
+            st.write(step["description"])
+
+  with options:
+    with st.expander("Advanced Settings"):
+      chat_llm_types = get_all_chat_llm_types()
+      st.session_state.chat_llm_type = st.selectbox("Model", chat_llm_types)
+
+      st.session_state.default_route = st.selectbox(
+        "Chat Mode", ["Chat", "Plan", "Query"])
+
 
 if __name__ == "__main__":
+  st.set_page_config(initial_sidebar_state="collapsed")
   utils.init_page()
   init_messages()
   chat_page()

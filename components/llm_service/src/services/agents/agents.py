@@ -17,8 +17,8 @@ import re
 from abc import ABC, abstractmethod
 from typing import Union, Type, Callable, List, Optional
 
-from langchain.agents import (Agent, AgentOutputParser,
-                              ConversationalAgent)
+from langchain.agents import Agent as LangchainAgent
+from langchain.agents import AgentOutputParser, ConversationalAgent
 from langchain.agents.structured_chat.base import StructuredChatAgent
 from langchain.agents.structured_chat.output_parser \
     import StructuredChatOutputParserWithRetries
@@ -26,25 +26,51 @@ from langchain.agents.structured_chat.prompt \
     import FORMAT_INSTRUCTIONS as STRUCTURED_FORMAT_INSTRUCTIONS
 from langchain.agents.conversational.prompt import FORMAT_INSTRUCTIONS
 from langchain.schema import AgentAction, AgentFinish
-
+from config import get_dataset_config, get_agent_config
+from common.models import QueryEngine
 from common.models.agent import AgentCapability
-from common.utils.http_exceptions import InternalServerError
+from common.utils.config import get_config_list
+from common.utils.errors import ResourceNotFoundException
 from common.utils.logging_handler import Logger
 from services import langchain_service
-from services.agents.agent_prompts import (PREFIX, DISPATCH_PREFIX,
+from services.agents.agent_prompts import (PREFIX, ROUTING_PREFIX,
                                            TASK_PREFIX, PLANNING_PREFIX,
                                            PLAN_FORMAT_INSTRUCTIONS,
-                                           DISPATCH_FORMAT_INSTRUCTIONS)
-from services.agents.agent_tools import (gmail_tool, docs_tool,database_tool,
-                                         google_sheets_tool,
-                                         calendar_tool, search_tool,
-                                         query_tool)
+                                           ROUTING_FORMAT_INSTRUCTIONS)
+from services.agents.agent_tools import agent_tool_registry
 
 Logger = Logger.get_logger(__file__)
 
+AGENT_CONFIG = get_agent_config()
+
+def get_agent_class(agent_class):
+  if agent_class in ["Routing", "RoutingAgent"]:
+    return RoutingAgent
+  elif agent_class in ["Chat", "ChatAgent"]:
+    return ChatAgent
+  elif agent_class in ["Task", "TaskAgent"]:
+    return TaskAgent
+  elif agent_class in ["Plan", "PlanAgent"]:
+    return PlanAgent
+
+  raise RuntimeError(f"Agent class {agent_class} is not supported.")
+
+def get_agent_class_from_name(agent_name):
+  """ Get agent class from name """
+  if agent_name in ["Routing", "Chat", "Task", "Plan"]:
+    return get_agent_class(agent_name)
+  else:
+    # For other custom agent config.
+    if agent_name not in AGENT_CONFIG:
+      raise RuntimeError(f"Cannot find agent config for {agent_name}")
+
+    agent_class = AGENT_CONFIG[agent_name]["agent_class"]
+    return get_agent_class(agent_class)
+
+
 class BaseAgent(ABC):
   """
-  Base Agent for LLM Service agents.  All agents are based on Langchain
+  Base Class for LLM Service agents.  All agents are based on Langchain
   agents and basically specify the configuration for a particular variant
   of Langchain agent.
   """
@@ -52,20 +78,26 @@ class BaseAgent(ABC):
   llm_type: str = None
   """ the LLM Service llm type used to power the agent """
 
-  agent: Agent = None
+  agent: LangchainAgent = None
   """ the langchain agent instance """
 
-  agent_class: Type[Agent] = None
+  agent_class: Type[LangchainAgent] = None
   """ the langchain agent class """
 
   name:str = None
   """ The name of the agent """
+
   prefix: str = PREFIX
   """ The prefix prompt of the agent """
 
-  def __init__(self, llm_type: str):
+  config: dict = {}
+  """ Agent config dict from config file """
+
+  def __init__(self, llm_type: str, name: str):
     self.llm_type = llm_type
+    self.name = name
     self.agent = None
+    self.config = get_agent_config()[self.name]
 
   def set_prefix(self, prefix) -> str:
     self.prefix = prefix
@@ -85,18 +117,44 @@ class BaseAgent(ABC):
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
 
-  @abstractmethod
   def get_tools(self) -> List[Callable]:
-    """ return tools used by this agent """
+    """
+    Return tools used by this agent. The base method reads tools from
+    agent config.  It supports special config like "ALL", specifying
+    that the agent uses all tools.
+    """
+    agent_tools = []
+    agent_config = get_agent_config()[self.name]
+    tool_config = agent_config.get("tools", "")
+    if tool_config == "ALL":
+      agent_tools = list(agent_tool_registry.values())
+    else:
+      tool_config_list = get_config_list(tool_config)
+      agent_tools = [tool for tool_name, tool in agent_tool_registry.items()
+                     if tool_name in tool_config_list]
+    return agent_tools
 
-  def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
+  @classmethod
+  def get_llm_service_agent(cls, agent_name: str):
+    agent_config = get_agent_config()[agent_name]
+    agent_class = get_agent_class_from_name(agent_name)
+    llm_service_agent = agent_class(
+        agent_config["llm_type"],
+        agent_name
+        )
+    return llm_service_agent
+
+  def load_langchain_agent(self,
+                           input_variables: Optional[List[str]]=None) -> \
+                           LangchainAgent:
     """ load this agent and return an instance of langchain Agent"""
     tools = self.get_tools()
 
     llm = langchain_service.get_model(self.llm_type)
     if llm is None:
-      raise InternalServerError(
+      raise RuntimeError(
           f"Agent: cannot find LLM type {self.llm_type}")
+    Logger.info(f"Using LLM type {self.llm_type} for {self.name} agent.")
 
     output_parser = self.output_parser_class()
     self.agent = self.agent_class.from_llm_and_tools(
@@ -113,15 +171,92 @@ class BaseAgent(ABC):
                  f"input_variables=[{input_variables}]")
     return self.agent
 
+  @classmethod
+  def get_query_engines(cls, agent_name: str) -> \
+      List[QueryEngine]:
+    """
+    Get list of query engines available to this agent.  Agent
+    query engines can be configured in agent config, or tagged
+    in query engine data models.
+    """
+    agent_config = get_agent_config()[agent_name]
+    agent_query_engines = []
+
+    if "query_engines" in agent_config:
+      agent_qe_names = get_config_list(agent_config["query_engines"])
+      if "ALL" in agent_qe_names:
+        agent_query_engines = QueryEngine.fetch_all()
+      else:
+        agent_query_engines = QueryEngine.collection.filter(
+          "name", "in", agent_qe_names).fetch()
+
+    tagged_query_engines = QueryEngine.collection.filter(
+        "agents", "array_contains", agent_name
+    ).fetch()
+    tagged_query_engines = list(tagged_query_engines) or []
+
+    query_engines = agent_query_engines + tagged_query_engines
+    return query_engines
+
+  @classmethod
+  def get_datasets(cls, agent_name: str) -> dict:
+    """
+    Agent datasets are configured in agent config
+    """
+    agent_config = get_agent_config()[agent_name]
+    agent_datasets = {}
+    agent_dataset_names = []
+    if "datasets" in agent_config:
+      agent_dataset_names = get_config_list(agent_config["datasets"])
+    datasets = get_dataset_config()
+    agent_datasets = {
+      ds_name: ds_config for ds_name, ds_config in datasets.items()
+      if ds_name in agent_dataset_names
+    }
+    return agent_datasets
+
+  @classmethod
+  def get_llm_type_for_agent(cls, agent_name: str) -> str:
+    """
+    Return agent llm_type given agent name
+    Args:
+      agent_name: str
+    Returns:
+      llm_type: str
+    Raises:
+      ResourceNotFoundException if agent_name not found
+    """
+    agent_config = get_agent_config()
+    for agent in agent_config.keys():
+      if agent_name == agent:
+        return agent_config[agent]["llm_type"]
+    raise ResourceNotFoundException(f"can't find agent name {agent_name}")
+
+  @classmethod
+  def get_agents_by_capability(cls, capability: str) -> List[str]:
+    """
+    Return config dicts for agents that support a specified capability
+    """
+    agent_name = capability
+    agent_config = get_agent_config()
+    agent_capability_config = {}
+    for agent_name, agent_config in agent_config.items():
+      agent_class = get_agent_class_from_name(agent_name)
+      if agent_class is None:
+        raise RuntimeError(f"agent class not found for agent {agent_name}")
+      capabilities = [ac.value for ac in agent_class.capabilities()]
+      if capability in capabilities:
+        agent_capability_config.update({agent_name: agent_config})
+    return agent_capability_config
+
 
 class ChatAgent(BaseAgent):
   """
   Chat Agent.  This is an agent configured for basic informational chat with a
   human.  It includes search and query tools.
   """
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "ChatAgent"
+  def __init__(self, llm_type: str, name: str):
+    super().__init__(llm_type, name)
     self.agent_class = ConversationalAgent
 
   @property
@@ -131,44 +266,37 @@ class ChatAgent(BaseAgent):
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
-    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
-                    AgentCapability.AGENT_QUERY_CAPABILITY]
+    capabilities = [AgentCapability.CHAT,
+                    AgentCapability.QUERY]
     return capabilities
 
-  def get_tools(self) -> List[Callable]:
-    """ return tools used by this agent """
-    return [search_tool, query_tool]
 
-
-class DispatchAgent(BaseAgent):
+class RoutingAgent(BaseAgent):
   """
-  Dispatch Agent.  This is an agent configured for dispatching
+  Routing Agent.  This is an agent configured for dispatching
   a given prompt to the best route with given list of choices.
   """
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "DispatchAgent"
+  def __init__(self, llm_type: str, name: str):
+    super().__init__(llm_type, name)
     self.agent_class = ConversationalAgent
-    self.prefix = DISPATCH_PREFIX
+    self.prefix = ROUTING_PREFIX
 
   @property
   def output_parser_class(self) -> Type[AgentOutputParser]:
-    return DispatchAgentOutputParser
+    return RoutingAgentOutputParser
 
   @property
   def format_instructions(self) -> str:
-    return DISPATCH_FORMAT_INSTRUCTIONS
+    return ROUTING_FORMAT_INSTRUCTIONS
 
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
-    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
-                    AgentCapability.AGENT_QUERY_CAPABILITY]
+    capabilities = [AgentCapability.CHAT,
+                    AgentCapability.QUERY,
+                    AgentCapability.PLAN,
+                    AgentCapability.ROUTE]
     return capabilities
-
-  def get_tools(self) -> List[Callable]:
-    """ return tools used by this agent """
-    return []
 
 
 class TaskAgent(BaseAgent):
@@ -180,17 +308,9 @@ class TaskAgent(BaseAgent):
   agent.
   """
 
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "TaskAgent"
+  def __init__(self, llm_type: str, name: str):
+    super().__init__(llm_type, name)
     self.agent_class = StructuredChatAgent
-
-  def load_agent(self,input_variables: Optional[List[str]] = None) -> Agent:
-    """ load this agent and return an instance of langchain Agent"""
-    #This is the list of variables defined in the associated prompt
-    #input_variables = ["input", "user", "user_email", "task_plan",
-    # "agent_scratchpad"]
-    return super().load_agent()
 
   @property
   def prefix(self) -> str:
@@ -206,15 +326,10 @@ class TaskAgent(BaseAgent):
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
-    capabilities = [AgentCapability.AGENT_CHAT_CAPABILITY,
-                    AgentCapability.AGENT_QUERY_CAPABILITY,
-                    AgentCapability.AGENT_TASK_CAPABILITY]
+    capabilities = [AgentCapability.CHAT,
+                    AgentCapability.QUERY,
+                    AgentCapability.TASK]
     return capabilities
-
-  def get_tools(self):
-    tools = [gmail_tool, database_tool,  google_sheets_tool, docs_tool,
-      calendar_tool, search_tool, query_tool]
-    return tools
 
   def get_planning_agent(self) -> str:
     """
@@ -229,9 +344,8 @@ class PlanAgent(BaseAgent):
   Plans will be executed using a different agent.
   """
 
-  def __init__(self, llm_type: str):
-    super().__init__(llm_type)
-    self.name = "PlanAgent"
+  def __init__(self, llm_type: str, name: str):
+    super().__init__(llm_type, name)
     self.agent_class = StructuredChatAgent
     self.prefix = PLANNING_PREFIX
 
@@ -246,23 +360,18 @@ class PlanAgent(BaseAgent):
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
-    capabilities = [AgentCapability.AGENT_PLAN_CAPABILITY]
+    capabilities = [AgentCapability.PLAN]
     return capabilities
 
-  def get_tools(self):
-    tools = [gmail_tool, database_tool, google_sheets_tool, docs_tool,
-      calendar_tool, search_tool, query_tool]
-    return tools
 
-
-class DispatchAgentOutputParser(AgentOutputParser):
+class RoutingAgentOutputParser(AgentOutputParser):
   """Output parser for a agent that makes plans."""
 
   ai_prefix: str = "AI"
   """Prefix to use before AI output."""
 
   def get_format_instructions(self) -> str:
-    return DISPATCH_FORMAT_INSTRUCTIONS
+    return ROUTING_FORMAT_INSTRUCTIONS
 
   def parse(self, text: str) -> Union[AgentAction, AgentFinish]:
     regex = r"Action: (.*?)[\n]*Action Input: (.*)"
