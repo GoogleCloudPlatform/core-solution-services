@@ -92,6 +92,7 @@ def reset_session_state():
   """ Reset critial session states. """
   st.session_state.landing_user_input = None
   st.session_state.chat_id = None
+  st.session_state.chat_llm_type = None
   st.session_state.messages = []
   st.session_state.error_msg = None
 

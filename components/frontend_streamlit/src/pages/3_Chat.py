@@ -20,7 +20,7 @@ import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan, get_all_chat_llm_types,
+    run_agent_execute_plan,
     get_all_routing_agents, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
 from components.content_header import chat_header
@@ -74,6 +74,9 @@ def on_submit(user_input):
     default_route = st.session_state.get("default_route", None)
     routing_agents = get_all_routing_agents()
     routing_agent_names = list(routing_agents.keys())
+    chat_llm_type = st.session_state.get("chat_llm_type")
+    Logger.info(f"llm_type in session {chat_llm_type}")
+
     if default_route is None:
       # pick the first routing agent as default
       if routing_agent_names:
@@ -83,24 +86,24 @@ def on_submit(user_input):
       response = run_dispatch(user_input,
                               routing_agent,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=st.session_state.get("chat_llm_type"))
+                              llm_type=chat_llm_type)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route in routing_agent_names:
       response = run_dispatch(user_input,
                               default_route,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=st.session_state.get("chat_llm_type"))
+                              llm_type=chat_llm_type)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route == "Chat":
       response = run_chat(user_input,
                          chat_id=st.session_state.get("chat_id"),
-                         llm_type=st.session_state.get("chat_llm_type"))
+                         llm_type=chat_llm_type)
     elif default_route == "Plan":
       response = run_agent_plan("Plan", user_input,
                                 chat_id=st.session_state.get("chat_id"),
-                                llm_type=st.session_state.get("chat_llm_type"))
+                                llm_type=chat_llm_type)
     else:
       st.error(f"Unsupported route {default_route}")
       response = None
@@ -296,12 +299,10 @@ def init_messages():
 def chat_page():
   chat_theme()
 
-  # Returns the values of the select input boxes
-  selections = chat_header(refresh_func=init_messages)
+  # display chat header
+  chat_header(refresh_func=init_messages)
 
   st.title("Chat")
-
-  chat_llm_types = get_all_chat_llm_types()
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
