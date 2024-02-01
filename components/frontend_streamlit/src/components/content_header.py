@@ -109,5 +109,3 @@ def chat_header(refresh_func=None):
     selected_chat = st.selectbox(
         "Chat Mode", chat_modes, index=chat_mode_index)
     st.session_state.default_route = selected_chat
-
-  return {"model": selected_model, "chat_mode": selected_chat}

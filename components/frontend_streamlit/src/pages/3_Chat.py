@@ -296,8 +296,8 @@ def init_messages():
 def chat_page():
   chat_theme()
 
-  # Returns the values of the select input boxes
-  selections = chat_header(refresh_func=init_messages)
+  # display chat header
+  chat_header(refresh_func=init_messages)
 
   st.title("Chat")
 
