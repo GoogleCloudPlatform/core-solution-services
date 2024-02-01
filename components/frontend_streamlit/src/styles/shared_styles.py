@@ -55,7 +55,8 @@ def main_styles():
       }}
 
       /* Generic button styles */
-      .main .stButton button {{
+      .main .stButton button,
+      [data-testid="baseButton-primary"] {{
         background-color: {colors['tint_primary']};
         color: {colors['light_fill']};
         border: none;
@@ -68,6 +69,16 @@ def main_styles():
         &:focus:not(:active) {{
           color: {colors['light_fill']};
         }}
+      }}
+      .main .stButton button div p {{
+        color: {colors['light_fill']};
+      }}
+
+      [data-testid="baseButton-primary"] {{
+        margin-top: 29px;
+      }}
+      [data-testid="baseButton-primary"] div p {{
+        color: {colors['light_fill']};
       }}
 
       /* Select input box styling */
