@@ -166,7 +166,6 @@ def chat_content():
       if "HumanInput" in item:
         has_input = True
         if item["HumanInput"].lower() == "i need help":
-            item["HumanInput"] == "i need help":
           needs_help = True
         with st.chat_message("user"):
           st.write(item["HumanInput"], is_user=True, key=f"human_{index}")
@@ -188,7 +187,8 @@ def chat_content():
             with st.chat_message("ai"):
               st.write(
                   "If it's an emergency, please dial 911."\
-                  " Otherwise, complete the form below"
+                  " Otherwise, complete the form below",
+                  key=f"ai_{index}"
               )
             with st.expander("Get Further Assistance", expanded=True):
               help_form()
