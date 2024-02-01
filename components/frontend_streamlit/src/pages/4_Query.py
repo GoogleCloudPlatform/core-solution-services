@@ -39,7 +39,7 @@ def on_input_change():
     return
   response = run_query(query_engine_id, user_input,
                        chat_id=st.session_state.chat_id,
-                       llm_type=st.session.chat_llm_type)
+                       llm_type=st.session_state.chat_llm_type)
 
   query_result = response["query_result"]
   query_references = response.get("query_references", None)
