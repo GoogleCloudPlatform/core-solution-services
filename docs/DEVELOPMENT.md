@@ -390,6 +390,7 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
   ```
   # Start in the root folder
   export BASE_DIR=$(pwd)
+  export PROJECT_ID=<your-dev-project-id>
 
   # Go to a specific microservice folder:
   cd components/<component_name>
