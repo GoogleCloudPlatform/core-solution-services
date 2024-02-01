@@ -20,7 +20,7 @@ import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan, get_all_chat_llm_types,
+    run_agent_execute_plan,
     get_all_routing_agents, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
 from components.content_header import chat_header
@@ -300,8 +300,6 @@ def chat_page():
   selections = chat_header(refresh_func=init_messages)
 
   st.title("Chat")
-
-  chat_llm_types = get_all_chat_llm_types()
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
