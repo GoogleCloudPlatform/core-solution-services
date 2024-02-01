@@ -35,10 +35,10 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
 * You may want to slightly alter the name of your forked repo to make it easier to distinguish from the original repo (e.g., gps-core-solution-services is forked from the original repo core-solution-services)
 * Clone the forked repo to your local computer.
   ```
-  export YOUR_GITHUB_NAME=<your-github-name>
+  export YOUR_GITHUB_USERNAME=<your-github-name>
   export YOUR_FORKED_REPO_NAME=<your-forked-repo-name>
   cd ~/workspace
-  git clone https://github.com/${YOUR_GITHUB_NAME}/${YOUR_FORKED_REPO_NAME}.git
+  git clone https://github.com/${YOUR_GITHUB_USERNAME}/${YOUR_FORKED_REPO_NAME}.git
   cd ${YOUR_FORKED_REPO_NAME}
   ```
 * Verify if the local git copy has the right remote endpoint.
@@ -50,9 +50,9 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
   ```
   - If for some reason your local git copy does not have the correct remotes, run the following:
     ```
-    git remote add origin https://github.com/${YOUR_GITHUB_NAME}/${YOUR_FORKED_REPO_NAME}.git
+    git remote add origin https://github.com/${YOUR_GITHUB_USERNAME}/${YOUR_FORKED_REPO_NAME}.git
     # Or, to reset the URL if origin remote exists
-    git remote set-url origin https://github.com/${YOUR_GITHUB_NAME}/${YOUR_FORKED_REPO_NAME}.git
+    git remote set-url origin https://github.com/${YOUR_GITHUB_USERNAME}/${YOUR_FORKED_REPO_NAME}.git
     ```
 * Add the upstream repo to the remote list as **upstream**.
   ```
@@ -265,7 +265,7 @@ pip install -r requirements.txt
 
 * Run the following to create a Kubernetes namespace for your development
   ```
-  export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_NAME
+  export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_USERNAME
   kubectl create ns $SKAFFOLD_NAMESPACE
   ```
 
@@ -289,7 +289,7 @@ pip install -r requirements.txt
 
 To build and deploy:
 ```
-export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_NAME
+export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_USERNAME
 
 # In the solution folder:
 sb deploy
