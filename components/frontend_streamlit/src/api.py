@@ -293,7 +293,7 @@ def run_agent_execute_plan(plan_id: str,
 
 
 def run_query(query_engine_id: str, prompt: str,
-              chat_id: str = None, auth_token=None):
+              chat_id: str = None, llm_type: str = None, auth_token=None):
   """
   Run Agent on human input, and return output
   """
@@ -304,9 +304,12 @@ def run_query(query_engine_id: str, prompt: str,
   api_url = f"{LLM_SERVICE_API_URL}/query/engine/{query_engine_id}"
   Logger.info(f"api_url={api_url}")
 
+  if llm_type is None:
+    llm_type = "VertexAI-Chat"
+    
   request_body = {
     "prompt": prompt,
-    "llm_type": "VertexAI-Chat"
+    "llm_type": llm_type
   }
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
