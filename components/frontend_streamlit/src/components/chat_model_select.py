@@ -25,7 +25,7 @@ Logger = Logger.get_logger(__file__)
 def chat_model_select():
   chat_llm_types = get_all_chat_llm_types(
     auth_token=st.session_state.auth_token)
-  
+
   chat_llm_types = ["default"] + chat_llm_types
 
   with st.container():

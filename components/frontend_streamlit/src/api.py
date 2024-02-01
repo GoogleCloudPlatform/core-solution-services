@@ -311,7 +311,7 @@ def run_query(query_engine_id: str, prompt: str,
 
   if llm_type is None:
     llm_type = "VertexAI-Chat"
-    
+
   request_body = {
     "prompt": prompt,
     "llm_type": llm_type

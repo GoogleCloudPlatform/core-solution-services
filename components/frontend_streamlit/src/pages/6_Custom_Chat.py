@@ -348,7 +348,7 @@ def chat_page():
   with options:
     with st.expander("Advanced Settings"):
       chat_model_select()
-      
+
       st.session_state.default_route = st.selectbox(
         "Chat Mode", ["Chat", "Plan", "Query"])
 
