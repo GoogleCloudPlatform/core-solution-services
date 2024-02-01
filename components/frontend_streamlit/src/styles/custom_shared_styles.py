@@ -25,11 +25,11 @@ def main_styles():
     <style>
       /* Main container styles */
       .main {{
-        border-radius: 18px;
+        border-radius: 12px;
         margin-top: 12px;
         margin-bottom: 12px;
         margin-left: 12px;
-        margin-right: 450px;
+        margin-right: 350px;
       }}
       .main [data-testid="block-container"] {{
         padding-top: 0;
@@ -108,10 +108,6 @@ def main_styles():
         }}
         [data-baseweb=select] {{
           font-size: .95rem;
-        }}
-        [data-baseweb=select] > div:nth-child(1) > div:nth-child(1) {{
-          padding-top: .43rem;
-          padding-bottom: .43rem;
         }}
       }}
 

@@ -134,13 +134,21 @@ def custom_chat_theme():
       [data-testid="stForm"] + div {{
         flex-direction: column;
         position: fixed;
-        width: 426px;
+        width: 326px;
         right: 12px;
         top: 12px;
         gap: 0;
+        max-height: calc(100% - 24px);
+        flex-wrap: nowrap;
+        overflow: hidden;
+        border-radius: 12px;
       }}
       [data-testid="stForm"] + div [data-testid="column"] {{
         width: 100%;
+      }}
+      [data-testid="stForm"] + div [data-testid="stExpanderDetails"] {{
+        max-height: 100vh;
+        overflow-y: scroll;
       }}
       [data-testid="stForm"] + div [data-testid="stExpander"] {{
         margin-left: 0;
@@ -158,8 +166,11 @@ def custom_chat_theme():
         vertical-align: sub;
       }}
       [data-testid="stForm"] + div [data-testid="stExpander"] hr {{
-        margin-top: 1em;
-        margin-bottom: 1.5em;
+        margin-top: .75em;
+        margin-bottom: 1.25em;
+      }}
+      [data-testid="stForm"] + div [data-testid="stExpanderDetails"] [data-testid="element-container"]:has(hr):last-child {{
+        display: none;
       }}
 
       /* Chat styling */
@@ -197,7 +208,7 @@ def custom_chat_theme():
       [data-testid="textInputRootElement"] {{
         background-color: {colors['light_fill']};
         border: 1px solid {colors['border_primary']};
-        transition: border-color 0.1s ease-in, border-width 0.2s ease-in;
+        transition: border-width 0.2s ease-in;
       }}
       [data-testid="textInputRootElement"]:has(input:focus) {{
         border: 2px solid {colors['tint_primary']};
@@ -223,8 +234,6 @@ def custom_chat_theme():
       /* Input button styling */
       .main [data-testid="stFormSubmitButton"] button {{
         border: none;
-        padding-left: 0;
-        float: right;
         color: {colors['dim_text']} !important;
         background-color: transparent !important;
       }}
@@ -232,15 +241,20 @@ def custom_chat_theme():
         color: {colors['tint_primary']} !important;
       }}
       .main [data-testid="stFormSubmitButton"] div::after {{
+        content: url('{icon_base}send-outline-rounded.svg?color=%234285f4&width=32&height=32');
         content: url('{icon_base}send-outline-rounded.svg?color=%234a4d50&width=32&height=32');
+      }}
+      [data-testid="stForm"] [data-testid="column"]:has(input:focus) + [data-testid="column"] [data-testid="stFormSubmitButton"] div::after {{
+        content: url('{icon_base}send-outline-rounded.svg?color=%234285f4&width=32&height=32');
       }}
       .main [data-testid="stFormSubmitButton"] div {{
         line-height: 1.4;
       }}
 
+
       .stSpinner {{
         margin-bottom: 68px;
-        margin-left: 5px;
+        margin-left: 30px;
       }}
 
       /* Smartphones and small devices */
@@ -262,13 +276,14 @@ def custom_chat_theme():
           padding-bottom: 94px;
         }}
         .main [data-testid="stForm"] [data-testid="textInputRootElement"] input {{
-          padding: 0.72rem;
+          padding: 0.7rem;
+          font-size: .96rem;
         }}
         .main [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1) > div:nth-child(1) {{
-          bottom: 20px;
+          bottom: 30px;
         }}
         .main [data-testid="stFormSubmitButton"] button {{
-          padding-bottom: 2px;
+          padding-bottom: 1px;
         }}
       }}
 
@@ -278,13 +293,14 @@ def custom_chat_theme():
           padding-bottom: 114px;
         }}
         .main [data-testid="stForm"] [data-testid="textInputRootElement"] input {{
-          padding: 0.83rem;
+          padding: 0.75rem;
+          font-size: .98rem;
         }}
         .main [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1) > div:nth-child(1) {{
           bottom: 30px;
         }}
         .main [data-testid="stFormSubmitButton"] button {{
-          padding-bottom: 5px;
+          padding-bottom: 2px;
         }}
       }}
 

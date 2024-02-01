@@ -28,16 +28,10 @@ def handle_click(option):
   if option == "like_btn" and st.session_state.btn_states["dislike_btn"]:
     st.session_state.btn_states["dislike_btn"] = False
 
-def action_buttons():
+def action_buttons(reload_func):
   icon_states = {
     "like_btn": False,
-    "dislike_btn": False,
-    "share_btn": False,
-    "edit_btn": False,
-    "translate_btn": False,
-    "info_btn": False,
-    "refresh_btn": False,
-    "more_btn": False
+    "dislike_btn": False
   }
 
   if "btn_states" not in st.session_state:
@@ -66,58 +60,22 @@ def action_buttons():
       dislike_state = "action_btn"
 
   with share:
-    st.button("Share", type="primary", help="Share & export",
-                on_click=handle_click, args=["share_btn"])
-
-    if st.session_state.btn_states["share_btn"]:
-      share_state = "action_btn_on"
-    else:
-      share_state = "action_btn"
+    st.button("Share", type="primary", help="Share & export")
 
   with edit:
-    st.button("Edit", type="primary", help="Modify response",
-                on_click=handle_click, args=["edit_btn"])
-
-    if st.session_state.btn_states["edit_btn"]:
-      edit_state = "action_btn_on"
-    else:
-      edit_state = "action_btn"
+    st.button("Edit", type="primary", help="Modify response")
 
   with translate:
-    st.button("Translate", type="primary", help="Translate response",
-                on_click=handle_click, args=["translate_btn"])
-
-    if st.session_state.btn_states["translate_btn"]:
-      translate_state = "action_btn_on"
-    else:
-      translate_state = "action_btn"
+    st.button("Translate", type="primary", help="Translate response")
 
   with info:
-    st.button("Info", type="primary", help="Get more info",
-                on_click=handle_click, args=["info_btn"])
-
-    if st.session_state.btn_states["info_btn"]:
-      info_state = "action_btn_on"
-    else:
-      info_state = "action_btn"
+    st.button("Info", type="primary", help="Get more info")
 
   with refresh:
-    st.button("Refresh", type="primary", help="Reload chat",
-                on_click=handle_click, args=["refresh_btn"])
-
-    if st.session_state.btn_states["refresh_btn"]:
-      refresh_state = "action_btn_on"
-    else:
-      refresh_state = "action_btn"
+    st.button("Refresh", type="primary", help="Reload chat", on_click=reload_func)
 
   with more:
-    st.button("More", type="primary", help="More",
-                on_click=handle_click, args=["more_btn"])
-
-    if st.session_state.btn_states["more_btn"]:
-      more_state = "action_btn_on"
-    else:
-      more_state = "action_btn"
+    st.button("More", type="primary", help="More")
 
   icon_base = "https://api.iconify.design/material-symbols/"
   icon_size = "width=24&height=24"
@@ -126,29 +84,69 @@ def action_buttons():
     <style>
       /* Chat options button styles */
       [data-testid="column"]:nth-child(2) [data-testid="baseButton-primary"] div::after {{
+        content: url('{icon_base}thumb-up-outline-rounded.svg?color={colors["action_btn_on"]}&{icon_size}');
         content: url('{icon_base}thumb-up-outline-rounded.svg?color={colors[like_state]}&{icon_size}');
       }}
+      [data-testid="column"]:nth-child(2) [data-testid="baseButton-primary"]:hover div::after {{
+        content: url('{icon_base}thumb-up-outline-rounded.svg?color={colors["action_btn_on"]}&{icon_size}');
+      }}
+      
       [data-testid="column"]:nth-child(3) [data-testid="baseButton-primary"] div::after {{
+        content: url('{icon_base}thumb-down-outline-rounded.svg?color={colors["action_btn_on"]}&{icon_size}');
         content: url('{icon_base}thumb-down-outline-rounded.svg?color={colors[dislike_state]}&{icon_size}');
       }}
+      [data-testid="column"]:nth-child(3) [data-testid="baseButton-primary"]:hover div::after {{
+        content: url('{icon_base}thumb-down-outline-rounded.svg?color={colors["action_btn_on"]}&{icon_size}');
+      }}
+
       [data-testid="column"]:nth-child(4) [data-testid="baseButton-primary"] div::after {{
-        content: url('{icon_base}share-outline.svg?color={colors[share_state]}&{icon_size}');
+        content: url('{icon_base}share-outline.svg?color={colors["action_btn_on"]}&{icon_size}');
+        content: url('{icon_base}share-outline.svg?color={colors["action_btn"]}&{icon_size}');
       }}
+      [data-testid="column"]:nth-child(4) [data-testid="baseButton-primary"]:hover div::after {{
+        content: url('{icon_base}share-outline.svg?color={colors["action_btn_on"]}&{icon_size}');
+      }}
+
       [data-testid="column"]:nth-child(5) [data-testid="baseButton-primary"] div::after {{
-        content: url('{icon_base}edit-square-outline-rounded.svg?color={colors[edit_state]}&{icon_size}');
+        content: url('{icon_base}edit-square-outline-rounded.svg?color={colors["action_btn_on"]}&{icon_size}');
+        content: url('{icon_base}edit-square-outline-rounded.svg?color={colors["action_btn"]}&{icon_size}');
       }}
+      [data-testid="column"]:nth-child(5) [data-testid="baseButton-primary"]:hover div::after {{
+        content: url('{icon_base}edit-square-outline-rounded.svg?color={colors["action_btn_on"]}&{icon_size}');
+      }}
+
       [data-testid="column"]:nth-child(6) [data-testid="baseButton-primary"] div::after {{
-        content: url('{icon_base}g-translate.svg?color={colors[translate_state]}&{icon_size}');
+        content: url('{icon_base}g-translate.svg?color={colors["action_btn_on"]}&{icon_size}');
+        content: url('{icon_base}g-translate.svg?color={colors["action_btn"]}&{icon_size}');
       }}
+      [data-testid="column"]:nth-child(6) [data-testid="baseButton-primary"]:hover div::after {{
+        content: url('{icon_base}g-translate.svg?color={colors["action_btn_on"]}&{icon_size}');
+      }}
+
       [data-testid="column"]:nth-child(7) [data-testid="baseButton-primary"] div::after {{
-        content: url('{icon_base}info-outline.svg?color={colors[info_state]}&{icon_size}');
+        content: url('{icon_base}info-outline.svg?color={colors["action_btn_on"]}&{icon_size}');
+        content: url('{icon_base}info-outline.svg?color={colors["action_btn"]}&{icon_size}');
       }}
+      [data-testid="column"]:nth-child(7) [data-testid="baseButton-primary"]:hover div::after {{
+        content: url('{icon_base}info-outline.svg?color={colors["action_btn_on"]}&{icon_size}');
+      }}
+
       [data-testid="column"]:nth-child(8) [data-testid="baseButton-primary"] div::after {{
-        content: url('{icon_base}refresh-rounded.svg?color={colors[refresh_state]}&{icon_size}');
+        content: url('{icon_base}refresh-rounded.svg?color={colors["action_btn_on"]}&{icon_size}');
+        content: url('{icon_base}refresh-rounded.svg?color={colors["action_btn"]}&{icon_size}');
       }}
+      [data-testid="column"]:nth-child(8) [data-testid="baseButton-primary"]:hover div::after {{
+        content: url('{icon_base}refresh-rounded.svg?color={colors["action_btn_on"]}&{icon_size}');
+      }}
+
       [data-testid="column"]:nth-child(9) [data-testid="baseButton-primary"] div::after {{
-        content: url('{icon_base}more-vert.svg?color={colors[more_state]}&{icon_size}');
+        content: url('{icon_base}more-vert.svg?color={colors["action_btn_on"]}&{icon_size}');
+        content: url('{icon_base}more-vert.svg?color={colors["action_btn"]}&{icon_size}');
       }}
+      [data-testid="column"]:nth-child(9) [data-testid="baseButton-primary"]:hover div::after {{
+        content: url('{icon_base}more-vert.svg?color={colors["action_btn_on"]}&{icon_size}');
+      }}
+
       [data-testid="column"]:nth-child(9) [data-testid="baseButton-primary"] {{
         padding-left: .45rem;
         padding-bottom: 0.14rem;

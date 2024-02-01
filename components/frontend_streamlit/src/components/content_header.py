@@ -38,10 +38,6 @@ top_content_styles = """
         max-width: 89% !important;
       }
     }
-    .main .stButton button {
-      margin-top: 28px;
-      background-color: #fff;
-    }
   </style>
 """
 
@@ -100,8 +96,8 @@ def chat_header(refresh_func=None):
         "Model", chat_llm_types, index=selected_model_index)
     st.session_state.chat_llm_type = selected_model
   with refresh_button:
-    if refresh_func and st.button("Refresh"):
-      refresh_func()
+    if refresh_func:
+      st.button("Refresh", on_click=refresh_func)
 
   chat_modes = routing_agent_names + ["Chat", "Plan", "Query"]
   chat_mode_index = 0
