@@ -305,7 +305,7 @@ def chat_content():
 
   # Position chat option buttons
   if has_input:
-    action_buttons(init_messages)
+    action_buttons()
 
 def render_cloud_storage_url(url):
   """ Parse a cloud storage url. """
