@@ -69,6 +69,12 @@ def api_request(method:str , api_url:str ,
     resp = None
     Logger.info(f"api_url={api_url}, auth_token={auth_token}")
 
+    # global processing of llm_type param
+    if request_body and isinstance(request_body, dict):
+      llm_type = request_body.get("llm_type", None)
+      if llm_type == "default":
+        del request_body["llm_type"]
+
     resp, resp_dict, status_code = dispatch_api(method,
                                                 api_url,
                                                 request_body,
@@ -218,6 +224,8 @@ def run_dispatch(prompt: str, agent_name: str, chat_id: str = None,
     "chat_id": chat_id,
     "llm_type": llm_type
   }
+  Logger.info(f"request_body = {request_body}")
+
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
   handle_error(resp)
