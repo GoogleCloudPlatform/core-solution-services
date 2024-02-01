@@ -124,38 +124,36 @@ DEFAULT_WEB_DEPTH_LIMIT = 1
 
 # config for agents and datasets
 AGENT_CONFIG_PATH = os.environ.get("AGENT_CONFIG_PATH")
-if not AGENT_CONFIG_PATH and AGENT_CONFIG_PATH != "":
+if not AGENT_CONFIG_PATH:
   AGENT_CONFIG_PATH = os.path.join(
       os.path.dirname(__file__), "agent_config.json")
-
-AGENT_DATASET_CONFIG_PATH = \
-    os.path.join(os.path.dirname(__file__), "agent_datasets.json")
 
 DATASETS = None
 AGENTS = None
 
 def get_dataset_config() -> dict:
-  global DATASETS
-
-  if DATASETS is None:
-    DATASETS = load_config_json(AGENT_DATASET_CONFIG_PATH)
   return DATASETS
 
 def get_agent_config() -> dict:
   global AGENTS
-
+  global DATASETS
   if AGENTS is None:
     if AGENT_CONFIG_PATH[:5] == "gs://":
       blob = get_blob_from_gcs_path(AGENT_CONFIG_PATH)
       agent_config = json.loads(blob.download_as_string())
     else:
       agent_config = load_config_json(AGENT_CONFIG_PATH)
-    agent_config = agent_config["Agents"]
-    AGENTS = agent_config
+    if "Agents" in agent_config:
+      AGENTS = agent_config["Agents"]
+    else:
+      raise RuntimeError("invalid agent config")
+    if "Datasets" in agent_config:
+      DATASETS = agent_config["Datasets"]
+    else:
+      DATASETS = {}
   return AGENTS
 
 # load agent config
-get_dataset_config()
 get_agent_config()
 
 # services config
