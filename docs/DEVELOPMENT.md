@@ -56,7 +56,7 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
     ```
 * Add the upstream repo to the remote list as **upstream**.
   ```
-  git remote add upstream https://github.com/GPS-Solutions/core-solution-services.git
+  git remote add upstream https://github.com/GoogleCloudPlatform/core-solution-services.git
   ```
   - In default case, `upstream` will be the repo that you make the fork from.
 
