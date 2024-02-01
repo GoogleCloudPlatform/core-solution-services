@@ -89,7 +89,7 @@ def chat_header(refresh_func=None):
     chat_model_select()
   with refresh_button:
     if refresh_func:
-      st.button("Refresh", on_click=refresh_func)
+      st.button("Refresh", type="primary", on_click=refresh_func)
 
   chat_modes = routing_agent_names + ["Chat", "Plan", "Query"]
   chat_mode_index = 0

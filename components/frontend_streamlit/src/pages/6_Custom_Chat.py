@@ -20,10 +20,11 @@ import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan, get_all_chat_llm_types,
+    run_agent_execute_plan,
     get_all_routing_agents, run_agent_plan, run_chat)
 from components.chat_options import action_buttons
 from components.help_modal import help_form
+from components.chat_model_select import chat_model_select
 from styles.pages.custom_chat_markup import custom_chat_theme
 from common.utils.logging_handler import Logger
 import utils
@@ -74,6 +75,9 @@ def on_submit(user_input):
     default_route = st.session_state.get("default_route", None)
     routing_agents = get_all_routing_agents()
     routing_agent_names = list(routing_agents.keys())
+    chat_llm_type = st.session_state.get("chat_llm_type")
+    Logger.info(f"llm_type in session {chat_llm_type}")
+
     if default_route is None:
       # pick the first routing agent as default
       if routing_agent_names:
@@ -83,24 +87,24 @@ def on_submit(user_input):
       response = run_dispatch(user_input,
                               routing_agent,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=st.session_state.get("chat_llm_type"))
+                              llm_type=chat_llm_type)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route in routing_agent_names:
       response = run_dispatch(user_input,
                               default_route,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=st.session_state.get("chat_llm_type"))
+                              llm_type=chat_llm_type)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route == "Chat":
       response = run_chat(user_input,
                          chat_id=st.session_state.get("chat_id"),
-                         llm_type=st.session_state.get("chat_llm_type"))
+                         llm_type=chat_llm_type)
     elif default_route == "Plan":
       response = run_agent_plan("Plan", user_input,
                                 chat_id=st.session_state.get("chat_id"),
-                                llm_type=st.session_state.get("chat_llm_type"))
+                                llm_type=chat_llm_type)
     else:
       st.error(f"Unsupported route {default_route}")
       response = None
@@ -115,6 +119,8 @@ def on_submit(user_input):
     del response["chat"]
     st.session_state.messages.append(response)
 
+  # reload page after exiting from spinner
+  utils.navigate_to("Custom_Chat")
 
 def format_ai_output(text):
   text = text.strip()
@@ -165,6 +171,14 @@ def chat_content():
         with st.chat_message("user"):
           st.write(item["HumanInput"], is_user=True, key=f"human_{index}")
 
+      if "route_name" in item:
+        route_name = item["route_name"]
+        with st.chat_message("ai"):
+          st.write(
+              f"Using route **`{route_name}`** to respond.",
+              key=f"ai_{index}",
+          )
+
       if "AIOutput" in item:
         if needs_help:
           if "help_state" not in st.session_state:
@@ -206,12 +220,6 @@ def chat_content():
         with st.expander("Thought Process"):
           st.write(format_ai_output(route_logs))
 
-      # Append all resources.
-      if item.get("resources", None):
-        with st.chat_message("ai"):
-          for name, link in item["resources"].items():
-            st.markdown(f"Resource: [{name}]({link})")
-
       # Append all query references.
       if item.get("db_result", None):
         with st.chat_message("ai"):
@@ -229,6 +237,34 @@ def chat_content():
               st.markdown(markdown_content)
 
             result_index = result_index + 1
+
+      # Append all resources.
+      if item.get("resources", None):
+        with st.chat_message("ai"):
+          for name, link in item["resources"].items():
+            st.markdown(f"Resource: [{name}]({link})")
+
+      # Append all query references.
+      if item.get("query_references", None):
+        with st.chat_message("ai"):
+          st.write("References:")
+          reference_index = 1
+          for reference in dedup_list(item["query_references"], "chunk_id"):
+            document_url = render_cloud_storage_url(reference["document_url"])
+            document_text = reference["document_text"]
+            st.markdown(
+                f"**{reference_index}.** [{document_url}]({document_url})")
+            markdown_content = re.sub(
+                r"<b>(.*?)</b>", r"**\1**", document_text, flags=re.IGNORECASE)
+
+            with stylable_container(
+              key=f"ref_{reference_index}",
+              css_styles = REFERENCE_CSS_STYLE
+            ):
+              st.markdown(markdown_content)
+
+            reference_index = reference_index + 1
+          st.divider()
 
       if "plan" in item:
         with st.chat_message("ai"):
@@ -360,15 +396,7 @@ def chat_page():
 
   with options:
     with st.expander("Advanced Settings"):
-      chat_llm_types = get_all_chat_llm_types()
-
-      try:
-        selected_model_index = chat_llm_types.index(
-            st.session_state.get("chat_llm_type"))
-      except ValueError:
-        selected_model_index = 1
-      st.session_state.chat_llm_type = st.selectbox(
-          "Model", chat_llm_types, index=selected_model_index)
+      chat_model_select()
 
       st.button("Refresh", on_click=init_messages)
 

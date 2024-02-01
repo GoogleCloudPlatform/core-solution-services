@@ -147,7 +147,7 @@ def custom_chat_theme():
         width: 100%;
       }}
       [data-testid="stForm"] + div [data-testid="stExpanderDetails"] {{
-        max-height: 100vh;
+        max-height: 93vh;
         overflow-y: scroll;
       }}
       [data-testid="stForm"] + div [data-testid="stExpander"] {{
@@ -157,13 +157,14 @@ def custom_chat_theme():
       [data-testid="stForm"] + div [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
         gap: .5rem;
       }}
-      [data-testid="stForm"] + div [data-testid="stExpander"] a {{
-        color: {colors['tint_primary']};
+      [data-testid="stForm"] + div [data-testid="stExpander"] p:has(a) {{
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip;
       }}
-      [data-testid="stForm"] + div [data-testid="stExpander"] a::after {{
-        content: url('{icon_base}open-in-new-rounded.svg?height=17&color=%234285f4');
-        margin-left: 7px;
-        vertical-align: sub;
+      [data-testid="stForm"] + div [data-testid="stExpander"] p:has(strong > a) {{
+        white-space: normal;
+        overflow: visible;
       }}
       [data-testid="stForm"] + div [data-testid="stExpander"] hr {{
         margin-top: .75em;

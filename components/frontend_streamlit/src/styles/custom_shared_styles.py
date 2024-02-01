@@ -90,6 +90,10 @@ def main_styles():
         color: {colors['text_primary']};
       }}
 
+      a {{
+        color: {colors['tint_primary']} !important;
+      }}
+
       /* Smartphones and small devices */
       @media screen and (max-width: 1024px) {{
         .main [data-testid="block-container"] {{
