@@ -72,7 +72,8 @@ def action_buttons(reload_func):
     st.button("Info", type="primary", help="Get more info")
 
   with refresh:
-    st.button("Refresh", type="primary", help="Reload chat", on_click=reload_func)
+    st.button("Refresh", type="primary", help="Reload chat",
+                on_click=reload_func)
 
   with more:
     st.button("More", type="primary", help="More")
