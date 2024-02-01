@@ -146,7 +146,8 @@ async def test_llm_generate_multi(clean_firestore):
   }
   get_model_config().llm_models = TEST_VERTEX_CONFIG
 
-  open(FAKE_FILENAME, "ab")
+  with open(FAKE_FILENAME, "ab") as f:
+    pass
   fake_file=open(FAKE_FILENAME, "rb")
   os.remove(FAKE_FILENAME)
   fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILENAME)
@@ -157,6 +158,7 @@ async def test_llm_generate_multi(clean_firestore):
     response = await llm_generate_multi(
       fake_upload_file, FAKE_PROMPT, VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
 
+  fake_file.close()
   assert response == FAKE_GENERATE_RESPONSE
 
 
