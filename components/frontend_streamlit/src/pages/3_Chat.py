@@ -295,7 +295,9 @@ def update_async_job(job_id):
   while (time.time() - start_time) < timeout:
     job = get_job(JOB_TYPE_ROUTING_AGENT, job_id)
     if st.session_state.debug:
-      print(f"Waiting for job: {job_id}, status={job['status']}")
+      st.write(f"Waiting for job: {job_id}, status={job['status']}")
+    init_messages()
+
     if not job:
       return
 
