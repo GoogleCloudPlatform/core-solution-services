@@ -290,7 +290,7 @@ def chat_content():
 
 def update_async_job(job_id):
   start_time = time.time()
-  timeout = 60 # timeout seconds
+  timeout = 120 # timeout seconds
 
   while (time.time() - start_time) < timeout:
     job = get_job(JOB_TYPE_ROUTING_AGENT, job_id)
