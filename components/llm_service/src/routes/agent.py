@@ -25,6 +25,7 @@ from common.utils.batch_jobs import initiate_batch_job
 from common.utils.errors import (ResourceNotFoundException,
                                  PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
+from common.utils.config import JOB_TYPE_ROUTING_AGENT
 from schemas.agent_schema import (LLMAgentRunResponse,
                                   LLMAgentRunModel,
                                   LLMAgentGetAllResponse,
@@ -37,7 +38,6 @@ from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
                     PROJECT_ID, DATABASE_PREFIX,
                     ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
                     DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH)
-from common.utils.config import JOB_TYPE_ROUTING_AGENT
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
