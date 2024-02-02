@@ -34,8 +34,8 @@ from services.agents.agents import BaseAgent
 from services.agents.routing_agent import run_routing_agent
 from services.langchain_service import langchain_chat_history
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
-                    PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
-                    ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
+                    PROJECT_ID, DATABASE_PREFIX,
+                    ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
                     DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH)
 from common.utils.config import JOB_TYPE_ROUTING_AGENT
 
