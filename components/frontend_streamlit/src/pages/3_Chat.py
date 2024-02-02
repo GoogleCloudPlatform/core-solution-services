@@ -302,6 +302,7 @@ def update_async_job(job_id):
     # Refresh messages when job status is "succeeded" or "failed".
     if job["status"] == JobStatus.JOB_STATUS_SUCCEEDED.value:
       init_messages()
+      return
 
     elif job["status"] == JobStatus.JOB_STATUS_FAILED.value:
       st.write("Job failed.")
