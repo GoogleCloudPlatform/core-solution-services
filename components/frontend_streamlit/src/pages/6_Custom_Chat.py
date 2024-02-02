@@ -16,17 +16,20 @@
 """
 # pylint: disable=invalid-name,unused-variable
 import re
+import time
 import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan,
+    run_agent_execute_plan, get_job,
     get_all_routing_agents, run_agent_plan, run_chat)
 from components.chat_options import action_buttons
 from components.help_modal import help_form
 from components.chat_model_select import chat_model_select
 from styles.pages.custom_chat_markup import custom_chat_theme
 from common.utils.logging_handler import Logger
+from common.utils.config import JOB_TYPE_ROUTING_AGENT
+from common.models import JobStatus
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
@@ -87,14 +90,16 @@ def on_submit(user_input):
       response = run_dispatch(user_input,
                               routing_agent,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=chat_llm_type)
+                              llm_type=chat_llm_type,
+                              run_as_batch_job=True)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route in routing_agent_names:
       response = run_dispatch(user_input,
                               default_route,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=chat_llm_type)
+                              llm_type=chat_llm_type,
+                              run_as_batch_job=True)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route == "Chat":
@@ -118,6 +123,9 @@ def on_submit(user_input):
       response["AIOutput"] = response["content"]
     del response["chat"]
     st.session_state.messages.append(response)
+
+    if "batch_job" in response:
+      update_async_job(response["batch_job"]["id"])
 
   # reload page after exiting from spinner
   utils.navigate_to("Custom_Chat")
@@ -307,6 +315,30 @@ def chat_content():
   if has_input:
     action_buttons()
 
+def update_async_job(job_id):
+  start_time = time.time()
+  timeout = 120 # timeout seconds
+
+  while (time.time() - start_time) < timeout:
+    job = get_job(JOB_TYPE_ROUTING_AGENT, job_id)
+    if st.session_state.debug:
+      st.write(f"Waiting for job: {job_id}, status={job['status']}")
+    init_messages()
+
+    if not job:
+      return
+
+    # Refresh messages when job status is "succeeded" or "failed".
+    if job["status"] == JobStatus.JOB_STATUS_SUCCEEDED.value:
+      init_messages()
+      return
+
+    elif job["status"] == JobStatus.JOB_STATUS_FAILED.value:
+      st.write("Job failed.")
+      return
+
+    time.sleep(3)
+
 def render_cloud_storage_url(url):
   """ Parse a cloud storage url. """
   if url[:3] == "/b/":
@@ -381,6 +413,19 @@ def chat_page():
             st.markdown(markdown_content)
 
             st.divider()
+
+      if item.get("db_result", None):
+        has_refs = True
+        with st.expander("References", expanded=True):
+          result_index = 1
+          for result in item["db_result"]:
+            values = list(result.values())
+            markdown_content = f"{result_index}. **{values[0]}**"
+            markdown_content += " - " + ", ".join(values[1:])
+
+            st.markdown(markdown_content)
+
+            result_index = result_index + 1
 
     if has_refs is False:
       with st.expander("References", expanded=False):
