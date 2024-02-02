@@ -66,7 +66,7 @@ def get_agent_class_from_name(agent_name):
     if agent_name not in AGENT_CONFIG:
       raise RuntimeError(f"Cannot find agent config for {agent_name}")
 
-    agent_class = AGENT_CONFIG[agent_name].get("agent_class", "Routing")
+    agent_class = AGENT_CONFIG[agent_name].get("agent_class")
     assert agent_class, f"Agent {agent_name} requires agent_class " \
                         "defined in the agent_config.json."
     return get_agent_class(agent_class)
