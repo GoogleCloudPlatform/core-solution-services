@@ -209,18 +209,32 @@ def chat_content():
         with st.chat_message("ai"):
           st.write("Query result:")
           result_index = 1
-          for result in item["db_result"]:
-            values = list(result.values())
-            markdown_content = f"{result_index}. **{values[0]}**"
-            markdown_content += " - " + ", ".join(values[1:])
 
+          # Clean up empty rows.
+          db_result = []
+          for result in item["db_result"]:
+            if len(result.keys()) > 0:
+              db_result.append(result)
+
+          if len(db_result) > 0:
+            for result in db_result:
+              values = list(result.values())
+              if len(values) > 0:
+                markdown_content = f"{result_index}. **{values[0]}**"
+                markdown_content += " - " + ", ".join(values[1:])
+                with stylable_container(
+                  key=f"ref_{result_index}",
+                  css_styles=REFERENCE_CSS_STYLE
+                ):
+                  st.markdown(markdown_content)
+              result_index = result_index + 1
+
+          else:
             with stylable_container(
               key=f"ref_{result_index}",
               css_styles=REFERENCE_CSS_STYLE
             ):
-              st.markdown(markdown_content)
-
-            result_index = result_index + 1
+              st.markdown("No result found.")
 
       # Append all resources.
       if item.get("resources", None):
