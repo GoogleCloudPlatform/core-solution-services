@@ -15,6 +15,7 @@
 # pylint: disable = broad-except,unused-import
 """Entry point for batch job"""
 import json
+import asyncio
 from absl import flags, app
 from common.utils.config import (JOB_TYPE_QUERY_ENGINE_BUILD,
                                  JOB_TYPE_AGENT_PLAN_EXECUTE,
@@ -36,7 +37,7 @@ flags.DEFINE_string("container_name", "",
 flags.mark_flag_as_required("container_name")
 
 
-async def main(argv):
+def main(argv):
   """Entry point method for batch job"""
   try:
     del argv  # Unused.
@@ -49,7 +50,8 @@ async def main(argv):
     elif job.type == JOB_TYPE_AGENT_PLAN_EXECUTE:
       _ = batch_execute_plan(request_body, job)
     elif job.type == JOB_TYPE_ROUTING_AGENT:
-      _ = await batch_run_dispatch(request_body, job)
+      _ = asyncio.get_event_loop().run_until_complete(
+        batch_run_dispatch(request_body, job))
     else:
       raise Exception("Invalid job type")
 
