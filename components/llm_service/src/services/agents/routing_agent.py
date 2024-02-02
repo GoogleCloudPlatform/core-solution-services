@@ -353,6 +353,5 @@ async def batch_run_dispatch(request_body: Dict, job: BatchJobModel) -> Dict:
 
   job.message = f"Successfully ran dispatch with route: {route}"
   job.result_data = response_data
-  job.status = JobStatus.JOB_STATUS_SUCCEEDED
+  job.status = JobStatus.JOB_STATUS_SUCCEEDED.value
   job.save()
-

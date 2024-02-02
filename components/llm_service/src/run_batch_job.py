@@ -55,7 +55,7 @@ def main(argv):
     else:
       raise Exception("Invalid job type")
 
-    job.status = JobStatus.JOB_STATUS_SUCCEEDED
+    job.status = JobStatus.JOB_STATUS_SUCCEEDED.value
     job.update()
     if JOB_NAMESPACE == "default":
       kube_delete_job(FLAGS.container_name, JOB_NAMESPACE)
