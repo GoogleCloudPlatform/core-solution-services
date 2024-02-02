@@ -15,7 +15,7 @@
 """ Routing Agent """
 from typing import List, Tuple, Dict
 from langchain.agents import AgentExecutor
-from common.models import QueryEngine, User, UserChat, BatchJobModel
+from common.models import QueryEngine, User, UserChat, BatchJobModel, JobStatus
 from common.models.agent import AgentCapability
 from common.models.llm import CHAT_AI
 from common.utils.logging_handler import Logger
@@ -339,6 +339,13 @@ async def batch_run_dispatch(request_body: Dict, job: BatchJobModel) -> Dict:
 
   user = User.find_by_id(user_id)
   user_chat = UserChat.find_by_id(chat_id)
+  user_chat.update_history(custom_entry={
+    "batch_job": {
+      "job_id": job.id,
+      "job_name": job.name,
+    },
+  })
+  user_chat.save()
 
   route, response_data = await run_routing_agent(
       prompt, agent_name, user, user_chat, llm_type,
@@ -346,9 +353,6 @@ async def batch_run_dispatch(request_body: Dict, job: BatchJobModel) -> Dict:
 
   job.message = f"Successfully ran dispatch with route: {route}"
   job.result_data = response_data
-  job.status = "succeeded"
+  job.status = JobStatus.JOB_STATUS_SUCCEEDED
   job.save()
 
-  user_chat.update_history(custom_entry={
-    "batch_job": job.to_dict(),
-  })

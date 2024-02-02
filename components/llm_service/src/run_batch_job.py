@@ -22,7 +22,7 @@ from common.utils.config import (JOB_TYPE_QUERY_ENGINE_BUILD,
                                  JOB_TYPE_ROUTING_AGENT)
 from common.utils.logging_handler import Logger
 from common.utils.kf_job_app import kube_delete_job
-from common.models.batch_job import BatchJobModel
+from common.models.batch_job import BatchJobModel, JobStatus
 from services.query.query_service import batch_build_query_engine
 from services.agents.routing_agent import batch_run_dispatch
 from services.agents.agent_service import batch_execute_plan
@@ -55,7 +55,7 @@ def main(argv):
     else:
       raise Exception("Invalid job type")
 
-    job.status = "succeeded"
+    job.status = JobStatus.JOB_STATUS_SUCCEEDED
     job.update()
     if JOB_NAMESPACE == "default":
       kube_delete_job(FLAGS.container_name, JOB_NAMESPACE)
