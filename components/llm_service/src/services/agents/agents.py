@@ -43,6 +43,7 @@ Logger = Logger.get_logger(__file__)
 
 AGENT_CONFIG = get_agent_config()
 
+
 def get_agent_class(agent_class):
   if agent_class in ["Routing", "RoutingAgent"]:
     return RoutingAgent
@@ -55,6 +56,7 @@ def get_agent_class(agent_class):
 
   raise RuntimeError(f"Agent class {agent_class} is not supported.")
 
+
 def get_agent_class_from_name(agent_name):
   """ Get agent class from name """
   if agent_name in ["Routing", "Chat", "Task", "Plan"]:
@@ -64,7 +66,9 @@ def get_agent_class_from_name(agent_name):
     if agent_name not in AGENT_CONFIG:
       raise RuntimeError(f"Cannot find agent config for {agent_name}")
 
-    agent_class = AGENT_CONFIG[agent_name]["agent_class"]
+    agent_class = AGENT_CONFIG[agent_name].get("agent_class")
+    assert agent_class, f"Agent {agent_name} requires agent_class " \
+                        "defined in the agent_config.json."
     return get_agent_class(agent_class)
 
 
@@ -84,7 +88,7 @@ class BaseAgent(ABC):
   agent_class: Type[LangchainAgent] = None
   """ the langchain agent class """
 
-  name:str = None
+  name: str = None
   """ The name of the agent """
 
   prefix: str = PREFIX
@@ -101,7 +105,6 @@ class BaseAgent(ABC):
 
   def set_prefix(self, prefix) -> str:
     self.prefix = prefix
-
 
   @property
   def format_instructions(self) -> str:
@@ -141,12 +144,12 @@ class BaseAgent(ABC):
     llm_service_agent = agent_class(
         agent_config["llm_type"],
         agent_name
-        )
+    )
     return llm_service_agent
 
   def load_langchain_agent(self,
-                           input_variables: Optional[List[str]]=None) -> \
-                           LangchainAgent:
+                           input_variables: Optional[List[str]] = None) -> \
+          LangchainAgent:
     """ load this agent and return an instance of langchain Agent"""
     tools = self.get_tools()
 
@@ -173,7 +176,7 @@ class BaseAgent(ABC):
 
   @classmethod
   def get_query_engines(cls, agent_name: str) -> \
-      List[QueryEngine]:
+          List[QueryEngine]:
     """
     Get list of query engines available to this agent.  Agent
     query engines can be configured in agent config, or tagged
@@ -255,6 +258,7 @@ class ChatAgent(BaseAgent):
   Chat Agent.  This is an agent configured for basic informational chat with a
   human.  It includes search and query tools.
   """
+
   def __init__(self, llm_type: str, name: str):
     super().__init__(llm_type, name)
     self.agent_class = ConversationalAgent
@@ -276,6 +280,7 @@ class RoutingAgent(BaseAgent):
   Routing Agent.  This is an agent configured for dispatching
   a given prompt to the best route with given list of choices.
   """
+
   def __init__(self, llm_type: str, name: str):
     super().__init__(llm_type, name)
     self.agent_class = ConversationalAgent
@@ -323,6 +328,7 @@ class TaskAgent(BaseAgent):
   @property
   def format_instructions(self) -> str:
     return STRUCTURED_FORMAT_INSTRUCTIONS
+
   @classmethod
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
@@ -378,7 +384,7 @@ class RoutingAgentOutputParser(AgentOutputParser):
     match = re.search(regex, text)
     if not match:
       # TODO: undo this temporary fix to make the v1 agent terminate
-      #raise OutputParserException(
+      # raise OutputParserException(
       #    f"MIRA: Could not parse LLM output: `{text}`")
       return AgentFinish(
           {
@@ -413,7 +419,7 @@ class PlanAgentOutputParser(AgentOutputParser):
     match = re.search(regex, text)
     if not match:
       # TODO: undo this temporary fix to make the v1 agent terminate
-      #raise OutputParserException(
+      # raise OutputParserException(
       #    f"MIRA: Could not parse LLM output: `{text}`")
       return AgentFinish(
           {"output": text.split(f"{self.ai_prefix}:")[-1].strip()}, text
@@ -447,7 +453,7 @@ class ToolAgentOutputParser(AgentOutputParser):
     match = re.search(regex, text)
     if not match:
       # TODO: undo this temporary fix to make the v1 agent terminate
-      #raise OutputParserException(
+      # raise OutputParserException(
       #    f"MIRA: Could not parse LLM output: `{text}`")
       return AgentFinish(
           {"output": text.split(f"{self.ai_prefix}:")[-1].strip()}, text
@@ -460,4 +466,3 @@ class ToolAgentOutputParser(AgentOutputParser):
   @property
   def _type(self) -> str:
     return "conversational"
-
