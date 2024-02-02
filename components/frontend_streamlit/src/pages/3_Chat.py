@@ -218,7 +218,7 @@ def chat_content():
 
           if len(db_result) > 0:
             for result in db_result:
-              values = list(result.values())
+              values = [str(x) for x in list(result.values())]
               if len(values) > 0:
                 markdown_content = f"{result_index}. **{values[0]}**"
                 markdown_content += " - " + ", ".join(values[1:])
