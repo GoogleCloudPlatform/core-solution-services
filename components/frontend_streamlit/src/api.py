@@ -30,8 +30,9 @@ from config import (APP_BASE_PATH, LLM_SERVICE_API_URL,
 Logger = Logger.get_logger(__file__)
 API_TIMEOUT = 600
 
-def dispatch_api(method:str , api_url:str ,
-                request_body:dict=None, auth_token:str=None):
+
+def dispatch_api(method: str, api_url: str,
+                 request_body: dict = None, auth_token: str = None):
   """ dispatch api call based on method """
   if not auth_token:
     auth_token = st.session_state.get("auth_token")
@@ -60,8 +61,8 @@ def dispatch_api(method:str , api_url:str ,
   return resp, resp_dict, status_code
 
 
-def api_request(method:str , api_url:str ,
-                request_body:dict=None, auth_token:str=None):
+def api_request(method: str, api_url: str,
+                request_body: dict = None, auth_token: str = None):
   """ Make API request with error handling. """
 
   st.session_state.error_msg = None
@@ -142,10 +143,12 @@ def api_request(method:str , api_url:str ,
 def get_auth_token():
   return st.session_state.get("auth_token", None)
 
+
 def handle_error(resp):
   if resp.status_code != 200:
     raise RuntimeError(
       f"Error with status {resp.status_code}: {str(resp)}")
+
 
 def get_response_json(resp):
   try:
@@ -156,6 +159,7 @@ def get_response_json(resp):
     st.session_state.error_msg = \
         f"Unable to decode response from backend APIs: {resp}"
     return None
+
 
 def validate_auth_token():
   """
@@ -170,6 +174,7 @@ def validate_auth_token():
     return True
 
   return False
+
 
 def get_agents(auth_token=None) -> List[dict]:
   """
@@ -186,6 +191,7 @@ def get_agents(auth_token=None) -> List[dict]:
 
   agent_config = resp_dict.get("data")
   return agent_config
+
 
 def get_all_routing_agents(auth_token=None) -> List[dict]:
   """
@@ -204,8 +210,10 @@ def get_all_routing_agents(auth_token=None) -> List[dict]:
   agent_config = resp_dict.get("data")
   return agent_config
 
+
 def run_dispatch(prompt: str, agent_name: str, chat_id: str = None,
-                 route=None, llm_type: str=None, auth_token=None):
+                 llm_type: str = None, run_as_batch_job=False,
+                 auth_token=None):
   """
   Run Agent on human input, and return output
   """
@@ -219,14 +227,18 @@ def run_dispatch(prompt: str, agent_name: str, chat_id: str = None,
   request_body = {
     "prompt": prompt,
     "chat_id": chat_id,
-    "llm_type": llm_type
+    "llm_type": llm_type,
+    "run_as_batch_job": run_as_batch_job,
   }
-  Logger.info(f"request_body = {request_body}")
+  Logger.info(f"request_body: {request_body}")
 
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
   handle_error(resp)
   resp_dict = get_response_json(resp)
+
+  Logger.info(f"response: {resp_dict}")
+
   return resp_dict["data"]
 
 
@@ -471,6 +483,7 @@ def get_all_chat_llm_types(auth_token=None):
 
   return output
 
+
 def get_all_vector_stores(auth_token=None):
   """
   Retrieve all vector store types
@@ -578,6 +591,22 @@ def get_plan(plan_id, auth_token=None) -> UserPlan:
 
   api_url = f"{LLM_SERVICE_API_URL}/agent/plan/" \
             f"{plan_id}"
+  Logger.info(f"api_url={api_url}")
+
+  resp = api_request("GET", api_url, auth_token=auth_token)
+  resp_dict = get_response_json(resp)
+  output = resp_dict["data"]
+  return output
+
+
+def get_job(job_type, job_id, auth_token=None) -> UserChat:
+  """
+  Retrieve a specific UserChat object
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{JOBS_SERVICE_API_URL}/jobs/{job_type}/{job_id}"
   Logger.info(f"api_url={api_url}")
 
   resp = api_request("GET", api_url, auth_token=auth_token)
