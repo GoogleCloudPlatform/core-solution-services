@@ -21,6 +21,7 @@ from schemas.schema_examples import (AGENT_RUN_EXAMPLE,
                                      AGENT_PLAN_RESPONSE_EXAMPLE,
                                      USER_PLAN_RESPONSE_EXAMPLE)
 
+
 class LLMAgentGetAllResponse(BaseModel):
   """Agent Get all model"""
   success: bool = True
@@ -36,6 +37,7 @@ class LLMAgentGetAllResponse(BaseModel):
             "data": {}
         }
     }
+
 
 class LLMAgentGetTypeResponse(BaseModel):
   """Agent Get all model"""
@@ -53,12 +55,14 @@ class LLMAgentGetTypeResponse(BaseModel):
         }
     }
 
+
 class LLMAgentRunModel(BaseModel):
   """LLM Agent run model"""
   prompt: str
   chat_id: str = None
   llm_type: str = None
   db_result_limit: int = 10
+  run_as_batch_job: bool = False
 
   class Config():
     orm_mode = True
@@ -79,6 +83,7 @@ class LLMAgentRunResponse(BaseModel):
         "example": AGENT_RUN_RESPONSE_EXAMPLE
     }
 
+
 class LLMAgentPlanModel(BaseModel):
   """LLM Agent plan model"""
   prompt: str
@@ -88,6 +93,7 @@ class LLMAgentPlanModel(BaseModel):
     schema_extra = {
         "example": AGENT_PLAN_EXAMPLE
     }
+
 
 class LLMAgentPlanResponse(BaseModel):
   """LLM Agent plan response model"""
@@ -113,6 +119,7 @@ class LLMAgentPlanRunResponse(BaseModel):
     schema_extra = {
         "example": AGENT_PLAN_RESPONSE_EXAMPLE
     }
+
 
 class LLMUserPlanResponse(BaseModel):
   """LLM User plan response model"""

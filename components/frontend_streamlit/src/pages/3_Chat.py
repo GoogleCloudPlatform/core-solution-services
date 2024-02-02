@@ -16,16 +16,19 @@
 """
 # pylint: disable=invalid-name,unused-variable
 import re
+import time
 import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 from api import (
     get_chat, run_dispatch, get_plan,
-    run_agent_execute_plan,
+    run_agent_execute_plan, get_job,
     get_all_routing_agents, run_agent_plan, run_chat)
 from components.chat_history import chat_history_panel
 from components.content_header import chat_header
 from styles.pages.chat_markup import chat_theme
 from common.utils.logging_handler import Logger
+from common.utils.config import JOB_TYPE_ROUTING_AGENT
+from common.models import JobStatus
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
@@ -63,6 +66,7 @@ REFERENCE_CSS_STYLE = """
 }
 """
 
+
 def on_submit(user_input):
   """ Run dispatch agent when adding an user input prompt """
   # Appending messages.
@@ -86,20 +90,22 @@ def on_submit(user_input):
       response = run_dispatch(user_input,
                               routing_agent,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=chat_llm_type)
+                              llm_type=chat_llm_type,
+                              run_as_batch_job=True)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route in routing_agent_names:
       response = run_dispatch(user_input,
                               default_route,
                               chat_id=st.session_state.get("chat_id"),
-                              llm_type=chat_llm_type)
+                              llm_type=chat_llm_type,
+                              run_as_batch_job=True)
       st.session_state.default_route = response.get("route", None)
 
     elif default_route == "Chat":
       response = run_chat(user_input,
-                         chat_id=st.session_state.get("chat_id"),
-                         llm_type=chat_llm_type)
+                          chat_id=st.session_state.get("chat_id"),
+                          llm_type=chat_llm_type)
     elif default_route == "Plan":
       response = run_agent_plan("Plan", user_input,
                                 chat_id=st.session_state.get("chat_id"),
@@ -118,6 +124,9 @@ def on_submit(user_input):
         response["AIOutput"] = response["content"]
       del response["chat"]
       st.session_state.messages.append(response)
+
+      if "batch_job" in response:
+        update_async_job(response["batch_job"]["id"])
 
   # reload page after exiting from spinner
   utils.navigate_to("Chat")
@@ -143,11 +152,13 @@ def format_ai_output(text):
   text = text.replace("> Finished chain", "**Finished chain**")
   return text
 
+
 def dedup_list(items, dedup_key):
   items_dict = {}
   for item in items:
     items_dict[item[dedup_key]] = item
   return list(items_dict.values())
+
 
 def chat_content():
   if st.session_state.debug:
@@ -198,18 +209,32 @@ def chat_content():
         with st.chat_message("ai"):
           st.write("Query result:")
           result_index = 1
-          for result in item["db_result"]:
-            values = list(result.values())
-            markdown_content = f"{result_index}. **{values[0]}**"
-            markdown_content += " - " + ", ".join(values[1:])
 
+          # Clean up empty rows.
+          db_result = []
+          for result in item["db_result"]:
+            if len(result.keys()) > 0:
+              db_result.append(result)
+
+          if len(db_result) > 0:
+            for result in db_result:
+              values = list(result.values())
+              if len(values) > 0:
+                markdown_content = f"{result_index}. **{values[0]}**"
+                markdown_content += " - " + ", ".join(values[1:])
+                with stylable_container(
+                  key=f"ref_{result_index}",
+                  css_styles=REFERENCE_CSS_STYLE
+                ):
+                  st.markdown(markdown_content)
+              result_index = result_index + 1
+
+          else:
             with stylable_container(
               key=f"ref_{result_index}",
-              css_styles = REFERENCE_CSS_STYLE
+              css_styles=REFERENCE_CSS_STYLE
             ):
-              st.markdown(markdown_content)
-
-            result_index = result_index + 1
+              st.markdown("No result found.")
 
       # Append all resources.
       if item.get("resources", None):
@@ -232,7 +257,7 @@ def chat_content():
 
             with stylable_container(
               key=f"ref_{reference_index}",
-              css_styles = REFERENCE_CSS_STYLE
+              css_styles=REFERENCE_CSS_STYLE
             ):
               st.markdown(markdown_content)
 
@@ -276,6 +301,30 @@ def chat_content():
 
       index = index + 1
 
+
+def update_async_job(job_id):
+  start_time = time.time()
+  timeout = 120 # timeout seconds
+
+  while (time.time() - start_time) < timeout:
+    job = get_job(JOB_TYPE_ROUTING_AGENT, job_id)
+    if st.session_state.debug:
+      st.write(f"Waiting for job: {job_id}, status={job['status']}")
+    init_messages()
+
+    if not job:
+      return
+
+    # Refresh messages when job status is "succeeded" or "failed".
+    if job["status"] == JobStatus.JOB_STATUS_SUCCEEDED.value:
+      init_messages()
+      return
+
+    elif job["status"] == JobStatus.JOB_STATUS_FAILED.value:
+      st.write("Job failed.")
+      return
+
+    time.sleep(3)
 
 def render_cloud_storage_url(url):
   """ Parse a cloud storage url. """
