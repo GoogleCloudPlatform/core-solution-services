@@ -36,7 +36,7 @@ from services.langchain_service import langchain_chat_history
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
                     PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_VECTOR_STORE, PG_HOST)
+                    DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH)
 from common.utils.config import JOB_TYPE_ROUTING_AGENT
 
 Logger = Logger.get_logger(__file__)
@@ -168,6 +168,7 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
       "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
       "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
       "PG_HOST": PG_HOST,
+      "AGENT_CONFIG_PATH": AGENT_CONFIG_PATH,
     }
     response = initiate_batch_job(data, JOB_TYPE_ROUTING_AGENT, env_vars)
     Logger.info(f"Batch job response: {response}")

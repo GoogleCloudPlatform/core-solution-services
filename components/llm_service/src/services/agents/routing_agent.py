@@ -344,13 +344,6 @@ async def batch_run_dispatch(request_body: Dict, job: BatchJobModel) -> Dict:
       prompt, agent_name, user, user_chat, llm_type,
       db_result_limit=db_result_limit)
 
-  # return {
-  #   "success": True,
-  #   "message": "Successfully ran dispatch",
-  #   "route": route,
-  #   "data": response_data
-  # }
-
   job.message = f"Successfully ran dispatch with route: {route}"
   job.result_data = response_data
   job.status = "succeeded"
