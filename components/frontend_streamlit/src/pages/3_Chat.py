@@ -294,10 +294,10 @@ def update_async_job(job_id):
 
   while (time.time() - start_time) < timeout:
     job = get_job(JOB_TYPE_ROUTING_AGENT, job_id)
+    if st.session_state.debug:
+      print(f"Waiting for job: {job_id}, status={job['status']}")
     if not job:
       return
-
-    print(f"Waiting for job: {job_id}, status={job['status']}")
 
     # Refresh messages when job status is "succeeded" or "failed".
     if job["status"] == JobStatus.JOB_STATUS_SUCCEEDED.value:
