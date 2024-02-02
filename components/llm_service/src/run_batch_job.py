@@ -17,11 +17,13 @@
 import json
 from absl import flags, app
 from common.utils.config import (JOB_TYPE_QUERY_ENGINE_BUILD,
-                                 JOB_TYPE_AGENT_PLAN_EXECUTE)
+                                 JOB_TYPE_AGENT_PLAN_EXECUTE,
+                                 JOB_TYPE_ROUTING_AGENT)
 from common.utils.logging_handler import Logger
 from common.utils.kf_job_app import kube_delete_job
 from common.models.batch_job import BatchJobModel
 from services.query.query_service import batch_build_query_engine
+from services.agents.routing_agent import batch_run_dispatch
 from services.agents.agent_service import batch_execute_plan
 from config import JOB_NAMESPACE
 
@@ -34,7 +36,7 @@ flags.DEFINE_string("container_name", "",
 flags.mark_flag_as_required("container_name")
 
 
-def main(argv):
+async def main(argv):
   """Entry point method for batch job"""
   try:
     del argv  # Unused.
@@ -46,12 +48,16 @@ def main(argv):
       _ = batch_build_query_engine(request_body, job)
     elif job.type == JOB_TYPE_AGENT_PLAN_EXECUTE:
       _ = batch_execute_plan(request_body, job)
+    elif job.type == JOB_TYPE_ROUTING_AGENT:
+      _ = await batch_run_dispatch(request_body, job)
     else:
       raise Exception("Invalid job type")
+
     job.status = "succeeded"
     job.update()
     if JOB_NAMESPACE == "default":
       kube_delete_job(FLAGS.container_name, JOB_NAMESPACE)
+
   except Exception as e:
     Logger.info(f"Job failed. Error: {e}")
     job = BatchJobModel.find_by_uuid(FLAGS.container_name)

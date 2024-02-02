@@ -13,9 +13,9 @@
 # limitations under the License.
 
 """ Routing Agent """
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from langchain.agents import AgentExecutor
-from common.models import QueryEngine, User, UserChat
+from common.models import QueryEngine, User, UserChat, BatchJobModel
 from common.models.agent import AgentCapability
 from common.models.llm import CHAT_AI
 from common.utils.logging_handler import Logger
@@ -32,11 +32,12 @@ from services.query.query_service import query_generate
 
 Logger = Logger.get_logger(__file__)
 
+
 async def run_routing_agent(prompt: str,
                             agent_name: str,
                             user: User,
                             user_chat: UserChat,
-                            llm_type: str=None,
+                            llm_type: str = None,
                             db_result_limit: int = 10) -> Tuple[str, dict]:
   """
   Determine intent from user prompt for best route to fulfill user
@@ -56,7 +57,7 @@ async def run_routing_agent(prompt: str,
   route, route_logs = await run_intent(
       agent_name, prompt, chat_history=user_chat.history)
 
-  Logger.info(f"Intent chooses this best route: {route}, " \
+  Logger.info(f"Intent chooses this best route: {route}, "
               f"based on user prompt: {prompt}")
   Logger.info(f"Chosen route: {route}")
 
@@ -92,11 +93,11 @@ async def run_routing_agent(prompt: str,
     Logger.info("Query Engine: {query_engine}")
 
     query_result, query_references = await query_generate(
-          user.id,
-          prompt,
-          query_engine,
-          llm_type,
-          sentence_references=True)
+        user.id,
+        prompt,
+        query_engine,
+        llm_type,
+        sentence_references=True)
     Logger.info(f"Query response="
                 f"[{query_result}]")
 
@@ -215,7 +216,7 @@ async def run_routing_agent(prompt: str,
 
 
 async def run_intent(
-    agent_name: str, prompt: str, chat_history:List = None) -> dict:
+        agent_name: str, prompt: str, chat_history: List = None) -> dict:
   """
   Evaluate a prompt to get the intent with best matched route.
 
@@ -289,9 +290,9 @@ def get_dispatch_prompt(llm_service_agent: BaseAgent) -> str:
 
   intent_list_str = ""
   intent_list = [
-    f"- {AgentCapability.CHAT.value}" \
+    f"- [{AgentCapability.CHAT.value}]"
     " to to perform generic chat conversation.",
-    f"- {AgentCapability.PLAN.value}" \
+    f"- [{AgentCapability.PLAN.value}]"
     " to compose, generate or create a plan.",
   ]
   for intent in intent_list:
@@ -313,15 +314,48 @@ def get_dispatch_prompt(llm_service_agent: BaseAgent) -> str:
   for ds_name, ds_config in datasets.items():
     description = ds_config["description"]
     intent_list_str += \
-      f"- [{AgentCapability.DATABASE.value}:{ds_name}]" \
-      f" to use SQL to retrieve rows of data from a database for data " \
-      f"related to these areas: {description} \n"
+        f"- [{AgentCapability.DATABASE.value}:{ds_name}]" \
+        f" to use SQL to retrieve rows of data from a database for data " \
+        f"related to these areas: {description} \n"
 
   dispatch_prompt = \
-    "The AI Routing Assistant has access to the following routes " + \
-    "for a user prompt:\n" + \
-    f"{intent_list_str}\n" + \
-    "Choose one route based on the question below:\n"
+      "The AI Routing Assistant has access to the following routes " + \
+      "for a user prompt:\n" + \
+      f"{intent_list_str}\n" + \
+      "Choose one route based on the question below:\n"
   Logger.info(f"dispatch_prompt: \n{dispatch_prompt}")
 
   return dispatch_prompt
+
+
+async def batch_run_dispatch(request_body: Dict, job: BatchJobModel) -> Dict:
+  # execute routing agent
+  prompt = request_body["prompt"]
+  agent_name = request_body["agent_name"]
+  user_id = request_body["user_id"]
+  chat_id = request_body["chat_id"]
+  llm_type = request_body["llm_type"]
+  db_result_limit = request_body.get("db_result_limit")
+
+  user = User.find_by_id(user_id)
+  user_chat = UserChat.find_by_id(chat_id)
+
+  route, response_data = await run_routing_agent(
+      prompt, agent_name, user, user_chat, llm_type,
+      db_result_limit=db_result_limit)
+
+  # return {
+  #   "success": True,
+  #   "message": "Successfully ran dispatch",
+  #   "route": route,
+  #   "data": response_data
+  # }
+
+  job.message = f"Successfully ran dispatch with route: {route}"
+  job.result_data = response_data
+  job.status = "succeeded"
+  job.save()
+
+  user_chat.update_history(custom_entry={
+    "batch_job": job.to_dict(),
+  })
