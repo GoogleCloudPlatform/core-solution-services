@@ -21,21 +21,27 @@ from common.models import User, UserChat
 from common.models.llm import CHAT_HUMAN
 from common.utils.auth_service import validate_token
 from common.utils.logging_handler import Logger
+from common.utils.batch_jobs import initiate_batch_job
 from common.utils.errors import (ResourceNotFoundException,
                                  PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
+from common.utils.config import JOB_TYPE_ROUTING_AGENT
 from schemas.agent_schema import (LLMAgentRunResponse,
-                                 LLMAgentRunModel,
-                                 LLMAgentGetAllResponse,
-                                 LLMAgentGetTypeResponse)
+                                  LLMAgentRunModel,
+                                  LLMAgentGetAllResponse,
+                                  LLMAgentGetTypeResponse)
 from services.agents.agent_service import (get_all_agents, run_agent)
 from services.agents.agents import BaseAgent
 from services.agents.routing_agent import run_routing_agent
 from services.langchain_service import langchain_chat_history
-from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
+from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
+                    PROJECT_ID, DATABASE_PREFIX,
+                    ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
+                    DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH)
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
+
 
 @router.get(
     "",
@@ -52,8 +58,8 @@ def get_agents():
 
   # convert config vals to str
   agent_config = {
-    agent: {k:str(v) for k,v in ac.items()}
-    for agent,ac in agent_config.items()
+    agent: {k: str(v) for k, v in ac.items()}
+    for agent, ac in agent_config.items()
   }
 
   try:
@@ -64,6 +70,7 @@ def get_agents():
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
+
 
 @router.get(
     "/{agent_type}",
@@ -82,8 +89,8 @@ def get_agent_types(agent_type: str):
 
   # convert config vals to str
   agent_config = {
-    agent: {k:str(v) for k,v in ac.items()}
-    for agent,ac in agent_config.items()
+    agent: {k: str(v) for k, v in ac.items()}
+    for agent, ac in agent_config.items()
   }
 
   try:
@@ -117,6 +124,7 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
   chat_id = runconfig_dict.get("chat_id")
   llm_type = runconfig_dict.get("llm_type")
   db_result_limit = runconfig_dict.get("db_result_limit")
+  run_as_batch_job = runconfig_dict.get("run_as_batch_job", False)
 
   Logger.info(
       f"Agent {agent_name} Choosing route based on {runconfig_dict}")
@@ -137,18 +145,54 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
     f"{CHAT_HUMAN}": prompt,
   })
   user_chat.save()
+  chat_data = user_chat.get_fields(reformat_datetime=True)
+  chat_data["id"] = user_chat.id
 
-  # execute routing agent
-  route, response_data = await run_routing_agent(
-      prompt, agent_name, user, user_chat, llm_type,
-      db_result_limit=db_result_limit)
+  if run_as_batch_job:
+    # Execute routing agent as batch_job and return job detail.
 
-  return {
-    "success": True,
-    "message": "Successfully ran dispatch",
-    "route": route,
-    "data": response_data
-  }
+    data = {
+      "prompt": prompt,
+      "agent_name": agent_name,
+      "user_id": user.id,
+      "chat_id": user_chat.id,
+      "llm_type": llm_type,
+    }
+    if db_result_limit:
+      data["db_result_limit"] = db_result_limit
+
+    env_vars = {
+      "DATABASE_PREFIX": DATABASE_PREFIX,
+      "PROJECT_ID": PROJECT_ID,
+      "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
+      "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
+      "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
+      "PG_HOST": PG_HOST,
+      "AGENT_CONFIG_PATH": AGENT_CONFIG_PATH,
+    }
+    response = initiate_batch_job(data, JOB_TYPE_ROUTING_AGENT, env_vars)
+    Logger.info(f"Batch job response: {response}")
+    return {
+      "success": True,
+      "message": "Successfully ran dispatch in batch mode",
+      "data": {
+        "chat": chat_data,
+        "batch_job": response["data"],
+      },
+    }
+
+  else:
+    # Execute routing agent synchronously.
+    route, response_data = await run_routing_agent(
+        prompt, agent_name, user, user_chat, llm_type,
+        db_result_limit=db_result_limit)
+
+    return {
+      "success": True,
+      "message": "Successfully ran dispatch",
+      "route": route,
+      "data": response_data
+    }
 
 
 @router.post(
@@ -156,8 +200,8 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
     name="Run agent on user input",
     response_model=LLMAgentRunResponse)
 async def agent_run(agent_name: str,
-              run_config: LLMAgentRunModel,
-              user_data: dict = Depends(validate_token)):
+                    run_config: LLMAgentRunModel,
+                    user_data: dict = Depends(validate_token)):
   """
   Run agent on user input. Store history in new UserChat.
 
@@ -189,7 +233,7 @@ async def agent_run(agent_name: str,
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                           agent_name=agent_name)
+                         agent_name=agent_name)
     # Save user chat to retrieve actual ID.
     user_chat.update_history(prompt, output)
     user_chat.save()
@@ -213,12 +257,13 @@ async def agent_run(agent_name: str,
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
+
 @router.post(
     "/run/{agent_name}/{chat_id}",
     name="Run agent on user input with chat history",
     response_model=LLMAgentRunResponse)
 async def agent_run_chat(agent_name: str, chat_id: str,
-                   run_config: LLMAgentRunModel):
+                         run_config: LLMAgentRunModel):
   """
   Run agent on user input with prior chat history
 
