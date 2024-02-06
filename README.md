@@ -68,9 +68,8 @@ jupyter notebook
 
 ## Installing
 
-Please follow the [INSTALL](./INSTALL.md) guide to install the platform. Note we stringly suggest you use a new GCP project to do this.  We also recommend you have the ability to update GCP Org policies.
+Please follow the [INSTALL](./INSTALL.md) guide to install the platform. Note we strongly suggest you use a new GCP project to do this.  We also recommend you have the ability to update certain policies for your GCP Organization.
 
 ## Development
 
 Please refer to the [DEVELOPMENT](./docs/DEVELOPMENT.md) guide to develop on the platform.
-
