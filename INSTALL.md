@@ -135,19 +135,30 @@ Run the rest of the deployment steps from within this jumphost.
 
 ### Initialize the Cloud infra
 
-Apply infra/terraform for the foundation and load balancer:
+Apply infra/terraform:
 ```
 sb infra apply 1-bootstrap
+```
+
+Note in the following step there is a known issue with firebase setup.\: "Error 409: Database already exists."  Consult the Troubleshooting section to fix this.
+
+```
 sb infra apply 2-foundation
+```
+
+Proceed with the install:
+
+```
 sb infra apply 3-gke
 sb infra apply 3-gke-ingress
 ```
 
 (Optional) Add an A record to your DNS:
 ![Alt text](.github/assets/dns_a_record.png)
-- Set the IP address to the external IP address in the ingress.
+- Set the IP address in the A recrod to the external IP address in the ingress.
 
-Apply infra/terraform for LLM service:
+- Apply infra/terraform for LLM service:
+
 ```
 sb infra apply 4-llm
 ```
@@ -155,6 +166,12 @@ sb infra apply 4-llm
 - This will create a `$PROJECT_ID-llm-docs` bucket and upload the sample doc `llm-sample-doc.pdf` to it.
 - It will add required Firestore indexes.
 
+
+### Before Deploy
+
+Follow README files for each microservice to set up:
+- LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
+- We recommend deploying AlloyDB and PG Vector as a vector store.  See the section on AlloyDB in the LLM Service [README](components/llm_service/README.md)
 
 ## Deploy Backend Microservices
 
@@ -164,11 +181,6 @@ export REGION=$(gcloud container clusters list --filter=main-cluster --format="v
 gcloud container clusters get-credentials main-cluster --region ${REGION} --project ${PROJECT_ID}
 kubectl get nodes
 ```
-
-### Before Deploy
-
-Follow README files for each microservice to set up:
-- LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
 
 ### Deploy all microservices to GKE cluster:
 ```bash
