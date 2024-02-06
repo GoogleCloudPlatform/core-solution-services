@@ -22,4 +22,4 @@ Features:
 
 ### Known Issues
 - e2e testing not currently enabled
-- Some known install issues (see (INSTALL)[./INSTALL.md] guide)
+- Some known install issues (see [INSTALL](./INSTALL.md) guide)
