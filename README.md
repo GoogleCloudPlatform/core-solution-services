@@ -33,7 +33,7 @@ Consult the [CHANGELOG](./CHANGELOG.md) for release information.  The current st
 
 ## Quickstart (for GENIE)
 
-To access the GenAI capabilities in Core Solution Services, we suggest you use Jupyter notebooks.  There are several notebooks included in the platform (though be aware these are currently development aids and not polished).
+To test the GenAI capabilities in Core Solution Services, we suggest you use Jupyter notebooks.  There are several notebooks included in the platform (though be aware these are currently development aids and not polished).
 
 1. Clone the repo locally
 
