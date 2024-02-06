@@ -169,9 +169,10 @@ sb infra apply 4-llm
 
 ### Before Deploy
 
-Follow README files for each microservice to set up:
+Follow README files for the microservices below to complete set up:
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
-- We recommend deploying AlloyDB and PG Vector as a vector store.  See the section on AlloyDB in the LLM Service [README](components/llm_service/README.md)
+  - We recommend deploying AlloyDB and PG Vector as a vector store.  See the section on AlloyDB in the LLM Service [README](components/llm_service/README.md)
+- Tools Service:  If you are using the Tool Service (for GenAI agents that use Tools) follow the instructions in the [README](components/tools_service/README.md)
 
 ## Deploy Backend Microservices
 
