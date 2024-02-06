@@ -11,7 +11,7 @@
 
 ### Installing on Windows
 
-We recommend you use WSL with Ubuntu for the initial steps, up to the point where you have a jump host.  After that you should complete the install from the jump host.
+We recommend you use (WSL)[https://learn.microsoft.com/en-us/windows/wsl/install] with (Ubuntu)[https://canonical-ubuntu-wsl.readthedocs-hosted.com/en/latest/guides/install-ubuntu-wsl2/] for the initial steps, up to the point where you have a jump host.  After that you should complete the install from the jump host.
 
 ### Troubleshooting Awareness
 
@@ -22,6 +22,10 @@ Please be aware of our [troubleshooting resources](https://github.com/GoogleClou
 ### Set up the GCP Project
 
 We recommend starting from a brand new GCP project. Create a new GCP project at https://console.cloud.google.com/projectcreate
+
+### Install gcloud
+(Install)[https://cloud.google.com/sdk/docs/install] the gcloud command line tool.
+
 
 ### Enable Cloud Identity Platform
 
@@ -41,9 +45,9 @@ gcloud resource-manager org-policies delete constraints/iam.allowedPolicyMemberD
 
 ### Clone repo
 
-Clone this repo to your local machine to start. Optionally, you can use Cloud Shell. Run the rest of the commands inside the repo folder.
+Clone this repo to your local machine to start. Optionally, you can use [Cloud Shell](https://cloud.google.com/shell). Run the rest of the commands inside the repo folder.
+
 ```
-# Clone repo
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
 cd core-solution-services
 ```
@@ -183,12 +187,35 @@ gcloud container clusters get-credentials main-cluster --region ${REGION} --proj
 kubectl get nodes
 ```
 
-### Deploy all microservices to GKE cluster:
+### Option 1: Deploy GENIE microservices to the GKE cluster
+If you are installing GENIE you can deploy a subset of the microservices necessary for GENIE:
+
+```
+NAMESPACE=default
+sb deploy -m authentication,llm_service,jobs_service,tools_service,frontend_streamlit -n $NAMESPACE
+```
+- This will run `skaffold` commands to deploy all microservices to the GKE cluster.
+
+Check the status of the pods:
+
+```
+kubectl get pods
+```
+
+### Option 2: Deploy all microservices to GKE cluster
+If you wish to deploy all microservices in Core Solution Services use the following command:
+
 ```bash
 NAMESPACE=default
 sb deploy -n $NAMESPACE
 ```
-- This will run `skaffold` commands to deploy all microservices and ingress to the GKE cluster.
+- This will run `skaffold` commands to deploy all microservices to the GKE cluster.
+
+Check the status of the pods:
+
+```
+kubectl get pods
+```
 
 ### Deploy ingress to GKE cluster:
 ```bash
