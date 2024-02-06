@@ -9,6 +9,10 @@
 | `skaffold`          | `>= v2.4.0`      | https://skaffold.dev/docs/install/                                                                                                                                                                  |
 | `kustomize`         | `>= v5.0.0`      | https://kubectl.docs.kubernetes.io/installation/kustomize/                                                                                                                                          |
 
+### Installing on Windows
+
+We recommend you use WSL with Ubuntu for the initial steps, up to the point where you have a jump host.  After that you should complete the install from the jump host.
+
 ### Troubleshooting Awareness
 
 Please be aware of our [troubleshooting resources](https://github.com/GoogleCloudPlatform/core-solution-services/tree/main#troubleshooting) as they detail solutions to common issues found during the deployment process.
