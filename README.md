@@ -38,7 +38,7 @@ To access the GenAI capabilities in Core Solution Services, we suggest you use J
 
 1. Clone the repo locally
 
-1. Create and activate a python 3.9 virtual environment in the LLM Service component.
+2. Create and activate a python 3.9 virtual environment in the LLM Service component.
 
 In the top level directory of the repo:
 
@@ -48,7 +48,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-1. Install python requirements
+3. Install python requirements
 
 ```
 pip install -r ../common/src/requirements.txt
@@ -56,14 +56,14 @@ pip install -r requirements.txt
 pip install jupyter
 ```
 
-1. Start a notebook server in the notebooks folder
+4. Start a notebook server in the notebooks folder
 
 ```
 cd notebooks
 jupyter notebook
 ```
 
-1. Open one of the notebooks and start experimenting with the libraries and APIs.
+5. Open one of the notebooks and start experimenting with the libraries and APIs.
 
 
 ## Installing
