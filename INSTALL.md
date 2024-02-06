@@ -140,7 +140,7 @@ Apply infra/terraform:
 sb infra apply 1-bootstrap
 ```
 
-Note in the following step there is a known issue with firebase setup.\: "Error 409: Database already exists."  Consult the Troubleshooting section to fix this.
+Note in the following step there is a known issue with firebase setup: `Error 409: Database already exists.`  If this error occurs, run the step, consult the Troubleshooting section to apply the fix, then re-run the step.
 
 ```
 sb infra apply 2-foundation
@@ -155,7 +155,7 @@ sb infra apply 3-gke-ingress
 
 (Optional) Add an A record to your DNS:
 ![Alt text](.github/assets/dns_a_record.png)
-- Set the IP address in the A recrod to the external IP address in the ingress.
+- Set the IP address in the A record to the external IP address in the ingress.
 
 - Apply infra/terraform for LLM service:
 
