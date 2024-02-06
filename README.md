@@ -12,7 +12,7 @@ in the Public Sector division of Google Cloud.
 
 ## Use Cases
 
-We have built an initial use case to support GenAI for Enterprise (GENIE).  GENIE is used as the foundation platform for other solutions in Google Cloud Public Sector.
+We have built an initial use case to support GenAI for Enterprise (GENIE).  GENIE is used as the foundation platform for other GenAI solutions in Google Cloud Public Sector.
 
 ### GenAI for Enterprise (GENIE)
 
