@@ -30,7 +30,7 @@ Highlighted features:
 
 ## Releases
 
-Consult the CHANGELOG for release information.  The current stable release of CSS is v0.0.2.
+Consult the [CHANGELOG](./CHANGELOG.md) for release information.  The current stable release of CSS is v0.0.2.
 
 ## Quickstart (for GENIE)
 
@@ -72,5 +72,5 @@ Please follow the [INSTALL](./INSTALL.md) guide to install the platform. Note we
 
 ## Development
 
-Please refer to the [DEVELOPMENT](./INSTALL.md) guide to develop on the platform.
+Please refer to the [DEVELOPMENT](./docs/DEVELOPMENT.md) guide to develop on the platform.
 
