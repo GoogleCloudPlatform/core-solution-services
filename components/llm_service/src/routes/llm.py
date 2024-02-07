@@ -176,10 +176,13 @@ async def generate_multi(prompt: str = Form(...),
     return PayloadTooLargeError(
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
-  # llm_type = genconfig_dict.get("llm_type")
+
+
 
   try:
-    result = await llm_generate_multi(user_file, prompt, llm_type)
+    user_file_name = user_file.filename
+    user_file_bytes = await user_file.read()
+    result = await llm_generate_multi(prompt, user_file_name, user_file_bytes, llm_type)
 
     return {
         "success": True,

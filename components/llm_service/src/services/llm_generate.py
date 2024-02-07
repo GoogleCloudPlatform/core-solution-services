@@ -17,7 +17,6 @@ LLM Generation Service
 # pylint: disable=import-outside-toplevel
 import time
 from typing import Optional
-from fastapi import UploadFile
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
 from vertexai.preview.generative_models import GenerativeModel, Image
@@ -96,21 +95,22 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-async def llm_generate_multi(user_file: UploadFile, prompt: str,
-                            llm_type: str) -> str:
+async def llm_generate_multi(prompt: str, user_file_name: str,
+                            user_file_bytes: bytes, llm_type: str) -> str:
   """
   Generate text with an LLM given a file and a prompt.
   Args:
-    user_file: the file provided by the user to pass to the LLM
     prompt: the text prompt to pass to the LLM
+    user_file_name: the name of the file provided by the user
+    user_file_bytes: the bytes of the file provided by the user
     llm_type: the type of LLM to use (default to gemini)
   Returns:
     the text response: str
   """
   Logger.info(f"Generating text with an LLM given an"
-              f" user_file={user_file.filename}, prompt={prompt},"
-              f" llm_type={llm_type}")
-  # default to openai LLM
+              f" prompt={prompt}, user_file_name={user_file_name}"
+              f" user_file_bytes={user_file_bytes}, llm_type={llm_type}")
+  # default to Gemini multi-modal LLM
   if llm_type is None:
     llm_type = DEFAULT_MULTI_LLM_TYPE
 
@@ -120,17 +120,7 @@ async def llm_generate_multi(user_file: UploadFile, prompt: str,
     # for Google models, prioritize native client over langchain
     chat_llm_types = get_model_config().get_chat_llm_types()
     multi_llm_types = get_model_config().get_multi_llm_types()
-    if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
-      is_chat = llm_type in chat_llm_types
-      response = await llm_service_predict(prompt, is_chat, llm_type)
-    elif llm_type in get_provider_models(PROVIDER_TRUSS):
-      model_endpoint = get_provider_value(
-          PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
-      response = await llm_truss_service_predict(
-          llm_type, prompt, model_endpoint)
-    elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
-      response = await model_garden_predict(prompt, llm_type)
-    elif llm_type in get_provider_models(PROVIDER_VERTEX):
+    if llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
       if google_llm is None:
@@ -138,8 +128,11 @@ async def llm_generate_multi(user_file: UploadFile, prompt: str,
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
       is_multi = llm_type in multi_llm_types
-      response = await google_llm_predict_multi(user_file, prompt,
-                                                is_chat, is_multi, google_llm)
+      if not is_multi:
+        raise RuntimeError(
+            f"Vertex model {llm_type} needs to be multi-modal")
+      response = await google_llm_predict_multi(prompt, user_file_name,
+                              user_file_bytes, is_chat, is_multi, google_llm)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -414,14 +407,16 @@ async def google_llm_predict(prompt: str, is_chat: bool,
 
   return response
 
-async def google_llm_predict_multi(user_file: UploadFile, prompt: str,
-                                  is_chat: bool, is_multi: bool,
-                                  google_llm: str, user_chat=None) -> str:
+async def google_llm_predict_multi(prompt: str, user_file_name: str, 
+                                  user_file_bytes: bytes, is_chat: bool,
+                                  is_multi: bool, google_llm: str,
+                                  user_chat=None) -> str:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
-    user_file: the user provided file to pass to the LLM
     prompt: the text prompt to pass to the LLM
+    user_file_name: the name of the file provided by the user
+    user_file_bytes: the bytes of the file provided by the user
     is_chat: true if the model is a chat model
     is_multi: true if the model is a multimodal model
     google_llm: name of the vertex llm model
@@ -432,12 +427,8 @@ async def google_llm_predict_multi(user_file: UploadFile, prompt: str,
   Logger.info(f"Generating text with a Google multimodal LLM given a"
               f" file and a prompt, is_chat=[{is_chat}],"
               f" is_multi=[{is_multi}], google_llm=[{google_llm}]")
-  Logger.info(f"user_file=[{user_file.filename}].")
+  Logger.info(f"user_file_name=[{user_file_name}].")
   Logger.info(f"prompt=[{prompt}].")
-
-  # Get file data and package in Gemini Image class
-  user_file_bytes = await user_file.read()
-  user_file_image = Image.from_bytes(user_file_bytes)
 
   # TODO: Consider images in chat
   prompt_list = []
@@ -469,6 +460,7 @@ async def google_llm_predict_multi(user_file: UploadFile, prompt: str,
       # gemini uses new "GenerativeModel" class and requires different params
       if "gemini" in google_llm:
         multi_model = GenerativeModel(google_llm)
+        user_file_image = Image.from_bytes(user_file_bytes)
         context_list = [user_file_image, context_prompt]
         safety_settings = [
              SafetySetting(
