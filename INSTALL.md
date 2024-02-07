@@ -52,6 +52,12 @@ git clone https://github.com/GoogleCloudPlatform/core-solution-services
 cd core-solution-services
 ```
 
+Checkout the release tag for the desired release.
+
+```
+git checkout v0.2.0
+```
+
 ### Verify your Python version and create a virtual env
 Make sure you have Python version 3.9 or greater.
 ```
@@ -114,6 +120,14 @@ Check out the code in the jump host:
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
 ```
 
+Checkout the release tag for the desired release.
+
+```
+cd core-solution-services
+git checkout v0.2.0
+```
+
+
 Initialize the jump host and set Project ID:
 ```
 gcloud auth login
@@ -123,8 +137,7 @@ gcloud auth application-default login
 export PROJECT_ID=$(gcloud config get project)
 echo PROJECT_ID=${PROJECT_ID}
 
-# Update all project_id value in the source code.
-cd core-solution-services
+# Update project_id values in the source code.
 sb set project-id ${PROJECT_ID}
 
 # Update domain name (for HTTPS load balancer and ingress)
@@ -187,13 +200,23 @@ kubectl get nodes
 ```
 
 ### Option 1: Deploy GENIE microservices to the GKE cluster
+
+You must set these environment variables prior to deployment.  If you re-login and redeploy from the jump host make sure to set these variables in your shell again:
+```
+export PROJECT_ID=$(gcloud config get project)
+export NAMESPACE=default
+export PG_HOST=<the IP of your deployed Alloydb instance>
+export DOMAIN_NAME=<your domain>
+export API_BASE_URL=https://${DOMAIN_NAME}
+export APP_BASE_PATH="/streamlit"
+```
+
 If you are installing GENIE you can deploy a subset of the microservices necessary for GENIE:
 
 ```
-NAMESPACE=default
 sb deploy -m authentication,llm_service,jobs_service,tools_service,frontend_streamlit -n $NAMESPACE
 ```
-- This will run `skaffold` commands to deploy all microservices to the GKE cluster.
+- This will run `skaffold` commands to deploy those microservices to the GKE cluster.
 
 Check the status of the pods:
 
@@ -204,7 +227,7 @@ kubectl get pods
 #### Deploy ingress to GKE cluster:
 ```bash
 cd ingress
-skaffold run -p genie-deploy -m authentication,llm_service,jobs_service,tools_service,frontend_streamlit -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
+skaffold run -p genie-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
 ```
 
 
