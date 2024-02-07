@@ -213,10 +213,10 @@ export API_BASE_URL=https://${DOMAIN_NAME}
 export APP_BASE_PATH="/streamlit"
 ```
 
-If you are installing GENIE you can deploy a subset of the microservices necessary for GENIE:
+If you are installing GENIE you can deploy a subset of the microservices used by GENIE.  Depending on your use case for GENIE you may not need the tools service (only needed if you are using agents that use tools).
 
 ```
-sb deploy -m authentication,llm_service,jobs_service,tools_service,frontend_streamlit -n $NAMESPACE
+sb deploy -m authentication,llm_service,jobs_service,frontend_streamlit,tools_service -n $NAMESPACE
 ```
 - This will run `skaffold` commands to deploy those microservices to the GKE cluster.
 
