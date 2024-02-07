@@ -11,7 +11,7 @@
 
 ### Installing on Windows
 
-We recommend you use (WSL)[https://learn.microsoft.com/en-us/windows/wsl/install] with (Ubuntu)[https://canonical-ubuntu-wsl.readthedocs-hosted.com/en/latest/guides/install-ubuntu-wsl2/] for the initial steps, up to the point where you have a jump host.  After that you should complete the install from the jump host.
+We recommend you use [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) with [Ubuntu](https://canonical-ubuntu-wsl.readthedocs-hosted.com/en/latest/guides/install-ubuntu-wsl2/) for the initial steps, up to the point where you have a jump host.  After that you should complete the install from the jump host.
 
 ### Troubleshooting Awareness
 
@@ -24,7 +24,7 @@ Please be aware of our [troubleshooting resources](https://github.com/GoogleClou
 We recommend starting from a brand new GCP project. Create a new GCP project at https://console.cloud.google.com/projectcreate
 
 ### Install gcloud
-(Install)[https://cloud.google.com/sdk/docs/install] the gcloud command line tool.
+[Install](https://cloud.google.com/sdk/docs/install) the gcloud command line tool.
 
 
 ### Enable Cloud Identity Platform
@@ -202,6 +202,13 @@ Check the status of the pods:
 kubectl get pods
 ```
 
+#### Deploy ingress to GKE cluster:
+```bash
+cd ingress
+skaffold run -p default-deploy -m authentication,llm_service,jobs_service,tools_service,frontend_streamlit -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
+```
+
+
 ### Option 2: Deploy all microservices to GKE cluster
 If you wish to deploy all microservices in Core Solution Services use the following command:
 
@@ -217,11 +224,12 @@ Check the status of the pods:
 kubectl get pods
 ```
 
-### Deploy ingress to GKE cluster:
+#### Deploy ingress to GKE cluster:
 ```bash
 cd ingress
 skaffold run -p default-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
 ```
+
 ### After deployment
 
 - Follow [components/authentication/README.md#create-users](./components/authentication/README.md#create-users) to create the first user.
