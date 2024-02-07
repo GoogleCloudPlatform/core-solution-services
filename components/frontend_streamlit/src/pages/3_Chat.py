@@ -14,7 +14,8 @@
 """
   Streamlit app Chat Page
 """
-# pylint: disable=invalid-name,unused-variable
+# pylint: disable=invalid-name,unused-variable,global-variable-not-assigned
+
 import re
 import time
 import streamlit as st
@@ -64,10 +65,32 @@ REFERENCE_CSS_STYLE = """
   min-height: 1rem;
   margin-top: 0.4rem;
 }
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 5px solid #FFF;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+      transform: rotate(0deg);
+  }
+  100% {
+      transform: rotate(360deg);
+  }
+}
 """
+
+loader_spin_html = "<span class=\"loader\"></span>"
 
 
 content_container = None
+messages_container = None
 spinner_container = None
 on_submit_clicked = False
 
@@ -135,7 +158,7 @@ def on_submit(user_input):
 
     # If the response has a batch async job, keep pulling the job result.
     if "batch_job" in response:
-      update_async_job(response["batch_job"]["id"], loop_seconds=1)
+      update_async_job(response["batch_job"]["id"])
 
 def hide_loading():
   global spinner_container
@@ -180,22 +203,24 @@ def chat_metadata():
     st.write(f"Chat ID: **{st.session_state.chat_id}**")
 
 
-def update_async_job(job_id, loop_seconds=3, timeout_seconds=120):
+def update_async_job(job_id, loop_seconds=1, timeout_seconds=180):
   global spinner_container
+  global messages_container
   start_time = time.time()
 
-  with spinner_container:
-    with st.chat_message("ai"):
-      st.write("Loading...", is_user=True, key=f"ai_loading")
+  count = 0
+  time_elapsed = 0
+  while time_elapsed < timeout_seconds:
+    count += 1
+    with spinner_container:
+      with st.chat_message("ai"):
+        st.write("Loading." + "." * int(count % 3),
+                 is_user=True, key=f"ai_loading")
 
-  while (time.time() - start_time) < timeout_seconds:
     job = get_job(JOB_TYPE_ROUTING_AGENT, job_id)
-    with content_container:
-      # Pull the latest chat history.
-      new_messages = append_new_messages()
-      if len(new_messages) > 0:
-        st.write(f"Found {len(new_messages)} new messages!")
-        st.write(new_messages)
+    # Pull the latest chat history.
+    with messages_container:
+      append_new_messages()
 
     # Breaks if the batch job doesn't exist.
     if not job:
@@ -214,6 +239,7 @@ def update_async_job(job_id, loop_seconds=3, timeout_seconds=120):
       return
 
     time.sleep(loop_seconds)
+    time_elapsed = time.time() - start_time
 
   # Timeout
   display_message({
@@ -386,16 +412,23 @@ def display_message(item, item_index):
 
   item_index += 1
 
+def reset_content():
+  global content_container
+  global messages_container
+  with content_container:
+    st.write("Reloading...")
+
 
 def chat_page():
   global content_container
-  global on_submit_clicked
+  global messages_container
   global spinner_container
+  global on_submit_clicked
 
   chat_theme()
 
   # display chat header
-  chat_header(refresh_func=init_messages)
+  chat_header(refresh_func=reset_content)
 
   st.title("Chat")
   chat_metadata()
@@ -403,10 +436,13 @@ def chat_page():
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
 
-  content_container = st.container()
+  content_container = st.empty()
   spinner_container = st.empty()
 
   with content_container:
+    messages_container = st.container()
+
+  with messages_container:
     init_messages()
 
     # Pass prompt from the Landing page if any.
