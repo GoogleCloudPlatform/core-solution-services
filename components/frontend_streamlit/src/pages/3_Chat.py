@@ -215,7 +215,7 @@ def update_async_job(job_id, loop_seconds=1, timeout_seconds=180):
     with spinner_container:
       with st.chat_message("ai"):
         st.write("Loading." + "." * int(count % 3),
-                 is_user=True, key=f"ai_loading")
+                 is_user=True, key="ai_loading")
 
     job = get_job(JOB_TYPE_ROUTING_AGENT, job_id)
     # Pull the latest chat history.
