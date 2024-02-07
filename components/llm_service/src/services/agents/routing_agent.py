@@ -203,6 +203,8 @@ async def run_routing_agent(prompt: str,
   chat_data = user_chat.get_fields(reformat_datetime=True)
   chat_data["id"] = user_chat.id
   response_data["chat"] = chat_data
+  response_data["route"] = route_type
+  response_data["route_name"] = route
 
   Logger.info(f"Dispatch agent {agent_name} response: "
               f"route [{route}] response {response_data}")
