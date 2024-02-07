@@ -109,6 +109,6 @@ def custom_sidebar(refresh_func=None):
 
       st.session_state.default_route = st.selectbox(
           "Chat Mode", chat_modes, index=chat_mode_index)
-      
+
       if refresh_func:
         st.button("Refresh", on_click=refresh_func)

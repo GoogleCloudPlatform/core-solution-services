@@ -17,7 +17,6 @@ Chat action buttons
 """
 # pylint: disable=unused-variable
 import streamlit as st
-from api import (get_chat)
 from styles.style_constants import colors
 
 def handle_click(option):
