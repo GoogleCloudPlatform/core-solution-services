@@ -29,7 +29,6 @@ def main_styles():
         margin-top: 12px;
         margin-bottom: 12px;
         margin-left: 12px;
-        margin-right: 350px;
       }}
       .main [data-testid="block-container"] {{
         padding-top: 0;
@@ -93,6 +92,9 @@ def main_styles():
       a {{
         color: {colors['tint_primary']} !important;
       }}
+      strong, ul, li {{
+        color: {colors['text_primary']};
+      }}
 
       /* Smartphones and small devices */
       @media screen and (max-width: 1024px) {{
@@ -113,6 +115,9 @@ def main_styles():
         [data-baseweb=select] {{
           font-size: .95rem;
         }}
+        .main {{
+          margin-right: 300px;
+        }}
       }}
 
       /* Large monitors */
@@ -120,12 +125,18 @@ def main_styles():
         .main [data-testid="block-container"] {{
           max-width: 58rem;
         }}
+        .main {{
+          margin-right: 350px;
+        }}
       }}
 
       /* Very large monitors */
       @media screen and (min-width: 1600px) {{
         .main [data-testid="block-container"] {{
           max-width: 60rem;
+        }}
+        .main {{
+          margin-right: 450px;
         }}
       }}
     </style>
