@@ -93,6 +93,7 @@ content_container = None
 messages_container = None
 spinner_container = None
 on_submit_clicked = False
+DEBUG_ID = "-test1"
 
 def on_submit(user_input):
   """ Run dispatch agent when adding an user input prompt """
@@ -158,6 +159,7 @@ def on_submit(user_input):
 
     # If the response has a batch async job, keep pulling the job result.
     if "batch_job" in response:
+      st.session_state.update_async_job = True
       update_async_job(response["batch_job"]["id"])
 
 def hide_loading():
@@ -215,7 +217,7 @@ def update_async_job(job_id, loop_seconds=1, timeout_seconds=180):
     with spinner_container:
       with st.chat_message("ai"):
         st.write("Loading." + "." * int(count % 3),
-                 is_user=True, key="ai_loading")
+                 is_user=True, key=f"ai_loading_{job_id}")
 
     job = get_job(JOB_TYPE_ROUTING_AGENT, job_id)
     # Pull the latest chat history.
@@ -228,20 +230,22 @@ def update_async_job(job_id, loop_seconds=1, timeout_seconds=180):
 
     # Refresh messages when job status is "succeeded" or "failed".
     if job["status"] == JobStatus.JOB_STATUS_SUCCEEDED.value:
-      # append_and_display_message(job["result_data"])
       hide_loading()
       append_new_messages()
+      st.session_state.update_async_job = False
       return
 
     elif job["status"] == JobStatus.JOB_STATUS_FAILED.value:
       hide_loading()
       st.write("Job failed.")
+      st.session_state.update_async_job = False
       return
 
     time.sleep(loop_seconds)
     time_elapsed = time.time() - start_time
 
   # Timeout
+  st.session_state.update_async_job = False
   display_message({
     "AIOutput": f"Timed out after {timeout_seconds} seconds."
   }, len(st.session_state.messages))
@@ -262,7 +266,7 @@ def init_messages():
     st.session_state.messages = chat_data["history"]
   elif not st.session_state.get("messages", None):
     display_message({
-      "AIOutput": "You can ask me anything."
+      "AIOutput": "You can ask me anything." + DEBUG_ID,
     }, 0)
     st.session_state.messages = []
 
