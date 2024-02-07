@@ -166,7 +166,6 @@ sb infra apply 3-gke-ingress
 ```
 sb infra apply 4-llm
 ```
-- This will create a GCE load balancer with ingress.
 - This will create a `$PROJECT_ID-llm-docs` bucket and upload the sample doc `llm-sample-doc.pdf` to it.
 - It will add required Firestore indexes.
 
@@ -232,16 +231,11 @@ skaffold run -p default-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
 
 ### After deployment
 
-- Follow [components/authentication/README.md#create-users](./components/authentication/README.md#create-users) to create the first user.
-  - You will need the output ID Token for the next step.
-- Follow [components/llm_service/README.md](./components/llm_service/README.md#after-deployment) to create the BOT account and a Query Engine.
+- Follow the "create users" section in the [authentication service README](./components/authentication/README.md#create-users) to create the first user.
 
 ### Verify deployment
 
 Once deployed, check out the API docs with the following links:
-
-- Frontend Flutterflow app:
-  - https://$YOUR_DNS_DOMAIN
 
 - Frontend Streamlit app:
   - https://$YOUR_DNS_DOMAIN/streamlit
@@ -252,15 +246,16 @@ Once deployed, check out the API docs with the following links:
   - https://$YOUR_DNS_DOMAIN/jobs-service/api/v1/docs
   - https://$YOUR_DNS_DOMAIN/llm-service/api/v1/docs
 
+- (if deployed) Frontend Flutterflow app:
+  - https://$YOUR_DNS_DOMAIN
+
+
 Alternatively, you can test with the IP address to verify API endpoints
 ```
 BASE_IP_ADDRESS=$(gcloud compute addresses list --global --format="value(address)")
 ```
 - Open up `http://$BASE_IP_ADDRESS/authentication/api/v1/docs` in a web browser.
 
-In the GCP Console, check the following:
-- A query engine at https://console.cloud.google.com/vertex-ai/matching-engine/indexes?referrer=search&project=$PROJECT_ID.
-- A vertex AI endpoint to the query engine at https://console.cloud.google.com/vertex-ai/matching-engine/index-endpoints?referrer=search&project=$PROJECT_ID
 
 ## Frontend applications
 
