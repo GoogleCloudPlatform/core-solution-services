@@ -199,6 +199,8 @@ gcloud container clusters get-credentials main-cluster --region ${REGION} --proj
 kubectl get nodes
 ```
 
+> Note that when you deply the ingress below you may need to wait some time (in some cases, hours) before the https cert is active.
+
 ### Option 1: Deploy GENIE microservices to the GKE cluster
 
 You must set these environment variables prior to deployment.  If you re-login and redeploy from the jump host make sure to set these variables in your shell again:
@@ -225,6 +227,9 @@ kubectl get pods
 ```
 
 #### Deploy ingress to GKE cluster:
+
+> Note again that the ingress may take some time to be available.  You can check the ingress status in the GCP console by [navigating to the cluster](https://console.cloud.google.com/kubernetes/discovery) and selecting "Gateways, Service and Ingress"
+
 ```bash
 cd ingress
 skaffold run -p genie-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
@@ -247,6 +252,9 @@ kubectl get pods
 ```
 
 #### Deploy ingress to GKE cluster:
+
+> See above comments on time needed for ingress deploy
+
 ```bash
 cd ingress
 skaffold run -p default-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
