@@ -231,7 +231,7 @@ skaffold run -p default-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
 
 ### After deployment
 
-- Follow the "create users" section in the [authentication service README](./components/authentication/README.md#create-users) to create the first user.
+- Follow the "add users" section in the [authentication service README](./components/authentication/README.md) to add a user, so you can login to the UX.
 
 ### Verify deployment
 
