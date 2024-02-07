@@ -24,7 +24,7 @@ Please be aware of our [troubleshooting resources](https://github.com/GoogleClou
 We recommend starting from a brand new GCP project. Create a new GCP project at https://console.cloud.google.com/projectcreate
 
 ### Install gcloud
-[Install](https://cloud.google.com/sdk/docs/install) the gcloud command line tool.
+[Install](https://cloud.google.com/sdk/docs/install) the gcloud command line tool, if it is not already present in your dev environment.
 
 
 ### Enable Cloud Identity Platform
@@ -205,7 +205,7 @@ kubectl get pods
 #### Deploy ingress to GKE cluster:
 ```bash
 cd ingress
-skaffold run -p default-deploy -m authentication,llm_service,jobs_service,tools_service,frontend_streamlit -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
+skaffold run -p genie-deploy -m authentication,llm_service,jobs_service,tools_service,frontend_streamlit -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
 ```
 
 
