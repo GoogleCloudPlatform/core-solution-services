@@ -156,8 +156,8 @@ async def generate(gen_config: LLMGenerateModel):
     name="Generate text with a multimodal LLM",
     response_model=LLMGenerateResponse)
 async def generate_multi(prompt: str = Form(...),
-                        llm_type: Optional[str] = Form(None),
-                        user_file: UploadFile = File(...)):
+                        user_file: UploadFile = File(...),
+                        llm_type: Optional[str] = Form(None)):
   """
   Generate text with a multimodal LLM
 
@@ -175,14 +175,15 @@ async def generate_multi(prompt: str = Form(...),
   if len(prompt) > PAYLOAD_FILE_SIZE:
     return PayloadTooLargeError(
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
-
-
-
+  
+  if user_file.content_type not in ["image/jpeg", "image/png", "video/mp4"]:
+    return BadRequest("File must be a picture or a video")
 
   try:
     user_file_name = user_file.filename
     user_file_bytes = await user_file.read()
-    result = await llm_generate_multi(prompt, user_file_name, user_file_bytes, llm_type)
+    result = await llm_generate_multi(prompt, user_file_name,
+                                      user_file_bytes, llm_type)
 
     return {
         "success": True,
