@@ -215,7 +215,7 @@ def update_async_job(job_id, loop_seconds=1, timeout_seconds=180):
     with spinner_container:
       with st.chat_message("ai"):
         st.write("Loading." + "." * int(count % 3),
-                 is_user=True, key="ai_loading")
+                 is_user=True, key=f"ai_loading_{job_id}")
 
     job = get_job(JOB_TYPE_ROUTING_AGENT, job_id)
     # Pull the latest chat history.
@@ -228,7 +228,6 @@ def update_async_job(job_id, loop_seconds=1, timeout_seconds=180):
 
     # Refresh messages when job status is "succeeded" or "failed".
     if job["status"] == JobStatus.JOB_STATUS_SUCCEEDED.value:
-      # append_and_display_message(job["result_data"])
       hide_loading()
       append_new_messages()
       return
@@ -262,14 +261,20 @@ def init_messages():
     st.session_state.messages = chat_data["history"]
   elif not st.session_state.get("messages", None):
     display_message({
-      "AIOutput": "You can ask me anything."
+      "AIOutput": "You can ask me anything.",
     }, 0)
     st.session_state.messages = []
 
   index = 1
-  for message in st.session_state.messages:
-    display_message(message, index)
+  last_batch_job = None
+  for item in st.session_state.messages:
+    display_message(item, index)
+    if "batch_job" in item:
+      last_batch_job = item["batch_job"]["job_id"]
     index += 1
+
+  if last_batch_job:
+    update_async_job(last_batch_job)
 
 
 def append_new_messages():
