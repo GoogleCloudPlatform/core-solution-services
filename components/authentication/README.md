@@ -14,9 +14,11 @@
   ![Alt text](../../.github/assets/idp_emailpass.png)
 
 
-### Add Users
+## Add Users
 
-#### Add users with the firestore console
+### Add users with the firestore console
+Please verify that email/password provider is enabled.
+
 You can add users to the platform in the [firebase console](https://console.firebase.google.com).  
 
 - Navigate to the console and select your project
@@ -28,8 +30,7 @@ You can add users to the platform in the [firebase console](https://console.fire
 - The user can now log in via the UX apps for the platform.
 - A user model will be created for the user when they log in.  Note that user model will be populated with test first name/last name and should be updated if you care about those fields.
 
-#### Add users with the create_users script
-
+### Add users with the create_users script
 Please verify that email/password provider is enabled.
 
 Get the IP address for the GKE ingress endpoint:
