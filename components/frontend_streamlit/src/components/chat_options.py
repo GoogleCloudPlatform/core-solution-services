@@ -28,7 +28,7 @@ def handle_click(option):
   if option == "like_btn" and st.session_state.btn_states["dislike_btn"]:
     st.session_state.btn_states["dislike_btn"] = False
 
-def action_buttons(reload_func):
+def action_buttons(refresh_func=None):
   icon_states = {
     "like_btn": False,
     "dislike_btn": False
@@ -73,7 +73,7 @@ def action_buttons(reload_func):
 
   with refresh:
     st.button("Refresh", type="primary", help="Reload chat",
-                on_click=reload_func)
+                on_click=refresh_func)
 
   with more:
     st.button("More", type="primary", help="More")
