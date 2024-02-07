@@ -22,7 +22,7 @@ You can add users to the platform in the [firebase console](https://console.fire
 - Navigate to the console and select your project
 - Navigate to the Authentication section (under Build > Authentication)
 - Click "Add User" on the UX.
-  ![Add User](./docs/assets/add_user.jpg)
+  ![Add User](../docs/assets/add_user.jpg)
 - Enter the email and password for the user.
 - You can send a password reset email to the user via firebase so the user can create their own password.
 - The user can now log in via the UX apps for the platform.
