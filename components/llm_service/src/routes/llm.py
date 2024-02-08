@@ -15,6 +15,7 @@
 # pylint: disable = broad-except
 
 """ LLM endpoints """
+import os.path
 from fastapi import APIRouter, UploadFile, File, Form
 from typing import Optional
 
@@ -176,14 +177,13 @@ async def generate_multi(prompt: str = Form(...),
     return PayloadTooLargeError(
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
-  if user_file.content_type not in ["image/jpeg", "image/png", "video/mp4"]:
-    return BadRequest("File must be a picture or a video")
+  user_file_extension = os.path.splitext(user_file.filename)[1]
+  if user_file_extension not in [".jpeg", ".png", ".gif", ".mp4"]:
+    return BadRequest("File must be a picture or a video.")
 
   try:
-    user_file_name = user_file.filename
     user_file_bytes = await user_file.read()
-    result = await llm_generate_multi(prompt, user_file_name,
-                                      user_file_bytes, llm_type)
+    result = await llm_generate_multi(prompt, user_file_bytes, llm_type)
 
     return {
         "success": True,
