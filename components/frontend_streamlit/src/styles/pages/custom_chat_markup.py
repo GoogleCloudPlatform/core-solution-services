@@ -72,7 +72,7 @@ def custom_chat_theme():
       }}
 
       /* Main container scroll positioning */
-      .main [data-testid="block-container"] {{
+      .main .block-container {{
         overflow: auto;
       }}
 

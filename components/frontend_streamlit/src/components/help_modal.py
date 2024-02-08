@@ -17,11 +17,46 @@ Help expander content
 """
 
 import streamlit as st
+import time
 
-def handle_click():
-  st.session_state.help_state = not st.session_state.help_state
+def handle_click(messages_cont, spinner_cont, help_cont, input_cont):
+  # Clear original message
+  with help_cont:
+    st.write("")
 
-def help_form():
+  start_time = time.time()
+  count = 0
+  time_elapsed = 0
+
+  while time_elapsed < 4:
+    count += 1
+    with spinner_cont:
+      with st.chat_message("ai"):
+        st.write("Loading." + "." * int(count % 3),
+                 is_user=True, key="help_loading2")
+
+      time.sleep(1)
+      time_elapsed = time.time() - start_time
+
+  # Clear initial human output message
+  with input_cont:
+    st.write("")
+  # Hide spinner
+  with spinner_cont:
+    st.write("")
+
+  with messages_cont:
+    with st.chat_message("ai"):
+      st.markdown(
+        "Your ticket number is: **5010**<br>"\
+        "You will receive an **email notification** "\
+        "within 48 hours.<br>"\
+        "You may continue to utilize the chat assistant, "\
+        "or can close or navigate away from this window.",
+        unsafe_allow_html=True
+      )
+
+def help_form(messages_cont, spinner_cont, help_cont, input_cont):
   name_col, pref_col = st.columns(2)
 
   with name_col:
@@ -42,5 +77,6 @@ def help_form():
   with issue_col:
     st.text_input("Detail Your Issue")
 
-  st.button("Send", on_click=handle_click)
+  st.button("Send", on_click=handle_click,
+            args=[messages_cont, spinner_cont, help_cont, input_cont])
 

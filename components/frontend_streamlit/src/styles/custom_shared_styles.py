@@ -30,7 +30,7 @@ def main_styles():
         margin-bottom: 12px;
         margin-left: 12px;
       }}
-      .main [data-testid="block-container"] {{
+      .main .block-container {{
         padding-top: 0;
         padding-bottom: 0;
       }}
@@ -97,8 +97,8 @@ def main_styles():
       }}
 
       /* Smartphones and small devices */
-      @media screen and (max-width: 1024px) {{
-        .main [data-testid="block-container"] {{
+      @media screen and (max-width: 1020px) {{
+        .main .block-container {{
           max-width: 40rem;
         }}
         .main {{
@@ -108,8 +108,8 @@ def main_styles():
       }}
 
       /* Laptops and small displays */
-      @media screen and (min-width: 1024px) and (max-width: 1366px) {{
-        .main [data-testid="block-container"] {{
+      @media screen and (min-width: 1020px) and (max-width: 1366px) {{
+        .main .block-container {{
           max-width: 52rem;
         }}
         [data-baseweb=select] {{
@@ -122,8 +122,8 @@ def main_styles():
 
       /* Large monitors */
       @media screen and (min-width: 1366px) and (max-width: 1600px) {{
-        .main [data-testid="block-container"] {{
-          max-width: 58rem;
+        .main .block-container {{
+          max-width: 60rem;
         }}
         .main {{
           margin-right: 350px;
@@ -132,8 +132,8 @@ def main_styles():
 
       /* Very large monitors */
       @media screen and (min-width: 1600px) {{
-        .main [data-testid="block-container"] {{
-          max-width: 60rem;
+        .main .block-container {{
+          max-width: 65rem;
         }}
         .main {{
           margin-right: 450px;
