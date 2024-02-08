@@ -101,64 +101,99 @@ def on_submit(user_input):
   st.session_state.messages.append({"HumanInput": user_input})
   message_index = len(st.session_state.messages)
 
-  with st.chat_message("user"):
-    st.write(user_input, is_user=True, key=f"human_{message_index}")
+  # Handle user who needs help
+  if user_input.lower() == "i need help":
+    input_cont = st.empty()
+    help_cont = st.empty()
+    start_time = time.time()
 
-  # Send API to llm-service
-  default_route = st.session_state.get("default_route", None)
-  routing_agents = get_all_routing_agents()
-  routing_agent_names = list(routing_agents.keys())
-  chat_llm_type = st.session_state.get("chat_llm_type")
-  Logger.info(f"llm_type in session {chat_llm_type}")
+    with input_cont:
+      with st.chat_message("user"):
+        st.write(user_input, is_user=True, key=f"human_{message_index}")
 
-  if default_route is None:
-    # pick the first routing agent as default
-    if routing_agent_names:
-      routing_agent = routing_agent_names[0]
-    else:
-      routing_agent = "default"
-    response = run_dispatch(user_input,
-                            routing_agent,
-                            chat_id=st.session_state.get("chat_id"),
-                            llm_type=chat_llm_type,
-                            run_as_batch_job=True)
-    st.session_state.default_route = response.get("route", None)
+    count = 0
+    time_elapsed = 0
+    while time_elapsed < 4:
+      count += 1
+      with spinner_container:
+        with st.chat_message("ai"):
+          st.write("Loading." + "." * int(count % 3),
+                   is_user=True, key="help_loading")
 
-  elif default_route in routing_agent_names:
-    response = run_dispatch(user_input,
-                            default_route,
-                            chat_id=st.session_state.get("chat_id"),
-                            llm_type=chat_llm_type,
-                            run_as_batch_job=True)
-    st.session_state.default_route = response.get("route", None)
+      time.sleep(1)
+      time_elapsed = time.time() - start_time
+    hide_loading()
 
-  elif default_route == "Chat":
-    response = run_chat(user_input,
-                        chat_id=st.session_state.get("chat_id"),
-                        llm_type=chat_llm_type)
-  elif default_route == "Plan":
-    response = run_agent_plan("Plan", user_input,
-                              chat_id=st.session_state.get("chat_id"),
-                              llm_type=chat_llm_type)
+    with help_cont:
+      with st.chat_message("ai"):
+        st.write(
+            "If it's an emergency, please dial 911."\
+            " Otherwise, complete the form below",
+            key=f"ai_{message_index}"
+        )
+      with st.expander("Get Further Assistance", expanded=True):
+        help_form(messages_container, spinner_container, help_cont, input_cont)
+
+  # User doesn't need help, handle normally
   else:
-    st.error(f"Unsupported route {default_route}")
-    response = None
+    with st.chat_message("user"):
+      st.write(user_input, is_user=True, key=f"human_{message_index}")
 
-  if response:
-    st.session_state.chat_id = response["chat"]["id"]
+    # Send API to llm-service
+    default_route = st.session_state.get("default_route", None)
+    routing_agents = get_all_routing_agents()
+    routing_agent_names = list(routing_agents.keys())
+    chat_llm_type = st.session_state.get("chat_llm_type")
+    Logger.info(f"llm_type in session {chat_llm_type}")
 
-    # TODO: Currently the AIOutput vs content are inconsistent across
-    # API response and in a UserChat history.
-    if "content" in response:
-      response["AIOutput"] = response["content"]
-    del response["chat"]
+    if default_route is None:
+      # pick the first routing agent as default
+      if routing_agent_names:
+        routing_agent = routing_agent_names[0]
+      else:
+        routing_agent = "default"
+      response = run_dispatch(user_input,
+                              routing_agent,
+                              chat_id=st.session_state.get("chat_id"),
+                              llm_type=chat_llm_type,
+                              run_as_batch_job=True)
+      st.session_state.default_route = response.get("route", None)
 
-    # Append new message from the API response and display it.
-    append_and_display_message(response)
+    elif default_route in routing_agent_names:
+      response = run_dispatch(user_input,
+                              default_route,
+                              chat_id=st.session_state.get("chat_id"),
+                              llm_type=chat_llm_type,
+                              run_as_batch_job=True)
+      st.session_state.default_route = response.get("route", None)
 
-    # If the response has a batch async job, keep pulling the job result.
-    if "batch_job" in response:
-      update_async_job(response["batch_job"]["id"])
+    elif default_route == "Chat":
+      response = run_chat(user_input,
+                          chat_id=st.session_state.get("chat_id"),
+                          llm_type=chat_llm_type)
+    elif default_route == "Plan":
+      response = run_agent_plan("Plan", user_input,
+                                chat_id=st.session_state.get("chat_id"),
+                                llm_type=chat_llm_type)
+    else:
+      st.error(f"Unsupported route {default_route}")
+      response = None
+
+    if response:
+      st.session_state.chat_id = response["chat"]["id"]
+
+      # TODO: Currently the AIOutput vs content are inconsistent across
+      # API response and in a UserChat history.
+      if "content" in response:
+        response["AIOutput"] = response["content"]
+      del response["chat"]
+
+      # Append new message from the API response and display it.
+      append_and_display_message(response)
+
+      # If the response has a batch async job, keep pulling the job result.
+      if "batch_job" in response:
+        update_async_job(response["batch_job"]["id"])
 
 def hide_loading():
   global spinner_container
@@ -282,21 +317,9 @@ def append_and_display_message(item):
 
 
 def display_message(item, item_index):
-  needs_help = False
-
   if "HumanInput" in item:
-    if item["HumanInput"].lower() == "i need help":
-      needs_help = True
     with st.chat_message("user"):
       st.write(item["HumanInput"], is_user=True, key=f"human_{item_index}")
-
-  #if "route_name" in item and "AIOutput" not in item:
-  #  route_name = item["route_name"]
-  #  with st.chat_message("ai"):
-  #    st.write(
-  #        f"Using route **`{route_name}`** to respond.",
-  #        key=f"ai_{item_index}",
-  #    )
 
   route_logs = item.get("route_logs", None)
   if route_logs and route_logs.strip() != "":
@@ -304,41 +327,15 @@ def display_message(item, item_index):
       st.write(format_ai_output(route_logs))
 
   if "AIOutput" in item:
-    if needs_help:
-      if "help_state" not in st.session_state:
-        st.session_state.help_state = False
-
-      if st.session_state.help_state is False:
-        with st.chat_message("ai"):
-          st.write(
-              "If it's an emergency, please dial 911."\
-              " Otherwise, complete the form below",
-              key=f"ai_{item_index}"
-          )
-        with st.expander("Get Further Assistance", expanded=True):
-          help_form()
-      else:
-        with st.chat_message("ai"):
-          st.markdown(
-              "Your ticket number is: **5010**<br>"\
-              "You will receive an **email notification** "\
-              "within 48 hours.<br>"\
-              "You may continue to utilize the chat assistant, "\
-              "or can close or navigate away from this window.",
-              unsafe_allow_html=True
-          )
-
-      needs_help = False
-    else:
-      with st.chat_message("ai"):
-        ai_output = item["AIOutput"]
-        ai_output = format_ai_output(ai_output)
-        st.write(
-            ai_output,
-            key=f"ai_{item_index}",
-            unsafe_allow_html=False,
-            is_table=False,  # TODO: Detect whether an output content type.
-        )
+    with st.chat_message("ai"):
+      ai_output = item["AIOutput"]
+      ai_output = format_ai_output(ai_output)
+      st.write(
+          ai_output,
+          key=f"ai_{item_index}",
+          unsafe_allow_html=False,
+          is_table=False,  # TODO: Detect whether an output content type.
+      )
 
   # Append all query references.
   if item.get("db_result", None):
