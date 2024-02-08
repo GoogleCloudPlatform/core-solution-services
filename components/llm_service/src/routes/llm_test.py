@@ -133,13 +133,14 @@ def test_llm_generate_multi(client_with_emulator):
 
   with open(FAKE_FILENAME, "ab") as f:
     pass
-  files = {"user_file": (FAKE_FILENAME, open(FAKE_FILENAME, "rb"))}
-  os.remove(FAKE_FILENAME)
 
-  with mock.patch("routes.llm.llm_generate_multi",
-                  return_value=FAKE_GENERATE_RESPONSE):
-    resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS,
-                                     files=files)
+  with open(FAKE_FILENAME, "rb") as f:
+    files = {"user_file": (FAKE_FILENAME, f)}
+    os.remove(FAKE_FILENAME)
+    with mock.patch("routes.llm.llm_generate_multi",
+                    return_value=FAKE_GENERATE_RESPONSE):
+      resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS,
+                                      files=files)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
