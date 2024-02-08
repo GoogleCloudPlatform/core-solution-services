@@ -21,6 +21,7 @@ import api
 from styles.pages.login_markup import login_theme
 import logging
 
+
 def login_clicked(username, password):
   logging.info(f"Logging in as {username}")
   st.session_state["username"] = username

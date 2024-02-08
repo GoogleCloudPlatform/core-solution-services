@@ -20,9 +20,7 @@ from components.chat_history import chat_history_panel
 from components.content_header import landing_header
 from components.suggestions import landing_suggestions
 from styles.pages.landing_markup import landing_theme
-import logging
 import utils
-
 
 
 def landing_page():

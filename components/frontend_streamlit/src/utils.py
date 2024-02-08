@@ -23,7 +23,6 @@ from urllib.parse import urlparse
 from api import validate_auth_token
 
 
-
 def http_navigate_to(url, query_params=None):
   """ Navigate to a specific URL. However, this will lose all session_state. """
 

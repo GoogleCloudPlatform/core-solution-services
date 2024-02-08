@@ -24,8 +24,6 @@ import logging
 import utils
 
 
-
-
 def on_input_change():
   user_input = st.session_state.user_input
   query_engine_id = st.session_state.query_engine_id
