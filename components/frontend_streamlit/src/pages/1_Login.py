@@ -19,12 +19,10 @@ import streamlit as st
 import utils
 import api
 from styles.pages.login_markup import login_theme
-from common.utils.logging_handler import Logger
-
-Logger = Logger.get_logger(__file__)
+import logging
 
 def login_clicked(username, password):
-  Logger.info(f"Logging in as {username}")
+  logging.info(f"Logging in as {username}")
   st.session_state["username"] = username
   st.session_state["password"] = password
   token = api.login_user(username, password)
@@ -55,4 +53,5 @@ def login_page():
 
 if __name__ == "__main__":
   utils.init_page(redirect_to_without_auth=False)
+  logging.info("Login page...")
   login_page()

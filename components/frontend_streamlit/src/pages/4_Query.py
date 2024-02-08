@@ -20,11 +20,11 @@ from api import get_chat, run_query
 from components.chat_history import chat_history_panel
 from components.query_engine_select import query_engine_select
 from components.chat_model_select import chat_model_select
-from common.utils.logging_handler import Logger
+import logging
 import utils
 
 
-Logger = Logger.get_logger(__file__)
+
 
 def on_input_change():
   user_input = st.session_state.user_input
@@ -34,7 +34,7 @@ def on_input_change():
 
   # Send API to llm-service
   if query_engine_id is None:
-    Logger.error("Invalid Query Engine")
+    logging.error("Invalid Query Engine")
     st.write("Invalid Query Engine")
     return
   response = run_query(query_engine_id, user_input,

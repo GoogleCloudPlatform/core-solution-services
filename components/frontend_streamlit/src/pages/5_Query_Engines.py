@@ -24,11 +24,11 @@ from api import (build_query_engine, update_query_engine,
                  get_all_vector_stores, get_all_query_engines,
                  get_all_docs_of_query_engine,
                  get_all_jobs)
-from common.utils.logging_handler import Logger
+import logging
 from common.config import PROJECT_ID
 import utils
 
-Logger = Logger.get_logger(__file__)
+
 qe_list = []
 qe_build_jobs = []
 
@@ -88,7 +88,7 @@ def query_engine_page():
   with tab_qe:
     st.subheader("Query Engines")
     if not qe_list:
-      Logger.error("No query engines found.")
+      logging.error("No query engines found.")
       st.write("No query engines found.")
 
     for qe in qe_list:
@@ -122,7 +122,7 @@ def query_engine_page():
     st.subheader("Query Engine Jobs")
 
     if not qe_build_jobs:
-      Logger.error("No query engine build jobs")
+      logging.error("No query engine build jobs")
       st.write("No query engine build jobs")
 
     for job in qe_build_jobs:

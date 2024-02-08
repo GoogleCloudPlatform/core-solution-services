@@ -27,14 +27,14 @@ from api import (
 from components.chat_history import chat_history_panel
 from components.content_header import chat_header
 from styles.pages.chat_markup import chat_theme
-from common.utils.logging_handler import Logger
+import logging
 from common.utils.config import JOB_TYPE_ROUTING_AGENT
 from common.models import JobStatus
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
-Logger = Logger.get_logger(__file__)
+
 
 REFERENCE_CSS_STYLE = """
 {
@@ -108,7 +108,7 @@ def on_submit(user_input):
   routing_agents = get_all_routing_agents()
   routing_agent_names = list(routing_agents.keys())
   chat_llm_type = st.session_state.get("chat_llm_type")
-  Logger.info(f"llm_type in session {chat_llm_type}")
+  logging.info(f"llm_type in session {chat_llm_type}")
 
   if default_route is None:
     # pick the first routing agent as default
@@ -385,7 +385,7 @@ def display_message(item, item_index):
       plan_index = 1
 
       plan = get_plan(item["plan"]["id"])
-      Logger.info(plan)
+      logging.info(plan)
 
       for step in plan["plan_steps"]:
         st.text_area(f"step-{item_index}", step["description"],
@@ -452,7 +452,7 @@ def chat_page():
 
     # Pass prompt from the Landing page if any.
     landing_user_input = st.session_state.get("landing_user_input", None)
-    Logger.info(f"Landing input [{landing_user_input}]")
+    logging.info(f"Landing input [{landing_user_input}]")
 
     if not st.session_state.chat_id and landing_user_input:
       user_input = st.session_state.landing_user_input

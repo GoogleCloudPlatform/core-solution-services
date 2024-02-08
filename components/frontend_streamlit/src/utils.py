@@ -15,14 +15,14 @@
   Streamlit app utils file
 """
 import streamlit as st
-from common.utils.logging_handler import Logger
+import logging
 from config import API_BASE_URL, APP_BASE_PATH
 from streamlit.runtime.scriptrunner import RerunData, RerunException
 from streamlit.source_util import get_pages
 from urllib.parse import urlparse
 from api import validate_auth_token
 
-Logger = Logger.get_logger(__file__)
+
 
 def http_navigate_to(url, query_params=None):
   """ Navigate to a specific URL. However, this will lose all session_state. """
@@ -32,7 +32,7 @@ def http_navigate_to(url, query_params=None):
       (x + "=" +str(st.session_state.get(x, ""))) \
       for x in query_params_from_session]
 
-  Logger.info(f"http_navigate_to query params {query_params_list}")
+  logging.info(f"http_navigate_to query params {query_params_list}")
 
   if query_params:
     for key, value in query_params.items():
@@ -124,7 +124,7 @@ def init_page(redirect_to_without_auth=True):
 
   api_base_url = API_BASE_URL
   st.session_state.api_base_url = api_base_url.rstrip("/")
-  Logger.info("st.session_state.api_base_url = "
+  logging.info("st.session_state.api_base_url = "
               f"{st.session_state.api_base_url}")
 
 def hide_pages(hidden_pages: list[str]):
