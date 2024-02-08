@@ -31,7 +31,7 @@ def http_navigate_to(url, query_params=None):
       (x + "=" +str(st.session_state.get(x, ""))) \
       for x in query_params_from_session]
 
-  logging.info(f"http_navigate_to query params {query_params_list}")
+  logging.info("http_navigate_to query params %s", query_params_list)
 
   if query_params:
     for key, value in query_params.items():

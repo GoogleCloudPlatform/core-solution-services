@@ -23,7 +23,7 @@ import logging
 
 
 def login_clicked(username, password):
-  logging.info(f"Logging in as {username}")
+  logging.info("Logging in as %s", username)
   st.session_state["username"] = username
   st.session_state["password"] = password
   token = api.login_user(username, password)

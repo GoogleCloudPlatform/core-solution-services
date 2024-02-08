@@ -28,7 +28,7 @@ def get_agent_chats(selected_agent):
   List all chat history for a given agent
   """
   index = 0
-  logging.info(f"get_chat_agents with {selected_agent}")
+  logging.info("get_chat_agents with %s", selected_agent)
   for user_chat in (st.session_state.user_chats or []):
 
     first_history_item = user_chat["history"][0]

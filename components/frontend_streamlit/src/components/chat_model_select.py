@@ -36,4 +36,4 @@ def chat_model_select():
     selected_model = st.selectbox(
         "Model", chat_llm_types, index=selected_model_index)
     st.session_state.chat_llm_type = selected_model
-    logging.info(f"setting chat_llm_type to {selected_model}")
+    logging.info("setting chat_llm_type to %s", selected_model)

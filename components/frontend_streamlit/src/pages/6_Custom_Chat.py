@@ -144,7 +144,7 @@ def on_submit(user_input):
     routing_agents = get_all_routing_agents()
     routing_agent_names = list(routing_agents.keys())
     chat_llm_type = st.session_state.get("chat_llm_type")
-    logging.info(f"llm_type in session {chat_llm_type}")
+    logging.info("llm_type in session %s", chat_llm_type)
 
     if default_route is None:
       # pick the first routing agent as default
@@ -461,7 +461,7 @@ def chat_page():
 
     # Pass prompt from the Landing page if any.
     landing_user_input = st.session_state.get("landing_user_input", None)
-    logging.info(f"Landing input [{landing_user_input}]")
+    logging.info("Landing input [%s]", landing_user_input)
 
     if not st.session_state.chat_id and landing_user_input:
       user_input = st.session_state.landing_user_input
