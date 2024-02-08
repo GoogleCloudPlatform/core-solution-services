@@ -70,7 +70,8 @@ FAKE_TRUSS_RESPONSE = {
   "data": {"generated_text": FAKE_GENERATE_RESPONSE}
 }
 
-FAKE_FILENAME = "test.png"
+FAKE_FILE_NAME = "test.png"
+FAKE_FILE_TYPE = "image/png"
 FAKE_PROMPT = "test prompt"
 
 
@@ -146,18 +147,18 @@ async def test_llm_generate_multi(clean_firestore):
   }
   get_model_config().llm_models = TEST_VERTEX_CONFIG
 
-  with open(FAKE_FILENAME, "ab") as f:
+  with open(FAKE_FILE_NAME, "ab") as f:
     pass
-  fake_file=open(FAKE_FILENAME, "rb")
-  os.remove(FAKE_FILENAME)
-  fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILENAME)
+  fake_file=open(FAKE_FILE_NAME, "rb")
+  os.remove(FAKE_FILE_NAME)
+  fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
   fake_file_bytes = await fake_upload_file.read()
 
   with mock.patch(
   "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
   return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate_multi(FAKE_PROMPT, fake_file_bytes,
-                                        VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
+                            FAKE_FILE_TYPE, VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
 
   fake_file.close()
   assert response == FAKE_GENERATE_RESPONSE

@@ -58,7 +58,7 @@ FAKE_USER_DATA = {
     "role": "Admin"
 }
 
-FAKE_FILENAME = "test.png"
+FAKE_FILE_NAME = "test.png"
 FAKE_GENERATE_PARAMS = {
     "llm_type": "LLM Test",
     "prompt": "test prompt"
@@ -131,12 +131,12 @@ def test_llm_generate(client_with_emulator):
 def test_llm_generate_multi(client_with_emulator):
   url = f"{api_url}/generate/multi"
 
-  with open(FAKE_FILENAME, "ab") as f:
+  with open(FAKE_FILE_NAME, "ab") as f:
     pass
 
-  with open(FAKE_FILENAME, "rb") as f:
-    files = {"user_file": (FAKE_FILENAME, f)}
-    os.remove(FAKE_FILENAME)
+  with open(FAKE_FILE_NAME, "rb") as f:
+    files = {"user_file": (FAKE_FILE_NAME, f)}
+    os.remove(FAKE_FILE_NAME)
     with mock.patch("routes.llm.llm_generate_multi",
                     return_value=FAKE_GENERATE_RESPONSE):
       resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS,

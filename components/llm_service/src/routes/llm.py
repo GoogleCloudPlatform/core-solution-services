@@ -177,13 +177,22 @@ async def generate_multi(prompt: str = Form(...),
     return PayloadTooLargeError(
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
+  vertex_mime_types = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".mp4": "video/mp4"
+  }
   user_file_extension = os.path.splitext(user_file.filename)[1]
-  if user_file_extension not in [".jpeg", ".png", ".gif", ".mp4"]:
+  user_file_extension = vertex_mime_types.get(user_file_extension)
+  if not user_file_extension:
     return BadRequest("File must be a picture or a video.")
 
   try:
     user_file_bytes = await user_file.read()
-    result = await llm_generate_multi(prompt, user_file_bytes, llm_type)
+    result = await llm_generate_multi(prompt, user_file_bytes,
+                                      user_file_extension, llm_type)
 
     return {
         "success": True,

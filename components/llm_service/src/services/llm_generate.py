@@ -19,7 +19,7 @@ import time
 from typing import Optional
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-from vertexai.preview.generative_models import GenerativeModel, Image
+from vertexai.preview.generative_models import GenerativeModel, Part
 from vertexai.preview.generative_models import (
     HarmCategory,
     HarmBlockThreshold)
@@ -97,7 +97,7 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
     raise InternalServerError(str(e)) from e
 
 async def llm_generate_multi(prompt: str, user_file_bytes: bytes,
-                             llm_type: str) -> str:
+                             user_file_type: str, llm_type: str) -> str:
   """
   Generate text with an LLM given a file and a prompt.
   Args:
@@ -131,7 +131,7 @@ async def llm_generate_multi(prompt: str, user_file_bytes: bytes,
         raise RuntimeError(
             f"Vertex model {llm_type} needs to be multi-modal")
       response = await google_llm_predict(prompt, is_chat, is_multi,
-                                          google_llm, None, user_file_bytes)
+                            google_llm, None, user_file_bytes, user_file_type)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -323,8 +323,8 @@ async def model_garden_predict(prompt: str,
   return predictions_text
 
 async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
-                              google_llm: str, user_chat=None,
-                              user_file_bytes: bytes=None) -> str:
+                google_llm: str, user_chat=None,
+                user_file_bytes: bytes=None, user_file_type: str=None) -> str:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
@@ -391,7 +391,8 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
              ),
         ]
         if is_multi:
-          user_file_image = Image.from_bytes(user_file_bytes)
+          user_file_image = Part.from_data(user_file_bytes,
+                                           mime_type=user_file_type)
           context_list = [user_file_image, context_prompt]
 
           response = await chat_model.generate_content_async(context_list,
