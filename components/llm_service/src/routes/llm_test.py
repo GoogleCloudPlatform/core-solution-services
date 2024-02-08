@@ -58,6 +58,7 @@ FAKE_USER_DATA = {
     "role": "Admin"
 }
 
+FAKE_FILENAME = "test.png"
 FAKE_GENERATE_PARAMS = {
     "llm_type": "LLM Test",
     "prompt": "test prompt"
@@ -121,6 +122,24 @@ def test_llm_generate(client_with_emulator):
   with mock.patch("routes.llm.llm_generate",
                   return_value=FAKE_GENERATE_RESPONSE):
     resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  assert json_response.get("content") == FAKE_GENERATE_RESPONSE, \
+    "returned generated text"
+
+def test_llm_generate_multi(client_with_emulator):
+  url = f"{api_url}/generate/multi"
+
+  with open(FAKE_FILENAME, "ab") as f:
+    pass
+  files = {"user_file": (FAKE_FILENAME, open(FAKE_FILENAME, "rb"))}
+  os.remove(FAKE_FILENAME)
+
+  with mock.patch("routes.llm.llm_generate_multi",
+                  return_value=FAKE_GENERATE_RESPONSE):
+    resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS,
+                                     files=files)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"

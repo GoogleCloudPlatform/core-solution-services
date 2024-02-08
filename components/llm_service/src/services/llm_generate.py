@@ -130,7 +130,8 @@ async def llm_generate_multi(prompt: str, user_file_bytes: bytes,
       if not is_multi:
         raise RuntimeError(
             f"Vertex model {llm_type} needs to be multi-modal")
-      response = await google_llm_predict(prompt, is_chat, is_multi, google_llm, None, user_file_bytes)
+      response = await google_llm_predict(prompt, is_chat, is_multi,
+                                          google_llm, None, user_file_bytes)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 

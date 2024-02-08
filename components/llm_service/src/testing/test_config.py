@@ -106,14 +106,14 @@ TEST_VERTEX_CONFIG = {
   VERTEX_LLM_TYPE_GEMINI_PRO: {
     KEY_PROVIDER: PROVIDER_VERTEX,
     KEY_IS_CHAT: True,
-    KEY_IS_MULTI: False,
+    KEY_IS_MULTI: True,
     KEY_ENABLED: True,
     KEY_MODEL_NAME: "gemini-pro"
   },
   VERTEX_LLM_TYPE_GEMINI_PRO_VISION: {
     KEY_PROVIDER: PROVIDER_VERTEX,
     KEY_IS_CHAT: True,
-    KEY_IS_MULTI: False,
+    KEY_IS_MULTI: True,
     KEY_ENABLED: True,
     KEY_MODEL_NAME: "gemini-pro-vision"
   }
