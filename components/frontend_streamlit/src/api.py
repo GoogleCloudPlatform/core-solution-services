@@ -95,15 +95,13 @@ def api_request(method: str, api_url: str,
                                                     auth_token)
 
       if status_code == 401 or resp_dict.get("success", False) is False:
-        logging.error(
-            f"Unauthorized when calling API: {api_url}")
+        logging.error("Unauthorized when calling API: %s", api_url)
         st.session_state.error_msg = \
             "Unauthorized or session expired. " \
             "Please [login]({APP_BASE_PATH}/Login) again."
 
     if status_code != 200:
-      logging.error(
-          f"Error with status {status_code}: {str(resp)}")
+      logging.error("Error with status %s: %s", status_code, str(resp))
       st.session_state.error_msg = \
           f"Error with status {status_code}: {str(resp)}"
 
@@ -124,7 +122,7 @@ def api_request(method: str, api_url: str,
     st.session_state.error_msg = str(e)
 
   except json.decoder.JSONDecodeError as e:
-    logging.error(f"Unable to parse response: {resp}")
+    logging.error("Unable to parse response: %s", resp)
     logging.error(e)
     st.session_state.error_msg = \
         f"Unable to decode response from backend APIs: {resp}"
@@ -154,7 +152,7 @@ def get_response_json(resp):
   try:
     return resp.json()
   except json.decoder.JSONDecodeError as e:
-    logging.error(f"Unable to parse response: {resp}")
+    logging.error("Unable to parse response: %s", resp)
     logging.error(e)
     st.session_state.error_msg = \
         f"Unable to decode response from backend APIs: {resp}"
