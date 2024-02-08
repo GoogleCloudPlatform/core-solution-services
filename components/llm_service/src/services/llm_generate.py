@@ -82,7 +82,8 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
-      response = await google_llm_predict(prompt, is_chat, google_llm)
+      is_multi = False
+      response = await google_llm_predict(prompt, is_chat, is_multi, google_llm)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type)
     else:
@@ -129,8 +130,7 @@ async def llm_generate_multi(prompt: str, user_file_bytes: bytes,
       if not is_multi:
         raise RuntimeError(
             f"Vertex model {llm_type} needs to be multi-modal")
-      response = await google_llm_predict_multi(prompt, user_file_bytes, 
-                                                is_chat, is_multi, google_llm)
+      response = await google_llm_predict(prompt, is_chat, is_multi, google_llm, None, user_file_bytes)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -178,7 +178,8 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
-      response = await google_llm_predict(prompt, is_chat,
+      is_multi = False
+      response = await google_llm_predict(prompt, is_chat, is_multi,
                                           google_llm, user_chat)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
@@ -320,102 +321,17 @@ async def model_garden_predict(prompt: str,
 
   return predictions_text
 
-
-async def google_llm_predict(prompt: str, is_chat: bool,
-                             google_llm: str, user_chat=None) -> str:
-  """
-  Generate text with a Google LLM given a prompt.
-  Args:
-    prompt: the text prompt to pass to the LLM
-    is_chat: true if the model is a chat model
-    google_llm: name of the vertex llm model
-    user_chat: chat history
-  Returns:
-    the text response.
-  """
-  Logger.info(f"Generating text with a Google LLM given a prompt,"
-              f" is_chat=[{is_chat}], google_llm=[{google_llm}],"
-              f" prompt=[{prompt}].")
-  prompt_list = []
-  if user_chat is not None:
-    history = user_chat.history
-    for entry in history:
-      content = UserChat.entry_content(entry)
-      if UserChat.is_human(entry):
-        prompt_list.append(f"Human input: {content}")
-      elif UserChat.is_ai(entry):
-        prompt_list.append(f"AI response: {content}")
-  prompt_list.append(prompt)
-  context_prompt = prompt.join("\n\n")
-
-  # Get model params. If params are set at the model level
-  # use those else use global vertex params.
-  parameters = {}
-  provider_config = get_provider_model_config(PROVIDER_VERTEX)
-  for _, model_config in provider_config.items():
-    model_name = model_config.get(KEY_MODEL_NAME)
-    if model_name == google_llm and KEY_MODEL_PARAMS in model_config:
-      parameters = model_config.get(KEY_MODEL_PARAMS)
-  else:
-    parameters = get_provider_value(PROVIDER_VERTEX,
-        KEY_MODEL_PARAMS)
-
-  try:
-    if is_chat:
-      # gemini uses new "GenerativeModel" class and requires different params
-      if "gemini" in google_llm:
-        chat_model = GenerativeModel(google_llm)
-        chat = chat_model.start_chat()
-        safety_settings = [
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_HARASSMENT,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-        ]
-        response = await chat.send_message_async(context_prompt,
-            generation_config=parameters, safety_settings=safety_settings)
-      else:
-        chat_model = ChatModel.from_pretrained(google_llm)
-        chat = chat_model.start_chat()
-        response = await chat.send_message_async(context_prompt, **parameters)
-    else:
-      text_model = TextGenerationModel.from_pretrained(google_llm)
-      response = await text_model.predict_async(
-          context_prompt,
-          **parameters,
-      )
-
-  except Exception as e:
-    raise InternalServerError(str(e)) from e
-
-  Logger.info(f"Received response from the Model [{response.text}]")
-  response = response.text
-
-  return response
-
-async def google_llm_predict_multi(prompt: str, user_file_bytes: bytes,
-                                  is_chat: bool, is_multi: bool,
-                                  google_llm: str, user_chat=None) -> str:
+async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
+                              google_llm: str, user_chat=None,
+                              user_file_bytes: bytes=None) -> str:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
     prompt: the text prompt to pass to the LLM
-    user_file_bytes: the bytes of the file provided by the user
     is_chat: true if the model is a chat model
     is_multi: true if the model is a multimodal model
     google_llm: name of the vertex llm model
+    user_file_bytes: the bytes of the file provided by the user
     user_chat: chat history
   Returns:
     the text response.

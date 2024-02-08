@@ -175,7 +175,7 @@ async def generate_multi(prompt: str = Form(...),
   if len(prompt) > PAYLOAD_FILE_SIZE:
     return PayloadTooLargeError(
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
-  
+
   if user_file.content_type not in ["image/jpeg", "image/png", "video/mp4"]:
     return BadRequest("File must be a picture or a video")
 
