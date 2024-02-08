@@ -123,8 +123,8 @@ def init_page(redirect_to_without_auth=True):
 
   api_base_url = API_BASE_URL
   st.session_state.api_base_url = api_base_url.rstrip("/")
-  logging.info("st.session_state.api_base_url = "
-              f"{st.session_state.api_base_url}")
+  logging.info("st.session_state.api_base_url = %s",
+               st.session_state.api_base_url)
 
 def hide_pages(hidden_pages: list[str]):
   styling = ""

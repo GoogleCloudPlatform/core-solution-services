@@ -17,8 +17,6 @@
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 
 import os
-import logging
-
 
 
 PROJECT_ID = os.environ.get("PROJECT_ID", None)
