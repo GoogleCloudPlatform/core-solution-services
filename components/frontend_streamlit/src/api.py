@@ -637,5 +637,6 @@ def login_user(user_email, user_password) -> str or None:
     st.session_state["username"] = user_email
     st.session_state["password"] = user_password
     logging.info(
-        f"Signed in with existing user '{user_email}'. ID Token:\n{id_token}")
+        "Signed in with existing user '%s'. ID Token:\n%s",
+        user_email, id_token)
     return id_token
