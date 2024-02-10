@@ -27,6 +27,7 @@ from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
                            QueryReference, QueryDocumentChunk,
                            BatchJobModel)
+from common.models.llm_query import QE_TYPE_VERTEX_SEARCH, QE_TYPE_LLM_SERVICE
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -37,6 +38,7 @@ from services.query.vector_store import (VectorStore,
                                          PostgresVectorStore)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
+from services.query.vertex_search import build_vertex_search
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
@@ -66,8 +68,7 @@ async def query_generate(
   """
   Execute a query over a query engine
 
-  The rule for determining the model used for question generation
-    model is:
+  The rule for determining the model used for question generation is:
     if llm_type is passed as an arg use it
     else if llm_type is set in query engine use that
     else use the default query chat model
@@ -305,6 +306,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
 def query_engine_build(doc_url: str,
                        query_engine: str,
                        user_id: str,
+                       query_engine_type: str,
                        llm_type: Optional[str] = None,
                        query_description: Optional[str] = None,
                        embedding_type: Optional[str] = None,
@@ -318,6 +320,7 @@ def query_engine_build(doc_url: str,
     doc_url: the URL to the set of documents to be indexed
     query_engine: the name of the query engine to create
     user_id: user id of engine creator
+    query_engine_type: type of query engine to build
     llm_type: llm used for query answer generation
     embedding_type: LLM used for query embeddings
     query_description: description of the query engine
@@ -353,8 +356,10 @@ def query_engine_build(doc_url: str,
     associated_agents = params["agents"].split(",")
     associated_agents = [qe.strip() for qe in associated_agents]
 
+  # create query engine model
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
+                         query_engine_type=query_engine_type,
                          llm_type=llm_type,
                          description=query_description,
                          embedding_type=embedding_type,
@@ -371,8 +376,13 @@ def query_engine_build(doc_url: str,
 
   # build document index
   try:
-    docs_processed, docs_not_processed = \
-        build_doc_index(doc_url, query_engine, qe_vector_store)
+    if query_engine_type == QE_TYPE_VERTEX_SEARCH:
+      build_vertex_search(q_engine)
+    elif query_engine_type == QE_TYPE_LLM_SERVICE:
+      docs_processed, docs_not_processed = \
+          build_doc_index(doc_url, query_engine, qe_vector_store)
+    else:
+      raise RuntimeError("")
   except Exception as e:
     # delete query engine model if build unsuccessful
     delete_engine(q_engine, hard_delete=True)

@@ -24,6 +24,10 @@ QUERY_HUMAN = "HumanQuestion"
 QUERY_AI_RESPONSE = "AIResponse"
 QUERY_AI_REFERENCES = "AIReferences"
 
+# query engine types
+QE_TYPE_VERTEX_SEARCH = "qe_vertex_search"
+QE_TYPE_LLM_SERVICE = "qe_llm_service"
+
 class UserQuery(BaseModel):
   """
   UserQuery ORM class
@@ -83,6 +87,7 @@ class QueryEngine(BaseModel):
   """
   id = IDField()
   name = TextField(required=True)
+  query_engine_type = TextField(required=True)
   description = TextField(required=True)
   llm_type = TextField(required=False)
   embedding_type = TextField(required=True)
