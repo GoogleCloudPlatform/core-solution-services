@@ -38,7 +38,8 @@ from services.query.vector_store import (VectorStore,
                                          PostgresVectorStore)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
-from services.query.vertex_search import build_vertex_search
+from services.query.vertex_search import (build_vertex_search,
+                                          query_vertex_search)
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
@@ -92,9 +93,14 @@ async def query_generate(
               f"user_id=[{user_id}], "
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
+
   # get doc context for question
-  query_references = query_search(
-      q_engine, prompt, sentence_references=sentence_references)
+  if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
+    query_references = query_vertex_search(q_engine, prompt)
+  elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
+      not q_engine.query_engine_type:
+    query_references = query_search(
+        q_engine, prompt, sentence_references=sentence_references)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -113,17 +119,7 @@ async def query_generate(
   question_response = await llm_generate.llm_chat(question_prompt, llm_type)
 
   # save query result
-  query_ref_ids = []
-  for ref in query_references:
-    query_reference = QueryReference(
-      query_engine_id=q_engine.id,
-      query_engine=q_engine.name,
-      document_id=ref["document_id"],
-      chunk_id=ref["chunk_id"]
-    )
-    query_reference.save()
-    query_ref_ids.append(query_reference.id)
-
+  query_ref_ids = [ref.id for ref in query_references]
   query_result = QueryResult(query_engine_id=q_engine.id,
                              query_engine=q_engine.name,
                              query_refs=query_ref_ids,
@@ -142,7 +138,7 @@ async def query_generate(
 
 def query_search(q_engine: QueryEngine,
                  query_prompt: str,
-                 sentence_references: bool = False) -> List[dict]:
+                 sentence_references: bool = False) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -152,11 +148,7 @@ def query_search(q_engine: QueryEngine,
     query_prompt (str):  user query
 
   Returns:
-    list of dicts containing summarized query results, with:
-      "document_id": id of QueryDocument for reference
-      "document_url": url of document containing reference
-      "document_text": text of document containing the grounding for the query
-      "chunk_id": id of QueryDocumentChunk containing the reference
+    list of QueryReference models
 
   """
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
@@ -206,12 +198,17 @@ def query_search(q_engine: QueryEngine,
             expand_neighbors=2, highlight_top_sentence=True)
         clean_text = " ".join(top_sentences)
 
-    query_references.append({
-      "document_id": query_doc.id,
-      "document_url": query_doc.doc_url,
-      "document_text": clean_text,
-      "chunk_id": doc_chunk.id
-    })
+    # save query reference
+    query_reference = QueryReference(
+      query_engine_id=q_engine.id,
+      query_engine=q_engine.name,
+      document_id=query_doc.id,
+      document_url=query_doc.doc_url,
+      chunk_id=doc_chunk.id,
+      chunk_text=clean_text
+    )
+    query_reference.save()
+    query_references.append(query_reference)
 
   # Logger.info(f"Retrieved {len(query_references)} "
   #             f"references={query_references}")
@@ -306,7 +303,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
 def query_engine_build(doc_url: str,
                        query_engine: str,
                        user_id: str,
-                       query_engine_type: str,
+                       query_engine_type: Optional[str] = None,
                        llm_type: Optional[str] = None,
                        query_description: Optional[str] = None,
                        embedding_type: Optional[str] = None,
@@ -345,6 +342,9 @@ def query_engine_build(doc_url: str,
   if embedding_type is None:
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
+  if not query_engine_type:
+    query_engine_type = QE_TYPE_LLM_SERVICE
+
   # process special params
   params = params or {}
   is_public = True
@@ -382,7 +382,7 @@ def query_engine_build(doc_url: str,
       docs_processed, docs_not_processed = \
           build_doc_index(doc_url, query_engine, qe_vector_store)
     else:
-      raise RuntimeError("")
+      raise RuntimeError(f"Invalid query_engine_type {query_engine_type}")
   except Exception as e:
     # delete query engine model if build unsuccessful
     delete_engine(q_engine, hard_delete=True)

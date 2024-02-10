@@ -158,7 +158,9 @@ class QueryReference(BaseModel):
   query_engine_id = TextField(required=True)
   query_engine = TextField(required=True)
   document_id = TextField(required=True)
+  document_url = TextField(required=True)
   chunk_id = TextField(required=True)
+  chunk_text = TextField(required=False)
 
   class Meta:
     ignore_none_field = False
