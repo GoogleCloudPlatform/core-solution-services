@@ -14,11 +14,15 @@
 """
 Vertex Search-based Query Engines
 """
-from typing import Optional
+# pylint: disable=line-too-long
+
 from google.api_core.client_options import ClientOptions
 from google.cloud import discoveryengine
 from config import PROJECT_ID
 from common.models import QueryEngine
+from common.utils.logging_handler import Logger
+
+Logger = Logger.get_logger(__file__)
 
 def query_vertex_search():
   pass
@@ -31,19 +35,19 @@ def query_vertex_search():
 
 
 def build_vertex_search(q_engine: QueryEngine):
-  
+
   data_url = q_engine.doc_url
   project_id = PROJECT_ID
   location = "global"
   data_store_id = q_engine.name
-  
+
   # create vertex search client
   client, parent = create_client(project_id, location, data_store_id)
 
   # create operation to import data
   if data_url.startswith("gs://"):
-    operation = import_documents_gcs(project_id, data_url, client, parent)
-    
+    operation = import_documents_gcs(data_url, client, parent)
+
   elif data_url.startswith("bq://"):
     bq_datasource = data_url.split("bq://")[1].split("/")[0]
     bigquery_dataset = bq_datasource.split(":")[0]
@@ -95,8 +99,7 @@ def create_client(project_id: str,
   return client, parent
 
 
-def import_documents_gcs(project_id: str,
-                         gcs_uri: Optional[str] = None,
+def import_documents_gcs(gcs_uri: str,
                          client, parent) -> str:
 
   request = discoveryengine.ImportDocumentsRequest(
@@ -114,8 +117,8 @@ def import_documents_gcs(project_id: str,
   return operation
 
 def import_documents_bq(project_id: str,
-                        bigquery_dataset: Optional[str] = None,
-                        bigquery_table: Optional[str] = None,
+                        bigquery_dataset: str,
+                        bigquery_table: str,
                         client, parent) -> str:
 
   request = discoveryengine.ImportDocumentsRequest(
