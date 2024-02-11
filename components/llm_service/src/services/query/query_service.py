@@ -265,6 +265,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   query_engine = request_body.get("query_engine")
   description = request_body.get("description")
   user_id = request_body.get("user_id")
+  query_engine_type = request_body.get("query_engine_type")
   llm_type = request_body.get("llm_type")
   embedding_type = request_body.get("embedding_type")
   vector_store_type = request_body.get("vector_store")
@@ -273,6 +274,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"Starting batch job for query engine [{query_engine}] "
               f"job id [{job.id}], request_body=[{request_body}]")
   Logger.info(f"doc_url: [{doc_url}] user id: [{user_id}]")
+  Logger.info(f"query engine type: [{query_engine_type}]")
   Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"query description: [{description}]")
   Logger.info(f"llm type: [{llm_type}]")
@@ -282,6 +284,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
 
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url, query_engine, user_id,
+                         query_engine_type,
                          llm_type, description,
                          embedding_type, vector_store_type, params)
 

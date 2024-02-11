@@ -373,8 +373,10 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
 
   if not (doc_url.startswith("gs://")
           or doc_url.startswith("http://")
-          or doc_url.startswith("https://")):
-    return BadRequest("doc_url must start with gs://, http:// or https://")
+          or doc_url.startswith("https://")
+          or doc_url.startswith("bq://")):
+    return BadRequest(
+        "doc_url must start with gs://, http:// or https://, or bq://")
 
   if doc_url.endswith(".pdf"):
     return BadRequest(
@@ -393,6 +395,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "doc_url": doc_url,
       "query_engine": query_engine,
       "user_id": user_id,
+      "query_engine_type": genconfig_dict.get("query_engine_type", None),
       "llm_type": genconfig_dict.get("llm_type", None),
       "embedding_type": genconfig_dict.get("embedding_type", None),
       "vector_store": genconfig_dict.get("vector_store", None),
