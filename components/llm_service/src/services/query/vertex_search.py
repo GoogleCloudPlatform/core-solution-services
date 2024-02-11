@@ -17,8 +17,7 @@ Vertex Search-based Query Engines
 # pylint: disable=line-too-long
 from typing import List
 from google.api_core.client_options import ClientOptions
-#from google.cloud import discoveryengine_v1 as discoveryengine
-from google.cloud import discoveryengine
+from google.cloud import discoveryengine_v1 as discoveryengine
 from config import PROJECT_ID
 from common.models import QueryEngine, QueryReference
 from common.utils.logging_handler import Logger
@@ -164,22 +163,19 @@ def build_vertex_search(q_engine: QueryEngine):
   metadata = discoveryengine.ImportDocumentsMetadata(operation.metadata)
 
   # save metadata in query engine
-  q_engine.vertex_metadata = metadata
-  q_engine.save()
+  #q_engine.vertex_metadata = metadata
+  #q_engine.save()
 
   # Handle the response
-  print(response)
-  print(metadata)
+  Logger.info(response)
+  Logger.info(metadata)
 
   return operation.operation.name
-
 
 
 def create_client(project_id: str,
                   location: str,
                   data_store_id: str):
-  #  For more information, refer to:
-  # https://cloud.google.com/generative-ai-app-builder/docs/locations#specify_a_multi-region_for_your_data_store
   client_options = (
       ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
       if location != "global"
