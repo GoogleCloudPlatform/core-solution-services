@@ -17,7 +17,7 @@ Vertex Search-based Query Engines
 # pylint: disable=line-too-long
 from typing import List
 from google.api_core.client_options import ClientOptions
-from google.cloud import discoveryengine_v1 as discoveryengine
+from google.cloud import discoveryengine_v1alpha as discoveryengine
 from config import PROJECT_ID
 from common.models import QueryEngine, QueryReference
 from common.utils.logging_handler import Logger
@@ -41,7 +41,7 @@ def query_vertex_search(q_engine: QueryEngine,
   data_store_id = q_engine.name
 
   # get search results from vertex
-  search_responses = vertex_search(data_store_id, search_query)
+  search_responses = perform_vertex_search(data_store_id, search_query)
 
   # create query reference models to store results
   query_references = []
@@ -57,9 +57,9 @@ def query_vertex_search(q_engine: QueryEngine,
       query_references.append(query_reference)
   return query_references
 
-def vertex_search(data_store_id: str,
-                  search_query: str
-                  ) -> List[discoveryengine.SearchResponse]:
+def perform_vertex_search(data_store_id: str,
+                          search_query: str
+                          ) -> List[discoveryengine.SearchResponse]:
   """ Send a search request to Vertex Search """
   project_id = PROJECT_ID
   location = "global"
@@ -140,8 +140,90 @@ def build_vertex_search(q_engine: QueryEngine):
   location = "global"
   data_store_id = q_engine.name
 
-  # create vertex search client
-  client, parent = create_client(project_id, location, data_store_id)
+  # create data store
+  operation = create_data_store(q_engine, project_id, data_store_id)
+  wait_for_operation(operation)
+
+  # initiate import
+  operation = import_documents_to_datastore(data_url,
+                                            project_id,
+                                            location,
+                                            data_store_id)
+
+  Logger.info(f"Waiting for import operation to complete: {operation.operation.name}")
+  wait_for_operation(operation)
+
+  # Once the operation is complete,
+  # get information from operation metadata
+  metadata = discoveryengine.ImportDocumentsMetadata(operation.metadata)
+
+  # Handle the response
+  Logger.info(response)
+  Logger.info(metadata)
+
+  # create search engine
+  operation = create_search_engine(q_engine, project_id, data_store_id)
+  Logger.info(f"Waiting for create engine to complete: {operation.operation.name}")
+  wait_for_operation(operation)
+
+  # save metadata in query engine
+  #q_engine.vertex_metadata = metadata
+  #q_engine.save()
+
+def create_data_store(q_engine: QueryEngine,
+                      project_id: str,
+                      data_store_id: str):
+
+  # create datastore request
+  parent = f"projects/{project_id}/locations/global/collections/default_collection"
+  data_store = discoveryengine.DataStore(display_name=q_engine.name,
+                                         industry_vertical="GENERIC",
+                                         solution_types=["SOLUTION_TYPE_SEARCH"])
+  ds_request = discoveryengine.CreateDataStoreRequest(parent=parent,
+                                                      data_store_id=data_store_id,
+                                                      data_store=data_store)
+
+  # use client to create datastore
+  dss_client = discoveryengine.DataStoreServiceClient()
+  operation = dss_client.create_data_store(request=ds_request)
+
+  return operation
+
+def create_search_engine(q_engine: QueryEngine, project_id: str, data_store_id: str):
+  parent = f"projects/{project_id}/locations/global/collections/default_collection"
+  engine = discoveryengine.Engine()
+  engine.display_name = q_engine.name
+  engine.solution_type = "SOLUTION_TYPE_SEARCH"
+  engine.dataStoreIds = [data_store_id]
+  request = discoveryengine.CreateEngineRequest(parent=parent,
+                                                engine=engine,
+                                                engine_id=data_store_id)
+
+  es_client = discoveryengine.EngineServiceClient()
+  operation = es_client.create_engine(request=request)
+  return operation
+
+def import_documents_to_datastore(data_url: str,
+                                  project_id: str,
+                                  location: str,
+                                  data_store_id: str):
+
+  # create doc service client
+  client_options = (
+      ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
+      if location != "global"
+      else None
+  )
+  client = discoveryengine.DocumentServiceClient(client_options=client_options)
+
+  # The full resource name of the search engine branch.
+  # e.g. projects/{project}/locations/{location}/dataStores/{data_store_id}/branches/{branch}
+  parent = client.branch_path(
+      project=project_id,
+      location=location,
+      data_store=data_store_id,
+      branch="default_branch",
+  )
 
   # create operation to import data
   operation = None
@@ -155,54 +237,21 @@ def build_vertex_search(q_engine: QueryEngine):
 
     operation = import_documents_bq(project_id, bigquery_dataset, bigquery_table, client, parent)
 
-  Logger.info(f"Waiting for operation to complete: {operation.operation.name}")
-  response = operation.result()
-
-  # Once the operation is complete,
-  # get information from operation metadata
-  metadata = discoveryengine.ImportDocumentsMetadata(operation.metadata)
-
-  # save metadata in query engine
-  #q_engine.vertex_metadata = metadata
-  #q_engine.save()
-
-  # Handle the response
-  Logger.info(response)
-  Logger.info(metadata)
-
-  return operation.operation.name
+  return operation
 
 
-def create_client(project_id: str,
-                  location: str,
-                  data_store_id: str):
-  client_options = (
-      ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
-      if location != "global"
-      else None
-  )
-
-  # Create a client
-  client = discoveryengine.DocumentServiceClient(client_options=client_options)
-
-  # The full resource name of the search engine branch.
-  # e.g. projects/{project}/locations/{location}/dataStores/{data_store_id}/branches/{branch}
-  parent = client.branch_path(
-      project=project_id,
-      location=location,
-      data_store=data_store_id,
-      branch="default_branch",
-  )
-  return client, parent
-
-
-def import_documents_gcs(gcs_uri: str,
-                         client, parent) -> str:
+def import_documents_gcs(gcs_uri: str, client, parent) -> str:
+  """ Import documents in a GCS bucket into a VSC Datastore """
+  # currently supports PDF / HTML
+  gcs_uris = [
+    f"{gcs_uri}/*.pdf",
+    f"{gcs_uri}/*.html",
+  ]
 
   request = discoveryengine.ImportDocumentsRequest(
       parent=parent,
       gcs_source=discoveryengine.GcsSource(
-          input_uris=[gcs_uri], data_schema="custom"
+          input_uris=gcs_uris, data_schema="content"
       ),
       # Options: `FULL`, `INCREMENTAL`
       reconciliation_mode=discoveryengine.ImportDocumentsRequest.ReconciliationMode.INCREMENTAL,
@@ -234,3 +283,9 @@ def import_documents_bq(project_id: str,
   operation = client.import_documents(request=request)
 
   return operation
+
+def wait_for_operation(operation):
+  if operation.done():
+    return
+  else
+    result = operation.result()
