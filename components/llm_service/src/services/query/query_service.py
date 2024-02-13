@@ -380,7 +380,7 @@ def query_engine_build(doc_url: str,
   # build document index
   try:
     if query_engine_type == QE_TYPE_VERTEX_SEARCH:
-      build_vertex_search(q_engine)
+      docs_processed, docs_not_processed = build_vertex_search(q_engine)
     elif query_engine_type == QE_TYPE_LLM_SERVICE:
       docs_processed, docs_not_processed = \
           build_doc_index(doc_url, query_engine, qe_vector_store)

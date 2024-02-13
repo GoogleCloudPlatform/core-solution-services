@@ -17,6 +17,7 @@ Vertex Search-based Query Engines
 # pylint: disable=line-too-long
 from typing import List
 from google.api_core.client_options import ClientOptions
+from google.api_core.operation import Operation
 from google.cloud import discoveryengine_v1alpha as discoveryengine
 from config import PROJECT_ID
 from common.models import QueryEngine, QueryReference
@@ -140,6 +141,9 @@ def build_vertex_search(q_engine: QueryEngine):
   location = "global"
   data_store_id = q_engine.name
 
+  docs_processed = []
+  docs_not_processed = []
+
   # create data store
   operation = create_data_store(q_engine, project_id, data_store_id)
   wait_for_operation(operation)
@@ -158,8 +162,8 @@ def build_vertex_search(q_engine: QueryEngine):
   metadata = discoveryengine.ImportDocumentsMetadata(operation.metadata)
 
   # Handle the response
-  Logger.info(response)
-  Logger.info(metadata)
+  # TODO: build list of documents processed/not processed from metadata
+  Logger.info(f"document metadata from import: {metadata}")
 
   # create search engine
   operation = create_search_engine(q_engine, project_id, data_store_id)
@@ -169,10 +173,11 @@ def build_vertex_search(q_engine: QueryEngine):
   # save metadata in query engine
   #q_engine.vertex_metadata = metadata
   #q_engine.save()
+  return docs_processed, docs_not_processed
 
 def create_data_store(q_engine: QueryEngine,
                       project_id: str,
-                      data_store_id: str):
+                      data_store_id: str) -> Operation:
 
   # create datastore request
   parent = f"projects/{project_id}/locations/global/collections/default_collection"
@@ -181,7 +186,7 @@ def create_data_store(q_engine: QueryEngine,
                                          industry_vertical="GENERIC",
                                          solution_types=["SOLUTION_TYPE_SEARCH"],
                                          content_config=content_config)
-                                         
+
   ds_request = discoveryengine.CreateDataStoreRequest(parent=parent,
                                                       data_store_id=data_store_id,
                                                       data_store=data_store)
@@ -192,7 +197,9 @@ def create_data_store(q_engine: QueryEngine,
 
   return operation
 
-def create_search_engine(q_engine: QueryEngine, project_id: str, data_store_id: str):
+def create_search_engine(q_engine: QueryEngine,
+                         project_id: str,
+                         data_store_id: str) -> Operation:
   parent = f"projects/{project_id}/locations/global/collections/default_collection"
   engine = discoveryengine.Engine()
   engine.display_name = q_engine.name
@@ -209,7 +216,7 @@ def create_search_engine(q_engine: QueryEngine, project_id: str, data_store_id: 
 def import_documents_to_datastore(data_url: str,
                                   project_id: str,
                                   location: str,
-                                  data_store_id: str):
+                                  data_store_id: str) -> Operation:
 
   # create doc service client
   client_options = (
@@ -243,9 +250,12 @@ def import_documents_to_datastore(data_url: str,
   return operation
 
 
-def import_documents_gcs(gcs_uri: str, client, parent) -> str:
+def import_documents_gcs(gcs_uri: str, client, parent) -> Operation:
   """ Import documents in a GCS bucket into a VSC Datastore """
   # currently supports PDF / HTML
+
+  # TODO: populate list of uris by recursively listing files in the
+  # bucket, and filtering for PDF/HTML
   gcs_uris = [
     f"{gcs_uri}/*.pdf",
     f"{gcs_uri}/*.html",
@@ -268,7 +278,7 @@ def import_documents_gcs(gcs_uri: str, client, parent) -> str:
 def import_documents_bq(project_id: str,
                         bigquery_dataset: str,
                         bigquery_table: str,
-                        client, parent) -> str:
+                        client, parent) -> Operation:
 
   request = discoveryengine.ImportDocumentsRequest(
       parent=parent,
@@ -289,6 +299,8 @@ def import_documents_bq(project_id: str,
 
 def wait_for_operation(operation):
   if operation.done():
-    return
-  else
+    result = None
+  else:
+    # wait for result
     result = operation.result()
+  return result
