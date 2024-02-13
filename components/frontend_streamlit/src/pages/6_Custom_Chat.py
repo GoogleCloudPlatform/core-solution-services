@@ -182,7 +182,6 @@ def on_submit(user_input):
       response = None
 
     if response:
-      st.write(response)
       st.session_state.chat_id = response["chat"]["id"]
 
       # TODO: Currently the AIOutput vs content are inconsistent across
