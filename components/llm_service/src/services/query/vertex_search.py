@@ -39,7 +39,7 @@ def query_vertex_search(q_engine: QueryEngine,
     list of QueryReference models
 
   """
-  data_store_id = q_engine.name
+  data_store_id = q_engine.index_id
 
   # get search results from vertex
   search_responses = perform_vertex_search(data_store_id, search_query)
@@ -65,8 +65,6 @@ def perform_vertex_search(data_store_id: str,
   project_id = PROJECT_ID
   location = "global"
 
-  #  For more information, refer to:
-  # https://cloud.google.com/generative-ai-app-builder/docs/locations#specify_a_multi-region_for_your_data_store
   client_options = (
       ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
       if location != "global"
@@ -139,7 +137,7 @@ def build_vertex_search(q_engine: QueryEngine):
   data_url = q_engine.doc_url
   project_id = PROJECT_ID
   location = "global"
-  data_store_id = q_engine.name
+  data_store_id = datastore_id_from_name(q_engine.name)
 
   docs_processed = []
   docs_not_processed = []
@@ -162,7 +160,7 @@ def build_vertex_search(q_engine: QueryEngine):
   metadata = discoveryengine.ImportDocumentsMetadata(operation.metadata)
 
   # Handle the response
-  # TODO: build list of documents processed/not processed from metadata
+  # TODO: build list of documents processed/not processed from results
   Logger.info(f"document metadata from import: {metadata}")
 
   # create search engine
@@ -170,9 +168,10 @@ def build_vertex_search(q_engine: QueryEngine):
   Logger.info(f"Waiting for create engine to complete: {operation.operation.name}")
   wait_for_operation(operation)
 
-  # save metadata in query engine
-  #q_engine.vertex_metadata = metadata
-  #q_engine.save()
+  # save metadata for datastore in query engine
+  q_engine.index_id = data_store_id
+  q_engine.update()
+
   return docs_processed, docs_not_processed
 
 def create_data_store(q_engine: QueryEngine,
@@ -204,7 +203,7 @@ def create_search_engine(q_engine: QueryEngine,
   engine = discoveryengine.Engine()
   engine.display_name = q_engine.name
   engine.solution_type = "SOLUTION_TYPE_SEARCH"
-  engine.dataStoreIds = [data_store_id]
+  engine.data_store_ids = [data_store_id]
   request = discoveryengine.CreateEngineRequest(parent=parent,
                                                 engine=engine,
                                                 engine_id=data_store_id)
@@ -304,3 +303,11 @@ def wait_for_operation(operation):
     # wait for result
     result = operation.result()
   return result
+
+def datastore_id_from_name(name: str) -> str:
+  data_store_id = name.replace(" ", "-")
+
+  # TODO
+  # check validity of datastore id
+
+  return data_store_id
