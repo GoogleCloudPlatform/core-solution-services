@@ -397,7 +397,7 @@ class ModelConfig():
       model_id: str=None, default=None) -> Any:
     """ get config value from provider model config """
 
-    Logger.info(f"Get provider value:")
+    Logger.info("Get provider value:")
     Logger.info(f"provider_id={provider_id}")
     Logger.info(f"model_id={model_id}")
 

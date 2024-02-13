@@ -254,7 +254,6 @@ async def run_intent(
   # Get all route options.
   route_list = get_route_list(llm_service_agent)
   Logger.info(f"route_list: {route_list}")
-  print(route_list)
   agent_logs = None
 
   if use_router_chain:
@@ -390,19 +389,19 @@ async def batch_run_dispatch(request_body: Dict, job: BatchJobModel) -> Dict:
 
 
 def generate_router_chain(llm, route_list):
-    """
-    Generats the router chains from the prompt infos.
-    :param route_list The prompt informations generated above.
-    """
-    destinations = [
-        f"{route['name']}: {route['description']}" for route in route_list]
-    destinations_str = "\n".join(destinations)
-    router_template = MULTI_PROMPT_ROUTER_TEMPLATE.format(
-        destinations=destinations_str)
-    router_prompt = PromptTemplate(
-        template=router_template,
-        input_variables=["input"],
-        output_parser=RouterOutputParser()
-    )
-    router_chain = LLMRouterChain.from_llm(llm, router_prompt)
-    return router_chain
+  """
+  Generats the router chains from the prompt infos.
+  :param route_list The prompt informations generated above.
+  """
+  destinations = [
+      f"{route['name']}: {route['description']}" for route in route_list]
+  destinations_str = "\n".join(destinations)
+  router_template = MULTI_PROMPT_ROUTER_TEMPLATE.format(
+      destinations=destinations_str)
+  router_prompt = PromptTemplate(
+      template=router_template,
+      input_variables=["input"],
+      output_parser=RouterOutputParser()
+  )
+  router_chain = LLMRouterChain.from_llm(llm, router_prompt)
+  return router_chain
