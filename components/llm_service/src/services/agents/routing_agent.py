@@ -131,7 +131,7 @@ async def run_routing_agent(prompt: str,
         prompt, llm_type, dataset_name, user.email)
 
     if "error" not in db_result:
-      print(f"db_result: {db_result}")
+      Logger.info(f"db_result: {db_result}")
 
       db_result_data = db_result.get("data", None)
       db_result_output = None

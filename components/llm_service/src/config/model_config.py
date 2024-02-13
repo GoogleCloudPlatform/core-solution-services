@@ -370,9 +370,8 @@ class ModelConfig():
     provider = model_config.get(KEY_PROVIDER, None)
     if provider is not None:
       provider_config = self.get_provider_config(provider)
-
-      print(f"provider = {provider}")
-      print(f"provider_config = {provider_config}")
+      Logger.info(f"provider = {provider}")
+      Logger.info(f"provider_config = {provider_config}")
     return provider, provider_config
 
   def get_provider_models(self, provider_id: str) -> List[str]:
@@ -408,7 +407,6 @@ class ModelConfig():
     else:
       provider_config = self.get_provider_model_config(provider_id)
       model_config = provider_config.get(model_id)
-      # Logger.info(f"model_config={model_config}")
       value = model_config.get(key, default)
 
     if value is None:
