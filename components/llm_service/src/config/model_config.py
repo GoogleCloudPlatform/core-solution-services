@@ -408,7 +408,7 @@ class ModelConfig():
     else:
       provider_config = self.get_provider_model_config(provider_id)
       model_config = provider_config.get(model_id)
-      Logger.info(f"model_config={model_config}")
+      # Logger.info(f"model_config={model_config}")
       value = model_config.get(key, default)
 
     if value is None:

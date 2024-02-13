@@ -71,7 +71,13 @@
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "gemini-pro",
-      "model_class": "ChatVertexAI"
+      "model_class": "ChatVertexAI",
+      "model_params": {
+        "temperature": 0,
+        "max_output_tokens": 2048,
+        "top_p": 0.95,
+        "top_k": 40
+      }
     },
     "VertexAI-Chat-Palm2V2-Langchain": {
       "is_chat": true,

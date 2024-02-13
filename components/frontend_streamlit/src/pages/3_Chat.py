@@ -206,7 +206,7 @@ def dedup_list(items, dedup_key):
 
 def chat_metadata():
   if st.session_state.debug:
-    with st.expander("DEBUG: session_state"):
+    with st.expander("DEBUG: session_state.messages"):
       st.write(st.session_state.get("messages"))
 
   if st.session_state.chat_id:
@@ -244,7 +244,11 @@ def update_async_job(job_id, loop_seconds=1, timeout_seconds=180):
 
     elif job["status"] == JobStatus.JOB_STATUS_FAILED.value:
       hide_loading()
-      st.write("Job failed.")
+      with st.chat_message("ai"):
+        st.write("Something went wrong.")
+        if st.session_state.get("debug"):
+          with st.expander("Job failed."):
+            st.write(job)
       return
 
     time.sleep(loop_seconds)
