@@ -159,7 +159,6 @@ def on_submit(user_input):
                               chat_id=st.session_state.get("chat_id"),
                               llm_type=chat_llm_type,
                               run_as_batch_job=True)
-      st.session_state.default_route = response.get("route", None)
 
     elif default_route in routing_agent_names:
       response = run_dispatch(user_input,
@@ -167,7 +166,6 @@ def on_submit(user_input):
                               chat_id=st.session_state.get("chat_id"),
                               llm_type=chat_llm_type,
                               run_as_batch_job=True)
-      st.session_state.default_route = response.get("route", None)
 
     elif default_route == "Chat":
       response = run_chat(user_input,
@@ -182,7 +180,7 @@ def on_submit(user_input):
       response = None
 
     if response:
-      st.session_state.chat_id = response["chat"]["id"]
+      st.session_state.chat_id = response.get("chat", {}).get("id")
 
       # TODO: Currently the AIOutput vs content are inconsistent across
       # API response and in a UserChat history.
@@ -265,7 +263,7 @@ def update_async_job(job_id, loop_seconds=1, timeout_seconds=180):
     if job["status"] == JobStatus.JOB_STATUS_SUCCEEDED.value:
       hide_loading()
       append_new_messages()
-      action_buttons(refresh_func=reset_content)
+      # action_buttons(refresh_func=reset_content)
       return
 
     elif job["status"] == JobStatus.JOB_STATUS_FAILED.value:
