@@ -105,11 +105,6 @@ def api_request(method: str, api_url: str,
       st.session_state.error_msg = \
           f"Error with status {status_code}: {str(resp)}"
 
-    if st.session_state.get("debug", False):
-      with st.expander(f"**DEBUG**: API Response for {api_url}"):
-        st.write(f"Status Code: {status_code}")
-        st.write(resp_dict)
-
     return resp
 
   except requests.exceptions.ConnectionError as e:

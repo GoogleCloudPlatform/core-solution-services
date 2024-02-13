@@ -3,7 +3,7 @@
   {
     "MediKate": {
       "agent_class": "Routing",
-      "llm_type": "VertexAI-Gemini-Pro",
+      "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_Conversational",
       "tools": "",
       "datasets": "fqhc_medical_transactions,medical_providers",
@@ -11,14 +11,14 @@
     },
     "Casey": {
       "agent_class": "Routing",
-      "llm_type": "VertexAI-Gemini-Pro",
+      "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_Conversational",
       "tools": "",
       "datasets": "fqhc_medical_transactions,medical_providers",
       "query_engines": "ALL"
     },
     "Routing": {
-      "llm_type": "VertexAI-Gemini-Pro",
+      "llm_type": "OpenAI-GPT4",
       "agent_type": "langchain_Conversational",
       "tools": "",
       "datasets": "fqhc_medical_transactions"
@@ -30,12 +30,12 @@
       "query_engines": "ALL"
     },
     "Task": {
-      "llm_type": "VertexAI-Gemini-Pro",
+      "llm_type": "OpenAI-GPT4-latest",
       "agent_type": "langchain_StructuredChatAgent",
       "tools": "ALL"
     },
     "Plan": {
-      "llm_type": "VertexAI-Gemini-Pro",
+      "llm_type": "OpenAI-GPT4-latest",
       "agent_type": "langchain_ZeroShot",
       "query_engines": "ALL",
       "tools": "ALL"

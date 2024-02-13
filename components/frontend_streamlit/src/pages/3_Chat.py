@@ -103,6 +103,8 @@ def on_submit(user_input):
   with st.chat_message("user"):
     st.write(user_input, is_user=True, key=f"human_{message_index}")
 
+  show_loading()
+
   # Send API to llm-service
   default_route = st.session_state.get("default_route", None)
   routing_agents = get_all_routing_agents()
@@ -121,7 +123,7 @@ def on_submit(user_input):
                             chat_id=st.session_state.get("chat_id"),
                             llm_type=chat_llm_type,
                             run_as_batch_job=True)
-    st.session_state.default_route = response.get("route", None)
+    # st.session_state.default_route = response.get("route", None)
 
   elif default_route in routing_agent_names:
     response = run_dispatch(user_input,
@@ -129,7 +131,7 @@ def on_submit(user_input):
                             chat_id=st.session_state.get("chat_id"),
                             llm_type=chat_llm_type,
                             run_as_batch_job=True)
-    st.session_state.default_route = response.get("route", None)
+    # st.session_state.default_route = response.get("route", None)
 
   elif default_route == "Chat":
     response = run_chat(user_input,
@@ -158,7 +160,16 @@ def on_submit(user_input):
 
     # If the response has a batch async job, keep pulling the job result.
     if "batch_job" in response:
+      if st.session_state.get("debug"):
+        with st.expander("batch_job info:"):
+          st.write(response)
       update_async_job(response["batch_job"]["id"])
+
+def show_loading():
+  global spinner_container
+  with spinner_container:
+    with st.chat_message("ai"):
+      st.write("Loading...")
 
 def hide_loading():
   global spinner_container
@@ -196,7 +207,6 @@ def dedup_list(items, dedup_key):
 def chat_metadata():
   if st.session_state.debug:
     with st.expander("DEBUG: session_state"):
-      st.write(st.session_state.get("landing_user_input"))
       st.write(st.session_state.get("messages"))
 
   if st.session_state.chat_id:
@@ -299,10 +309,7 @@ def display_message(item, item_index):
   if "route_name" in item and "AIOutput" not in item:
     route_name = item["route_name"]
     with st.chat_message("ai"):
-      st.write(
-          f"Using route **`{route_name}`** to respond.",
-          key=f"ai_{item_index}",
-      )
+      st.write(f"Using route **`{route_name}`** to respond.")
 
   route_logs = item.get("route_logs", None)
   if route_logs and route_logs.strip() != "":
