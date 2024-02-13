@@ -390,8 +390,8 @@ async def batch_run_dispatch(request_body: Dict, job: BatchJobModel) -> Dict:
 
 def generate_router_chain(llm, route_list):
   """
-  Generats the router chains from the prompt infos.
-  :param route_list The prompt informations generated above.
+  Generates the router chains from the prompt infos.
+  :param route_list The prompt information generated above.
   """
   destinations = [
       f"{route['name']}: {route['description']}" for route in route_list]
