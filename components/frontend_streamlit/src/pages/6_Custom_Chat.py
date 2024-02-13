@@ -139,6 +139,8 @@ def on_submit(user_input):
     with st.chat_message("user"):
       st.write(user_input, is_user=True, key=f"human_{message_index}")
 
+    show_loading()
+
     # Send API to llm-service
     default_route = st.session_state.get("default_route", None)
     routing_agents = get_all_routing_agents()
@@ -180,6 +182,7 @@ def on_submit(user_input):
       response = None
 
     if response:
+      st.write(response)
       st.session_state.chat_id = response["chat"]["id"]
 
       # TODO: Currently the AIOutput vs content are inconsistent across
@@ -193,7 +196,16 @@ def on_submit(user_input):
 
       # If the response has a batch async job, keep pulling the job result.
       if "batch_job" in response:
+        if st.session_state.get("debug"):
+          with st.expander("batch_job info:"):
+            st.write(response)
         update_async_job(response["batch_job"]["id"])
+
+def show_loading():
+  global spinner_container
+  with spinner_container:
+    with st.chat_message("ai"):
+      st.write("Loading...")
 
 def hide_loading():
   global spinner_container
@@ -320,6 +332,11 @@ def display_message(item, item_index):
   if "HumanInput" in item:
     with st.chat_message("user"):
       st.write(item["HumanInput"], is_user=True, key=f"human_{item_index}")
+
+  if "route_name" in item and "AIOutput" not in item:
+    route_name = item["route_name"]
+    with st.chat_message("ai"):
+      st.write(f"Using route **`{route_name}`** to respond.")
 
   route_logs = item.get("route_logs", None)
   if route_logs and route_logs.strip() != "":
