@@ -176,9 +176,12 @@ def create_data_store(q_engine: QueryEngine,
 
   # create datastore request
   parent = f"projects/{project_id}/locations/global/collections/default_collection"
+  content_config = discoveryengine.DataStore.ContentConfig.CONTENT_REQUIRED
   data_store = discoveryengine.DataStore(display_name=q_engine.name,
                                          industry_vertical="GENERIC",
-                                         solution_types=["SOLUTION_TYPE_SEARCH"])
+                                         solution_types=["SOLUTION_TYPE_SEARCH"],
+                                         content_config=content_config)
+                                         
   ds_request = discoveryengine.CreateDataStoreRequest(parent=parent,
                                                       data_store_id=data_store_id,
                                                       data_store=data_store)
