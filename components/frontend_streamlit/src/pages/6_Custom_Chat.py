@@ -87,6 +87,20 @@ REFERENCE_CSS_STYLE = """
 }
 """
 
+STEP_CSS_STYLE = """
+{
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0.5rem;
+  display: inline-block;
+  padding: 0.5rem;
+  background-color: #FFFFFF;
+  border: none;
+  border-width: 1px;
+  margin-bottom: 0.4rem;
+}
+"""
+
 loader_spin_html = "<span class=\"loader\"></span>"
 
 
@@ -419,9 +433,11 @@ def display_message(item, item_index):
       logging.info(plan)
 
       for step in plan["plan_steps"]:
-        st.text_area(f"step-{item_index}", step["description"],
-                      height=30, disabled=True,
-                      label_visibility="hidden")
+        with stylable_container(
+          key=f"ref_{plan_index}",
+          css_styles=STEP_CSS_STYLE
+        ):
+          st.markdown(step["description"])
         plan_index += 1
 
       plan_id = plan["id"]
