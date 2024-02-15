@@ -82,6 +82,10 @@ def validate_id_token(token: auth_scheme = Depends()):
       token_data["access_api_docs"] = user_fields.get("access_api_docs", False)
       token_data["user_type"] = user_fields.get("user_type")
 
+    else:
+      raise UnauthorizedUserError(
+          f"Unauthorized: User {user_email} not found.")
+
     return {
         "success": True,
         "message": "Token validated successfully",
