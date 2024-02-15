@@ -71,20 +71,16 @@ def validate_id_token(token: auth_scheme = Depends()):
     user = get_user_by_email(user_email,
                              check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER,
                              create_if_not_exist=create_if_not_exist)
-
-    if user:
-      Logger.info(f"user: {user.to_dict()}")
-
-      user_fields = user.get_fields(reformat_datetime=True)
-      Logger.info(user_fields)
-      if user_fields.get("status") == "inactive":
-        raise UnauthorizedUserError("Unauthorized: User status is inactive.")
-      token_data["access_api_docs"] = user_fields.get("access_api_docs", False)
-      token_data["user_type"] = user_fields.get("user_type")
-
-    else:
+    if not user:
       raise UnauthorizedUserError(
           f"Unauthorized: User {user_email} not found.")
+
+    Logger.info(f"user: {user.to_dict()}")
+    user_fields = user.get_fields(reformat_datetime=True)
+    if user_fields.get("status") == "inactive":
+      raise UnauthorizedUserError("Unauthorized: User status is inactive.")
+    token_data["access_api_docs"] = user_fields.get("access_api_docs", False)
+    token_data["user_type"] = user_fields.get("user_type")
 
     return {
         "success": True,
