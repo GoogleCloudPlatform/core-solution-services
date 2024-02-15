@@ -41,9 +41,14 @@ IS_DEVELOPMENT = bool(os.getenv("IS_DEVELOPMENT", "").lower() in ("True",
 # If this flag is "true", all sign-in/sign-up requires a pre-existing
 # Firestore User record in "users" collection.
 AUTH_REQUIRE_FIRESTORE_USER = os.getenv(
-    "AUTH_REQUIRE_FIRESTORE_RECORD", "").lower() == "true"
-Logger.info("Setting AUTH_REQUIRE_FIRESTORE_RECORD as "
+    "AUTH_REQUIRE_FIRESTORE_USER", "").lower() == "true"
+Logger.info("Setting AUTH_REQUIRE_FIRESTORE_USER as "
             f"{AUTH_REQUIRE_FIRESTORE_USER}")
+
+AUTH_AUTO_CREATE_USERS = os.getenv(
+    "AUTH_AUTO_CREATE_USERS", "").lower() == "true"
+AUTH_EMAIL_DOMAINS_WHITELIST = os.getenv(
+    "AUTH_EMAIL_DOMAINS_WHITELIST", "").split(",")
 
 # Retrieving FIREBASE_API_KEY from secrets manager.
 FIREBASE_API_KEY = None
