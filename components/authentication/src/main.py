@@ -75,4 +75,4 @@ if __name__ == "__main__":
     host="0.0.0.0",
     port=int(config.PORT),
     log_level="debug",
-    reload=config.IS_DEVELOPMENT)
+    reload=True)
