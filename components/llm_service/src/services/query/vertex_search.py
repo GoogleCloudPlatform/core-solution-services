@@ -16,7 +16,7 @@ Vertex Search-based Query Engines
 """
 # pylint: disable=line-too-long,broad-exception-caught
 
-from typing import List
+from typing import List, Tuple
 from pathlib import Path
 from google.cloud import storage
 from google.api_core.client_options import ClientOptions
@@ -140,6 +140,7 @@ def build_vertex_search(q_engine: QueryEngine):
   q_engine.doc_url = "bq://BIGQUERY_DATASET:BIGQUERY_TABLE"
   """
 
+  # initialize some variables
   data_url = q_engine.doc_url
   project_id = PROJECT_ID
   location = "global"
@@ -182,7 +183,7 @@ def build_vertex_search(q_engine: QueryEngine):
     q_engine.index_id = data_store_id
     q_engine.update()
   except Exception as e:
-    Logger.info(f"Error building vertex search query engine {str(e)}")
+    Logger.error(f"Error building vertex search query engine {str(e)}")
 
     # on build error, delete any vertex search assets that were created
     delete_vertex_search(q_engine)
@@ -261,10 +262,11 @@ def import_documents_to_datastore(data_url: str,
   # create operation to import data
   operation = None
   if data_url.startswith("gs://"):
-    operation = import_documents_gcs(data_url,
-                                     docs_to_be_processed,
-                                     client,
-                                     parent)
+    gcs_uris, operation = import_documents_gcs(data_url,
+                                               docs_to_be_processed,
+                                               client,
+                                               parent)
+    docs_to_be_processed = gcs_uris
 
   elif data_url.startswith("bq://"):
     bq_datasource = data_url.split("bq://")[1].split("/")[0]
@@ -281,22 +283,29 @@ def import_documents_to_datastore(data_url: str,
       f"Waiting for import operation to complete: {operation.operation.name}")
   wait_for_operation(operation)
 
-  # Once the operation is complete,
+  Logger.info(f"document import result: {operation.result}")
+
   # get information from operation metadata
   metadata = discoveryengine.ImportDocumentsMetadata(operation.metadata)
 
   # Handle the response
-  # TODO: build list of documents processed/not processed from results
   Logger.info(f"document metadata from import: {metadata}")
+  if metadata.success_count == len(docs_to_be_processed):
+    docs_processed = docs_to_be_processed
+  else:
+    # TODO: build list of documents processed/not processed from results
+    pass
 
   return docs_processed, docs_not_processed
 
 
 def import_documents_gcs(gcs_uri: str,
                          docs_to_be_processed: List[str],
-                         client, parent) -> Operation:
+                         client, parent) -> Tuple[List[str], Operation]:
+
   """ Import documents in a GCS bucket into a VSC Datastore """
 
+  # construct list of full gcs uris for import files
   gcs_uris = [
     f"{gcs_uri}/{filepath}"
     for filepath in docs_to_be_processed
@@ -315,7 +324,7 @@ def import_documents_gcs(gcs_uri: str,
   # Make the request
   operation = client.import_documents(request=request)
 
-  return operation
+  return gcs_uris, operation
 
 def import_documents_bq(project_id: str,
                         bigquery_dataset: str,
