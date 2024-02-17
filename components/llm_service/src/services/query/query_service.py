@@ -35,7 +35,8 @@ from services import llm_generate, embeddings
 from services.query import query_prompts
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
-                                         PostgresVectorStore)
+                                         PostgresVectorStore,
+                                         NUM_MATCH_RESULTS)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
 from services.query.vertex_search import (build_vertex_search,
@@ -96,7 +97,7 @@ async def query_generate(
 
   # get doc context for question
   if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
-    query_references = query_vertex_search(q_engine, prompt)
+    query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
     query_references = query_search(

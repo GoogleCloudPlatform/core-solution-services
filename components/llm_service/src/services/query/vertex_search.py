@@ -14,7 +14,7 @@
 """
 Vertex Search-based Query Engines
 """
-# pylint: disable=line-too-long,broad-exception-caught
+# pylint: disable=broad-exception-caught
 
 from typing import List, Tuple
 from pathlib import Path
@@ -23,8 +23,9 @@ from google.api_core.client_options import ClientOptions
 from google.api_core.operation import Operation
 from google.cloud import discoveryengine_v1alpha as discoveryengine
 from config import PROJECT_ID
-from common.models import QueryEngine, QueryReference
+from common.models import QueryEngine, QueryDocument, QueryReference
 from common.utils.logging_handler import Logger
+import proto
 
 Logger = Logger.get_logger(__file__)
 
@@ -32,7 +33,8 @@ Logger = Logger.get_logger(__file__)
 VALID_FILE_EXTENSIONS = [".pdf", ".html", ".csv", ".json"]
 
 def query_vertex_search(q_engine: QueryEngine,
-                        search_query: str) -> List[QueryReference]:
+                        search_query: str,
+                        num_results: int) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents from a vertex search engine.
@@ -45,28 +47,48 @@ def query_vertex_search(q_engine: QueryEngine,
     list of QueryReference models
 
   """
+  # vertex search datastore id is stored in q_engine.index_id
   data_store_id = q_engine.index_id
 
   # get search results from vertex
-  search_responses = perform_vertex_search(data_store_id, search_query)
+  search_results = perform_vertex_search(data_store_id,
+                                         search_query,
+                                         num_results)
 
-  # create query reference models to store results
+  # create query document and reference models to store results
   query_references = []
-  for search_response in search_responses:
-    for search_result in search_response.results:
-      content = search_result.document.content
-      query_reference = QueryReference(
+  for search_result in search_results:
+    document_data = \
+        proto.Message.to_dict(search_result.document)["derived_struct_data"]
+
+    # find or create document model
+    query_document = QueryDocument.find_by_url(
+        q_engine.id, document_data["link"])
+    if not query_document:
+      query_document = QueryDocument(
         query_engine_id=q_engine.id,
         query_engine=q_engine.name,
-        chunk_text=content
+        doc_url=document_data["link"]
       )
-      query_reference.save()
-      query_references.append(query_reference)
+      query_document.save()
+    
+    # create query reference model
+    query_reference = QueryReference(
+      query_engine_id=q_engine.id,
+      query_engine=q_engine.name,
+      document_id=query_document.id,
+      document_url=query_document.doc_url,
+      chunk_text=document_data["snippets"][0]["snippet"],
+    )
+    query_reference.save()
+    query_references.append(query_reference)
+
   return query_references
 
 def perform_vertex_search(data_store_id: str,
-                          search_query: str) -> \
-                          List[discoveryengine.SearchResponse]:
+                          search_query: str,
+                          num_results: int) -> \
+                          List[discoveryengine.SearchResponse.SearchResult]:
   """ Send a search request to Vertex Search """
   project_id = PROJECT_ID
   location = "global"
@@ -80,8 +102,9 @@ def perform_vertex_search(data_store_id: str,
   # Create a client
   client = discoveryengine.SearchServiceClient(client_options=client_options)
 
-  # The full resource name of the search engine serving config
-  # e.g. projects/{project_id}/locations/{location}/dataStores/{data_store_id}/servingConfigs/{serving_config_id}
+  # The full resource name of the search engine serving config, e.g.
+  # "projects/{project_id}/locations/{location}/dataStores/{data_store_id}"
+  # + "/servingConfigs/{serving_config_id}"
   serving_config = client.serving_config_path(
       project=project_id,
       location=location,
@@ -89,43 +112,42 @@ def perform_vertex_search(data_store_id: str,
       serving_config="default_config",
   )
 
-  # Optional: Configuration options for search
-  # Refer to the `ContentSearchSpec` reference for all supported fields:
-  # https://cloud.google.com/python/docs/reference/discoveryengine/latest/google.cloud.discoveryengine_v1.types.SearchRequest.ContentSearchSpec
+  # Configuration options for search
+  # Refer to the `ContentSearchSpec` reference for all supported fields
   content_search_spec = discoveryengine.SearchRequest.ContentSearchSpec(
-      # For information about snippets, refer to:
-      # https://cloud.google.com/generative-ai-app-builder/docs/snippets
       snippet_spec=discoveryengine.SearchRequest.ContentSearchSpec.SnippetSpec(
           return_snippet=True
       ),
-      # For information about search summaries, refer to:
-      # https://cloud.google.com/generative-ai-app-builder/docs/get-search-summaries
       summary_spec=discoveryengine.SearchRequest.ContentSearchSpec.SummarySpec(
-          summary_result_count=5,
+          summary_result_count=num_results,
           include_citations=True,
           ignore_adversarial_query=True,
           ignore_non_summary_seeking_query=True,
       ),
   )
 
-  # Refer to the `SearchRequest` reference for all supported fields:
-  # https://cloud.google.com/python/docs/reference/discoveryengine/latest/google.cloud.discoveryengine_v1.types.SearchRequest
+  # Refer to the `SearchRequest` reference for all supported fields
   request = discoveryengine.SearchRequest(
       serving_config=serving_config,
       query=search_query,
       page_size=10,
       content_search_spec=content_search_spec,
       query_expansion_spec=discoveryengine.SearchRequest.QueryExpansionSpec(
-          condition=discoveryengine.SearchRequest.QueryExpansionSpec.Condition.AUTO,
+          condition=\
+              discoveryengine.SearchRequest.QueryExpansionSpec.Condition.AUTO,
       ),
       spell_correction_spec=discoveryengine.SearchRequest.SpellCorrectionSpec(
           mode=discoveryengine.SearchRequest.SpellCorrectionSpec.Mode.AUTO
       ),
   )
 
+  # perform search with client
   response = client.search(request)
 
-  return response
+  # get list of results
+  result_list = response.results
+
+  return result_list
 
 
 def build_vertex_search(q_engine: QueryEngine):

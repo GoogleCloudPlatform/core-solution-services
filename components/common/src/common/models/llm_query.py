@@ -232,6 +232,26 @@ class QueryDocument(BaseModel):
       None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
 
+  @classmethod
+  def find_by_url(cls, query_engine_id, doc_url):
+    """
+    Fetch a document by url
+
+    Args:
+        query_engine_id (str): Query Engine id
+        doc_url (str): Query document url
+
+    Returns:
+        QueryDocument: query document object
+
+    """
+    q_doc = cls.collection.filter(
+      "query_engine_id", "==", query_engine_id).filter(
+      "doc_url", "==", doc_url).filter(
+          "deleted_at_timestamp", "==",
+          None).get()
+    return q_doc
+
 
 class QueryDocumentChunk(BaseModel):
   """
@@ -259,7 +279,7 @@ class QueryDocumentChunk(BaseModel):
         index (int): QueryDocumentChunk index
 
     Returns:
-        QueryDocumentChunk: query engine object
+        QueryDocumentChunk: query document chunk object
 
     """
     q_chunk = cls.collection.filter(
