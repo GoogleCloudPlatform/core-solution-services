@@ -14,7 +14,8 @@
 """
 Vertex Search-based Query Engines
 """
-# pylint: disable=line-too-long
+# pylint: disable=line-too-long,broad-exception-caught
+
 from typing import List
 from pathlib import Path
 from google.cloud import storage
@@ -149,7 +150,7 @@ def build_vertex_search(q_engine: QueryEngine):
   docs_not_processed = []
 
   # validate data_url
-  if not (data_url.startswith("bq://") or data_url.startswith("gs://"))
+  if not (data_url.startswith("bq://") or data_url.startswith("gs://")):
     raise RuntimeError(f"Invalid data url: {data_url}")
 
   try:
@@ -182,10 +183,11 @@ def build_vertex_search(q_engine: QueryEngine):
     q_engine.update()
   except Exception as e:
     Logger.info(f"Error building vertex search query engine {str(e)}")
-    
+
     # on build error, delete any vertex search assets that were created
     delete_vertex_search(q_engine)
     docs_processed = []
+    docs_not_processed = docs_to_be_processed
 
   return docs_processed, docs_not_processed
 
@@ -214,6 +216,7 @@ def create_data_store(q_engine: QueryEngine,
 def create_search_engine(q_engine: QueryEngine,
                          project_id: str,
                          data_store_id: str) -> Operation:
+  # create engine request
   parent = f"projects/{project_id}/locations/global/collections/default_collection"
   engine = discoveryengine.Engine()
   engine.display_name = q_engine.name
@@ -223,8 +226,10 @@ def create_search_engine(q_engine: QueryEngine,
                                                 engine=engine,
                                                 engine_id=data_store_id)
 
+  # use client to create engine
   es_client = discoveryengine.EngineServiceClient()
   operation = es_client.create_engine(request=request)
+
   return operation
 
 def import_documents_to_datastore(data_url: str,
@@ -235,7 +240,7 @@ def import_documents_to_datastore(data_url: str,
 
   docs_processed = []
   docs_not_processed = []
-  
+
   # create doc service client
   client_options = (
       ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
@@ -256,7 +261,10 @@ def import_documents_to_datastore(data_url: str,
   # create operation to import data
   operation = None
   if data_url.startswith("gs://"):
-    operation = import_documents_gcs(data_url, client, parent)
+    operation = import_documents_gcs(data_url,
+                                     docs_to_be_processed,
+                                     client,
+                                     parent)
 
   elif data_url.startswith("bq://"):
     bq_datasource = data_url.split("bq://")[1].split("/")[0]
@@ -268,7 +276,7 @@ def import_documents_to_datastore(data_url: str,
                                     bigquery_table,
                                     client, parent)
     docs_processed = docs_to_be_processed
-    
+
   Logger.info(
       f"Waiting for import operation to complete: {operation.operation.name}")
   wait_for_operation(operation)
@@ -284,15 +292,14 @@ def import_documents_to_datastore(data_url: str,
   return docs_processed, docs_not_processed
 
 
-def import_documents_gcs(gcs_uri: str, client, parent) -> Operation:
+def import_documents_gcs(gcs_uri: str,
+                         docs_to_be_processed: List[str],
+                         client, parent) -> Operation:
   """ Import documents in a GCS bucket into a VSC Datastore """
-  # currently supports PDF / HTML
 
-  # TODO: populate list of uris by recursively listing files in the
-  # bucket, and filtering for PDF/HTML
   gcs_uris = [
-    f"{gcs_uri}/*.pdf",
-    f"{gcs_uri}/*.html",
+    f"{gcs_uri}/{filepath}"
+    for filepath in docs_to_be_processed
   ]
 
   request = discoveryengine.ImportDocumentsRequest(
@@ -350,6 +357,7 @@ def datastore_id_from_name(name: str) -> str:
   return data_store_id
 
 def delete_vertex_search(q_engine: QueryEngine):
+  Logger.info(f"deleting vertex search query engine {q_engine.name}")
   # TODO
   pass
 
