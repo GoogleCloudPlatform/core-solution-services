@@ -197,16 +197,19 @@ def create_data_store(q_engine: QueryEngine,
                       data_store_id: str) -> Operation:
 
   # create datastore request
-  parent = f"projects/{project_id}/locations/global/collections/default_collection"
+  parent = \
+      f"projects/{project_id}/locations/global/collections/default_collection"
   content_config = discoveryengine.DataStore.ContentConfig.CONTENT_REQUIRED
-  data_store = discoveryengine.DataStore(display_name=q_engine.name,
-                                         industry_vertical="GENERIC",
-                                         solution_types=["SOLUTION_TYPE_SEARCH"],
-                                         content_config=content_config)
+  data_store = discoveryengine.DataStore(
+      display_name=q_engine.name,
+      industry_vertical="GENERIC",
+      solution_types=["SOLUTION_TYPE_SEARCH"],
+      content_config=content_config)
 
-  ds_request = discoveryengine.CreateDataStoreRequest(parent=parent,
-                                                      data_store_id=data_store_id,
-                                                      data_store=data_store)
+  ds_request = discoveryengine.CreateDataStoreRequest(
+      parent=parent,
+      data_store_id=data_store_id,
+      data_store=data_store)
 
   # use client to create datastore
   dss_client = discoveryengine.DataStoreServiceClient()
@@ -218,7 +221,8 @@ def create_search_engine(q_engine: QueryEngine,
                          project_id: str,
                          data_store_id: str) -> Operation:
   # create engine request
-  parent = f"projects/{project_id}/locations/global/collections/default_collection"
+  parent = \
+      f"projects/{project_id}/locations/global/collections/default_collection"
   engine = discoveryengine.Engine()
   engine.display_name = q_engine.name
   engine.solution_type = "SOLUTION_TYPE_SEARCH"
@@ -250,8 +254,9 @@ def import_documents_to_datastore(data_url: str,
   )
   client = discoveryengine.DocumentServiceClient(client_options=client_options)
 
-  # The full resource name of the search engine branch.
-  # e.g. projects/{project}/locations/{location}/dataStores/{data_store_id}/branches/{branch}
+  # The full resource name of the search engine branch, e.g.
+  # "projects/{project}/locations/{location}/dataStores/{data_store_id}"
+  # + "/branches/{branch}"
   parent = client.branch_path(
       project=project_id,
       location=location,
