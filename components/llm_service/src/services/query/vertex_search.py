@@ -16,6 +16,8 @@ Vertex Search-based Query Engines
 """
 # pylint: disable=line-too-long
 from typing import List
+from pathlib import Path
+from google.cloud import storage
 from google.api_core.client_options import ClientOptions
 from google.api_core.operation import Operation
 from google.cloud import discoveryengine_v1alpha as discoveryengine
@@ -24,6 +26,9 @@ from common.models import QueryEngine, QueryReference
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
+
+# valid file extensions for Vertex Search
+VALID_FILE_EXTENSIONS = [".pdf", ".html", ".csv", ".json"]
 
 def query_vertex_search(q_engine: QueryEngine,
                         search_query: str) -> List[QueryReference]:
@@ -59,8 +64,8 @@ def query_vertex_search(q_engine: QueryEngine,
   return query_references
 
 def perform_vertex_search(data_store_id: str,
-                          search_query: str
-                          ) -> List[discoveryengine.SearchResponse]:
+                          search_query: str) -> \
+                          List[discoveryengine.SearchResponse]:
   """ Send a search request to Vertex Search """
   project_id = PROJECT_ID
   location = "global"
@@ -137,40 +142,50 @@ def build_vertex_search(q_engine: QueryEngine):
   data_url = q_engine.doc_url
   project_id = PROJECT_ID
   location = "global"
-  data_store_id = datastore_id_from_name(q_engine.name)
 
+  # initialize doc tracking lists
+  docs_to_be_processed = []
   docs_processed = []
   docs_not_processed = []
 
-  # create data store
-  operation = create_data_store(q_engine, project_id, data_store_id)
-  wait_for_operation(operation)
+  # validate data_url
+  if not (data_url.startswith("bq://") or data_url.startswith("gs://"))
+    raise RuntimeError(f"Invalid data url: {data_url}")
 
-  # initiate import
-  operation = import_documents_to_datastore(data_url,
-                                            project_id,
-                                            location,
-                                            data_store_id)
+  try:
+    # inventory the documents to be ingested
+    if data_url.startswith("bq://"):
+      docs_to_be_processed = data_url.split("bq://")[1]
+    else:
+      docs_to_be_processed = inventory_gcs_files(data_url)
 
-  Logger.info(f"Waiting for import operation to complete: {operation.operation.name}")
-  wait_for_operation(operation)
+    # create data store
+    data_store_id = datastore_id_from_name(q_engine.name)
+    operation = create_data_store(q_engine, project_id, data_store_id)
+    wait_for_operation(operation)
 
-  # Once the operation is complete,
-  # get information from operation metadata
-  metadata = discoveryengine.ImportDocumentsMetadata(operation.metadata)
+    # perform import
+    docs_processed, docs_not_processed = \
+        import_documents_to_datastore(data_url,
+                                      docs_to_be_processed,
+                                      project_id,
+                                      location,
+                                      data_store_id)
 
-  # Handle the response
-  # TODO: build list of documents processed/not processed from results
-  Logger.info(f"document metadata from import: {metadata}")
+    # create search engine
+    operation = create_search_engine(q_engine, project_id, data_store_id)
+    wait_for_operation(operation)
+    Logger.info(f"Created vertex search engine for {q_engine.name}")
 
-  # create search engine
-  operation = create_search_engine(q_engine, project_id, data_store_id)
-  Logger.info(f"Waiting for create engine to complete: {operation.operation.name}")
-  wait_for_operation(operation)
-
-  # save metadata for datastore in query engine
-  q_engine.index_id = data_store_id
-  q_engine.update()
+    # save metadata for datastore in query engine
+    q_engine.index_id = data_store_id
+    q_engine.update()
+  except Exception as e:
+    Logger.info(f"Error building vertex search query engine {str(e)}")
+    
+    # on build error, delete any vertex search assets that were created
+    delete_vertex_search(q_engine)
+    docs_processed = []
 
   return docs_processed, docs_not_processed
 
@@ -213,10 +228,14 @@ def create_search_engine(q_engine: QueryEngine,
   return operation
 
 def import_documents_to_datastore(data_url: str,
+                                  docs_to_be_processed: List[str],
                                   project_id: str,
                                   location: str,
                                   data_store_id: str) -> Operation:
 
+  docs_processed = []
+  docs_not_processed = []
+  
   # create doc service client
   client_options = (
       ClientOptions(api_endpoint=f"{location}-discoveryengine.googleapis.com")
@@ -244,9 +263,25 @@ def import_documents_to_datastore(data_url: str,
     bigquery_dataset = bq_datasource.split(":")[0]
     bigquery_table = bq_datasource.split(":")[1]
 
-    operation = import_documents_bq(project_id, bigquery_dataset, bigquery_table, client, parent)
+    operation = import_documents_bq(project_id,
+                                    bigquery_dataset,
+                                    bigquery_table,
+                                    client, parent)
+    docs_processed = docs_to_be_processed
+    
+  Logger.info(
+      f"Waiting for import operation to complete: {operation.operation.name}")
+  wait_for_operation(operation)
 
-  return operation
+  # Once the operation is complete,
+  # get information from operation metadata
+  metadata = discoveryengine.ImportDocumentsMetadata(operation.metadata)
+
+  # Handle the response
+  # TODO: build list of documents processed/not processed from results
+  Logger.info(f"document metadata from import: {metadata}")
+
+  return docs_processed, docs_not_processed
 
 
 def import_documents_gcs(gcs_uri: str, client, parent) -> Operation:
@@ -266,7 +301,8 @@ def import_documents_gcs(gcs_uri: str, client, parent) -> Operation:
           input_uris=gcs_uris, data_schema="content"
       ),
       # Options: `FULL`, `INCREMENTAL`
-      reconciliation_mode=discoveryengine.ImportDocumentsRequest.ReconciliationMode.INCREMENTAL,
+      reconciliation_mode=\
+        discoveryengine.ImportDocumentsRequest.ReconciliationMode.INCREMENTAL,
   )
 
   # Make the request
@@ -288,7 +324,8 @@ def import_documents_bq(project_id: str,
           data_schema="custom",
       ),
       # Options: `FULL`, `INCREMENTAL`
-      reconciliation_mode=discoveryengine.ImportDocumentsRequest.ReconciliationMode.INCREMENTAL,
+      reconciliation_mode=\
+        discoveryengine.ImportDocumentsRequest.ReconciliationMode.INCREMENTAL,
   )
 
   # Make the request
@@ -311,3 +348,22 @@ def datastore_id_from_name(name: str) -> str:
   # check validity of datastore id
 
   return data_store_id
+
+def delete_vertex_search(q_engine: QueryEngine):
+  # TODO
+  pass
+
+def inventory_gcs_files(gcs_url: str) -> List[str]:
+  """ create a list of eligible files for vertex search in the GCS bucket """
+  valid_files = []
+  storage_client = storage.Client(project=PROJECT_ID)
+  bucket_name = gcs_url.split("gs://")[1].split("/")[0]
+  for blob in storage_client.list_blobs(bucket_name):
+    file_name = Path(blob.name).name
+    file_extension = Path(file_name).suffix
+    if file_extension in VALID_FILE_EXTENSIONS:
+      valid_files.append(blob.name)
+    elif file_extension in [".htm"]:
+      # TODO rename .htm files to .html
+      pass
+  return valid_files
