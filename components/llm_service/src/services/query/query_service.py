@@ -164,7 +164,7 @@ def query_search(q_engine: QueryEngine,
                                                          query_embedding)
   query_references = []
 
-  # Assemble document chunk references from vector store indexes
+  # Assemble document chunk models from vector store indexes
   for match in match_indexes_list:
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
     if doc_chunk is None:
@@ -410,7 +410,7 @@ def build_doc_index(doc_url: str, query_engine: str,
 
   Returns:
     Tuple of list of QueryDocument objects of docs processed,
-      list of urls of docs not processed
+      list of uris of docs not processed
   """
   q_engine = QueryEngine.find_by_name(query_engine)
   if q_engine is None:
