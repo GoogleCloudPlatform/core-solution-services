@@ -19,7 +19,7 @@ echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=
 ## Adding Optional LLM Models
 
 ### Llama2 Truss Deployment
-Optionally deploy Llama2 using Truss following these [instructions]("../../experimental/llm_truss/llama2-7b-sample/README.md).
+Optionally deploy Llama2 using Truss following these [instructions](../../experimental/llm_truss/llama2-7b-sample/README.md).
 
 To use deployed llama2 Endpoint (IP:PORT), set the following environment variable before deploying llm-service:
 
@@ -65,15 +65,6 @@ psql -U postgres -c "CREATE DATABASE pgvector"
 psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector"
 exit
 ```
-
-## Apply terraform infra for LLM service
-
-Set up Cloud Storage with one sample PDF file for Query Engine to use later:
-```
-sb infra apply 4-llm
-```
-- This will create a `$PROJECT_ID-llm-docs` bucket and upload a `llm-sample-doc.pdf`.
-- It will add required Firestore indexes.
 
 ## After Deployment
 

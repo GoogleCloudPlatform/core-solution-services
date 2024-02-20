@@ -79,10 +79,10 @@ sb version
 
 ### Set up `gcloud` CLI
 ```
-export PROJECT_ID=<my-project-id>
+export PROJECT_ID=<your-project-id>
+gcloud config set project ${PROJECT_ID}
 gcloud auth login
 gcloud auth application-default login
-gcloud config set project ${PROJECT_ID}
 ```
 
 ### Update Project ID
@@ -113,9 +113,8 @@ Check the status of the installation:
 ls -la /tmp/jumphost_ready
 ```
 - If the file `jumphost_ready` exists, it means the jumphost is ready to deploy the rest of the resources.  If not, please wait for a few minutes.
-- You should start with a clean copy of the repository.
 
-Check out the code in the jump host:
+You should start with a clean copy of the repository. Check out the code in the jump host:
 ```
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
 ```
@@ -137,11 +136,11 @@ gcloud auth application-default login
 export PROJECT_ID=$(gcloud config get project)
 echo PROJECT_ID=${PROJECT_ID}
 
-# Update project_id values in the source code.
+# Update project_id values in the source repo on the jumphost
 sb set project-id ${PROJECT_ID}
 
 # Update domain name (for HTTPS load balancer and ingress)
-export DOMAIN_NAME=<my-domain-name> # e.g. css.example.com
+export DOMAIN_NAME=<your-domain-name> # e.g. css.example.com
 sb vars set domain_name ${DOMAIN_NAME}
 
 # Set up API_BASE_URL for the frontend app:
@@ -157,7 +156,7 @@ Apply infra/terraform:
 sb infra apply 1-bootstrap
 ```
 
-Note in the following step there is a known issue with firebase setup: `Error 409: Database already exists.`  If this error occurs, run the step, consult the Troubleshooting section to apply the fix, then re-run the step.
+Note in the following step there is a known issue with firebase setup: `Error 409: Database already exists.`  If this error occurs, consult the Troubleshooting section to apply the fix, then re-run the 1-bootstrap step.
 
 ```
 sb infra apply 2-foundation
@@ -185,19 +184,20 @@ sb infra apply 4-llm
 
 ### Before Deploy
 
-Follow README files for the microservices below to complete set up:
+1. Set up `kubectl` to connect to the provisioned GKE cluster
+```
+export REGION=$(gcloud container clusters list --filter=main-cluster --format="value(location)")
+gcloud container clusters get-credentials main-cluster --region ${REGION} --project ${PROJECT_ID}
+kubectl get nodes
+```
+
+2. Follow README files for the microservices below to complete set up:
 - LLM Service: [components/llm_service/README.md](./components/llm_service/README.md#setup) (Only Setup section)
   - We recommend deploying AlloyDB and PG Vector as a vector store.  See the section on AlloyDB in the LLM Service [README](components/llm_service/README.md)
 - Tools Service:  If you are using the Tool Service (for GenAI agents that use Tools) follow the instructions in the [README](components/tools_service/README.md)
 
 ## Deploy Backend Microservices
 
-Set up `kubectl` to connect to the provisioned GKE cluster
-```
-export REGION=$(gcloud container clusters list --filter=main-cluster --format="value(location)")
-gcloud container clusters get-credentials main-cluster --region ${REGION} --project ${PROJECT_ID}
-kubectl get nodes
-```
 
 > Note that when you deply the ingress below you may need to wait some time (in some cases, hours) before the https cert is active.
 
