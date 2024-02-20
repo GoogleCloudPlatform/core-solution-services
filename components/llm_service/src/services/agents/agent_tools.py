@@ -118,7 +118,8 @@ def gmail_tool(recipients: List, subject: str, message: str) -> str:
                           auth_client=auth_client)
 
     resp_data = response.json()
-    result = resp_data["result"]
+    Logger.info(f"resp_data: {resp_data}")
+    result = resp_data.get("result")
     recipient = resp_data["recipient"]
     output = f"[gmail_tool] Sending email to {recipient}. Result: {result}"
     Logger.info(output)
