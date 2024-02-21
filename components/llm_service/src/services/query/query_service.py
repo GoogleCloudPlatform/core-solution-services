@@ -563,8 +563,8 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
   Delete query engine and associated models and vector store data.
   """
   # delete vector store data
-  qe_vector_store = vector_store_from_query_engine(q_engine)
   try:
+    qe_vector_store = vector_store_from_query_engine(q_engine)
     qe_vector_store.delete()
   except Exception:
     # we make this error non-fatal as we want to delete the models

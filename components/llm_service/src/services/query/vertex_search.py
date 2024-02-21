@@ -71,7 +71,7 @@ def query_vertex_search(q_engine: QueryEngine,
         doc_url=document_data["link"]
       )
       query_document.save()
-    
+
     # create query reference model
     query_reference = QueryReference(
       query_engine_id=q_engine.id,

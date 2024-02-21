@@ -360,8 +360,8 @@ def run_chat(prompt: str, chat_id: str = None,
   return resp_dict["data"]
 
 
-def build_query_engine(name: str, doc_url: str, depth_limit: int,
-                       embedding_type: str,
+def build_query_engine(name: str, engine_type: str, doc_url: str,
+                       depth_limit: int, embedding_type: str,
                        vector_store: str, description: str, agents: str,
                        auth_token=None):
   """
@@ -375,6 +375,7 @@ def build_query_engine(name: str, doc_url: str, depth_limit: int,
 
   request_body = {
     "query_engine": name,
+    "query_engine_type": engine_type,
     "doc_url": doc_url,
     "embedding_type": embedding_type,
     "vector_store": vector_store,

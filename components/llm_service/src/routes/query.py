@@ -63,6 +63,7 @@ def get_engine_list():
   query_engine_data = [{
     "id": qe.id,
     "name": qe.name,
+    "query_engine_type": qe.query_engine_type,
     "description": qe.description,
     "llm_type": qe.llm_type,
     "embedding_type": qe.embedding_type,
