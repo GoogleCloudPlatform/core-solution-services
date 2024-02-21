@@ -19,21 +19,6 @@ components:
     resource_name: frontend-flutterflow
     service_path: frontend-flutterflow
     use_github_action: true
-  huggingface_service:
-    cloudrun_neg: true
-    component_name: huggingface_service
-    component_template: blank_service
-    default_deploy: gke
-    depend_on_common: true
-    deploy_cloudrun: false
-    deploy_gke: true
-    destination_path: .
-    gcp_region: us-central1
-    local_port: '9001'
-    module_version: '1.0'
-    resource_name: huggingface-service
-    service_path: huggingface-service
-    use_github_action: false
   jobs_service:
     custom_component: true
     init_script_path: ./components/jobs_service/src/utils/init.py
