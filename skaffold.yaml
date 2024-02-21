@@ -33,6 +33,3 @@ requires:
 - configs:
   - frontend_flutterflow
   path: ./components/frontend_flutterflow
-#- configs:
-#  - model_service
-#  path: ./components/model_service

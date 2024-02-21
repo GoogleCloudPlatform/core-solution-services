@@ -1,6 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-bases:
-- ../base
 resources:
-- hpa.yaml
+  - ./ingress.yaml
+  - ./frontend_config.yaml
+  - ./managed_cert.yaml
