@@ -29,43 +29,17 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import CrawlSpider, Rule, Spider
 from scrapy.http import Response
 from google.cloud import storage
-from config import DEFAULT_WEB_DEPTH_LIMIT
+from config import DEFAULT_WEB_DEPTH_LIMIT, PROJECT_ID
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource
+from utils.gcs_helper import create_bucket, upload_to_gcs
 from utils.html_helper import (html_trim_tags,
                                html_to_text,
                                html_to_sentence_list)
 
 Logger = Logger.get_logger(__file__)
 
-
-def clear_bucket(storage_client:storage.Client, bucket_name:str) -> None:
-  """
-  Delete all the contents of the specified GCS bucket
-  """
-  Logger.info(f"Deleting all objects from GCS bucket {bucket_name}")
-  bucket = storage_client.bucket(bucket_name)
-  blobs = bucket.list_blobs()
-  index = 0
-  for blob in blobs:
-    blob.delete()
-    index += 1
-  Logger.info(f"{index} files deleted")
-
-def upload_to_gcs(storage_client:storage.Client, bucket_name:str,
-                  file_name:str, content:str,
-                  content_type="text/plain") -> None:
-  """Upload content to GCS bucket"""
-  Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
-  bucket = storage_client.bucket(bucket_name)
-  blob = bucket.blob(file_name)
-  blob.upload_from_string(
-    data=content,
-    content_type=content_type
-  )
-  Logger.info(f"Uploaded {len(content)} bytes")
-
-def save_content(filepath:str, file_name:str, content:str) -> None:
+def save_content(filepath: str, file_name: str, content: str) -> None:
   """
   Save content in a file in a local directory
   """
@@ -206,7 +180,6 @@ class WebDataSourceSpider(CrawlSpider):
     return self.parser.parse(response, **kwargs)
 
 
-
 class WebDataSource(DataSource):
   """
    Web site data source.
@@ -220,14 +193,12 @@ class WebDataSource(DataSource):
     Initialize the WebDataSource.
 
     Args:
-      start_urls: List of URLs to download.
+      storage_client: Google cloud storage client instance
       bucket_name (str): name of GCS bucket to save downloaded webpages.
                          If None files will not be saved.
       depth_limit (int): depth limit to crawl. 0=don't crawl, just
                          download provided URLs
     """
-    if storage_client is None:
-      storage_client = storage.Client()
     super().__init__(storage_client)
     self.depth_limit = depth_limit
     self.bucket_name = bucket_name
@@ -238,7 +209,7 @@ class WebDataSource(DataSource):
     Logger.info(f"Downloaded Response URL: {response.url}")
     content_type = item["content_type"]
     if item["content"] is None:
-      Logger.warn(
+      Logger.warning(
         f"No content from: {response.url}, content type: {content_type}")
     else:
       filepath = os.path.join(item["filepath"], item["filename"])
@@ -258,16 +229,16 @@ class WebDataSource(DataSource):
     Returns:
         list of tuples (doc name, document url, local file path)
     """
-    # clear bucket
-    if self.bucket_name:
-      clear_bucket(self.storage_client, self.bucket_name)
+    # The scraped files won't be uploaded to GCS if the bucket_name is not set
+    if self.bucket_name is None:
+      Logger.error(f"ERROR: Bucket name for WebDataSource {doc_url} not set. "
+                   f"Scraped files not uploaded to Google Cloud Storage")
 
+    spider_class = WebDataSourceSpider
     if self.depth_limit == 0:
       # for this class, depth_limit=0 means don't crawl, just download the
       # web page(s) supplied.  (for scrapy depth_limit=0 means no limit).
       spider_class = WebDataSourcePageSpider
-    elif self.depth_limit > 0:
-      spider_class = WebDataSourceSpider
 
     # define Scrapy settings
     settings = {
@@ -291,6 +262,7 @@ class WebDataSource(DataSource):
                   filepath=temp_dir)
     process.start()
 
+    Logger.info(f"Scraped {len(self.doc_data)} links")
     return self.doc_data
 
   @classmethod
@@ -304,23 +276,24 @@ class WebDataSource(DataSource):
 
 
 def main():
-  args = ["genie-demo-gdch-web", "https://dmv.nv.gov//", 1]
+  args = [f"{PROJECT_ID}-downloads-dmv_nv_gov", "https://dmv.nv.gov/", 1]
   if len(sys.argv) > 1:
     args = sys.argv[1:]
-  bucket,url,depth = args
+  bucket_name, url, depth = args
   start_time = datetime.now()
-  # WebDataSource(start_url="https://www.medicaid.gov/sitemap/index.html",
-  #               depth_limit=1, bucket_name="gcp-mira-demo-medicaid-test")
-  web_datasource = WebDataSource(bucket_name=bucket,
+  storage_client = storage.Client(project=PROJECT_ID)
+  create_bucket(storage_client, bucket_name)
+  web_datasource = WebDataSource(storage_client=storage_client,
+                                 bucket_name=bucket_name,
                                  depth_limit=depth)
   temp_dir = tempfile.mkdtemp()
   doc_data = web_datasource.download_documents(url, temp_dir)
   time_elapsed = datetime.now() - start_time
   Logger.info(f"Time elapsed (hh:mm:ss.ms) {time_elapsed}")
-  Logger.info(f"Scraped {len(doc_data)} links")
   crawled_urls = [d[1] for d in doc_data]
-  print(crawled_urls)
-  print(f"*** Pages stored at [{temp_dir}]")
+  print(f"Crawled URLS = {crawled_urls}")
+  print(f"*** Local pages stored at [{temp_dir}]")
+
 
 if __name__ == "__main__":
   main()
