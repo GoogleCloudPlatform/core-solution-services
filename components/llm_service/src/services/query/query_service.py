@@ -553,8 +553,7 @@ def datasource_from_url(doc_url: str,
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
     # Create bucket name using query_engine name
-    qe_name = q_engine.name.replace(" ", "_")
-    bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
+    bucket_name = WebDataSource.downloads_bucket_name(q_engine)
     return WebDataSource(storage_client,
                          bucket_name=bucket_name,
                          depth_limit=depth_limit)

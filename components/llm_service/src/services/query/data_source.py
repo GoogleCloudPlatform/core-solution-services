@@ -19,6 +19,7 @@ from typing import List, Tuple
 from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.models import QueryEngine
+from config import PROJECT_ID
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import CSVLoader
 from pypdf import PdfReader
@@ -42,9 +43,9 @@ class DataSource:
     self.docs_not_processed = []
 
   @classmethod
-  def upload_bucket_name(cls, q_engine: QueryEngine) -> str:
-    bucket_prefix = q_engine.name.replace(" ", "_")
-    bucket_name = f"{bucket_prefix}-upload"
+  def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
+    qe_name = q_engine.name.replace(" ", "_")
+    bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
     return bucket_name
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \

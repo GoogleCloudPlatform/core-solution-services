@@ -428,7 +428,7 @@ def download_web_docs(q_engine: QueryEngine, data_url: str):
     depth_limit = params["depth_limit"]
   else:
     depth_limit = DEFAULT_WEB_DEPTH_LIMIT
-  bucket_name = WebDataSource.upload_bucket_name(q_engine)
+  bucket_name = WebDataSource.downloads_bucket_name(q_engine)
   web_data_source = WebDataSource(storage_client,
                                   bucket_name,
                                   depth_limit=depth_limit)
