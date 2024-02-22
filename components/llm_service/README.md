@@ -19,7 +19,7 @@ echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=
 ## Adding Optional LLM Models
 
 ### Llama2 Truss Deployment
-Optionally deploy Llama2 using Truss following these [instructions]("../../experimental/llm_truss/llama2-7b-sample/README.md).
+Optionally deploy Llama2 using Truss following these [instructions](../../experimental/llm_truss/llama2-7b-sample/README.md).
 
 To use deployed llama2 Endpoint (IP:PORT), set the following environment variable before deploying llm-service:
 
@@ -42,7 +42,9 @@ export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
 ```shell
 # Create a secret for postgres password
 gcloud secrets create "postgres-user-passwd"
-echo <your-postgres-password> | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+# Please use single quotes to enclose the password below (esp.
+# if the password contains special characters like $)
+echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
 
 # Create an AlloyDB instance
 ./utils/alloy_db.sh
@@ -63,15 +65,6 @@ psql -U postgres -c "CREATE DATABASE pgvector"
 psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector"
 exit
 ```
-
-## Apply `terraform infra` for LLM service
-
-Set up Cloud Storage with one sample PDF file for Query Engine to use later:
-```
-sb infra apply 4-llm
-```
-- This will create a `$PROJECT_ID-llm-docs` bucket and upload a `llm-sample-doc.pdf`.
-- It will add required Firestore indexes.
 
 ## After Deployment
 
@@ -102,8 +95,7 @@ curl --location "$BASE_URL/llm-service/api/v1/query/engine" \
 --header "Authorization: Bearer $ID_TOKEN" \
 --data "{
     \"doc_url\": \"gs://$PROJECT_ID-llm-docs\",
-    \"query_engine\": \"$QUERY_ENGINE_NAME\",
-    \"llm_type\": \"VertexAI-Chat\"
+    \"query_engine\": \"$QUERY_ENGINE_NAME\"
 }"
 ```
 
@@ -117,6 +109,46 @@ Once finished, you shall see the following artifacts:
 - A corresponding document metadata in `query_documents` collection in Firestore.
 - A record in `query_document_chunk` collection in Firestore.
 - A Vertex AI Matching Engine.
+
+### Deploy with CORS origin allows
+
+Set the CORS origin environment variable:
+```
+CORS_ALLOW_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173,https://your-domain.com
+```
+
+Deploy microservice to GKE cluster as usual.
+```
+sb deploy -n default -m llm_service
+```
+
+### Deploy with custom agent_config.json stored in a GCS bucket path.
+
+Create a GCS bucket if it doesn't exist.
+```
+gcloud storage buckets create gs://${PROJECT_ID}-config
+```
+
+Upload the `agent_config.json` to a GCS bucket path:
+```
+gcloud storage cp /path/to/agent_config.json gs://${PROJECT_ID}-config
+```
+- You can refer to the `components/llm_service/src/config/agent_config.json` as the template to start with.
+
+Verify if the file has uploaded correctly to the bucket.
+```
+gsutil list gs://${PROJECT_ID}-config/agent_config.json
+```
+
+Set up the environment variable `AGENT_CONFIG_PATH` accordingly:
+- When deploying locally, set AGENT_CONFIG_PATH to the GCS path.
+  ```
+  export AGENT_CONFIG_PATH=gs://${PROJECT_ID}-config/agent_config.json
+  ```
+- When deploying with CI/CD like Github action, set the AGENT_CONFIG_PATH in the CI/CD's env vars.
+
+> If AGENT_CONFIG_PATH is not set, it will fall back to use the default agent_config.json in
+> `components/llm_service/src/config/agent_config.json`.
 
 ## Troubleshoot
 

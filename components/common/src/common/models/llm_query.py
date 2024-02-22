@@ -93,6 +93,7 @@ class QueryEngine(BaseModel):
   index_name = TextField(required=False)
   endpoint = TextField(required=False)
   doc_url = TextField(required=False)
+  agents = ListField(required=False)
   params = MapField(default={})
 
   class Meta:

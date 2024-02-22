@@ -22,4 +22,9 @@ cat <path/to/client_secrets.json> | gcloud secrets versions add "tools-gmail-cli
 # Create and set secret "tools-gmail-oauth-token"
 gcloud secrets create "tools-gmail-oauth-token"
 cat <path/to/token.json> | gcloud secrets versions add "tools-gmail-oauth-token" --data-file=-
+
+# Create and set secret "tools-sheets-serviceaccount-token"
+gcloud secrets create "tools-sheets-serviceaccount-token"
+cat <path/to/token.json> | gcloud secrets versions add "tools-sheets-serviceaccount-token" --data-file=-
+
 ```

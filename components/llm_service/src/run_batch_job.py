@@ -15,13 +15,16 @@
 # pylint: disable = broad-except,unused-import
 """Entry point for batch job"""
 import json
+import asyncio
 from absl import flags, app
 from common.utils.config import (JOB_TYPE_QUERY_ENGINE_BUILD,
-                                 JOB_TYPE_AGENT_PLAN_EXECUTE)
+                                 JOB_TYPE_AGENT_PLAN_EXECUTE,
+                                 JOB_TYPE_ROUTING_AGENT)
 from common.utils.logging_handler import Logger
 from common.utils.kf_job_app import kube_delete_job
-from common.models.batch_job import BatchJobModel
+from common.models.batch_job import BatchJobModel, JobStatus
 from services.query.query_service import batch_build_query_engine
+from services.agents.routing_agent import batch_run_dispatch
 from services.agents.agent_service import batch_execute_plan
 from config import JOB_NAMESPACE
 
@@ -46,12 +49,17 @@ def main(argv):
       _ = batch_build_query_engine(request_body, job)
     elif job.type == JOB_TYPE_AGENT_PLAN_EXECUTE:
       _ = batch_execute_plan(request_body, job)
+    elif job.type == JOB_TYPE_ROUTING_AGENT:
+      _ = asyncio.get_event_loop().run_until_complete(
+        batch_run_dispatch(request_body, job))
     else:
       raise Exception("Invalid job type")
-    job.status = "succeeded"
+
+    job.status = JobStatus.JOB_STATUS_SUCCEEDED.value
     job.update()
     if JOB_NAMESPACE == "default":
       kube_delete_job(FLAGS.container_name, JOB_NAMESPACE)
+
   except Exception as e:
     Logger.info(f"Job failed. Error: {e}")
     job = BatchJobModel.find_by_uuid(FLAGS.container_name)

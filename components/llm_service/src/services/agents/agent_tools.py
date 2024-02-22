@@ -14,16 +14,39 @@
 
 """ Agent tools """
 
-# pylint: disable=unused-argument,unused-import
+# pylint: disable=unused-argument,unused-import,import-outside-toplevel
 
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
-from langchain.tools import tool
+from langchain.tools import tool as langchain_tool, StructuredTool
 from config import SERVICES, auth_client
 from typing import List, Dict
 
 Logger = Logger.get_logger(__file__)
 
+# the agent tool decorator adds tools to this dict
+# {
+#    "tool_1 function name": langchain-wrapped-tool-function,
+#    "tool_2 function name": langchain-wrapped-tool-function,
+#    ...
+# }
+agent_tool_registry = {}
+
+def agent_tool(*dec_args, **dec_kwargs):
+  """ Extend langchain tool decorator to allow us to manage tools """
+
+  def decorator(func):
+    # call the langchain tool decorator on the tool function
+    tool_func = langchain_tool(*dec_args, **dec_kwargs)(func)
+
+    # add the tool to our registry
+    agent_tool_registry.update({func.__name__: tool_func})
+
+    return tool_func
+
+  return decorator
+
+# Tool definitions
 
 def rules_engine_get_ruleset_fields(ruleset_name: str):
   """
@@ -36,7 +59,45 @@ def rules_engine_get_ruleset_fields(ruleset_name: str):
   fields = response.json().get("fields", {})
   return fields
 
-@tool(infer_schema=True)
+def rules_engine_execute_ruleset(ruleset_name: str, rule_inputs: dict):
+  """
+  Call the rules engine to get the fields for a record
+  """
+  api_url_prefix = SERVICES["rules-engine"]["api_url_prefix"]
+  api_url = f"{api_url_prefix}/ruleset/{ruleset_name}/evaluate"
+
+  post_data = {
+
+  }
+
+  response = post_method(url=api_url,
+                         request_body=post_data,
+                         auth_client=auth_client)
+  fields = response.json().get("fields", {})
+  return fields
+
+@agent_tool(infer_schema=True)
+def ruleset_input_tool(ruleset_name: str) -> dict:
+  """
+  Get the list of required inputs to run a set of rules (a 'ruleset').
+  The current available ruleset is a ruleset for medicaid eligibility.
+  The output of this tool is a dict of input keys and corresponding data types.
+  """
+  return rules_engine_get_ruleset_fields(ruleset_name)
+
+
+@agent_tool(infer_schema=True)
+def ruleset_execute_tool(ruleset_name: str, rule_inputs: dict) -> dict:
+  """
+  Run a business rules engine to make determinations about medicaid
+  eligibility. Takes a dict of constituent attributes as input (such as
+  income level, demographic data etc - the full set of input keys is
+  retrieved using the ruleset_input_tool).  Outputs an eligibility decision.
+  """
+  return rules_engine_execute_ruleset(ruleset_name, rule_inputs)
+
+
+@agent_tool(infer_schema=True)
 def gmail_tool(recipients: List, subject: str, message: str) -> str:
   """
   Send an email to a list of recipients
@@ -68,7 +129,7 @@ def gmail_tool(recipients: List, subject: str, message: str) -> str:
 
   return output
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def docs_tool(recipients: List, content: str) -> Dict:
   """
   Compose or create a document using Google Docs
@@ -111,37 +172,38 @@ def docs_tool(recipients: List, content: str) -> Dict:
     Logger.error(f"[gmail_tool] Unable to send email: {e}")
   return output
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def calendar_tool(date: str) -> str:
   """
   Create and update meetings using Google Calendar
   """
+  # TODO: implement this tool
   print("[calendar_tool] calendar tool called:" + date)
   return ""
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def search_tool(query: str) -> str:
   """
   Perform an internet search.
   """
+  # TODO: implement this tool
   print("[search_tool] search tool called: " + query)
   return ""
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def query_tool(query: str) -> Dict:
   """
-  Perform a query and craft an answer using one of the available query engines.
+  Perform a query and craft an answer using one of the available query engines,
+  with the name passed in as a argument.
   """
-
-
-  # Use StructuredTool to let agent to pass output from previous tool..
+  # TODO: implement this tool
   result = {
     "recipients": ["sumeetvij@google.com"]
   }
 
   return result
 
-@tool(infer_schema=True)
+@agent_tool(infer_schema=True)
 def google_sheets_tool(
     name: str, columns: list, rows: list, user_email: str=None) -> dict:
   """
@@ -166,11 +228,14 @@ def create_google_sheet(name: str,
   output = {}
 
   # TODO: Add support with multiple emails.
+  share_emails = []
+  if user_email is not None:
+    share_emails = [user_email]
   data = {
     "name": name,
     "columns": columns,
     "rows": rows,
-    "share_emails": [user_email],
+    "share_emails": share_emails
   }
 
   try:
@@ -194,37 +259,37 @@ def create_google_sheet(name: str,
     Logger.error(f"[google_sheets_tool] Unable to create Google Sheets: {e}")
   return output
 
-@tool(infer_schema=True)
-def database_tool(database_query: str) -> dict:
+@agent_tool(infer_schema=True)
+async def database_tool(database_query_prompt: str) -> dict:
   """
-    Accepts a natural language question and queries a database to get definite
-    answer
+    Accepts a natural language question and queries a database to get an
+    answer in the form of data.
   """
-  Logger.info(
-    f"[database_tool] executing query:{database_query}")
-  api_url_prefix = SERVICES["tools-service"]["api_url_prefix"]
-  api_url = f"{api_url_prefix}/workspace/database/query"
-  output = {}
-  data = {
-    "query": database_query
-  }
-  try:
-    response = post_method(url=api_url,
-                           request_body=data,
-                           auth_client=auth_client)
+  tool_description = """
+  Accepts a natural language question and queries a relational database using
+  SQL to get an answer, in the form of rows of data."
+  """
+  langchain_database_tool = StructuredTool.from_function(
+      name="database_tool",
+      description=tool_description,
+      coroutine=execute_db_query
+  )
 
-    resp_data = response.json()
-    Logger.info(
-      f"[database_tool] response from database_service: {response}"
-      )
-    result = resp_data["result"]
-    Logger.info(
-        f"[database_tool] query response:{resp_data}."
-        f" Result: {result}")
-    output = {
-      "columns": resp_data["columns"],
-      "rows": resp_data["rows"]
-    }
+  # run the tool
+  response = await langchain_database_tool.arun(database_query_prompt)
+
+  return response
+
+
+async def execute_db_query(database_query_prompt: str) -> dict:
+  Logger.info(
+    f"[database_tool] executing query:{database_query_prompt}")
+  output = {}
+  try:
+    from services.agents.db_agent import run_db_agent
+    resp_data = await run_db_agent(database_query_prompt)
+
+    output = resp_data
   except RuntimeError as e:
     Logger.error(f"[database_tool] Unable to execute query: {e}")
   return output

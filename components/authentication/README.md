@@ -13,8 +13,24 @@
 - Make sure to enable the Email/Password provider as the screenshot below:
   ![Alt text](../../.github/assets/idp_emailpass.png)
 
-### Create users
 
+## Add Users
+
+### Add users with the firestore console
+Please verify that email/password provider is enabled.
+
+You can add users to the platform in the [firebase console](https://console.firebase.google.com).  
+
+- Navigate to the console and select your project
+- Navigate to the Authentication section (under Build > Authentication)
+- Click "Add User" on the UX.
+  ![Add User](../../docs/assets/add_user.jpg)
+- Enter the email and password for the user.
+- You can send a password reset email to the user via firebase so the user can create their own password.
+- The user can now log in via the UX apps for the platform.
+- A user model will be created for the user when they log in.  Note that user model will be populated with test first name/last name and should be updated if you care about those fields.
+
+### Add users with the create_users script
 Please verify that email/password provider is enabled.
 
 Get the IP address for the GKE ingress endpoint:
@@ -39,9 +55,9 @@ User 'user@my.domain.com' created successfully. ID Token:
 <my-id-token...>
 ```
 
-### Get ID Access Token
+### Get an ID Access Token
 
-Get the access token for a particular user:
+Get an access token for a particular user:
 ```
 PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py get_token
 ```

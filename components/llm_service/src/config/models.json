@@ -51,7 +51,18 @@
       "provider": "Vertex",
       "model_name": "text-bison@002"
     },
-    "VertexAI-Chat-Palm2V2": {
+    "VertexAI-Chat": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "gemini-pro",
+      "model_params": {
+        "temperature": 0.2,
+        "max_output_tokens": 2048,
+        "top_p": 0.95,
+        "top_k": 40
+      }
+    },
+    "VertexAI-Chat-Palm2-V2": {
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "chat-bison@002"
@@ -102,6 +113,17 @@
       "provider": "Langchain",
       "enabled": true,
       "model_name": "gpt-4",
+      "model_class": "ChatOpenAI",      
+      "model_params": {
+        "temperature": 0
+      }
+    },
+    "OpenAI-GPT4-latest": {
+      "vendor": "OpenAI",
+      "is_chat": true,
+      "provider": "Langchain",
+      "enabled": true,
+      "model_name": "gpt-4-1106-preview",
       "model_class": "ChatOpenAI",      
       "model_params": {
         "temperature": 0

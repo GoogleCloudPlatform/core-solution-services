@@ -67,7 +67,8 @@ def kube_delete_empty_pods(namespace="default"):
       podname = pod.metadata.name
       try:
         if pod.status.phase == "Succeeded":
-          api_pods.delete_namespaced_pod(podname, namespace, body=deleteoptions)
+          api_pods.delete_namespaced_pod(
+            podname, namespace, body=deleteoptions)
           logging.info("Pod: %s deleted!\n" % podname)
       except ApiException as e:
         logging.error(
@@ -78,20 +79,21 @@ def kube_delete_empty_pods(namespace="default"):
     logging.error(
         "Exception when calling CoreV1Api->list_namespaced_pod: %s\n" % e)
 
+
 def kube_delete_job(job_name, namespace="default"):
   """Deletes a pod with the given name"""
   # The always needed object
   deleteoptions = client.V1DeleteOptions(propagation_policy="Background")
   try:
-    api_response = api_instance.delete_namespaced_job(
+    api_instance.delete_namespaced_job(
       job_name, namespace, body=deleteoptions)
-    logging.info(api_response)
   except ApiException as e:
     raise Exception(
       "Exception when calling BatchV1Api->delete_namespaced_job: " + str(
         e)) from e
   except Exception as e:
     raise Exception("Failed to delete the job. Error: " + str(e)) from e
+
 
 def kube_namespace_job_status(namespace="default"):
   """
@@ -236,6 +238,7 @@ def kube_test_credentials():
   except ApiException as e:
     print("Exception when calling API: %s\n" % e)
 
+
 def get_cloud_link(microservice_name):
   """Creates a query which can be used to directly view the logs of
   the required microservice"""
@@ -262,7 +265,9 @@ def get_cloud_link(microservice_name):
 
   return url
 
-def kube_create_job(job_specs, namespace="default", env_vars={}):
+
+def kube_create_job(
+        job_specs, namespace="default", env_vars={}) -> BatchJobModel:
   """ Create a kube job based on the job spec """
   logging.info("kube_create_job: {}".format(job_specs))
   logging.info("kube_create_job: namespace {} env {}".format(
@@ -273,11 +278,6 @@ def kube_create_job(job_specs, namespace="default", env_vars={}):
     logging.info("Type of request body")
     logging.info(job_specs["input_data"])
     logging.info(type(job_specs["input_data"]))
-    duplicate_job = find_duplicate_jobs(job_specs["type"],
-                                        job_specs["input_data"])
-    if duplicate_job:
-      return duplicate_job
-
     # Create the job definition
     logging.info("Batch Job Creation Started")
     container_image = job_specs["container_image"]
@@ -329,7 +329,7 @@ def kube_create_job(job_specs, namespace="default", env_vars={}):
     if job_specs["type"] == "assessment-items":
       job_logs = {job_specs["type"]: get_cloud_link(job_specs["type"]),
                   input_data["activity"]: get_cloud_link(
-                    input_data["activity"].replace("_", "-"))}
+          input_data["activity"].replace("_", "-"))}
 
     elif job_specs["type"] in ["course-ingestion",
                                "course-ingestion_topic-tree",
@@ -361,16 +361,13 @@ def kube_create_job(job_specs, namespace="default", env_vars={}):
                  "kube job body created".format(job_model.name))
 
     # call kube batch API to create job
-    job = api_instance.create_namespaced_job(namespace, body, pretty=True)
-    logging.info("Batch Job {} id {}: Created".format(job, job_model.uuid))
+    kube_job = api_instance.create_namespaced_job(namespace, body, pretty=True)
+    logging.info("Batch Job {} id {}: Created".format(
+      kube_job, job_model.uuid))
 
-    response = {
-      "job_name": job_model.uuid,
-      "doc_id": job_model.id,
-      "status": "active",
-      "job logs": job_logs
-    }
-    return response
+    job_model.status = "active"
+    job_model.save()
+    return job_model
 
   except Exception as e:
     logging.error("Batch Job {}: Failed".format(job_specs))

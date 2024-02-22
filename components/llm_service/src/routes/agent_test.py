@@ -74,9 +74,13 @@ def test_get_agent_list(clean_firestore, client_with_emulator):
   url = f"{api_url}"
   resp = client_with_emulator.get(url)
   json_response = resp.json()
-  agent_list = get_all_agents()
+  agent_config = get_all_agents()
+  # cast all agent config into str
+  for a, ac in agent_config.items():
+    for k, v in ac.items():
+      ac[k] = str(v)
   assert resp.status_code == 200, "Status 200"
-  assert json_response.get("data") == agent_list
+  assert json_response.get("data") == agent_config
 
 
 @pytest.mark.anyio

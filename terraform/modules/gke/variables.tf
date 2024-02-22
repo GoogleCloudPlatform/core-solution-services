@@ -123,6 +123,7 @@ variable "gke_service_account_roles" {
   type        = list(string)
   description = "List of GCP IAM roles"
   default = [
+    "roles/artifactregistry.reader",
     "roles/aiplatform.user",
     "roles/bigquery.admin",
     "roles/container.admin",

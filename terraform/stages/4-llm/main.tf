@@ -44,7 +44,10 @@ resource "null_resource" "dummy_collections_delete" {
   depends_on = [
     google_firestore_index.user_chats_index,
     google_firestore_index.user_queries_index,
-    google_firestore_index.batch_jobs_index
+    google_firestore_index.batch_jobs_index,
+    google_firestore_index.query_documents_index,
+    google_firestore_index.query_documents_2_index,
+    google_firestore_index.query_engines_index
   ]
   provisioner "local-exec" {
     command = "python3 dummy_collections_delete.py"
@@ -119,6 +122,72 @@ resource "google_firestore_index" "batch_jobs_index" {
     order      = "ASCENDING"
   }
 }
+
+resource "google_firestore_index" "query_documents_index" {
+  depends_on = [null_resource.dummy_collections_create]
+  project    = var.project_id
+  collection = "query_documents"
+
+  fields {
+    field_path = "deleted_at_timestamp"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "query_engine_id"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "created_time"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "__name__"
+    order      = "ASCENDING"
+  }
+}
+
+resource "google_firestore_index" "query_documents_2_index" {
+  depends_on = [null_resource.dummy_collections_create]
+  project    = var.project_id
+  collection = "query_documents"
+
+  fields {
+    field_path = "deleted_at_timestamp"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "query_engine_id"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "created_time"
+    order      = "DESCENDING"
+  }
+  fields {
+    field_path = "__name__"
+    order      = "DESCENDING"
+  }
+}
+
+resource "google_firestore_index" "query_engines_index" {
+  depends_on = [null_resource.dummy_collections_create]
+  project    = var.project_id
+  collection = "query_engines"
+
+  fields {
+    field_path = "deleted_at_timestamp"
+    order      = "ASCENDING"
+  }
+  fields {
+    field_path = "created_time"
+    order      = "DESCENDING"
+  }
+  fields {
+    field_path = "__name__"
+    order      = "DESCENDING"
+  }
+}
+
 
 resource "google_secret_manager_secret" "llm_backend_robot_username" {
   secret_id = "llm-backend-robot-username"

@@ -16,23 +16,26 @@
 
 from common.models.batch_job import BatchJobModel, JobStatus
 from common.utils.kf_job_app import (kube_delete_job, kube_create_job,
-                                     kube_get_namespaced_deployment_image_path)
+                                     kube_get_namespaced_deployment_image_path,
+                                     find_duplicate_jobs)
 import json
 from common.utils.errors import ResourceNotFoundException, ConflictError
 
-from config import (DEPLOYMENT_NAME, CONTAINER_NAME, JOB_NAMESPACE, GCP_PROJECT)
+from config import (DEPLOYMENT_NAME, CONTAINER_NAME,
+                    JOB_NAMESPACE, GCP_PROJECT)
 # pylint: disable = dangerous-default-value,broad-exception-raised
 
 
-def initiate_batch_job(request_body, job_type, env_vars={}):
+def initiate_batch_job(request_body, job_type, env_vars={},
+                       allow_duplicate_jobs=True):
   """Triggers a batch job
     Args:
       request_body: dict - dictionary containing metadata for running batch job
       job_type: "type of job"
       env_vars: environment variables
     Returns:
-      job_status: status message if the batch job is triggered successfully
-                  or not.
+      response: A dict object with success status, message and job detail in
+                data property.
   """
   image_path = kube_get_namespaced_deployment_image_path(
       DEPLOYMENT_NAME, CONTAINER_NAME, JOB_NAMESPACE, GCP_PROJECT)
@@ -42,21 +45,24 @@ def initiate_batch_job(request_body, job_type, env_vars={}):
       "input_data": json.dumps(request_body)
   }
   env_vars.update({"GCP_PROJECT": GCP_PROJECT})
-  job_status = kube_create_job(job_specs, JOB_NAMESPACE, env_vars)
-  response = {}
-  if job_status.get("status"):
-    response = {
-        "success": True,
-        "message": f"Successfully initiated the job with type '{job_type}'. "
-                   f"Please use the job name to track the job status",
-        "data": {
-          "job_name": job_status.get("job_name"),
-          "status": job_status.get("status")
-        }
-    }
-  else:  # will go in else if any duplicate job found
-    raise ConflictError("Job already running for same request")
-  return response
+
+  # Find duplicate job.
+  if not allow_duplicate_jobs:
+    duplicate_job = find_duplicate_jobs(job_specs["type"],
+                                        job_specs["input_data"])
+    if duplicate_job:
+      raise ConflictError("Job already running for same request")
+
+  # Create a k8s job and return a newly created BatchJobModel.
+  job_model = kube_create_job(job_specs, JOB_NAMESPACE, env_vars)
+  assert job_model, f"Failed to create job with job_specs: {job_specs}"
+
+  return {
+    "success": True,
+    "message": f"Successfully initiated the job with type '{job_type}'. "
+      f"Please use the job_name to track the job status",
+    "data": job_model.to_dict(),
+  }
 
 
 def get_job_status(job_type, job_name):

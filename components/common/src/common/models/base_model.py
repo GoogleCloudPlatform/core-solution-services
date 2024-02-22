@@ -15,9 +15,14 @@
 FireO BaseModel to be inherited by all other objects in ORM
 """
 import datetime
+from typing import List, Tuple
 import fireo
 from fireo.models import Model
 from fireo.fields import DateTime, TextField
+from fireo.fields.errors import (RequiredField,
+                                 UnSupportedAttribute,
+                                 FieldValidationFailed,
+                                 ValidatorNotCallable)
 from common.utils.errors import ResourceNotFoundException
 import common.config
 
@@ -233,3 +238,32 @@ class BaseModel(Model):
     else:
       raise (ResourceNotFoundException(
         f"{cls.__name__} with uuid {uuid} not found"))
+
+  def validate(self) -> Tuple[bool, List[str]]:
+    """
+    Validate a model in this class.
+
+    Returns:
+      True,[] or False, list of error messages
+    """
+    errors = []
+    valid = True
+    for field_name, field in self._meta.field_list.items():
+      val = getattr(self, field_name)
+      field_attribute = field.field_attribute
+      try:
+        field_attribute.parse(val, ignore_required=False, ignore_default=False,
+                              run_only=None)
+      except RequiredField as e:
+        valid = False
+        errors.append(f"field '{field_name}': {str(e)}")
+      except UnSupportedAttribute as e:
+        valid = False
+        errors.append(f"field '{field_name}': {str(e)}")
+      except FieldValidationFailed as e:
+        valid = False
+        errors.append(f"field '{field_name}': {str(e)}")
+      except ValidatorNotCallable as e:
+        valid = False
+        errors.append(f"field '{field_name}': {str(e)}")
+    return valid, errors

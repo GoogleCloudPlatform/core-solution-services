@@ -18,6 +18,8 @@
 import streamlit as st
 from api import get_chat, run_query
 from components.chat_history import chat_history_panel
+from components.query_engine_select import query_engine_select
+from components.chat_model_select import chat_model_select
 from common.utils.logging_handler import Logger
 import utils
 
@@ -36,7 +38,8 @@ def on_input_change():
     st.write("Invalid Query Engine")
     return
   response = run_query(query_engine_id, user_input,
-                       chat_id=st.session_state.chat_id)
+                       chat_id=st.session_state.chat_id,
+                       llm_type=st.session_state.chat_llm_type)
 
   query_result = response["query_result"]
   query_references = response.get("query_references", None)
@@ -100,7 +103,6 @@ def chat_content():
 
 def chat_page():
   st.title("Query")
-  st.write(f"Engine: {st.session_state.query_engine_id}")
 
   # List all existing chats if any. (data model: UserChat)
   chat_history_panel()
@@ -108,6 +110,11 @@ def chat_page():
   # Set up columns to mimic a right-side sidebar
   main_container = st.container()
   with main_container:
+    col1, col2 = st.columns([3, 3])
+    with col1:
+      query_engine_select()
+    with col2:
+      chat_model_select()
     chat_content()
 
 

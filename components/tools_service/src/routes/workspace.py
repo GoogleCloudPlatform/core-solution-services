@@ -112,7 +112,7 @@ def create_sheet(data: CreateSheetSchema) -> dict:
   Raises:
     HTTPException: 500 Internal Server Error if something fails
   """
-  Logger.info("Creating sheet [{data.name}] for [{data.share_emails}]")
+  Logger.info(f"Creating sheet [{data.name}] for [{data.share_emails}]")
   result = create_spreadsheet(name=data.name,
                               columns=data.columns,
                               rows=data.rows,

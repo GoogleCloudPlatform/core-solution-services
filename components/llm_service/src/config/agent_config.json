@@ -1,30 +1,40 @@
 {
   "Agents":
   {
-    "Dispatch": {
+    "Routing": {
       "llm_type": "OpenAI-GPT4",
-      "agent_type": "langchain_ZeroShot",
-      "agent_class": "DispatchAgent"
+      "agent_type": "langchain_Conversational",
+      "tools": "",
+      "datasets": "fqhc_medical_transactions"
     },
     "Chat": {
       "llm_type": "VertexAI-Chat-Palm2V2-Langchain",
       "agent_type": "langchain_Conversational",
-      "agent_class": "ChatAgent"
+      "tools": "search_tool,query_tool",
+      "query_engines": "ALL"
     },
     "Task": {
-      "llm_type": "OpenAI-GPT4",
+      "llm_type": "OpenAI-GPT4-latest",
       "agent_type": "langchain_StructuredChatAgent",
-      "agent_class": "TaskAgent"
+      "tools": "ALL"
     },
     "Plan": {
-      "llm_type": "OpenAI-GPT4",
+      "llm_type": "OpenAI-GPT4-latest",
       "agent_type": "langchain_ZeroShot",
-      "agent_class": "PlanAgent"
-    },
-    "ModelGarden_LLAMA2": {
-      "llm_type": "VertexAi-ModelGarden-Chat",
-      "agent_type": "model_garden",
-      "agent_class": "ChatAgent"
+      "query_engines": "ALL",
+      "tools": "ALL"
     }
+  },
+  "Datasets":
+  {
+    "fqhc_medical_transactions": {
+      "description": "For queries about approved medicaid billing including CDT codes, FQHC providers and claim transactions.",
+      "type": "SQL"
+    },
+    "medical_providers": {
+      "description": "For queries about medical providers with name, address and medical specialty.",
+      "type": "SQL"
+    },
+    "default": "fqhc_medical_transactions"
   }
 }
