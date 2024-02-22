@@ -18,6 +18,7 @@ import os
 from typing import List, Tuple
 from pathlib import Path
 from common.utils.logging_handler import Logger
+from common.models import QueryEngine
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import CSVLoader
 from pypdf import PdfReader
@@ -39,6 +40,12 @@ class DataSource:
   def __init__(self, storage_client):
     self.storage_client = storage_client
     self.docs_not_processed = []
+
+  @classmethod
+  def upload_bucket_name(cls, q_engine: QueryEngine) -> str:
+    bucket_prefix = q_engine.name.replace(" ", "_")
+    bucket_name = f"{bucket_prefix}-upload"
+    return bucket_name
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[Tuple[str, str, str]]:

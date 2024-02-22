@@ -16,15 +16,17 @@ Vertex Search-based Query Engines
 """
 # pylint: disable=broad-exception-caught
 
+import tempfile
 from typing import List, Tuple
 from pathlib import Path
 from google.cloud import storage
 from google.api_core.client_options import ClientOptions
 from google.api_core.operation import Operation
 from google.cloud import discoveryengine_v1alpha as discoveryengine
-from config import PROJECT_ID
+from config import PROJECT_ID, DEFAULT_WEB_DEPTH_LIMIT
 from common.models import QueryEngine, QueryDocument, QueryReference
 from common.utils.logging_handler import Logger
+from services.query.web_data_source import WebDataSource
 import proto
 
 Logger = Logger.get_logger(__file__)
@@ -154,8 +156,8 @@ def build_vertex_search(q_engine: QueryEngine):
   """
   Build a Vertex Search-based Query Engine
   
-  q_engine.doc_url must specify either a gcs uri,
-     or bq://<bigquery dataset and table separated by colons>
+  q_engine.doc_url must specify either a gcs uri, an http:// https://
+     URL, or bq://<bigquery dataset and table separated by colons>
   ie.
   q_engine.doc_url = "gs://bucket/optional_subfolder"
     or
@@ -173,14 +175,21 @@ def build_vertex_search(q_engine: QueryEngine):
   docs_not_processed = []
 
   # validate data_url
-  if not (data_url.startswith("bq://") or data_url.startswith("gs://")):
+  if not (data_url.startswith("bq://")
+       or data_url.startswith("gs://")
+       or data_url.startswith("http://") or data_url.startswith("https://")):
     raise RuntimeError(f"Invalid data url: {data_url}")
 
   try:
+    if data_url.startswith("http://") or data_url.startswith("https://"):
+      # download web docs and store in a GCS bucket
+      gcs_url = download_web_docs(q_engine, data_url)
+      data_url = gcs_url
+
     # inventory the documents to be ingested
     if data_url.startswith("bq://"):
       docs_to_be_processed = data_url.split("bq://")[1]
-    else:
+    elif data_url.startswith("gs://"):
       docs_to_be_processed = inventory_gcs_files(data_url)
 
     # create data store
@@ -411,3 +420,20 @@ def inventory_gcs_files(gcs_url: str) -> List[str]:
       # TODO rename .htm files to .html
       pass
   return valid_files
+
+def download_web_docs(q_engine: QueryEngine, data_url: str):
+  storage_client = storage.Client(project=PROJECT_ID)
+  params = q_engine.params or {}
+  if "depth_limit" in params:
+    depth_limit = params["depth_limit"]
+  else:
+    depth_limit = DEFAULT_WEB_DEPTH_LIMIT
+  bucket_name = WebDataSource.upload_bucket_name(q_engine)
+  web_data_source = WebDataSource(storage_client,
+                                  bucket_name,
+                                  depth_limit=depth_limit)
+  Logger.info(f"downloading web docs to bucket [{bucket_name}]")
+  with tempfile.TemporaryDirectory() as temp_dir:
+    web_data_source.download_documents(data_url, temp_dir)
+  gcs_url = f"gs://{bucket_name}"
+  return gcs_url
