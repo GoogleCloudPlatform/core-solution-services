@@ -25,7 +25,10 @@ from common.utils.logging_handler import Logger
 from common.utils.user_handler import get_user_by_email
 from services.validation_service import validate_token
 from schemas.validate_token_schema import ValidateTokenResponseModel
-from config import (ERROR_RESPONSES, AUTH_REQUIRE_FIRESTORE_USER)
+from config import (ERROR_RESPONSES,
+                    AUTH_REQUIRE_FIRESTORE_USER,
+                    AUTH_EMAIL_DOMAINS_WHITELIST,
+                    AUTH_AUTO_CREATE_USERS)
 
 Logger = Logger.get_logger(__file__)
 
@@ -57,16 +60,28 @@ def validate_id_token(token: auth_scheme = Depends()):
       raise TokenNotFoundError("Token not found")
     token_dict = dict(token)
     token_data = validate_token(token_dict["credentials"])
-    user = get_user_by_email(
-        token_data["email"], check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER)
+    user_email = token_data["email"]
+    email_domain = user_email.split("@")[1]
+    create_if_not_exist = False
+    Logger.info(f"user_email: {user_email}")
 
-    if user:
-      user_fields = user.get_fields(reformat_datetime=True)
-      Logger.info(user_fields)
-      if user_fields.get("status") == "inactive":
-        raise UnauthorizedUserError("Unauthorized: User status is inactive.")
-      token_data["access_api_docs"] = user_fields.get("access_api_docs", False)
-      token_data["user_type"] = user_fields.get("user_type")
+    if AUTH_AUTO_CREATE_USERS and email_domain in AUTH_EMAIL_DOMAINS_WHITELIST:
+      create_if_not_exist = True
+
+    user = get_user_by_email(user_email,
+                             check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER,
+                             create_if_not_exist=create_if_not_exist)
+    if not user:
+      Logger.error(f"Unauthorized: User {user_email} not found.")
+      raise UnauthorizedUserError(
+          f"Unauthorized: User {user_email} not found.")
+
+    Logger.info(f"user: {user.to_dict()}")
+    user_fields = user.get_fields(reformat_datetime=True)
+    if user_fields.get("status") == "inactive":
+      raise UnauthorizedUserError("Unauthorized: User status is inactive.")
+    token_data["access_api_docs"] = user_fields.get("access_api_docs", False)
+    token_data["user_type"] = user_fields.get("user_type")
 
     return {
         "success": True,
