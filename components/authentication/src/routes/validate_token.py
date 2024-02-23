@@ -72,6 +72,7 @@ def validate_id_token(token: auth_scheme = Depends()):
                              check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER,
                              create_if_not_exist=create_if_not_exist)
     if not user:
+      Logger.error(f"Unauthorized: User {user_email} not found.")
       raise UnauthorizedUserError(
           f"Unauthorized: User {user_email} not found.")
 

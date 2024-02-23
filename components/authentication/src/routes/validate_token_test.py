@@ -26,7 +26,10 @@ API_URL = "http://localhost/authentication/api/v1"
 FAKE_USER_DATA = {
     "id": "fake-user-id",
     "user_id": "fake-user-id",
-    "email": "api-testing@test.com"
+    "email": "api-testing@test.com",
+    "status": "active",
+    "user_type": "user",
+    "access_api_docs": False,
 }
 
 app = FastAPI()
@@ -45,6 +48,7 @@ def test_valid_id(mocker):
   mocker.patch(
       "routes.validate_token.get_user_by_email",
       return_value=fake_user)
+
   response = client.get(url, headers={"Authorization": token})
   assert response.json().get("data") == BASIC_VALIDATE_TOKEN_RESPONSE_EXAMPLE
 
