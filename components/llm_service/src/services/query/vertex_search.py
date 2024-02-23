@@ -162,6 +162,8 @@ def build_vertex_search(q_engine: QueryEngine):
   q_engine.doc_url = "gs://bucket/optional_subfolder"
     or
   q_engine.doc_url = "bq://BIGQUERY_DATASET:BIGQUERY_TABLE"
+    or
+  q_engine.doc_url = "https://example.com/news"
   """
 
   # initialize some variables
@@ -411,14 +413,19 @@ def inventory_gcs_files(gcs_url: str) -> List[str]:
   valid_files = []
   storage_client = storage.Client(project=PROJECT_ID)
   bucket_name = gcs_url.split("gs://")[1].split("/")[0]
+  bucket = storage_client.bucket(bucket_name)
   for blob in storage_client.list_blobs(bucket_name):
     file_name = Path(blob.name).name
     file_extension = Path(file_name).suffix
     if file_extension in VALID_FILE_EXTENSIONS:
       valid_files.append(blob.name)
-    elif file_extension in [".htm"]:
-      # TODO rename .htm files to .html
-      pass
+    elif file_extension == ".htm":
+      # rename .htm files to .html
+      new_blob_name = Path.joinpath(
+        Path(blob.name).parent,
+        Path(blob.name).stem, ".html")
+      bucket.rename_blob(blob, new_blob_name)
+      valid_files.append(blob.name)
   return valid_files
 
 def download_web_docs(q_engine: QueryEngine, data_url: str):
