@@ -14,12 +14,21 @@
   ![Alt text](../../.github/assets/idp_emailpass.png)
 
 
-## Add Users
+## Automatic User Creation with whitelisted email domains
+
+Set the following two environment variables:
+```
+export AUTH_AUTO_CREATE_USERS=true
+export AUTH_EMAIL_DOMAINS_WHITELIST=google.com
+```
+- Please note that `AUTH_EMAIL_DOMAINS_WHITELIST` matches exact email domain, not wildcard support yet.
+
+## Manually add Users
 
 ### Add users with the firestore console
 Please verify that email/password provider is enabled.
 
-You can add users to the platform in the [firebase console](https://console.firebase.google.com).  
+You can add users to the platform in the [firebase console](https://console.firebase.google.com).
 
 - Navigate to the console and select your project
 - Navigate to the Authentication section (under Build > Authentication)
