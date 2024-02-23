@@ -39,6 +39,7 @@ from config.vector_store_config import (PG_HOST, PG_PORT,
 from langchain.schema.vectorstore import VectorStore as LCVectorStore
 from langchain.vectorstores.pgvector import PGVector as LangchainPGVector
 from langchain.docstore.document import Document
+from services.query import vertex_search
 from utils.gcs_helper import create_bucket
 
 Logger = Logger.get_logger(__file__)
@@ -105,6 +106,20 @@ class VectorStore(ABC):
     Returns:
       list of indexes that are matched of length NUM_MATCH_RESULTS
     """
+
+class VertexSearchVectorStore(VectorStore):
+  """
+  A wrapper class to ease integration with Vertex Search
+  """
+  def init_index(self):
+    pass
+
+  @property
+  def vector_store_type(self):
+    return "VertexSearch"
+
+  def delete(self):
+    vertex_search.delete_vertex_search(self.q_engine)
 
 class MatchingEngineVectorStore(VectorStore):
   """

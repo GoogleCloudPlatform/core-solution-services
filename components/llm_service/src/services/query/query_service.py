@@ -36,6 +36,7 @@ from services.query import query_prompts
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore,
+                                         VertexSearchVectorStore,
                                          NUM_MATCH_RESULTS)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
@@ -373,16 +374,17 @@ def query_engine_build(doc_url: str,
                          agents=associated_agents,
                          params=params)
 
-  # retrieve vector store class and store type in q_engine
-  qe_vector_store = vector_store_from_query_engine(q_engine)
-  q_engine.vector_store = qe_vector_store.vector_store_type
-  q_engine.save()
-
   # build document index
   try:
     if query_engine_type == QE_TYPE_VERTEX_SEARCH:
       docs_processed, docs_not_processed = build_vertex_search(q_engine)
+
     elif query_engine_type == QE_TYPE_LLM_SERVICE:
+      # retrieve vector store class and store type in q_engine
+      qe_vector_store = vector_store_from_query_engine(q_engine)
+      q_engine.vector_store = qe_vector_store.vector_store_type
+      q_engine.save()
+
       docs_processed, docs_not_processed = \
           build_doc_index(doc_url, query_engine, qe_vector_store)
     else:
@@ -521,15 +523,18 @@ def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
   A Query Engine is configured for the vector store it uses when it is
   built.  If there is no configured vector store the default is used.
   """
-  qe_vector_store_type = q_engine.vector_store
-  if qe_vector_store_type is None:
-    # set to default vector store
-    qe_vector_store_type = DEFAULT_VECTOR_STORE
+  if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
+    qe_vector_store = VertexSearchVectorStore
+  else:
+    qe_vector_store_type = q_engine.vector_store
+    if qe_vector_store_type is None:
+      # set to default vector store
+      qe_vector_store_type = DEFAULT_VECTOR_STORE
 
-  qe_vector_store_class = VECTOR_STORES.get(qe_vector_store_type)
-  if qe_vector_store_class is None:
-    raise InternalServerError(
-       f"vector store class {qe_vector_store_type} not found in config")
+    qe_vector_store_class = VECTOR_STORES.get(qe_vector_store_type)
+    if qe_vector_store_class is None:
+      raise InternalServerError(
+         f"vector store class {qe_vector_store_type} not found in config")
 
   qe_vector_store = qe_vector_store_class(q_engine, q_engine.embedding_type)
   return qe_vector_store
