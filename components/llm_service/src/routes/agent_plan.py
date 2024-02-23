@@ -39,6 +39,7 @@ Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent/plan", tags=["Agent Plans"],
                    responses=ERROR_RESPONSES)
 
+
 @router.get(
     "/{plan_id}",
     name="Get user plan",
@@ -176,6 +177,7 @@ async def generate_agent_plan(agent_name: str,
     Logger.error(e)
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
+
 
 @router.post(
     "/{plan_id}/run",

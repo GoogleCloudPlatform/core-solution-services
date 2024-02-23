@@ -199,7 +199,7 @@ def query_tool(query: str) -> Dict:
   """
   # TODO: implement this tool
   result = {
-    "recipients": ["sumeetvij@google.com"]
+    "recipients": ["jonchen@google.com"]
   }
 
   return result
