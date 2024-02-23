@@ -406,6 +406,7 @@ class ModelConfig():
       value = provider_config.get(key, default)
     else:
       provider_config = self.get_provider_model_config(provider_id)
+      Logger.info(f"provider_config={provider_config}")
       model_config = provider_config.get(model_id)
       value = model_config.get(key, default)
 

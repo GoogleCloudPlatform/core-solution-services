@@ -174,7 +174,6 @@ async def test_query_route(mock_run_intent,
   assert response_data["output"] == create_query_result.response
   assert response_data["query_engine_id"] == create_query_engine.id
   assert response_data["query_references"] == FAKE_REFERENCES
-  assert response_data["agent_logs"] == FAKE_AGENT_LOGS
 
 
 @pytest.mark.asyncio

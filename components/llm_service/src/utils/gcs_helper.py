@@ -53,6 +53,7 @@ def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
                   content_type="text/plain") -> None:
   """Upload content to GCS bucket"""
   Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
+  create_bucket(storage_client, bucket_name)
   bucket = storage_client.bucket(bucket_name)
   blob = bucket.blob(file_name)
   blob.upload_from_string(
