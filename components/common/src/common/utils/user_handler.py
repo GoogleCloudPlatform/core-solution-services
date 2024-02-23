@@ -23,12 +23,22 @@ DEFAULT_USER_FIRSTNAME = "Test"
 DEFAULT_USER_LASTNAME = "Test"
 DEFAULT_USER_TYPE = "user"
 
-def get_user_by_email(email, check_firestore_user=False):
+def get_user_by_email(email,
+                      check_firestore_user=False,
+                      create_if_not_exist=False):
   Logger.info(f"Find user {email}")
   user = User.find_by_email(email)
-  if check_firestore_user and not user:
-    Logger.error(f"user {email} not found in the database")
-    raise ValueError(f"Unauthorized: user {email} not found in the database.")
+
+  if not user and create_if_not_exist:
+    Logger.error(f"Creating user {email} in the Firestore")
+    return create_user_in_firestore({
+      "user_id": email,
+      "email": email,
+    })
+
+  if not user and check_firestore_user:
+    Logger.error(f"user {email} not found in the Firestore")
+    raise ValueError(f"Unauthorized: user {email} not found in the Firestore.")
   return user
 
 def create_user_in_firestore(user_data: dict):
