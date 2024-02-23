@@ -190,26 +190,6 @@ def hide_loading():
   with spinner_container:
     st.write("")
 
-def format_ai_output(text):
-  text = text.strip()
-
-  # Clean up ASCI code and text formatting code.
-  text = ansi_escape.sub("", text)
-  text = re.sub(r"\[1;3m", "\n", text)
-  text = re.sub(r"\[[\d;]+m", "", text)
-
-  # Reformat steps.
-  text = text.replace("> Entering new AgentExecutor chain",
-                      "**Entering new AgentExecutor chain**")
-  text = text.replace("Task:", "- **Task**:")
-  text = text.replace("Observation:", "---\n**Observation**:")
-  text = text.replace("Thought:", "- **Thought**:")
-  text = text.replace("Action:", "- **Action**:")
-  text = text.replace("Action Input:", "- **Action Input**:")
-  text = text.replace("Route:", "- **Route**:")
-  text = text.replace("> Finished chain", "**Finished chain**")
-  return text
-
 
 def dedup_list(items, dedup_key):
   items_dict = {}
@@ -332,18 +312,11 @@ def display_message(item, item_index):
   route_logs = item.get("route_logs", None)
   if route_logs and route_logs.strip() != "":
     with st.expander("Expand to see Agent's thought process"):
-      st.write(format_ai_output(route_logs))
+      utils.print_ai_output(route_logs)
 
   if "AIOutput" in item:
     with st.chat_message("ai"):
-      ai_output = item["AIOutput"]
-      ai_output = format_ai_output(ai_output)
-      st.write(
-          ai_output,
-          key=f"ai_{item_index}",
-          unsafe_allow_html=False,
-          is_table=False,  # TODO: Detect whether an output content type.
-      )
+      utils.print_ai_output(item["AIOutput"])
 
   # Append all query references.
   if item.get("db_result", None):
@@ -437,9 +410,9 @@ def display_message(item, item_index):
         })
 
   agent_logs = item.get("agent_logs", None)
-  if agent_logs and agent_logs.strip() != "":
+  if agent_logs:
     with st.expander("Expand to see Agent's thought process"):
-      st.write(format_ai_output(agent_logs))
+      utils.print_ai_output(agent_logs)
 
   item_index += 1
 

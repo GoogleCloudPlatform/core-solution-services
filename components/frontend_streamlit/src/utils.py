@@ -14,6 +14,8 @@
 """
   Streamlit app utils file
 """
+import re
+import ast
 import streamlit as st
 import logging
 from config import API_BASE_URL, APP_BASE_PATH
@@ -21,6 +23,8 @@ from streamlit.runtime.scriptrunner import RerunData, RerunException
 from streamlit.source_util import get_pages
 from urllib.parse import urlparse
 from api import validate_auth_token
+
+ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
 def http_navigate_to(url, query_params=None):
@@ -156,3 +160,76 @@ def hide_pages(hidden_pages: list[str]):
     styling,
     unsafe_allow_html=True,
   )
+
+def format_ai_output(text):
+  if not isinstance(text, str):
+    return text
+
+  text = text.strip()
+
+  # Clean up ASCI code and text formatting code.
+  text = ansi_escape.sub("", text)
+  text = re.sub(r"\[1;3m", "\n", text)
+  text = re.sub(r"\[[\d;]+m", "", text)
+
+  # Reformat steps.
+  text = text.replace("> Entering new AgentExecutor chain",
+                      "**Entering new AgentExecutor chain**")
+  text = text.replace("Task:", "- **Task**:")
+  text = text.replace("Observation:", "---\n**Observation**:")
+  text = text.replace("Thought:", "- **Thought**:")
+  text = text.replace("Action:", "- **Action**:")
+  text = text.replace("Action Input:", "- **Action Input**:")
+  text = text.replace("Route:", "- **Route**:")
+  text = text.replace("> Finished chain", "**Finished chain**")
+  return text
+
+
+def print_json_content(key, value):
+  output = f"  - **{key}**: ```{value}```"
+
+  if key == "action_input":
+    output = f"- **{key}**:"
+    if isinstance(value, dict):
+      for sub_key, sub_value in value.items():
+        output += f"\n    - {sub_key}: {sub_value}"
+    else:
+      try:
+        value = ast.literal_eval(value.strip())
+        for sub_key, sub_value in value.items():
+          output += f"\n    - {sub_key}: {sub_value}"
+      except (ValueError, SyntaxError):
+        output = f"  - **{key}**: ```{value}```"
+
+  st.markdown(output)
+
+def print_ai_output(ai_output):
+  if isinstance(ai_output, list):
+    for item in ai_output:
+      # with type
+      if "type" in item:
+        if item["type"] == "Observation":
+          st.markdown("---")
+
+        if not item.get("json_content") and \
+            not item.get("text_content", "").strip():
+          continue
+
+        st.markdown(f"**{item['type']}**")
+
+        if "json_content" in item:
+          for key, value in item["json_content"].items():
+            print_json_content(key, value)
+        else:
+          st.markdown(f" - {item['text_content']}")
+
+      # Without type
+      else:
+        text_content = item["text_content"].strip()
+        if text_content[:2] == "> ":
+          text_content = text_content[2:]
+        st.markdown(f"{text_content}")
+
+  elif isinstance(ai_output, str) and ai_output.strip() != "":
+    st.write(format_ai_output(ai_output))
+
