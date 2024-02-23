@@ -26,7 +26,7 @@ from google.cloud import discoveryengine_v1alpha as discoveryengine
 from config import PROJECT_ID, DEFAULT_WEB_DEPTH_LIMIT
 from common.models import QueryEngine, QueryDocument, QueryReference
 from common.utils.logging_handler import Logger
-from services.query.web_data_source import WebDataSource
+from services.query.web_datasource import WebDataSource
 import proto
 
 Logger = Logger.get_logger(__file__)
