@@ -46,9 +46,9 @@ class DataSource:
   @classmethod
   def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
     qe_name = q_engine.name.replace(" ", "-")
-    qe_name = qe_name.replace("_", "-")
+    qe_name = qe_name.replace("_", "-").lower()
     bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
-    if not re.match("^[a-z]([-a-z0-9]*[a-z0-9])?", bucket_name):
+    if not re.fullmatch("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucket_name):
       raise RuntimeError(f"Invalid downloads bucket name {bucket_name}")
     return bucket_name
 

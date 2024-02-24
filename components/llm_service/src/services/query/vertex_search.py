@@ -17,6 +17,7 @@ Vertex Search-based Query Engines
 # pylint: disable=broad-exception-caught
 
 import tempfile
+import traceback
 from typing import List, Tuple
 from pathlib import Path
 from google.cloud import storage
@@ -217,7 +218,8 @@ def build_vertex_search(q_engine: QueryEngine):
     q_engine.index_id = data_store_id
     q_engine.update()
   except Exception as e:
-    Logger.error(f"Error building vertex search query engine {str(e)}")
+    Logger.error(f"Error building vertex search query engine [{str(e)}]")
+    Logger.error(traceback.print_exc())
 
     # on build error, delete any vertex search assets that were created
     delete_vertex_search(q_engine)

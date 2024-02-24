@@ -186,7 +186,7 @@ class WebDataSource(DataSource):
   """
 
   def __init__(self,
-               storage_client=None,
+               storage_client,
                bucket_name=None,
                depth_limit=DEFAULT_WEB_DEPTH_LIMIT):
     """
@@ -234,7 +234,8 @@ class WebDataSource(DataSource):
       Logger.error(f"ERROR: Bucket name for WebDataSource {doc_url} not set. "
                    f"Scraped files not uploaded to Google Cloud Storage")
     else:
-      create_bucket(self.bucket_name)
+      # ensure downloads bucket exists, and clear contents
+      create_bucket(self.storage_client, self.bucket_name)
 
     spider_class = WebDataSourceSpider
     if self.depth_limit == 0:
