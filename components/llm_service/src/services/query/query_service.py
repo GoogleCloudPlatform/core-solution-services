@@ -36,12 +36,12 @@ from services.query import query_prompts
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore,
-                                         VertexSearchVectorStore,
                                          NUM_MATCH_RESULTS)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
 from services.query.vertex_search import (build_vertex_search,
-                                          query_vertex_search)
+                                          query_vertex_search,
+                                          delete_vertex_search)
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
@@ -277,7 +277,6 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
               f"job id [{job.id}], request_body=[{request_body}]")
   Logger.info(f"doc_url: [{doc_url}] user id: [{user_id}]")
   Logger.info(f"query engine type: [{query_engine_type}]")
-  Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"query description: [{description}]")
   Logger.info(f"llm type: [{llm_type}]")
   Logger.info(f"embedding type: [{embedding_type}]")
@@ -350,6 +349,10 @@ def query_engine_build(doc_url: str,
   if not query_engine_type:
     query_engine_type = QE_TYPE_LLM_SERVICE
 
+  if query_engine_type == QE_TYPE_VERTEX_SEARCH:
+    # no vector store set for vertex search
+    vector_store_type = None
+
   # process special params
   params = params or {}
   is_public = True
@@ -374,6 +377,8 @@ def query_engine_build(doc_url: str,
                          agents=associated_agents,
                          params=params)
 
+  q_engine.save()
+
   # build document index
   try:
     if query_engine_type == QE_TYPE_VERTEX_SEARCH:
@@ -383,7 +388,7 @@ def query_engine_build(doc_url: str,
       # retrieve vector store class and store type in q_engine
       qe_vector_store = vector_store_from_query_engine(q_engine)
       q_engine.vector_store = qe_vector_store.vector_store_type
-      q_engine.save()
+      q_engine.update()
 
       docs_processed, docs_not_processed = \
           build_doc_index(doc_url, query_engine, qe_vector_store)
@@ -523,18 +528,15 @@ def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
   A Query Engine is configured for the vector store it uses when it is
   built.  If there is no configured vector store the default is used.
   """
-  if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
-    qe_vector_store = VertexSearchVectorStore
-  else:
-    qe_vector_store_type = q_engine.vector_store
-    if qe_vector_store_type is None:
-      # set to default vector store
-      qe_vector_store_type = DEFAULT_VECTOR_STORE
+  qe_vector_store_type = q_engine.vector_store
+  if qe_vector_store_type is None:
+    # set to default vector store
+    qe_vector_store_type = DEFAULT_VECTOR_STORE
 
-    qe_vector_store_class = VECTOR_STORES.get(qe_vector_store_type)
-    if qe_vector_store_class is None:
-      raise InternalServerError(
-         f"vector store class {qe_vector_store_type} not found in config")
+  qe_vector_store_class = VECTOR_STORES.get(qe_vector_store_type)
+  if qe_vector_store_class is None:
+    raise InternalServerError(
+       f"vector store class {qe_vector_store_type} not found in config")
 
   qe_vector_store = qe_vector_store_class(q_engine, q_engine.embedding_type)
   return qe_vector_store
@@ -573,8 +575,11 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
   """
   # delete vector store data
   try:
-    qe_vector_store = vector_store_from_query_engine(q_engine)
-    qe_vector_store.delete()
+    if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
+      delete_vertex_search(q_engine)
+    else:
+      qe_vector_store = vector_store_from_query_engine(q_engine)
+      qe_vector_store.delete()
   except Exception:
     # we make this error non-fatal as we want to delete the models
     Logger.error(

@@ -91,7 +91,7 @@ class QueryEngine(BaseModel):
   description = TextField(required=True)
   llm_type = TextField(required=False)
   embedding_type = TextField(required=True)
-  vector_store = TextField(required=True)
+  vector_store = TextField(required=False)
   created_by = TextField(required=True)
   is_public = BooleanField(default=False)
   index_id = TextField(required=False)
