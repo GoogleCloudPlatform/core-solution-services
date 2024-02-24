@@ -16,6 +16,7 @@ Vertex Search-based Query Engines
 """
 # pylint: disable=broad-exception-caught
 
+import re
 import tempfile
 import traceback
 from typing import List, Tuple
@@ -197,7 +198,7 @@ def build_vertex_search(q_engine: QueryEngine):
       docs_to_be_processed = inventory_gcs_files(data_url)
 
     # create data store
-    data_store_id = datastore_id_from_name(q_engine.name)
+    data_store_id = datastore_id_from_engine(q_engine)
     operation = create_data_store(q_engine, project_id, data_store_id)
     wait_for_operation(operation)
 
@@ -303,11 +304,7 @@ def import_documents_to_datastore(data_url: str,
   # create operation to import data
   operation = None
   if data_url.startswith("gs://"):
-    gcs_uris, operation = import_documents_gcs(data_url,
-                                               docs_to_be_processed,
-                                               client,
-                                               parent)
-    docs_to_be_processed = gcs_uris
+    operation = import_documents_gcs(docs_to_be_processed, client, parent)
 
   elif data_url.startswith("bq://"):
     bq_datasource = data_url.split("bq://")[1].split("/")[0]
@@ -340,22 +337,15 @@ def import_documents_to_datastore(data_url: str,
   return docs_processed, docs_not_processed
 
 
-def import_documents_gcs(gcs_uri: str,
-                         docs_to_be_processed: List[str],
+def import_documents_gcs(docs_to_be_processed: List[str],
                          client, parent) -> Tuple[List[str], Operation]:
 
   """ Import documents in a GCS bucket into a VSC Datastore """
 
-  # construct list of full gcs uris for import files
-  gcs_uris = [
-    f"{gcs_uri}/{filepath}"
-    for filepath in docs_to_be_processed
-  ]
-
   request = discoveryengine.ImportDocumentsRequest(
       parent=parent,
       gcs_source=discoveryengine.GcsSource(
-          input_uris=gcs_uris, data_schema="content"
+          input_uris=docs_to_be_processed, data_schema="content"
       ),
       # Options: `FULL`, `INCREMENTAL`
       reconciliation_mode=\
@@ -365,7 +355,7 @@ def import_documents_gcs(gcs_uri: str,
   # Make the request
   operation = client.import_documents(request=request)
 
-  return gcs_uris, operation
+  return operation
 
 def import_documents_bq(project_id: str,
                         bigquery_dataset: str,
@@ -398,12 +388,12 @@ def wait_for_operation(operation):
     result = operation.result()
   return result
 
-def datastore_id_from_name(name: str) -> str:
-  data_store_id = name.replace(" ", "-")
-
-  # TODO
-  # check validity of datastore id
-
+def datastore_id_from_engine(q_engine: QueryEngine) -> str:
+  """ generate a valid datastore id from a query engine name """
+  data_store_id = q_engine.name.lower()
+  data_store_id = data_store_id.replace(" ", "-")
+  if not re.fullmatch("[a-z0-9][a-z0-9-_]*", data_store_id):
+    raise RuntimeError("Invalid datastore id: {data_store_id}")
   return data_store_id
 
 def delete_vertex_search(q_engine: QueryEngine):
@@ -418,17 +408,19 @@ def inventory_gcs_files(gcs_url: str) -> List[str]:
   bucket_name = gcs_url.split("gs://")[1].split("/")[0]
   bucket = storage_client.bucket(bucket_name)
   for blob in storage_client.list_blobs(bucket_name):
-    file_name = Path(blob.name).name
+    file_name = blob.name
+    file_url = f"gs://{bucket_name}/{file_name}"
     file_extension = Path(file_name).suffix
     if file_extension in VALID_FILE_EXTENSIONS:
-      valid_files.append(blob.name)
+      valid_files.append(file_url)
     elif file_extension == ".htm":
       # rename .htm files to .html
-      new_blob_name = Path.joinpath(
-        Path(blob.name).parent,
-        Path(blob.name).stem, ".html")
-      bucket.rename_blob(blob, new_blob_name)
-      valid_files.append(blob.name)
+      new_blob_name = str(Path.joinpath(
+        Path(file_name).parent,
+        Path(file_name).stem + ".html"))
+      new_blob = bucket.rename_blob(blob, new_blob_name)
+      file_url = f"gs://{bucket_name}/{new_blob.name}"
+      valid_files.append(file_url)
   return valid_files
 
 def download_web_docs(q_engine: QueryEngine, data_url: str):
