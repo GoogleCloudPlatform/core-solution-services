@@ -36,16 +36,16 @@ def clear_bucket(storage_client: storage.Client, bucket_name: str) -> None:
 
 def create_bucket(storage_client: storage.Client,
                   bucket_name: str, location: str = None,
-                  force: bool = True) -> None:
+                  clear: bool = True) -> None:
   # Check if the bucket exists
   bucket = storage_client.bucket(bucket_name)
   if not bucket.exists():
     # Create new bucket
     _ = storage_client.create_bucket(bucket_name, location=location)
-    print(f"Bucket {bucket_name} created.")
+    Logger.info(f"Bucket {bucket_name} created.")
   else:
-    print(f"Bucket {bucket_name} already exists.")
-    if force:
+    Logger.info(f"Bucket {bucket_name} already exists.")
+    if clear:
       clear_bucket(storage_client, bucket_name)
 
 def upload_to_gcs(storage_client: storage.Client, bucket_name: str,

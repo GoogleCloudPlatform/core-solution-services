@@ -15,6 +15,7 @@
 Query Data Sources
 """
 import os
+import re
 from typing import List, Tuple
 from pathlib import Path
 from common.utils.logging_handler import Logger
@@ -44,8 +45,11 @@ class DataSource:
 
   @classmethod
   def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
-    qe_name = q_engine.name.replace(" ", "_")
+    qe_name = q_engine.name.replace(" ", "-")
+    qe_name = qe_name.replace("_", "-")
     bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
+    if not re.match("^[a-z]([-a-z0-9]*[a-z0-9])?", bucket_name):
+      raise RuntimeError(f"Invalid downloads bucket name {bucket_name}")
     return bucket_name
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \

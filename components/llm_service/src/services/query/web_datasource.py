@@ -233,6 +233,8 @@ class WebDataSource(DataSource):
     if self.bucket_name is None:
       Logger.error(f"ERROR: Bucket name for WebDataSource {doc_url} not set. "
                    f"Scraped files not uploaded to Google Cloud Storage")
+    else:
+      create_bucket(self.bucket_name)
 
     spider_class = WebDataSourceSpider
     if self.depth_limit == 0:

@@ -165,11 +165,12 @@ def build_vertex_search(q_engine: QueryEngine):
     or
   q_engine.doc_url = "https://example.com/news"
   """
-
   # initialize some variables
   data_url = q_engine.doc_url
   project_id = PROJECT_ID
   location = "global"
+
+  Logger.info(f"Building vertex search engine [{q_engine.name}] [{data_url}]")
 
   # initialize doc tracking lists
   docs_to_be_processed = []
