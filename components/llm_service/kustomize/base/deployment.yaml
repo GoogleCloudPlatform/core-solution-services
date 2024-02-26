@@ -17,7 +17,7 @@ kind: Deployment
 metadata:
   name: llm-service
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: llm-service
@@ -34,11 +34,11 @@ spec:
         imagePullPolicy: IfNotPresent
         resources:
           requests:
-            cpu: "250m"
-            memory: "100Mi"
-          limits:
-            memory: "5000Mi"
             cpu: "2000m"
+            memory: "5000Mi"
+          limits:
+            cpu: "4000m"
+            memory: "10000Mi"
         ports:
         - containerPort: 80
         livenessProbe:
