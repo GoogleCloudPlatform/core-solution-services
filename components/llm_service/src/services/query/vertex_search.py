@@ -28,7 +28,7 @@ from google.cloud import discoveryengine_v1alpha as discoveryengine
 from config import PROJECT_ID, DEFAULT_WEB_DEPTH_LIMIT
 from common.models import QueryEngine, QueryDocument, QueryReference
 from common.utils.logging_handler import Logger
-from services.query.web_datasource import WebDataSource
+from services.query.web_datasource import WebDataSource, sanitize_url
 import proto
 
 Logger = Logger.get_logger(__file__)
@@ -65,14 +65,21 @@ def query_vertex_search(q_engine: QueryEngine,
     document_data = \
         proto.Message.to_dict(search_result.document)["derived_struct_data"]
 
-    # find or create document model
-    query_document = QueryDocument.find_by_url(
+    # Find or create document model
+    query_document = QueryDocument.find_by_index_file(
         q_engine.id, document_data["link"])
     if not query_document:
+      # By not assuming the document models exist, we can more easily search an
+      # existing datastore. The LLM Service just needs the datastore id
+      # associated with a query engine model.
+      Logger.warning(
+          f"Creating document model for {document_data['link']} engine"
+          f" {q_engine.name}")
       query_document = QueryDocument(
         query_engine_id=q_engine.id,
         query_engine=q_engine.name,
-        doc_url=document_data["link"]
+        doc_url=document_data["link"],
+        index_file=document_data["link"]
       )
       query_document.save()
 
@@ -186,9 +193,11 @@ def build_vertex_search(q_engine: QueryEngine):
     raise RuntimeError(f"Invalid data url: {data_url}")
 
   try:
+    is_web = False
     if data_url.startswith("http://") or data_url.startswith("https://"):
       # download web docs and store in a GCS bucket
-      gcs_url = download_web_docs(q_engine, data_url)
+      gcs_url, web_docs_downloaded = download_web_docs(q_engine, data_url)
+      is_web = True
       data_url = gcs_url
 
     # inventory the documents to be ingested
@@ -218,6 +227,28 @@ def build_vertex_search(q_engine: QueryEngine):
     # save metadata for datastore in query engine
     q_engine.index_id = data_store_id
     q_engine.update()
+
+    # if importing from web, build list of web URLs that were imported
+    if is_web:
+      web_docs_processed = []
+      bucket_name = WebDataSource.downloads_bucket_name(q_engine)
+      processed_doc_paths = {
+        doc.split(f"gs://{bucket_name}/")[1] for doc in docs_processed
+      }
+      for doc_url in web_docs_downloaded:
+        if sanitize_url(doc_url) in processed_doc_paths:
+          web_docs_processed.append(doc_url)
+      docs_processed = web_docs_processed
+
+    # create QueryDocument models for processed documents
+    for doc_url in docs_processed:
+      query_document = QueryDocument(
+        query_engine_id=q_engine.id,
+        query_engine=q_engine.name,
+        doc_url=doc_url
+      )
+      query_document.save()
+
   except Exception as e:
     Logger.error(f"Error building vertex search query engine [{str(e)}]")
     Logger.error(traceback.print_exc())
@@ -278,7 +309,25 @@ def import_documents_to_datastore(data_url: str,
                                   docs_to_be_processed: List[str],
                                   project_id: str,
                                   location: str,
-                                  data_store_id: str) -> Operation:
+                                  data_store_id: str) -> \
+                                      Tuple[List[str], List[str]]:
+  """
+  Import documents to a vertex search datastore.  Supports importing
+  BQ dataset:table or GCS bucket containing docs.
+  
+  Args:
+    data_url: url of data source (gcs, bq dataset:table)
+    docs_to_be_processed: list of doc urls stored in the data url
+       that should be imported
+    project_id: id of project of datastore
+    location: location of datastore (currently hard coded to "global")
+       see: https://cloud.google.com/vertex-ai/docs/general/locations
+       for more information
+    data_store_id: id of datastore
+  Returns:
+    Tuple of (list of document urls that were imported from the data source,
+              list of document urls that failed to import)
+  """
 
   docs_processed = []
   docs_not_processed = []
@@ -423,7 +472,18 @@ def inventory_gcs_files(gcs_url: str) -> List[str]:
       valid_files.append(file_url)
   return valid_files
 
-def download_web_docs(q_engine: QueryEngine, data_url: str):
+def download_web_docs(q_engine: QueryEngine, data_url: str) -> \
+    Tuple[str, List[str]]:
+  """
+  Download web docs to a GCS bucket.
+  Args:
+    q_engine: QueryEngine (used for build params, i.e. depth_limit)
+    data_url: http(s) url of root web page
+  Returns:
+    gcs_url:  URL of bucket holding files
+              (bucket will be created if it doesn't exist)
+    downloaded_doc_urls: list of URLs of web docs that were downloaded
+  """
   storage_client = storage.Client(project=PROJECT_ID)
   params = q_engine.params or {}
   if "depth_limit" in params:
@@ -436,6 +496,7 @@ def download_web_docs(q_engine: QueryEngine, data_url: str):
                                   depth_limit=depth_limit)
   Logger.info(f"downloading web docs to bucket [{bucket_name}]")
   with tempfile.TemporaryDirectory() as temp_dir:
-    web_data_source.download_documents(data_url, temp_dir)
+    docs_downloaded = web_data_source.download_documents(data_url, temp_dir)
   gcs_url = f"gs://{bucket_name}"
-  return gcs_url
+  downloaded_doc_urls = [doc[1] for doc in docs_downloaded]
+  return gcs_url, downloaded_doc_urls

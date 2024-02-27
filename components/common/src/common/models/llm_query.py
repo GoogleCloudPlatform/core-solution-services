@@ -200,8 +200,9 @@ class QueryDocument(BaseModel):
   query_engine_id = TextField(required=True)
   query_engine = TextField(required=True)
   doc_url = TextField(required=True)
-  index_start = NumberField(required=True)
-  index_end = NumberField(required=True)
+  index_file = TextField(required=False)
+  index_start = NumberField(required=False)
+  index_end = NumberField(required=False)
 
   class Meta:
     ignore_none_field = False
@@ -248,6 +249,26 @@ class QueryDocument(BaseModel):
     q_doc = cls.collection.filter(
       "query_engine_id", "==", query_engine_id).filter(
       "doc_url", "==", doc_url).filter(
+          "deleted_at_timestamp", "==",
+          None).get()
+    return q_doc
+
+  @classmethod
+  def find_by_index_file(cls, query_engine_id, index_file):
+    """
+    Fetch a document by url
+
+    Args:
+        query_engine_id (str): Query Engine id
+        doc_url (str): Query document url
+
+    Returns:
+        QueryDocument: query document object
+
+    """
+    q_doc = cls.collection.filter(
+      "query_engine_id", "==", query_engine_id).filter(
+      "index_file", "==", index_file).filter(
           "deleted_at_timestamp", "==",
           None).get()
     return q_doc
