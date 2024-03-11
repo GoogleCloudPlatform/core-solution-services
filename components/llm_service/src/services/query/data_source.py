@@ -15,12 +15,14 @@
 Query Data Sources
 """
 import os
+from copy import copy
+from base64 import b64encode
 from typing import List, Tuple
 from pathlib import Path
 from common.utils.logging_handler import Logger
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import CSVLoader
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter, PageObject
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
 
@@ -120,6 +122,53 @@ class DataSource:
 
     return text_chunks
 
+  def chunk_pdf_slides(self, doc_name: str, doc_url: str,
+                     doc_filepath: str) -> List[str]:
+    """
+    Process a pdf export of a slide deck into chunks for embeddings
+
+    Args:
+       doc_name: file name of document
+       doc_url: remote url of document
+       doc_filepath: local file path of document
+    Returns:
+       array where each item is an object representing a pdf page and
+       contains two properties for image b64 data & text chunks 
+       or None if the document could not be processed
+    """
+    Logger.info(f"generating index data for {doc_name}")
+
+    # Confirm that this is a PDF
+    try:
+      doc_extension = doc_name.split(".")[-1]
+      doc_extension = doc_extension.lower()
+      if doc_extension is not "pdf":
+        raise ValueError(f"File {doc_name} must be a PDF")
+    except Exception as e:
+      Logger.error(f"error reading doc {doc_name}: {e}")
+
+    # Open PDF and iterate over pages
+    try:
+      with open(doc_filepath, "rb") as f:
+        reader = PdfReader(f)
+        num_pages = len(reader.pages)
+        Logger.info(f"Reading pdf slide deck {doc_name} with {num_pages} pages")
+        for i in range(num_pages):
+          # Split page into image (PDF) and text (PDF) text files
+          slide_obj = self.split_slide_page(reader.pages[i], doc_filepath)
+
+          # Convert image to b64 and chunk text
+          with open(slide_obj.text.slide_text_filename, "rb") as f:
+            slide_image_b64 = b64encode(f.read()).decode("utf-8")
+          slide_text_chunks = self.chunk_document(
+            slide_obj.text.slide_text_filename, doc_url,
+            slide_obj.text.slide_text_filename)
+    except Exception as e:
+      Logger.error(f"error processing doc {doc_name}: {e}")
+
+    # Return array of page data
+    return [slide_image_b64, slide_text_chunks]
+
   @classmethod
   def text_to_sentence_list(cls, text: str) -> List[str]:
     """
@@ -183,3 +232,65 @@ class DataSource:
       doc_text_list = [section.page_content for section in langchain_document]
 
     return doc_text_list
+
+  @staticmethod
+  def split_slide_page(page: PageObject, doc_filepath: str) -> List[str]:
+    """
+    Read document and return content as a list of strings
+
+    Args:
+      page: a PdfReader page object representing a slide image and its text note
+    Returns:
+      array containing strings of the two newly created files (png and txt)
+    """
+
+    # Get file name and temp folder path
+    doc_folder_i = doc_filepath.rfind("/")
+    if doc_folder_i == -1:
+      doc_folder = ""
+    else:
+      doc_folder = doc_filepath[:doc_folder_i+1]
+    doc_file = doc_filepath[doc_folder_i+1:]
+
+    # crop the top slide of the page
+    slide_image_page = copy(page)
+    slide_image_page.mediabox.lower_left = (page.mediabox.left,
+                                page.mediabox.top - page.mediabox.height * .47)
+
+    # create a new PDF file and add the cropped page to the new PDF file
+    slide_image_pdf = PdfWriter()
+    slide_image_pdf.add_page(slide_image_page)
+
+    # write the new PDF file to a file
+    slide_image_filename = "slide_" + doc_file
+    slide_image_filepath = doc_folder + slide_image_filename
+    with open(slide_image_filepath, "wb") as f:
+      slide_image_pdf.write(f)
+
+    # crop the bottom text content of the page
+    slide_text_page = copy(page)
+    slide_text_page.mediabox.upper_right = (page.mediabox.right,
+                                page.mediabox.top - page.mediabox.height * .47)
+
+    # create a new PDF file and add the cropped page to the new PDF file
+    slide_text_pdf = PdfWriter()
+    slide_text_pdf.add_page(slide_text_page)
+
+    # write the new PDF file to a file
+    slide_text_filename = "text_" + doc_file
+    slide_text_filepath = doc_folder + "text_" + doc_file
+    with open(slide_text_filepath, "wb") as f:
+      slide_text_pdf.write(f)
+
+    slide_image_obj = {
+      "slide_image_filename": slide_image_filename,
+      "slide_image_filepath": slide_image_filepath
+    }
+    slide_text_obj = {
+      "slide_text_filename": slide_text_filename,
+      "slide_text_filepath": slide_text_filepath
+    }
+    return {
+      "image": slide_image_obj,
+      "text": slide_text_obj
+    }
