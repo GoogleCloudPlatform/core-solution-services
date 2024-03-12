@@ -94,6 +94,7 @@ class QueryEngine(BaseModel):
   endpoint = TextField(required=False)
   doc_url = TextField(required=False)
   agents = ListField(required=False)
+  parent_engine_id = TextField(required=False)
   params = MapField(default={})
 
   class Meta:
@@ -137,6 +138,20 @@ class QueryEngine(BaseModel):
             "deleted_at_timestamp", "==",
             None).get()
     return q_engine
+
+  def find_children(self) -> List[BaseModel]:
+    """
+    Find all child engines for this engine.
+
+    Returns:
+        List of QueryEngine objects that point to this engine as parent
+
+    """
+    q_engines = self.collection.filter(
+        "parent_engine_id", "==", self.id).filter(
+            "deleted_at_timestamp", "==",
+            None).fetch()
+    return list(q_engines)
 
   @property
   def deployed_index_name(self):
