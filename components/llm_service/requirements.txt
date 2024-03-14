@@ -9,7 +9,7 @@ google-cloud-storage==2.10.0
 invoke==2.0.0
 langchain==0.0.350
 langchain-community==0.0.7
-langchain-core==0.1.4
+langchain-core==0.1.30
 numpy==1.25.0
 openai==0.28.1
 packaging==23.2
