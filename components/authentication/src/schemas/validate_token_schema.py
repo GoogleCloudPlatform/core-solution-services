@@ -45,7 +45,7 @@ class ResponseModel(BaseModel):
   email_verified: bool
   firebase: FirebaseModel
   uid: str
-  access_api_docs: bool
+  access_api_docs: Optional[bool]
   user_type: str
 
 
