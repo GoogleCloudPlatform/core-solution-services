@@ -84,12 +84,14 @@ def query_vertex_search(q_engine: QueryEngine,
       query_document.save()
 
     # create query reference model
+    Logger.info(
+        f"Creating query ref for search result [{document_data['link']}]")
     query_reference = QueryReference(
       query_engine_id=q_engine.id,
       query_engine=q_engine.name,
       document_id=query_document.id,
       document_url=query_document.doc_url,
-      chunk_text=document_data["snippets"][0]["snippet"],
+      document_text=document_data["snippets"][0]["snippet"],
     )
     query_reference.save()
     query_references.append(query_reference)

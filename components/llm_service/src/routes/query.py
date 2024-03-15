@@ -468,12 +468,15 @@ async def query(query_engine_id: str,
           sentence_references=sentence_references)
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
+    query_reference_dicts = [
+      ref.get_fields(reformat_datetime=True) for ref in query_references
+    ]
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
             "query_result": query_result,
-            "query_references": query_references
+            "query_references": query_reference_dicts
         }
     }
   except Exception as e:
@@ -523,16 +526,19 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
                                                           q_engine,
                                                           llm_type,
                                                           user_query)
+    query_reference_dicts = [
+      ref.get_fields(reformat_datetime=True) for ref in query_references
+    ]
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "
                 f"query_result={query_result} "
-                f"query_references={query_references}")
+                f"query_references={query_reference_dicts}")
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
             "query_result": query_result,
-            "query_references": query_references
+            "query_references": query_reference_dicts
         }
     }
   except Exception as e:

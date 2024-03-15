@@ -67,7 +67,7 @@ async def query_generate(
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
             sentence_references: bool = True) -> \
-                Tuple[QueryResult, List[dict]]:
+                Tuple[QueryResult, List[QueryReference]]:
   """
   Execute a query over a query engine
 
@@ -85,7 +85,7 @@ async def query_generate(
 
   Returns:    
     QueryResult object, 
-    list of dicts of query reference metadata (see query_search)
+    list of QueryReference objects (see query_search)
 
   Raises:
     ResourceNotFoundException if the named query engine doesn't exist
@@ -133,7 +133,11 @@ async def query_generate(
     user_query = UserQuery(user_id=user_id,
                            query_engine_id=q_engine.id)
     user_query.save()
-  user_query.update_history(prompt, question_response, query_references)
+
+  query_reference_dicts = [
+    ref.get_fields(reformat_datetime=True) for ref in query_references
+  ]
+  user_query.update_history(prompt, question_response, query_reference_dicts)
 
   return query_result, query_references
 
@@ -207,13 +211,13 @@ def query_search(q_engine: QueryEngine,
       document_id=query_doc.id,
       document_url=query_doc.doc_url,
       chunk_id=doc_chunk.id,
-      chunk_text=clean_text
+      document_text=clean_text
     )
     query_reference.save()
     query_references.append(query_reference)
 
-  # Logger.info(f"Retrieved {len(query_references)} "
-  #             f"references={query_references}")
+  Logger.info(f"Retrieved {len(query_references)} "
+               f"references={query_references}")
   return query_references
 
 def get_top_relevant_sentences(q_engine, query_embeddings,
