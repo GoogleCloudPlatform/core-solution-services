@@ -22,6 +22,8 @@ LLM_GENERATE_EXAMPLE = {
 
 LLM_MULTI_GENERATE_EXAMPLE = {
   "llm_type": "",
+  "user_file_b64": "",
+  "user_file_name": "",
   "prompt": ""
 }
 
