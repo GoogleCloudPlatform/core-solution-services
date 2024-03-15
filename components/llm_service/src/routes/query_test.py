@@ -296,7 +296,9 @@ def test_query(create_user, create_engine,
   query_data = json_response.get("data")
   assert query_data["query_result"]["id"] == QUERY_RESULT_EXAMPLE.get("id"), \
     "returned query result"
-  assert query_data["query_references"] == [QUERY_REFERENCE_EXAMPLE_1], \
+  test_query_ref_fields = create_query_reference.get_fields(remove_meta=True)
+  QueryReference.remove_field_meta(query_data["query_references"][0])
+  assert query_data["query_references"] == [test_query_ref_fields], \
     "returned query references"
 
 
@@ -318,7 +320,9 @@ def test_query_generate(create_user, create_engine, create_user_query,
   query_data = json_response.get("data")
   assert query_data["query_result"]["id"] == QUERY_RESULT_EXAMPLE.get("id"), \
     "returned query result"
-  assert query_data["query_references"] == [QUERY_REFERENCE_EXAMPLE_1], \
+  test_query_ref_fields = create_query_reference.get_fields(remove_meta=True)
+  QueryReference.remove_field_meta(query_data["query_references"][0])
+  assert query_data["query_references"] == [test_query_ref_fields], \
     "returned query references"
 
 

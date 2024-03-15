@@ -98,11 +98,7 @@ QUERY_REFERENCE_EXAMPLE_1 = {
   "document_id": "asd98798as7dhjgkjsdfh1",
   "document_url": "https://example.com/content",
   "chunk_id": "abcdxxzzyy5678",
-  "document_text": "test doc content",
-  "archived_at_timestamp": None,
-  "archived_by": None,
-  "created_by": "fake-user-id",
-  "created_time": "2023-07-04 19:22:50.799741+00:00"  
+  "document_text": "test doc content"
 }
 
 QUERY_DOCUMENT_EXAMPLE_1 = {
