@@ -36,6 +36,8 @@ class UserQuery(BaseModel):
   user_id = TextField(required=True)
   title = TextField(required=False)
   query_engine_id = TextField(required=True)
+  prompt = TextField(required=True)
+  response = TextField(required=False)
   history = ListField(default=[])
 
   class Meta:
@@ -78,7 +80,7 @@ class UserQuery(BaseModel):
         QUERY_AI_REFERENCES: references
       }
     )
-    self.update()
+    self.save(merge=True)
 
 
 class QueryEngine(BaseModel):

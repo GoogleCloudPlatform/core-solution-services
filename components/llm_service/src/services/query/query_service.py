@@ -125,6 +125,7 @@ async def query_generate(
   query_result = QueryResult(query_engine_id=q_engine.id,
                              query_engine=q_engine.name,
                              query_refs=query_ref_ids,
+                             prompt=prompt,
                              response=question_response)
   query_result.save()
 
