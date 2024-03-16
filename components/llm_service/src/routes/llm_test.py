@@ -19,6 +19,8 @@
 # pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
 import os
 import pytest
+import base64
+import json
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
@@ -51,22 +53,29 @@ add_exception_handlers(app)
 app.include_router(router, prefix="/llm-service/api/v1")
 
 FAKE_USER_DATA = {
-    "id": "fake-user-id",
-    "user_id": "fake-user-id",
-    "auth_id": "fake-user-id",
-    "email": "user@gmail.com",
-    "role": "Admin"
+  "id": "fake-user-id",
+  "user_id": "fake-user-id",
+  "auth_id": "fake-user-id",
+  "email": "user@gmail.com",
+  "role": "Admin"
 }
 
-FAKE_FILE_NAME = "test.png"
 FAKE_GENERATE_PARAMS = {
-    "llm_type": "LLM Test",
-    "prompt": "test prompt"
-  }
+  "llm_type": "LLM Test",
+  "prompt": "test prompt"
+}
+
+FAKE_GENERATE_MULTI_PARAMS = {
+  "llm_type": "LLM Test",
+  "prompt": "test prompt",
+  "user_file_b64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs\
+    4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII=",
+  "user_file_name": "test.png"
+}
 
 FAKE_GENERATE_EMBEDDINGS = {
-    "embedding_type": "Embedding Test",
-    "text": "test prompt"
+  "embedding_type": "Embedding Test",
+  "text": "test prompt"
 }
 
 FAKE_GENERATE_RESPONSE = "test generation"
@@ -131,16 +140,10 @@ def test_llm_generate(client_with_emulator):
 def test_llm_generate_multi(client_with_emulator):
   url = f"{api_url}/generate/multi"
 
-  with open(FAKE_FILE_NAME, "ab") as f:
-    pass
-
-  with open(FAKE_FILE_NAME, "rb") as f:
-    files = {"user_file": (FAKE_FILE_NAME, f)}
-    os.remove(FAKE_FILE_NAME)
-    with mock.patch("routes.llm.llm_generate_multi",
-                    return_value=FAKE_GENERATE_RESPONSE):
-      resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS,
-                                      files=files)
+  with mock.patch("routes.llm.llm_generate_multi",
+                  return_value=FAKE_GENERATE_RESPONSE):
+    resp = client_with_emulator.post(url, data=json.dumps(
+      FAKE_GENERATE_MULTI_PARAMS))
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"

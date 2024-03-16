@@ -191,7 +191,14 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".gif": "image/gif",
-    ".mp4": "video/mp4"
+    ".mp4": "video/mp4",
+    ".mov": "video/mov",
+    ".avi": "video/avi",
+    ".mpegps": "video/mpegps",
+    ".mpeg": "video/mpeg",
+    ".mpg": "video/mpg",
+    ".wmv": "video/wmv",
+    ".fls": "video/fls"
   }
   user_file_extension = os.path.splitext(user_file_name)[1]
   user_file_extension = vertex_mime_types.get(user_file_extension)

@@ -22,7 +22,6 @@ from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      QUERY_ENGINE_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
                                      LLM_EMBEDDINGS_EXAMPLE)
-from fastapi import UploadFile, File, Form
 
 class ChatModel(BaseModel):
   id: Optional[str] = None
