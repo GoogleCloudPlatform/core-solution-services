@@ -52,8 +52,7 @@ jobs:
 
       - name: Install Firebase CLI and emulator
         run: |
-          curl -sL https://firebase.tools | bash
-          firebase setup:emulators:firestore
+          utils/install_firebase.sh v13.1.0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -73,6 +72,7 @@ jobs:
       - name: Run pytest with coverage
         run: |
           BASE_DIR=$(pwd)
+          firebase emulators:start --only firestore --project fake-project &
           cd ${{ matrix.target-folder }}/src
           PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest || true
 
