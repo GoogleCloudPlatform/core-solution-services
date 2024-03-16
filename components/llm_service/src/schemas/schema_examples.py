@@ -35,7 +35,7 @@ USER_QUERY_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "user_id": "fake-user-id",
   "title": "Test query",
-#  "llm_type": "VertexAI-Chat",
+  "prompt": "Test prompt",
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "history": [
     {"HumanQuestion": "test input 1"},
@@ -99,6 +99,16 @@ QUERY_REFERENCE_EXAMPLE_1 = {
   "document_url": "https://example.com/content",
   "chunk_id": "abcdxxzzyy5678",
   "document_text": "test doc content"
+}
+
+QUERY_REFERENCE_EXAMPLE_2 = {
+  "id": "fasd98798as7dhjgkjsdf",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
+  "query_engine": "query-engine-test",
+  "document_id": "asd98798as7dhjgkjsdfh1",
+  "document_url": "https://example.com/content",
+  "chunk_id": "abcdxxzzyy5678",
+  "document_text": "test doc content 2"
 }
 
 QUERY_DOCUMENT_EXAMPLE_1 = {
