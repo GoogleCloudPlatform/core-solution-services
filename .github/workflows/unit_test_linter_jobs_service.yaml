@@ -72,7 +72,7 @@ jobs:
         # We run tests separately for routes and services in the LLM service due to mocking conflicts
         run: |
           BASE_DIR=$(pwd)
-          firebase emulators:start --only firestore --project fake-project &
+          firebase emulators:start --only firestore --project fake-project
           cd ${{ matrix.target-folder }}/src
           PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest
 
