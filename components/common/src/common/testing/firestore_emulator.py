@@ -19,7 +19,7 @@ import requests
 import pytest
 
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import,line-too-long,useless-return
+# pylint: disable=unused-argument,redefined-outer-name,unused-import,line-too-long,useless-return,raise-missing-from
 
 @pytest.fixture(scope="session", autouse=True)
 def firestore_emulator():
