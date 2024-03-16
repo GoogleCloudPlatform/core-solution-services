@@ -15,15 +15,11 @@
   Pytest Fixture for getting firestore emulator
 """
 import os
-import signal
-import subprocess
-import time
-import platform
 import requests
 import pytest
 
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import
+# pylint: disable=unused-argument,redefined-outer-name,unused-import,line-too-long,useless-return
 
 @pytest.fixture(scope="session", autouse=True)
 def firestore_emulator():
