@@ -469,12 +469,16 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
-    doc_filepaths = data_source.download_documents(doc_url, temp_dir)
+    data_source_files = data_source.download_documents(doc_url, temp_dir)
 
     # counter for unique index ids
     index_base = 0
 
-    for doc_name, index_doc_url, doc_filepath in doc_filepaths:
+    for data_source_file in data_source_files:
+      doc_name = data_source_file.doc_name
+      index_doc_url = data_source_file.src_url
+      doc_filepath = data_source_file.local_path
+
       Logger.info(f"processing [{doc_name}]")
 
       text_chunks = data_source.chunk_document(doc_name,

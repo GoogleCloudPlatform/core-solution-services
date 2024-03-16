@@ -50,8 +50,8 @@ def create_bucket(storage_client: storage.Client,
 
 def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
                   file_name: str, content: str,
-                  content_type="text/plain") -> None:
-  """Upload content to GCS bucket"""
+                  content_type="text/plain") -> str:
+  """ Upload content to GCS bucket. Returns URL to file. """
   Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
   bucket = storage_client.bucket(bucket_name)
   blob = bucket.blob(file_name)
@@ -60,3 +60,4 @@ def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
     content_type=content_type
   )
   Logger.info(f"Uploaded {len(content)} bytes")
+  return blob.path

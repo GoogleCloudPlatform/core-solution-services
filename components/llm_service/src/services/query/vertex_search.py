@@ -498,7 +498,7 @@ def download_web_docs(q_engine: QueryEngine, data_url: str) -> \
                                   depth_limit=depth_limit)
   Logger.info(f"downloading web docs to bucket [{bucket_name}]")
   with tempfile.TemporaryDirectory() as temp_dir:
-    docs_downloaded = web_data_source.download_documents(data_url, temp_dir)
+    downloaded_docs = web_data_source.download_documents(data_url, temp_dir)
   gcs_url = f"gs://{bucket_name}"
-  downloaded_doc_urls = [doc[1] for doc in docs_downloaded]
+  downloaded_doc_urls = [dsfile.src_url for dsfile in downloaded_docs]
   return gcs_url, downloaded_doc_urls

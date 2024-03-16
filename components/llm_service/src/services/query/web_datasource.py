@@ -22,7 +22,7 @@ import hashlib
 import os
 import sys
 import tempfile
-from typing import List, Tuple
+from typing import List
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
 from scrapy.linkextractors import LinkExtractor
@@ -31,7 +31,7 @@ from scrapy.http import Response
 from google.cloud import storage
 from config import DEFAULT_WEB_DEPTH_LIMIT, PROJECT_ID
 from common.utils.logging_handler import Logger
-from services.query.data_source import DataSource
+from services.query.data_source import DataSource, DataSourceFile
 from utils.gcs_helper import create_bucket, upload_to_gcs
 from utils.html_helper import (html_trim_tags,
                                html_to_text,
@@ -107,8 +107,9 @@ class WebDataSourceParser:
     }
     save_content(self.filepath, file_name, file_content)
     if self.storage_client and self.bucket_name:
-      upload_to_gcs(self.storage_client, self.bucket_name,
-                    file_name, file_content, content_type)
+      gcs_path = upload_to_gcs(self.storage_client, self.bucket_name,
+                               file_name, file_content, content_type)
+      item.update({"gcs_path": gcs_path})
     return item
 
 
@@ -213,12 +214,13 @@ class WebDataSource(DataSource):
         f"No content from: {response.url}, content type: {content_type}")
     else:
       filepath = os.path.join(item["filepath"], item["filename"])
-      self.doc_data.append((item["filename"],
-                            item["url"],
-                            filepath))
+      data_source_file = DataSourceFile(item["filename"], item["url"], filepath)
+      if "gcs_path" in item:
+        data_source_file.gcs_path = item["gcs_path"]
+      self.doc_data.append(data_source_file)
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \
-        List[Tuple[str, str, str]]:
+        List[DataSourceFile]:
     """
     Download files from doc_url source to a local tmp directory
 
@@ -227,7 +229,7 @@ class WebDataSource(DataSource):
         temp_dir: Path to temporary directory to download files to
 
     Returns:
-        list of tuples (doc name, document url, local file path)
+        list of DataSourceFile's
     """
     # The scraped files won't be uploaded to GCS if the bucket_name is not set
     if self.bucket_name is None:

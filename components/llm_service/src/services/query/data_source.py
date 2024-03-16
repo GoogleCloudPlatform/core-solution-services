@@ -16,7 +16,7 @@ Query Data Sources
 """
 import os
 import re
-from typing import List, Tuple
+from typing import List
 from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.models import QueryEngine
@@ -33,10 +33,21 @@ from utils import text_helper
 Logger = Logger.get_logger(__file__)
 CHUNK_SIZE = 1000
 
+class DataSourceFile():
+  """ class storing meta data about a data source file """
+  def __init__(self,
+               doc_name:str,
+               src_url:str,
+               local_path:str,
+               gcs_path:str = None):
+    self.doc_name = doc_name
+    self.src_url = src_url
+    self.local_path = local_path
+    self.gcs_path = gcs_path
 
 class DataSource:
   """
-  Class for query data sources
+  Super class for query data sources. Also implements GCS DataSource.
   """
 
   def __init__(self, storage_client):
@@ -53,7 +64,7 @@ class DataSource:
     return bucket_name
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \
-        List[Tuple[str, str, str]]:
+        List[DataSourceFile]:
     """
     Download files from doc_url source to a local tmp directory
 
@@ -62,7 +73,7 @@ class DataSource:
         temp_dir: Path to temporary directory to download files to
 
     Returns:
-        list of tuples (doc name, document url, local file path)
+        list of DataSourceFile
     """
     doc_filepaths = []
     bucket_name = doc_url.split("gs://")[1].split("/")[0]
@@ -73,7 +84,8 @@ class DataSource:
       file_name = Path(blob.name).name
       file_path = os.path.join(temp_dir, file_name)
       blob.download_to_filename(file_path)
-      doc_filepaths.append((blob.name, blob.path, file_path))
+      doc_filepaths.append(
+          DataSourceFile(blob.name, blob.path, file_path, blob.path))
 
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(
