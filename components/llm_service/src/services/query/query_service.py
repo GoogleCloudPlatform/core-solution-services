@@ -27,7 +27,9 @@ from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
                            QueryReference, QueryDocumentChunk,
                            BatchJobModel)
-from common.models.llm_query import QE_TYPE_VERTEX_SEARCH, QE_TYPE_LLM_SERVICE
+from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
+                                     QE_TYPE_LLM_SERVICE,
+                                     QE_TYPE_INTEGRATED_SEARCH)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -354,20 +356,30 @@ def query_engine_build(doc_url: str,
   if not query_engine_type:
     query_engine_type = QE_TYPE_LLM_SERVICE
 
-  if query_engine_type == QE_TYPE_VERTEX_SEARCH:
-    # no vector store set for vertex search
+  if query_engine_type in (QE_TYPE_VERTEX_SEARCH,
+                           QE_TYPE_INTEGRATED_SEARCH):
+    # no vector store set for vertex search or integrated search
     vector_store_type = None
 
-  # process special params
+  # process special build params
   params = params or {}
   is_public = True
   if "is_public" in params and isinstance(params["is_public"], str):
     is_public = params["is_public"].lower()
     is_public = is_public == "true"
+
   associated_agents = []
   if "agents" in params and isinstance(params["agents"], str):
     associated_agents = params["agents"].split(",")
     associated_agents = [qe.strip() for qe in associated_agents]
+
+  associated_query_engines = []
+  if "query_engines" in params:
+    associated_qe_names = params["query_engines"].split(",")
+    associated_query_engines = [
+      QueryEngine.find_by_name(qe_name.strip())
+      for qe_name in associated_qe_names
+    ]
 
   # create query engine model
   q_engine = QueryEngine(name=query_engine,
@@ -397,6 +409,13 @@ def query_engine_build(doc_url: str,
 
       docs_processed, docs_not_processed = \
           build_doc_index(doc_url, query_engine, qe_vector_store)
+
+    elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
+      # for each associated query engine store the current engine as its parent
+      for aq_engine in associated_query_engines:
+        aq_engine.parent_engine_id = q_engine.id
+        aq_engine.update()
+
     else:
       raise RuntimeError(f"Invalid query_engine_type {query_engine_type}")
   except Exception as e:

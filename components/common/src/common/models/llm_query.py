@@ -27,6 +27,7 @@ QUERY_AI_REFERENCES = "AIReferences"
 # query engine types
 QE_TYPE_VERTEX_SEARCH = "qe_vertex_search"
 QE_TYPE_LLM_SERVICE = "qe_llm_service"
+QE_TYPE_INTEGRATED_SEARCH = "qe_integrated_search"
 
 class UserQuery(BaseModel):
   """
