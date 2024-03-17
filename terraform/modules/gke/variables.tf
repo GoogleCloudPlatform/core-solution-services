@@ -140,5 +140,6 @@ variable "gke_service_account_roles" {
     "roles/stackdriver.resourceMetadata.writer",
     "roles/secretmanager.admin",
     "roles/storage.admin",
+    "roles/discoveryengine.admin",
   ]
 }

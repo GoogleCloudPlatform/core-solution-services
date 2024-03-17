@@ -15,9 +15,12 @@
 Query Data Sources
 """
 import os
-from typing import List, Tuple
+import re
+from typing import List
 from pathlib import Path
 from common.utils.logging_handler import Logger
+from common.models import QueryEngine
+from config import PROJECT_ID
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.document_loaders import CSVLoader
 from pypdf import PdfReader
@@ -30,18 +33,38 @@ from utils import text_helper
 Logger = Logger.get_logger(__file__)
 CHUNK_SIZE = 1000
 
+class DataSourceFile():
+  """ class storing meta data about a data source file """
+  def __init__(self,
+               doc_name:str,
+               src_url:str,
+               local_path:str,
+               gcs_path:str = None):
+    self.doc_name = doc_name
+    self.src_url = src_url
+    self.local_path = local_path
+    self.gcs_path = gcs_path
 
 class DataSource:
   """
-  Class for query data sources
+  Super class for query data sources. Also implements GCS DataSource.
   """
 
   def __init__(self, storage_client):
     self.storage_client = storage_client
     self.docs_not_processed = []
 
+  @classmethod
+  def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
+    qe_name = q_engine.name.replace(" ", "-")
+    qe_name = qe_name.replace("_", "-").lower()
+    bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
+    if not re.fullmatch("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucket_name):
+      raise RuntimeError(f"Invalid downloads bucket name {bucket_name}")
+    return bucket_name
+
   def download_documents(self, doc_url: str, temp_dir: str) -> \
-        List[Tuple[str, str, str]]:
+        List[DataSourceFile]:
     """
     Download files from doc_url source to a local tmp directory
 
@@ -50,7 +73,7 @@ class DataSource:
         temp_dir: Path to temporary directory to download files to
 
     Returns:
-        list of tuples (doc name, document url, local file path)
+        list of DataSourceFile
     """
     doc_filepaths = []
     bucket_name = doc_url.split("gs://")[1].split("/")[0]
@@ -61,7 +84,8 @@ class DataSource:
       file_name = Path(blob.name).name
       file_path = os.path.join(temp_dir, file_name)
       blob.download_to_filename(file_path)
-      doc_filepaths.append((blob.name, blob.path, file_path))
+      doc_filepaths.append(
+          DataSourceFile(blob.name, blob.path, file_path, blob.path))
 
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(

@@ -15,64 +15,50 @@
   Pytest Fixture for getting firestore emulator
 """
 import os
-import signal
-import subprocess
-import time
-import platform
 import requests
 import pytest
 
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import
+# pylint: disable=unused-argument,redefined-outer-name,unused-import,line-too-long,useless-return,raise-missing-from
 
-
-# recreate the emulator each module - could consider changing to session
-# pylint: disable = consider-using-with, subprocess-popen-preexec-fn
 @pytest.fixture(scope="session", autouse=True)
 def firestore_emulator():
-  """Fixture to start firestore emulator
+  """
+  Fixture to set up firestore emulator. Previous versions of this fixture
+  would start and stop the emulator, but this was found to be very slow,
+  and unreliable with the latest versions of the firestore emulator (13.5+).
+  We now rely on the user to start the emulator prior to running tests with
+  the following command:
+
+  $ firebase emulators:start --only firestore --project fake-project &
+
+  Once the emulator is started it can typically be left running without
+  restarting.
+
+  This fixture currently relies on the user to start the emulator outside
+  the test run.
 
   Yields:
-      emulator: _description_
+      None
   """
-  is_windows = bool(platform.system() == "Windows")
-  if is_windows:
-    emulator = subprocess.Popen(
-        "firebase emulators:start --only firestore --project fake-project",
-        shell=True)
-  else:
-    emulator = subprocess.Popen(
-        "firebase emulators:start --only firestore --project fake-project",
-        shell=True,
-        preexec_fn=os.setsid)
-  time.sleep(15)
-
+  # set env vars needed for emulator
   os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
   os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
   os.environ["PROJECT_ID"] = "fake-project"
 
-  # yield so emulator isn't recreated each test
-  yield emulator
-
+  # clear database (and test that firestore emulator is running)
   try:
-    if is_windows:
-      os.kill(emulator.pid, signal.SIGTERM)
-    else:
-      os.killpg(os.getpgid(emulator.pid), signal.SIGTERM)
-  except ProcessLookupError:
-    pass
+    requests.delete(
+      "http://localhost:8080/emulator/v1/projects/fake-project/databases/(default)/documents",
+      timeout=5)
+  except:
+    raise RuntimeError("Must start firestore emulator")
 
-  # delete debug files
-  # some get deleted, not all
+  # yield nothing as we are not creating any artifact
+  yield None
 
-  try:
-    os.remove("firestore-debug.log")
-    os.remove("ui-debug.log")
-  except OSError:
-    pass
-
-  # TODO: script to unset / reset the environmental variables
-  # instead of just delete
+  # no post-run cleanup needed - just return
+  return
 
 
 # pylint: disable = line-too-long

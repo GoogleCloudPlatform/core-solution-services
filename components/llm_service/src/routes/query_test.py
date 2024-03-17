@@ -34,9 +34,11 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
                                      QUERY_DOCUMENT_CHUNK_EXAMPLE_1,
                                      QUERY_DOCUMENT_CHUNK_EXAMPLE_2,
                                      QUERY_DOCUMENT_CHUNK_EXAMPLE_3,
-                                     QUERY_RESULT_EXAMPLE)
+                                     QUERY_RESULT_EXAMPLE,
+                                     QUERY_REFERENCE_EXAMPLE_1)
 from common.models import (UserQuery, QueryResult, QueryEngine,
-                           User, QueryDocument, QueryDocumentChunk)
+                           User, QueryDocument, QueryDocumentChunk,
+                           QueryReference)
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
@@ -90,11 +92,7 @@ FAKE_QUERY_ENGINE_BUILD = {
   "is_public": True
 }
 
-FAKE_REFERENCES = USER_QUERY_EXAMPLE["history"][1]["AIReferences"]
-
 FAKE_GENERATE_RESPONSE = "test generation"
-
-FAKE_QUERY_RESPONSE = (QUERY_RESULT_EXAMPLE, FAKE_REFERENCES)
 
 FAKE_QUERY_PARAMS = QUERY_EXAMPLE
 
@@ -139,6 +137,14 @@ def create_query_result(client_with_emulator):
   query_result_dict = QUERY_RESULT_EXAMPLE
   query_result = QueryResult.from_dict(query_result_dict)
   query_result.save()
+
+
+@pytest.fixture
+def create_query_reference(client_with_emulator):
+  query_reference_dict = QUERY_REFERENCE_EXAMPLE_1
+  query_reference = QueryReference.from_dict(query_reference_dict)
+  query_reference.save()
+  return query_reference
 
 
 @pytest.fixture
@@ -274,12 +280,13 @@ def test_delete_query_engine_hard(mock_vector_store, create_user,
 
 
 def test_query(create_user, create_engine,
-               create_query_result, client_with_emulator):
+               create_query_result, create_query_reference,
+               client_with_emulator):
   q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
   url = f"{api_url}/engine/{q_engine_id}"
 
   query_result = QueryResult.find_by_id(QUERY_RESULT_EXAMPLE["id"])
-  fake_query_response = (query_result, FAKE_REFERENCES)
+  fake_query_response = (query_result, [create_query_reference])
   with mock.patch("routes.query.query_generate",
                   return_value=fake_query_response):
     resp = client_with_emulator.post(url, json=FAKE_QUERY_PARAMS)
@@ -289,18 +296,21 @@ def test_query(create_user, create_engine,
   query_data = json_response.get("data")
   assert query_data["query_result"]["id"] == QUERY_RESULT_EXAMPLE.get("id"), \
     "returned query result"
-  assert query_data["query_references"] == FAKE_REFERENCES, \
+  test_query_ref_fields = create_query_reference.get_fields(remove_meta=True)
+  QueryReference.remove_field_meta(query_data["query_references"][0])
+  assert query_data["query_references"] == [test_query_ref_fields], \
     "returned query references"
 
 
 def test_query_generate(create_user, create_engine, create_user_query,
-                        create_query_result, client_with_emulator):
+                        create_query_result, create_query_reference,
+                        client_with_emulator):
   query_id = USER_QUERY_EXAMPLE["id"]
 
   url = f"{api_url}/{query_id}"
 
   query_result = QueryResult.find_by_id(QUERY_RESULT_EXAMPLE["id"])
-  fake_query_response = (query_result, FAKE_REFERENCES)
+  fake_query_response = (query_result, [create_query_reference])
   with mock.patch("routes.query.query_generate",
                   return_value=fake_query_response):
     resp = client_with_emulator.post(url, json=FAKE_QUERY_PARAMS)
@@ -310,7 +320,9 @@ def test_query_generate(create_user, create_engine, create_user_query,
   query_data = json_response.get("data")
   assert query_data["query_result"]["id"] == QUERY_RESULT_EXAMPLE.get("id"), \
     "returned query result"
-  assert query_data["query_references"] == FAKE_REFERENCES, \
+  test_query_ref_fields = create_query_reference.get_fields(remove_meta=True)
+  QueryReference.remove_field_meta(query_data["query_references"][0])
+  assert query_data["query_references"] == [test_query_ref_fields], \
     "returned query references"
 
 

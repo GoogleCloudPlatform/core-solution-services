@@ -25,7 +25,7 @@ export AUTH_EMAIL_DOMAINS_WHITELIST=google.com
 
 ## Manually add Users
 
-### Add users with the firestore console
+### Add users with the firebase console
 Please verify that email/password provider is enabled.
 
 You can add users to the platform in the [firebase console](https://console.firebase.google.com).
