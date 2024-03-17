@@ -28,6 +28,7 @@ from google.cloud import discoveryengine_v1alpha as discoveryengine
 from config import PROJECT_ID, DEFAULT_WEB_DEPTH_LIMIT
 from common.models import QueryEngine, QueryDocument, QueryReference
 from common.utils.logging_handler import Logger
+from services.query.data_source import DataSourceFile
 from services.query.web_datasource import WebDataSource, sanitize_url
 import proto
 
@@ -204,7 +205,8 @@ def build_vertex_search(q_engine: QueryEngine):
 
     # inventory the documents to be ingested
     if data_url.startswith("bq://"):
-      docs_to_be_processed = data_url.split("bq://")[1]
+      table_data = DataSourceFile(data_url.split("bq://")[1], None, None)
+      docs_to_be_processed = [table_data]
     elif data_url.startswith("gs://"):
       docs_to_be_processed = inventory_gcs_files(data_url)
 
@@ -492,10 +494,14 @@ def download_web_docs(q_engine: QueryEngine, data_url: str) -> \
     depth_limit = params["depth_limit"]
   else:
     depth_limit = DEFAULT_WEB_DEPTH_LIMIT
+
+  # create web datasource
   bucket_name = WebDataSource.downloads_bucket_name(q_engine)
   web_data_source = WebDataSource(storage_client,
                                   bucket_name,
                                   depth_limit=depth_limit)
+
+  # download web docs to GCS
   Logger.info(f"downloading web docs to bucket [{bucket_name}]")
   with tempfile.TemporaryDirectory() as temp_dir:
     downloaded_docs = web_data_source.download_documents(data_url, temp_dir)
