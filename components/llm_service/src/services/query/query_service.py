@@ -132,7 +132,8 @@ async def query_generate(
   # save user query history
   if user_query is None:
     user_query = UserQuery(user_id=user_id,
-                           query_engine_id=q_engine.id)
+                           query_engine_id=q_engine.id,
+                           prompt=prompt)
     user_query.save()
 
   query_reference_dicts = [
