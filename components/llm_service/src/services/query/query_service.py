@@ -70,7 +70,7 @@ async def query_generate(
             user_query: Optional[UserQuery] = None) -> \
                 Tuple[QueryResult, List[QueryReference]]:
   """
-  Execute a query over a query engine
+  Execute a query over a query engine and generate a response.
 
   The rule for determining the model used for question generation is:
     if llm_type is passed as an arg use it
@@ -78,7 +78,7 @@ async def query_generate(
     else use the default query chat model
 
   Args:
-    user_id: user id if user making query
+    user_id: user id of user making query
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
@@ -97,13 +97,8 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
-  # get doc context for question
-  if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
-    query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
-  elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
-      not q_engine.query_engine_type:
-    query_references = query_search(
-        q_engine, prompt, sentence_references=sentence_references)
+  # perform retrieval
+  query_references = retrieve_references(prompt, q_engine, user_id)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -143,6 +138,35 @@ async def query_generate(
 
   return query_result, query_references
 
+def retrieve_references(prompt: str,
+                        q_engine: QueryEngine,
+                        user_id: str) -> List[QueryReference]:
+  """
+  Execute a query over a query engine and retrieve reference documents.
+
+  Args:
+    prompt: the text prompt to pass to the query engine
+    q_engine: the name of the query engine to use
+    user_id: user id of user making query
+  Returns:    
+    list of QueryReference objects
+  """
+  # perform retrieval for prompt
+  query_references = []
+  if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
+    query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
+  elif q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
+    child_engines = q_engine.find_children()
+    for child_engine in child_engines:
+      # make a recursive call to retrieve references for child engine
+      child_query_references = retrieve_references(prompt,
+                                                   child_engine,
+                                                   user_id)
+      query_references += child_query_references
+  elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
+      not q_engine.query_engine_type:
+    query_references = query_search(q_engine, prompt)
+  return query_references
 
 def query_search(q_engine: QueryEngine,
                  query_prompt: str) -> List[QueryReference]:
