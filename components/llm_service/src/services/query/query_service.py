@@ -67,8 +67,7 @@ async def query_generate(
             prompt: str,
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
-            user_query: Optional[UserQuery] = None,
-            sentence_references: bool = True) -> \
+            user_query: Optional[UserQuery] = None) -> \
                 Tuple[QueryResult, List[QueryReference]]:
   """
   Execute a query over a query engine
@@ -146,8 +145,7 @@ async def query_generate(
 
 
 def query_search(q_engine: QueryEngine,
-                 query_prompt: str,
-                 sentence_references: bool = False) -> List[QueryReference]:
+                 query_prompt: str) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -190,22 +188,21 @@ def query_search(q_engine: QueryEngine,
       # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
-    if sentence_references:
-      # Assemble sentences from a document chunk. Currently it gets the
-      # sentences from the top-ranked document chunk.
-      sentences = doc_chunk.sentences
-      # for backwards compatibility with legacy engines break chunks
-      # into sentences here
-      if not sentences or len(sentences) == 0:
-        sentences = text_helper.text_to_sentence_list(doc_chunk.text)
+    # Assemble sentences from a document chunk. Currently it gets the
+    # sentences from the top-ranked document chunk.
+    sentences = doc_chunk.sentences
+    # for backwards compatibility with legacy engines break chunks
+    # into sentences here
+    if not sentences or len(sentences) == 0:
+      sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
-      # Only update clean_text when sentences is not empty.
-      Logger.info(f"Processing {len(sentences)} sentences.")
-      if sentences and len(sentences) > 0:
-        top_sentences = get_top_relevant_sentences(
-            q_engine, query_embeddings, sentences,
-            expand_neighbors=2, highlight_top_sentence=True)
-        clean_text = " ".join(top_sentences)
+    # Only update clean_text when sentences is not empty.
+    Logger.info(f"Processing {len(sentences)} sentences.")
+    if sentences and len(sentences) > 0:
+      top_sentences = get_top_relevant_sentences(
+          q_engine, query_embeddings, sentences,
+          expand_neighbors=2, highlight_top_sentence=True)
+      clean_text = " ".join(top_sentences)
 
     # save query reference
     query_reference = QueryReference(

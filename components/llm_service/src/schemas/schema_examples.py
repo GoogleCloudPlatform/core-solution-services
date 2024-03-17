@@ -28,7 +28,6 @@ LLM_EMBEDDINGS_EXAMPLE = {
 QUERY_EXAMPLE = {
   "prompt": "test prompt",
   "llm_type": "VertexAI-Chat",
-  "sentence_references": False
 }
 
 USER_QUERY_EXAMPLE = {

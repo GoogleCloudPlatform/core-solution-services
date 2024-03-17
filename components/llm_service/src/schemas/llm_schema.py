@@ -130,7 +130,6 @@ class LLMQueryModel(BaseModel):
   """LLM Query model"""
   prompt: str
   llm_type: Optional[str]
-  sentence_references: Optional[bool]
 
   class Config():
     orm_mode = True
