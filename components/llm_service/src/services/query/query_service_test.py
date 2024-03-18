@@ -17,6 +17,7 @@
 """
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable=unused-argument,redefined-outer-name,ungrouped-imports,unused-import
+from pathlib import Path
 import pytest
 from typing import List
 from unittest import mock
@@ -60,34 +61,35 @@ def create_query_reference_2(firestore_emulator, clean_firestore):
   return query_reference
 
 @pytest.fixture
-def create_user(client_with_emulator):
+def create_user(firestore_emulator, clean_firestore):
   user_dict = USER_EXAMPLE
   user = User.from_dict(user_dict)
   user.save()
+  return user
 
 @pytest.fixture
-def create_engine(client_with_emulator):
+def create_engine(firestore_emulator, clean_firestore):
   query_engine_dict = QUERY_ENGINE_EXAMPLE
   q_engine = QueryEngine.from_dict(query_engine_dict)
   q_engine.save()
   return q_engine
 
 @pytest.fixture
-def create_user_query(client_with_emulator):
+def create_user_query(firestore_emulator, clean_firestore):
   query_dict = USER_QUERY_EXAMPLE
   query = UserQuery.from_dict(query_dict)
   query.save()
   return query
 
 @pytest.fixture
-def create_query_result(client_with_emulator):
+def create_query_result(firestore_emulator, clean_firestore):
   query_result_dict = QUERY_RESULT_EXAMPLE
   query_result = QueryResult.from_dict(query_result_dict)
   query_result.save()
   return query_result
 
 @pytest.fixture
-def create_query_docs(client_with_emulator):
+def create_query_docs(firestore_emulator, clean_firestore):
   query_doc1 = QueryDocument.from_dict(QUERY_DOCUMENT_EXAMPLE_1)
   query_doc1.save()
   query_doc2 = QueryDocument.from_dict(QUERY_DOCUMENT_EXAMPLE_2)
@@ -97,7 +99,7 @@ def create_query_docs(client_with_emulator):
   return [query_doc1, query_doc2, query_doc3]
 
 @pytest.fixture
-def create_query_doc_chunks(client_with_emulator):
+def create_query_doc_chunks(firestore_emulator, clean_firestore):
   qdoc_chunk1 = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_1)
   qdoc_chunk1.save()
   qdoc_chunk2 = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_2)
@@ -147,7 +149,8 @@ class FakeVectorStore(VectorStore):
 class FakeDataSource(DataSource):
   """ mock data source class """
   def __init__(self):
-    pass
+    self.docs_not_processed = [DSF3.src_url]
+    
   def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[DataSourceFile]:
     return [DSF1, DSF2, DSF3]
@@ -165,7 +168,7 @@ class FakeDataSource(DataSource):
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.llm_generate.llm_chat")
 @mock.patch("services.query.query_service.query_search")
-def test_query_generate(mock_query_search, mock_llm_chat,
+async def test_query_generate(mock_query_search, mock_llm_chat,
                         create_engine, create_user, create_query_result,
                         create_query_reference, create_query_reference_2):
   prompt = QUERY_EXAMPLE["prompt"]
@@ -173,7 +176,7 @@ def test_query_generate(mock_query_search, mock_llm_chat,
                                     create_query_reference_2]
   mock_llm_chat.return_value = FAKE_GENERATE_RESPONSE
   query_result, query_references = \
-      query_generate(create_user.id, prompt, create_engine)
+      await query_generate(create_user.id, prompt, create_engine)
   assert query_result.query_engine_id == create_engine.id
   assert query_result.prompt == prompt
   assert query_result.response == FAKE_GENERATE_RESPONSE
@@ -186,11 +189,12 @@ def test_query_generate(mock_query_search, mock_llm_chat,
 @mock.patch("services.query.query_service.get_top_relevant_sentences")
 def test_query_search(mock_get_top_relevant_sentences,
                       mock_get_vector_store, mock_get_embeddings,
-                      create_engine, create_query_doc_chunks):
+                      create_engine, create_query_docs,
+                      create_query_doc_chunks):
   qdoc_chunk1 = create_query_doc_chunks[0]
   qdoc_chunk2 = create_query_doc_chunks[1]
   qdoc_chunk3 = create_query_doc_chunks[2]
-  mock_get_embeddings.return_value = [0,1,2,3]
+  mock_get_embeddings.return_value = [True, True, True, True], [0,1,2,3]
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_get_top_relevant_sentences.return_value = "test sentence"
   prompt = QUERY_EXAMPLE["prompt"]
@@ -201,8 +205,10 @@ def test_query_search(mock_get_top_relevant_sentences,
   assert query_references[2].chunk_id == qdoc_chunk3.id
 
 @mock.patch("services.query.query_service.build_doc_index")
-def test_query_engine_build(mock_build_doc_index, create_query_docs,
-                            create_user):
+@mock.patch("services.query.query_service.vector_store_from_query_engine")
+def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
+                            create_query_docs, create_user):
+  mock_get_vector_store.return_value = FakeVectorStore()
   mock_build_doc_index.return_value = (
       [create_query_docs[0], create_query_docs[1]],
       [create_query_docs[2]]
@@ -217,15 +223,17 @@ def test_query_engine_build(mock_build_doc_index, create_query_docs,
   assert docs_not_processed == [create_query_docs[2]]
 
 @mock.patch("services.query.query_service.process_documents")
-def test_build_doc_index(mock_process_documents, create_engine):
+def test_build_doc_index(mock_process_documents, create_engine,
+                         create_query_docs):
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
   mock_process_documents.return_value = (
       [create_query_docs[0], create_query_docs[1]],
       [create_query_docs[2]]
   )
-  docs_processed, docs_not_processed = \
-      build_doc_index(doc_url, create_engine, qe_vector_store)
+  with mock.patch("google.cloud.storage.Client"):
+    docs_processed, docs_not_processed = \
+        build_doc_index(doc_url, create_engine, qe_vector_store)
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
@@ -234,8 +242,9 @@ def test_process_documents(mock_get_datasource, create_engine):
   mock_get_datasource.return_value = FakeDataSource()
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
+  Path(DSF1.local_path).touch()
+  Path(DSF2.local_path).touch()
   docs_processed, docs_not_processed = \
-      process_documents(doc_url, qe_vector_store,
-                      create_engine, None)
-  assert {doc.doc_url for doc in docs_processed} == {DSF1.doc_url, DSF2.doc_url}
-  assert set(docs_not_processed) == {DSF3.doc_url}
+      process_documents(doc_url, qe_vector_store, create_engine, None)
+  assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
+  assert set(docs_not_processed) == {DSF3.src_url}

@@ -397,7 +397,7 @@ def query_engine_build(doc_url: str,
       q_engine.update()
 
       docs_processed, docs_not_processed = \
-          build_doc_index(doc_url, query_engine, qe_vector_store)
+          build_doc_index(doc_url, q_engine, qe_vector_store)
     else:
       raise RuntimeError(f"Invalid query_engine_type {query_engine_type}")
   except Exception as e:
@@ -410,7 +410,7 @@ def query_engine_build(doc_url: str,
   return q_engine, docs_processed, docs_not_processed
 
 
-def build_doc_index(doc_url: str, query_engine: str,
+def build_doc_index(doc_url: str, q_engine: QueryEngine,
                     qe_vector_store: VectorStore) -> \
         Tuple[List[QueryDocument], List[str]]:
   """
@@ -420,16 +420,12 @@ def build_doc_index(doc_url: str, query_engine: str,
 
   Args:
     doc_url: URL pointing to folder of documents
-    query_engine: the query engine to build the index for
+    query_engine: the query engine name to build the index for
 
   Returns:
     Tuple of list of QueryDocument objects of docs processed,
       list of uris of docs not processed
   """
-  q_engine = QueryEngine.find_by_name(query_engine)
-  if q_engine is None:
-    raise ResourceNotFoundException(f"cant find query engine {query_engine}")
-
   storage_client = storage.Client(project=PROJECT_ID)
 
   # initialize the vector store index
@@ -445,7 +441,7 @@ def build_doc_index(doc_url: str, query_engine: str,
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # deploy vectore store (e.g. create endpoint for matching engine)
+    # deploy vector store (e.g. create endpoint for matching engine)
     # db vector stores typically don't require this step.
     qe_vector_store.deploy()
 

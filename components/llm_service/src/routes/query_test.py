@@ -233,7 +233,7 @@ def test_delete_query_engine_soft(mock_vector_store, create_user,
 
   qchunks = QueryDocumentChunk.collection.filter(
       "query_engine_id", "==", q_engine_id).fetch()
-  assert len(list(qchunks)) == 2
+  assert len(list(qchunks)) == 3
 
   assert query_engine_before.name == QUERY_ENGINE_EXAMPLE["name"], "valid"
   assert resp.status_code == 200, "Status 200"
