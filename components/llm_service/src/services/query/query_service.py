@@ -128,7 +128,8 @@ async def query_generate(
   # save user query history
   if user_query is None:
     user_query = UserQuery(user_id=user_id,
-                           query_engine_id=q_engine.id)
+                           query_engine_id=q_engine.id,
+                           prompt=prompt)
     user_query.save()
 
   query_reference_dicts = [
@@ -429,7 +430,7 @@ def query_engine_build(doc_url: str,
       q_engine.update()
 
       docs_processed, docs_not_processed = \
-          build_doc_index(doc_url, query_engine, qe_vector_store)
+          build_doc_index(doc_url, q_engine, qe_vector_store)
 
     elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
       # for each associated query engine store the current engine as its parent
@@ -449,7 +450,7 @@ def query_engine_build(doc_url: str,
   return q_engine, docs_processed, docs_not_processed
 
 
-def build_doc_index(doc_url: str, query_engine: str,
+def build_doc_index(doc_url: str, q_engine: QueryEngine,
                     qe_vector_store: VectorStore) -> \
         Tuple[List[QueryDocument], List[str]]:
   """
@@ -459,16 +460,12 @@ def build_doc_index(doc_url: str, query_engine: str,
 
   Args:
     doc_url: URL pointing to folder of documents
-    query_engine: the query engine to build the index for
+    query_engine: the query engine name to build the index for
 
   Returns:
     Tuple of list of QueryDocument objects of docs processed,
       list of uris of docs not processed
   """
-  q_engine = QueryEngine.find_by_name(query_engine)
-  if q_engine is None:
-    raise ResourceNotFoundException(f"cant find query engine {query_engine}")
-
   storage_client = storage.Client(project=PROJECT_ID)
 
   # initialize the vector store index
@@ -484,7 +481,7 @@ def build_doc_index(doc_url: str, query_engine: str,
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # deploy vectore store (e.g. create endpoint for matching engine)
+    # deploy vector store (e.g. create endpoint for matching engine)
     # db vector stores typically don't require this step.
     qe_vector_store.deploy()
 

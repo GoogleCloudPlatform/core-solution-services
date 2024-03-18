@@ -91,7 +91,7 @@ class QueryEngine(BaseModel):
   id = IDField()
   name = TextField(required=True)
   query_engine_type = TextField(required=True)
-  description = TextField(required=True)
+  description = TextField(required=True, default="")
   llm_type = TextField(required=False)
   embedding_type = TextField(required=True)
   vector_store = TextField(required=False)
