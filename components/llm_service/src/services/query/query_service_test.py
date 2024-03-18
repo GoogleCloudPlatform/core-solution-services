@@ -150,7 +150,7 @@ class FakeDataSource(DataSource):
   """ mock data source class """
   def __init__(self):
     self.docs_not_processed = [DSF3.src_url]
-    
+
   def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[DataSourceFile]:
     return [DSF1, DSF2, DSF3]
