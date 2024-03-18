@@ -35,7 +35,7 @@ USER_QUERY_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "user_id": "fake-user-id",
   "title": "Test query",
-#  "llm_type": "VertexAI-Chat",
+  "prompt": "Test prompt",
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "history": [
     {"HumanQuestion": "test input 1"},
@@ -69,6 +69,7 @@ QUERY_ENGINE_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "name": "query-engine-test",
   "description": "sample description",
+  "query_engine_type": "qe_llm_service",
   "embedding_type": "VertexAI-Chat",
   "vector_store": "langchain_pgvector",
   "created_by": "fake-user-id",
@@ -88,6 +89,26 @@ QUERY_RESULT_EXAMPLE = {
   "archived_by": None,
   "created_by": "fake-user-id",
   "created_time": "2023-07-04 19:22:50.799741+00:00"
+}
+
+QUERY_REFERENCE_EXAMPLE_1 = {
+  "id": "easd98798as7dhjgkjsdf",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
+  "query_engine": "query-engine-test",
+  "document_id": "asd98798as7dhjgkjsdfh1",
+  "document_url": "https://example.com/content",
+  "chunk_id": "abcdxxzzyy5678",
+  "document_text": "test doc content"
+}
+
+QUERY_REFERENCE_EXAMPLE_2 = {
+  "id": "fasd98798as7dhjgkjsdf",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
+  "query_engine": "query-engine-test",
+  "document_id": "asd98798as7dhjgkjsdfh1",
+  "document_url": "https://example.com/content",
+  "chunk_id": "abcdxxzzyy5678",
+  "document_text": "test doc content 2"
 }
 
 QUERY_DOCUMENT_EXAMPLE_1 = {
@@ -139,7 +160,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_2 = {
 
 QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
   "id": "asd98798as7dhjhkkjhk13",
-  "query_engine_id": "asd98798as7dhjgkjs",
+  "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 2,
   "text": "<p>query_document_chunk_example_3</p>",
