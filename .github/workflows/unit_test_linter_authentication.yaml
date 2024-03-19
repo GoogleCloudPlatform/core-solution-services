@@ -49,13 +49,9 @@ jobs:
         with:
           node-version: ${{env.NODE_VERSION}}
 
-      - name: Install Firebase CLI
+      - name: Install Firebase CLI and emulator
         run: |
-          curl -sL https://firebase.tools | bash
-
-      - name: Download Firestore emulator
-        run: |
-          firebase setup:emulators:firestore
+          utils/install_firebase.sh v13.1.0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
@@ -76,6 +72,8 @@ jobs:
         # We run tests separately for routes and services in the LLM service due to mocking conflicts
         run: |
           BASE_DIR=$(pwd)
+          firebase emulators:start --only firestore --project fake-project &
+          sleep 10
           cd ${{ matrix.target-folder }}/src
           PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest routes/*_test.py
           PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest services/*_test.py

@@ -56,7 +56,4 @@ SERVICES = {
     },
 }
 
-# Define custom user types as a list below.
-# TODO: Clean up unused user types.
-USER_TYPES = ["user", "learner", "faculty", "assessor", "admin", "coach",
-              "instructor", "lxe", "curriculum_designer", "robot"]
+CORS_ALLOW_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "").split(",")

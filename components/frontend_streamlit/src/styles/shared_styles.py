@@ -26,6 +26,9 @@ def main_styles():
   shared_styles = f"""
     <style>
       /* Main container styles */
+      .stApp {{
+        background-color: {colors['light_fill']};
+      }}
       .main {{
         background-color: {colors['background']};
         border-radius: 18px;
@@ -52,7 +55,8 @@ def main_styles():
       }}
 
       /* Generic button styles */
-      .main .stButton button {{
+      .main .stButton button,
+      [data-testid="baseButton-primary"] {{
         background-color: {colors['tint_primary']};
         color: {colors['light_fill']};
         border: none;
@@ -65,6 +69,16 @@ def main_styles():
         &:focus:not(:active) {{
           color: {colors['light_fill']};
         }}
+      }}
+      .main .stButton button div p {{
+        color: {colors['light_fill']};
+      }}
+
+      [data-testid="baseButton-primary"] {{
+        margin-top: 29px;
+      }}
+      [data-testid="baseButton-primary"] div p {{
+        color: {colors['light_fill']};
       }}
 
       /* Select input box styling */
@@ -83,34 +97,17 @@ def main_styles():
       }}
       [data-testid=stVirtualDropdown] li {{
         background-color: {colors['light_fill']};
+        color: {colors['text_primary']};
       }}
-
-      /* Expander styling */
-      .main [data-testid="stExpander"] details {{
-        border-color: {colors['light_fill']};
-        border-radius: {decoration['border_radius']};
+      [data-testid=stVirtualDropdown] {{
         background-color: {colors['light_fill']};
-        color: {colors['dim_text']};
       }}
-      .main [data-testid="stExpander"] [data-testid="stText"] {{
-        font-family: Arial;
-        text-wrap: wrap;
+      [data-testid=stVirtualDropdown] li:hover {{
+        background-color: rgb(240, 242, 246);
       }}
-      .main [data-testid="stExpander"] p {{
-        font-family: Arial;
-      }}
-      .main [data-testid="stExpander"] summary:hover {{
-        color: #3b3a3a;
-      }}
-      .main [data-testid="stExpander"] summary svg {{
-        display: none;
-      }}
-      .main [data-testid="stExpander"] summary p {{
-        font-weight: 600;
-        font-size: .96rem;
-      }}
-      .main [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
-        gap: 1rem !important;
+      [data-baseweb="tooltip"] > div:nth-child(1) {{
+        background-color: {colors['light_fill']};
+        color: {colors['text_primary']};
       }}
 
       /* Smartphones and small devices */

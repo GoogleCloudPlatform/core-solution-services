@@ -17,7 +17,7 @@ Main styles for the chat page
 """
 
 import streamlit as st
-from styles.style_constants import colors
+from styles.style_constants import colors, decoration
 from styles.shared_styles import main_styles
 
 def chat_theme():
@@ -36,6 +36,11 @@ def chat_theme():
       /* Heading styles */
       .main .stHeadingContainer h1 {{
         font-family: Arial;
+        color: {colors['text_primary']};
+      }}
+
+      /* Main text content styles */
+      .main p {{
         color: {colors['text_primary']};
       }}
 
@@ -69,22 +74,62 @@ def chat_theme():
       .stTextArea textarea {{
         color: {colors['input_text']};
         -webkit-text-fill-color: {colors['input_text']};
+        caret-color: {colors['input_text']};
       }}
       .stTextArea label {{
         display: none !important;
       }}
 
-      div[data-testid='stExpander'] {{
+      /* Expander styling */
+      .main [data-testid="stExpander"] details {{
+        border-color: {colors['light_fill']};
+        border-radius: {decoration['border_radius']};
+        background-color: {colors['light_fill']};
+        color: {colors['dim_text']};
+      }}
+      [data-testid="stExpander"] {{
         margin-left: 3em;
+      }}
+      .main [data-testid="stExpander"] [data-testid="stText"] {{
+        font-family: Arial;
+        text-wrap: wrap;
+      }}
+      .main [data-testid="stExpander"] p {{
+        font-family: Arial;
+      }}
+      .main [data-testid="stExpander"] summary:hover {{
+        color: #3b3a3a;
+      }}
+      .main [data-testid="stExpander"] summary svg {{
+        display: none;
+      }}
+      .main [data-testid="stExpander"] summary p {{
+        font-weight: 600;
+        font-size: .93rem;
+      }}
+      .main [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
+        gap: 1rem !important;
+      }}
+
+      .stSpinner {{
+        margin-bottom: 68px;
+        margin-left: 5px;
       }}
 
       /* Chat styling */
       [data-testid="chatAvatarIcon-user"] {{
         background-color: {colors['tint_primary']};
+        color: {colors['light_fill']};
+      }}
+      [data-testid="chatAvatarIcon-assistant"] {{
+        color: {colors['light_fill']};
       }}
       .stChatMessage:has([data-testid="chatAvatarIcon-user"]) {{
         background-color: {colors['light_fill']};
         margin-top: 10px;
+      }}
+      [data-testid="stChatMessageContent"] code {{
+        background-color: {colors['light_fill']};
       }}
 
       /* Text input styling */
@@ -103,6 +148,7 @@ def chat_theme():
       [data-testid="textInputRootElement"] input {{
         color: {colors['input_text']};
         -webkit-text-fill-color: {colors['input_text']};
+        caret-color: {colors['input_text']};
       }}
 
       /* Input button styling */

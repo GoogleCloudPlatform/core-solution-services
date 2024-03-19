@@ -39,6 +39,7 @@ locals {
     "run.googleapis.com",                  # Cloud Run
     "secretmanager.googleapis.com",        # Secret Manager
     "storage.googleapis.com",              # Cloud Storage
+    "discoveryengine.googleapis.com",      # Discovery Engine
   ]
 
   roles_for_default_sa = [

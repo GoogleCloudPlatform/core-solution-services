@@ -53,6 +53,10 @@ def history_styles():
       &:hover {{
         background-color: {colors['btn_hover']};
       }}
+
+      &:focus:not(:active) {{
+        color: {colors['light_fill']};
+      }}
     }}
 
     /* Styles for text in vertical block chat history buttons */
@@ -67,6 +71,13 @@ def history_styles():
     h3 {{
       padding-top: .52rem;
       font-weight: 500;
+      color: {colors['text_primary']};
+    }}
+  }}
+
+  @media (prefers-color-scheme: dark) {{
+    [data-testid=stSidebarNavLink] span {{
+      color: {colors['text_primary']};
     }}
   }}
 
@@ -74,6 +85,7 @@ def history_styles():
   [data-testid=stSidebarNavSeparator] {{
     margin-left: 20px;
     margin-right: 20px;
+    border-bottom-color: rgb(49 51 63 / 60%);
   }}
 
   [data-testid="stSidebarNavItems"] {{

@@ -59,14 +59,16 @@ def get_engine_list():
   Returns:
       LLMGetQueryEnginesResponse
   """
-  query_engines = QueryEngine.collection.fetch()
+  query_engines = QueryEngine.fetch_all()
   query_engine_data = [{
     "id": qe.id,
     "name": qe.name,
+    "query_engine_type": qe.query_engine_type,
     "description": qe.description,
     "llm_type": qe.llm_type,
     "embedding_type": qe.embedding_type,
     "vector_store": qe.vector_store,
+    "params": qe.params,
     "created_time": qe.created_time,
     "last_modified_time": qe.last_modified_time,
   } for qe in query_engines]
@@ -372,8 +374,10 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
 
   if not (doc_url.startswith("gs://")
           or doc_url.startswith("http://")
-          or doc_url.startswith("https://")):
-    return BadRequest("doc_url must start with gs://, http:// or https://")
+          or doc_url.startswith("https://")
+          or doc_url.startswith("bq://")):
+    return BadRequest(
+        "doc_url must start with gs://, http:// or https://, or bq://")
 
   if doc_url.endswith(".pdf"):
     return BadRequest(
@@ -392,6 +396,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "doc_url": doc_url,
       "query_engine": query_engine,
       "user_id": user_id,
+      "query_engine_type": genconfig_dict.get("query_engine_type", None),
       "llm_type": genconfig_dict.get("llm_type", None),
       "embedding_type": genconfig_dict.get("embedding_type", None),
       "vector_store": genconfig_dict.get("vector_store", None),
@@ -450,25 +455,23 @@ async def query(query_engine_id: str,
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   llm_type = genconfig_dict.get("llm_type")
-  # NOTE: Make sentence_references as True by default.
-  # sentence_references = genconfig_dict.get("sentence_references", None)
-  sentence_references = True
-  Logger.info(f"sentence_references = {sentence_references}")
 
   user = User.find_by_email(user_data.get("email"))
 
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type,
-          sentence_references=sentence_references)
+          user.id, prompt, q_engine, llm_type)
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
+    query_reference_dicts = [
+      ref.get_fields(reformat_datetime=True) for ref in query_references
+    ]
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
             "query_result": query_result,
-            "query_references": query_references
+            "query_references": query_reference_dicts
         }
     }
   except Exception as e:
@@ -518,16 +521,19 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
                                                           q_engine,
                                                           llm_type,
                                                           user_query)
+    query_reference_dicts = [
+      ref.get_fields(reformat_datetime=True) for ref in query_references
+    ]
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "
                 f"query_result={query_result} "
-                f"query_references={query_references}")
+                f"query_references={query_reference_dicts}")
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
             "query_result": query_result,
-            "query_references": query_references
+            "query_references": query_reference_dicts
         }
     }
   except Exception as e:

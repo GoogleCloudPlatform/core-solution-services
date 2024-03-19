@@ -10,6 +10,8 @@ env:
   SKAFFOLD_NAMESPACE: ${{ vars.GKE_NAMESPACE }}
   DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
   API_BASE_URL: https://${{ vars.DOMAIN_NAME }}
+  CORS_ALLOW_ORIGINS: ${{ vars.CORS_ALLOW_ORIGINS }}
+  AGENT_CONFIG_PATH: ${{ vars.AGENT_CONFIG_PATH }}
   GKE_CLUSTER: main-cluster
   GKE_REGION: us-central1
   KUSTOMIZE_VERSION: 5.0.0
@@ -83,6 +85,8 @@ jobs:
           export PROJECT_ID=${PROJECT_ID}
           export API_BASE_URL=${API_BASE_URL}
           export PG_HOST=${PG_HOST}
+          export CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS}
+          export AGENT_CONFIG_PATH=${AGENT_CONFIG_PATH}
           sb deploy -n ${SKAFFOLD_NAMESPACE} --yes
 
       - name: Upload Skaffold cache
