@@ -94,12 +94,16 @@ def api_request(method: str, api_url: str,
                                                     request_body,
                                                     auth_token)
 
-      if status_code == 401 or resp_dict.get("success", False) is False:
+      if status_code == 401:
         Logger.error(
             f"Unauthorized when calling API: {api_url}")
         st.session_state.error_msg = \
             "Unauthorized or session expired. " \
             "Please [login]({APP_BASE_PATH}/Login) again."
+      
+      if resp_dict.get("success", False) is False:
+        msg = resp_dict.get("message", "no message returned")
+        st.session_state.error_msg = "API call failed: {msg} "
 
     if status_code != 200:
       Logger.error(
