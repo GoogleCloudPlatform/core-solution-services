@@ -142,12 +142,13 @@ class DataSource:
     try:
       doc_extension = doc_name.split(".")[-1]
       doc_extension = doc_extension.lower()
-      if doc_extension is not "pdf":
+      if doc_extension != "pdf":
         raise ValueError(f"File {doc_name} must be a PDF")
     except Exception as e:
       Logger.error(f"error reading doc {doc_name}: {e}")
 
     # Open PDF and iterate over pages
+    slide_chunks = []
     try:
       with open(doc_filepath, "rb") as f:
         reader = PdfReader(f)
@@ -159,15 +160,22 @@ class DataSource:
 
           # Convert image to b64 and chunk text
           with open(slide_obj.text.slide_text_filename, "rb") as f:
-            slide_image_b64 = b64encode(f.read()).decode("utf-8")
-          slide_text_chunks = self.chunk_document(
+            image_b64 = b64encode(f.read()).decode("utf-8")
+          text_chunks = self.chunk_document(
             slide_obj.text.slide_text_filename, doc_url,
             slide_obj.text.slide_text_filename)
+
+          # Push slide into array
+          slide_chunk_obj = {
+            "image_b64": image_b64,
+            "text_chunks": text_chunks
+          }
+          slide_chunks.push(slide_chunk_obj)
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
 
     # Return array of page data
-    return [slide_image_b64, slide_text_chunks]
+    return slide_chunks
 
   @classmethod
   def text_to_sentence_list(cls, text: str) -> List[str]:
