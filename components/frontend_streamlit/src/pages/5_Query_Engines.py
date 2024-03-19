@@ -26,6 +26,7 @@ from api import (build_query_engine, update_query_engine,
                  get_all_jobs)
 from common.utils.logging_handler import Logger
 from common.config import PROJECT_ID
+from common.models.llm_query import QE_TYPE_VERTEX_SEARCH, QE_TYPE_LLM_SERVICE
 import utils
 
 Logger = Logger.get_logger(__file__)
@@ -40,12 +41,12 @@ def reload():
   qe_build_jobs = get_all_jobs()
 
 
-def submit_build(engine_name:str, doc_url:str, depth_limit: int,
-                 embedding_type:str, vector_store:str,
+def submit_build(engine_name:str, engine_type:str, doc_url:str,
+                 depth_limit: int, embedding_type:str, vector_store:str,
                  description:str, agents:str):
   try:
     output = build_query_engine(
-      engine_name, doc_url,
+      engine_name, engine_type, doc_url,
       depth_limit, embedding_type, vector_store, description, agents)
 
     if output.get("success") is True:
@@ -160,6 +161,7 @@ def query_engine_page():
           if submit:
             submit_build(
               input_data["query_engine"],
+              input_data["query_engine_type"],
               input_data["doc_url"],
               input_data["depth_limit"],
               input_data["embedding_type"],
@@ -175,6 +177,9 @@ def query_engine_page():
 
   with placeholder_build_qe.form("build"):
     engine_name = st.text_input("Name")
+    engine_type = st.selectbox(
+        "Engine Type:",
+        [QE_TYPE_VERTEX_SEARCH, QE_TYPE_LLM_SERVICE])
     doc_url = st.text_input("Document URL")
     depth_limit = st.selectbox(
         "Web depth limit:",
@@ -191,7 +196,7 @@ def query_engine_page():
     submit = st.form_submit_button("Build")
   if submit:
     submit_build(
-      engine_name,
+      engine_name, engine_type,
       doc_url, depth_limit, embedding_type, vector_store, description, agents
     )
 

@@ -14,29 +14,48 @@
 """
   Unit tests for Query Prompts
 """
+# pylint: disable=unused-argument,redefined-outer-name,unused-import
+import pytest
 from services.query.query_prompts import question_prompt
 from services.query.query_prompt_config import QUESTION_PROMPT
+from common.models import QueryReference
+from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+from schemas.schema_examples import (QUERY_REFERENCE_EXAMPLE_1,
+                                     QUERY_REFERENCE_EXAMPLE_2)
 
+@pytest.fixture
+def create_query_reference(firestore_emulator, clean_firestore):
+  query_reference_dict = QUERY_REFERENCE_EXAMPLE_1
+  query_reference = QueryReference.from_dict(query_reference_dict)
+  query_reference.save()
+  return query_reference
 
-def test_question_prompt():
+@pytest.fixture
+def create_query_reference_2(firestore_emulator, clean_firestore):
+  query_reference_dict = QUERY_REFERENCE_EXAMPLE_2
+  query_reference = QueryReference.from_dict(query_reference_dict)
+  query_reference.save()
+  return query_reference
+
+def test_question_prompt(create_query_reference, create_query_reference_2):
 
   prompt = "What color is the sky?"
-  text_context = "It is sunny outside, the sky is blue."
+  text_context = create_query_reference.document_text
   expected_prompt = QUESTION_PROMPT.format(
     question=prompt, context=text_context)
   question = "What color is the sky?"
-  query_context = [{"document_text": "It is sunny outside, the sky is blue."}]
+  query_context = [create_query_reference]
   actual_prompt = question_prompt(question, query_context)
   assert expected_prompt == actual_prompt, "Prompts don't match"
 
   prompt = "What color is the sky?"
-  list_context = ["It is sunny outside, the sky is blue.",
-                  "And there are no clouds."]
+  list_context = [create_query_reference.document_text,
+                  create_query_reference_2.document_text]
   text_context = "\n\n".join(list_context)
   expected_prompt = QUESTION_PROMPT.format(
     question=prompt, context=text_context)
   question = "What color is the sky?"
-  query_context = [{"document_text": "It is sunny outside, the sky is blue."},
-                   {"document_text": "And there are no clouds."}]
+  query_context = [create_query_reference,
+                   create_query_reference_2]
   actual_prompt = question_prompt(question, query_context)
   assert expected_prompt == actual_prompt, "Prompts don't match"

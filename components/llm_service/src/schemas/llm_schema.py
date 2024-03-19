@@ -130,7 +130,6 @@ class LLMQueryModel(BaseModel):
   """LLM Query model"""
   prompt: str
   llm_type: Optional[str]
-  sentence_references: Optional[bool]
 
   class Config():
     orm_mode = True
@@ -144,6 +143,7 @@ class LLMQueryEngineModel(BaseModel):
   doc_url: str
   query_engine: str
   description: str
+  query_engine_type: Optional[str]
   llm_type: Optional[str]
   embedding_type: Optional[str]
   vector_store: Optional[str]
