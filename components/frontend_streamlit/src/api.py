@@ -103,7 +103,7 @@ def api_request(method: str, api_url: str,
       
       if resp_dict.get("success", False) is False:
         msg = resp_dict.get("message", "no message returned")
-        st.session_state.error_msg = "API call failed: {msg} "
+        st.session_state.error_msg = f"API call failed: {msg} "
 
     if status_code != 200:
       Logger.error(
