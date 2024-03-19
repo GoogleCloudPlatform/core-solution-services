@@ -197,9 +197,7 @@ def query_engine_page():
         vector_store_list)
     description = st.text_area("Description")
     agents = st.text_area("Agents")
-    child_engines = []
-    if engine_type == QE_TYPE_INTEGRATED_SEARCH:
-       child_engines = st.text_area("Child engines")
+    child_engines = st.text_area("Child Engines")
 
     submit = st.form_submit_button("Build")
   if submit:
