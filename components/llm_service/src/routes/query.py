@@ -455,17 +455,12 @@ async def query(query_engine_id: str,
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   llm_type = genconfig_dict.get("llm_type")
-  # NOTE: Make sentence_references as True by default.
-  # sentence_references = genconfig_dict.get("sentence_references", None)
-  sentence_references = True
-  Logger.info(f"sentence_references = {sentence_references}")
 
   user = User.find_by_email(user_data.get("email"))
 
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type,
-          sentence_references=sentence_references)
+          user.id, prompt, q_engine, llm_type)
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
     query_reference_dicts = [

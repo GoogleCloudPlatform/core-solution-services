@@ -198,7 +198,7 @@ def test_query_search(mock_get_top_relevant_sentences,
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_get_top_relevant_sentences.return_value = "test sentence"
   prompt = QUERY_EXAMPLE["prompt"]
-  query_references = query_search(create_engine, prompt, True)
+  query_references = query_search(create_engine, prompt)
   assert len(query_references) == len(create_query_doc_chunks)
   assert query_references[0].chunk_id == qdoc_chunk1.id
   assert query_references[1].chunk_id == qdoc_chunk2.id

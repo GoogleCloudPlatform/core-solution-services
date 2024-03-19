@@ -27,7 +27,9 @@ from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
                            QueryReference, QueryDocumentChunk,
                            BatchJobModel)
-from common.models.llm_query import QE_TYPE_VERTEX_SEARCH, QE_TYPE_LLM_SERVICE
+from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
+                                     QE_TYPE_LLM_SERVICE,
+                                     QE_TYPE_INTEGRATED_SEARCH)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -65,11 +67,10 @@ async def query_generate(
             prompt: str,
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
-            user_query: Optional[UserQuery] = None,
-            sentence_references: bool = True) -> \
+            user_query: Optional[UserQuery] = None) -> \
                 Tuple[QueryResult, List[QueryReference]]:
   """
-  Execute a query over a query engine
+  Execute a query over a query engine and generate a response.
 
   The rule for determining the model used for question generation is:
     if llm_type is passed as an arg use it
@@ -77,7 +78,7 @@ async def query_generate(
     else use the default query chat model
 
   Args:
-    user_id: user id if user making query
+    user_id: user id of user making query
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
@@ -96,13 +97,8 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
-  # get doc context for question
-  if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
-    query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
-  elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
-      not q_engine.query_engine_type:
-    query_references = query_search(
-        q_engine, prompt, sentence_references=sentence_references)
+  # perform retrieval
+  query_references = retrieve_references(prompt, q_engine, user_id)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -143,10 +139,38 @@ async def query_generate(
 
   return query_result, query_references
 
+def retrieve_references(prompt: str,
+                        q_engine: QueryEngine,
+                        user_id: str) -> List[QueryReference]:
+  """
+  Execute a query over a query engine and retrieve reference documents.
+
+  Args:
+    prompt: the text prompt to pass to the query engine
+    q_engine: the name of the query engine to use
+    user_id: user id of user making query
+  Returns:    
+    list of QueryReference objects
+  """
+  # perform retrieval for prompt
+  query_references = []
+  if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
+    query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
+  elif q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
+    child_engines = q_engine.find_children()
+    for child_engine in child_engines:
+      # make a recursive call to retrieve references for child engine
+      child_query_references = retrieve_references(prompt,
+                                                   child_engine,
+                                                   user_id)
+      query_references += child_query_references
+  elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
+      not q_engine.query_engine_type:
+    query_references = query_search(q_engine, prompt)
+  return query_references
 
 def query_search(q_engine: QueryEngine,
-                 query_prompt: str,
-                 sentence_references: bool = False) -> List[QueryReference]:
+                 query_prompt: str) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -189,22 +213,21 @@ def query_search(q_engine: QueryEngine,
       # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
-    if sentence_references:
-      # Assemble sentences from a document chunk. Currently it gets the
-      # sentences from the top-ranked document chunk.
-      sentences = doc_chunk.sentences
-      # for backwards compatibility with legacy engines break chunks
-      # into sentences here
-      if not sentences or len(sentences) == 0:
-        sentences = text_helper.text_to_sentence_list(doc_chunk.text)
+    # Assemble sentences from a document chunk. Currently it gets the
+    # sentences from the top-ranked document chunk.
+    sentences = doc_chunk.sentences
+    # for backwards compatibility with legacy engines break chunks
+    # into sentences here
+    if not sentences or len(sentences) == 0:
+      sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
-      # Only update clean_text when sentences is not empty.
-      Logger.info(f"Processing {len(sentences)} sentences.")
-      if sentences and len(sentences) > 0:
-        top_sentences = get_top_relevant_sentences(
-            q_engine, query_embeddings, sentences,
-            expand_neighbors=2, highlight_top_sentence=True)
-        clean_text = " ".join(top_sentences)
+    # Only update clean_text when sentences is not empty.
+    Logger.info(f"Processing {len(sentences)} sentences.")
+    if sentences and len(sentences) > 0:
+      top_sentences = get_top_relevant_sentences(
+          q_engine, query_embeddings, sentences,
+          expand_neighbors=2, highlight_top_sentence=True)
+      clean_text = " ".join(top_sentences)
 
     # save query reference
     query_reference = QueryReference(
@@ -355,20 +378,30 @@ def query_engine_build(doc_url: str,
   if not query_engine_type:
     query_engine_type = QE_TYPE_LLM_SERVICE
 
-  if query_engine_type == QE_TYPE_VERTEX_SEARCH:
-    # no vector store set for vertex search
+  if query_engine_type in (QE_TYPE_VERTEX_SEARCH,
+                           QE_TYPE_INTEGRATED_SEARCH):
+    # no vector store set for vertex search or integrated search
     vector_store_type = None
 
-  # process special params
+  # process special build params
   params = params or {}
   is_public = True
   if "is_public" in params and isinstance(params["is_public"], str):
     is_public = params["is_public"].lower()
     is_public = is_public == "true"
+
   associated_agents = []
   if "agents" in params and isinstance(params["agents"], str):
     associated_agents = params["agents"].split(",")
     associated_agents = [qe.strip() for qe in associated_agents]
+
+  associated_query_engines = []
+  if "query_engines" in params:
+    associated_qe_names = params["query_engines"].split(",")
+    associated_query_engines = [
+      QueryEngine.find_by_name(qe_name.strip())
+      for qe_name in associated_qe_names
+    ]
 
   # create query engine model
   q_engine = QueryEngine(name=query_engine,
@@ -398,6 +431,13 @@ def query_engine_build(doc_url: str,
 
       docs_processed, docs_not_processed = \
           build_doc_index(doc_url, q_engine, qe_vector_store)
+
+    elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
+      # for each associated query engine store the current engine as its parent
+      for aq_engine in associated_query_engines:
+        aq_engine.parent_engine_id = q_engine.id
+        aq_engine.update()
+
     else:
       raise RuntimeError(f"Invalid query_engine_type {query_engine_type}")
   except Exception as e:

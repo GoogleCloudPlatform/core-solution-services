@@ -99,8 +99,7 @@ async def run_routing_agent(prompt: str,
         user.id,
         prompt,
         query_engine,
-        llm_type,
-        sentence_references=True)
+        llm_type)
     Logger.info(f"Query response="
                 f"[{query_result}]")
 
