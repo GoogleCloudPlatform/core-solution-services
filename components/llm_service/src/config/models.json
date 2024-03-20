@@ -168,6 +168,10 @@
     },
     "OpenAI-Embedding": {
       "provider": "Langchain"
+    },
+    "HuggingFaceEmbeddings": {
+      "provider": "Langchain",
+      "model_class": "HuggingFaceEmbeddings"      
     }
   }
 }

@@ -103,6 +103,7 @@ VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
 VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 VERTEX_LLM_TYPE_GEMINI_PRO = "VertexAI-Gemini-Pro"
 VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN = "VertexAI-Chat-Gemini-Pro-Langchain"
+HUGGINGFACE_EMBEDDING = "HuggingFaceEmbeddings"
 
 MODEL_TYPES = [
   OPENAI_LLM_TYPE_GPT3_5,
@@ -123,7 +124,8 @@ MODEL_TYPES = [
   VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
   VERTEX_LLM_TYPE_BISON_CHAT_32K,
   VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN,
-  VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN
+  VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN,
+  HUGGINGFACE_EMBEDDING
 ]
 
 class ModelConfigMissingException(Exception):
@@ -549,6 +551,8 @@ class ModelConfig():
       if model_cls is None:
         Logger.error(f"Cannot load langchain model class {model_class_name}")
         model_class_instance = None
+      elif model_name is None:
+        model_class_instance = model_cls(**model_params)
       else:
         model_class_instance = model_cls(model_name=model_name, **model_params)
     return model_class_instance
