@@ -396,8 +396,8 @@ def query_engine_build(doc_url: str,
     associated_agents = [qe.strip() for qe in associated_agents]
 
   associated_query_engines = []
-  if "query_engines" in params:
-    associated_qe_names = params["query_engines"].split(",")
+  if "associated_engines" in params:
+    associated_qe_names = params["associated_engines"].split(",")
     associated_query_engines = [
       QueryEngine.find_by_name(qe_name.strip())
       for qe_name in associated_qe_names
