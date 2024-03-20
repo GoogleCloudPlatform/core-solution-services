@@ -482,11 +482,12 @@ async def query(query_engine_id: str,
 
 @router.post(
     "/{user_query_id}",
-    name="Make a query to a query engine based on a prior user query",
+    name="Continue chat with a prior user query",
     response_model=LLMQueryResponse)
 async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   """
-  Send a query to a query engine with a prior user query as context
+  Continue a prior user query.  Does not perform a new search, but rather
+  treats this as a chat with the prior query as context.
 
   Args:
       user_query_id (str): id of previous user query
@@ -514,28 +515,20 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   llm_type = genconfig_dict.get("llm_type")
 
   try:
-    q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
+    response = await llm_chat(prompt, llm_type, user_query=user_query)
 
-    query_result, query_references = await query_generate(user_query.user_id,
-                                                          prompt,
-                                                          q_engine,
-                                                          llm_type,
-                                                          user_query)
-    query_reference_dicts = [
-      ref.get_fields(reformat_datetime=True) for ref in query_references
-    ]
-    Logger.info(f"Generated query response="
-                f"[{query_result.response}], "
-                f"query_result={query_result} "
-                f"query_references={query_reference_dicts}")
+    # save chat history
+    user_query.update_history(prompt, response)
+
+    chat_data = user_query.get_fields(reformat_datetime=True)
+    chat_data["id"] = user_query.id
+
     return {
         "success": True,
         "message": "Successfully generated text",
-        "data": {
-            "query_result": query_result,
-            "query_references": query_reference_dicts
-        }
+        "data": chat_data
     }
+
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())

@@ -110,10 +110,7 @@ async def query_generate(
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
-  # send question prompt to model
-  # TODO: pass user_query history to model as context for generation.
-  #       This requires refactoring the llm_chat method as it takes a
-  #       UserChat model now.  Instead it should take a chat history.
+  # send prompt to model
   question_response = await llm_generate.llm_chat(question_prompt, llm_type)
 
   # save query result
