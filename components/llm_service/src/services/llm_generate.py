@@ -33,13 +33,13 @@ from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
 from config import (get_model_config, get_provider_models,
                     get_provider_value, get_provider_model_config,
+                    get_model_config_value,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
-                    KEY_MODEL_PARAMS,
-                    DEFAULT_LLM_TYPE
-                    )
+                    KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
+                    DEFAULT_LLM_TYPE)
 from services.langchain_service import langchain_llm_generate
 
 Logger = Logger.get_logger(__file__)
@@ -95,13 +95,15 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
     raise InternalServerError(str(e)) from e
 
 async def llm_chat(prompt: str, llm_type: str,
-                   user_chat: Optional[UserChat] = None) -> str:
+                   user_chat: Optional[UserChat] = None,
+                   user_query: Optional[UserChat] = None) -> str:
   """
   Send a prompt to a chat model and return response.
   Args:
     prompt: the text prompt to pass to the LLM
     llm_type: the type of LLM to use
     user_chat (optional): a user chat to use for context
+    user_query (optional): a user query to use for context
   Returns:
     the text response: str
   """
@@ -112,6 +114,11 @@ async def llm_chat(prompt: str, llm_type: str,
 
   try:
     response = None
+
+    if user_chat is not None or user_query is not None:
+      context_prompt = get_context_prompt(prompt, llm_type,
+                                  user_chat=user_chat, user_query=user_query)
+      prompt = context_prompt + "\n" + prompt
 
     if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
       is_chat = True
@@ -140,6 +147,60 @@ async def llm_chat(prompt: str, llm_type: str,
     import traceback
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
+
+def get_context_prompt(prompt:str,
+                       llm_type:str,
+                       user_chat=None,
+                       user_query=None): -> str
+  """
+  Get context prompt for chat. Include previous chat or query history
+  if present. 
+  If prompt exceeds context window length for model, use summarization
+  to compress prompt.
+  Args:
+    prompt: the text prompt to pass to the query engine
+    llm_type: the model id for generation
+    user_chat (optional): previous user chat
+    user_query (optional): previous user query
+  Returns:
+    string context prompt
+  """ 
+  context_prompt = ""
+  if user_chat is not None:
+    prompt_list = []
+    history = user_chat.history
+    for entry in history:
+      content = UserChat.entry_content(entry)
+      if UserChat.is_human(entry):
+        prompt_list.append(f"Human input: {content}")
+      elif UserChat.is_ai(entry):
+        prompt_list.append(f"AI response: {content}")
+    context_prompt = "\n\n".join(prompt_list)
+
+  if user_query is not None:
+    prompt_list = []
+    history = user_query.history
+    for entry in history:
+      content = UserQuery.entry_content(entry)
+      if UserQuery.is_human(entry):
+        prompt_list.append(f"Human input: {content}")
+      elif UserQuery.is_ai(entry):
+        prompt_list.append(f"AI response: {content}")
+    context_prompt = "\n\n".join(prompt_list)
+
+  # check if prompt exceeds context window length for model
+  max_context_length = get_model_config_value(llm_type,
+                                              KEY_MODEL_CONTEXT_LENGTH,
+                                              None)
+  if max_context_length and len(context_prompt) > max_context_length:
+    Logger.info(
+        f"rag prompt length {len(rag_prompt)} exceeds llm_type {llm_type} "
+        f"max context length {max_context_length}")
+    
+    # TODO call a text model to summarize
+
+  return context_prompt
+
 
 async def llm_truss_service_predict(llm_type: str, prompt: str,
                                     model_endpoint: str,
@@ -299,7 +360,7 @@ async def google_llm_predict(prompt: str, is_chat: bool,
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
   prompt_list.append(prompt)
-  context_prompt = prompt.join("\n\n")
+  context_prompt = "\n\n".join(prompt_list)
 
   # Get model params. If params are set at the model level
   # use those else use global vertex params.
