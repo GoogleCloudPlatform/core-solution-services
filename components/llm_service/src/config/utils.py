@@ -35,3 +35,6 @@ def get_provider_config(provider_id):
 
 def get_provider_model_config(provider_id):
   return get_model_config().get_provider_model_config(provider_id)
+
+def get_model_config_value(llm_type, key, default=None):
+  return get_model_config().get_config_value(llm_type, key, default)

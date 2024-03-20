@@ -60,6 +60,7 @@ KEY_ENV_FLAG = "env_flag"
 KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
+KEY_MODEL_CONTEXT_LENGTH = "context_length"
 KEY_IS_CHAT = "is_chat"
 KEY_MODEL_FILE_URL = "model_file_url"
 KEY_MODEL_PATH = "model_path"
@@ -77,6 +78,7 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_CLASS,
   KEY_MODEL_NAME,
   KEY_MODEL_PARAMS,
+  KEY_MODEL_CONTEXT_LENGTH,
   KEY_IS_CHAT,
   KEY_MODEL_FILE_URL,
   KEY_MODEL_PATH,

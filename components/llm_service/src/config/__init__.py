@@ -89,6 +89,7 @@ from config.model_config import (
     KEY_MODEL_CLASS,
     KEY_MODEL_NAME,
     KEY_MODEL_PARAMS,
+    KEY_MODEL_CONTEXT_LENGTH,
     KEY_IS_CHAT,
     KEY_MODEL_FILE_URL,
     KEY_MODEL_PATH,
@@ -118,5 +119,6 @@ from config.utils import (
   get_provider_value,
   get_provider_embedding_types,
   get_provider_config,
-  get_provider_model_config
+  get_provider_model_config,
+  get_model_config_value
 )
