@@ -157,7 +157,7 @@ def retrieve_references(prompt: str,
   if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
     query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
   elif q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
-    child_engines = q_engine.find_children()
+    child_engines = QueryEngine.find_children(q_engine)
     for child_engine in child_engines:
       # make a recursive call to retrieve references for child engine
       child_query_references = retrieve_references(prompt,

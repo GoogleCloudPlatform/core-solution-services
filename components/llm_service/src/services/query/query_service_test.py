@@ -43,7 +43,8 @@ from services.query.query_service import (query_generate,
                                           query_search,
                                           query_engine_build,
                                           process_documents,
-                                          build_doc_index)
+                                          build_doc_index,
+                                          retrieve_references)
 from services.query.vector_store import VectorStore
 from services.query.data_source import DataSource, DataSourceFile
 
@@ -190,7 +191,7 @@ async def test_query_generate(mock_query_search, mock_llm_chat,
 @mock.patch("services.query.query_service.get_top_relevant_sentences")
 def test_query_search(mock_get_top_relevant_sentences,
                       mock_get_vector_store, mock_get_embeddings,
-                      create_engine, create_query_docs,
+                      create_engine, create_user, create_query_docs,
                       create_query_doc_chunks):
   qdoc_chunk1 = create_query_doc_chunks[0]
   qdoc_chunk2 = create_query_doc_chunks[1]
@@ -205,6 +206,23 @@ def test_query_search(mock_get_top_relevant_sentences,
   assert query_references[1].chunk_id == qdoc_chunk2.id
   assert query_references[2].chunk_id == qdoc_chunk3.id
 
+  # test integrated search
+  doc_url = ""
+  build_params = {
+    "associated_engines": create_engine.name
+  }
+  q_engine_2, docs_processed, docs_not_processed = \
+      query_engine_build(doc_url, "test integrated search", create_user.id,
+                         query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
+                         params=build_params)
+  
+  query_references = retrieve_references(prompt, q_engine_2, create_user.id)
+  assert len(query_references) == len(create_query_doc_chunks)
+  assert query_references[0].chunk_id == qdoc_chunk1.id
+  assert query_references[1].chunk_id == qdoc_chunk2.id
+  assert query_references[2].chunk_id == qdoc_chunk3.id
+  
+  
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
