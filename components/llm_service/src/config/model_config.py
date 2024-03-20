@@ -296,6 +296,9 @@ class ModelConfig():
       # instantiate model class if necessary (mainly langchain models)
       if model_enabled and KEY_MODEL_CLASS in model_config:
         model_instance = self.instantiate_model_class(model_id)
+        if model_instance is None:
+          Logger.warning(f"Disabling model {model_id}")
+          model_config[KEY_ENABLED] = False
         model_config[KEY_MODEL_CLASS] = model_instance
 
       # download model file if necessary
@@ -542,8 +545,12 @@ class ModelConfig():
         model_params.update({api_key_name: api_key})
 
       # retrieve and instantiate langchain model class
-      model_cls = langchain_classes.get(model_class_name)
-      model_class_instance = model_cls(model_name=model_name, **model_params)
+      model_cls = langchain_classes.get(model_class_name, None)
+      if model_cls is None:
+        Logger.error(f"Cannot load langchain model class {model_class_name}")
+        model_class_instance = None
+      else:
+        model_class_instance = model_cls(model_name=model_name, **model_params)
     return model_class_instance
 
   def load_model_config(self):
