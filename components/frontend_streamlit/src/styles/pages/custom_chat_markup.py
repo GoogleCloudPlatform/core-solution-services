@@ -72,7 +72,7 @@ def custom_chat_theme():
       }}
 
       /* Main container scroll positioning */
-      .main [data-testid="block-container"] {{
+      .main .block-container {{
         overflow: auto;
       }}
 
@@ -131,10 +131,9 @@ def custom_chat_theme():
       }}
 
       /* References styling */
-      [data-testid="stForm"] + div {{
+      .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child {{
         flex-direction: column;
         position: fixed;
-        width: 326px;
         right: 12px;
         top: 12px;
         gap: 0;
@@ -143,35 +142,39 @@ def custom_chat_theme():
         overflow: hidden;
         border-radius: 12px;
       }}
-      [data-testid="stForm"] + div [data-testid="column"] {{
+      .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child [data-testid="column"] {{
         width: 100%;
       }}
-      [data-testid="stForm"] + div [data-testid="stExpanderDetails"] {{
+      .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child [data-testid="stExpanderDetails"] {{
         max-height: 93vh;
         overflow-y: scroll;
       }}
-      [data-testid="stForm"] + div [data-testid="stExpander"] {{
+      .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child [data-testid="stExpander"] {{
         margin-left: 0;
         padding-bottom: 12px;
       }}
-      [data-testid="stForm"] + div [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
+      .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child [data-testid="stExpander"] [data-testid="stVerticalBlock"] {{
         gap: .5rem;
       }}
-      [data-testid="stForm"] + div [data-testid="stExpander"] p:has(a) {{
+      .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child [data-testid="stExpander"] p:has(a) {{
         white-space: nowrap;
         overflow: hidden;
         text-overflow: clip;
       }}
-      [data-testid="stForm"] + div [data-testid="stExpander"] p:has(strong > a) {{
+      .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child [data-testid="stExpander"] p:has(strong > a) {{
         white-space: normal;
         overflow: visible;
       }}
-      [data-testid="stForm"] + div [data-testid="stExpander"] hr {{
+      .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child [data-testid="stExpander"] hr {{
         margin-top: .75em;
         margin-bottom: 1.25em;
       }}
-      [data-testid="stForm"] + div [data-testid="stExpanderDetails"] [data-testid="element-container"]:has(hr):last-child {{
+      .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child [data-testid="stExpanderDetails"] [data-testid="element-container"]:has(hr):last-child {{
         display: none;
+      }}
+
+      pre {{
+        background-color: {colors['light_fill']};
       }}
 
       /* Chat styling */
@@ -199,7 +202,7 @@ def custom_chat_theme():
         margin-top: 10px;
       }}
       [data-testid="stChatMessageContent"] code {{
-        background-color: {colors['casey_tint']};
+        background-color: {colors['light_fill']};
       }}
 
       /* Text input styling */
@@ -252,7 +255,6 @@ def custom_chat_theme():
         line-height: 1.4;
       }}
 
-
       .stSpinner {{
         margin-bottom: 68px;
         margin-left: 30px;
@@ -264,10 +266,16 @@ def custom_chat_theme():
           padding-bottom: 30px;
         }}
         .main [data-testid="stForm"] [data-testid="textInputRootElement"] input {{
-          padding: 0.7rem;
+          padding: 0.65rem;
         }}
         .main [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] > div:nth-child(1) > div:nth-child(1) {{
           bottom: 20px;
+        }}
+        .main [data-testid="stFormSubmitButton"] button {{
+          padding-bottom: 0;
+        }}
+        .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child {{
+          display: none;
         }}
       }}
 
@@ -286,6 +294,9 @@ def custom_chat_theme():
         .main [data-testid="stFormSubmitButton"] button {{
           padding-bottom: 1px;
         }}
+        .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child {{
+          width: 276px;
+        }}
       }}
 
       /* Large monitors */
@@ -303,6 +314,9 @@ def custom_chat_theme():
         .main [data-testid="stFormSubmitButton"] button {{
           padding-bottom: 2px;
         }}
+        .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child {{
+          width: 326px;
+        }}
       }}
 
       /* Very large monitors */
@@ -318,6 +332,9 @@ def custom_chat_theme():
         }}
         .main [data-testid="stFormSubmitButton"] button {{
           padding-bottom: 4px;
+        }}
+        .block-container > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:last-child {{
+          width: 426px;
         }}
       }}
     </style>

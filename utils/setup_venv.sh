@@ -1,10 +1,11 @@
+#!/bin/bash
 # Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+#     https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,22 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: cpu-pod-scaling-model-service
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: model-service
-  minReplicas: 3
-  maxReplicas: 110
-  metrics:
-    - type: Resource
-      resource:
-       name: memory
-       targetAverageValue: 500Mi
-      resource:
-        name: cpu
-        targetAverageUtilization: 60
+if [ -e .venv ]; then
+  echo "*** removing existing .venv"
+  rm -rf .venv
+fi
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r ../common/requirements.txt
+pip install -r ../common/requirements-test.txt
+pip install -r requirements.txt
+pip install -r requirements-test.txt

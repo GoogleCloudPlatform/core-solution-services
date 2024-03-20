@@ -69,7 +69,10 @@ async def run_routing_agent(prompt: str,
   chat_history_entry = {
     "route": route_type,
     "route_name": route,
+    "route_logs": route_logs,
   }
+  user_chat.update_history(custom_entry=chat_history_entry)
+  chat_history_entry = {}
 
   # get routing agent model
   routing_agent_config = get_agent_config()[agent_name]
@@ -96,14 +99,11 @@ async def run_routing_agent(prompt: str,
         user.id,
         prompt,
         query_engine,
-        llm_type,
-        sentence_references=True)
+        llm_type)
     Logger.info(f"Query response="
                 f"[{query_result}]")
 
     response_data = {
-      "route": route_type,
-      "route_name": f"Query Engine: {query_engine_name}",
       "output": query_result.response,
       "query_engine_id": query_result.query_engine_id,
       "query_references": query_references,
@@ -155,8 +155,6 @@ async def run_routing_agent(prompt: str,
 
     resources = db_result.get("resources", None)
     response_data = {
-      "route": route_type,
-      "route_name": f"Database Query: {dataset_name}",
       f"{CHAT_AI}": response_output,
       "content": response_output,
       "db_result": db_result_output,
@@ -177,8 +175,6 @@ async def run_routing_agent(prompt: str,
     agent_logs = output
 
     response_data = {
-      "route": route_type,
-      "route_name": AgentCapability.PLAN.value,
       "content": output,
       "plan": plan_data,
     }
@@ -189,8 +185,6 @@ async def run_routing_agent(prompt: str,
     output = await run_agent("Chat", prompt)
     chat_history_entry[CHAT_AI] = output
     response_data = {
-      "route": AgentCapability.CHAT.value,
-      "route_name": AgentCapability.CHAT.value,
       "content": output
     }
 
@@ -209,6 +203,8 @@ async def run_routing_agent(prompt: str,
   chat_data = user_chat.get_fields(reformat_datetime=True)
   chat_data["id"] = user_chat.id
   response_data["chat"] = chat_data
+  response_data["route"] = route_type
+  response_data["route_name"] = route
 
   Logger.info(f"Dispatch agent {agent_name} response: "
               f"route [{route}] response {response_data}")

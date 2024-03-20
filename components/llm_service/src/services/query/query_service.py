@@ -27,6 +27,9 @@ from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
                            QueryReference, QueryDocumentChunk,
                            BatchJobModel)
+from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
+                                     QE_TYPE_LLM_SERVICE,
+                                     QE_TYPE_INTEGRATED_SEARCH)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -34,9 +37,13 @@ from services import llm_generate, embeddings
 from services.query import query_prompts
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
-                                         PostgresVectorStore)
+                                         PostgresVectorStore,
+                                         NUM_MATCH_RESULTS)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
+from services.query.vertex_search import (build_vertex_search,
+                                          query_vertex_search,
+                                          delete_vertex_search)
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
@@ -60,20 +67,18 @@ async def query_generate(
             prompt: str,
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
-            user_query: Optional[UserQuery] = None,
-            sentence_references: bool = True) -> \
-                Tuple[QueryResult, List[dict]]:
+            user_query: Optional[UserQuery] = None) -> \
+                Tuple[QueryResult, List[QueryReference]]:
   """
-  Execute a query over a query engine
+  Execute a query over a query engine and generate a response.
 
-  The rule for determining the model used for question generation
-    model is:
+  The rule for determining the model used for question generation is:
     if llm_type is passed as an arg use it
     else if llm_type is set in query engine use that
     else use the default query chat model
 
   Args:
-    user_id: user id if user making query
+    user_id: user id of user making query
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
@@ -81,7 +86,7 @@ async def query_generate(
 
   Returns:    
     QueryResult object, 
-    list of dicts of query reference metadata (see query_search)
+    list of QueryReference objects (see query_search)
 
   Raises:
     ResourceNotFoundException if the named query engine doesn't exist
@@ -91,9 +96,9 @@ async def query_generate(
               f"user_id=[{user_id}], "
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
-  # get doc context for question
-  query_references = query_search(
-      q_engine, prompt, sentence_references=sentence_references)
+
+  # perform retrieval
+  query_references = retrieve_references(prompt, q_engine, user_id)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -112,36 +117,60 @@ async def query_generate(
   question_response = await llm_generate.llm_chat(question_prompt, llm_type)
 
   # save query result
-  query_ref_ids = []
-  for ref in query_references:
-    query_reference = QueryReference(
-      query_engine_id=q_engine.id,
-      query_engine=q_engine.name,
-      document_id=ref["document_id"],
-      chunk_id=ref["chunk_id"]
-    )
-    query_reference.save()
-    query_ref_ids.append(query_reference.id)
-
+  query_ref_ids = [ref.id for ref in query_references]
   query_result = QueryResult(query_engine_id=q_engine.id,
                              query_engine=q_engine.name,
                              query_refs=query_ref_ids,
+                             prompt=prompt,
                              response=question_response)
   query_result.save()
 
   # save user query history
   if user_query is None:
     user_query = UserQuery(user_id=user_id,
-                           query_engine_id=q_engine.id)
+                           query_engine_id=q_engine.id,
+                           prompt=prompt)
     user_query.save()
-  user_query.update_history(prompt, question_response, query_references)
+
+  query_reference_dicts = [
+    ref.get_fields(reformat_datetime=True) for ref in query_references
+  ]
+  user_query.update_history(prompt, question_response, query_reference_dicts)
 
   return query_result, query_references
 
+def retrieve_references(prompt: str,
+                        q_engine: QueryEngine,
+                        user_id: str) -> List[QueryReference]:
+  """
+  Execute a query over a query engine and retrieve reference documents.
+
+  Args:
+    prompt: the text prompt to pass to the query engine
+    q_engine: the name of the query engine to use
+    user_id: user id of user making query
+  Returns:    
+    list of QueryReference objects
+  """
+  # perform retrieval for prompt
+  query_references = []
+  if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
+    query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
+  elif q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
+    child_engines = q_engine.find_children()
+    for child_engine in child_engines:
+      # make a recursive call to retrieve references for child engine
+      child_query_references = retrieve_references(prompt,
+                                                   child_engine,
+                                                   user_id)
+      query_references += child_query_references
+  elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
+      not q_engine.query_engine_type:
+    query_references = query_search(q_engine, prompt)
+  return query_references
 
 def query_search(q_engine: QueryEngine,
-                 query_prompt: str,
-                 sentence_references: bool = False) -> List[dict]:
+                 query_prompt: str) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -151,11 +180,7 @@ def query_search(q_engine: QueryEngine,
     query_prompt (str):  user query
 
   Returns:
-    list of dicts containing summarized query results, with:
-      "document_id": id of QueryDocument for reference
-      "document_url": url of document containing reference
-      "document_text": text of document containing the grounding for the query
-      "chunk_id": id of QueryDocumentChunk containing the reference
+    list of QueryReference models
 
   """
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
@@ -171,7 +196,7 @@ def query_search(q_engine: QueryEngine,
                                                          query_embedding)
   query_references = []
 
-  # Assemble document chunk references from vector store indexes
+  # Assemble document chunk models from vector store indexes
   for match in match_indexes_list:
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
     if doc_chunk is None:
@@ -188,32 +213,36 @@ def query_search(q_engine: QueryEngine,
       # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
-    if sentence_references:
-      # Assemble sentences from a document chunk. Currently it gets the
-      # sentences from the top-ranked document chunk.
-      sentences = doc_chunk.sentences
-      # for backwards compatibility with legacy engines break chunks
-      # into sentences here
-      if not sentences or len(sentences) == 0:
-        sentences = text_helper.text_to_sentence_list(doc_chunk.text)
+    # Assemble sentences from a document chunk. Currently it gets the
+    # sentences from the top-ranked document chunk.
+    sentences = doc_chunk.sentences
+    # for backwards compatibility with legacy engines break chunks
+    # into sentences here
+    if not sentences or len(sentences) == 0:
+      sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
-      # Only update clean_text when sentences is not empty.
-      Logger.info(f"Processing {len(sentences)} sentences.")
-      if sentences and len(sentences) > 0:
-        top_sentences = get_top_relevant_sentences(
-            q_engine, query_embeddings, sentences,
-            expand_neighbors=2, highlight_top_sentence=True)
-        clean_text = " ".join(top_sentences)
+    # Only update clean_text when sentences is not empty.
+    Logger.info(f"Processing {len(sentences)} sentences.")
+    if sentences and len(sentences) > 0:
+      top_sentences = get_top_relevant_sentences(
+          q_engine, query_embeddings, sentences,
+          expand_neighbors=2, highlight_top_sentence=True)
+      clean_text = " ".join(top_sentences)
 
-    query_references.append({
-      "document_id": query_doc.id,
-      "document_url": query_doc.doc_url,
-      "document_text": clean_text,
-      "chunk_id": doc_chunk.id
-    })
+    # save query reference
+    query_reference = QueryReference(
+      query_engine_id=q_engine.id,
+      query_engine=q_engine.name,
+      document_id=query_doc.id,
+      document_url=query_doc.doc_url,
+      chunk_id=doc_chunk.id,
+      document_text=clean_text
+    )
+    query_reference.save()
+    query_references.append(query_reference)
 
-  # Logger.info(f"Retrieved {len(query_references)} "
-  #             f"references={query_references}")
+  Logger.info(f"Retrieved {len(query_references)} "
+               f"references={query_references}")
   return query_references
 
 def get_top_relevant_sentences(q_engine, query_embeddings,
@@ -267,6 +296,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   query_engine = request_body.get("query_engine")
   description = request_body.get("description")
   user_id = request_body.get("user_id")
+  query_engine_type = request_body.get("query_engine_type")
   llm_type = request_body.get("llm_type")
   embedding_type = request_body.get("embedding_type")
   vector_store_type = request_body.get("vector_store")
@@ -275,7 +305,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"Starting batch job for query engine [{query_engine}] "
               f"job id [{job.id}], request_body=[{request_body}]")
   Logger.info(f"doc_url: [{doc_url}] user id: [{user_id}]")
-  Logger.info(f"embedding type: [{embedding_type}]")
+  Logger.info(f"query engine type: [{query_engine_type}]")
   Logger.info(f"query description: [{description}]")
   Logger.info(f"llm type: [{llm_type}]")
   Logger.info(f"embedding type: [{embedding_type}]")
@@ -284,6 +314,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
 
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url, query_engine, user_id,
+                         query_engine_type,
                          llm_type, description,
                          embedding_type, vector_store_type, params)
 
@@ -305,6 +336,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
 def query_engine_build(doc_url: str,
                        query_engine: str,
                        user_id: str,
+                       query_engine_type: Optional[str] = None,
                        llm_type: Optional[str] = None,
                        query_description: Optional[str] = None,
                        embedding_type: Optional[str] = None,
@@ -318,6 +350,7 @@ def query_engine_build(doc_url: str,
     doc_url: the URL to the set of documents to be indexed
     query_engine: the name of the query engine to create
     user_id: user id of engine creator
+    query_engine_type: type of query engine to build
     llm_type: llm used for query answer generation
     embedding_type: LLM used for query embeddings
     query_description: description of the query engine
@@ -342,19 +375,38 @@ def query_engine_build(doc_url: str,
   if embedding_type is None:
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
-  # process special params
+  if not query_engine_type:
+    query_engine_type = QE_TYPE_LLM_SERVICE
+
+  if query_engine_type in (QE_TYPE_VERTEX_SEARCH,
+                           QE_TYPE_INTEGRATED_SEARCH):
+    # no vector store set for vertex search or integrated search
+    vector_store_type = None
+
+  # process special build params
   params = params or {}
   is_public = True
   if "is_public" in params and isinstance(params["is_public"], str):
     is_public = params["is_public"].lower()
     is_public = is_public == "true"
+
   associated_agents = []
   if "agents" in params and isinstance(params["agents"], str):
     associated_agents = params["agents"].split(",")
     associated_agents = [qe.strip() for qe in associated_agents]
 
+  associated_query_engines = []
+  if "associated_engines" in params:
+    associated_qe_names = params["associated_engines"].split(",")
+    associated_query_engines = [
+      QueryEngine.find_by_name(qe_name.strip())
+      for qe_name in associated_qe_names
+    ]
+
+  # create query engine model
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
+                         query_engine_type=query_engine_type,
                          llm_type=llm_type,
                          description=query_description,
                          embedding_type=embedding_type,
@@ -364,15 +416,33 @@ def query_engine_build(doc_url: str,
                          agents=associated_agents,
                          params=params)
 
-  # retrieve vector store class and store type in q_engine
-  qe_vector_store = vector_store_from_query_engine(q_engine)
-  q_engine.vector_store = qe_vector_store.vector_store_type
   q_engine.save()
 
   # build document index
+  docs_processed = []
+  docs_not_processed = []
+
   try:
-    docs_processed, docs_not_processed = \
-        build_doc_index(doc_url, query_engine, qe_vector_store)
+    if query_engine_type == QE_TYPE_VERTEX_SEARCH:
+      docs_processed, docs_not_processed = build_vertex_search(q_engine)
+
+    elif query_engine_type == QE_TYPE_LLM_SERVICE:
+      # retrieve vector store class and store type in q_engine
+      qe_vector_store = vector_store_from_query_engine(q_engine)
+      q_engine.vector_store = qe_vector_store.vector_store_type
+      q_engine.update()
+
+      docs_processed, docs_not_processed = \
+          build_doc_index(doc_url, q_engine, qe_vector_store)
+
+    elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
+      # for each associated query engine store the current engine as its parent
+      for aq_engine in associated_query_engines:
+        aq_engine.parent_engine_id = q_engine.id
+        aq_engine.update()
+
+    else:
+      raise RuntimeError(f"Invalid query_engine_type {query_engine_type}")
   except Exception as e:
     # delete query engine model if build unsuccessful
     delete_engine(q_engine, hard_delete=True)
@@ -383,7 +453,7 @@ def query_engine_build(doc_url: str,
   return q_engine, docs_processed, docs_not_processed
 
 
-def build_doc_index(doc_url: str, query_engine: str,
+def build_doc_index(doc_url: str, q_engine: QueryEngine,
                     qe_vector_store: VectorStore) -> \
         Tuple[List[QueryDocument], List[str]]:
   """
@@ -393,16 +463,12 @@ def build_doc_index(doc_url: str, query_engine: str,
 
   Args:
     doc_url: URL pointing to folder of documents
-    query_engine: the query engine to build the index for
+    query_engine: the query engine name to build the index for
 
   Returns:
     Tuple of list of QueryDocument objects of docs processed,
-      list of urls of docs not processed
+      list of uris of docs not processed
   """
-  q_engine = QueryEngine.find_by_name(query_engine)
-  if q_engine is None:
-    raise ResourceNotFoundException(f"cant find query engine {query_engine}")
-
   storage_client = storage.Client(project=PROJECT_ID)
 
   # initialize the vector store index
@@ -418,7 +484,7 @@ def build_doc_index(doc_url: str, query_engine: str,
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # deploy vectore store (e.g. create endpoint for matching engine)
+    # deploy vector store (e.g. create endpoint for matching engine)
     # db vector stores typically don't require this step.
     qe_vector_store.deploy()
 
@@ -443,12 +509,16 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
-    doc_filepaths = data_source.download_documents(doc_url, temp_dir)
+    data_source_files = data_source.download_documents(doc_url, temp_dir)
 
     # counter for unique index ids
     index_base = 0
 
-    for doc_name, index_doc_url, doc_filepath in doc_filepaths:
+    for data_source_file in data_source_files:
+      doc_name = data_source_file.doc_name
+      index_doc_url = data_source_file.src_url
+      doc_filepath = data_source_file.local_path
+
       Logger.info(f"processing [{doc_name}]")
 
       text_chunks = data_source.chunk_document(doc_name,
@@ -538,7 +608,11 @@ def datasource_from_url(doc_url: str,
     else:
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
-    return WebDataSource(storage_client, depth_limit=depth_limit)
+    # Create bucket name using query_engine name
+    bucket_name = WebDataSource.downloads_bucket_name(q_engine)
+    return WebDataSource(storage_client,
+                         bucket_name=bucket_name,
+                         depth_limit=depth_limit)
   else:
     raise InternalServerError(
         f"No datasource available for doc url [{doc_url}]")
@@ -549,9 +623,12 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
   Delete query engine and associated models and vector store data.
   """
   # delete vector store data
-  qe_vector_store = vector_store_from_query_engine(q_engine)
   try:
-    qe_vector_store.delete()
+    if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
+      delete_vertex_search(q_engine)
+    else:
+      qe_vector_store = vector_store_from_query_engine(q_engine)
+      qe_vector_store.delete()
   except Exception:
     # we make this error non-fatal as we want to delete the models
     Logger.error(

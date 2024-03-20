@@ -39,23 +39,9 @@ spec:
           limits:
             memory: "5000Mi"
             cpu: "2000m"
-        env:
-        # Define the environment variable
-        - name: PROJECT_ID
-          valueFrom:
-            configMapKeyRef:
-              name: env-vars
-              key: PROJECT_ID
-        - name: API_BASE_URL
-          # Required format: api/version
-          value: api/v1
-        - name: SERVICE_NAME
-          value: authentication
-        - name: COLLECTION
-          value: users
-        - name: REDIS_HOST
-          value: redis-master
-
+        envFrom:
+        - configMapRef:
+            name: env-vars
         ports:
         - containerPort: 80
         livenessProbe:
