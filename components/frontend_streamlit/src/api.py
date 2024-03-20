@@ -94,12 +94,16 @@ def api_request(method: str, api_url: str,
                                                     request_body,
                                                     auth_token)
 
-      if status_code == 401 or resp_dict.get("success", False) is False:
+      if status_code == 401:
         Logger.error(
             f"Unauthorized when calling API: {api_url}")
         st.session_state.error_msg = \
             "Unauthorized or session expired. " \
             "Please [login]({APP_BASE_PATH}/Login) again."
+
+      if resp_dict.get("success", False) is False:
+        msg = resp_dict.get("message", "no message returned")
+        st.session_state.error_msg = f"API call failed: {msg} "
 
     if status_code != 200:
       Logger.error(
@@ -363,6 +367,7 @@ def run_chat(prompt: str, chat_id: str = None,
 def build_query_engine(name: str, engine_type: str, doc_url: str,
                        depth_limit: int, embedding_type: str,
                        vector_store: str, description: str, agents: str,
+                       child_engines: str,
                        auth_token=None):
   """
   Start a query engine build job
@@ -382,7 +387,8 @@ def build_query_engine(name: str, engine_type: str, doc_url: str,
     "description": description,
     "params": {
       "depth_limit": depth_limit,
-      "agents": agents
+      "agents": agents,
+      "associated_engines": child_engines,
     }
   }
   Logger.info(f"Sending request_body={request_body} to {api_url}")

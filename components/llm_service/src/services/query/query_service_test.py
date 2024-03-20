@@ -37,6 +37,7 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            User, QueryDocument, QueryDocumentChunk,
                            QueryReference)
+from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 from services.query.query_service import (query_generate,
                                           query_search,
@@ -221,6 +222,20 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   assert q_engine.doc_url == doc_url
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
+
+  # test integrated search build
+  doc_url = ""
+  build_params = {
+    "associated_engines": q_engine.name
+  }
+  q_engine_2, docs_processed, docs_not_processed = \
+      query_engine_build(doc_url, "test integrated search", create_user.id,
+                         query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
+                         params=build_params)
+  assert docs_processed == []
+  assert docs_not_processed == []
+  q_engine = QueryEngine.find_by_id(q_engine.id)
+  assert q_engine.parent_engine_id == q_engine_2.id
 
 @mock.patch("services.query.query_service.process_documents")
 def test_build_doc_index(mock_process_documents, create_engine,

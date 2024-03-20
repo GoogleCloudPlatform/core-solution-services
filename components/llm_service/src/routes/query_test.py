@@ -39,6 +39,7 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            User, QueryDocument, QueryDocumentChunk,
                            QueryReference)
+from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
@@ -193,6 +194,25 @@ def test_get_query_engine_urls(create_engine, create_query_docs,
 def test_create_query_engine(create_user, client_with_emulator):
   url = f"{api_url}/engine"
   params = FAKE_QUERY_ENGINE_BUILD
+  with mock.patch("routes.query.initiate_batch_job",
+                  return_value=FAKE_QE_BUILD_RESPONSE):
+    resp = client_with_emulator.post(url, json=params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  query_engine_data = json_response.get("data")
+  assert query_engine_data == FAKE_QE_BUILD_RESPONSE["data"]
+
+  # test integrated search build
+  params = {
+    "query_engine": "query-engine-integrated-test",
+    "doc_url": "",
+    "description": "",
+    "query_engine_type": QE_TYPE_INTEGRATED_SEARCH,
+    "params": {
+      "associated_engines": FAKE_QUERY_ENGINE_BUILD["query_engine"]
+    }
+  }
   with mock.patch("routes.query.initiate_batch_job",
                   return_value=FAKE_QE_BUILD_RESPONSE):
     resp = client_with_emulator.post(url, json=params)
