@@ -419,6 +419,9 @@ def query_engine_build(doc_url: str,
   q_engine.save()
 
   # build document index
+  docs_processed = []
+  docs_not_processed = []
+
   try:
     if query_engine_type == QE_TYPE_VERTEX_SEARCH:
       docs_processed, docs_not_processed = build_vertex_search(q_engine)
