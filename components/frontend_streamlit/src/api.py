@@ -100,7 +100,7 @@ def api_request(method: str, api_url: str,
         st.session_state.error_msg = \
             "Unauthorized or session expired. " \
             "Please [login]({APP_BASE_PATH}/Login) again."
-      
+
       if resp_dict.get("success", False) is False:
         msg = resp_dict.get("message", "no message returned")
         st.session_state.error_msg = f"API call failed: {msg} "
