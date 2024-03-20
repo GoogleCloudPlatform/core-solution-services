@@ -215,14 +215,16 @@ def test_query_search(mock_get_top_relevant_sentences,
       query_engine_build(doc_url, "test integrated search", create_user.id,
                          query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
                          params=build_params)
-  
+
+  assert docs_processed == []
+  assert docs_not_processed == []
   query_references = retrieve_references(prompt, q_engine_2, create_user.id)
   assert len(query_references) == len(create_query_doc_chunks)
   assert query_references[0].chunk_id == qdoc_chunk1.id
   assert query_references[1].chunk_id == qdoc_chunk2.id
   assert query_references[2].chunk_id == qdoc_chunk3.id
-  
-  
+
+
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
