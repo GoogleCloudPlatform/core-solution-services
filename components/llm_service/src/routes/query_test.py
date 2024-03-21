@@ -385,7 +385,7 @@ def test_delete_query(create_user, create_user_query, client_with_emulator):
   deleted_query = UserQuery.collection.filter("id", "in",
       [query_id]).filter("deleted_at_timestamp",
       "==", None).get()
-  assert deleted_query == None
+  assert deleted_query is None
 
   # test hard delete
   query_dict = USER_QUERY_EXAMPLE
@@ -398,7 +398,7 @@ def test_delete_query(create_user, create_user_query, client_with_emulator):
 
   deleted_query = UserQuery.collection.filter("id", "in",
       [query_id]).get()
-  assert deleted_query == None
+  assert deleted_query is None
 
 def test_get_queries(create_user, create_user_query, client_with_emulator):
   userid = USER_EXAMPLE["id"]
