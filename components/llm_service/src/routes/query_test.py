@@ -358,6 +358,48 @@ def test_get_query(create_user, create_engine, create_user_query,
   assert USER_QUERY_EXAMPLE["id"] == saved_id, "all data not retrieved"
 
 
+def test_update_query(create_user, create_user_query, client_with_emulator):
+  query_id = USER_QUERY_EXAMPLE["id"]
+  url = f"{api_url}/{query_id}"
+  update_params = {
+    "title": "updated title"
+  }
+  resp = client_with_emulator.put(url, json=update_params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+
+  updated_query = UserQuery.find_by_id(query_id)
+  assert updated_query.title == "updated title", "user query updated"
+
+
+def test_delete_query(create_user, create_user_query, client_with_emulator):
+  # test soft delete
+  query_id = USER_QUERY_EXAMPLE["id"]
+  url = f"{api_url}/{query_id}"
+
+  resp = client_with_emulator.delete(url, params={"hard_delete": False})
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+
+  deleted_query = UserQuery.collection.filter("id", "in",
+      [query_id]).filter("deleted_at_timestamp",
+      "==", None).get()
+  assert deleted_query == None
+
+  # test hard delete
+  query_dict = USER_QUERY_EXAMPLE
+  query = UserQuery.from_dict(query_dict)
+  query.save()
+
+  resp = client_with_emulator.delete(url, params={"hard_delete": True})
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+
+  deleted_query = UserQuery.collection.filter("id", "in",
+      [query_id]).get()
+  assert deleted_query == None
+
 def test_get_queries(create_user, create_user_query, client_with_emulator):
   userid = USER_EXAMPLE["id"]
   url = f"{api_url}/user/{userid}"
