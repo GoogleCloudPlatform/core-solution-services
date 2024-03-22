@@ -89,8 +89,8 @@ async def query_generate(
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
 
-  Returns:    
-    QueryResult object, 
+  Returns:
+    QueryResult object,
     list of QueryReference objects (see query_search)
 
   Raises:
@@ -106,7 +106,8 @@ async def query_generate(
   query_references = retrieve_references(prompt, q_engine, user_id)
 
   # only need to do this if integrated search from multiple child engines
-  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and len(query_references) > 1:
+  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
+    len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
 
   # generate question prompt for chat model
@@ -158,7 +159,7 @@ def retrieve_references(prompt: str,
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
     user_id: user id of user making query
-  Returns:    
+  Returns:
     list of QueryReference objects
   """
   # perform retrieval for prompt
@@ -255,14 +256,16 @@ def query_search(q_engine: QueryEngine,
   return query_references
 
 def rerank_references(prompt: str,
-                      query_references: List[QueryReference]) -> List[QueryReference]:
+                      query_references: List[QueryReference]) -> \
+                        List[QueryReference]:
   """
   Return a list of QueryReferences ranked by relevance to the prompt.
 
   Args:
     prompt: the text prompt to pass to the query engine
-    query_references: list of QueryReference objects (possibly from multiple q_engines) 
-  Returns:    
+    query_references: list of QueryReference objects (possibly
+                      from multiple q_engines)
+  Returns:
     list of QueryReference objects
   """
 
@@ -272,26 +275,29 @@ def rerank_references(prompt: str,
   # reranker function requires text and ids as separate params
   query_ref_text = []
   query_ref_ids = []
-  
-  for query_ref in query_references:    
+
+  for query_ref in query_references:
     query_doc_chunk = QueryDocumentChunk.find_by_id(query_ref.chunk_id)
     # print(query_ref.id, query_ref_id, query_ref.chunk_id, query_doc_chunk.id)
     query_ref_text.append(query_doc_chunk.clean_text)
     query_ref_ids.append(query_ref.id)
-  
+
   # rerank, passing in QueryReference ids
-  ranked_results = reranker.rank(query=prompt, docs=query_ref_text, doc_ids=query_ref_ids)
-  
+  ranked_results = reranker.rank(
+    query=prompt,
+    docs=query_ref_text,
+    doc_ids=query_ref_ids)
+
   # order the original references based on the rank
   ranked_query_ref_ids = [r.doc_id for r in ranked_results.results]
   sort_dict = {x: i for i, x in enumerate(ranked_query_ref_ids)}
   sort_list = [(qr, sort_dict[qr.id]) for qr in query_references]
   sort_list.sort(key=lambda x: x[1])
-  
+
   # just return the QueryReferences
   ranked_query_refs = [qr for qr, i in sort_list]
-  
-  return ranked_query_refs  
+
+  return ranked_query_refs
 
 def get_top_relevant_sentences(q_engine, query_embeddings,
     sentences, expand_neighbors=2, highlight_top_sentence=False) -> list:
@@ -614,9 +620,9 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
   return docs_processed, data_source.docs_not_processed
 
 def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
-  """ 
+  """
   Retrieve Vector Store object for a Query Engine.
-  
+
   A Query Engine is configured for the vector store it uses when it is
   built.  If there is no configured vector store the default is used.
   """
