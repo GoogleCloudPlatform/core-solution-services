@@ -106,7 +106,7 @@ async def query_generate(
   query_references = retrieve_references(prompt, q_engine, user_id)
 
   # only need to do this if integrated search from multiple child engines
-  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
+  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
 
   # generate question prompt for chat model
@@ -265,12 +265,15 @@ def rerank_references(prompt: str,
   Returns:    
     list of QueryReference objects
   """
+
+  Logger.info(f"Reranking {len(query_references)} references for "
+              f"query_prompt=[{prompt}]")
+
   # reranker function requires text and ids as separate params
   query_ref_text = []
   query_ref_ids = []
   
-  for query_ref in query_references:
-    # query_ref = QueryReference.find_by_id(query_ref_id)
+  for query_ref in query_references:    
     query_doc_chunk = QueryDocumentChunk.find_by_id(query_ref.chunk_id)
     # print(query_ref.id, query_ref_id, query_ref.chunk_id, query_doc_chunk.id)
     query_ref_text.append(query_doc_chunk.clean_text)
