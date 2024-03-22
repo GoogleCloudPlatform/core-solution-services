@@ -272,6 +272,46 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
     Logger.error(e)
     raise InternalServerError(str(e)) from e
 
+@router.delete(
+  "/{query_id}",
+  name="Delete user query"
+)
+def delete_query(query_id: str, hard_delete=False):
+  """Delete a user query. By default we do a soft delete.
+
+  Args:
+    query_id (str): Query ID
+
+  Raises:
+    ResourceNotFoundException: If the UserQuery does not exist
+    HTTPException: 500 Internal Server Error if something fails
+
+  Returns:
+    [JSON]: {'success': 'True'} if the user query is deleted,
+    NotFoundErrorResponseModel if the user query not found,
+    InternalServerErrorResponseModel if the update raises an exception
+  """
+  Logger.info(f"Delete a user query by id={query_id}")
+  existing_query = UserQuery.find_by_id(query_id)
+  if existing_query is None:
+    raise ResourceNotFoundException(f"Query {query_id} not found")
+
+  try:
+    if hard_delete:
+      UserQuery.delete_by_id(existing_query.id)
+    else:
+      UserQuery.soft_delete_by_id(existing_query.id)
+
+    return {
+      "success": True,
+      "message": f"Successfully deleted user query {query_id}",
+    }
+  except ResourceNotFoundException as re:
+    raise ResourceNotFound(str(re)) from re
+  except Exception as e:
+    Logger.error(e)
+    raise InternalServerError(str(e)) from e
+
 @router.put(
   "/engine/{query_engine_id}",
   name="Update a query engine")
@@ -321,6 +361,7 @@ def delete_query_engine(query_engine_id: str, hard_delete=False):
 
   Args:
       query_engine_id (LLMQueryEngineModel)
+      hard_delete (boolean)
   Returns:
     [JSON]: {'success': 'True'} if the query engine is deleted,
     ResourceNotFoundException if the query engine not found,
