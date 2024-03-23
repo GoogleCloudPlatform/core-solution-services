@@ -32,14 +32,12 @@ assert MODEL_IP, "MODEL_IP is not set, should be set either " \
 data = {
     "prompt": args.prompt,
     "temperature": float(args.temperature) if args.temperature else 0.2,
+    "max_length": int(args.max_length) if args.max_length else 1024,
     "top_p": float(args.top_p) if args.top_p else 0.95,
     "top_k": int(args.top_k) if args.top_k else 40,
 }
 
-if args.max_length:
-    data.update({"max_length": int(args.max_length)})
-
-MODEL_ENDPOINT = f"http://{MODEL_IP}:8080/v1/models/model:predict"
+MODEL_ENDPOINT = f"http://{MODEL_IP}/v1/models/model:predict"
 print(f"Using model endpoint {MODEL_ENDPOINT} with data: {data}")
 
 start_time = time.time()
