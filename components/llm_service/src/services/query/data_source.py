@@ -270,7 +270,7 @@ class DataSource:
     return doc_text_list
 
   @staticmethod
-  def split_slide_page(page: PageObject, doc_filepath: str, 
+  def split_slide_page(page: PageObject, doc_filepath: str,
                        page_index: int) -> List[str]:
     """
     Read document and return content as a list of strings
