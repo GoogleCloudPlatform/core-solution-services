@@ -180,21 +180,25 @@ class DataSource:
         Logger.info(f"Reading pdf slide deck {doc_name} with {num_pages} pages")
         for i in range(num_pages):
           # Split page into image (PDF) and text (PDF) text files
-          slide_obj = self.split_slide_page(reader.pages[i], doc_filepath)
+          slide_obj = self.split_slide_page(reader.pages[i], doc_filepath, i)
 
           # Convert image to b64 and chunk text
-          with open(slide_obj.text.slide_text_filename, "rb") as f:
+          with open(slide_obj["slide_image_filepath"], "rb") as f:
             image_b64 = b64encode(f.read()).decode("utf-8")
           text_chunks = self.chunk_document(
-            slide_obj.text.slide_text_filename, doc_url,
-            slide_obj.text.slide_text_filename)
+            slide_obj["slide_text_filename"], doc_url,
+            slide_obj["slide_text_filepath"])
+
+          # Clean up temp files
+          os.remove(slide_obj["slide_image_filepath"])
+          os.remove(slide_obj["slide_text_filepath"])
 
           # Push slide into array
           slide_chunk_obj = {
             "image_b64": image_b64,
             "text_chunks": text_chunks
           }
-          slide_chunks.push(slide_chunk_obj)
+          slide_chunks.append(slide_chunk_obj)
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
 
@@ -266,7 +270,8 @@ class DataSource:
     return doc_text_list
 
   @staticmethod
-  def split_slide_page(page: PageObject, doc_filepath: str) -> List[str]:
+  def split_slide_page(page: PageObject, doc_filepath: str, 
+                       page_index: int) -> List[str]:
     """
     Read document and return content as a list of strings
 
@@ -294,7 +299,7 @@ class DataSource:
     slide_image_pdf.add_page(slide_image_page)
 
     # write the new PDF file to a file
-    slide_image_filename = "slide_" + doc_file
+    slide_image_filename = str(page_index) + "_slide_" + doc_file
     slide_image_filepath = doc_folder + slide_image_filename
     with open(slide_image_filepath, "wb") as f:
       slide_image_pdf.write(f)
@@ -309,20 +314,14 @@ class DataSource:
     slide_text_pdf.add_page(slide_text_page)
 
     # write the new PDF file to a file
-    slide_text_filename = "text_" + doc_file
-    slide_text_filepath = doc_folder + "text_" + doc_file
+    slide_text_filename =  str(page_index) + "_text_" + doc_file
+    slide_text_filepath = doc_folder + slide_text_filename
     with open(slide_text_filepath, "wb") as f:
       slide_text_pdf.write(f)
 
-    slide_image_obj = {
+    return {
       "slide_image_filename": slide_image_filename,
-      "slide_image_filepath": slide_image_filepath
-    }
-    slide_text_obj = {
+      "slide_image_filepath": slide_image_filepath,
       "slide_text_filename": slide_text_filename,
       "slide_text_filepath": slide_text_filepath
-    }
-    return {
-      "image": slide_image_obj,
-      "text": slide_text_obj
     }
