@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends
 
 from common.models import (QueryEngine,
                            User, UserQuery, QueryDocument)
+from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
@@ -271,6 +272,46 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
     Logger.error(e)
     raise InternalServerError(str(e)) from e
 
+@router.delete(
+  "/{query_id}",
+  name="Delete user query"
+)
+def delete_query(query_id: str, hard_delete=False):
+  """Delete a user query. By default we do a soft delete.
+
+  Args:
+    query_id (str): Query ID
+
+  Raises:
+    ResourceNotFoundException: If the UserQuery does not exist
+    HTTPException: 500 Internal Server Error if something fails
+
+  Returns:
+    [JSON]: {'success': 'True'} if the user query is deleted,
+    NotFoundErrorResponseModel if the user query not found,
+    InternalServerErrorResponseModel if the update raises an exception
+  """
+  Logger.info(f"Delete a user query by id={query_id}")
+  existing_query = UserQuery.find_by_id(query_id)
+  if existing_query is None:
+    raise ResourceNotFoundException(f"Query {query_id} not found")
+
+  try:
+    if hard_delete:
+      UserQuery.delete_by_id(existing_query.id)
+    else:
+      UserQuery.soft_delete_by_id(existing_query.id)
+
+    return {
+      "success": True,
+      "message": f"Successfully deleted user query {query_id}",
+    }
+  except ResourceNotFoundException as re:
+    raise ResourceNotFound(str(re)) from re
+  except Exception as e:
+    Logger.error(e)
+    raise InternalServerError(str(e)) from e
+
 @router.put(
   "/engine/{query_engine_id}",
   name="Update a query engine")
@@ -320,6 +361,7 @@ def delete_query_engine(query_engine_id: str, hard_delete=False):
 
   Args:
       query_engine_id (LLMQueryEngineModel)
+      hard_delete (boolean)
   Returns:
     [JSON]: {'success': 'True'} if the query engine is deleted,
     ResourceNotFoundException if the query engine not found,
@@ -366,22 +408,26 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
 
   genconfig_dict = {**gen_config.dict()}
 
-  # validate doc_url
   Logger.info(f"Create a query engine with {genconfig_dict}")
+
   doc_url = genconfig_dict.get("doc_url")
-  if doc_url is None or doc_url == "":
-    return BadRequest("Missing or invalid payload parameters: doc_url")
+  query_engine_type = genconfig_dict.get("query_engine_type", None)
 
-  if not (doc_url.startswith("gs://")
-          or doc_url.startswith("http://")
-          or doc_url.startswith("https://")
-          or doc_url.startswith("bq://")):
-    return BadRequest(
-        "doc_url must start with gs://, http:// or https://, or bq://")
+  if query_engine_type != QE_TYPE_INTEGRATED_SEARCH:
+    # validate doc_url
+    if doc_url is None or doc_url == "":
+      return BadRequest("Missing or invalid payload parameters: doc_url")
 
-  if doc_url.endswith(".pdf"):
-    return BadRequest(
-      "doc_url must point to a GCS bucket/folder or website, not a document")
+    if not (doc_url.startswith("gs://")
+            or doc_url.startswith("http://")
+            or doc_url.startswith("https://")
+            or doc_url.startswith("bq://")):
+      return BadRequest(
+          "doc_url must start with gs://, http:// or https://, or bq://")
+
+    if doc_url.endswith(".pdf"):
+      return BadRequest(
+        "doc_url must point to a GCS bucket/folder or website, not a document")
 
   query_engine = genconfig_dict.get("query_engine")
   if query_engine is None or query_engine == "":
@@ -396,7 +442,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "doc_url": doc_url,
       "query_engine": query_engine,
       "user_id": user_id,
-      "query_engine_type": genconfig_dict.get("query_engine_type", None),
+      "query_engine_type": query_engine_type,
       "llm_type": genconfig_dict.get("llm_type", None),
       "embedding_type": genconfig_dict.get("embedding_type", None),
       "vector_store": genconfig_dict.get("vector_store", None),

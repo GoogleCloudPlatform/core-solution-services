@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 from typing import List, Optional, Tuple, Dict
 from google.cloud import storage
+from rerankers import Reranker
 from common.utils.logging_handler import Logger
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
@@ -62,6 +63,10 @@ VECTOR_STORES = {
   VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
 }
 
+RERANK_MODEL_NAME = "cross-encoder"
+reranker = Reranker(RERANK_MODEL_NAME, verbose=0)
+
+
 async def query_generate(
             user_id: str,
             prompt: str,
@@ -84,8 +89,8 @@ async def query_generate(
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
 
-  Returns:    
-    QueryResult object, 
+  Returns:
+    QueryResult object,
     list of QueryReference objects (see query_search)
 
   Raises:
@@ -99,6 +104,11 @@ async def query_generate(
 
   # perform retrieval
   query_references = retrieve_references(prompt, q_engine, user_id)
+
+  # only need to do this if integrated search from multiple child engines
+  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
+    len(query_references) > 1:
+    query_references = rerank_references(prompt, query_references)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
@@ -149,7 +159,7 @@ def retrieve_references(prompt: str,
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
     user_id: user id of user making query
-  Returns:    
+  Returns:
     list of QueryReference objects
   """
   # perform retrieval for prompt
@@ -157,7 +167,7 @@ def retrieve_references(prompt: str,
   if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
     query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
   elif q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
-    child_engines = q_engine.find_children()
+    child_engines = QueryEngine.find_children(q_engine)
     for child_engine in child_engines:
       # make a recursive call to retrieve references for child engine
       child_query_references = retrieve_references(prompt,
@@ -245,6 +255,50 @@ def query_search(q_engine: QueryEngine,
                f"references={query_references}")
   return query_references
 
+def rerank_references(prompt: str,
+                      query_references: List[QueryReference]) -> \
+                        List[QueryReference]:
+  """
+  Return a list of QueryReferences ranked by relevance to the prompt.
+
+  Args:
+    prompt: the text prompt to pass to the query engine
+    query_references: list of QueryReference objects (possibly
+                      from multiple q_engines)
+  Returns:
+    list of QueryReference objects
+  """
+
+  Logger.info(f"Reranking {len(query_references)} references for "
+              f"query_prompt=[{prompt}]")
+
+  # reranker function requires text and ids as separate params
+  query_ref_text = []
+  query_ref_ids = []
+
+  for query_ref in query_references:
+    query_doc_chunk = QueryDocumentChunk.find_by_id(query_ref.chunk_id)
+    # print(query_ref.id, query_ref_id, query_ref.chunk_id, query_doc_chunk.id)
+    query_ref_text.append(query_doc_chunk.clean_text)
+    query_ref_ids.append(query_ref.id)
+
+  # rerank, passing in QueryReference ids
+  ranked_results = reranker.rank(
+    query=prompt,
+    docs=query_ref_text,
+    doc_ids=query_ref_ids)
+
+  # order the original references based on the rank
+  ranked_query_ref_ids = [r.doc_id for r in ranked_results.results]
+  sort_dict = {x: i for i, x in enumerate(ranked_query_ref_ids)}
+  sort_list = [(qr, sort_dict[qr.id]) for qr in query_references]
+  sort_list.sort(key=lambda x: x[1])
+
+  # just return the QueryReferences
+  ranked_query_refs = [qr for qr, i in sort_list]
+
+  return ranked_query_refs
+
 def get_top_relevant_sentences(q_engine, query_embeddings,
     sentences, expand_neighbors=2, highlight_top_sentence=False) -> list:
 
@@ -280,7 +334,6 @@ def get_similarity(query_embeddings, sentence_embeddings) -> list:
     cos_sim.append(cosine[0])
 
   return cos_sim
-
 
 def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   """
@@ -331,7 +384,6 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"Completed batch job query engine build for {query_engine}")
 
   return result_data
-
 
 def query_engine_build(doc_url: str,
                        query_engine: str,
@@ -396,8 +448,8 @@ def query_engine_build(doc_url: str,
     associated_agents = [qe.strip() for qe in associated_agents]
 
   associated_query_engines = []
-  if "query_engines" in params:
-    associated_qe_names = params["query_engines"].split(",")
+  if "associated_engines" in params:
+    associated_qe_names = params["associated_engines"].split(",")
     associated_query_engines = [
       QueryEngine.find_by_name(qe_name.strip())
       for qe_name in associated_qe_names
@@ -419,6 +471,9 @@ def query_engine_build(doc_url: str,
   q_engine.save()
 
   # build document index
+  docs_processed = []
+  docs_not_processed = []
+
   try:
     if query_engine_type == QE_TYPE_VERTEX_SEARCH:
       docs_processed, docs_not_processed = build_vertex_search(q_engine)
@@ -448,7 +503,6 @@ def query_engine_build(doc_url: str,
   Logger.info(f"Completed query engine build for {query_engine}")
 
   return q_engine, docs_processed, docs_not_processed
-
 
 def build_doc_index(doc_url: str, q_engine: QueryEngine,
                     qe_vector_store: VectorStore) -> \
@@ -490,7 +544,6 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
   except Exception as e:
     Logger.error(f"Error creating doc index {e}")
     raise InternalServerError(str(e)) from e
-
 
 def process_documents(doc_url: str, qe_vector_store: VectorStore,
                       q_engine: QueryEngine, storage_client) -> \
@@ -566,11 +619,10 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
   return docs_processed, data_source.docs_not_processed
 
-
 def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
-  """ 
+  """
   Retrieve Vector Store object for a Query Engine.
-  
+
   A Query Engine is configured for the vector store it uses when it is
   built.  If there is no configured vector store the default is used.
   """
@@ -586,7 +638,6 @@ def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
 
   qe_vector_store = qe_vector_store_class(q_engine, q_engine.embedding_type)
   return qe_vector_store
-
 
 def datasource_from_url(doc_url: str,
                         q_engine: QueryEngine,
@@ -613,7 +664,6 @@ def datasource_from_url(doc_url: str,
   else:
     raise InternalServerError(
         f"No datasource available for doc url [{doc_url}]")
-
 
 def delete_engine(q_engine: QueryEngine, hard_delete=False):
   """

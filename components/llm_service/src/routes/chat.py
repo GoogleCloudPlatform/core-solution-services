@@ -112,6 +112,8 @@ def get_chat_list(skip: int = 0, limit: int = 20,
   except ResourceNotFoundException as e:
     raise ResourceNotFound(str(e)) from e
   except Exception as e:
+    Logger.error(e)
+    Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
 
