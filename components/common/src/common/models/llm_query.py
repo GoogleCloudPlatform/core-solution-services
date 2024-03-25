@@ -147,16 +147,17 @@ class QueryEngine(BaseModel):
             None).get()
     return q_engine
 
-  def find_children(self) -> List[BaseModel]:
+  @classmethod
+  def find_children(cls, q_engine) -> List[BaseModel]:
     """
-    Find all child engines for this engine.
+    Find all child engines for an engine.
 
     Returns:
         List of QueryEngine objects that point to this engine as parent
 
     """
-    q_engines = self.collection.filter(
-        "parent_engine_id", "==", self.id).filter(
+    q_engines = cls.collection.filter(
+        "parent_engine_id", "==", q_engine.id).filter(
             "deleted_at_timestamp", "==",
             None).fetch()
     return list(q_engines)

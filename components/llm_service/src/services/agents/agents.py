@@ -256,7 +256,7 @@ class BaseAgent(ABC):
 class ChatAgent(BaseAgent):
   """
   Chat Agent.  This is an agent configured for basic informational chat with a
-  human.  It includes search and query tools.
+  human.
   """
 
   def __init__(self, llm_type: str, name: str):
@@ -307,7 +307,7 @@ class RoutingAgent(BaseAgent):
 class TaskAgent(BaseAgent):
   """
   Structured Task Agent.  This agent accepts multiple inputs and can call
-  StructuredTools that accept multiple inputs,not just one String. This is an
+  StructuredTools that accept multiple inputs, not just one string. This is an
   agent configured to execute tasks on behalf of a human.  Every task has a
   plan, consisting of plan steps. Creation of the plan is done by a planning
   agent.

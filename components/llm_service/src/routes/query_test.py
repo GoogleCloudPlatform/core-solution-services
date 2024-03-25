@@ -39,6 +39,7 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            User, QueryDocument, QueryDocumentChunk,
                            QueryReference)
+from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
@@ -202,6 +203,25 @@ def test_create_query_engine(create_user, client_with_emulator):
   query_engine_data = json_response.get("data")
   assert query_engine_data == FAKE_QE_BUILD_RESPONSE["data"]
 
+  # test integrated search build
+  params = {
+    "query_engine": "query-engine-integrated-test",
+    "doc_url": "",
+    "description": "",
+    "query_engine_type": QE_TYPE_INTEGRATED_SEARCH,
+    "params": {
+      "associated_engines": FAKE_QUERY_ENGINE_BUILD["query_engine"]
+    }
+  }
+  with mock.patch("routes.query.initiate_batch_job",
+                  return_value=FAKE_QE_BUILD_RESPONSE):
+    resp = client_with_emulator.post(url, json=params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  query_engine_data = json_response.get("data")
+  assert query_engine_data == FAKE_QE_BUILD_RESPONSE["data"]
+
 
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 def test_delete_query_engine_soft(mock_vector_store, create_user,
@@ -337,6 +357,48 @@ def test_get_query(create_user, create_engine, create_user_query,
   saved_id = json_response.get("data").get("id")
   assert USER_QUERY_EXAMPLE["id"] == saved_id, "all data not retrieved"
 
+
+def test_update_query(create_user, create_user_query, client_with_emulator):
+  query_id = USER_QUERY_EXAMPLE["id"]
+  url = f"{api_url}/{query_id}"
+  update_params = {
+    "title": "updated title"
+  }
+  resp = client_with_emulator.put(url, json=update_params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+
+  updated_query = UserQuery.find_by_id(query_id)
+  assert updated_query.title == "updated title", "user query updated"
+
+
+def test_delete_query(create_user, create_user_query, client_with_emulator):
+  # test soft delete
+  query_id = USER_QUERY_EXAMPLE["id"]
+  url = f"{api_url}/{query_id}"
+
+  resp = client_with_emulator.delete(url, params={"hard_delete": False})
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+
+  deleted_query = UserQuery.collection.filter("id", "in",
+      [query_id]).filter("deleted_at_timestamp",
+      "==", None).get()
+  assert deleted_query is None
+
+  # test hard delete
+  query_dict = USER_QUERY_EXAMPLE
+  query = UserQuery.from_dict(query_dict)
+  query.save()
+
+  resp = client_with_emulator.delete(url, params={"hard_delete": True})
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+
+  deleted_query = UserQuery.collection.filter("id", "in",
+      [query_id]).get()
+  assert deleted_query is None
 
 def test_get_queries(create_user, create_user_query, client_with_emulator):
   userid = USER_EXAMPLE["id"]
