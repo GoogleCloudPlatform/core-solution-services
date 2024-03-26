@@ -401,8 +401,7 @@ def test_delete_query(create_user, create_user_query, client_with_emulator):
   assert deleted_query is None
 
 def test_get_queries(create_user, create_user_query, client_with_emulator):
-  userid = USER_EXAMPLE["id"]
-  url = f"{api_url}/user/{userid}"
+  url = f"{api_url}/user"
   resp = client_with_emulator.get(url)
   json_response = resp.json()
 
