@@ -515,10 +515,24 @@ async def query(query_engine_id: str,
     query_reference_dicts = [
       ref.get_fields(reformat_datetime=True) for ref in query_references
     ]
+
+    # save user query history
+    query_reference_dicts = [
+      ref.get_fields(reformat_datetime=True) for ref in query_references
+    ]
+    user_query = UserQuery(user_id=user.id,
+                          query_engine_id=q_engine.id,
+                          prompt=prompt)
+    user_query.update_history(prompt,
+                              query_result.response,
+                              query_reference_dicts)
+    user_query.save()
+
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
+            "user_query_id": user_query.id,
             "query_result": query_result,
             "query_references": query_reference_dicts
         }
@@ -573,6 +587,11 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
     query_reference_dicts = [
       ref.get_fields(reformat_datetime=True) for ref in query_references
     ]
+    user_query.update_history(prompt,
+                              query_result.response,
+                              query_reference_dicts)
+    user_query.save()
+
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "
                 f"query_result={query_result} "
@@ -581,6 +600,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
         "success": True,
         "message": "Successfully generated text",
         "data": {
+            "user_query_id": user_query.id,
             "query_result": query_result,
             "query_references": query_reference_dicts
         }

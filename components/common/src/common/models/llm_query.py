@@ -72,6 +72,9 @@ class UserQuery(BaseModel):
 
   def update_history(self, prompt: str, response: str, references: List[dict]):
     """ Update history with query and response """
+    if not self.history:
+      self.history = []
+
     self.history.append(
       {QUERY_HUMAN: prompt}
     )
