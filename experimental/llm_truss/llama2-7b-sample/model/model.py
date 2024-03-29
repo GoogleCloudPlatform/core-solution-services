@@ -1,20 +1,30 @@
+"""
+Serve LLAMA2 Model using truss
+"""
 from typing import Dict
 
+import os
 import torch
 import urllib3
 from transformers import pipeline, LlamaForCausalLM, LlamaTokenizer
+from google.cloud import secretmanager
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-import os
-from google.cloud import secretmanager
 
 secrets = secretmanager.SecretManagerServiceClient()
 
 MODEL_NAME = "meta-llama/Llama-2-7b-chat-hf"
+MAX_LENGTH = "1024"
 
-DEFAULT_MAX_LENGTH = os.getenv("DEFAULT_MAX_LENGTH", 256)
-if DEFAULT_MAX_LENGTH == "":
-    DEFAULT_MAX_LENGTH = 256
+DEFAULT_MAX_LENGTH_STR = os.getenv("DEFAULT_MAX_LENGTH")
+if DEFAULT_MAX_LENGTH_STR is None or DEFAULT_MAX_LENGTH_STR == "":
+    DEFAULT_MAX_LENGTH_STR = MAX_LENGTH
+DEFAULT_MAX_LENGTH = int(DEFAULT_MAX_LENGTH_STR)
+
+print()
+print("MODEL_NAME: ", MODEL_NAME)
+print("DEFAULT_MAX_LENGTH: ", DEFAULT_MAX_LENGTH)
+print()
 
 PROJECT_ID = os.environ.get("PROJECT_ID")
 

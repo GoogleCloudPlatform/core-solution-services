@@ -17,6 +17,7 @@ env:
   KUSTOMIZE_VERSION: 5.0.0
   SKAFFOLD_VERSION: 2.4.0
   SKAFFOLD_CACHE_GCS: gs://artifacts.${{ vars.PROJECT_ID }}.appspot.com/skaffold/cache
+  SKAFFOLD_BUILD_CONCURRENCY: 0
   PG_HOST: ${{ vars.PG_HOST }}
 
 jobs:

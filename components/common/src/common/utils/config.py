@@ -62,8 +62,8 @@ IS_CLOUD_LOGGING_ENABLED = bool(
   os.getenv("IS_CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))
 
 DEFAULT_JOB_LIMITS = {
-    "cpu": "3",
-    "memory": "7000Mi"
+    "cpu": "4",
+    "memory": "16000Mi"
 }
 DEFAULT_JOB_REQUESTS = {
     "cpu": "2",

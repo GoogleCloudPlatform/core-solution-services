@@ -168,7 +168,7 @@ Build and deploy into the default namespace:
 
 ```shell
 cd $MODEL_NAME
-skaffold run  --default-repo=gcr.io/${PROJECT_ID}
+skaffold run --default-repo=gcr.io/${PROJECT_ID}
 ```
 
 Build and deploy into the custom namespace:
@@ -243,7 +243,7 @@ Received response in 8 seconds.
 Optionally overwrite parameters:
 
 ```shell
-python main.py "what is medicaid?"  --max_length 100 --temperature 1 --top_p 0.9 --top_k 30
+python main.py "what is medicaid?" --max_length 256 --temperature 1 --top_p 0.9 --top_k 30
 ```
 
 Help:
