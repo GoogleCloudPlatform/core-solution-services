@@ -493,8 +493,8 @@ class ModelConfig():
         api_key_name = api_key_name.replace("-", "_")
     return api_key_name, api_key
 
-  def get_config_value(self, model_id: str, key: str) -> Any:
-    return self.get_model_config(model_id).get(key)
+  def get_config_value(self, model_id: str, key: str, default=None) -> Any:
+    return self.get_model_config(model_id).get(key, default)
 
   def get_all_model_config(self):
     """ return dict of model config and embedding model config combined """
