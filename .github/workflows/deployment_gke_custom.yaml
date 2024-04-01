@@ -61,7 +61,7 @@ jobs:
 
       - name: Install Solutions Builder
         run: |
-          pip install -U solutions-builder
+          pip install -U solutions-builder yamlinclude
 
       - name: Update the project id in config files
         run: |
