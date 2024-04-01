@@ -116,8 +116,8 @@ async def llm_chat(prompt: str, llm_type: str,
     response = None
 
     if user_chat is not None or user_query is not None:
-      context_prompt = get_context_prompt(prompt, llm_type,
-                                  user_chat=user_chat, user_query=user_query)
+      context_prompt = get_context_prompt(
+          llm_type, user_chat=user_chat, user_query=user_query)
       prompt = context_prompt + "\n" + prompt
 
     if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
@@ -148,8 +148,7 @@ async def llm_chat(prompt: str, llm_type: str,
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
-def get_context_prompt(prompt:str,
-                       llm_type:str,
+def get_context_prompt(llm_type:str,
                        user_chat=None,
                        user_query=None) -> str:
   """
@@ -158,7 +157,6 @@ def get_context_prompt(prompt:str,
   If prompt exceeds context window length for model, use summarization
   to compress prompt.
   Args:
-    prompt: the text prompt to pass to the query engine
     llm_type: the model id for generation
     user_chat (optional): previous user chat
     user_query (optional): previous user query
@@ -166,8 +164,8 @@ def get_context_prompt(prompt:str,
     string context prompt
   """
   context_prompt = ""
+  prompt_list = []
   if user_chat is not None:
-    prompt_list = []
     history = user_chat.history
     for entry in history:
       content = UserChat.entry_content(entry)
@@ -175,10 +173,8 @@ def get_context_prompt(prompt:str,
         prompt_list.append(f"Human input: {content}")
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
-    context_prompt = "\n\n".join(prompt_list)
 
   if user_query is not None:
-    prompt_list = []
     history = user_query.history
     for entry in history:
       content = UserQuery.entry_content(entry)
@@ -186,7 +182,8 @@ def get_context_prompt(prompt:str,
         prompt_list.append(f"Human input: {content}")
       elif UserQuery.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
-    context_prompt = "\n\n".join(prompt_list)
+
+  context_prompt = "\n\n".join(prompt_list)
 
   # check if prompt exceeds context window length for model
   max_context_length = get_model_config_value(llm_type,
@@ -194,7 +191,7 @@ def get_context_prompt(prompt:str,
                                               None)
   if max_context_length and len(context_prompt) > max_context_length:
     Logger.info(
-        f"rag prompt length {len(rag_prompt)} exceeds llm_type {llm_type} "
+        f"rag prompt length {len(context_prompt)} exceeds llm_type {llm_type} "
         f"max context length {max_context_length}")
 
     # TODO call a text model to summarize
