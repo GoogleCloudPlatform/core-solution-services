@@ -34,9 +34,7 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
-from services import embeddings
-from services.llm_generate import (llm_generate, get_context_prompt,
-                                   check_context_length)
+from services import llm_generate, embeddings
 from services.query import query_prompts
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
@@ -122,11 +120,11 @@ async def query_generate(
 
   # incorporate user query context if it exists
   if user_query is not None:
-    context_prompt = get_context_prompt(user_query=user_query)
+    context_prompt = llm_generate.get_context_prompt(user_query=user_query)
     prompt = context_prompt + "\n" + prompt
 
   # check prompt against context length of generation model
-  check_context_length(prompt, llm_type)
+  llm_generate.check_context_length(prompt, llm_type)
 
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
