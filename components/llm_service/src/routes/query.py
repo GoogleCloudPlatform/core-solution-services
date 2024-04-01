@@ -43,6 +43,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryEngineURLResponse,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
+from services.llm_generate import llm_chat
 from services.query.query_service import (query_generate,
                                           delete_engine)
 Logger = Logger.get_logger(__file__)

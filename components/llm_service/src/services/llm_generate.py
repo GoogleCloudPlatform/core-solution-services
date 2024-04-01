@@ -25,7 +25,7 @@ from vertexai.preview.generative_models import (
     HarmBlockThreshold)
 from google.cloud.aiplatform_v1beta1.types.content import SafetySetting
 from common.config import PROJECT_ID, REGION
-from common.models import UserChat
+from common.models import UserChat, UserQuery
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
@@ -151,7 +151,7 @@ async def llm_chat(prompt: str, llm_type: str,
 def get_context_prompt(prompt:str,
                        llm_type:str,
                        user_chat=None,
-                       user_query=None): -> str
+                       user_query=None) -> str:
   """
   Get context prompt for chat. Include previous chat or query history
   if present. 
@@ -164,7 +164,7 @@ def get_context_prompt(prompt:str,
     user_query (optional): previous user query
   Returns:
     string context prompt
-  """ 
+  """
   context_prompt = ""
   if user_chat is not None:
     prompt_list = []
@@ -196,7 +196,7 @@ def get_context_prompt(prompt:str,
     Logger.info(
         f"rag prompt length {len(rag_prompt)} exceeds llm_type {llm_type} "
         f"max context length {max_context_length}")
-    
+
     # TODO call a text model to summarize
 
   return context_prompt
