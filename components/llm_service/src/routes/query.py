@@ -43,7 +43,6 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryEngineURLResponse,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
-from services.llm_generate import llm_chat
 from services.query.query_service import (query_generate,
                                           delete_engine)
 Logger = Logger.get_logger(__file__)
@@ -550,8 +549,8 @@ async def query(query_engine_id: str,
     response_model=LLMQueryResponse)
 async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   """
-  Continue a prior user query.  Does not perform a new search, but rather
-  treats this as a chat with the prior query as context.
+  Continue a prior user query.  Perform a new search and
+  add those references along with prior query/chat history as context.
 
   Args:
       user_query_id (str): id of previous user query
@@ -579,21 +578,33 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   llm_type = genconfig_dict.get("llm_type")
 
   try:
-    response = await llm_chat(prompt, llm_type, user_query=user_query)
+    q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
 
-    # save chat history
-    user_query.update_history(prompt, response)
+    query_result, query_references = await query_generate(user_query.user_id,
+                                                          prompt,
+                                                          q_engine,
+                                                          llm_type,
+                                                          user_query)
+    query_reference_dicts = [
+      ref.get_fields(reformat_datetime=True) for ref in query_references
+    ]
+    user_query.update_history(prompt,
+                              query_result.response,
+                              query_reference_dicts)
+    user_query.save()
 
-    chat_data = user_query.get_fields(reformat_datetime=True)
-    chat_data["id"] = user_query.id
+    Logger.info(f"Generated query response="
+                f"[{query_result.response}], "
+                f"query_result={query_result} "
+                f"query_references={query_reference_dicts}")
 
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
             "user_query_id": user_query.id,
-            "response": response,
-            "chat": chat_data 
+            "query_result": query_result,
+            "query_references": query_reference_dicts
         }
     }
 
