@@ -62,6 +62,10 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   try:
     start_time = time.time()
 
+    # check whether the context length exceeds the limit for the model
+    check_context_length(prompt, llm_type)
+
+    # call the appropriate provider to generate the chat response
     # for Google models, prioritize native client over langchain
     chat_llm_types = get_model_config().get_chat_llm_types()
     if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
@@ -115,11 +119,16 @@ async def llm_chat(prompt: str, llm_type: str,
   try:
     response = None
 
+    # add chat history to prompt if necessary
     if user_chat is not None or user_query is not None:
       context_prompt = get_context_prompt(
-          llm_type, user_chat=user_chat, user_query=user_query)
+          user_chat=user_chat, user_query=user_query)
       prompt = context_prompt + "\n" + prompt
 
+    # check whether the context length exceeds the limit for the model
+    check_context_length(prompt, llm_type)
+
+    # call the appropriate provider to generate the chat response
     if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
       is_chat = True
       response = await llm_service_predict(prompt, is_chat, llm_type,
@@ -148,16 +157,12 @@ async def llm_chat(prompt: str, llm_type: str,
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
-def get_context_prompt(llm_type:str,
-                       user_chat=None,
+def get_context_prompt(user_chat=None,
                        user_query=None) -> str:
   """
-  Get context prompt for chat. Include previous chat or query history
-  if present. 
-  If prompt exceeds context window length for model, use summarization
-  to compress prompt.
+  Get context prompt for chat based on previous chat or query history.
+ 
   Args:
-    llm_type: the model id for generation
     user_chat (optional): previous user chat
     user_query (optional): previous user query
   Returns:
@@ -185,19 +190,26 @@ def get_context_prompt(llm_type:str,
 
   context_prompt = "\n\n".join(prompt_list)
 
+  return context_prompt
+
+def check_context_length(prompt, llm_type):
+  """
+  Check whether a prompt exceeds the maximum context length for
+  a model.
+
+  Raise an exception if max context length exceeded.
+
+  TODO: offer the option to summarize and shorten the prompt.
+  """
   # check if prompt exceeds context window length for model
   max_context_length = get_model_config_value(llm_type,
                                               KEY_MODEL_CONTEXT_LENGTH,
                                               None)
-  if max_context_length and len(context_prompt) > max_context_length:
-    Logger.info(
-        f"rag prompt length {len(context_prompt)} exceeds llm_type {llm_type} "
-        f"max context length {max_context_length}")
-
-    # TODO call a text model to summarize
-
-  return context_prompt
-
+  if max_context_length and len(prompt) > max_context_length:
+    msg = f"Prompt length {len(prompt)} exceeds llm_type {llm_type} " + \
+          f"Max context length {max_context_length}"
+    Logger.error(msg)
+    raise RuntimeError(msg)
 
 async def llm_truss_service_predict(llm_type: str, prompt: str,
                                     model_endpoint: str,

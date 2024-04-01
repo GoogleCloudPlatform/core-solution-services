@@ -34,7 +34,9 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
-from services import llm_generate, embeddings
+from services import embeddings
+from services.llm_generate import (llm_generate, get_context_prompt,
+                                   check_context_length)
 from services.query import query_prompts
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
@@ -102,23 +104,32 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
-  # perform retrieval
-  query_references = retrieve_references(prompt, q_engine, user_id)
-
-  # only need to do this if integrated search from multiple child engines
-  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
-    len(query_references) > 1:
-    query_references = rerank_references(prompt, query_references)
-
-  # generate question prompt for chat model
-  question_prompt = query_prompts.question_prompt(prompt, query_references)
-
   # determine question generation model
   if llm_type is None:
     if q_engine.llm_type is not None:
       llm_type = q_engine.llm_type
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
+
+  # perform retrieval
+  query_references = retrieve_references(prompt, q_engine, user_id)
+
+  # Rerank references. Only need to do this if performing integrated search
+  # from multiple child engines.
+  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
+      len(query_references) > 1:
+    query_references = rerank_references(prompt, query_references)
+
+  # incorporate user query context if it exists
+  if user_query is not None:
+    context_prompt = get_context_prompt(user_query=user_query)
+    prompt = context_prompt + "\n" + prompt
+
+  # check prompt against context length of generation model
+  check_context_length(prompt, llm_type)
+
+  # generate question prompt for chat model
+  question_prompt = query_prompts.question_prompt(prompt, query_references)
 
   # send prompt to model
   question_response = await llm_generate.llm_chat(question_prompt, llm_type)
