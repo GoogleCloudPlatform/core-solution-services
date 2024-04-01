@@ -153,12 +153,13 @@ async def run_routing_agent(prompt: str,
       response_output = db_result["error"]
       db_result_output = []
 
+    resources = db_result.get("resources", None)
     response_data = {
       f"{CHAT_AI}": response_output,
       "content": response_output,
       "db_result": db_result_output,
       "dataset": dataset_name,
-      "resources": db_result["resources"],
+      "resources": resources,
     }
     chat_history_entry = response_data
 

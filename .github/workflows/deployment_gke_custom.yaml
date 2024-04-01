@@ -1,6 +1,6 @@
 # copier:raw
 
-name: GKE - Deploy microservices to demo
+name: GKE - Deploy microservices to a custom project
 on:
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ jobs:
   deploy_backends:
     name: Deploy microservices to GKE cluster
     runs-on: ubuntu-latest
-    environment: demo
+    environment: custom
     steps:
       - name: Check out repository
         uses: actions/checkout@v3

@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends
 
 from common.models import (QueryEngine,
                            User, UserQuery, QueryDocument)
+from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
@@ -141,10 +142,12 @@ def get_urls_for_query_engine(query_engine_id: str):
 
 
 @router.get(
-    "/user/{user_id}",
-    name="Get all Queries for a user",
+    "/user",
+    name="Get all Queries for current logged-in user",
     response_model=LLMUserAllQueriesResponse)
-def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
+def get_query_list(skip: int = 0,
+                   limit: int = 20,
+                   user_data: dict = Depends(validate_token)):
   """
   Get user queries for authenticated user.  Query data does not include
   history to slim payload.  To retrieve query history use the
@@ -159,7 +162,8 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
       LLMUserAllQueriesResponse
   """
   try:
-    Logger.info(f"Get all Queries for a user={user_id}")
+    user_email = user_data.get("email")
+    Logger.info(f"Get all Queries for a user={user_email}")
     if skip < 0:
       raise ValidationError("Invalid value passed to \"skip\" query parameter")
 
@@ -168,11 +172,11 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
 
     # TODO: RBAC check. This call allows the authenticated user to access
     # other user queries
-    user = User.collection.filter("user_id", "==", user_id).get()
+    user = User.find_by_email(user_email)
     if user is None:
-      raise ResourceNotFoundException(f"User {user_id} not found ")
+      raise ResourceNotFoundException(f"User {user_email} not found ")
 
-    user_queries = UserQuery.find_by_user(user.user_id, skip=skip, limit=limit)
+    user_queries = UserQuery.find_by_user(user.id, skip=skip, limit=limit)
 
     query_list = []
     for i in user_queries:
@@ -185,7 +189,7 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
     Logger.info(f"Successfully retrieved user queries query_list={query_list}")
     return {
       "success": True,
-      "message": f"Successfully retrieved user queries for user {user.user_id}",
+      "message": f"Successfully retrieved user queries for user {user.id}",
       "data": query_list
     }
   except ValidationError as e:
@@ -271,6 +275,46 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
     Logger.error(e)
     raise InternalServerError(str(e)) from e
 
+@router.delete(
+  "/{query_id}",
+  name="Delete user query"
+)
+def delete_query(query_id: str, hard_delete=False):
+  """Delete a user query. By default we do a soft delete.
+
+  Args:
+    query_id (str): Query ID
+
+  Raises:
+    ResourceNotFoundException: If the UserQuery does not exist
+    HTTPException: 500 Internal Server Error if something fails
+
+  Returns:
+    [JSON]: {'success': 'True'} if the user query is deleted,
+    NotFoundErrorResponseModel if the user query not found,
+    InternalServerErrorResponseModel if the update raises an exception
+  """
+  Logger.info(f"Delete a user query by id={query_id}")
+  existing_query = UserQuery.find_by_id(query_id)
+  if existing_query is None:
+    raise ResourceNotFoundException(f"Query {query_id} not found")
+
+  try:
+    if hard_delete:
+      UserQuery.delete_by_id(existing_query.id)
+    else:
+      UserQuery.soft_delete_by_id(existing_query.id)
+
+    return {
+      "success": True,
+      "message": f"Successfully deleted user query {query_id}",
+    }
+  except ResourceNotFoundException as re:
+    raise ResourceNotFound(str(re)) from re
+  except Exception as e:
+    Logger.error(e)
+    raise InternalServerError(str(e)) from e
+
 @router.put(
   "/engine/{query_engine_id}",
   name="Update a query engine")
@@ -320,6 +364,7 @@ def delete_query_engine(query_engine_id: str, hard_delete=False):
 
   Args:
       query_engine_id (LLMQueryEngineModel)
+      hard_delete (boolean)
   Returns:
     [JSON]: {'success': 'True'} if the query engine is deleted,
     ResourceNotFoundException if the query engine not found,
@@ -366,22 +411,26 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
 
   genconfig_dict = {**gen_config.dict()}
 
-  # validate doc_url
   Logger.info(f"Create a query engine with {genconfig_dict}")
+
   doc_url = genconfig_dict.get("doc_url")
-  if doc_url is None or doc_url == "":
-    return BadRequest("Missing or invalid payload parameters: doc_url")
+  query_engine_type = genconfig_dict.get("query_engine_type", None)
 
-  if not (doc_url.startswith("gs://")
-          or doc_url.startswith("http://")
-          or doc_url.startswith("https://")
-          or doc_url.startswith("bq://")):
-    return BadRequest(
-        "doc_url must start with gs://, http:// or https://, or bq://")
+  if query_engine_type != QE_TYPE_INTEGRATED_SEARCH:
+    # validate doc_url
+    if doc_url is None or doc_url == "":
+      return BadRequest("Missing or invalid payload parameters: doc_url")
 
-  if doc_url.endswith(".pdf"):
-    return BadRequest(
-      "doc_url must point to a GCS bucket/folder or website, not a document")
+    if not (doc_url.startswith("gs://")
+            or doc_url.startswith("http://")
+            or doc_url.startswith("https://")
+            or doc_url.startswith("bq://")):
+      return BadRequest(
+          "doc_url must start with gs://, http:// or https://, or bq://")
+
+    if doc_url.endswith(".pdf"):
+      return BadRequest(
+        "doc_url must point to a GCS bucket/folder or website, not a document")
 
   query_engine = genconfig_dict.get("query_engine")
   if query_engine is None or query_engine == "":
@@ -396,7 +445,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "doc_url": doc_url,
       "query_engine": query_engine,
       "user_id": user_id,
-      "query_engine_type": genconfig_dict.get("query_engine_type", None),
+      "query_engine_type": query_engine_type,
       "llm_type": genconfig_dict.get("llm_type", None),
       "embedding_type": genconfig_dict.get("embedding_type", None),
       "vector_store": genconfig_dict.get("vector_store", None),
@@ -466,10 +515,24 @@ async def query(query_engine_id: str,
     query_reference_dicts = [
       ref.get_fields(reformat_datetime=True) for ref in query_references
     ]
+
+    # save user query history
+    query_reference_dicts = [
+      ref.get_fields(reformat_datetime=True) for ref in query_references
+    ]
+    user_query = UserQuery(user_id=user.id,
+                          query_engine_id=q_engine.id,
+                          prompt=prompt)
+    user_query.update_history(prompt,
+                              query_result.response,
+                              query_reference_dicts)
+    user_query.save()
+
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
+            "user_query_id": user_query.id,
             "query_result": query_result,
             "query_references": query_reference_dicts
         }
@@ -526,7 +589,11 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
     return {
         "success": True,
         "message": "Successfully generated text",
-        "data": chat_data
+        "data": {
+            "user_query_id": user_query.id,
+            "response": response,
+            "chat": chat_data 
+        }
     }
 
   except Exception as e:

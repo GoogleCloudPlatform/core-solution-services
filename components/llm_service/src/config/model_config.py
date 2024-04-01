@@ -28,25 +28,13 @@ from common.utils.config import get_environ_flag
 from common.utils.gcs_adapter import download_file_from_gcs
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
-import langchain.chat_models as langchain_chat
-import langchain.llms as langchain_llm
-import langchain.embeddings as langchain_embedding
+import langchain_community.chat_models as langchain_chat
+import langchain_community.llms as langchain_llm
+import langchain_community.embeddings as langchain_embedding
+from langchain_google_vertexai import ChatVertexAI
+from langchain_openai import ChatOpenAI
 
 Logger = Logger.get_logger(__file__)
-
-LANGCHAIN_CHAT_CLASSES = {
-  k:klass for (k, klass) in inspect.getmembers(langchain_chat)
-  if isinstance(klass, type)
-}
-LANGCHAIN_LLM_CLASSES = {
-  k:klass() for (k, klass) in langchain_llm.get_type_to_cls_dict().items()
-}
-LANGCHAIN_EMBEDDING_CLASSES = {
-  k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
-  if isinstance(klass, type)
-}
-LANGCHAIN_CLASSES = LANGCHAIN_CHAT_CLASSES | LANGCHAIN_LLM_CLASSES \
-                    | LANGCHAIN_EMBEDDING_CLASSES
 
 # config dict keys
 KEY_ENABLED = "enabled"
@@ -116,6 +104,8 @@ TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
 VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
 VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 VERTEX_LLM_TYPE_GEMINI_PRO = "VertexAI-Gemini-Pro"
+VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN = "VertexAI-Chat-Gemini-Pro-Langchain"
+HUGGINGFACE_EMBEDDING = "HuggingFaceEmbeddings"
 
 MODEL_TYPES = [
   OPENAI_LLM_TYPE_GPT3_5,
@@ -135,7 +125,9 @@ MODEL_TYPES = [
   TRUSS_LLM_LLAMA2_CHAT,
   VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
   VERTEX_LLM_TYPE_BISON_CHAT_32K,
-  VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN
+  VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN,
+  VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN,
+  HUGGINGFACE_EMBEDDING
 ]
 
 class ModelConfigMissingException(Exception):
@@ -147,6 +139,34 @@ class InvalidModelConfigException(Exception):
   def __init__(self, message):
     self.message = message
     super().__init__(self.message)
+
+def load_langchain_classes() -> dict:
+  """
+  Load langchain classes.  Return a dict mapping classname to 
+  class instance.
+  """
+  langchain_chat_classes = {
+    k:klass for (k, klass) in inspect.getmembers(langchain_chat)
+    if isinstance(klass, type)
+  }
+  langchain_llm_classes = {
+    klass().__name__:klass()
+    for klass in langchain_llm.get_type_to_cls_dict().values()
+  }
+  langchain_embedding_classes = {
+    k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
+    if isinstance(klass, type)
+  }
+
+  # special handling for Vertex and OpenAI chat models, which are
+  # imported in community packages
+  langchain_chat_classes["ChatOpenAI"] = ChatOpenAI
+  langchain_chat_classes["ChatVertexAI"] = ChatVertexAI
+
+  langchain_classes = langchain_chat_classes | langchain_llm_classes \
+                      | langchain_embedding_classes
+
+  return langchain_classes
 
 class ModelConfig():
   """
@@ -280,6 +300,9 @@ class ModelConfig():
       # instantiate model class if necessary (mainly langchain models)
       if model_enabled and KEY_MODEL_CLASS in model_config:
         model_instance = self.instantiate_model_class(model_id)
+        if model_instance is None:
+          Logger.warning(f"Disabling model {model_id}")
+          model_config[KEY_ENABLED] = False
         model_config[KEY_MODEL_CLASS] = model_instance
 
       # download model file if necessary
@@ -507,6 +530,7 @@ class ModelConfig():
     """ 
     Instantiate the model class for providers that use them (e.g. Langchain)
     """
+    langchain_classes = load_langchain_classes()
     model_class_instance = None
     provider, _ = self.get_model_provider_config(model_id)
     model_class_name = self.get_config_value(model_id, KEY_MODEL_CLASS)
@@ -524,9 +548,15 @@ class ModelConfig():
         # add api key to model params
         model_params.update({api_key_name: api_key})
 
-      # retrieve and instantiate model class
-      model_cls = LANGCHAIN_CLASSES.get(model_class_name)
-      model_class_instance = model_cls(model_name=model_name, **model_params)
+      # retrieve and instantiate langchain model class
+      model_cls = langchain_classes.get(model_class_name, None)
+      if model_cls is None:
+        Logger.error(f"Cannot load langchain model class {model_class_name}")
+        model_class_instance = None
+      elif model_name is None:
+        model_class_instance = model_cls(**model_params)
+      else:
+        model_class_instance = model_cls(model_name=model_name, **model_params)
     return model_class_instance
 
   def load_model_config(self):
