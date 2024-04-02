@@ -545,11 +545,12 @@ async def query(query_engine_id: str,
 
 @router.post(
     "/{user_query_id}",
-    name="Make a query to a query engine based on a prior user query",
+    name="Continue chat with a prior user query",
     response_model=LLMQueryResponse)
 async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   """
-  Send a query to a query engine with a prior user query as context
+  Continue a prior user query.  Perform a new search and
+  add those references along with prior query/chat history as context.
 
   Args:
       user_query_id (str): id of previous user query
@@ -596,6 +597,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
                 f"[{query_result.response}], "
                 f"query_result={query_result} "
                 f"query_references={query_reference_dicts}")
+
     return {
         "success": True,
         "message": "Successfully generated text",
@@ -605,6 +607,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
             "query_references": query_reference_dicts
         }
     }
+
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())

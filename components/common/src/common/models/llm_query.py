@@ -86,6 +86,18 @@ class UserQuery(BaseModel):
     )
     self.save(merge=True)
 
+  @classmethod
+  def is_human(cls, entry: dict) -> bool:
+    return QUERY_HUMAN in entry.keys()
+
+  @classmethod
+  def is_ai(cls, entry: dict) -> bool:
+    return QUERY_AI_RESPONSE in entry.keys()
+
+  @classmethod
+  def entry_content(cls, entry: dict) -> str:
+    return list(entry.values())[0]
+
 
 class QueryEngine(BaseModel):
   """
