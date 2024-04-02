@@ -613,6 +613,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
                               query_engine_id=q_engine.id,
                               query_document_id=query_doc.id,
                               index=i+index_base,
+                              modality="text",
                               text=text_chunks[i],
                               clean_text=clean_text,
                               sentences=sentences)
