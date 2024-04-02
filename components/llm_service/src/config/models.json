@@ -96,7 +96,7 @@
       "model_class": "ChatVertexAI"
     },
     "Truss-Llama2-Chat": {
-      "model_endpoint": "http://truss-llama2-7b-service",
+      "model_endpoint": "truss-llama2-7b-service",
       "is_chat": true,
       "provider": "Truss",
       "enabled": true,
