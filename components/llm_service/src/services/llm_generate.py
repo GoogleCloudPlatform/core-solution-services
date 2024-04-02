@@ -175,6 +175,10 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
 
   Logger.info(f"Got LLM service response {json_response}")
   output = json_response["data"]["generated_text"]
+
+  # if the prompt is repeated as part of the response, remove it
+  output = output.replace(prompt, "")
+
   return output
 
 async def llm_service_predict(prompt: str, is_chat: bool,
