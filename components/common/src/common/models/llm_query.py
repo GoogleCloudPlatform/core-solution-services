@@ -316,7 +316,7 @@ class QueryDocumentChunk(BaseModel):
   query_engine_id = TextField(required=True)  # For all modalities
   query_document_id = TextField(required=True)  # For all modalities
   index = NumberField(required=True)  # For all modalities
-  modality = TextField(required=True)  # For all modalities, expected values={"text", "image", "video", "audio"}
+  modality = TextField(required=True)  # For all modalities:text image video audio
   page = TextField(required=False)  # For text and image only
   text = TextField(required=False)  # For text only
   clean_text = TextField(required=False)  # For text only (optional)
