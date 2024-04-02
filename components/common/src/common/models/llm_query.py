@@ -312,13 +312,18 @@ class QueryDocumentChunk(BaseModel):
   """
   QueryDocumentChunk ORM class.
   """
-  id = IDField()
-  query_engine_id = TextField(required=True)
-  query_document_id = TextField(required=True)
-  index = NumberField(required=True)
-  text = TextField(required=True)
-  clean_text = TextField(required=False)
-  sentences = ListField(required=False)
+  id = IDField()  # For all modalities
+  query_engine_id = TextField(required=True)  # For all modalities
+  query_document_id = TextField(required=True)  # For all modalities 
+  index = NumberField(required=True)  # For all modalities
+  modality = TextField(required=True)  # For all modalities, acceptable values={"text", "image", "video", "audio"}  #SC240402
+  page = TextField(required=False)  # For text and image only  #SC240402
+  #text = TextField(required=True)  #SC240402
+  text = TextField(required=False)  # For text only  #SC240402
+  clean_text = TextField(required=False)  # For text only (optional)
+  sentences = ListField(required=False)  # For text only (optional)
+  timestamp_start = NumberField(required=False)  # For video or audio only  #SC240402
+  timestamp_stop = NumberField(required=False)  # For video or audio only  #SC240402
 
   class Meta:
     ignore_none_field = False
