@@ -142,30 +142,33 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_1 = {
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 0,
+  "modality": "text",
   "text": "<p>query_document_chunk_example_1</p>",
   "clean_text": "query_document_chunk_example_1",
   "sentences": ["query_document_chunk_example_1"]
-}
+}  #SC240402 added modality field
 
 QUERY_DOCUMENT_CHUNK_EXAMPLE_2 = {
   "id": "asd98798as7dhjhkkjhk12",
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 1,
+  "modality": "text",
   "text": "<p>query_document_chunk_example_2</p>",
   "clean_text": "query_document_chunk_example_2",
   "sentences": ["query_document_chunk_example_2"]
-}
+}  #SC240402 added modality field
 
 QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
   "id": "asd98798as7dhjhkkjhk13",
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 2,
+  "modality": "text",
   "text": "<p>query_document_chunk_example_3</p>",
   "clean_text": "query_document_chunk_example_3",
   "sentences": ["query_document_chunk_example_3"]
-}
+}  #Sc240402 added modality field
 
 CHAT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
