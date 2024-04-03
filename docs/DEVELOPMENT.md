@@ -375,6 +375,8 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
 
 ###  7.1. <a name='Unittesting'></a>Unit testing
 
+Unit tests make use of the firestore emulator.  Tests currently assume that the emulator is running in the background, so you must launch the emulator before running tests.  If the emulator us not running the test infrastructure will report this as an error.
+
 * Install NodeJS [required by Firebase Emulator](https://firebase.google.com/docs/emulator-suite/install_and_configure):
   ```
   Follow instructions on https://nodejs.org/en/download or https://formulae.brew.sh/formula/node
@@ -384,9 +386,21 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
   Follow instructions on https://openjdk.org/install/ or https://formulae.brew.sh/formula/openjdk
   ```
 * Install Firebase CLI and emulator:
+  We install firebase CLI with our own script, to pin the version of the emulator, as emulator updates have broken our tests in the past.
+  
+  ```
+  utils/install_firebase.sh v13.1.0
+  ```
+
+  To install the latest version of firebase CLI and the emulators, run this command:
   ```
   curl -sL https://firebase.tools | bash
   firebase setup:emulators:firestore
+  ```
+
+* Launch emulator in background (should remain running until you restart your laptop)
+  ```
+  firebase emulators:start --only firestore --project fake-project &
   ```
 
 * Set up quota project:
@@ -427,6 +441,12 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
   ```
   cd components/<component_name>/src
   PYTHONPATH=../../common/src python -m pytest path/to/target_test.py
+  ```
+
+* Run unit tests with logging
+  ```
+  cd components/<component_name>/src
+  PYTHONPATH=../../common/src python -m pytest --log-cli-level=INFO path/to/target_test.py
   ```
 
 ###  7.2. <a name='Testfilenameconventionandformat'></a>Test filename convention and format

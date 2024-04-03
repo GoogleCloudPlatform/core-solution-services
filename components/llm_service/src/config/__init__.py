@@ -66,6 +66,8 @@ from config.config import (
     )
 
 from config.model_config import (
+    ModelConfig,
+
     # llm type constants
     OPENAI_LLM_TYPE_GPT3_5,
     OPENAI_LLM_TYPE_GPT4,

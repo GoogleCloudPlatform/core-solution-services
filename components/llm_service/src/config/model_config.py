@@ -229,6 +229,14 @@ class ModelConfig():
           f" {self.model_config_path}: {str(e)}")
       raise RuntimeError(str(e)) from e
 
+  def copy_model_config(self, mc):
+    """ copy model config from another config object """
+    self.model_config_path = mc.model_config_path
+    self.llm_model_providers = mc.llm_model_providers
+    self.llm_model_vendors = mc.llm_model_vendors
+    self.llm_models = mc.llm_models
+    self.llm_embedding_models = mc.llm_embedding_models
+
   def set_model_config(self):
     """
     Initialize and set config for providers, models and embeddings, based
