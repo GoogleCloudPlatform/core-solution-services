@@ -27,7 +27,7 @@ from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
 from common.utils.logging_handler import Logger
 from config import PROJECT_ID, OPENAI_LLM_TYPE_GPT4_LATEST
-from config.utils import get_dataset_config
+from config import get_dataset_config
 from services import langchain_service
 from services.agents.agent_prompts import (SQL_QUERY_FORMAT_INSTRUCTIONS,
                                            SQL_STATEMENT_FORMAT_INSTRUCTIONS,
@@ -56,7 +56,9 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
              attempt to determine the dataset from the prompt.
     user_email: if present, send the resulting data to this email in a Sheet.
   Return:
-    a dict of "columns: column names, "data": row data
+    a dict of "columns: column names, "data": row data. If the db_agent can't
+        produce a valid statement and result, the data will be the db_agent's
+        explanation.
   """
   if dataset is None:
     dataset, db_type = map_prompt_to_dataset(prompt, llm_type)
@@ -76,7 +78,10 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
     # check if valid SQL was produced
     if not validate_sql(statement):
       # if SQL not produced return the agent output and logs
-      return statement, agent_logs
+      output = {
+        "error": statement,
+      }
+      return output, agent_logs
 
     # run SQL
     output = execute_sql_statement(statement, dataset, user_email)
@@ -183,7 +188,7 @@ def execute_sql_statement(statement: str,
 
   dbdata = query_sql_database_tool.run(statement)
 
-  Logger.info(f"got results {dbdata}")
+  Logger.info(f"Database query results: {dbdata}")
 
   if not dbdata or dbdata == "":
     Logger.error(f"No results returned from sql statement: {statement}")
@@ -210,7 +215,7 @@ def execute_sql_statement(statement: str,
   # generate spreadsheet
   sheet_data = {
     "columns": columns,
-    "data": row_data
+    "rows": row_data
   }
   sheet_url = generate_spreadsheet(dataset, sheet_data, user_email)
 
@@ -307,7 +312,7 @@ def generate_spreadsheet(
 
   sheet_output = create_google_sheet(sheet_name,
                                      sheet_data["columns"],
-                                     sheet_data["data"],
+                                     sheet_data["rows"],
                                      user_email)
   Logger.info(f"Got spreadsheet output [{sheet_output}]")
   sheet_url = sheet_output["sheet_url"]

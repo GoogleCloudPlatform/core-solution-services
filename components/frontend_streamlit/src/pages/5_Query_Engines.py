@@ -26,6 +26,9 @@ from api import (build_query_engine, update_query_engine,
                  get_all_jobs)
 from common.utils.logging_handler import Logger
 from common.config import PROJECT_ID
+from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
+                                     QE_TYPE_LLM_SERVICE,
+                                     QE_TYPE_INTEGRATED_SEARCH)
 import utils
 
 Logger = Logger.get_logger(__file__)
@@ -40,13 +43,14 @@ def reload():
   qe_build_jobs = get_all_jobs()
 
 
-def submit_build(engine_name:str, doc_url:str, depth_limit: int,
-                 embedding_type:str, vector_store:str,
-                 description:str):
+def submit_build(engine_name:str, engine_type:str, doc_url:str,
+                 depth_limit: int, embedding_type:str, vector_store:str,
+                 description:str, agents:str, child_engines:str):
   try:
     output = build_query_engine(
-      engine_name,
-      doc_url, depth_limit, embedding_type, vector_store, description)
+      engine_name, engine_type, doc_url,
+      depth_limit, embedding_type, vector_store, description, agents,
+      child_engines)
 
     if output.get("success") is True:
       job_id = output["data"]["job_name"]
@@ -124,7 +128,6 @@ def query_engine_page():
     if not qe_build_jobs:
       Logger.error("No query engine build jobs")
       st.write("No query engine build jobs")
-      return
 
     for job in qe_build_jobs:
       created_at = moment.date(
@@ -161,11 +164,14 @@ def query_engine_page():
           if submit:
             submit_build(
               input_data["query_engine"],
+              input_data["query_engine_type"],
               input_data["doc_url"],
               input_data["depth_limit"],
               input_data["embedding_type"],
               input_data["vector_store"],
-              input_data["description"])
+              input_data["description"],
+              input_data["agents"],
+              input_data["child_engines"])
             st.toast(
                 "Job re-submitted with query engine: {job['query_engine']}")
 
@@ -175,6 +181,10 @@ def query_engine_page():
 
   with placeholder_build_qe.form("build"):
     engine_name = st.text_input("Name")
+    engine_type = st.selectbox(
+        "Engine Type:",
+        [QE_TYPE_VERTEX_SEARCH, QE_TYPE_LLM_SERVICE,
+         QE_TYPE_INTEGRATED_SEARCH])
     doc_url = st.text_input("Document URL")
     depth_limit = st.selectbox(
         "Web depth limit:",
@@ -186,12 +196,15 @@ def query_engine_page():
         "Vector Store:",
         vector_store_list)
     description = st.text_area("Description")
+    agents = st.text_area("Agents")
+    child_engines = st.text_area("Child Engines")
 
     submit = st.form_submit_button("Build")
   if submit:
     submit_build(
-      engine_name,
-      doc_url, depth_limit, embedding_type, vector_store, description
+      engine_name, engine_type,
+      doc_url, depth_limit, embedding_type, vector_store, description, agents,
+      child_engines
     )
 
 

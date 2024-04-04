@@ -24,6 +24,11 @@ QUERY_HUMAN = "HumanQuestion"
 QUERY_AI_RESPONSE = "AIResponse"
 QUERY_AI_REFERENCES = "AIReferences"
 
+# query engine types
+QE_TYPE_VERTEX_SEARCH = "qe_vertex_search"
+QE_TYPE_LLM_SERVICE = "qe_llm_service"
+QE_TYPE_INTEGRATED_SEARCH = "qe_integrated_search"
+
 class UserQuery(BaseModel):
   """
   UserQuery ORM class
@@ -32,6 +37,8 @@ class UserQuery(BaseModel):
   user_id = TextField(required=True)
   title = TextField(required=False)
   query_engine_id = TextField(required=True)
+  prompt = TextField(required=True)
+  response = TextField(required=False)
   history = ListField(default=[])
 
   class Meta:
@@ -65,6 +72,9 @@ class UserQuery(BaseModel):
 
   def update_history(self, prompt: str, response: str, references: List[dict]):
     """ Update history with query and response """
+    if not self.history:
+      self.history = []
+
     self.history.append(
       {QUERY_HUMAN: prompt}
     )
@@ -74,7 +84,19 @@ class UserQuery(BaseModel):
         QUERY_AI_REFERENCES: references
       }
     )
-    self.update()
+    self.save(merge=True)
+
+  @classmethod
+  def is_human(cls, entry: dict) -> bool:
+    return QUERY_HUMAN in entry.keys()
+
+  @classmethod
+  def is_ai(cls, entry: dict) -> bool:
+    return QUERY_AI_RESPONSE in entry.keys()
+
+  @classmethod
+  def entry_content(cls, entry: dict) -> str:
+    return list(entry.values())[0]
 
 
 class QueryEngine(BaseModel):
@@ -83,16 +105,19 @@ class QueryEngine(BaseModel):
   """
   id = IDField()
   name = TextField(required=True)
-  description = TextField(required=True)
+  query_engine_type = TextField(required=True)
+  description = TextField(required=True, default="")
   llm_type = TextField(required=False)
   embedding_type = TextField(required=True)
-  vector_store = TextField(required=True)
+  vector_store = TextField(required=False)
   created_by = TextField(required=True)
   is_public = BooleanField(default=False)
   index_id = TextField(required=False)
   index_name = TextField(required=False)
   endpoint = TextField(required=False)
   doc_url = TextField(required=False)
+  agents = ListField(required=False)
+  parent_engine_id = TextField(required=False)
   params = MapField(default={})
 
   class Meta:
@@ -137,6 +162,21 @@ class QueryEngine(BaseModel):
             None).get()
     return q_engine
 
+  @classmethod
+  def find_children(cls, q_engine) -> List[BaseModel]:
+    """
+    Find all child engines for an engine.
+
+    Returns:
+        List of QueryEngine objects that point to this engine as parent
+
+    """
+    q_engines = cls.collection.filter(
+        "parent_engine_id", "==", q_engine.id).filter(
+            "deleted_at_timestamp", "==",
+            None).fetch()
+    return list(q_engines)
+
   @property
   def deployed_index_name(self):
     return f"deployed_{self.index_name}"
@@ -152,7 +192,9 @@ class QueryReference(BaseModel):
   query_engine_id = TextField(required=True)
   query_engine = TextField(required=True)
   document_id = TextField(required=True)
-  chunk_id = TextField(required=True)
+  document_url = TextField(required=True)
+  chunk_id = TextField(required=False)
+  document_text = TextField(required=False)
 
   class Meta:
     ignore_none_field = False
@@ -192,8 +234,9 @@ class QueryDocument(BaseModel):
   query_engine_id = TextField(required=True)
   query_engine = TextField(required=True)
   doc_url = TextField(required=True)
-  index_start = NumberField(required=True)
-  index_end = NumberField(required=True)
+  index_file = TextField(required=False)
+  index_start = NumberField(required=False)
+  index_end = NumberField(required=False)
 
   class Meta:
     ignore_none_field = False
@@ -224,6 +267,46 @@ class QueryDocument(BaseModel):
       None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
 
+  @classmethod
+  def find_by_url(cls, query_engine_id, doc_url):
+    """
+    Fetch a document by url
+
+    Args:
+        query_engine_id (str): Query Engine id
+        doc_url (str): Query document url
+
+    Returns:
+        QueryDocument: query document object
+
+    """
+    q_doc = cls.collection.filter(
+      "query_engine_id", "==", query_engine_id).filter(
+      "doc_url", "==", doc_url).filter(
+          "deleted_at_timestamp", "==",
+          None).get()
+    return q_doc
+
+  @classmethod
+  def find_by_index_file(cls, query_engine_id, index_file):
+    """
+    Fetch a document by url
+
+    Args:
+        query_engine_id (str): Query Engine id
+        doc_url (str): Query document url
+
+    Returns:
+        QueryDocument: query document object
+
+    """
+    q_doc = cls.collection.filter(
+      "query_engine_id", "==", query_engine_id).filter(
+      "index_file", "==", index_file).filter(
+          "deleted_at_timestamp", "==",
+          None).get()
+    return q_doc
+
 
 class QueryDocumentChunk(BaseModel):
   """
@@ -251,7 +334,7 @@ class QueryDocumentChunk(BaseModel):
         index (int): QueryDocumentChunk index
 
     Returns:
-        QueryDocumentChunk: query engine object
+        QueryDocumentChunk: query document chunk object
 
     """
     q_chunk = cls.collection.filter(

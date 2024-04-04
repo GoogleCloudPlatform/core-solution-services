@@ -31,8 +31,8 @@ from schemas.agent_schema import (LLMAgentPlanModel,
                                   LLMUserPlanResponse,
                                   LLMAgentPlanRunResponse)
 from services.agents.agent_service import (agent_plan,
-                                           agent_execute_plan,
-                                           get_llm_type_for_agent)
+                                           agent_execute_plan)
+from services.agents.agents import BaseAgent
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES)
 
 Logger = Logger.get_logger(__file__)
@@ -118,7 +118,7 @@ async def generate_agent_plan(agent_name: str,
 
   try:
     user = User.find_by_email(user_data.get("email"))
-    llm_type = get_llm_type_for_agent(agent_name)
+    llm_type = BaseAgent.get_llm_type_for_agent(agent_name)
 
     # Generate the plan
     output, user_plan = await agent_plan(agent_name, prompt, user.id)

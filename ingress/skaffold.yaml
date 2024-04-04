@@ -14,6 +14,19 @@ profiles:
     deploy:
       kubectl: {}
 
-  # The default-deploy profile refer to gke profile above.
+  - &genie-profile # YAML anchor used by "genie" profile.
+    name: genie
+    manifests:
+      kustomize:
+        paths:
+          - ./kustomize/genie
+    deploy:
+      kubectl: {}
+
+  # The default-deploy profile refers to gke profile above.
   - <<: *gke-profile
     name: default-deploy
+
+  # The genie-deploy profile refers to genie profile above.
+  - <<: *genie-profile
+    name: genie-deploy

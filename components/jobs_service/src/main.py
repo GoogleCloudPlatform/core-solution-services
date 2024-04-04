@@ -23,15 +23,30 @@ import os
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 """
+
 import config
 import uvicorn
 from fastapi import FastAPI, Depends
+from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from routes import jobs
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_token
+from common.config import CORS_ALLOW_ORIGINS
+
+# Basic API config
+service_title = "Jobs Service API's"
+service_path = "jobs-service"
+version = "v1"
 
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ALLOW_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/ping")
 def health_check():
@@ -47,19 +62,29 @@ def health_check():
   }
 
 
+@app.get("/", response_class=HTMLResponse)
+@app.get(f"/{service_path}", response_class=HTMLResponse)
+@app.get(f"/{service_path}/", response_class=HTMLResponse)
+def hello():
+  return f"""
+  You've reached the {service_title}. <br>
+  See <a href='/{service_path}/api/{version}/docs'>API docs</a>
+  """
+
+
 api = FastAPI(
     title="Jobs Service API's",
     version="latest",
     # docs_url=None,
     # redoc_url=None,
     dependencies=[Depends(validate_token)]
-    )
+)
 
 api.include_router(jobs.router)
 
 add_exception_handlers(app)
 add_exception_handlers(api)
-app.mount("/jobs-service/api/v1", api)
+app.mount(f"/{service_path}/api/{version}", api)
 
 if __name__ == "__main__":
   uvicorn.run(

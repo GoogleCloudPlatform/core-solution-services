@@ -43,7 +43,6 @@ class Logger:
                  "%(funcName)s()] %(message)s"
     handler.setFormatter(logging.Formatter(log_format))
     self.logger.addHandler(handler)
-    self.logger.propagate = False
 
   @classmethod
   def get_logger(cls, name) -> logging.Logger:

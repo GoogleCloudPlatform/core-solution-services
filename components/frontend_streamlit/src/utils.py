@@ -79,16 +79,20 @@ def init_session_state():
 
   # Try to get a state var from query parameter.
   states_to_init = [
-    "auth_token", "chat_id", "agent_name", "debug"
+    "auth_token", "chat_id", "agent_name", "debug", "chat_llm_type",
+    "default_route"
   ]
   for state_name in states_to_init:
     if not st.session_state.get(state_name, None):
       st.session_state[state_name] = query_params.get(state_name, "")
 
+  print(f"st.session_state: {st.session_state}")
+
 def reset_session_state():
   """ Reset critial session states. """
   st.session_state.landing_user_input = None
   st.session_state.chat_id = None
+  st.session_state.chat_llm_type = None
   st.session_state.messages = []
   st.session_state.error_msg = None
 
@@ -116,7 +120,7 @@ def init_page(redirect_to_without_auth=True):
 
   #./main.py is used as an entrypoint for the build,
   # which creates a page that duplicates the Login page named "main".
-  hide_pages(["main"])
+  hide_pages(["main", "Custom_Chat"])
 
   api_base_url = API_BASE_URL
   st.session_state.api_base_url = api_base_url.rstrip("/")

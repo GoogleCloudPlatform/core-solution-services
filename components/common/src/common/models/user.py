@@ -15,12 +15,15 @@
 User Data Model
 """
 import regex
-from common.config import USER_TYPES
-from common.models import BaseModel, NodeItem
+from common.models import BaseModel
 from common.utils.errors import ResourceNotFoundException
 from fireo.fields import (TextField, NumberField, MapField,
                           ListField, BooleanField)
 
+# Define custom user types as a list below.
+# TODO: Clean up unused user types.
+USER_TYPES = ["user", "learner", "faculty", "assessor", "admin", "coach",
+              "instructor", "lxe", "curriculum_designer", "robot"]
 
 def validate_name(name):
   """Validator method to validate name"""
@@ -379,34 +382,6 @@ class Module(BaseModel):
         Module: Module Object
     """
     return cls.collection.filter("name", "==", name).get()
-
-
-class UserEvent(NodeItem):
-  """UserEvent model class"""
-
-  # should be a reference field if we have session data model
-  session_ref = TextField(required=False, default="")
-  is_correct = NumberField(required=False)
-  learning_item_id = TextField(required=True)
-  activity_type = TextField(required=True)
-  raw_response = MapField(required=False, default={})
-  user_id = TextField(required=True)
-  feedback = MapField(required=False, default={})
-  learning_unit = TextField(required=True)
-  course_id = TextField(required=True, default="")
-  flow_type = TextField(required=True, default="Let AITutor Guide Me")
-  context = TextField(required=True, default="")
-  hint = MapField(required=False, default={})
-
-  class Meta:
-    collection_name = BaseModel.DATABASE_PREFIX + "user_events"
-    ignore_none_field = False
-
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    # leaf node
-    self.children_nodes = None
-
 
 class AssociationGroup(BaseModel):
   """Class for Association Group"""

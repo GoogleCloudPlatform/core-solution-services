@@ -29,7 +29,7 @@ def login_clicked(username, password):
   st.session_state["password"] = password
   token = api.login_user(username, password)
   if token:
-    utils.http_navigate_to("Landing")
+    st.switch_page("pages/2_Landing.py")
 
 
 def login_page():

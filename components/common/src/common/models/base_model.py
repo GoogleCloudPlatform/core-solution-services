@@ -15,9 +15,14 @@
 FireO BaseModel to be inherited by all other objects in ORM
 """
 import datetime
+from typing import List, Tuple
 import fireo
 from fireo.models import Model
 from fireo.fields import DateTime, TextField
+from fireo.fields.errors import (RequiredField,
+                                 UnSupportedAttribute,
+                                 FieldValidationFailed,
+                                 ValidatorNotCallable)
 from common.utils.errors import ResourceNotFoundException
 import common.config
 
@@ -84,14 +89,32 @@ class BaseModel(Model):
     self.last_modified_time = date_timestamp
     return super().update(key, transaction, batch)
 
-  def get_fields(self, reformat_datetime=False):
-    """overrides default method to fix data type for datetime fields"""
+  def get_fields(self, reformat_datetime=False, remove_meta=False):
+    """
+    Overrides default method to fix data type for datetime fields.
+    remove_meta=True will remove extra meta data fields (useful for testing)
+    """
     fields = super()._get_fields()
     if "id" in self.to_dict():
       fields["id"] = self.id
     if reformat_datetime:
       fields["created_time"] = str(fields["created_time"])
       fields["last_modified_time"] = str(fields["last_modified_time"])
+    if remove_meta:
+      fields = self.remove_field_meta(fields)
+    return fields
+
+  @classmethod
+  def remove_field_meta(cls, fields:dict) -> dict:
+    """ remove meta keys from dict fields """
+    del fields["created_time"]
+    del fields["created_by"]
+    del fields["archived_at_timestamp"]
+    del fields["archived_by"]
+    del fields["deleted_at_timestamp"]
+    del fields["deleted_by"]
+    del fields["last_modified_time"]
+    del fields["last_modified_by"]
     return fields
 
   class Meta:
@@ -233,3 +256,32 @@ class BaseModel(Model):
     else:
       raise (ResourceNotFoundException(
         f"{cls.__name__} with uuid {uuid} not found"))
+
+  def validate(self) -> Tuple[bool, List[str]]:
+    """
+    Validate a model in this class.
+
+    Returns:
+      True,[] or False, list of error messages
+    """
+    errors = []
+    valid = True
+    for field_name, field in self._meta.field_list.items():
+      val = getattr(self, field_name)
+      field_attribute = field.field_attribute
+      try:
+        field_attribute.parse(val, ignore_required=False, ignore_default=False,
+                              run_only=None)
+      except RequiredField as e:
+        valid = False
+        errors.append(f"field '{field_name}': {str(e)}")
+      except UnSupportedAttribute as e:
+        valid = False
+        errors.append(f"field '{field_name}': {str(e)}")
+      except FieldValidationFailed as e:
+        valid = False
+        errors.append(f"field '{field_name}': {str(e)}")
+      except ValidatorNotCallable as e:
+        valid = False
+        errors.append(f"field '{field_name}': {str(e)}")
+    return valid, errors

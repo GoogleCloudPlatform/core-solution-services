@@ -43,6 +43,11 @@ from config.config import (
     get_model_config,
     MODEL_CONFIG_PATH,
 
+    # agent config
+    AGENT_CONFIG_PATH,
+    get_agent_config,
+    get_dataset_config,
+
     # secrets
     LLM_BACKEND_ROBOT_USERNAME,
     LLM_BACKEND_ROBOT_PASSWORD,
@@ -58,13 +63,11 @@ from config.config import (
 
     # query engine and other defaults
     DEFAULT_WEB_DEPTH_LIMIT,
-
-    # agent config
-    AGENT_CONFIG_PATH,
-    AGENT_DATASET_CONFIG_PATH,
-)
+    )
 
 from config.model_config import (
+    ModelConfig,
+
     # llm type constants
     OPENAI_LLM_TYPE_GPT3_5,
     OPENAI_LLM_TYPE_GPT4,
@@ -72,6 +75,7 @@ from config.model_config import (
     COHERE_LLM_TYPE,
     VERTEX_LLM_TYPE_BISON_TEXT,
     VERTEX_LLM_TYPE_BISON_CHAT,
+    VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
     TRUSS_LLM_LLAMA2_CHAT,
 
@@ -87,6 +91,7 @@ from config.model_config import (
     KEY_MODEL_CLASS,
     KEY_MODEL_NAME,
     KEY_MODEL_PARAMS,
+    KEY_MODEL_CONTEXT_LENGTH,
     KEY_IS_CHAT,
     KEY_MODEL_FILE_URL,
     KEY_MODEL_PATH,
@@ -116,5 +121,6 @@ from config.utils import (
   get_provider_value,
   get_provider_embedding_types,
   get_provider_config,
-  get_provider_model_config
+  get_provider_model_config,
+  get_model_config_value
 )

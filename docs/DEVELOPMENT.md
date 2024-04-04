@@ -32,25 +32,27 @@ Install the following based on the [README.md#Prerequisites](../README.md#Prereq
 ###  2.1. <a name='Forthefirst-timesetup:'></a>For the first-time setup:
 * Create a fork of a Git repository (using the button on the right corner of the page)
 * Choose your own GitHub profile to create this fork under your name.
-* Clone the repo to your local computer.
+* You may want to slightly alter the name of your forked repo to make it easier to distinguish from the original repo (e.g., gps-core-solution-services is forked from the original repo core-solution-services)
+* Clone the forked repo to your local computer.
   ```
-  export YOUR_GITHUB_ID=<your-github-id>
+  export YOUR_GITHUB_USERNAME=<your-github-username>
+  export YOUR_FORKED_REPO_NAME=<your-forked-repo-name>
   cd ~/workspace
-  git clone https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git
-  cd core-solution-services
+  git clone https://github.com/${YOUR_GITHUB_USERNAME}/${YOUR_FORKED_REPO_NAME}.git
+  cd ${YOUR_FORKED_REPO_NAME}
   ```
 * Verify if the local git copy has the right remote endpoint.
   ```
   git remote -v
   # This will display the detailed remote list like below.
-  origin  https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git (fetch)
-  origin  https://github.com/${YOUR_GITHUB_ID}core-solution-services.git (push)
+  origin  https://github.com/<your-github-username>/<your-forked-repo-name>.git (fetch)
+  origin  https://github.com/<your-github-username>/<your-forked-repo-name>.git (push)
   ```
   - If for some reason your local git copy does not have the correct remotes, run the following:
     ```
-    git remote add origin https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git
+    git remote add origin https://github.com/${YOUR_GITHUB_USERNAME}/${YOUR_FORKED_REPO_NAME}.git
     # Or, to reset the URL if origin remote exists
-    git remote set-url origin https://github.com/${YOUR_GITHUB_ID}/core-solution-services.git
+    git remote set-url origin https://github.com/${YOUR_GITHUB_USERNAME}/${YOUR_FORKED_REPO_NAME}.git
     ```
 * Add the upstream repo to the remote list as **upstream**.
   ```
@@ -263,7 +265,7 @@ pip install -r requirements.txt
 
 * Run the following to create a Kubernetes namespace for your development
   ```
-  export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
+  export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_USERNAME
   kubectl create ns $SKAFFOLD_NAMESPACE
   ```
 
@@ -287,7 +289,7 @@ pip install -r requirements.txt
 
 To build and deploy:
 ```
-export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_ID
+export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_USERNAME
 
 # In the solution folder:
 sb deploy
@@ -373,6 +375,8 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
 
 ###  7.1. <a name='Unittesting'></a>Unit testing
 
+Unit tests make use of the firestore emulator.  Tests currently assume that the emulator is running in the background, so you must launch the emulator before running tests.  If the emulator us not running the test infrastructure will report this as an error.
+
 * Install NodeJS [required by Firebase Emulator](https://firebase.google.com/docs/emulator-suite/install_and_configure):
   ```
   Follow instructions on https://nodejs.org/en/download or https://formulae.brew.sh/formula/node
@@ -382,14 +386,33 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
   Follow instructions on https://openjdk.org/install/ or https://formulae.brew.sh/formula/openjdk
   ```
 * Install Firebase CLI and emulator:
+  We install firebase CLI with our own script, to pin the version of the emulator, as emulator updates have broken our tests in the past.
+  
+  ```
+  utils/install_firebase.sh v13.1.0
+  ```
+
+  To install the latest version of firebase CLI and the emulators, run this command:
   ```
   curl -sL https://firebase.tools | bash
   firebase setup:emulators:firestore
   ```
+
+* Launch emulator in background (should remain running until you restart your laptop)
+  ```
+  firebase emulators:start --only firestore --project fake-project &
+  ```
+
+* Set up quota project:
+  ```
+  gcloud auth application-default set-quota-project $PROJECT_ID
+  ```
+
 * Install Virtualenv and pip requirements
   ```
   # Start in the root folder
   export BASE_DIR=$(pwd)
+  export PROJECT_ID=<your-dev-project-id>
 
   # Go to a specific microservice folder:
   cd components/<component_name>
@@ -400,10 +423,30 @@ When you're done, make sure to fully disconnect the debugger, so it removes the 
 
   # If this component depends on the common folder:
   pip install -r ../common/requirements.txt
+  pip install -r ../common/requirements-test.txt
   ```
-* Run unit tests locally:
+* Run unit tests locally for the entire codebase:
   ```
-  PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=$BASE_DIR/components/common/src python -m pytest
+  cd components/<component_name>/src
+  PYTHONPATH=../../common/src python -m pytest
+  ```
+
+  Or run the unit tests with code coverage:
+  ```
+  cd components/<component_name>/src
+  PYTEST_ADDOPTS="--cache-clear --cov . " PYTHONPATH=../../common/src python -m pytest
+  ```
+
+* Run unit tests locally for a particular test file
+  ```
+  cd components/<component_name>/src
+  PYTHONPATH=../../common/src python -m pytest path/to/target_test.py
+  ```
+
+* Run unit tests with logging
+  ```
+  cd components/<component_name>/src
+  PYTHONPATH=../../common/src python -m pytest --log-cli-level=INFO path/to/target_test.py
   ```
 
 ###  7.2. <a name='Testfilenameconventionandformat'></a>Test filename convention and format

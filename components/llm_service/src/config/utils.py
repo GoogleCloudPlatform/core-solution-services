@@ -15,30 +15,9 @@
 """
   LLM Service utils file
 """
-# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 
-import json
-from config.config import AGENT_DATASET_CONFIG_PATH, get_model_config
+from config.config import get_model_config
 
-# Global DATASETS as the cache for loading datasets only once.
-DATASETS = None
-
-def get_dataset_config() -> dict:
-  global DATASETS
-
-  if DATASETS is None:
-    DATASETS = load_config_json(AGENT_DATASET_CONFIG_PATH)
-  return DATASETS
-
-
-def load_config_json(file_path: str):
-  """ load a config JSON file """
-  try:
-    with open(file_path, "r", encoding="utf-8") as file:
-      return json.load(file)
-  except Exception as e:
-    raise RuntimeError(
-        f" Error loading config file {file_path}: {e}") from e
 
 # Helper methods for config retrieval
 def get_provider_models(provider_id):
@@ -56,3 +35,6 @@ def get_provider_config(provider_id):
 
 def get_provider_model_config(provider_id):
   return get_model_config().get_provider_model_config(provider_id)
+
+def get_model_config_value(llm_type, key, default=None):
+  return get_model_config().get_config_value(llm_type, key, default)

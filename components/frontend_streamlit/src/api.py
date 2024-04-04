@@ -23,27 +23,34 @@ import streamlit as st
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import (
     get_method, post_method, put_method, delete_method)
-from common.models import Agent, UserChat, UserPlan
+from common.models import UserChat, UserPlan
 from config import (APP_BASE_PATH, LLM_SERVICE_API_URL,
                     JOBS_SERVICE_API_URL, AUTH_SERVICE_API_URL)
 
 Logger = Logger.get_logger(__file__)
+API_TIMEOUT = 600
 
 
-def dispatch_api(method:str , api_url:str ,
-                request_body:dict=None, auth_token:str=None):
+def dispatch_api(method: str, api_url: str,
+                 request_body: dict = None, auth_token: str = None):
   """ dispatch api call based on method """
+  if not auth_token:
+    auth_token = st.session_state.get("auth_token")
+
   if method.upper() == "GET":
-    resp = get_method(api_url, token=auth_token)
+    resp = get_method(api_url, token=auth_token, timeout=API_TIMEOUT)
   elif method.upper() == "POST":
     resp = post_method(
-        api_url, request_body=request_body, token=auth_token)
+        api_url, request_body=request_body, token=auth_token,
+        timeout=API_TIMEOUT)
   elif method.upper() == "PUT":
     resp = put_method(
-        api_url, request_body=request_body, token=auth_token)
+        api_url, request_body=request_body, token=auth_token,
+        timeout=API_TIMEOUT)
   elif method.upper() == "DELETE":
     resp = delete_method(
-        api_url, request_body=request_body, token=auth_token)
+        api_url, request_body=request_body, token=auth_token,
+        timeout=API_TIMEOUT)
   else:
     raise ValueError(f"method {method} is not supported.")
 
@@ -54,14 +61,20 @@ def dispatch_api(method:str , api_url:str ,
   return resp, resp_dict, status_code
 
 
-def api_request(method:str , api_url:str ,
-                request_body:dict=None, auth_token:str=None):
+def api_request(method: str, api_url: str,
+                request_body: dict = None, auth_token: str = None):
   """ Make API request with error handling. """
 
   st.session_state.error_msg = None
   try:
     resp = None
-    Logger.info(f"api_url={api_url}")
+    Logger.info(f"api_url={api_url}, auth_token={auth_token}")
+
+    # global processing of llm_type param
+    if request_body and isinstance(request_body, dict):
+      llm_type = request_body.get("llm_type", None)
+      if llm_type == "default":
+        del request_body["llm_type"]
 
     resp, resp_dict, status_code = dispatch_api(method,
                                                 api_url,
@@ -72,7 +85,8 @@ def api_request(method:str , api_url:str ,
       # refresh token with existing creds and retry on failure to authenticate
       username = st.session_state.get("username", None)
       password = st.session_state.get("password", None)
-      Logger.info(f"got 401. attempting to reauth {username}")
+      Logger.info(f"API responds 401 error. attempting to reauth with "
+                  f"username: {username}")
       if username and password:
         auth_token = login_user(username, password)
         resp, resp_dict, status_code = dispatch_api(method,
@@ -80,12 +94,16 @@ def api_request(method:str , api_url:str ,
                                                     request_body,
                                                     auth_token)
 
-      if status_code == 401 or resp_dict.get("success", False) is False:
+      if status_code == 401:
         Logger.error(
             f"Unauthorized when calling API: {api_url}")
         st.session_state.error_msg = \
             "Unauthorized or session expired. " \
             "Please [login]({APP_BASE_PATH}/Login) again."
+
+      if resp_dict.get("success", False) is False:
+        msg = resp_dict.get("message", "no message returned")
+        st.session_state.error_msg = f"API call failed: {msg} "
 
     if status_code != 200:
       Logger.error(
@@ -129,10 +147,12 @@ def api_request(method:str , api_url:str ,
 def get_auth_token():
   return st.session_state.get("auth_token", None)
 
+
 def handle_error(resp):
   if resp.status_code != 200:
     raise RuntimeError(
       f"Error with status {resp.status_code}: {str(resp)}")
+
 
 def get_response_json(resp):
   try:
@@ -143,6 +163,7 @@ def get_response_json(resp):
     st.session_state.error_msg = \
         f"Unable to decode response from backend APIs: {resp}"
     return None
+
 
 def validate_auth_token():
   """
@@ -158,7 +179,8 @@ def validate_auth_token():
 
   return False
 
-def get_agents(auth_token=None) -> List[Agent]:
+
+def get_agents(auth_token=None) -> List[dict]:
   """
   Return list of Agent models from LLM Service
   """
@@ -171,37 +193,56 @@ def get_agents(auth_token=None) -> List[Agent]:
   resp = api_request("GET", api_url, auth_token)
   resp_dict = get_response_json(resp)
 
+  agent_config = resp_dict.get("data")
+  return agent_config
+
+
+def get_all_routing_agents(auth_token=None) -> List[dict]:
+  """
+  Return list of Routing Agent models from LLM Service
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{LLM_SERVICE_API_URL}/agent/route"
+  Logger.info(f"api_url={api_url}")
+
+  resp = api_request("GET", api_url, auth_token)
+  resp_dict = get_response_json(resp)
+
   # load agent models based on response
-  agent_list = []
-  for agent_name in resp_dict.get("data"):
-    agent_list.append(Agent.find_by_name(agent_name))
-  return agent_list
+  agent_config = resp_dict.get("data")
+  return agent_config
 
 
-def run_dispatch(prompt: str, chat_id: str = None,
-                 route=None, llm_type: str=None, auth_token=None):
+def run_dispatch(prompt: str, agent_name: str, chat_id: str = None,
+                 llm_type: str = None, run_as_batch_job=False,
+                 auth_token=None):
   """
   Run Agent on human input, and return output
   """
   if not auth_token:
     auth_token = get_auth_token()
 
-  # hard code llm_type to the dispatch agent default
-  llm_type = None
-
-  api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch"
+  api_url = f"{LLM_SERVICE_API_URL}/agent/dispatch/{agent_name}"
   Logger.info(f"api_url = {api_url}")
   Logger.info(f"chat_id = {chat_id}")
 
   request_body = {
     "prompt": prompt,
     "chat_id": chat_id,
-    "llm_type": llm_type
+    "llm_type": llm_type,
+    "run_as_batch_job": run_as_batch_job,
   }
+  Logger.info(f"request_body: {request_body}")
+
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
   handle_error(resp)
   resp_dict = get_response_json(resp)
+
+  Logger.info(f"response: {resp_dict}")
+
   return resp_dict["data"]
 
 
@@ -273,7 +314,7 @@ def run_agent_execute_plan(plan_id: str,
 
 
 def run_query(query_engine_id: str, prompt: str,
-              chat_id: str = None, auth_token=None):
+              chat_id: str = None, llm_type: str = None, auth_token=None):
   """
   Run Agent on human input, and return output
   """
@@ -284,9 +325,12 @@ def run_query(query_engine_id: str, prompt: str,
   api_url = f"{LLM_SERVICE_API_URL}/query/engine/{query_engine_id}"
   Logger.info(f"api_url={api_url}")
 
+  if llm_type is None:
+    llm_type = "VertexAI-Chat"
+
   request_body = {
     "prompt": prompt,
-    "llm_type": "VertexAI-Chat"
+    "llm_type": llm_type
   }
   resp = api_request("POST", api_url,
                      request_body=request_body, auth_token=auth_token)
@@ -303,7 +347,7 @@ def run_chat(prompt: str, chat_id: str = None,
   Logger.info(f"chat id = {chat_id}")
 
   if chat_id:
-    api_url = f"{LLM_SERVICE_API_URL}/{chat_id}/generate"
+    api_url = f"{LLM_SERVICE_API_URL}/chat/{chat_id}/generate"
   else:
     api_url = f"{LLM_SERVICE_API_URL}/chat"
 
@@ -320,9 +364,10 @@ def run_chat(prompt: str, chat_id: str = None,
   return resp_dict["data"]
 
 
-def build_query_engine(name: str, doc_url: str, depth_limit: int,
-                       embedding_type: str,
-                       vector_store: str, description: str,
+def build_query_engine(name: str, engine_type: str, doc_url: str,
+                       depth_limit: int, embedding_type: str,
+                       vector_store: str, description: str, agents: str,
+                       child_engines: str,
                        auth_token=None):
   """
   Start a query engine build job
@@ -335,12 +380,15 @@ def build_query_engine(name: str, doc_url: str, depth_limit: int,
 
   request_body = {
     "query_engine": name,
+    "query_engine_type": engine_type,
     "doc_url": doc_url,
     "embedding_type": embedding_type,
     "vector_store": vector_store,
     "description": description,
     "params": {
-      "depth_limit": depth_limit
+      "depth_limit": depth_limit,
+      "agents": agents,
+      "associated_engines": child_engines,
     }
   }
   Logger.info(f"Sending request_body={request_body} to {api_url}")
@@ -441,6 +489,7 @@ def get_all_chat_llm_types(auth_token=None):
   output.sort(reverse=True)
 
   return output
+
 
 def get_all_vector_stores(auth_token=None):
   """
@@ -557,6 +606,22 @@ def get_plan(plan_id, auth_token=None) -> UserPlan:
   return output
 
 
+def get_job(job_type, job_id, auth_token=None) -> UserChat:
+  """
+  Retrieve a specific UserChat object
+  """
+  if not auth_token:
+    auth_token = get_auth_token()
+
+  api_url = f"{JOBS_SERVICE_API_URL}/jobs/{job_type}/{job_id}"
+  Logger.info(f"api_url={api_url}")
+
+  resp = api_request("GET", api_url, auth_token=auth_token)
+  resp_dict = get_response_json(resp)
+  output = resp_dict["data"]
+  return output
+
+
 def login_user(user_email, user_password) -> str or None:
   req_body = {
     "email": user_email,
@@ -575,11 +640,11 @@ def login_user(user_email, user_password) -> str or None:
     return None
 
   else:
-    Logger.info(f"Signed in with existing user '{user_email}'. ID Token:\n")
     id_token = resp_dict["data"]["idToken"]
     st.session_state["logged_in"] = True
     st.session_state["auth_token"] = id_token
     st.session_state["username"] = user_email
     st.session_state["password"] = user_password
+    Logger.info(
+        f"Signed in with existing user '{user_email}'. ID Token:\n{id_token}")
     return id_token
-  

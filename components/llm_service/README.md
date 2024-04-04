@@ -19,7 +19,7 @@ echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=
 ## Adding Optional LLM Models
 
 ### Llama2 Truss Deployment
-Optionally deploy Llama2 using Truss following these [instructions]("../../experimental/llm_truss/llama2-7b-sample/README.md).
+Optionally deploy Llama2 using Truss following these [instructions](../../experimental/llm_truss/llama2-7b-sample/README.md).
 
 To use deployed llama2 Endpoint (IP:PORT), set the following environment variable before deploying llm-service:
 
@@ -42,7 +42,9 @@ export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
 ```shell
 # Create a secret for postgres password
 gcloud secrets create "postgres-user-passwd"
-echo <your-postgres-password> | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+# Please use single quotes to enclose the password below (esp.
+# if the password contains special characters like $)
+echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
 
 # Create an AlloyDB instance
 ./utils/alloy_db.sh
@@ -63,15 +65,6 @@ psql -U postgres -c "CREATE DATABASE pgvector"
 psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector"
 exit
 ```
-
-## Apply terraform infra for LLM service
-
-Set up Cloud Storage with one sample PDF file for Query Engine to use later:
-```
-sb infra apply 4-llm
-```
-- This will create a `$PROJECT_ID-llm-docs` bucket and upload a `llm-sample-doc.pdf`.
-- It will add required Firestore indexes.
 
 ## After Deployment
 
@@ -116,6 +109,46 @@ Once finished, you shall see the following artifacts:
 - A corresponding document metadata in `query_documents` collection in Firestore.
 - A record in `query_document_chunk` collection in Firestore.
 - A Vertex AI Matching Engine.
+
+### Deploy with CORS origin allows
+
+Set the CORS origin environment variable:
+```
+CORS_ALLOW_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173,https://your-domain.com
+```
+
+Deploy microservice to GKE cluster as usual.
+```
+sb deploy -n default -m llm_service
+```
+
+### Deploy with custom agent_config.json stored in a GCS bucket path.
+
+Create a GCS bucket if it doesn't exist.
+```
+gcloud storage buckets create gs://${PROJECT_ID}-config
+```
+
+Upload the `agent_config.json` to a GCS bucket path:
+```
+gcloud storage cp /path/to/agent_config.json gs://${PROJECT_ID}-config
+```
+- You can refer to the `components/llm_service/src/config/agent_config.json` as the template to start with.
+
+Verify if the file has uploaded correctly to the bucket.
+```
+gsutil list gs://${PROJECT_ID}-config/agent_config.json
+```
+
+Set up the environment variable `AGENT_CONFIG_PATH` accordingly:
+- When deploying locally, set AGENT_CONFIG_PATH to the GCS path.
+  ```
+  export AGENT_CONFIG_PATH=gs://${PROJECT_ID}-config/agent_config.json
+  ```
+- When deploying with CI/CD like Github action, set the AGENT_CONFIG_PATH in the CI/CD's env vars.
+
+> If AGENT_CONFIG_PATH is not set, it will fall back to use the default agent_config.json in
+> `components/llm_service/src/config/agent_config.json`.
 
 ## Troubleshoot
 
@@ -199,14 +232,14 @@ common.utils.http_exceptions.InternalServerError: 403 GET https://storage.google
 
 When sending the API call to https://$YOUR_DOMAIN/llm-service/api/v1/query/engine but received a 403 error. It could be one of the following reasons:
 
-- The Kubenetes Role and Role Binding are not set correctly.
+- The Kubernetes Role and Role Binding are not set correctly.
   - Check out the `components/llm_service/kustomize/base` folder, you will see role.yaml and role_binding.yaml. Make sure they exist.
   - Check the `kustomization.yaml` file and make sure the role.yaml and role_binding.yaml are in `resources` list. Orders don't matter.
   - Check out `role_binding.yaml` and ensure the Service Account name is exact `gke-sa`. This is defined in the `/terraform/stages/2-gke/main.tf`
 
 #### Batch job created but failed.
 
-If a batch job is created succesfully, but there's an error about creating a pod, run the following to triage kubernetes resources:
+If a batch job is created successfully, but there's an error about creating a pod, run the following to triage kubernetes resources:
 
 ```
 $ kubectl get jobs
@@ -280,7 +313,7 @@ Containers:
       Finished:     Mon, 14 Aug 2023 14:15:24 -0400
 ```
 
-Now the pod seems get some error, run the following to checkout logs (Or see logs in Stackdriver.)
+Now the pod seems get some error, run the following to check out logs (Or see logs in Stackdriver.)
 ```
 kubectl logs d49bb762-4c0e-4972-abf9-5d284bd74597-l87wf
 ```
