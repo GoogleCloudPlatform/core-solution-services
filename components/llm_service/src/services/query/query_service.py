@@ -123,11 +123,19 @@ async def query_generate(
     context_prompt = llm_generate.get_context_prompt(user_query=user_query)
     prompt = context_prompt + "\n" + prompt
 
-  # check prompt against context length of generation model
-  llm_generate.check_context_length(prompt, llm_type)
-
   # generate question prompt for chat model
   question_prompt = query_prompts.question_prompt(prompt, query_references)
+
+  # check prompt against context length of generation model
+  try:
+    llm_generate.check_context_length(question_prompt, llm_type)
+  except llm_generate.ContextWindowExceededException:
+    # if context window length is exceeded, summarize the reference chunks
+    query_references = summarize_references(query_references, llm_type)
+    question_prompt = query_prompts.question_prompt(prompt, query_references)
+
+    # check again - if it fails this time the exception will propagate
+    llm_generate.check_context_length(question_prompt, llm_type)
 
   # send prompt to model
   question_response = await llm_generate.llm_chat(question_prompt, llm_type)
@@ -142,6 +150,27 @@ async def query_generate(
   query_result.save()
 
   return query_result, query_references
+
+def summarize_references(query_references: List[QueryReference],
+                         llm_type: str) -> List[QueryReference]:
+  """
+  Use an LLM to summarize the document text fields of a list of references.
+  Mutates the original objects and updates models in the DB with the
+  summarized text.
+
+  Args:
+    query_references: list of query references to summarize
+    llm_type: model to use to perform the summaries
+  Returns:
+    List of query references with summarized document_text fields
+  """
+  for query_ref in query_references:
+    summarize_prompt = query_prompts.summarize_prompt(query_ref.document_text)
+    summary = llm_generate.llm_chat(summarize_prompt, llm_type)
+    Logger.info(f"generated summary with LLM {llm_type}: {summary}")
+    query_ref.document_text = summary
+    query_ref.update()
+  return query_references
 
 def retrieve_references(prompt: str,
                         q_engine: QueryEngine,
@@ -174,7 +203,8 @@ def retrieve_references(prompt: str,
   return query_references
 
 def query_search(q_engine: QueryEngine,
-                 query_prompt: str) -> List[QueryReference]:
+                 query_prompt: str,
+                 rank_sentences=False) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -182,6 +212,7 @@ def query_search(q_engine: QueryEngine,
   Args:
     q_engine: QueryEngine to search
     query_prompt (str):  user query
+    rank_sentences: rank sentence relevance in retrieved chunks
 
   Returns:
     list of QueryReference models
@@ -217,21 +248,22 @@ def query_search(q_engine: QueryEngine,
       # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
-    # # Assemble sentences from a document chunk. Currently it gets the
-    # # sentences from the top-ranked document chunk.
-    # sentences = doc_chunk.sentences
-    # # for backwards compatibility with legacy engines break chunks
-    # # into sentences here
-    # if not sentences or len(sentences) == 0:
-    #   sentences = text_helper.text_to_sentence_list(doc_chunk.text)
+    if rank_sentences:
+      # Assemble sentences from a document chunk. Currently it gets the
+      # sentences from the top-ranked document chunk.
+      sentences = doc_chunk.sentences
+      # for backwards compatibility with legacy engines break chunks
+      # into sentences here
+      if not sentences or len(sentences) == 0:
+        sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
-    # # Only update clean_text when sentences is not empty.
-    # Logger.info(f"Processing {len(sentences)} sentences.")
-    # if sentences and len(sentences) > 0:
-    #   top_sentences = get_top_relevant_sentences(
-    #       q_engine, query_embeddings, sentences,
-    #       expand_neighbors=2, highlight_top_sentence=True)
-    #   clean_text = " ".join(top_sentences)
+      # Only update clean_text when sentences is not empty.
+      Logger.info(f"Processing {len(sentences)} sentences.")
+      if sentences and len(sentences) > 0:
+        top_sentences = get_top_relevant_sentences(
+            q_engine, query_embeddings, sentences,
+            expand_neighbors=2, highlight_top_sentence=True)
+        clean_text = " ".join(top_sentences)
 
     # save query reference
     query_reference = QueryReference(

@@ -44,6 +44,16 @@ from services.langchain_service import langchain_llm_generate
 
 Logger = Logger.get_logger(__file__)
 
+class ContextWindowExceededException(Exception):
+  """
+  Exception raised when context window length is exceeded
+  in generation
+  """
+  def __init__(self, message="Context window length exceeded"):
+    self.message = message
+    super().__init__(self.message)
+
+
 async def llm_generate(prompt: str, llm_type: str) -> str:
   """
   Generate text with an LLM given a prompt.
@@ -198,8 +208,6 @@ def check_context_length(prompt, llm_type):
   a model.
 
   Raise an exception if max context length exceeded.
-
-  TODO: offer the option to summarize and shorten the prompt.
   """
   # check if prompt exceeds context window length for model
   max_context_length = get_model_config_value(llm_type,
@@ -209,7 +217,7 @@ def check_context_length(prompt, llm_type):
     msg = f"Prompt length {len(prompt)} exceeds llm_type {llm_type} " + \
           f"Max context length {max_context_length}"
     Logger.error(msg)
-    raise RuntimeError(msg)
+    raise ContextWindowExceededException(msg)
 
 async def llm_truss_service_predict(llm_type: str, prompt: str,
                                     model_endpoint: str,
