@@ -102,17 +102,6 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
-  # perform retrieval
-  query_references = retrieve_references(prompt, q_engine, user_id)
-
-  # only need to do this if integrated search from multiple child engines
-  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
-    len(query_references) > 1:
-    query_references = rerank_references(prompt, query_references)
-
-  # generate question prompt for chat model
-  question_prompt = query_prompts.question_prompt(prompt, query_references)
-
   # determine question generation model
   if llm_type is None:
     if q_engine.llm_type is not None:
@@ -120,10 +109,27 @@ async def query_generate(
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
-  # send question prompt to model
-  # TODO: pass user_query history to model as context for generation.
-  #       This requires refactoring the llm_chat method as it takes a
-  #       UserChat model now.  Instead it should take a chat history.
+  # perform retrieval
+  query_references = retrieve_references(prompt, q_engine, user_id)
+
+  # Rerank references. Only need to do this if performing integrated search
+  # from multiple child engines.
+  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
+      len(query_references) > 1:
+    query_references = rerank_references(prompt, query_references)
+
+  # incorporate user query context if it exists
+  if user_query is not None:
+    context_prompt = llm_generate.get_context_prompt(user_query=user_query)
+    prompt = context_prompt + "\n" + prompt
+
+  # check prompt against context length of generation model
+  llm_generate.check_context_length(prompt, llm_type)
+
+  # generate question prompt for chat model
+  question_prompt = query_prompts.question_prompt(prompt, query_references)
+
+  # send prompt to model
   question_response = await llm_generate.llm_chat(question_prompt, llm_type)
 
   # save query result
@@ -134,18 +140,6 @@ async def query_generate(
                              prompt=prompt,
                              response=question_response)
   query_result.save()
-
-  # save user query history
-  if user_query is None:
-    user_query = UserQuery(user_id=user_id,
-                           query_engine_id=q_engine.id,
-                           prompt=prompt)
-    user_query.save()
-
-  query_reference_dicts = [
-    ref.get_fields(reformat_datetime=True) for ref in query_references
-  ]
-  user_query.update_history(prompt, question_response, query_reference_dicts)
 
   return query_result, query_references
 

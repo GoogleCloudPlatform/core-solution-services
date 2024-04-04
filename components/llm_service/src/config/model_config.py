@@ -48,6 +48,7 @@ KEY_ENV_FLAG = "env_flag"
 KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
+KEY_MODEL_CONTEXT_LENGTH = "context_length"
 KEY_IS_CHAT = "is_chat"
 KEY_MODEL_FILE_URL = "model_file_url"
 KEY_MODEL_PATH = "model_path"
@@ -65,6 +66,7 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_CLASS,
   KEY_MODEL_NAME,
   KEY_MODEL_PARAMS,
+  KEY_MODEL_CONTEXT_LENGTH,
   KEY_IS_CHAT,
   KEY_MODEL_FILE_URL,
   KEY_MODEL_PATH,
@@ -226,6 +228,14 @@ class ModelConfig():
           "Can't load models config json at"
           f" {self.model_config_path}: {str(e)}")
       raise RuntimeError(str(e)) from e
+
+  def copy_model_config(self, mc):
+    """ copy model config from another config object """
+    self.model_config_path = mc.model_config_path
+    self.llm_model_providers = mc.llm_model_providers
+    self.llm_model_vendors = mc.llm_model_vendors
+    self.llm_models = mc.llm_models
+    self.llm_embedding_models = mc.llm_embedding_models
 
   def set_model_config(self):
     """
@@ -491,8 +501,8 @@ class ModelConfig():
         api_key_name = api_key_name.replace("-", "_")
     return api_key_name, api_key
 
-  def get_config_value(self, model_id: str, key: str) -> Any:
-    return self.get_model_config(model_id).get(key)
+  def get_config_value(self, model_id: str, key: str, default=None) -> Any:
+    return self.get_model_config(model_id).get(key, default)
 
   def get_all_model_config(self):
     """ return dict of model config and embedding model config combined """

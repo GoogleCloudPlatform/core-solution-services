@@ -34,10 +34,12 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
                                      QUERY_REFERENCE_EXAMPLE_1,
                                      QUERY_REFERENCE_EXAMPLE_2)
+from config import get_model_config, ModelConfig, MODEL_CONFIG_PATH
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            User, QueryDocument, QueryDocumentChunk,
                            QueryReference)
 from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
+from common.utils.logging_handler import Logger
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 from services.query.query_service import (query_generate,
                                           query_search,
@@ -47,6 +49,16 @@ from services.query.query_service import (query_generate,
                                           retrieve_references)
 from services.query.vector_store import VectorStore
 from services.query.data_source import DataSource, DataSourceFile
+
+Logger = Logger.get_logger(__file__)
+
+@pytest.fixture
+def restore_config():
+  # restore global config
+  mc = ModelConfig(MODEL_CONFIG_PATH)
+  mc.load_model_config()
+  get_model_config().copy_model_config(mc)
+  Logger.info(f"*** model config: {mc.llm_models}")
 
 @pytest.fixture
 def create_query_reference(firestore_emulator, clean_firestore):
@@ -171,8 +183,9 @@ class FakeDataSource(DataSource):
 @mock.patch("services.query.query_service.llm_generate.llm_chat")
 @mock.patch("services.query.query_service.query_search")
 async def test_query_generate(mock_query_search, mock_llm_chat,
-                        create_engine, create_user, create_query_result,
-                        create_query_reference, create_query_reference_2):
+                        restore_config, create_engine, create_user,
+                        create_query_result, create_query_reference,
+                        create_query_reference_2):
   prompt = QUERY_EXAMPLE["prompt"]
   mock_query_search.return_value = [create_query_reference,
                                     create_query_reference_2]
@@ -193,6 +206,7 @@ def test_query_search(mock_get_top_relevant_sentences,
                       mock_get_vector_store, mock_get_embeddings,
                       create_engine, create_user, create_query_docs,
                       create_query_doc_chunks):
+  # test llm service query search
   qdoc_chunk1 = create_query_doc_chunks[0]
   qdoc_chunk2 = create_query_doc_chunks[1]
   qdoc_chunk3 = create_query_doc_chunks[2]
