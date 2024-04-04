@@ -131,7 +131,7 @@ async def query_generate(
     llm_generate.check_context_length(question_prompt, llm_type)
   except llm_generate.ContextWindowExceededException:
     # if context window length is exceeded, summarize the reference chunks
-    query_references = summarize_references(query_references, llm_type)
+    query_references = await summarize_references(query_references, llm_type)
     question_prompt = query_prompts.question_prompt(prompt, query_references)
 
     # check again - if it fails this time the exception will propagate
@@ -151,7 +151,7 @@ async def query_generate(
 
   return query_result, query_references
 
-def summarize_references(query_references: List[QueryReference],
+async def summarize_references(query_references: List[QueryReference],
                          llm_type: str) -> List[QueryReference]:
   """
   Use an LLM to summarize the document text fields of a list of references.
@@ -166,7 +166,7 @@ def summarize_references(query_references: List[QueryReference],
   """
   for query_ref in query_references:
     summarize_prompt = query_prompts.summarize_prompt(query_ref.document_text)
-    summary = llm_generate.llm_chat(summarize_prompt, llm_type)
+    summary = await llm_generate.llm_chat(summarize_prompt, llm_type)
     Logger.info(f"generated summary with LLM {llm_type}: {summary}")
     query_ref.document_text = summary
     query_ref.update()
