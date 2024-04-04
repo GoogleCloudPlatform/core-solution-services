@@ -54,6 +54,7 @@ KEY_MODEL_FILE_URL = "model_file_url"
 KEY_MODEL_PATH = "model_path"
 KEY_MODEL_ENDPOINT = "model_endpoint"
 KEY_VENDOR = "vendor"
+KEY_DIMENSION = "dimension"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -71,7 +72,8 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_FILE_URL,
   KEY_MODEL_PATH,
   KEY_MODEL_ENDPOINT,
-  KEY_VENDOR
+  KEY_VENDOR,
+  KEY_DIMENSION
 ]
 
 # model providers
