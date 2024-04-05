@@ -30,3 +30,12 @@ Helpful Answer:"""
 QUESTION_PROMPT = PromptTemplate(
     template=prompt_template, input_variables=["context", "question"]
 )
+
+summary_template = """
+Summarize the following text in three sentences or less:
+{original_text}
+"""
+
+SUMMARY_PROMPT = PromptTemplate(
+    template=summary_template, input_variables=["original_text"]
+)
