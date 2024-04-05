@@ -54,6 +54,7 @@ KEY_MODEL_FILE_URL = "model_file_url"
 KEY_MODEL_PATH = "model_path"
 KEY_MODEL_ENDPOINT = "model_endpoint"
 KEY_VENDOR = "vendor"
+KEY_DIMENSION = "dimension"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -71,7 +72,8 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_FILE_URL,
   KEY_MODEL_PATH,
   KEY_MODEL_ENDPOINT,
-  KEY_VENDOR
+  KEY_VENDOR,
+  KEY_DIMENSION
 ]
 
 # model providers
@@ -174,35 +176,62 @@ class ModelConfig():
 
   Instances of this class represent config for LLM models managed by the
   LLM Service.  Config is stored in four instance dicts:
-  
-  llm_model_providers: Dict[str, Dict[str, Any]] 
-    provider_id: provider config dict
+
+  llm_model_providers: Dict[str, Dict[str, Any]]
+    { ...
+      provider_id: {
+        {
+          ...
+          provider config key: value
+        }
+    }
 
     provider config keys:
       enabled: is provider enabled
       env_flag: environment variable to enable/disable provider
+      model_params: global provider generation parameters
 
   llm_model_vendors: Dict[str, Dict[str, Any]]
-    vendor_id: vendor config dict
+    { ...
+      vendor_id: {
+        ...
+        vendor config key: value
+      }
+    }
 
     vendor config keys:
       enabled: is vendor enabled
       env_flag: environment variable to enable/disable vendor
       api_key: secret id for api key
+      model_params: global vendor generation parameters
 
   llm_models: Dict[str, Dict[str, Any]]
-    model_id: model config dict
-
+    { ...
+      model_id: {
+        ...
+        model config key: value
+      }
+    }
     model config keys:
       enabled: is model enabled
       is_chat: is the model a chat model
       provider: the provider of the model
       model_endpoint: base url of a model served by an external provider
+      model_class: class to instantiate for model, e.g. langchain model class
+      model_params: generation parameters
+      vendor: vendor id
+      env_flag: environment variable to enable/disable model
+      model_file_url: url of model file to load
 
   llm_embedding_models: Dict[str, Dict[str, Any]]
-    model_id: embedding model config dict
-  
-    embedding model config uses all model config keys
+    { ...
+      model_id: {
+        ...
+        embedding model config key: value
+      }
+    }
+
+    embedding model config uses all model config keys except is_chat
     embedding models also include these keys
       dimension: dimension of embedding vector
   """
@@ -289,14 +318,14 @@ class ModelConfig():
         continue
       provider_enabled = self.is_provider_enabled(provider_id)
 
-      # Get api keys if present. If an api key serect is configured and
+      # Get api keys if present. If an api key secret is configured and
       # the key is missing, disable the model.
       api_key = self.get_api_key(model_id)
       api_check = True
       if self.get_config_value(model_id, KEY_API_KEY):
         api_check = api_key is not None
 
-      # set model_enabled flag based on conjuntion of settings
+      # set model_enabled flag based on conjunction of settings
       model_enabled = \
           model_enabled and \
           api_check and \

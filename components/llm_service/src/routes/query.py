@@ -170,8 +170,6 @@ def get_query_list(skip: int = 0,
     if limit < 1:
       raise ValidationError("Invalid value passed to \"limit\" query parameter")
 
-    # TODO: RBAC check. This call allows the authenticated user to access
-    # other user queries
     user = User.find_by_email(user_email)
     if user is None:
       raise ResourceNotFoundException(f"User {user_email} not found ")
@@ -186,7 +184,7 @@ def get_query_list(skip: int = 0,
       del query_data["history"]
       query_list.append(query_data)
 
-    Logger.info(f"Successfully retrieved user queries query_list={query_list}")
+    Logger.info(f"Successfully retrieved {len(query_list)} user queries.")
     return {
       "success": True,
       "message": f"Successfully retrieved user queries for user {user.id}",
@@ -523,10 +521,10 @@ async def query(query_engine_id: str,
     user_query = UserQuery(user_id=user.id,
                           query_engine_id=q_engine.id,
                           prompt=prompt)
+    user_query.save()
     user_query.update_history(prompt,
                               query_result.response,
                               query_reference_dicts)
-    user_query.save()
 
     return {
         "success": True,

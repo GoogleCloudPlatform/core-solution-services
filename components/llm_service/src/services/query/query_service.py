@@ -141,18 +141,6 @@ async def query_generate(
                              response=question_response)
   query_result.save()
 
-  # save user query history
-  if user_query is None:
-    user_query = UserQuery(user_id=user_id,
-                           query_engine_id=q_engine.id,
-                           prompt=prompt)
-    user_query.save()
-
-  query_reference_dicts = [
-    ref.get_fields(reformat_datetime=True) for ref in query_references
-  ]
-  user_query.update_history(prompt, question_response, query_reference_dicts)
-
   return query_result, query_references
 
 def retrieve_references(prompt: str,
