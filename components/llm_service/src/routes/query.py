@@ -184,7 +184,7 @@ def get_query_list(skip: int = 0,
       del query_data["history"]
       query_list.append(query_data)
 
-    Logger.info(f"Successfully retrieved user queries query_list={query_list}")
+    Logger.info(f"Successfully retrieved {len(query_list)} user queries.")
     return {
       "success": True,
       "message": f"Successfully retrieved user queries for user {user.id}",
