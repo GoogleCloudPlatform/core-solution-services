@@ -22,7 +22,8 @@ from common.models import QueryReference
 
 Logger = Logger.get_logger(__file__)
 
-def question_prompt(prompt: str, query_context: List[QueryReference]) -> str:
+def get_question_prompt(prompt: str,
+                        query_context: List[QueryReference]) -> str:
   """ Create question prompt with context for LLM """
   Logger.info(f"Creating question prompt with context "
               f"for LLM prompt=[{prompt}]")
@@ -31,7 +32,7 @@ def question_prompt(prompt: str, query_context: List[QueryReference]) -> str:
   question = QUESTION_PROMPT.format(question=prompt, context=text_context)
   return question
 
-def summarize_prompt(original_text: str) -> str:
+def get_summarize_prompt(original_text: str) -> str:
   """ Create summarize prompt for LLM """
   Logger.info(f"Creating summarize prompt for original text=[{original_text}]")
   prompt = SUMMARY_PROMPT.format(original_text=original_text)

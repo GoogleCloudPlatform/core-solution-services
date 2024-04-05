@@ -41,17 +41,9 @@ from config import (get_model_config, get_provider_models,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
                     DEFAULT_LLM_TYPE)
 from services.langchain_service import langchain_llm_generate
+from utils.errors import ContextWindowExceededException
 
 Logger = Logger.get_logger(__file__)
-
-class ContextWindowExceededException(Exception):
-  """
-  Exception raised when context window length is exceeded
-  in generation
-  """
-  def __init__(self, message="Context window length exceeded"):
-    self.message = message
-    super().__init__(self.message)
 
 
 async def llm_generate(prompt: str, llm_type: str) -> str:

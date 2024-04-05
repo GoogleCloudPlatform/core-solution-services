@@ -34,8 +34,12 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
-from services import llm_generate, embeddings
-from services.query import query_prompts
+from services import embeddings
+from services.llm_generate import (get_context_prompt,
+                                   llm_chat,
+                                   check_context_length)
+from services.query.query_prompts import (get_question_prompt,
+                                          get_summarize_prompt)
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore,
@@ -45,7 +49,8 @@ from services.query.web_datasource import WebDataSource
 from services.query.vertex_search import (build_vertex_search,
                                           query_vertex_search,
                                           delete_vertex_search)
-from utils.errors import NoDocumentsIndexedException
+from utils.errors import (NoDocumentsIndexedException,
+                          ContextWindowExceededException)
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
@@ -66,6 +71,8 @@ VECTOR_STORES = {
 RERANK_MODEL_NAME = "cross-encoder"
 reranker = Reranker(RERANK_MODEL_NAME, verbose=0)
 
+# minimum number of references to return
+MIN_QUERY_REFERENCES = 2
 
 async def query_generate(
             user_id: str,
@@ -118,27 +125,15 @@ async def query_generate(
       len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
 
-  # incorporate user query context if it exists
-  if user_query is not None:
-    context_prompt = llm_generate.get_context_prompt(user_query=user_query)
-    prompt = context_prompt + "\n" + prompt
-
-  # generate question prompt for chat model
-  question_prompt = query_prompts.question_prompt(prompt, query_references)
-
-  # check prompt against context length of generation model
-  try:
-    llm_generate.check_context_length(question_prompt, llm_type)
-  except llm_generate.ContextWindowExceededException:
-    # if context window length is exceeded, summarize the reference chunks
-    query_references = await summarize_references(query_references, llm_type)
-    question_prompt = query_prompts.question_prompt(prompt, query_references)
-
-    # check again - if it fails this time the exception will propagate
-    llm_generate.check_context_length(question_prompt, llm_type)
+  # generate question prompt
+  question_prompt, query_references = \
+      await generate_question_prompt(prompt,
+                                     llm_type,
+                                     query_references,
+                                     user_query)
 
   # send prompt to model
-  question_response = await llm_generate.llm_chat(question_prompt, llm_type)
+  question_response = await llm_chat(question_prompt, llm_type)
 
   # save query result
   query_ref_ids = [ref.id for ref in query_references]
@@ -150,6 +145,64 @@ async def query_generate(
   query_result.save()
 
   return query_result, query_references
+
+async def generate_question_prompt(prompt: str,
+                                   llm_type: str,
+                                   query_references: List[QueryReference],
+                                   user_query=None) -> \
+                                   Tuple[str, QueryReference]:
+  """
+  Generate question prompt for RAG, given initial prompt and retrieved
+  references.  If necessary, trim context or references to fit context window
+  of generation model.
+
+  Args:
+    prompt: the original user prompt
+    llm_type: chat model to use for generation
+    query_references: list of retrieved query references
+    user_query (optional): existing user query for context
+
+  Returns:
+    question prompt (str)
+    list of QueryReference objects
+
+  Raises:
+    ContextWindowExceededException if the model context window is exceeded
+  """
+  # incorporate user query context in prompt if it exists
+  if user_query is not None:
+    context_prompt = get_context_prompt(user_query=user_query)
+    prompt = context_prompt + "\n" + prompt
+
+  # generate default prompt
+  question_prompt = get_question_prompt(prompt, query_references)
+
+  # check prompt against context length of generation model
+  try:
+    check_context_length(question_prompt, llm_type)
+  except ContextWindowExceededException:
+    # if context window length is exceeded, summarize the reference chunks
+    query_references = await summarize_references(query_references, llm_type)
+    question_prompt = get_question_prompt(prompt, query_references)
+
+    # check again
+    try:
+      check_context_length(question_prompt, llm_type)
+    except ContextWindowExceededException:
+      # now try popping reference results
+      while len(query_references) > MIN_QUERY_REFERENCES:
+        query_references.pop()
+        question_prompt = get_question_prompt(prompt, query_references)
+        try:
+          check_context_length(question_prompt, llm_type)
+          break
+        except ContextWindowExceededException:
+          pass
+      # one final check - this will propagate the exception if the prompt
+      # is still too long
+      check_context_length(question_prompt, llm_type)
+
+  return question_prompt, query_references
 
 async def summarize_references(query_references: List[QueryReference],
                          llm_type: str) -> List[QueryReference]:
@@ -165,8 +218,8 @@ async def summarize_references(query_references: List[QueryReference],
     List of query references with summarized document_text fields
   """
   for query_ref in query_references:
-    summarize_prompt = query_prompts.summarize_prompt(query_ref.document_text)
-    summary = await llm_generate.llm_chat(summarize_prompt, llm_type)
+    summarize_prompt = get_summarize_prompt(query_ref.document_text)
+    summary = await llm_chat(summarize_prompt, llm_type)
     Logger.info(f"generated summary with LLM {llm_type}: {summary}")
     query_ref.document_text = summary
     query_ref.update()
