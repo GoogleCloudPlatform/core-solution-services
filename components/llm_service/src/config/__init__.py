@@ -116,6 +116,13 @@ from config.vector_store_config import (
   PG_HOST
 )
 
+from config.onedrive_config import (
+  ONEDRIVE_CLIENT_ID,
+  ONEDRIVE_TENANT_ID,
+  ONEDRIVE_CLIENT_SECRET,
+  ONEDRIVE_PRINCIPLE_NAME
+)
+
 from config.utils import (
   get_provider_models,
   get_provider_value,
