@@ -15,9 +15,7 @@
 Sharepoint DataSources
 """
 import os
-import re
 from typing import List
-from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.models import QueryEngine
 from config import (PROJECT_ID,
@@ -25,14 +23,8 @@ from config import (PROJECT_ID,
                     ONEDRIVE_TENANT_ID,
                     ONEDRIVE_CLIENT_SECRET,
                     ONEDRIVE_PRINCIPLE_NAME)
-from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.document_loaders import CSVLoader
-from llama_index.core import download_loader
 from llama_index.readers.microsoft_onedrive import OneDriveReader
-from pypdf import PdfReader
-from services.query.data_source import DataSource, CHUNK_SIZE, DataSourceFile
-from utils.errors import NoDocumentsIndexedException
-from utils import text_helper
+from services.query.data_source import DataSource, DataSourceFile
 from utils.gcs_helper import create_bucket, upload_to_gcs
 
 # pylint: disable=broad-exception-caught
@@ -45,9 +37,18 @@ class SharePointDataSource(DataSource):
   Class for sharepoint data sources.
   """
 
-  def __init__(self, storage_client):
-    self.storage_client = storage_client
-    self.docs_not_processed = []
+  def __init__(self, storage_client, bucket_name=None):
+    """
+    Initialize the SharePointDataSource.
+
+    Args:
+      storage_client: Google cloud storage client instance
+      bucket_name (str): name of GCS bucket to save downloaded documents.
+                         If None files will not be saved to GCS.
+    """
+    super().__init__(storage_client)
+    self.bucket_name = bucket_name
+    self.doc_data = []
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[DataSourceFile]:
@@ -55,7 +56,7 @@ class SharePointDataSource(DataSource):
     Download files from doc_url source to a local tmp directory
 
     Args:
-        doc_url: folder path on OneDrive
+        doc_url: shpt://<folder path on OneDrive>
         temp_dir: Path to temporary directory to download files to
 
     Returns:
@@ -99,9 +100,9 @@ class SharePointDataSource(DataSource):
       
       # create DataSourceFile object to track download
       datasource_file = DataSourceFile(
-        doc_name = doc.metadata["name"]
-        src_url = doc.metadata["name"]
-        local_path = doc.metadata.keys()[0]
+        doc_name = doc.metadata["name"],
+        src_url = doc.metadata["name"],
+        local_path = doc.metadata.keys()[0],
         gcs_path = gcs_path
       )
       downloaded_docs.append(datasource_file)
