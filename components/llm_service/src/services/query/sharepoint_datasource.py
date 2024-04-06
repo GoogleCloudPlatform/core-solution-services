@@ -62,15 +62,13 @@ class SharePointDataSource(DataSource):
     Returns:
         list of DataSourceFile
     """
-    downloaded_docs = []
-    
     # extract folder name from url
     sharepoint_folder = doc_url.split("shpt://")[1]
 
     if self.bucket_name is None:
       Logger.error(
-      f"ERROR: Bucket name for SharepointDataSource {doc_url} not set. "
-      f"Scraped files not uploaded to Google Cloud Storage")
+      f"ERROR: Bucket name for SharePointDataSource {doc_url} not set. "
+      f"Downloaded files will not be uploaded to Google Cloud Storage")
     else:
       # ensure downloads bucket exists, and clear contents
       create_bucket(self.storage_client, self.bucket_name)
@@ -79,32 +77,45 @@ class SharePointDataSource(DataSource):
     loader = OneDriveReader(
         client_id=ONEDRIVE_CLIENT_ID,
         tenant_id=ONEDRIVE_TENANT_ID,
-        client_secret=ONEDRIVE_CLIENT_SECRET
+        client_secret=ONEDRIVE_CLIENT_SECRET,
+        userprincipalname=ONEDRIVE_PRINCIPLE_NAME,
+        folder_path=sharepoint_folder
     )
-    documents = loader.load_data(
-        folder_path=sharepoint_folder,
-        userprincipalname=ONEDRIVE_PRINCIPLE_NAME
+    # download files from sharepoint to local dir
+    datasource_files = _download_sharepoint_files(loader, temp_dir, sharepoint_folder)
+    
+    # upload files to GCS
+    if self.bucket_name:
+      bucket = self.storage_client.get_bucket(self.bucket_name)
+      for doc in datasource_files:
+        blob = bucket.blob(doc.doc_name)
+        blob.upload_from_filename(doc.local_path)
+        doc.gcs_path = blob.path
+
+    return datasource_files
+
+  def _download_sharepoint_files(
+      loader: OneDriveReader,
+      temp_dir: str,
+      sharepoint_folder: str) -> List[DataSourceFile]:
+    """ Use llamaindex sharepoint loader to download files locally """
+    datasource_files = []
+    access_token = loader._authenticate_with_msal()
+    doc_metadata = loader._connect_download_and_return_metadata(
+        access_token, 
+        temp_dir, 
+        sharepoint_folder, 
+        False, 
+        userprincipalname=loader.userprincipalname,
+        isRelativePath=True
     )
     
-    # upload files to GCS and create list of DataSourceFile objects
-    for doc in documents:
-      file_name = doc.metadata["name"]
-      local_path = doc.metadata.keys()[0]
-      content_type = doc.metadata["mime_type"]
-      with open(local_path, "r", encoding="utf-8") as f:
-        file_content = f.read()
-
-      # upload doc to GCS
-      gcs_path = upload_to_gcs(self.storage_client, self.bucket_name,
-                               file_name, file_content, content_type)
-      
-      # create DataSourceFile object to track download
+    for doc_path, doc_data in doc_metadata.items():    
+      # create DataSourceFile object
       datasource_file = DataSourceFile(
-        doc_name = doc.metadata["name"],
-        src_url = doc.metadata["name"],
-        local_path = doc.metadata.keys()[0],
-        gcs_path = gcs_path
+        doc_name = doc_data["file_name"],
+        src_url = doc_data["file_id"],
+        local_path = doc_path
       )
-      downloaded_docs.append(datasource_file)
-
-    return downloaded_docs
+      datasource_files.append(datasource_file)
+    return datasource_files
