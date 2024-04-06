@@ -14,20 +14,17 @@
 """
 Sharepoint DataSources
 """
-import os
 from typing import List
 from common.utils.logging_handler import Logger
-from common.models import QueryEngine
-from config import (PROJECT_ID,
-                    ONEDRIVE_CLIENT_ID,
+from config import (ONEDRIVE_CLIENT_ID,
                     ONEDRIVE_TENANT_ID,
                     ONEDRIVE_CLIENT_SECRET,
                     ONEDRIVE_PRINCIPLE_NAME)
 from llama_index.readers.microsoft_onedrive import OneDriveReader
 from services.query.data_source import DataSource, DataSourceFile
-from utils.gcs_helper import create_bucket, upload_to_gcs
+from utils.gcs_helper import create_bucket
 
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,protected-access,consider-using-dict-items
 
 # text chunk size for embedding data
 Logger = Logger.get_logger(__file__)
@@ -72,18 +69,11 @@ class SharePointDataSource(DataSource):
     else:
       # ensure downloads bucket exists, and clear contents
       create_bucket(self.storage_client, self.bucket_name)
-    
-    # download files to local storage
-    loader = OneDriveReader(
-        client_id=ONEDRIVE_CLIENT_ID,
-        tenant_id=ONEDRIVE_TENANT_ID,
-        client_secret=ONEDRIVE_CLIENT_SECRET,
-        userprincipalname=ONEDRIVE_PRINCIPLE_NAME,
-        folder_path=sharepoint_folder
-    )
-    # download files from sharepoint to local dir
-    datasource_files = _download_sharepoint_files(loader, temp_dir, sharepoint_folder)
-    
+
+    # download files from sharepoint to temp_dir
+    datasource_files = \
+        self._download_sharepoint_files(temp_dir, sharepoint_folder)
+
     # upload files to GCS
     if self.bucket_name:
       bucket = self.storage_client.get_bucket(self.bucket_name)
@@ -94,24 +84,32 @@ class SharePointDataSource(DataSource):
 
     return datasource_files
 
-  def _download_sharepoint_files(
-      loader: OneDriveReader,
+  def _download_sharepoint_files(self,
       temp_dir: str,
       sharepoint_folder: str) -> List[DataSourceFile]:
     """ Use llamaindex sharepoint loader to download files locally """
-    datasource_files = []
+    loader = OneDriveReader(
+        client_id=ONEDRIVE_CLIENT_ID,
+        tenant_id=ONEDRIVE_TENANT_ID,
+        client_secret=ONEDRIVE_CLIENT_SECRET,
+        userprincipalname=ONEDRIVE_PRINCIPLE_NAME,
+        folder_path=sharepoint_folder
+    )
     access_token = loader._authenticate_with_msal()
     doc_metadata = loader._connect_download_and_return_metadata(
-        access_token, 
-        temp_dir, 
-        sharepoint_folder, 
-        False, 
+        access_token,
+        temp_dir,
+        sharepoint_folder,
+        False,
         userprincipalname=loader.userprincipalname,
         isRelativePath=True
     )
-    
-    for doc_path, doc_data in doc_metadata.items():    
-      # create DataSourceFile object
+
+    # return a list of DataSourceFile
+    datasource_files = []
+    for doc_path in doc_metadata:
+      # create DataSourceFile object from loader metadata
+      doc_data = doc_metadata[doc_path]
       datasource_file = DataSourceFile(
         doc_name = doc_data["file_name"],
         src_url = doc_data["file_id"],
