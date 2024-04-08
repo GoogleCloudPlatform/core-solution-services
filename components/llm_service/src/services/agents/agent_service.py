@@ -13,8 +13,7 @@
 # limitations under the License.
 
 """ Agent service """
-# pylint: disable=consider-using-dict-items,consider-iterating-dictionary,
-# pylint: unused-argument,broad-exception-raised
+# pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-argument,broad-exception-raised,broad-exception-caught
 
 import re
 import ast
