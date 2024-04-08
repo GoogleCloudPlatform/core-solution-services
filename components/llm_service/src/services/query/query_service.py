@@ -184,7 +184,9 @@ async def generate_question_prompt(prompt: str,
   except ContextWindowExceededException:
     # if context window length is exceeded, summarize the reference chunks
     query_references = await summarize_references(query_references, llm_type)
-    question_prompt = get_question_prompt(prompt, chat_history, query_references)
+    question_prompt = get_question_prompt(
+      prompt, chat_history, query_references
+    )
 
     # check again
     try:
@@ -193,7 +195,9 @@ async def generate_question_prompt(prompt: str,
       # now try popping reference results
       while len(query_references) > MIN_QUERY_REFERENCES:
         query_references.pop()
-        question_prompt = get_question_prompt(prompt, chat_history, query_references)
+        question_prompt = get_question_prompt(
+          prompt, chat_history, query_references
+        )
         try:
           check_context_length(question_prompt, llm_type)
           break

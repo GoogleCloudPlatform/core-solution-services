@@ -33,7 +33,9 @@ Question: {question}
 Helpful Answer:"""
 
 QUESTION_PROMPT = PromptTemplate(
-    template=prompt_template, input_variables=["context", "chat_history", "question"]
+    template=prompt_template, input_variables=[
+        "context", "chat_history", "question"
+    ]
 )
 
 summary_template = """
