@@ -80,7 +80,9 @@ class SharePointDataSource(DataSource):
       for doc in datasource_files:
         blob = bucket.blob(doc.doc_name)
         blob.upload_from_filename(doc.local_path)
-        doc.gcs_path = blob.path
+        
+        # return public link to blob
+        doc.gcs_path = blob.public_url
 
     return datasource_files
 
