@@ -33,6 +33,7 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse)
 from services.llm_generate import llm_chat
+from services.agents.agent_service import get_agent_config_by_name
 
 
 Logger = Logger.get_logger(__file__)
@@ -305,7 +306,7 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   user_chat = UserChat.find_by_id(chat_id)
   if user_chat is None:
     raise ResourceNotFoundException(f"Chat {chat_id} not found ")
-  llm_type = user_chat.llm_type
+  llm_type = get_agent_config_by_name("Chat")["llm_type"]
 
   try:
     response = await llm_chat(prompt, llm_type, user_chat)

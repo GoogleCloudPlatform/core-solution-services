@@ -271,11 +271,11 @@ class ModelConfig():
     Initialize and set config for providers, models and embeddings, based
     on current config dicts (loaded from a config file), environment variables
     and secrets associated with the project.
-    
+
     This method performs the following:
-    
+
     - Validate model config, by checking model type and keys
-    
+
     - Set enabled flags for models.
       A model is enabled if its config setting is enabled, environment
       variables (which override config file settings) are set to true if
@@ -283,7 +283,7 @@ class ModelConfig():
       API key is present (if applicable).
 
     - Set API keys for models.
-    
+
     - Instantiate model classes and store in the config dicts for models and
     Embeddings.
 
@@ -432,6 +432,8 @@ class ModelConfig():
     provider = model_config.get(KEY_PROVIDER, None)
     if provider is not None:
       provider_config = self.get_provider_config(provider)
+      Logger.info(f"provider = {provider}")
+      Logger.info(f"provider_config = {provider_config}")
     return provider, provider_config
 
   def get_provider_models(self, provider_id: str) -> List[str]:
@@ -455,14 +457,21 @@ class ModelConfig():
   def get_provider_value(self, provider_id: str, key: str,
       model_id: str=None, default=None) -> Any:
     """ get config value from provider model config """
+
+    Logger.info("Get provider value:")
+    Logger.info(f"provider_id={provider_id}")
+    Logger.info(f"model_id={model_id}")
+
     if model_id is None:
       # get global provider value
       provider_config = self.get_provider_config(provider_id)
       value = provider_config.get(key, default)
     else:
       provider_config = self.get_provider_model_config(provider_id)
+      Logger.info(f"provider_config={provider_config}")
       model_config = provider_config.get(model_id)
       value = model_config.get(key, default)
+
     if value is None:
       Logger.error(f"key {key} for provider {provider_id} is None")
     return value
@@ -564,7 +573,7 @@ class ModelConfig():
     return api_key
 
   def instantiate_model_class(self, model_id: str) -> Callable:
-    """ 
+    """
     Instantiate the model class for providers that use them (e.g. Langchain)
     """
     langchain_classes = load_langchain_classes()
@@ -597,8 +606,8 @@ class ModelConfig():
     return model_class_instance
 
   def load_model_config(self):
-    """ 
-    Load model config dicts.  
+    """
+    Load model config dicts.
     Refresh api keys and set enabled flags for all models.
     """
     self.read_model_config()
@@ -640,7 +649,7 @@ class ModelConfig():
     Args:
       model_id: model identifier
       model_config: model config dict
-    
+
     Raises:
       RuntimeError if model download fails
       InvalidModelConfigException if config is invalid/missing

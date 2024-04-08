@@ -17,9 +17,7 @@
 # pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
 
 import os
-from common.utils.logging_handler import Logger
 
-Logger = Logger.get_logger(__file__)
 
 PROJECT_ID = os.environ.get("PROJECT_ID", None)
 API_BASE_URL = os.environ.get("API_BASE_URL", None)
