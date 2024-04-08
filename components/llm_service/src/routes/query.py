@@ -216,7 +216,7 @@ def get_chat(query_id: str):
     query_data = user_query.get_fields(reformat_datetime=True)
     query_data["id"] = user_query.id
 
-    Logger.info(f"Successfully retrieved user query_data={query_data}")
+    Logger.info(f"Successfully retrieved user query {query_id}")
     return {
       "success": True,
       "message": f"Successfully retrieved user query {query_id}",
@@ -423,9 +423,10 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
     if not (doc_url.startswith("gs://")
             or doc_url.startswith("http://")
             or doc_url.startswith("https://")
-            or doc_url.startswith("bq://")):
+            or doc_url.startswith("bq://")
+            or doc_url.startswith("shpt://")):
       return BadRequest(
-          "doc_url must start with gs://, http:// or https://, or bq://")
+          "doc_url must start with gs://, http:// or https://, bq://, shpt://")
 
     if doc_url.endswith(".pdf"):
       return BadRequest(
@@ -652,7 +653,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "
                 f"query_result={query_result} "
-                f"query_references={query_reference_dicts}")
+                f"query_references={[repr(qe) for qe in query_references]}")
 
     return {
         "success": True,

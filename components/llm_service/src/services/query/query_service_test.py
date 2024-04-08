@@ -180,7 +180,7 @@ class FakeDataSource(DataSource):
     return chunk_list
 
 @pytest.mark.asyncio
-@mock.patch("services.query.query_service.llm_generate.llm_chat")
+@mock.patch("services.query.query_service.llm_chat")
 @mock.patch("services.query.query_service.query_search")
 async def test_query_generate(mock_query_search, mock_llm_chat,
                         restore_config, create_engine, create_user,
