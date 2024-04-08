@@ -422,7 +422,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
     if not (doc_url.startswith("gs://")
             or doc_url.startswith("http://")
             or doc_url.startswith("https://")
-            or doc_url.startswith("bq://"))
+            or doc_url.startswith("bq://")
             or doc_url.startswith("shpt://")):
       return BadRequest(
           "doc_url must start with gs://, http:// or https://, bq://, shpt://")
