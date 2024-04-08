@@ -80,7 +80,7 @@ async def query_generate(
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
-            sentence_ranking=False) -> \
+            rank_sentences=False) -> \
                 Tuple[QueryResult, List[QueryReference]]:
   """
   Execute a query over a query engine and generate a response.
@@ -96,7 +96,7 @@ async def query_generate(
     q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
-    sentence_ranking (optional): rank sentences in retrieved chunks
+    rank_sentences: (optional): rank sentences in retrieved chunks
 
   Returns:
     QueryResult object,
@@ -120,7 +120,7 @@ async def query_generate(
 
   # perform retrieval
   query_references = retrieve_references(prompt, q_engine, user_id,
-                                         sentence_ranking)
+                                         rank_sentences)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -133,8 +133,7 @@ async def query_generate(
       await generate_question_prompt(prompt,
                                      llm_type,
                                      query_references,
-                                     user_query,
-                                     sentence_ranking)
+                                     user_query)
 
   # send prompt to model
   question_response = await llm_chat(question_prompt, llm_type)
@@ -418,6 +417,85 @@ def get_similarity(query_embeddings, sentence_embeddings) -> list:
     cos_sim.append(cosine[0])
 
   return cos_sim
+
+async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
+  """
+  Handle a batch job request for query generation.
+
+  Args:
+    request_body: dict of query params
+    job: BatchJobModel model object
+  Returns:
+    dict containing job meta data
+  """
+  query_engine_id = request_body.get("query_engine_id")
+  prompt = request_body.get("prompt")
+  user_id = request_body.get("user_id")
+  user_query_id = request_body.get("user_query_id", None)
+  llm_type = request_body.get("llm_type")
+  rank_sentences = request_body.get("rank_sentences", None)
+
+  q_engine = QueryEngine.find_by_id(query_engine_id)
+  if q_engine is None:
+    raise ResourceNotFoundException(f"Query Engine id {query_engine_id}")
+
+  user_query = None
+  if user_query_id:
+    user_query = UserQuery.find_by_id(user_query_id)
+    if user_query is None:
+      raise ResourceNotFoundException(f"UserQuery id {user_query_id}")
+
+  Logger.info(f"Starting batch job for query on [{q_engine.name}] "
+              f"job id [{job.id}], request_body=[{request_body}]")
+
+  query_result, query_references = await query_generate(
+      user_id, prompt, q_engine, llm_type, user_query, rank_sentences)
+
+  # update user query
+  user_query, query_reference_dicts = \
+      update_user_query(prompt,
+                        query_result,
+                        user_id,
+                        q_engine,
+                        query_references,
+                        user_query)
+
+  # update result data in batch job model
+  result_data = {
+    "query_engine_id": q_engine.id,
+    "query_result_id": query_result.id,
+    "user_query_id": user_query.id,
+    "query_references": query_reference_dicts
+  }
+  job.result_data = result_data
+  job.save(merge=True)
+
+  Logger.info(f"Completed batch job query execute for {q_engine.name}")
+
+  return result_data
+
+def update_user_query(prompt: str,
+                      query_result: QueryResult,
+                      user_id: str,
+                      q_engine: QueryEngine,
+                      query_references: List[QueryReference],
+                      user_query: UserQuery = None) -> \
+                      Tuple[UserQuery, dict]:
+  """ Save user query history """
+  query_reference_dicts = [
+    ref.get_fields(reformat_datetime=True) for ref in query_references
+  ]
+
+  # create user query if needed
+  if user_query is None:
+    user_query = UserQuery(user_id=user_id,
+                          query_engine_id=q_engine.id,
+                          prompt=prompt)
+    user_query.save()
+  user_query.update_history(prompt,
+                            query_result.response,
+                            query_reference_dicts)
+  return user_query, query_reference_dicts
 
 def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   """

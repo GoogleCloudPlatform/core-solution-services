@@ -24,7 +24,8 @@ from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
-from common.utils.config import JOB_TYPE_QUERY_ENGINE_BUILD
+from common.utils.config import (JOB_TYPE_QUERY_ENGINE_BUILD,
+                                 JOB_TYPE_QUERY_EXECUTE)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  PayloadTooLargeError)
@@ -44,7 +45,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import (query_generate,
-                                          delete_engine)
+                                          delete_engine, update_user_query)
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -502,31 +503,53 @@ async def query(query_engine_id: str,
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   llm_type = genconfig_dict.get("llm_type")
-  sentence_references = genconfig_dict.get("sentence_ranking", True)
-  Logger.info(f"sentence_ranking = {sentence_ranking}")
+  rank_sentences = genconfig_dict.get("rank_sentences", False)
+  Logger.info(f"rank_sentences = {rank_sentences}")
 
   user = User.find_by_email(user_data.get("email"))
+  async_query = genconfig_dict.get("async_query", False)
 
+  if async_query:
+    # launch batch job to perform query
+    try:
+      data = {
+        "query_engine_id": query_engine_id,
+        "prompt": prompt,
+        "llm_type": llm_type,
+        "user_id": user.id,
+        "user_query_id": None,
+        "rank_sentences": rank_sentences
+      }
+      env_vars = {
+        "DATABASE_PREFIX": DATABASE_PREFIX,
+        "PROJECT_ID": PROJECT_ID,
+        "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
+        "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
+        "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
+        "PG_HOST": PG_HOST,
+      }
+      response = initiate_batch_job(data, JOB_TYPE_QUERY_EXECUTE, env_vars)
+      Logger.info(f"Batch job response: {response}")
+      return response
+    except Exception as e:
+      Logger.error(e)
+      Logger.error(traceback.print_exc())
+      raise InternalServerError(str(e)) from e
+
+  # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type, sentence_ranking)
+          user.id, prompt, q_engine, llm_type, rank_sentences)
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
-    query_reference_dicts = [
-      ref.get_fields(reformat_datetime=True) for ref in query_references
-    ]
 
     # save user query history
-    query_reference_dicts = [
-      ref.get_fields(reformat_datetime=True) for ref in query_references
-    ]
-    user_query = UserQuery(user_id=user.id,
-                          query_engine_id=q_engine.id,
-                          prompt=prompt)
-    user_query.save()
-    user_query.update_history(prompt,
-                              query_result.response,
-                              query_reference_dicts)
+    user_query, query_reference_dicts = \
+        update_user_query(prompt,
+                          query_result,
+                          user.id,
+                          q_engine,
+                          query_references, None)
 
     return {
         "success": True,
@@ -577,21 +600,54 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
 
   llm_type = genconfig_dict.get("llm_type")
 
-  try:
-    q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
+  rank_sentences = genconfig_dict.get("rank_sentences", False)
+  Logger.info(f"rank_sentences = {rank_sentences}")
 
+  q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
+
+  async_query = genconfig_dict.get("async_query", False)
+
+  if async_query:
+    # launch batch job to perform query
+    try:
+      data = {
+        "query_engine_id": q_engine.id,
+        "prompt": prompt,
+        "llm_type": llm_type,
+        "user_id": user_query.user_id,
+        "user_query_id": user_query.id,
+        "rank_sentences": rank_sentences
+      }
+      env_vars = {
+        "DATABASE_PREFIX": DATABASE_PREFIX,
+        "PROJECT_ID": PROJECT_ID,
+        "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
+        "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
+        "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
+        "PG_HOST": PG_HOST,
+      }
+      response = initiate_batch_job(data, JOB_TYPE_QUERY_EXECUTE, env_vars)
+      Logger.info(f"Batch job response: {response}")
+      return response
+    except Exception as e:
+      Logger.error(e)
+      Logger.error(traceback.print_exc())
+      raise InternalServerError(str(e)) from e
+
+  # perform normal synchronous query
+  try:
     query_result, query_references = await query_generate(user_query.user_id,
                                                           prompt,
                                                           q_engine,
                                                           llm_type,
                                                           user_query)
-    query_reference_dicts = [
-      ref.get_fields(reformat_datetime=True) for ref in query_references
-    ]
-    user_query.update_history(prompt,
-                              query_result.response,
-                              query_reference_dicts)
-    user_query.save()
+    # save user query history
+    _, query_reference_dicts = \
+        update_user_query(prompt,
+                          query_result,
+                          user_query.user_id,
+                          q_engine,
+                          query_references, None)
 
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "
