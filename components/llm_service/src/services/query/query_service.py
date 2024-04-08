@@ -79,7 +79,8 @@ async def query_generate(
             prompt: str,
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
-            user_query: Optional[UserQuery] = None) -> \
+            user_query: Optional[UserQuery] = None,
+            sentence_ranking=False) -> \
                 Tuple[QueryResult, List[QueryReference]]:
   """
   Execute a query over a query engine and generate a response.
@@ -95,6 +96,7 @@ async def query_generate(
     q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
+    sentence_ranking (optional): rank sentences in retrieved chunks
 
   Returns:
     QueryResult object,
@@ -117,7 +119,8 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = retrieve_references(prompt, q_engine, user_id)
+  query_references = retrieve_references(prompt, q_engine, user_id,
+                                         sentence_ranking)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -130,7 +133,8 @@ async def query_generate(
       await generate_question_prompt(prompt,
                                      llm_type,
                                      query_references,
-                                     user_query)
+                                     user_query,
+                                     sentence_ranking)
 
   # send prompt to model
   question_response = await llm_chat(question_prompt, llm_type)
@@ -227,7 +231,8 @@ async def summarize_references(query_references: List[QueryReference],
 
 def retrieve_references(prompt: str,
                         q_engine: QueryEngine,
-                        user_id: str) -> List[QueryReference]:
+                        user_id: str,
+                        rank_sentences=False)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -252,7 +257,7 @@ def retrieve_references(prompt: str,
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
-    query_references = query_search(q_engine, prompt)
+    query_references = query_search(q_engine, prompt, rank_sentences)
   return query_references
 
 def query_search(q_engine: QueryEngine,
