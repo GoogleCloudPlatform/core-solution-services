@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends
 
 from common.models import (QueryEngine,
                            User, UserQuery, QueryDocument)
-from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
+from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH, QUERY_HUMAN
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
@@ -508,9 +508,19 @@ async def query(query_engine_id: str,
   Logger.info(f"rank_sentences = {rank_sentences}")
 
   user = User.find_by_email(user_data.get("email"))
-  async_query = genconfig_dict.get("async_query", False)
+  run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
 
-  if async_query:
+  if run_as_batch_job:
+    # create user query object to hold the query state
+    user_query = UserQuery(user_id=user.user_id,
+                           prompt=prompt, query_engine_id=q_engine.id)
+    user_query.update_history(custom_entry={
+      f"{QUERY_HUMAN}": prompt,
+    })
+    user_query.save()
+    query_data = user_query.get_fields(reformat_datetime=True)
+    query_data["id"] = query_data.id
+
     # launch batch job to perform query
     try:
       data = {
@@ -518,7 +528,7 @@ async def query(query_engine_id: str,
         "prompt": prompt,
         "llm_type": llm_type,
         "user_id": user.id,
-        "user_query_id": None,
+        "user_query_id": user_query.id,
         "rank_sentences": rank_sentences
       }
       env_vars = {
@@ -531,7 +541,15 @@ async def query(query_engine_id: str,
       }
       response = initiate_batch_job(data, JOB_TYPE_QUERY_EXECUTE, env_vars)
       Logger.info(f"Batch job response: {response}")
-      return response
+
+      return {
+        "success": True,
+        "message": "Successfully ran query in batch mode",
+        "data": {
+          "query": query_data,
+          "batch_job": response["data"],
+        },
+      }
     except Exception as e:
       Logger.error(e)
       Logger.error(traceback.print_exc())
@@ -606,9 +624,9 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
 
   q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
 
-  async_query = genconfig_dict.get("async_query", False)
+  run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
 
-  if async_query:
+  if run_as_batch_job:
     # launch batch job to perform query
     try:
       data = {
@@ -629,7 +647,18 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
       }
       response = initiate_batch_job(data, JOB_TYPE_QUERY_EXECUTE, env_vars)
       Logger.info(f"Batch job response: {response}")
-      return response
+
+      query_data = user_query.get_fields(reformat_datetime=True)
+      query_data["id"] = query_data.id
+
+      return {
+        "success": True,
+        "message": "Successfully ran query in batch mode",
+        "data": {
+          "query": query_data,
+          "batch_job": response["data"],
+        },
+      }
     except Exception as e:
       Logger.error(e)
       Logger.error(traceback.print_exc())
