@@ -96,7 +96,7 @@ def api_request(method: str, api_url: str,
 
       if status_code == 401:
         logging.error(
-            f"Unauthorized when calling API: {api_url}")
+            "Unauthorized when calling API: %s", api_url)
         st.session_state.error_msg = \
             "Unauthorized or session expired. " \
             "Please [login]({APP_BASE_PATH}/Login) again."
