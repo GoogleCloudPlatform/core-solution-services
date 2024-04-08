@@ -45,7 +45,8 @@ from services.query.vector_store import (VectorStore,
                                          PostgresVectorStore,
                                          NUM_MATCH_RESULTS)
 from services.query.data_source import DataSource
-from services.query.web_datasource import WebDataSource, SharePointDataSource
+from services.query.web_datasource import WebDataSource
+from services.query.sharepoint_datasource import SharePointDataSource
 from services.query.vertex_search import (build_vertex_search,
                                           query_vertex_search,
                                           delete_vertex_search)
