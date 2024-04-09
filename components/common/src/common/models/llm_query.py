@@ -85,7 +85,7 @@ class UserQuery(BaseModel):
 
     if references:
       self.history.append({QUERY_AI_REFERENCES: references})
-    
+
     self.save(merge=True)
 
   @classmethod
