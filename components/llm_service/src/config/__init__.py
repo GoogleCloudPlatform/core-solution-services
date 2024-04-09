@@ -57,9 +57,10 @@ from config.config import (
     ENABLE_COHERE_LLM,
 
     # default LLM models
+    DEFAULT_LLM_TYPE,
+    DEFAULT_CHAT_LLM_TYPE,
     DEFAULT_QUERY_CHAT_MODEL,
     DEFAULT_QUERY_EMBEDDING_MODEL,
-    DEFAULT_LLM_TYPE,
 
     # query engine and other defaults
     DEFAULT_WEB_DEPTH_LIMIT,

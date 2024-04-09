@@ -26,15 +26,13 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
 from common.utils.logging_handler import Logger
-from config import ERROR_RESPONSES, get_model_config
+from config import ERROR_RESPONSES, DEFAULT_CHAT_LLM_TYPE, get_model_config
 from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
                                 LLMUserChatResponse,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse)
 from services.llm_generate import llm_chat
-from services.agents.agent_service import get_agent_config_by_name
-
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
@@ -306,7 +304,11 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   user_chat = UserChat.find_by_id(chat_id)
   if user_chat is None:
     raise ResourceNotFoundException(f"Chat {chat_id} not found ")
-  llm_type = get_agent_config_by_name("Chat")["llm_type"]
+  
+  # set llm type for chat
+  llm_type = genconfig_dict.get("llm_type", None)
+  if llm_type is None:
+    llm_type = user_chat.llm_type or DEFAULT_CHAT_LLM_TYPE
 
   try:
     response = await llm_chat(prompt, llm_type, user_chat)
