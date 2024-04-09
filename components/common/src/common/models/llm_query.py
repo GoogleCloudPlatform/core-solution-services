@@ -188,13 +188,16 @@ class QueryReference(BaseModel):
   It points to a specific chunk of text in one of the indexed documents.
 
   """
-  id = IDField()
-  query_engine_id = TextField(required=True)
-  query_engine = TextField(required=True)
-  document_id = TextField(required=True)
-  document_url = TextField(required=True)
-  chunk_id = TextField(required=False)
-  document_text = TextField(required=False)
+  id = IDField()  # All modalities
+  query_engine_id = TextField(required=True)  # All modalities
+  query_engine = TextField(required=True)  # All modalities
+  document_id = TextField(required=True)  # All modalities
+  document_url = TextField(required=True)  # All modalities
+  chunk_id = TextField(required=False)  # All modalities
+  page = TextField(required=False)  # Text or image only
+  document_text = TextField(required=False)  # Text only
+  timestamp_start = NumberField(required=False)  # Video or audio only
+  timestamp_stop = NumberField(required=False)  # Video or audio only
 
   class Meta:
     ignore_none_field = False
@@ -312,7 +315,7 @@ class QueryDocumentChunk(BaseModel):
   """
   QueryDocumentChunk ORM class.
   """
-  id = IDField()  # For all modalities
+  id = IDField()  # All modalities
   query_engine_id = TextField(required=True)  # All modalities
   query_document_id = TextField(required=True)  # All modalities
   index = NumberField(required=True)  # All modalities
