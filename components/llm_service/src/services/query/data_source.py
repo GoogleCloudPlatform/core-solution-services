@@ -21,7 +21,6 @@ from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.models import QueryEngine
 from config import PROJECT_ID
-from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import CSVLoader
 from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
@@ -138,7 +137,7 @@ class DataSource:
     if doc_text_list is not None:
       # combine text from all pages to try to avoid small chunks
       # when there is just title text on a page, for example
-      doc_text = '\n'.join(doc_text_list)
+      doc_text = "\n".join(doc_text_list)
       # llama-index base class that is used by all parsers
       doc = Document(text=doc_text)
       # a node = a chunk of a page
@@ -146,7 +145,7 @@ class DataSource:
       # this is a sentence parser with overlap --
       # each text chunk will include the specified
       # number of sentences before and after the current sentence
-      text_chunks = [c.metadata['window_text'] for c in chunks]
+      text_chunks = [c.metadata["window_text"] for c in chunks]
 
       if all(element == "" for element in text_chunks):
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
