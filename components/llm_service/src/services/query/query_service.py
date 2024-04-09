@@ -129,6 +129,11 @@ async def query_generate(
       len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
 
+  # update user query with ranked references
+  if user_query:
+    update_user_query(
+        prompt, None, user_id, q_engine, query_references, user_query)
+
   # generate question prompt
   question_prompt, query_references = \
       await generate_question_prompt(prompt,
@@ -459,7 +464,7 @@ async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
   # update user query
   user_query, query_reference_dicts = \
       update_user_query(prompt,
-                        query_result,
+                        query_result.response,
                         user_id,
                         q_engine,
                         query_references,
@@ -480,7 +485,7 @@ async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
   return result_data
 
 def update_user_query(prompt: str,
-                      query_result: QueryResult,
+                      response: str,
                       user_id: str,
                       q_engine: QueryEngine,
                       query_references: List[QueryReference],
@@ -497,9 +502,9 @@ def update_user_query(prompt: str,
                           query_engine_id=q_engine.id,
                           prompt=prompt)
     user_query.save()
-  user_query.update_history(prompt,
-                            query_result.response,
-                            query_reference_dicts)
+  user_query.update_history(prompt=prompt,
+                            response=response,
+                            query_references=query_reference_dicts)
   return user_query, query_reference_dicts
 
 def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:

@@ -565,7 +565,7 @@ async def query(query_engine_id: str,
     # save user query history
     user_query, query_reference_dicts = \
         update_user_query(prompt,
-                          query_result,
+                          query_result.response,
                           user.id,
                           q_engine,
                           query_references, None)
@@ -674,7 +674,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
     # save user query history
     _, query_reference_dicts = \
         update_user_query(prompt,
-                          query_result,
+                          query_result.response,
                           user_query.user_id,
                           q_engine,
                           query_references, None)
