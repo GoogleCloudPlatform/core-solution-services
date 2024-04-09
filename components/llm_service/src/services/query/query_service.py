@@ -301,18 +301,62 @@ def query_search(q_engine: QueryEngine,
       raise ResourceNotFoundException(
         f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
 
+    query_reference = create_query_reference(
+      q_engine=q_engine,
+      query_doc=query_doc,
+      doc_chunk=doc_chunk,
+      query_embeddings=query_embeddings,
+      rank_sentences=rank_sentences
+    )
+    query_reference.save()
+    query_references.append(query_reference)
+
+  Logger.info(f"Retrieved {len(query_references)} "
+               f"references={query_references}")
+  return query_references
+
+
+# Create a single QueryReference object
+def create_query_reference(q_engine: QueryEngine,
+                           query_doc: QueryDocument,
+                           doc_chunk: QueryDocumentChunk,
+                           query_embeddings: List[Optional[List[float]]],
+                           rank_sentences: bool = False,
+) -> QueryReference:
+  """
+  Create a single QueryReference object, with appropriate fields
+  for modality
+  
+  Args:
+    q_engine: The QueryEngine object that was searched
+    query_doc: The QueryDocument object retreived from q_engine
+    doc_chunk: The QueryDocumentChunk object of the retrieved query_doc
+    query_embeddings: The embedding vector for the query prompt
+    
+  Returns:
+    query_reference: The QueryReference object corresponding to doc_chunk
+  """
+
+  # Get modality of document chunk, make lowercase
+  modality = doc_chunk.modality.casefold()
+
+  # Clean up text chunk
+  if modality=="text":
+
+    # Clean up text in document chunk.
     clean_text = doc_chunk.clean_text
     if not clean_text:
       # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
+    # Pick out sentences from document chunk and rank them.
     if rank_sentences:
       # Assemble sentences from a document chunk. Currently it gets the
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
-      # for backwards compatibility with legacy engines break chunks
-      # into sentences here
       if not sentences or len(sentences) == 0:
+        # for backwards compatibility with legacy engines break chunks
+        # into sentences here
         sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
       # Only update clean_text when sentences is not empty.
@@ -323,21 +367,46 @@ def query_search(q_engine: QueryEngine,
             expand_neighbors=2, highlight_top_sentence=True)
         clean_text = " ".join(top_sentences)
 
-    # save query reference
-    query_reference = QueryReference(
-      query_engine_id=q_engine.id,
-      query_engine=q_engine.name,
-      document_id=query_doc.id,
-      document_url=query_doc.doc_url,
-      chunk_id=doc_chunk.id,
-      document_text=clean_text
-    )
-    query_reference.save()
-    query_references.append(query_reference)
+  # Clean up image chunk
+  elif modality=="image":
+    pass
 
-  Logger.info(f"Retrieved {len(query_references)} "
-               f"references={query_references}")
-  return query_references
+  # Clean up video chunk
+  elif modality=="video":
+    pass
+
+  # Clean up audio chunk
+  elif modality=="audio":
+    pass
+
+  # Create dict to hold all fields of query_reference,
+  # depending on its modality
+  query_reference_dict = {}
+  # For chunk of any modality
+  query_reference_dict["query_engine_id"]=q_engine.id
+  query_reference_dict["query_engine"]=q_engine.name
+  query_reference_dict["document_id"]=query_doc.id
+  query_reference_dict["document_url"]=query_doc.doc_url
+  query_reference_dict["modality"]=doc_chunk.modality
+  query_reference_dict["chunk_id"]=doc_chunk.id
+  # For text chunk only
+  if modality=="text":
+    query_reference_dict["page"]=doc_chunk.page
+    query_reference_dict["document_text"]=clean_text
+  # For image chunk only
+  elif modality=="image":
+    query_reference_dict["page"]=doc_chunk.page
+  # For video and audio chunks only
+  elif modality=="video" | modality=="audio":
+    query_reference_dict["timestamp_start"]=doc_chunk.timestamp_start
+    query_reference_dict["timestamp_stop"]=doc_chunk.timestamp_stop
+
+  # Create query_reference out of dict
+  query_reference = QueryReference.from_dict(query_reference_dict)
+
+  # Return query_reference
+  return query_reference
+
 
 def rerank_references(prompt: str,
                       query_references: List[QueryReference]) -> \
