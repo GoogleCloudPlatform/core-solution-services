@@ -142,10 +142,12 @@ def get_urls_for_query_engine(query_engine_id: str):
 
 
 @router.get(
-    "/user/{user_id}",
-    name="Get all Queries for a user",
+    "/user",
+    name="Get all Queries for current logged-in user",
     response_model=LLMUserAllQueriesResponse)
-def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
+def get_query_list(skip: int = 0,
+                   limit: int = 20,
+                   user_data: dict = Depends(validate_token)):
   """
   Get user queries for authenticated user.  Query data does not include
   history to slim payload.  To retrieve query history use the
@@ -160,20 +162,19 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
       LLMUserAllQueriesResponse
   """
   try:
-    Logger.info(f"Get all Queries for a user={user_id}")
+    user_email = user_data.get("email")
+    Logger.info(f"Get all Queries for a user={user_email}")
     if skip < 0:
       raise ValidationError("Invalid value passed to \"skip\" query parameter")
 
     if limit < 1:
       raise ValidationError("Invalid value passed to \"limit\" query parameter")
 
-    # TODO: RBAC check. This call allows the authenticated user to access
-    # other user queries
-    user = User.collection.filter("user_id", "==", user_id).get()
+    user = User.find_by_email(user_email)
     if user is None:
-      raise ResourceNotFoundException(f"User {user_id} not found ")
+      raise ResourceNotFoundException(f"User {user_email} not found ")
 
-    user_queries = UserQuery.find_by_user(user.user_id, skip=skip, limit=limit)
+    user_queries = UserQuery.find_by_user(user.id, skip=skip, limit=limit)
 
     query_list = []
     for i in user_queries:
@@ -183,10 +184,10 @@ def get_query_list(user_id: str, skip: int = 0, limit: int = 20):
       del query_data["history"]
       query_list.append(query_data)
 
-    Logger.info(f"Successfully retrieved user queries query_list={query_list}")
+    Logger.info(f"Successfully retrieved {len(query_list)} user queries.")
     return {
       "success": True,
-      "message": f"Successfully retrieved user queries for user {user.user_id}",
+      "message": f"Successfully retrieved user queries for user {user.id}",
       "data": query_list
     }
   except ValidationError as e:
@@ -214,7 +215,7 @@ def get_chat(query_id: str):
     query_data = user_query.get_fields(reformat_datetime=True)
     query_data["id"] = user_query.id
 
-    Logger.info(f"Successfully retrieved user query_data={query_data}")
+    Logger.info(f"Successfully retrieved user query {query_id}")
     return {
       "success": True,
       "message": f"Successfully retrieved user query {query_id}",
@@ -421,9 +422,10 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
     if not (doc_url.startswith("gs://")
             or doc_url.startswith("http://")
             or doc_url.startswith("https://")
-            or doc_url.startswith("bq://")):
+            or doc_url.startswith("bq://")
+            or doc_url.startswith("shpt://")):
       return BadRequest(
-          "doc_url must start with gs://, http:// or https://, or bq://")
+          "doc_url must start with gs://, http:// or https://, bq://, shpt://")
 
     if doc_url.endswith(".pdf"):
       return BadRequest(
@@ -512,10 +514,24 @@ async def query(query_engine_id: str,
     query_reference_dicts = [
       ref.get_fields(reformat_datetime=True) for ref in query_references
     ]
+
+    # save user query history
+    query_reference_dicts = [
+      ref.get_fields(reformat_datetime=True) for ref in query_references
+    ]
+    user_query = UserQuery(user_id=user.id,
+                          query_engine_id=q_engine.id,
+                          prompt=prompt)
+    user_query.save()
+    user_query.update_history(prompt,
+                              query_result.response,
+                              query_reference_dicts)
+
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
+            "user_query_id": user_query.id,
             "query_result": query_result,
             "query_references": query_reference_dicts
         }
@@ -528,11 +544,12 @@ async def query(query_engine_id: str,
 
 @router.post(
     "/{user_query_id}",
-    name="Make a query to a query engine based on a prior user query",
+    name="Continue chat with a prior user query",
     response_model=LLMQueryResponse)
 async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   """
-  Send a query to a query engine with a prior user query as context
+  Continue a prior user query.  Perform a new search and
+  add those references along with prior query/chat history as context.
 
   Args:
       user_query_id (str): id of previous user query
@@ -570,18 +587,26 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
     query_reference_dicts = [
       ref.get_fields(reformat_datetime=True) for ref in query_references
     ]
+    user_query.update_history(prompt,
+                              query_result.response,
+                              query_reference_dicts)
+    user_query.save()
+
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "
                 f"query_result={query_result} "
-                f"query_references={query_reference_dicts}")
+                f"query_references={[repr(qe) for qe in query_references]}")
+
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
+            "user_query_id": user_query.id,
             "query_result": query_result,
             "query_references": query_reference_dicts
         }
     }
+
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())

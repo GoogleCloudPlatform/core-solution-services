@@ -34,18 +34,24 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
-from services import llm_generate, embeddings
-from services.query import query_prompts
+from services import embeddings
+from services.llm_generate import (get_context_prompt,
+                                   llm_chat,
+                                   check_context_length)
+from services.query.query_prompts import (get_question_prompt,
+                                          get_summarize_prompt)
 from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore,
                                          NUM_MATCH_RESULTS)
 from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
+from services.query.sharepoint_datasource import SharePointDataSource
 from services.query.vertex_search import (build_vertex_search,
                                           query_vertex_search,
                                           delete_vertex_search)
-from utils.errors import NoDocumentsIndexedException
+from utils.errors import (NoDocumentsIndexedException,
+                          ContextWindowExceededException)
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
@@ -66,6 +72,8 @@ VECTOR_STORES = {
 RERANK_MODEL_NAME = "cross-encoder"
 reranker = Reranker(RERANK_MODEL_NAME, verbose=0)
 
+# minimum number of references to return
+MIN_QUERY_REFERENCES = 2
 
 async def query_generate(
             user_id: str,
@@ -102,17 +110,6 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
-  # perform retrieval
-  query_references = retrieve_references(prompt, q_engine, user_id)
-
-  # only need to do this if integrated search from multiple child engines
-  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
-    len(query_references) > 1:
-    query_references = rerank_references(prompt, query_references)
-
-  # generate question prompt for chat model
-  question_prompt = query_prompts.question_prompt(prompt, query_references)
-
   # determine question generation model
   if llm_type is None:
     if q_engine.llm_type is not None:
@@ -120,11 +117,24 @@ async def query_generate(
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
-  # send question prompt to model
-  # TODO: pass user_query history to model as context for generation.
-  #       This requires refactoring the llm_chat method as it takes a
-  #       UserChat model now.  Instead it should take a chat history.
-  question_response = await llm_generate.llm_chat(question_prompt, llm_type)
+  # perform retrieval
+  query_references = retrieve_references(prompt, q_engine, user_id)
+
+  # Rerank references. Only need to do this if performing integrated search
+  # from multiple child engines.
+  if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
+      len(query_references) > 1:
+    query_references = rerank_references(prompt, query_references)
+
+  # generate question prompt
+  question_prompt, query_references = \
+      await generate_question_prompt(prompt,
+                                     llm_type,
+                                     query_references,
+                                     user_query)
+
+  # send prompt to model
+  question_response = await llm_chat(question_prompt, llm_type)
 
   # save query result
   query_ref_ids = [ref.id for ref in query_references]
@@ -135,19 +145,90 @@ async def query_generate(
                              response=question_response)
   query_result.save()
 
-  # save user query history
-  if user_query is None:
-    user_query = UserQuery(user_id=user_id,
-                           query_engine_id=q_engine.id,
-                           prompt=prompt)
-    user_query.save()
-
-  query_reference_dicts = [
-    ref.get_fields(reformat_datetime=True) for ref in query_references
-  ]
-  user_query.update_history(prompt, question_response, query_reference_dicts)
-
   return query_result, query_references
+
+async def generate_question_prompt(prompt: str,
+                                   llm_type: str,
+                                   query_references: List[QueryReference],
+                                   user_query=None) -> \
+                                   Tuple[str, QueryReference]:
+  """
+  Generate question prompt for RAG, given initial prompt and retrieved
+  references.  If necessary, trim context or references to fit context window
+  of generation model.
+
+  Args:
+    prompt: the original user prompt
+    llm_type: chat model to use for generation
+    query_references: list of retrieved query references
+    user_query (optional): existing user query for context
+
+  Returns:
+    question prompt (str)
+    list of QueryReference objects
+
+  Raises:
+    ContextWindowExceededException if the model context window is exceeded
+  """
+  # incorporate user query context in prompt if it exists
+  chat_history = ""
+  if user_query is not None:
+    chat_history = get_context_prompt(user_query=user_query)
+
+  # generate default prompt
+  question_prompt = get_question_prompt(prompt, chat_history, query_references)
+
+  # check prompt against context length of generation model
+  try:
+    check_context_length(question_prompt, llm_type)
+  except ContextWindowExceededException:
+    # if context window length is exceeded, summarize the reference chunks
+    query_references = await summarize_references(query_references, llm_type)
+    question_prompt = get_question_prompt(
+      prompt, chat_history, query_references
+    )
+
+    # check again
+    try:
+      check_context_length(question_prompt, llm_type)
+    except ContextWindowExceededException:
+      # now try popping reference results
+      while len(query_references) > MIN_QUERY_REFERENCES:
+        query_references.pop()
+        question_prompt = get_question_prompt(
+          prompt, chat_history, query_references
+        )
+        try:
+          check_context_length(question_prompt, llm_type)
+          break
+        except ContextWindowExceededException:
+          pass
+      # one final check - this will propagate the exception if the prompt
+      # is still too long
+      check_context_length(question_prompt, llm_type)
+
+  return question_prompt, query_references
+
+async def summarize_references(query_references: List[QueryReference],
+                         llm_type: str) -> List[QueryReference]:
+  """
+  Use an LLM to summarize the document text fields of a list of references.
+  Mutates the original objects and updates models in the DB with the
+  summarized text.
+
+  Args:
+    query_references: list of query references to summarize
+    llm_type: model to use to perform the summaries
+  Returns:
+    List of query references with summarized document_text fields
+  """
+  for query_ref in query_references:
+    summarize_prompt = get_summarize_prompt(query_ref.document_text)
+    summary = await llm_chat(summarize_prompt, llm_type)
+    Logger.info(f"generated summary with LLM {llm_type}: {summary}")
+    query_ref.document_text = summary
+    query_ref.update()
+  return query_references
 
 def retrieve_references(prompt: str,
                         q_engine: QueryEngine,
@@ -180,7 +261,8 @@ def retrieve_references(prompt: str,
   return query_references
 
 def query_search(q_engine: QueryEngine,
-                 query_prompt: str) -> List[QueryReference]:
+                 query_prompt: str,
+                 rank_sentences=False) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -188,6 +270,7 @@ def query_search(q_engine: QueryEngine,
   Args:
     q_engine: QueryEngine to search
     query_prompt (str):  user query
+    rank_sentences: rank sentence relevance in retrieved chunks
 
   Returns:
     list of QueryReference models
@@ -223,21 +306,22 @@ def query_search(q_engine: QueryEngine,
       # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
-    # Assemble sentences from a document chunk. Currently it gets the
-    # sentences from the top-ranked document chunk.
-    sentences = doc_chunk.sentences
-    # for backwards compatibility with legacy engines break chunks
-    # into sentences here
-    if not sentences or len(sentences) == 0:
-      sentences = text_helper.text_to_sentence_list(doc_chunk.text)
+    if rank_sentences:
+      # Assemble sentences from a document chunk. Currently it gets the
+      # sentences from the top-ranked document chunk.
+      sentences = doc_chunk.sentences
+      # for backwards compatibility with legacy engines break chunks
+      # into sentences here
+      if not sentences or len(sentences) == 0:
+        sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
-    # Only update clean_text when sentences is not empty.
-    Logger.info(f"Processing {len(sentences)} sentences.")
-    if sentences and len(sentences) > 0:
-      top_sentences = get_top_relevant_sentences(
-          q_engine, query_embeddings, sentences,
-          expand_neighbors=2, highlight_top_sentence=True)
-      clean_text = " ".join(top_sentences)
+      # Only update clean_text when sentences is not empty.
+      Logger.info(f"Processing {len(sentences)} sentences.")
+      if sentences and len(sentences) > 0:
+        top_sentences = get_top_relevant_sentences(
+            q_engine, query_embeddings, sentences,
+            expand_neighbors=2, highlight_top_sentence=True)
+        clean_text = " ".join(top_sentences)
 
     # save query reference
     query_reference = QueryReference(
@@ -661,6 +745,11 @@ def datasource_from_url(doc_url: str,
     return WebDataSource(storage_client,
                          bucket_name=bucket_name,
                          depth_limit=depth_limit)
+  elif doc_url.startswith("shpt://"):
+    # Create bucket name using query_engine name
+    bucket_name = SharePointDataSource.downloads_bucket_name(q_engine)
+    return SharePointDataSource(storage_client,
+                                bucket_name=bucket_name)
   else:
     raise InternalServerError(
         f"No datasource available for doc url [{doc_url}]")

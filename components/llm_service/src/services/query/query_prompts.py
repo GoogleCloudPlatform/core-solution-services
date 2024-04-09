@@ -16,17 +16,27 @@ Query prompt generator methods
 """
 from typing import List
 
-from services.query.query_prompt_config import QUESTION_PROMPT
+from services.query.query_prompt_config import QUESTION_PROMPT, SUMMARY_PROMPT
 from common.utils.logging_handler import Logger
 from common.models import QueryReference
 
 Logger = Logger.get_logger(__file__)
 
-def question_prompt(prompt: str, query_context: List[QueryReference]) -> str:
+def get_question_prompt(prompt: str,
+                        chat_history: str,
+                        query_context: List[QueryReference]) -> str:
   """ Create question prompt with context for LLM """
   Logger.info(f"Creating question prompt with context "
               f"for LLM prompt=[{prompt}]")
   context_list = [ref.document_text for ref in query_context]
   text_context = "\n\n".join(context_list)
-  question = QUESTION_PROMPT.format(question=prompt, context=text_context)
+  question = QUESTION_PROMPT.format(
+    question=prompt, chat_history=chat_history, context=text_context
+  )
   return question
+
+def get_summarize_prompt(original_text: str) -> str:
+  """ Create summarize prompt for LLM """
+  Logger.info(f"Creating summarize prompt for original text=[{original_text}]")
+  prompt = SUMMARY_PROMPT.format(original_text=original_text)
+  return prompt

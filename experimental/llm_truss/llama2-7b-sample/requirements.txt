@@ -1,9 +1,9 @@
-torch==2.0.1
+torch
 peft
 sentencepiece
 accelerate
 bitsandbytes
-google-cloud-secret-manager==2.16.1
+google-cloud-secret-manager
 einops
 scipy
 protobuf

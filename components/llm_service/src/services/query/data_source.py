@@ -22,7 +22,7 @@ from common.utils.logging_handler import Logger
 from common.models import QueryEngine
 from config import PROJECT_ID
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.document_loaders import CSVLoader
+from langchain_community.document_loaders import CSVLoader
 from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
