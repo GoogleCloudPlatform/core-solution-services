@@ -33,7 +33,7 @@ from config.model_config import (ModelConfig, VENDOR_OPENAI,
                                 PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
                                 PROVIDER_TRUSS, PROVIDER_LLM_SERVICE,
                                 VERTEX_LLM_TYPE_BISON_CHAT, TRUSS_LLM_LLAMA2_CHAT,
-                                VERTEX_LLM_TYPE_GECKO_EMBEDDING
+                                VERTEX_LLM_TYPE_GECKO_EMBEDDING,
                                 VERTEX_LLM_TYPE_GEMINI_PRO,
                                 VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
 
