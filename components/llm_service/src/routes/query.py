@@ -203,7 +203,7 @@ def get_query_list(skip: int = 0,
     "/{query_id}",
     name="Get user query",
     response_model=LLMUserQueryResponse)
-def get_chat(query_id: str):
+def get_query(query_id: str):
   """
   Get a specific user query by id
 
