@@ -304,7 +304,7 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   user_chat = UserChat.find_by_id(chat_id)
   if user_chat is None:
     raise ResourceNotFoundException(f"Chat {chat_id} not found ")
-  
+
   # set llm type for chat
   llm_type = genconfig_dict.get("llm_type", None)
   if llm_type is None:
