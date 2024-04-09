@@ -15,7 +15,8 @@
 """ Routing Agent """
 from typing import List, Tuple, Dict
 from langchain.agents import AgentExecutor
-from langchain.chains.router.llm_router import LLMRouterChain,RouterOutputParser
+from langchain.chains.router.llm_router import (
+    LLMRouterChain, RouterOutputParser)
 from langchain.chains.router.multi_prompt_prompt import MULTI_PROMPT_ROUTER_TEMPLATE
 from langchain.prompts import PromptTemplate
 from common.models import QueryEngine, User, UserChat, BatchJobModel, JobStatus

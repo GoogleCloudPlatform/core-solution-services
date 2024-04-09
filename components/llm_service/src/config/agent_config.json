@@ -2,13 +2,13 @@
   "Agents":
   {
     "Routing": {
-      "llm_type": "VertexAI-Gemini-Pro",
+      "llm_type": "VertexAI-Chat-Gemini-Pro-Langchain",
       "agent_type": "langchain_Conversational",
       "tools": "",
       "datasets": "fqhc_medical_transactions"
     },
     "Chat": {
-      "llm_type": "VertexAI-Gemini-Pro",
+      "llm_type": "VertexAI-Chat-Gemini-Pro-Langchain",
       "agent_type": "langchain_Conversational",
       "tools": "search_tool,query_tool",
       "query_engines": "ALL"

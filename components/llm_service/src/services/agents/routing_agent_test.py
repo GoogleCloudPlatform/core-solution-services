@@ -18,21 +18,22 @@
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports,wrong-import-position
 
+from copy import deepcopy
 import os
 import json
 import pytest
 import tempfile
 from unittest import mock
+from langchain.schema import LLMResult, Generation
 from common.models import (User, UserChat, QueryResult,
                            QueryEngine, UserPlan, PlanStep)
 from common.models.llm import CHAT_AI
 from common.models.agent import AgentCapability
 from common.utils.logging_handler import Logger
 from config import (get_model_config, PROVIDER_LANGCHAIN,
-                    OPENAI_LLM_TYPE_GPT4,
-                    VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
-                    OPENAI_LLM_TYPE_GPT4_LATEST)
-from testing.test_config import TEST_OPENAI_CONFIG
+                    VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN,
+                    KEY_MODEL_CLASS)
+from testing.test_config import TEST_OPENAI_CONFIG, FakeModelClass, FAKE_LANGCHAIN_GENERATION
 from schemas.schema_examples import (CHAT_EXAMPLE,
                                      USER_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
@@ -257,6 +258,14 @@ async def test_chat_route(mock_run_intent,
   assert response_data["content"] == FAKE_AGENT_OUTPUT
   assert "agent_logs" not in response_data
 
+class FakeRoutingModelClass(FakeModelClass):
+  def _generate(self, prompts, stop=None):
+    return LLMResult(generations=[[
+      Generation(text=
+        "```json" + \
+         "{\"destination\":\""+FAKE_DB_ROUTE+"\",\"next_inputs\":\"\"}" + \
+         "```"
+      )]])
 
 @pytest.mark.asyncio
 @mock.patch("services.agents.routing_agent.agent_executor_arun_with_logs")
@@ -265,9 +274,15 @@ async def test_chat_route(mock_run_intent,
 async def test_run_intent(mock_get_agent,
                           mock_agent_executor,
                           mock_agent_executor_arun,
-                          test_model_config,
                           create_user, create_chat, create_query_engine):
   """ Test run_intent """
+  routing_config = deepcopy(TEST_OPENAI_CONFIG)
+  routing_config[VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN][KEY_MODEL_CLASS] = \
+      FakeRoutingModelClass()
+  get_model_config().llm_model_providers = {
+    PROVIDER_LANGCHAIN: routing_config
+  }
+  get_model_config().llm_models = routing_config
 
   mock_get_agent.return_value = FakeAgent([create_query_engine])
   mock_agent_executor.return_value = FakeAgentExecutor()
@@ -280,5 +295,5 @@ async def test_run_intent(mock_get_agent,
   route, route_logs = await run_intent(agent_name, prompt, chat_history)
 
   assert route == FAKE_DB_ROUTE
-  assert route_logs == FAKE_AGENT_LOGS
+  assert route_logs is None
 
