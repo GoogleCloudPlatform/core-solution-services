@@ -199,6 +199,21 @@ class QueryReference(BaseModel):
   timestamp_start = NumberField(required=False)  # Video or audio only
   timestamp_stop = NumberField(required=False)  # Video or audio only
 
+  def __repr__(self) -> str:
+    """
+    Log-friendly string representation of a QueryReference
+    """
+    document_text_num_tokens = len(self.document_text.split())
+    document_text_num_chars = len(self.document_text)
+    return (
+      f"Query_Ref(query_engine_name={self.query_engine}, "
+      f"document_id={self.document_id}, "
+      f"chunk_id={self.chunk_id}, "
+      f"chunk_num_tokens={document_text_num_tokens}, "
+      f"chunk_num_chars={document_text_num_chars}, "
+      f"chunk_text={self.document_text[:min(100, document_text_num_chars)]})"
+    )
+
   class Meta:
     ignore_none_field = False
     collection_name = BaseModel.DATABASE_PREFIX + "query_references"

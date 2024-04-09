@@ -150,6 +150,23 @@ Set up the environment variable `AGENT_CONFIG_PATH` accordingly:
 > If AGENT_CONFIG_PATH is not set, it will fall back to use the default agent_config.json in
 > `components/llm_service/src/config/agent_config.json`.
 
+## Onedrive integration
+
+To access Onedrive as a datasource, the following setup must be performed:
+
+```shell
+gcloud secrets create "onedrive-client-secret"
+gcloud secrets create "onedrive-principle-name"
+
+echo '<your-onedrive-client-secret>' | gcloud secrets versions add "onedrive-client-secret" --data-file=-
+
+echo '<your-onedrive-principle-name>' | gcloud secrets versions add "onedrive-principle-name" --data-file=-
+
+# prior to deploy you must set these env vars
+export ONEDRIVE_CLIENT_ID="<your-onedrive-client-id>"
+export ONEDRIVE_TENANT_ID="<your-onedrive-tenant-id>"
+```
+
 ## Troubleshoot
 
 ### Deploy the microservice with live logs output in local terminal

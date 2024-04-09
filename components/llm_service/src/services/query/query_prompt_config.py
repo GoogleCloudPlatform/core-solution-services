@@ -18,15 +18,31 @@ Query prompt templates
 from langchain.prompts import PromptTemplate
 
 prompt_template = """
-Use the following pieces of context to answer the question at the end.
+You are a helpful and truthful AI Assistant.
+Use the following pieces of context and the chat history to answer the question at the end.
+Do not answer anything other than the final question at the end.
 If you don't know the answer, just say that you don't know, don't try to make up an answer.
 
 Context:
 {context}
 
+Chat History:
+{chat_history}
+
 Question: {question}
 Helpful Answer:"""
 
 QUESTION_PROMPT = PromptTemplate(
-    template=prompt_template, input_variables=["context", "question"]
+    template=prompt_template, input_variables=[
+        "context", "chat_history", "question"
+    ]
+)
+
+summary_template = """
+Summarize the following text in three sentences or less:
+{original_text}
+"""
+
+SUMMARY_PROMPT = PromptTemplate(
+    template=summary_template, input_variables=["original_text"]
 )

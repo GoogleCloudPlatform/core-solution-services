@@ -20,3 +20,12 @@ class NoDocumentsIndexedException(Exception):
   def __init__(self, message="No documents found"):
     self.message = message
     super().__init__(self.message)
+
+class ContextWindowExceededException(Exception):
+  """
+  Exception raised when context window length is exceeded
+  in generation
+  """
+  def __init__(self, message="Context window length exceeded"):
+    self.message = message
+    super().__init__(self.message)
