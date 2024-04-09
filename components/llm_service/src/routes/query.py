@@ -510,6 +510,7 @@ async def query(query_engine_id: str,
   user = User.find_by_email(user_data.get("email"))
   run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
 
+  user_query = None
   if run_as_batch_job:
     # create user query object to hold the query state
     user_query = UserQuery(user_id=user.user_id,
@@ -558,7 +559,7 @@ async def query(query_engine_id: str,
   # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type, rank_sentences)
+          user.id, prompt, q_engine, llm_type, user_query, rank_sentences)
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
 
