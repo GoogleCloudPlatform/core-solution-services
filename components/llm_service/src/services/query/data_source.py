@@ -26,12 +26,17 @@ from langchain_community.document_loaders import CSVLoader
 from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
+from llama_index.core.node_parser import SentenceWindowNodeParser
+from llama_index.core import Document
 
 # pylint: disable=broad-exception-caught
 
 # text chunk size for embedding data
 Logger = Logger.get_logger(__file__)
 CHUNK_SIZE = 1000
+# number of sentences included before and after the current
+# sentence when creating chunks (chunks have overlapping text)
+CHUNK_SENTENCE_PADDING = 2
 
 class DataSourceFile():
   """ class storing meta data about a data source file """
@@ -108,9 +113,13 @@ class DataSource:
 
     text_chunks = None
 
-    # use langchain text splitter
-    text_splitter = CharacterTextSplitter(chunk_size=CHUNK_SIZE,
-                                          chunk_overlap=0)
+    # use llama index sentence window parser
+    doc_parser = SentenceWindowNodeParser.from_defaults(
+        window_size=CHUNK_SENTENCE_PADDING,
+        include_metadata=True,
+        window_metadata_key="window_text",
+        original_text_metadata_key="text",
+    )
 
     Logger.info(f"generating index data for {doc_name}")
 
@@ -127,10 +136,17 @@ class DataSource:
       self.docs_not_processed.append(doc_url)
 
     if doc_text_list is not None:
-      # split text into chunks
-      text_chunks = []
-      for text in doc_text_list:
-        text_chunks.extend(text_splitter.split_text(text))
+      # combine text from all pages to try to avoid small chunks
+      # when there is just title text on a page, for example
+      doc_text = '\n'.join(doc_text_list)
+      # llama-index base class that is used by all parsers
+      doc = Document(text=doc_text)
+      # a node = a chunk of a page
+      chunks = doc_parser.get_nodes_from_documents([doc])
+      # this is a sentence parser with overlap --
+      # each text chunk will include the specified
+      # number of sentences before and after the current sentence
+      text_chunks = [c.metadata['window_text'] for c in chunks]
 
       if all(element == "" for element in text_chunks):
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
@@ -147,7 +163,7 @@ class DataSource:
   @classmethod
   def text_to_sentence_list(cls, text: str) -> List[str]:
     """
-    Split text into sentences. 
+    Split text into sentences.
     In this class we assume generic text.
     Subclasses may do additional transformation (e.g. html to text).
     """
@@ -156,7 +172,7 @@ class DataSource:
   @classmethod
   def clean_text(cls, text: str) -> List[str]:
     """
-    Produce clean text from text extracted from source document. 
+    Produce clean text from text extracted from source document.
     In this class we assume generic text.
     Subclasses may do additional transformation (e.g. html to text).
     """
