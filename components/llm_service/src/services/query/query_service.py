@@ -504,7 +504,7 @@ def update_user_query(prompt: str,
     user_query.save()
   user_query.update_history(prompt=prompt,
                             response=response,
-                            query_references=query_reference_dicts)
+                            references=query_reference_dicts)
   return user_query, query_reference_dicts
 
 def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
