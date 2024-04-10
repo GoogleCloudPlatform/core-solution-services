@@ -520,12 +520,10 @@ async def query(query_engine_id: str,
     # create user query object to hold the query state
     user_query = UserQuery(user_id=user.user_id,
                            prompt=prompt, query_engine_id=q_engine.id)
-    user_query.update_history(custom_entry={
-      f"{QUERY_HUMAN}": prompt,
-    })
     user_query.save()
+    user_query.update_history(prompt=prompt)
     query_data = user_query.get_fields(reformat_datetime=True)
-    query_data["id"] = query_data.id
+    query_data["id"] = user_query.id
 
     # launch batch job to perform query
     try:
