@@ -33,7 +33,8 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from common.utils.logging_handler import Logger
 from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST)
+                    DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST,
+                    ONEDRIVE_CLIENT_ID, ONEDRIVE_TENANT_ID)
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
@@ -170,8 +171,6 @@ def get_query_list(skip: int = 0,
     if limit < 1:
       raise ValidationError("Invalid value passed to \"limit\" query parameter")
 
-    # TODO: RBAC check. This call allows the authenticated user to access
-    # other user queries
     user = User.find_by_email(user_email)
     if user is None:
       raise ResourceNotFoundException(f"User {user_email} not found ")
@@ -186,7 +185,7 @@ def get_query_list(skip: int = 0,
       del query_data["history"]
       query_list.append(query_data)
 
-    Logger.info(f"Successfully retrieved user queries query_list={query_list}")
+    Logger.info(f"Successfully retrieved {len(query_list)} user queries.")
     return {
       "success": True,
       "message": f"Successfully retrieved user queries for user {user.id}",
@@ -217,7 +216,7 @@ def get_chat(query_id: str):
     query_data = user_query.get_fields(reformat_datetime=True)
     query_data["id"] = user_query.id
 
-    Logger.info(f"Successfully retrieved user query_data={query_data}")
+    Logger.info(f"Successfully retrieved user query {query_id}")
     return {
       "success": True,
       "message": f"Successfully retrieved user query {query_id}",
@@ -424,9 +423,10 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
     if not (doc_url.startswith("gs://")
             or doc_url.startswith("http://")
             or doc_url.startswith("https://")
-            or doc_url.startswith("bq://")):
+            or doc_url.startswith("bq://")
+            or doc_url.startswith("shpt://")):
       return BadRequest(
-          "doc_url must start with gs://, http:// or https://, or bq://")
+          "doc_url must start with gs://, http:// or https://, bq://, shpt://")
 
     if doc_url.endswith(".pdf"):
       return BadRequest(
@@ -459,6 +459,8 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
       "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
       "PG_HOST": PG_HOST,
+      "ONEDRIVE_CLIENT_ID": ONEDRIVE_CLIENT_ID,
+      "ONEDRIVE_TENANT_ID": ONEDRIVE_TENANT_ID,
     }
     response = initiate_batch_job(data, JOB_TYPE_QUERY_ENGINE_BUILD, env_vars)
     Logger.info(f"Batch job response: {response}")
@@ -523,10 +525,10 @@ async def query(query_engine_id: str,
     user_query = UserQuery(user_id=user.id,
                           query_engine_id=q_engine.id,
                           prompt=prompt)
+    user_query.save()
     user_query.update_history(prompt,
                               query_result.response,
                               query_reference_dicts)
-    user_query.save()
 
     return {
         "success": True,
@@ -545,11 +547,12 @@ async def query(query_engine_id: str,
 
 @router.post(
     "/{user_query_id}",
-    name="Make a query to a query engine based on a prior user query",
+    name="Continue chat with a prior user query",
     response_model=LLMQueryResponse)
 async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
   """
-  Send a query to a query engine with a prior user query as context
+  Continue a prior user query.  Perform a new search and
+  add those references along with prior query/chat history as context.
 
   Args:
       user_query_id (str): id of previous user query
@@ -595,7 +598,8 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "
                 f"query_result={query_result} "
-                f"query_references={query_reference_dicts}")
+                f"query_references={[repr(qe) for qe in query_references]}")
+
     return {
         "success": True,
         "message": "Successfully generated text",
@@ -605,6 +609,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
             "query_references": query_reference_dicts
         }
     }
+
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())

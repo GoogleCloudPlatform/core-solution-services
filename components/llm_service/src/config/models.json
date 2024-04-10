@@ -8,7 +8,7 @@
         "max_output_tokens": 1024,
         "top_p": 0.95,
         "top_k": 40
-      }      
+      }
     },
     "ModelGarden": {
       "enabled": true,
@@ -18,7 +18,7 @@
         "max_tokens": 900,
         "top_p": 1.0,
         "top_k": 10
-      }      
+      }
     },
     "Langchain": {
       "enabled": true,
@@ -43,7 +43,7 @@
       "enabled": true,
       "api_key": "cohere-api-key",
       "env_flag": "ENABLE_COHERE_LLM"
-    }    
+    }
   },
   "models": {
     "VertexAI-Text": {
@@ -60,7 +60,8 @@
         "max_output_tokens": 2048,
         "top_p": 0.95,
         "top_k": 40
-      }
+      },
+      "context_length": 128000
     },
     "VertexAI-Chat-Palm2-V2": {
       "is_chat": true,
@@ -70,24 +71,28 @@
     "VertexAI-Gemini-Pro": {
       "is_chat": true,
       "provider": "Vertex",
-      "model_name": "gemini-pro"
+      "model_name": "gemini-pro",
+      "context_length": 128000
     },
     "VertexAI-Chat-Palm2V2-Langchain": {
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "chat-bison@002",
-      "model_class": "ChatVertexAI"
+      "model_class": "ChatVertexAI",
+      "context_length": 2048
     },
     "VertexAI-Chat-Palm2-32k": {
       "is_chat": true,
       "provider": "Vertex",
-      "model_name": "chat-bison-32k"
+      "model_name": "chat-bison-32k",
+      "context_length": 32000
     },
     "VertexAI-Chat-Palm2-32k-Langchain": {
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "chat-bison-32k",
-      "model_class": "ChatVertexAI"
+      "model_class": "ChatVertexAI",
+      "context_length": 32000
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {
       "is_chat": true,
@@ -96,10 +101,11 @@
       "model_class": "ChatVertexAI"
     },
     "Truss-Llama2-Chat": {
-      "model_endpoint": "http://truss-llama2-7b-service:8080",
+      "model_endpoint": "truss-llama2-7b-service",
       "is_chat": true,
       "provider": "Truss",
-      "enabled": false,
+      "enabled": true,
+      "context_length": 4096,
       "model_params": {
         "temperature": 0.2,
         "top_p": 0.95,
@@ -111,6 +117,7 @@
       "is_chat": true,
       "provider": "ModelGarden",
       "enabled": false,
+      "context_length": 4096,
       "model_endpoint": "xxx"
     },
     "OpenAI-GPT4": {
@@ -120,6 +127,7 @@
       "enabled": true,
       "model_name": "gpt-4",
       "model_class": "ChatOpenAI",      
+      "context_length": 8192,
       "model_params": {
         "temperature": 0
       }
@@ -131,6 +139,7 @@
       "enabled": true,
       "model_name": "gpt-4-1106-preview",
       "model_class": "ChatOpenAI",      
+      "context_length": 128000,
       "model_params": {
         "temperature": 0
       }
@@ -142,6 +151,7 @@
       "enabled": true,
       "model_name": "gpt-3.5-turbo",
       "model_class": "ChatOpenAI",      
+      "context_length": 16385,
       "model_params": {
         "temperature": 0
       }
@@ -171,7 +181,7 @@
     },
     "HuggingFaceEmbeddings": {
       "provider": "Langchain",
-      "model_class": "HuggingFaceEmbeddings"      
+      "model_class": "HuggingFaceEmbeddings"
     }
   }
 }
