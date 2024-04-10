@@ -130,6 +130,8 @@ class LLMQueryModel(BaseModel):
   """LLM Query model"""
   prompt: str
   llm_type: Optional[str]
+  run_as_batch_job: Optional[str]
+  rank_sentences: Optional[str]
 
   class Config():
     orm_mode = True

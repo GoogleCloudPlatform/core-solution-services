@@ -511,7 +511,9 @@ async def query(query_engine_id: str,
   Logger.info(f"rank_sentences = {rank_sentences}")
 
   user = User.find_by_email(user_data.get("email"))
+
   run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
+  Logger.info(f"run_as_batch_job = {run_as_batch_job}")
 
   user_query = None
   if run_as_batch_job:
