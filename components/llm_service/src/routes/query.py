@@ -33,7 +33,8 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from common.utils.logging_handler import Logger
 from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST)
+                    DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST,
+                    ONEDRIVE_CLIENT_ID, ONEDRIVE_TENANT_ID)
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
@@ -458,6 +459,8 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
       "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
       "PG_HOST": PG_HOST,
+      "ONEDRIVE_CLIENT_ID": ONEDRIVE_CLIENT_ID,
+      "ONEDRIVE_TENANT_ID": ONEDRIVE_TENANT_ID,
     }
     response = initiate_batch_job(data, JOB_TYPE_QUERY_ENGINE_BUILD, env_vars)
     Logger.info(f"Batch job response: {response}")
