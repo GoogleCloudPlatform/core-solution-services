@@ -173,46 +173,45 @@ class DataSource:
     except Exception as e:
       Logger.error(f"error reading doc {doc_name}: {e}")
 
-    # Open PDF and iterate over pages
-    slide_chunks = []
+    doc_chunks = []
     try:
-      print("000")
+      # Convert PDF to an array of PNGs for each page
+      png_array = None
+      with tempfile.TemporaryDirectory() as path:
+        png_array = convert_from_path(doc_filepath, output_folder=path)
+      # Open PDF and iterate over pages
       with open(doc_filepath, "rb") as f:
         reader = PdfReader(f)
         num_pages = len(reader.pages)
         Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
         for i in range(num_pages):
           # Create a pdf file for the page and chunk into text chunks
-          print("0")
           pdf_doc = self.create_pdf_page(reader.pages[i], doc_filepath, i)
-          print("1: "+pdf_doc["filepath"])
           text_chunks = self.chunk_document(pdf_doc["filename"],
                                             doc_url, pdf_doc["filepath"])
 
-          # Convert pdf page file into png base 64
-          print("2: "+pdf_doc["filepath"])
-          png_doc = self.create_png_page(pdf_doc["filename"],
-                                         pdf_doc["filepath"], i)
-          print("3: "+png_doc)
-          with open(png_doc, "rb") as f:
+          # Take PNG version of page and convert to b64
+          png_doc_filepath = ".png".join(pdf_doc["filepath"].rsplit(".pdf", 1))
+          png_array[i].save(png_doc_filepath, format="png")
+          with open(png_doc_filepath, "rb") as f:
             png_bytes = f.read()
           png_b64 = b64encode(png_bytes).decode("utf-8")
 
           # Clean up temp files
           os.remove(pdf_doc["filepath"])
-          os.remove(png_doc)
+          os.remove(png_doc_filepath)
 
-          # Push slide into array
-          slide_chunk_obj = {
+          # Push chunk object into chunk array
+          chunk_obj = {
             "image_b64": png_b64,
             "text_chunks": text_chunks
           }
-          slide_chunks.append(slide_chunk_obj)
+          doc_chunks.append(chunk_obj)
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
 
     # Return array of page data
-    return slide_chunks
+    return doc_chunks
 
   @classmethod
   def text_to_sentence_list(cls, text: str) -> List[str]:
@@ -285,7 +284,7 @@ class DataSource:
     Read pypdf PageObject and create a new pdf file for that PageObject
 
     Args:
-      page: PdfReader page object representing a slide image and its text note
+      page: PdfReader page object representing a page from a pdf file
       doc_filepath: string filepath of the pdf we are reading the page from
       page_index: int index for the page of doc_filepath file we are on
     Returns:
@@ -315,34 +314,3 @@ class DataSource:
       "filename": page_pdf_filename,
       "filepath": page_pdf_filepath
     }
-
-  @staticmethod
-  def create_png_page(doc_filename: str, doc_filepath: str,
-                       page_index: int) -> List[str]:
-    """
-    Read pypdf PageObject and create a new pdf file for that PageObject
-
-    Args:
-      page: PdfReader page object representing a slide image and its text note
-      doc_filepath: string filepath of the pdf we are reading the page from
-      page_index: int index for the page of doc_filepath file we are on
-    Returns:
-      obj containing strings of the filename and filepath of new pdf
-    """
-
-    # # Get file name and temp folder path
-    # doc_folder_i = doc_filepath.rfind("/")
-    # if doc_folder_i == -1:
-    #   doc_folder = ""
-    # else:
-    #   doc_folder = doc_filepath[:doc_folder_i+1]
-    # doc_file = doc_filepath[doc_folder_i+1:]
-
-    # with tempfile.TemporaryDirectory() as path:
-    #     page_png = convert_from_path(doc_filepath, output_folder=path)
-    print("2.1: "+doc_filepath)
-    png_page = convert_from_path(doc_filepath)
-    print("2.2: "+doc_filepath.replace(".pdf", ".png"))
-    png_page[0].save(doc_filepath.replace(".pdf", ".png"), format="png")
-
-    return doc_filepath.replace(".pdf", ".png")
