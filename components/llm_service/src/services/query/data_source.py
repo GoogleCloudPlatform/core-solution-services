@@ -32,10 +32,9 @@ from llama_index.core import Document
 
 # text chunk size for embedding data
 Logger = Logger.get_logger(__file__)
-CHUNK_SIZE = 1000
 # number of sentences included before and after the current
 # sentence when creating chunks (chunks have overlapping text)
-CHUNK_SENTENCE_PADDING = 2
+CHUNK_SENTENCE_PADDING = 1
 
 class DataSourceFile():
   """ class storing meta data about a data source file """
@@ -57,6 +56,13 @@ class DataSource:
   def __init__(self, storage_client):
     self.storage_client = storage_client
     self.docs_not_processed = []
+    # use llama index sentence window parser
+    self.doc_parser = SentenceWindowNodeParser.from_defaults(
+      window_size=CHUNK_SENTENCE_PADDING,
+      include_metadata=True,
+      window_metadata_key="window_text",
+      original_text_metadata_key="text",
+    )
 
   @classmethod
   def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
@@ -112,14 +118,6 @@ class DataSource:
 
     text_chunks = None
 
-    # use llama index sentence window parser
-    doc_parser = SentenceWindowNodeParser.from_defaults(
-        window_size=CHUNK_SENTENCE_PADDING,
-        include_metadata=True,
-        window_metadata_key="window_text",
-        original_text_metadata_key="text",
-    )
-
     Logger.info(f"generating index data for {doc_name}")
 
     # read doc data and split into text chunks
@@ -135,13 +133,15 @@ class DataSource:
       self.docs_not_processed.append(doc_url)
 
     if doc_text_list is not None:
+      # clean text of escape and other unprintable chars
+      doc_text_list = [self.clean_text(x) for x in doc_text_list]
       # combine text from all pages to try to avoid small chunks
       # when there is just title text on a page, for example
       doc_text = "\n".join(doc_text_list)
       # llama-index base class that is used by all parsers
       doc = Document(text=doc_text)
       # a node = a chunk of a page
-      chunks = doc_parser.get_nodes_from_documents([doc])
+      chunks = self.doc_parser.get_nodes_from_documents([doc])
       # this is a sentence parser with overlap --
       # each text chunk will include the specified
       # number of sentences before and after the current sentence
@@ -153,9 +153,6 @@ class DataSource:
 
       # clean up text_chunks with empty items.
       text_chunks = [x for x in text_chunks if x.strip() != ""]
-
-      # clean text of escape and other unprintable chars
-      text_chunks = [self.clean_text(x) for x in text_chunks]
 
     return text_chunks
 
