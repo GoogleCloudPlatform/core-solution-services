@@ -16,6 +16,7 @@ Query Data Sources
 """
 import os
 import re
+import tempfile
 from copy import copy
 from base64 import b64encode
 from typing import List
@@ -25,6 +26,7 @@ from common.models import QueryEngine
 from config import PROJECT_ID
 from langchain.text_splitter import CharacterTextSplitter
 from pypdf import PdfReader, PdfWriter, PageObject
+from pdf2image import convert_from_path
 from langchain_community.document_loaders import CSVLoader
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
@@ -146,17 +148,17 @@ class DataSource:
 
     return text_chunks
 
-  def chunk_pdf_slides(self, doc_name: str, doc_url: str,
+  def chunk_document_multi(self, doc_name: str, doc_url: str,
                      doc_filepath: str) -> List[str]:
     """
-    Process a pdf export of a slide deck into chunks for embeddings
+    Process a pdf document into multimodal chunks (b64 and text) for embeddings
 
     Args:
        doc_name: file name of document
        doc_url: remote url of document
        doc_filepath: local file path of document
     Returns:
-       array where each item is an object representing a pdf page and
+       array where each item is an object representing a page of the document
        contains two properties for image b64 data & text chunks 
        or None if the document could not be processed
     """
@@ -174,28 +176,35 @@ class DataSource:
     # Open PDF and iterate over pages
     slide_chunks = []
     try:
+      print("000")
       with open(doc_filepath, "rb") as f:
         reader = PdfReader(f)
         num_pages = len(reader.pages)
-        Logger.info(f"Reading pdf slide deck {doc_name} with {num_pages} pages")
+        Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
         for i in range(num_pages):
-          # Split page into image (PDF) and text (PDF) text files
-          slide_obj = self.split_slide_page(reader.pages[i], doc_filepath, i)
+          # Create a pdf file for the page and chunk into text chunks
+          print("0")
+          pdf_doc = self.create_pdf_page(reader.pages[i], doc_filepath, i)
+          print("1: "+pdf_doc["filepath"])
+          text_chunks = self.chunk_document(pdf_doc["filename"],
+                                            doc_url, pdf_doc["filepath"])
 
-          # Convert image to b64 and chunk text
-          with open(slide_obj["slide_image_filepath"], "rb") as f:
-            image_b64 = b64encode(f.read()).decode("utf-8")
-          text_chunks = self.chunk_document(
-            slide_obj["slide_text_filename"], doc_url,
-            slide_obj["slide_text_filepath"])
+          # Convert pdf page file into png base 64
+          print("2: "+pdf_doc["filepath"])
+          png_doc = self.create_png_page(pdf_doc["filename"],
+                                         pdf_doc["filepath"], i)
+          print("3: "+png_doc)
+          with open(png_doc, "rb") as f:
+            png_bytes = f.read()
+          png_b64 = b64encode(png_bytes).decode("utf-8")
 
           # Clean up temp files
-          os.remove(slide_obj["slide_image_filepath"])
-          os.remove(slide_obj["slide_text_filepath"])
+          os.remove(pdf_doc["filepath"])
+          os.remove(png_doc)
 
           # Push slide into array
           slide_chunk_obj = {
-            "image_b64": image_b64,
+            "image_b64": png_b64,
             "text_chunks": text_chunks
           }
           slide_chunks.append(slide_chunk_obj)
@@ -270,15 +279,17 @@ class DataSource:
     return doc_text_list
 
   @staticmethod
-  def split_slide_page(page: PageObject, doc_filepath: str,
+  def create_pdf_page(page: PageObject, doc_filepath: str,
                        page_index: int) -> List[str]:
     """
-    Read document and return content as a list of strings
+    Read pypdf PageObject and create a new pdf file for that PageObject
 
     Args:
-      page: a PdfReader page object representing a slide image and its text note
+      page: PdfReader page object representing a slide image and its text note
+      doc_filepath: string filepath of the pdf we are reading the page from
+      page_index: int index for the page of doc_filepath file we are on
     Returns:
-      array containing strings of the two newly created files (png and txt)
+      obj containing strings of the filename and filepath of new pdf
     """
 
     # Get file name and temp folder path
@@ -289,39 +300,49 @@ class DataSource:
       doc_folder = doc_filepath[:doc_folder_i+1]
     doc_file = doc_filepath[doc_folder_i+1:]
 
-    # crop the top slide of the page
-    slide_image_page = copy(page)
-    slide_image_page.mediabox.lower_left = (page.mediabox.left,
-                                page.mediabox.top - page.mediabox.height * .47)
-
     # create a new PDF file and add the cropped page to the new PDF file
-    slide_image_pdf = PdfWriter()
-    slide_image_pdf.add_page(slide_image_page)
+    page_copy = copy(page)
+    page_pdf = PdfWriter()
+    page_pdf.add_page(page_copy)
 
     # write the new PDF file to a file
-    slide_image_filename = str(page_index) + "_slide_" + doc_file
-    slide_image_filepath = doc_folder + slide_image_filename
-    with open(slide_image_filepath, "wb") as f:
-      slide_image_pdf.write(f)
-
-    # crop the bottom text content of the page
-    slide_text_page = copy(page)
-    slide_text_page.mediabox.upper_right = (page.mediabox.right,
-                                page.mediabox.top - page.mediabox.height * .47)
-
-    # create a new PDF file and add the cropped page to the new PDF file
-    slide_text_pdf = PdfWriter()
-    slide_text_pdf.add_page(slide_text_page)
-
-    # write the new PDF file to a file
-    slide_text_filename =  str(page_index) + "_text_" + doc_file
-    slide_text_filepath = doc_folder + slide_text_filename
-    with open(slide_text_filepath, "wb") as f:
-      slide_text_pdf.write(f)
+    page_pdf_filename = str(page_index) + doc_file
+    page_pdf_filepath = doc_folder + page_pdf_filename
+    with open(page_pdf_filepath, "wb") as f:
+      page_pdf.write(f)
 
     return {
-      "slide_image_filename": slide_image_filename,
-      "slide_image_filepath": slide_image_filepath,
-      "slide_text_filename": slide_text_filename,
-      "slide_text_filepath": slide_text_filepath
+      "filename": page_pdf_filename,
+      "filepath": page_pdf_filepath
     }
+
+  @staticmethod
+  def create_png_page(doc_filename: str, doc_filepath: str,
+                       page_index: int) -> List[str]:
+    """
+    Read pypdf PageObject and create a new pdf file for that PageObject
+
+    Args:
+      page: PdfReader page object representing a slide image and its text note
+      doc_filepath: string filepath of the pdf we are reading the page from
+      page_index: int index for the page of doc_filepath file we are on
+    Returns:
+      obj containing strings of the filename and filepath of new pdf
+    """
+
+    # # Get file name and temp folder path
+    # doc_folder_i = doc_filepath.rfind("/")
+    # if doc_folder_i == -1:
+    #   doc_folder = ""
+    # else:
+    #   doc_folder = doc_filepath[:doc_folder_i+1]
+    # doc_file = doc_filepath[doc_folder_i+1:]
+
+    # with tempfile.TemporaryDirectory() as path:
+    #     page_png = convert_from_path(doc_filepath, output_folder=path)
+    print("2.1: "+doc_filepath)
+    png_page = convert_from_path(doc_filepath)
+    print("2.2: "+doc_filepath.replace(".pdf", ".png"))
+    png_page[0].save(doc_filepath.replace(".pdf", ".png"), format="png")
+
+    return doc_filepath.replace(".pdf", ".png")
