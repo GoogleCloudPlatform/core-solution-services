@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends
 
 from common.models import (QueryEngine,
                            User, UserQuery, QueryDocument)
-from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH, QUERY_HUMAN
+from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
