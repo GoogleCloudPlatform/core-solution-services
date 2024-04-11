@@ -173,7 +173,8 @@ async def generate_question_prompt(prompt: str,
   # incorporate user query context in prompt if it exists
   chat_history = ""
   if user_query is not None:
-    chat_history = get_context_prompt(user_query=user_query)
+    chat_history = get_context_prompt(
+      user_query=user_query, llm_type=llm_type)
 
   # generate default prompt
   question_prompt = get_question_prompt(
