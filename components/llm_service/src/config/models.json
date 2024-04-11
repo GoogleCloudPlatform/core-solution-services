@@ -110,7 +110,7 @@
         "temperature": 0.2,
         "top_p": 0.95,
         "top_k": 40,
-        "max_new_tokens": 512
+        "max_new_tokens": 1024
       }
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
