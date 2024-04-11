@@ -74,6 +74,8 @@ reranker = Reranker(RERANK_MODEL_NAME, verbose=0)
 
 # minimum number of references to return
 MIN_QUERY_REFERENCES = 2
+# total number of references to return from integrated search
+NUM_INTEGRATED_QUERY_REFERENCES = 6
 
 async def query_generate(
             user_id: str,
@@ -367,6 +369,7 @@ def rerank_references(prompt: str,
     query=prompt,
     docs=query_ref_text,
     doc_ids=query_ref_ids)
+  ranked_results = ranked_results.top_k(NUM_INTEGRATED_QUERY_REFERENCES)
 
   # order the original references based on the rank
   ranked_query_ref_ids = [r.doc_id for r in ranked_results.results]
