@@ -313,15 +313,12 @@ def query_search(q_engine: QueryEngine,
 
     clean_text = doc_chunk.clean_text
     if not clean_text:
-      # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
     if rank_sentences:
       # Assemble sentences from a document chunk. Currently it gets the
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
-      # for backwards compatibility with legacy engines break chunks
-      # into sentences here
       if not sentences or len(sentences) == 0:
         sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
