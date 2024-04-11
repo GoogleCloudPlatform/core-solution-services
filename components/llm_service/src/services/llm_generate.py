@@ -163,10 +163,11 @@ async def llm_chat(prompt: str, llm_type: str,
     raise InternalServerError(str(e)) from e
 
 def get_context_prompt(user_chat=None,
-                       user_query=None) -> str:
+                       user_query=None,
+                       llm_type=None) -> str:
   """
   Get context prompt for chat based on previous chat or query history.
- 
+
   Args:
     user_chat (optional): previous user chat
     user_query (optional): previous user query
@@ -175,27 +176,52 @@ def get_context_prompt(user_chat=None,
   """
   context_prompt = ""
   prompt_list = []
-  if user_chat is not None:
-    history = user_chat.history
-    for entry in history:
-      content = UserChat.entry_content(entry)
-      if UserChat.is_human(entry):
-        prompt_list.append(f"Human input: {content}")
-      elif UserChat.is_ai(entry):
-        prompt_list.append(f"AI response: {content}")
 
-  if user_query is not None:
-    history = user_query.history
-    for entry in history:
-      content = UserQuery.entry_content(entry)
-      if UserQuery.is_human(entry):
-        prompt_list.append(f"Human input: {content}")
-      elif UserQuery.is_ai(entry):
-        prompt_list.append(f"AI response: {content}")
+  if llm_type is None or llm_type != "Truss-Llama2-Chat":
 
-  context_prompt = "\n\n".join(prompt_list)
+    if user_chat is not None:
+      history = user_chat.history
+      for entry in history:
+        content = UserChat.entry_content(entry)
+        if UserChat.is_human(entry):
+          prompt_list.append(f"Human input: {content}")
+        elif UserChat.is_ai(entry):
+          prompt_list.append(f"AI response: {content}")
+
+    if user_query is not None:
+      history = user_query.history
+      for entry in history:
+        content = UserQuery.entry_content(entry)
+        if UserQuery.is_human(entry):
+          prompt_list.append(f"Human input: {content}")
+        elif UserQuery.is_ai(entry):
+          prompt_list.append(f"AI response: {content}")
+    context_prompt = "\n\n".join(prompt_list)
+
+  elif llm_type == "Truss-Llama2-Chat":
+    if user_chat is not None:
+      history = user_chat.history
+      for entry in history:
+        content = UserChat.entry_content(entry)
+        if UserChat.is_human(entry):
+          prompt_list.append(f"<s>[INST]{content}[/INST]")
+        elif UserChat.is_ai(entry):
+          prompt_list.append(f"{content}</s>")
+
+    if user_query is not None:
+      history = user_query.history
+      for entry in history:
+        content = UserQuery.entry_content(entry)
+        if UserQuery.is_human(entry):
+          prompt_list.append(f"<s>[INST]{content}[/INST]")
+        elif UserQuery.is_ai(entry):
+          prompt_list.append(f"{content}</s>")
+
+    prompt_list[0] = prompt_list[0].replace("<s>[INST]", "")
+    context_prompt = "\n\n".join(prompt_list) + "\n\n<s>[INST]"
 
   return context_prompt
+
 
 def check_context_length(prompt, llm_type):
   """
