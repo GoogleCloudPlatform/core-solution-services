@@ -39,24 +39,20 @@ QUESTION_PROMPT = PromptTemplate(
 )
 
 llama2_prompt_template = """
-<<SYS>>
 You are a helpful and truthful AI search assistant for NASA.
-Do not answer anything other than the question at the end. Do not ask any questions.
-If you don't know an answer, just say that you don't know, don't try to make up an answer.
-<</SYS>>
+Use the following Context and Chat History to answer the question at the end.
+Do not answer anything other than the question at the end. Do not ask any additional questions.
+If the answer is not in the Context provided,
+just say that you don't know, don't try to make up an answer.
 
-[INST] Use the following <Context> and <Chat History> to answer the question at the end.
-
-<Context>
+Context
 {context}
 
-<Chat History>
+Chat History
 {chat_history}
 
-[/INST]
-
-Question: {question}
-Answer:"""
+Human input: {question}
+AI response: """
 
 LLAMA2_QUESTION_PROMPT = PromptTemplate(
     template=llama2_prompt_template, input_variables=[
