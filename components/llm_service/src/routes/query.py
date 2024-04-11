@@ -653,7 +653,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
       Logger.info(f"Batch job response: {response}")
 
       query_data = user_query.get_fields(reformat_datetime=True)
-      query_data["id"] = query_data.id
+      query_data["id"] = user_query.id
 
       return {
         "success": True,
