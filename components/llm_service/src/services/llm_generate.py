@@ -45,6 +45,9 @@ from utils.errors import ContextWindowExceededException
 
 Logger = Logger.get_logger(__file__)
 
+# A conservative characters-per-token constant, used to check
+# whether prompt length exceeds context window size
+CHARS_PER_TOKEN = 3
 
 async def llm_generate(prompt: str, llm_type: str) -> str:
   """
@@ -202,11 +205,13 @@ def check_context_length(prompt, llm_type):
   Raise an exception if max context length exceeded.
   """
   # check if prompt exceeds context window length for model
+  # assume a constant relationship between tokens and chars
+  token_length = len(prompt) / CHARS_PER_TOKEN
   max_context_length = get_model_config_value(llm_type,
                                               KEY_MODEL_CONTEXT_LENGTH,
                                               None)
-  if max_context_length and len(prompt) > max_context_length:
-    msg = f"Prompt length {len(prompt)} exceeds llm_type {llm_type} " + \
+  if max_context_length and token_length > max_context_length:
+    msg = f"Token length {token_length} exceeds llm_type {llm_type} " + \
           f"Max context length {max_context_length}"
     Logger.error(msg)
     raise ContextWindowExceededException(msg)

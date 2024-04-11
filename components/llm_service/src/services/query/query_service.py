@@ -191,53 +191,48 @@ async def generate_question_prompt(prompt: str,
   try:
     check_context_length(question_prompt, llm_type)
   except ContextWindowExceededException:
-    # if context window length is exceeded, summarize the reference chunks
-    query_references = await summarize_references(query_references, llm_type)
-    question_prompt = get_question_prompt(
-      prompt, chat_history, query_references, llm_type
-    )
-
+    # first try popping reference results
+    while len(query_references) > MIN_QUERY_REFERENCES:
+      q_ref = query_references.pop()
+      Logger.info(f"Dropped reference {q_ref.id}")
+      question_prompt = get_question_prompt(
+        prompt, chat_history, query_references, llm_type
+      )
+      try:
+        check_context_length(question_prompt, llm_type)
+        break
+      except ContextWindowExceededException:
+        pass
     # check again
     try:
       check_context_length(question_prompt, llm_type)
     except ContextWindowExceededException:
-      # now try popping reference results
-      while len(query_references) > MIN_QUERY_REFERENCES:
-        query_references.pop()
-        question_prompt = get_question_prompt(
-          prompt, chat_history, query_references, llm_type
-        )
-        try:
-          check_context_length(question_prompt, llm_type)
-          break
-        except ContextWindowExceededException:
-          pass
-      # one final check - this will propagate the exception if the prompt
-      # is still too long
+      # summarize chat history
+      Logger.info(f"Summarizing chat history for {question_prompt}")
+      chat_history = await summarize_history(chat_history, llm_type)
+      question_prompt = get_question_prompt(
+        prompt, chat_history, query_references, llm_type
+      )
+      # exception will be propagated if context is too long at this point
       check_context_length(question_prompt, llm_type)
 
   return question_prompt, query_references
 
-async def summarize_references(query_references: List[QueryReference],
-                         llm_type: str) -> List[QueryReference]:
+async def summarize_history(chat_history: str,
+                            llm_type: str) -> str:
   """
-  Use an LLM to summarize the document text fields of a list of references.
-  Mutates the original objects and updates models in the DB with the
-  summarized text.
+  Use an LLM to summarize a chat history.
 
   Args:
-    query_references: list of query references to summarize
+    chat_history: string of previous chat
     llm_type: model to use to perform the summaries
   Returns:
-    List of query references with summarized document_text fields
+    summarized chat history
   """
-  for query_ref in query_references:
-    summarize_prompt = get_summarize_prompt(query_ref.document_text)
-    summary = await llm_chat(summarize_prompt, llm_type)
-    Logger.info(f"generated summary with LLM {llm_type}: {summary}")
-    query_ref.document_text = summary
-    query_ref.update()
-  return query_references
+  summarize_prompt = get_summarize_prompt(chat_history)
+  summary = await llm_chat(summarize_prompt, llm_type)
+  Logger.info(f"generated summary with LLM {llm_type}: {summary}")
+  return summary
 
 def retrieve_references(prompt: str,
                         q_engine: QueryEngine,
