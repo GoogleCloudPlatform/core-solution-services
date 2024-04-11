@@ -39,6 +39,7 @@ def create_query_reference_2(firestore_emulator, clean_firestore):
 
 def test_question_prompt(create_query_reference, create_query_reference_2):
 
+  llm_type = "VertexAI-Chat"
   chat_history = ""
   prompt = "What color is the sky?"
   text_context = create_query_reference.document_text
@@ -47,7 +48,7 @@ def test_question_prompt(create_query_reference, create_query_reference_2):
   question = "What color is the sky?"
   query_context = [create_query_reference]
   actual_prompt = get_question_prompt(
-    question, chat_history, query_context
+    question, chat_history, query_context, llm_type
   )
   assert expected_prompt == actual_prompt, "Prompts don't match"
 
@@ -62,6 +63,6 @@ def test_question_prompt(create_query_reference, create_query_reference_2):
   query_context = [create_query_reference,
                    create_query_reference_2]
   actual_prompt = get_question_prompt(
-    question, chat_history, query_context
+    question, chat_history, query_context, llm_type
   )
   assert expected_prompt == actual_prompt, "Prompts don't match"
