@@ -38,6 +38,32 @@ QUESTION_PROMPT = PromptTemplate(
     ]
 )
 
+llama2_prompt_template = """
+<<SYS>>
+You are a helpful and truthful AI search assistant for NASA.
+Do not answer anything other than the question at the end. Do not ask any questions.
+If you don't know an answer, just say that you don't know, don't try to make up an answer.
+<</SYS>>
+
+[INST] Use the following <Context> and <Chat History> to answer the question at the end.
+
+<Context>
+{context}
+
+<Chat History>
+{chat_history}
+
+[/INST]
+
+Question: {question}
+Answer:"""
+
+LLAMA2_QUESTION_PROMPT = PromptTemplate(
+    template=llama2_prompt_template, input_variables=[
+        "context", "chat_history", "question"
+    ]
+)
+
 summary_template = """
 Summarize the following text in three sentences or less:
 {original_text}
