@@ -42,11 +42,13 @@ class DataSourceFile():
                doc_name:str,
                src_url:str,
                local_path:str,
-               gcs_path:str = None):
+               gcs_path:str = None,
+               doc_id:str=None):
     self.doc_name = doc_name
     self.src_url = src_url
     self.local_path = local_path
     self.gcs_path = gcs_path
+    self.doc_id = doc_id
 
 class DataSource:
   """

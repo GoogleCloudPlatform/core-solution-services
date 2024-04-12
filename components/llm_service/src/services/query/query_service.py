@@ -676,6 +676,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       query_doc = QueryDocument(query_engine_id=q_engine.id,
                                 query_engine=q_engine.name,
                                 doc_url=index_doc_url,
+                                index_file=data_source_file.doc_id,
                                 index_start=index_base,
                                 index_end=new_index_base)
       query_doc.save()
