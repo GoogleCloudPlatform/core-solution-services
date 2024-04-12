@@ -1,5 +1,5 @@
-ARG COMMON_IMAGE
-FROM ${COMMON_IMAGE}
+ARG COMMON_ML_IMAGE
+FROM ${COMMON_ML_IMAGE}
 
 WORKDIR /opt
 COPY requirements.txt service_requirements.txt
