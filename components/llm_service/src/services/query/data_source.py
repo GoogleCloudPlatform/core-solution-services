@@ -37,7 +37,7 @@ Logger = Logger.get_logger(__file__)
 CHUNK_SENTENCE_PADDING = 1
 
 class DataSourceFile():
-  """ class storing meta data about a data source file """
+  """ object storing meta data about a data source file """
   def __init__(self,
                doc_name:str=None,
                src_url:str=None,
@@ -68,6 +68,16 @@ class DataSource:
 
   @classmethod
   def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
+    """
+    Generate a unique downloads bucket name, that obeys the rules of
+    GCS bucket names.
+
+    Args:
+        q_engine: the QueryEngine to generate the bucket name for.
+
+    Returns:
+        bucket name (str)
+    """
     qe_name = q_engine.name.replace(" ", "-")
     qe_name = qe_name.replace("_", "-").lower()
     bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
