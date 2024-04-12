@@ -211,7 +211,7 @@ class DataSource:
         for page in range(num_pages):
           doc_text_list.append(reader.pages[page].extract_text())
         Logger.info(f"Finished reading pdf file {doc_name}")
-    elif doc_extension == "docx" or doc_extension == "pptx":
+    elif doc_extension in ["docx", "pptx", "ppt", "pptm"]:
       doc_text_list = []
       docs = SimpleDirectoryReader(
           input_files=[doc_filepath]
