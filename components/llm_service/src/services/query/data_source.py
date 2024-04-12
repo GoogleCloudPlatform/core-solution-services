@@ -25,6 +25,7 @@ from langchain_community.document_loaders import CSVLoader
 from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
+from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceWindowNodeParser
 from llama_index.core import Document
 
@@ -210,6 +211,15 @@ class DataSource:
         for page in range(num_pages):
           doc_text_list.append(reader.pages[page].extract_text())
         Logger.info(f"Finished reading pdf file {doc_name}")
+    elif doc_extension == "docx" or doc_extension == "pptx":
+      doc_text_list = []
+      docs = SimpleDirectoryReader(
+          input_files=[doc_filepath]
+      ).load_data()
+      # each document is read as one chunk, but do this for clarity
+      for d in docs:
+        doc_text_list.append(d.text)
+      Logger.info(f"Finished reading file {doc_name}")
     else:
       # return None if doc type not supported
       Logger.error(
