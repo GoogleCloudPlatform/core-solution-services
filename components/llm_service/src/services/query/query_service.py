@@ -357,12 +357,14 @@ def rerank_references(prompt: str,
   # reranker function requires text and ids as separate params
   query_ref_text = []
   query_ref_ids = []
+  query_ref_lookup = {}
 
   for query_ref in query_references:
     query_doc_chunk = QueryDocumentChunk.find_by_id(query_ref.chunk_id)
     # print(query_ref.id, query_ref_id, query_ref.chunk_id, query_doc_chunk.id)
     query_ref_text.append(query_doc_chunk.clean_text)
     query_ref_ids.append(query_ref.id)
+    query_ref_lookup[query_ref.id] = query_ref
 
   # rerank, passing in QueryReference ids
   ranked_results = reranker.rank(
@@ -372,13 +374,10 @@ def rerank_references(prompt: str,
   ranked_results = ranked_results.top_k(NUM_INTEGRATED_QUERY_REFERENCES)
 
   # order the original references based on the rank
+  ranked_query_refs = []
   ranked_query_ref_ids = [r.doc_id for r in ranked_results]
-  sort_dict = {x: i for i, x in enumerate(ranked_query_ref_ids)}
-  sort_list = [(qr, sort_dict[qr.id]) for qr in query_references]
-  sort_list.sort(key=lambda x: x[1])
-
-  # just return the QueryReferences
-  ranked_query_refs = [qr for qr, i in sort_list]
+  for i in ranked_query_ref_ids:
+    ranked_query_refs.append(query_ref_lookup[i])
 
   return ranked_query_refs
 
