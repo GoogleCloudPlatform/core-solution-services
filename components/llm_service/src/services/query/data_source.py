@@ -39,10 +39,10 @@ CHUNK_SENTENCE_PADDING = 1
 class DataSourceFile():
   """ class storing meta data about a data source file """
   def __init__(self,
-               doc_name:str,
-               src_url:str,
-               local_path:str,
-               gcs_path:str = None,
+               doc_name:str=None,
+               src_url:str=None,
+               local_path:str=None,
+               gcs_path:str=None,
                doc_id:str=None):
     self.doc_name = doc_name
     self.src_url = src_url
