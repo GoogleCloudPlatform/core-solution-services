@@ -372,7 +372,7 @@ def rerank_references(prompt: str,
   ranked_results = ranked_results.top_k(NUM_INTEGRATED_QUERY_REFERENCES)
 
   # order the original references based on the rank
-  ranked_query_ref_ids = [r.doc_id for r in ranked_results.results]
+  ranked_query_ref_ids = [r.doc_id for r in ranked_results]
   sort_dict = {x: i for i, x in enumerate(ranked_query_ref_ids)}
   sort_list = [(qr, sort_dict[qr.id]) for qr in query_references]
   sort_list.sort(key=lambda x: x[1])
