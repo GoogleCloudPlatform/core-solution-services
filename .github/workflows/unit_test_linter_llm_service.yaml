@@ -10,6 +10,7 @@ on:
       - main
     paths:
       - "components/common/**"
+      - "components/common_ml/**"
       - "components/llm_service/**"
       - ".github/workflows/unit_test_linter_llm_service.yaml"
       - ".pylintrc"
@@ -63,6 +64,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f $BASE_DIR/components/common/requirements.txt ]; then pip install -r $BASE_DIR/components/common/requirements.txt; fi
           if [ -f $BASE_DIR/components/common/requirements-test.txt ]; then pip install -r $BASE_DIR/components/common/requirements-test.txt; fi
+          if [ -f $BASE_DIR/components/common_ml/requirements.txt ]; then pip install -r $BASE_DIR/components/common_ml/requirements.txt; fi
           cd ${{ matrix.target-folder }}
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
