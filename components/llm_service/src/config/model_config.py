@@ -148,7 +148,7 @@ def load_langchain_classes() -> dict:
   class instance.
   """
   langchain_chat_classes = {
-    k:importlib.import_module(klass)
+    k:getattr(importlib.import_module(klass), k)
     for k,klass in langchain_chat._module_lookup.items()
   }
   langchain_llm_classes = {
@@ -156,7 +156,7 @@ def load_langchain_classes() -> dict:
     for klass in langchain_llm.get_type_to_cls_dict().values()
   }
   langchain_embedding_classes = {
-    k:importlib.import_module(klass)
+    k:getattr(importlib.import_module(klass), k)
     for k,klass in langchain_embedding._module_lookup.items()
   }
 
