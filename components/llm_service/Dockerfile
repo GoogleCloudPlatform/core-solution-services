@@ -10,7 +10,7 @@ RUN cat service_requirements.txt >> requirements.txt
 RUN pip install -r requirements.txt
 
 # download spacy model
-RUN python -m spacy download en_core_web_sm
+RUN python -m spacy download en_core_web_md
 
 COPY src/ .
 
