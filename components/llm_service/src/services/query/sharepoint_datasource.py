@@ -98,6 +98,8 @@ class SharePointDataSource(DataSource):
         userprincipalname=ONEDRIVE_PRINCIPLE_NAME,
         folder_path=sharepoint_folder
     )
+    Logger.info(
+        f"Downloading files from sharepoint folder {sharepoint_folder}...")
     access_token = loader._authenticate_with_msal()
     doc_metadata = loader._connect_download_and_return_metadata(
         access_token,
@@ -107,6 +109,9 @@ class SharePointDataSource(DataSource):
         userprincipalname=loader.userprincipalname,
         isRelativePath=True
     )
+    Logger.info(
+        f"Done: downloaded {len(doc_metadata)} files from "
+        f"sharepoint {sharepoint_folder} to {temp_dir}")
 
     # return a list of DataSourceFile
     datasource_files = []
