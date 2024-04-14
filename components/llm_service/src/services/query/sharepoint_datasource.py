@@ -79,7 +79,7 @@ class SharePointDataSource(DataSource):
       bucket = self.storage_client.get_bucket(self.bucket_name)
       for doc in datasource_files:
         blob = bucket.blob(doc.doc_name)
-        blob.upload_from_filename(doc.local_path, predefined_acl="publicRead")
+        blob.upload_from_filename(doc.local_path)
 
         # return public link to blob
         doc.gcs_path = blob.public_url
