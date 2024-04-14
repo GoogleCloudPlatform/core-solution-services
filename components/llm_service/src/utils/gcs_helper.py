@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-argument,broad-exception-raised,dangerous-default-value
+# pylint: disable=unused-argument,broad-exception-raised
 """
 Google Storage helper functions.
 """
@@ -45,7 +45,7 @@ def create_bucket(storage_client: storage.Client,
     # Create new bucket
     if make_public:
       _ = storage_client.create_bucket(bucket_name, location=location)
-      set_bucket_public_iam(storage_client, bucket_name)
+      set_bucket_viewer_iam(storage_client, bucket_name, ["allUsers"])
     else:
       _ = storage_client.create_bucket(bucket_name, location=location)
     Logger.info(f"Bucket {bucket_name} created.")
@@ -54,12 +54,14 @@ def create_bucket(storage_client: storage.Client,
     if clear:
       clear_bucket(storage_client, bucket_name)
 
-def set_bucket_public_iam(
+def set_bucket_viewer_iam(
     storage_client: storage.Client,
     bucket_name: str,
-    members: List[str] = ["allUsers"],
+    members: List[str] = None,
 ):
-  """Set a public IAM Policy to bucket"""
+  """Set viewer IAM Policy on bucket"""
+  if members is None:
+    members = ["allUsers"]
   bucket = storage_client.bucket(bucket_name)
   policy = bucket.get_iam_policy(requested_policy_version=3)
   policy.bindings.append(
