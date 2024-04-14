@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-argument,broad-exception-raised
+# pylint: disable=unused-argument,broad-exception-raised,dangerous-default-value
 """
 Google Storage helper functions.
 """
+from typing import List
 from common.utils.logging_handler import Logger
 from google.cloud import storage
 
