@@ -36,12 +36,17 @@ def clear_bucket(storage_client: storage.Client, bucket_name: str) -> None:
 
 def create_bucket(storage_client: storage.Client,
                   bucket_name: str, location: str = None,
-                  clear: bool = True) -> None:
+                  clear: bool = True,
+                  make_public: bool = False) -> None:
   # Check if the bucket exists
   bucket = storage_client.bucket(bucket_name)
   if not bucket.exists():
     # Create new bucket
-    _ = storage_client.create_bucket(bucket_name, location=location)
+    if make_public:
+      _ = storage_client.create_bucket(bucket_name, location=location,
+            predefined_acl="publicRead")
+    else:
+      _ = storage_client.create_bucket(bucket_name, location=location)
     Logger.info(f"Bucket {bucket_name} created.")
   else:
     Logger.info(f"Bucket {bucket_name} already exists.")
