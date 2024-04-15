@@ -350,3 +350,15 @@ Fix
 sudo usermod -aG docker ${USER}
 ```
 Log out and log back in again to re-evaluate group memberships
+
+
+### sb deploy --dev fails for Mac OS
+```commandline
+sh: envsubst: command not found
+build [frontend-flutterflow] failed: exit status 127
+```
+Fix
+```commandline
+brew install gettext
+brew link --force gettext 
+```
