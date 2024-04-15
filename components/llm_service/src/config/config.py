@@ -33,8 +33,9 @@ from config.model_config import (ModelConfig, VENDOR_OPENAI,
                                 PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
                                 PROVIDER_TRUSS, PROVIDER_LLM_SERVICE,
                                 VERTEX_LLM_TYPE_BISON_CHAT, TRUSS_LLM_LLAMA2_CHAT,
-                                VERTEX_LLM_TYPE_GECKO_EMBEDDING
-                                )
+                                VERTEX_LLM_TYPE_GECKO_EMBEDDING,
+                                VERTEX_LLM_TYPE_GEMINI_PRO,
+                                VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
@@ -116,6 +117,7 @@ _, COHERE_API_KEY = mc.get_vendor_api_key(VENDOR_COHERE)
 
 # default models
 DEFAULT_LLM_TYPE = VERTEX_LLM_TYPE_BISON_CHAT
+DEFAULT_MULTI_LLM_TYPE = VERTEX_LLM_TYPE_GEMINI_PRO_VISION
 DEFAULT_QUERY_CHAT_MODEL = TRUSS_LLM_LLAMA2_CHAT
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
 
