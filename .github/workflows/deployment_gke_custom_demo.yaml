@@ -1,6 +1,6 @@
 # copier:raw
 
-name: GKE - Deploy microservices to a custom project
+name: GKE - Deploy microservices to a custom demo project
 on:
   workflow_dispatch:
 
