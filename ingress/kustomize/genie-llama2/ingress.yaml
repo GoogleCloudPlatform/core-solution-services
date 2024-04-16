@@ -50,3 +50,11 @@ spec:
                 name: frontend-streamlit
                 port:
                   number: 80
+
+          - path: /truss-llama2-7b-service/
+            pathType: Prefix
+            backend:
+              service:
+                name: truss-llama2-7b-service
+                port:
+                  number: 80
