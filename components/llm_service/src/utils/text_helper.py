@@ -30,9 +30,9 @@ nlp = None
 
 try:
   # to use this model one must execute
-  # python -m spacy download en_core_web_sm
+  # python -m spacy download en_core_web_md
   # in deployed llm_service this is done in the docker container build
-  nlp = spacy.load("en_core_web_sm")
+  nlp = spacy.load("en_core_web_md")
   Logger.info("loaded spacy model")
 except Exception:
   # we fallback to sentencizer which doesn't require a download

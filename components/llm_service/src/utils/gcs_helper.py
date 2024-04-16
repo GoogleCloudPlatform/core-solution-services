@@ -16,6 +16,7 @@
 """
 Google Storage helper functions.
 """
+from typing import List
 from common.utils.logging_handler import Logger
 from google.cloud import storage
 
@@ -43,8 +44,8 @@ def create_bucket(storage_client: storage.Client,
   if not bucket.exists():
     # Create new bucket
     if make_public:
-      _ = storage_client.create_bucket(bucket_name, location=location,
-            predefined_acl="publicRead")
+      _ = storage_client.create_bucket(bucket_name, location=location)
+      set_bucket_viewer_iam(storage_client, bucket_name, ["allUsers"])
     else:
       _ = storage_client.create_bucket(bucket_name, location=location)
     Logger.info(f"Bucket {bucket_name} created.")
@@ -52,6 +53,21 @@ def create_bucket(storage_client: storage.Client,
     Logger.info(f"Bucket {bucket_name} already exists.")
     if clear:
       clear_bucket(storage_client, bucket_name)
+
+def set_bucket_viewer_iam(
+    storage_client: storage.Client,
+    bucket_name: str,
+    members: List[str] = None,
+):
+  """Set viewer IAM Policy on bucket"""
+  if members is None:
+    members = ["allUsers"]
+  bucket = storage_client.bucket(bucket_name)
+  policy = bucket.get_iam_policy(requested_policy_version=3)
+  policy.bindings.append(
+      {"role": "roles/storage.objectViewer", "members": members}
+  )
+  bucket.set_iam_policy(policy)
 
 def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
                   file_name: str, content: str,
