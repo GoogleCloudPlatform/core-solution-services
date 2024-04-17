@@ -1,0 +1,7 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: default-managed-cert
+spec:
+  domains:
+    - example.com # sb-var:domain_name
