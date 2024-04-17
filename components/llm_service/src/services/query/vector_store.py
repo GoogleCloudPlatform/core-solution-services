@@ -47,7 +47,7 @@ Logger = Logger.get_logger(__file__)
 DIMENSIONS = 768
 
 # number of document match results to retrieve from a single embeddings search
-NUM_MATCH_RESULTS = 6
+NUM_MATCH_RESULTS = 5
 
 # number of text chunks to process into an embeddings file
 MAX_NUM_TEXT_CHUNK_PROCESS = 1000
