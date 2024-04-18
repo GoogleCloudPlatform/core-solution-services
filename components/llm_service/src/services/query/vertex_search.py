@@ -164,10 +164,11 @@ def perform_vertex_search(data_store_id: str,
   return result_list
 
 
-def build_vertex_search(q_engine: QueryEngine):
+def build_vertex_search(q_engine: QueryEngine) -> \
+    Tuple[List[QueryDocument], List[str]]:
   """
   Build a Vertex Search-based Query Engine
-  
+
   q_engine.doc_url must specify either a gcs uri, an http:// https://
      URL, or bq://<bigquery dataset and table separated by colons>
   ie.
@@ -176,6 +177,13 @@ def build_vertex_search(q_engine: QueryEngine):
   q_engine.doc_url = "bq://BIGQUERY_DATASET:BIGQUERY_TABLE"
     or
   q_engine.doc_url = "https://example.com/news"
+
+  Args:
+    q_engine: QueryEngine to build
+
+  Returns:
+    Tuple of list of QueryDocument objects of docs processed,
+      list of uris of docs not processed
   """
   # initialize some variables
   data_url = q_engine.doc_url
@@ -188,6 +196,7 @@ def build_vertex_search(q_engine: QueryEngine):
   docs_to_be_processed = []
   docs_processed = []
   docs_not_processed = []
+  doc_models_processed = []
 
   # validate data_url
   if not (data_url.startswith("bq://")
@@ -252,6 +261,7 @@ def build_vertex_search(q_engine: QueryEngine):
         doc_url=doc_url
       )
       query_document.save()
+      doc_models_processed.append(query_document)
 
   except Exception as e:
     Logger.error(f"Error building vertex search query engine [{str(e)}]")
@@ -259,10 +269,10 @@ def build_vertex_search(q_engine: QueryEngine):
 
     # on build error, delete any vertex search assets that were created
     delete_vertex_search(q_engine)
-    docs_processed = []
+    doc_models_processed = []
     docs_not_processed = docs_to_be_processed
 
-  return docs_processed, docs_not_processed
+  return doc_models_processed, docs_not_processed
 
 def create_data_store(q_engine: QueryEngine,
                       project_id: str,
