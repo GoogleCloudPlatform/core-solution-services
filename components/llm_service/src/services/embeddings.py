@@ -20,6 +20,9 @@ from typing import List, Optional, Generator, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from vertexai.preview.language_models import TextEmbeddingModel
+from vertexai.vision_models import (
+    MultiModalEmbeddingModel)
+from vertexai.preview.generative_models import Part
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import post_method
@@ -27,7 +30,8 @@ from common.utils.token_handler import UserCredentials
 from config import (get_model_config, get_provider_embedding_types,
                     KEY_MODEL_NAME, KEY_MODEL_CLASS, KEY_MODEL_ENDPOINT,
                     PROVIDER_VERTEX, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
-                    DEFAULT_QUERY_EMBEDDING_MODEL)
+                    DEFAULT_QUERY_EMBEDDING_MODEL,
+                    DEFAULT_QUERY_MULTI_EMBEDDING_MODEL)
 from langchain.schema.embeddings import Embeddings
 
 # pylint: disable=broad-exception-caught
@@ -63,6 +67,33 @@ def get_embeddings(
       text_chunks)
 
   return is_successful, embeddings
+
+def get_multi_embeddings(
+    user_text: List[str], user_file_bytes: str,
+    user_file_type: str, embedding_type: str = None) -> (
+    Tuple)[List[bool], np.ndarray]:
+  """
+  Get multimodal embeddings for a string and image or video file
+
+  Args:
+    user_text: text context to generate embeddings for
+    user_file_bytes: the bytes of the file provided by the user
+    user_file_type: the string representation of the file type
+    embedding_type: embedding model id
+  Returns:
+    Tuple of (list of booleans for chunk true if embeddings were generated,
+              numpy array of embeddings indexed by chunks)
+  """
+  if embedding_type is None or embedding_type == "":
+    embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
+
+  Logger.info(f"generating multimodal embeddings with {embedding_type}")
+
+  embeddings = generate_multi_embeddings(
+      user_text, embedding_type,
+      user_file_bytes, user_file_type)
+
+  return embeddings
 
 def _generate_embeddings_batched(embedding_type,
                                  text_chunks):
@@ -125,6 +156,27 @@ def generate_embeddings(batch: List[str], embedding_type: str) -> \
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
   return embeddings
 
+def generate_multi_embeddings(user_text: str, embedding_type: str,
+    user_file_bytes: bytes, user_file_type: str
+    ) -> List[Optional[List[float]]]:
+  """
+  Generate embeddings for a list of strings
+  Args:
+    batch: list of text chunks to generate embeddings for
+    embedding_type: str - model identifier
+  Returns:
+    list of embedding vectors (each vector is a list of floats)
+  """
+
+  Logger.info(f"generating embeddings for embedding type {embedding_type}")
+
+  if embedding_type in get_provider_embedding_types(PROVIDER_VERTEX):
+    embeddings = get_vertex_multi_embeddings(embedding_type, user_text,
+                                             user_file_bytes, user_file_type)
+  else:
+    raise InternalServerError(f"Unsupported embedding type {embedding_type}")
+  return embeddings
+
 def get_vertex_embeddings(embedding_type: str,
     sentence_list: List[str]) -> List[Optional[List[float]]]:
   """
@@ -149,6 +201,42 @@ def get_vertex_embeddings(embedding_type: str,
     return return_value
   except Exception:
     return [None for _ in range(len(sentence_list))]
+
+def get_vertex_multi_embeddings(embedding_type: str,
+    text: str, user_file_bytes: bytes, user_file_type: str
+    ) -> List[Optional[List[float]]]:
+  """
+  Generate an embedding from a Vertex model
+  Args:
+    embedding_type: str - vertex model identifier
+    sentence_list: list of text chunks to generate embeddings for
+  Returns:
+    list of embedding vectors (each vector is a list of floats)
+  """
+  google_llm = get_model_config().get_provider_value(
+      PROVIDER_VERTEX, KEY_MODEL_NAME, embedding_type)
+  if google_llm is None:
+    raise RuntimeError(
+        f"Vertex model name not found for embedding type {embedding_type}")
+  try:
+    user_file_image = Part.from_data(user_file_bytes,
+                                          mime_type=user_file_type)
+    vertex_model = MultiModalEmbeddingModel.from_pretrained(
+      google_llm)
+    embeddings = vertex_model.get_embeddings(
+      image=user_file_image,
+      contextual_text=text
+    )
+
+    return_value = {}
+    return_value["image_embeddings"] = [
+      embedding.values for embedding in embeddings["image_embeddings"]]
+    return_value["text_embeddings"] = [
+      embedding.values for embedding in embeddings["text_embeddings"]]
+
+    return return_value
+  except Exception:
+    return f"Error generating embeddings with embedding type {embedding_type}"
 
 def get_langchain_embeddings(embedding_type: str,
     sentence_list: List[str]) -> List[Optional[List[float]]]:
