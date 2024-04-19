@@ -108,7 +108,7 @@ class DataSource:
       file_path = os.path.join(temp_dir, file_name)
       blob.download_to_filename(file_path)
       doc_filepaths.append(
-          DataSourceFile(blob.name, blob.path, file_path, blob.path))
+          DataSourceFile(blob.name, doc_url, file_path, doc_url))
 
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(

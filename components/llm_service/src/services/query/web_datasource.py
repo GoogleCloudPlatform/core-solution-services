@@ -48,6 +48,7 @@ def save_content(filepath: str, file_name: str, content: str) -> None:
   with open(doc_filepath, "w", encoding="utf-8") as f:
     f.write(content)
   Logger.info(f"{len(content)} bytes written")
+  return doc_filepath
 
 def sanitize_url(url) -> str:
   # Remove the scheme (http, https) and domain, and keep the path and query
@@ -105,10 +106,10 @@ class WebDataSourceParser:
       "content_type": content_type,
       "content": file_content
     }
-    save_content(self.filepath, file_name, file_content)
+    saved_path = save_content(self.filepath, file_name, file_content)
     if self.storage_client and self.bucket_name:
       gcs_path = upload_to_gcs(self.storage_client, self.bucket_name,
-                               file_name, file_content, content_type)
+                               saved_path)
       item.update({"gcs_path": gcs_path})
     return item
 
