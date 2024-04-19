@@ -38,7 +38,8 @@ class BatchJobModel(BaseModel):
             "message": "Successfully initiated the job with type 'emsi_ingestion'."
                        " Please use the job name to track the job status",
             "data": {
-                "job_name": "abcd-ajdf-sdfk-sdff",
+                "name": "abcd-ajdf-sdfk-sdff",
+                "type": "query_engine_build",
                 "status": "active"
             }
         }
