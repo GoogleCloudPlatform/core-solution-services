@@ -215,7 +215,7 @@ def build_vertex_search(q_engine: QueryEngine) -> \
       gcs_url, web_docs_downloaded = download_web_docs(q_engine, data_url)
       is_web = True
       data_url = gcs_url
-      docs_to_be_processed = [doc.gcs_url for doc in web_docs_downloaded]
+      docs_to_be_processed = [doc.gcs_path for doc in web_docs_downloaded]
     elif data_url.startswith("bq://"):
       table_data = DataSourceFile(data_url.split("bq://")[1], None, None)
       docs_to_be_processed = [table_data]
