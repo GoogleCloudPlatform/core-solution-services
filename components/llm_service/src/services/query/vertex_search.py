@@ -447,9 +447,11 @@ def datastore_id_from_engine(q_engine: QueryEngine) -> str:
     raise RuntimeError("Invalid datastore id: {data_store_id}")
   return data_store_id
 
-def delete_vertex_search(q_engine: QueryEngine, data_store_id: str):
+def delete_vertex_search(q_engine: QueryEngine, data_store_id: str=None):
   """ attempt to delete a vertex search datastore and engine """
   Logger.info(f"deleting vertex search query engine {q_engine.name}")
+  if data_store_id is None:
+    data_store_id = q_engine.index_id
   try:
     Logger.info(f"deleting engine {q_engine.name}")
     client = discoveryengine.EngineServiceClient()
