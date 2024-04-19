@@ -578,7 +578,7 @@ def query_engine_build(doc_url: str,
     else:
       raise RuntimeError(f"Invalid query_engine_type {query_engine_type}")
   except Exception as e:
-    # delete query engine model if build unsuccessful
+    # delete query engine models if build unsuccessful
     delete_engine(q_engine, hard_delete=True)
     raise InternalServerError(str(e)) from e
 
