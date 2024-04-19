@@ -782,6 +782,14 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
       "query_engine_id", "==", q_engine.id
     ).delete()
 
+    QueryReference.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
+    QueryResult.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
     # delete query engine
     QueryEngine.delete_by_id(q_engine.id)
   else:
@@ -797,6 +805,16 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
       "query_engine_id", "==", q_engine.id).fetch()
     for qc in qchunks:
       qc.soft_delete_by_id(qc.id)
+
+    qrefs = QueryReference.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qr in qrefs:
+      qr.soft_delete_by_id(qr.id)
+
+    qres = QueryResult.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qr in qres:
+      qr.soft_delete_by_id(qr.id)
 
     # delete query engine
     QueryEngine.soft_delete_by_id(q_engine.id)
