@@ -22,6 +22,7 @@ import hashlib
 import os
 import sys
 import tempfile
+from pathlib import Path
 from typing import List
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
@@ -108,6 +109,14 @@ class WebDataSourceParser:
     }
     saved_path = save_content(self.filepath, file_name, file_content)
     if self.storage_client and self.bucket_name:
+      # rename .htm files to .html for upload to GCS
+      file_extension = Path(file_name).suffix
+      if file_extension == ".htm":
+        new_filepath = str(Path.joinpath(
+          Path(saved_path).parent,
+          Path(file_name).stem + ".html"))
+        os.rename(saved_path, new_filepath)
+        saved_path = new_filepath
       gcs_path = upload_to_gcs(self.storage_client, self.bucket_name,
                                saved_path)
       item.update({"gcs_path": gcs_path})

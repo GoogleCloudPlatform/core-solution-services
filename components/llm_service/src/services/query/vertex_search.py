@@ -208,17 +208,13 @@ def build_vertex_search(q_engine: QueryEngine) -> \
     raise RuntimeError(f"Invalid data url: {data_url}")
 
   try:
-    is_web = False
     # inventory the documents to be ingested
     if data_url.startswith("http://") or data_url.startswith("https://"):
       # download web docs and store in a GCS bucket
-      gcs_url, web_docs_downloaded = download_web_docs(q_engine, data_url)
-      is_web = True
+      gcs_url, docs_to_be_processed = download_web_docs(q_engine, data_url)
       data_url = gcs_url
-      docs_to_be_processed = [doc.gcs_path for doc in web_docs_downloaded]
     elif data_url.startswith("bq://"):
-      table_data = DataSourceFile(data_url.split("bq://")[1], None, None)
-      docs_to_be_processed = [table_data]
+      docs_to_be_processed = [DataSourceFile(src_url=data_url)]
     elif data_url.startswith("gs://"):
       docs_to_be_processed = inventory_gcs_files(data_url)
 
@@ -244,16 +240,13 @@ def build_vertex_search(q_engine: QueryEngine) -> \
     q_engine.index_id = data_store_id
     q_engine.update()
 
-    # if importing from web, build list of web URLs that were imported
-    if is_web:
-      docs_processed = [doc.src_url for doc in web_docs_downloaded]
-
     # create QueryDocument models for processed documents
-    for doc_url in docs_processed:
+    for doc in docs_processed:
       query_document = QueryDocument(
         query_engine_id=q_engine.id,
         query_engine=q_engine.name,
-        doc_url=doc_url
+        doc_url=doc.src_url,
+        index_file=doc.gcs_path
       )
       query_document.save()
       doc_models_processed.append(query_document)
@@ -314,7 +307,7 @@ def create_search_engine(q_engine: QueryEngine,
   return operation
 
 def import_documents_to_datastore(data_url: str,
-                                  docs_to_be_processed: List[str],
+                                  docs_to_be_processed: List[DataSourceFile],
                                   project_id: str,
                                   location: str,
                                   data_store_id: str) -> \
@@ -325,8 +318,8 @@ def import_documents_to_datastore(data_url: str,
   
   Args:
     data_url: url of data source (gcs, bq dataset:table)
-    docs_to_be_processed: list of doc urls stored in the data url
-       that should be imported
+    docs_to_be_processed: list of datasource file objects stored in the
+       data url that should be imported
     project_id: id of project of datastore
     location: location of datastore (currently hard coded to "global")
        see: https://cloud.google.com/vertex-ai/docs/general/locations
@@ -361,7 +354,8 @@ def import_documents_to_datastore(data_url: str,
   # create operation to import data
   operation = None
   if data_url.startswith("gs://"):
-    operation = import_documents_gcs(docs_to_be_processed, client, parent)
+    doc_gcs_urls = [doc.gcs_path for doc in docs_to_be_processed]
+    operation = import_documents_gcs(doc_gcs_urls, client, parent)
 
   elif data_url.startswith("bq://"):
     bq_datasource = data_url.split("bq://")[1].split("/")[0]
@@ -389,7 +383,7 @@ def import_documents_to_datastore(data_url: str,
     docs_processed = docs_to_be_processed
   else:
     # TODO: build list of documents processed/not processed from results
-    pass
+    docs_processed = docs_to_be_processed
 
   return docs_processed, docs_not_processed
 
@@ -477,26 +471,20 @@ def delete_vertex_search(q_engine: QueryEngine, data_store_id: str):
   except Exception as e:
     Logger.error(f"Exception deleting datastore {data_store_id}: {str(e)}")
 
-def inventory_gcs_files(gcs_url: str) -> List[str]:
+def inventory_gcs_files(gcs_url: str) -> List[DataSourceFile]:
   """ create a list of eligible files for vertex search in the GCS bucket """
   valid_files = []
   storage_client = storage.Client(project=PROJECT_ID)
   bucket_name = gcs_url.split("gs://")[1].split("/")[0]
-  bucket = storage_client.bucket(bucket_name)
   for blob in storage_client.list_blobs(bucket_name):
     file_name = blob.name
-    file_url = f"gs://{bucket_name}/{file_name}"
     file_extension = Path(file_name).suffix
     if file_extension in VALID_FILE_EXTENSIONS:
-      valid_files.append(file_url)
-    elif file_extension == ".htm":
-      # rename .htm files to .html
-      new_blob_name = str(Path.joinpath(
-        Path(file_name).parent,
-        Path(file_name).stem + ".html"))
-      new_blob = bucket.rename_blob(blob, new_blob_name)
-      file_url = f"gs://{bucket_name}/{new_blob.name}"
-      valid_files.append(file_url)
+      file_url = f"gs://{bucket_name}/{file_name}"
+      doc = DataSourceFile(doc_name=Path(file_name).name,
+                           src_url=file_url,
+                           gcs_path=file_url)
+      valid_files.append(doc)
   return valid_files
 
 def download_web_docs(q_engine: QueryEngine, data_url: str) -> \
@@ -509,7 +497,7 @@ def download_web_docs(q_engine: QueryEngine, data_url: str) -> \
   Returns:
     gcs_url:  URL of bucket holding files
               (bucket will be created if it doesn't exist)
-    downloaded_docs: list of DataSourceFiles of downloaded web docs
+    downloaded_docs: list of DataSourceFiles representing downloaded web docs
   """
   storage_client = storage.Client(project=PROJECT_ID)
   params = q_engine.params or {}
