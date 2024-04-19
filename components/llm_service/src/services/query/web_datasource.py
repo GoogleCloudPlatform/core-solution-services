@@ -214,7 +214,9 @@ class WebDataSource(DataSource):
         f"No content from: {response.url}, content type: {content_type}")
     else:
       filepath = os.path.join(item["filepath"], item["filename"])
-      data_source_file = DataSourceFile(item["filename"], item["url"], filepath)
+      data_source_file = DataSourceFile(doc_name=item["filename"],
+                                        src_url=item["url"],
+                                        local_path=filepath)
       if "gcs_path" in item:
         data_source_file.gcs_path = item["gcs_path"]
       self.doc_data.append(data_source_file)
