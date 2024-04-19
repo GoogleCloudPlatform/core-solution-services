@@ -450,6 +450,16 @@ def datastore_id_from_engine(q_engine: QueryEngine) -> str:
 def delete_vertex_search(q_engine: QueryEngine, data_store_id: str):
   """ attempt to delete a vertex search datastore and engine """
   Logger.info(f"deleting vertex search query engine {q_engine.name}")
+  try:
+    Logger.info(f"deleting engine {q_engine.name}")
+    client = discoveryengine.EngineServiceClient()
+    request = discoveryengine.DeleteEngineRequest(name=q_engine.name)
+    operation = client.delete_engine(request=request)
+    wait_for_operation(operation)
+    Logger.info(f"successfully deleted engine {q_engine.name}")
+  except Exception as e:
+    Logger.error(f"Exception deleting datastore {data_store_id}: {str(e)}")
+
   if data_store_id:
     try:
       Logger.info(f"deleting datastore {data_store_id}")
@@ -460,16 +470,6 @@ def delete_vertex_search(q_engine: QueryEngine, data_store_id: str):
       Logger.info(f"successfully deleted datastore {data_store_id}")
     except Exception as e:
       Logger.error(f"Exception deleting datastore {data_store_id}: {str(e)}")
-
-  try:
-    Logger.info(f"deleting engine {q_engine.name}")
-    client = discoveryengine.EngineServiceClient()
-    request = discoveryengine.DeleteEngineRequest(name=q_engine.name)
-    operation = client.delete_engine(request=request)
-    wait_for_operation(operation)
-    Logger.info(f"successfully deleted engine {q_engine.name}")
-  except Exception as e:
-    Logger.error(f"Exception deleting datastore {data_store_id}: {str(e)}")
 
 def inventory_gcs_files(gcs_url: str) -> List[DataSourceFile]:
   """ create a list of eligible files for vertex search in the GCS bucket """
