@@ -25,10 +25,10 @@ from config import (COHERE_LLM_TYPE,
                     VERTEX_LLM_TYPE_GEMINI_PRO,
                     VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                     PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
-                    PROVIDER_TRUSS,
+                    PROVIDER_TRUSS, PROVIDER_VLLM,
                     PROVIDER_MODEL_GARDEN,
                     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
-                    TRUSS_LLM_LLAMA2_CHAT,
+                    TRUSS_LLM_LLAMA2_CHAT, VLLM_LLM_GEMMA_CHAT,
                     KEY_PROVIDER, KEY_IS_CHAT, KEY_IS_MULTI, KEY_ENABLED,
                     KEY_MODEL_CLASS, KEY_MODEL_PARAMS, KEY_MODEL_NAME,
                     KEY_MODEL_ENDPOINT)
@@ -137,6 +137,21 @@ TEST_MODEL_GARDEN_CONFIG = {
 TEST_TRUSS_CONFIG = {
   TRUSS_LLM_LLAMA2_CHAT: {
     KEY_PROVIDER: PROVIDER_TRUSS,
+    KEY_MODEL_ENDPOINT: "fake-endpoint",
+    KEY_IS_CHAT: True,
+    KEY_MODEL_PARAMS: {
+      "temperature": 0.2,
+      "max_tokens": 900,
+      "top_p": 1.0,
+      "top_k": 10
+    },
+    KEY_ENABLED: True
+  }
+}
+
+TEST_VLLM_CONFIG = {
+  VLLM_LLM_GEMMA_CHAT: {
+    KEY_PROVIDER: PROVIDER_VLLM,
     KEY_MODEL_ENDPOINT: "fake-endpoint",
     KEY_IS_CHAT: True,
     KEY_MODEL_PARAMS: {

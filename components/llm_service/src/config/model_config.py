@@ -83,6 +83,7 @@ PROVIDER_VERTEX = "Vertex"
 PROVIDER_MODEL_GARDEN = "ModelGarden"
 PROVIDER_LANGCHAIN = "Langchain"
 PROVIDER_TRUSS = "Truss"
+PROVIDER_VLLM = "vLLM"
 PROVIDER_LLM_SERVICE = "LLMService"
 
 # model vendors
@@ -105,6 +106,7 @@ VERTEX_LLM_TYPE_BISON_CHAT_32K = "VertexAI-Chat-Palm2-32k"
 VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
 VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT = "VertexAI-ModelGarden-LLAMA2-Chat"
 TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
+VLLM_LLM_GEMMA_CHAT = "vLLM-Gemma-Chat"
 VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
 VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 VERTEX_LLM_TYPE_GEMINI_PRO = "VertexAI-Gemini-Pro"
@@ -129,6 +131,7 @@ MODEL_TYPES = [
   VERTEX_LLM_TYPE_GECKO_EMBEDDING,
   VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
   TRUSS_LLM_LLAMA2_CHAT,
+  VLLM_LLM_GEMMA_CHAT,
   VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
   VERTEX_LLM_TYPE_BISON_CHAT_32K,
   VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN,
@@ -447,7 +450,7 @@ class ModelConfig():
     ]
     return provider_models
 
-  def get_provider_model_config(self, provider_id: str) -> List[str]:
+  def get_provider_model_config(self, provider_id: str) -> dict:
     """ get model config dict for provider models """
     provider_model_config = {
       model_id: model_config
@@ -457,7 +460,7 @@ class ModelConfig():
     return provider_model_config
 
   def get_provider_value(self, provider_id: str, key: str,
-      model_id: str=None, default=None) -> Any:
+                         model_id: str = None, default=None) -> Any:
     """ get config value from provider model config """
     if model_id is None:
       # get global provider value
