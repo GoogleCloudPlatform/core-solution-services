@@ -252,7 +252,7 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
   output = json_response["data"]["generated_text"]
 
   # if the prompt is repeated as part of the response, remove it
-  output = output.replace(prompt, "")
+  output = output.replace(prompt, "").strip()
   # Llama 2 often adds quotes
   if output.startswith('"') or output.startswith("'"):
     output = output[1:]
