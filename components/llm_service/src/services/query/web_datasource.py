@@ -112,11 +112,13 @@ class WebDataSourceParser:
       # rename .htm files to .html for upload to GCS
       file_extension = Path(file_name).suffix
       if file_extension == ".htm":
+        new_filename = Path(file_name).stem + ".html"
         new_filepath = str(Path.joinpath(
           Path(saved_path).parent,
-          Path(file_name).stem + ".html"))
+          new_filename))
         os.rename(saved_path, new_filepath)
         saved_path = new_filepath
+        item["filename"] = new_filename
       gcs_path = upload_to_gcs(self.storage_client, self.bucket_name,
                                saved_path)
       item.update({"gcs_path": gcs_path})
