@@ -109,8 +109,10 @@ class DataSource:
       blob.download_to_filename(file_path)
       gcs_path = blob.path.replace("/b/","")
       gcs_url = f"gs://{gcs_path}"
-      doc_filepaths.append(
-          DataSourceFile(blob.name, gcs_url, file_path, gcs_url))
+      doc_filepaths.append(DataSourceFile(doc_name=blob.name,
+                                          src_url=blob.public_url,
+                                          local_path=file_path,
+                                          gcs_path=gcs_url))
 
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(
