@@ -85,6 +85,12 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
+### Update Project ID
+Run this command to update the project id in config files of your local repo.
+```
+sb set project-id ${PROJECT_ID}
+```
+
 ### Set up a Jump Host
 
 > If you choose to run this setup in your local machine, you can skip this section. However, we recommend using a jump host to ensure a consistent install environment.
@@ -320,6 +326,24 @@ cd terraform/stages/2-foundation/
 terraform import google_firestore_database.database "(default)"
 cd -
 ```
+
+### Apple M1 laptop related errors
+- I use an Apple M1 Mac and got errors like below when I ran `terraform init`:
+  ```
+  │ Error: Incompatible provider version
+  │
+  │ Provider registry.terraform.io/hashicorp/template v2.2.0 does not have a package available for your current platform,
+  │ darwin_arm64.
+  │
+  │ Provider releases are separate from Terraform CLI releases, so not all providers are available for all platforms. Other
+  │ versions of this provider may have different platforms supported.
+  ```
+  - A: Run the following to add support of M1 chip ([reference](https://kreuzwerker.de/en/post/use-m1-terraform-provider-helper-to-compile-terraform-providers-for-mac-m1))
+    ```
+     brew install kreuzwerker/taps/m1-terraform-provider-helper
+     m1-terraform-provider-helper activate
+     m1-terraform-provider-helper install hashicorp/template -v v2.2.0
+    ```
 
 ### Running user-tool gives an error
 ```commandline
