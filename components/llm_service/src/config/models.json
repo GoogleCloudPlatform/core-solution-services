@@ -53,7 +53,7 @@
       "model_name": "text-bison@002"
     },
     "VertexAI-Chat": {
-      "enabled": false,
+      "enabled": true,
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "gemini-pro",
@@ -72,7 +72,7 @@
       "model_name": "chat-bison@002"
     },
     "VertexAI-Gemini-Pro": {
-      "enabled": true,
+      "enabled": false,
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "gemini-pro",
