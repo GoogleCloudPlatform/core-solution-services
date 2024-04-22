@@ -117,7 +117,7 @@ class DataSource:
     return doc_filepaths
 
   def chunk_document(self, doc_name: str, doc_url: str,
-                     doc_filepath: str) -> List[str]:
+                     doc_filepath: str):
     """
     Process doc into chunks for embeddings
 
@@ -129,6 +129,7 @@ class DataSource:
        list of text chunks or None if the document could not be processed
     """
 
+    embed_chunks = None
     text_chunks = None
 
     Logger.info(f"generating index data for {doc_name}")
@@ -147,7 +148,7 @@ class DataSource:
 
     if doc_text_list is not None:
       # clean text of escape and other unprintable chars
-      doc_text_list = [self.clean_text(x) for x in doc_text_list]
+      # doc_text_list = [self.clean_text(x) for x in doc_text_list]
       # combine text from all pages to try to avoid small chunks
       # when there is just title text on a page, for example
       doc_text = "\n".join(doc_text_list)
@@ -155,19 +156,19 @@ class DataSource:
       doc = Document(text=doc_text)
       # a node = a chunk of a page
       chunks = self.doc_parser.get_nodes_from_documents([doc])
+      # remove any empty chunks
+      chunks = [c for c in chunks if c.metadata["text"].strip() != ""]
       # this is a sentence parser with overlap --
       # each text chunk will include the specified
       # number of sentences before and after the current sentence
+      embed_chunks = [c.metadata["text"] for c in chunks]
       text_chunks = [c.metadata["window_text"] for c in chunks]
 
       if all(element == "" for element in text_chunks):
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
         self.docs_not_processed.append(doc_url)
 
-      # clean up text_chunks with empty items.
-      text_chunks = [x for x in text_chunks if x.strip() != ""]
-
-    return text_chunks
+    return text_chunks, embed_chunks
 
   @classmethod
   def text_to_sentence_list(cls, text: str) -> List[str]:
