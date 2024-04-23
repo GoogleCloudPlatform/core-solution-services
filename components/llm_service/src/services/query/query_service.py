@@ -299,7 +299,7 @@ def query_search(q_engine: QueryEngine,
       raise ResourceNotFoundException(
         f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
 
-    query_reference = create_query_reference(
+    query_reference = make_query_reference(
       q_engine=q_engine,
       query_doc=query_doc,
       doc_chunk=doc_chunk,
@@ -315,14 +315,14 @@ def query_search(q_engine: QueryEngine,
 
 
 # Create a single QueryReference object
-def create_query_reference(q_engine: QueryEngine,
+def make_query_reference(q_engine: QueryEngine,
                            query_doc: QueryDocument,
                            doc_chunk: QueryDocumentChunk,
                            query_embeddings: List[Optional[List[float]]],
                            rank_sentences: bool = False,
 ) -> QueryReference:
   """
-  Create a single QueryReference object, with appropriate fields
+  Make a single QueryReference object, with appropriate fields
   for modality
   
   Args:
