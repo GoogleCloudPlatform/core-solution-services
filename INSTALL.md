@@ -108,13 +108,22 @@ echo Jump host zone is ${JUMP_HOST_ZONE}
 gcloud compute ssh jump-host --zone=${JUMP_HOST_ZONE} --tunnel-through-iap --project=${PROJECT_ID}
 ```
 
-Check the status of the installation:
+Authenticate to GCP in the jumphost:
+```
+gcloud auth login
+gcloud auth application-default login
+```
+
+Check the status of the jump host setup:
 ```
 ls -la /tmp/jumphost_ready
 ```
 - If the file `jumphost_ready` exists, it means the jumphost is ready to deploy the rest of the resources.  If not, please wait for a few minutes.
 
-You should start with a clean copy of the repository. Check out the code in the jump host:
+Run the rest of the deployment steps from within this jumphost.
+
+### Configure repository
+You should start with a clean copy of the repository. Check out the code:
 ```
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
 ```
@@ -126,37 +135,28 @@ cd core-solution-services
 git checkout v0.2.0
 ```
 
-
-Initialize the jump host and set Project ID:
+Configure the repository:
 ```
-gcloud auth login
-gcloud auth application-default login
-
 # Set PROJECT_ID
 export PROJECT_ID=$(gcloud config get project)
 echo PROJECT_ID=${PROJECT_ID}
 
-# Update project_id values in the source repo on the jumphost
+# Update project_id values in the source repo
 sb set project-id ${PROJECT_ID}
 
 # Update domain name (for HTTPS load balancer and ingress)
 export DOMAIN_NAME=<your-domain-name> # e.g. css.example.com
 sb vars set domain_name ${DOMAIN_NAME}
-
-# Set up API_BASE_URL for the frontend app:
-export API_BASE_URL=https://${DOMAIN_NAME}
 ```
 
-Run the rest of the deployment steps from within this jumphost.
-
-### Initialize the Cloud infra
+### Create the Cloud infra
 
 Apply infra/terraform:
 ```
 sb infra apply 1-bootstrap
 ```
 
-Note in the following step there is a known issue with firebase setup: `Error 409: Database already exists.`  If this error occurs, consult the Troubleshooting section to apply the fix, then re-run the 1-bootstrap step.
+Note in the following step there is a known issue with firebase setup: `Error 409: Database already exists.`  If this error occurs, consult the Troubleshooting section to apply the fix, then re-run the 2-foundation step.
 
 ```
 sb infra apply 2-foundation
@@ -216,7 +216,7 @@ export APP_BASE_PATH="/streamlit"
 If you are installing GENIE you can deploy a subset of the microservices used by GENIE.  Depending on your use case for GENIE you may not need the tools service (only needed if you are using agents that use tools).
 
 ```
-sb deploy -m authentication,llm_service,jobs_service,frontend_streamlit,tools_service -n $NAMESPACE
+sb deploy -m authentication,redis,llm_service,jobs_service,frontend_streamlit,tools_service -n $NAMESPACE
 ```
 - This will run `skaffold` commands to deploy those microservices to the GKE cluster.
 
@@ -327,6 +327,24 @@ terraform import google_firestore_database.database "(default)"
 cd -
 ```
 
+### Apple M1 laptop related errors
+- I use an Apple M1 Mac and got errors like below when I ran `terraform init`:
+  ```
+  │ Error: Incompatible provider version
+  │
+  │ Provider registry.terraform.io/hashicorp/template v2.2.0 does not have a package available for your current platform,
+  │ darwin_arm64.
+  │
+  │ Provider releases are separate from Terraform CLI releases, so not all providers are available for all platforms. Other
+  │ versions of this provider may have different platforms supported.
+  ```
+  - A: Run the following to add support of M1 chip ([reference](https://kreuzwerker.de/en/post/use-m1-terraform-provider-helper-to-compile-terraform-providers-for-mac-m1))
+    ```
+     brew install kreuzwerker/taps/m1-terraform-provider-helper
+     m1-terraform-provider-helper activate
+     m1-terraform-provider-helper install hashicorp/template -v v2.2.0
+    ```
+
 ### Running user-tool gives an error
 ```commandline
 user@jump-host:/home/user/core-solution-services$ PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py create_user --base-url=$BASE_URL
@@ -350,3 +368,15 @@ Fix
 sudo usermod -aG docker ${USER}
 ```
 Log out and log back in again to re-evaluate group memberships
+
+
+### sb deploy --dev fails for Mac OS
+```commandline
+sh: envsubst: command not found
+build [frontend-flutterflow] failed: exit status 127
+```
+Fix
+```commandline
+brew install gettext
+brew link --force gettext 
+```

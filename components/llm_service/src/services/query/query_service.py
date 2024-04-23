@@ -69,7 +69,7 @@ VECTOR_STORES = {
   VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
 }
 
-RERANK_MODEL_NAME = "cross-encoder"
+RERANK_MODEL_NAME = "colbert"
 reranker = Reranker(RERANK_MODEL_NAME, verbose=0)
 
 # minimum number of references to return
