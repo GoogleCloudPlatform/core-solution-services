@@ -205,15 +205,22 @@ class QueryReference(BaseModel):
     """
     Log-friendly string representation of a QueryReference
     """
-    document_text_num_tokens = len(self.document_text.split())
-    document_text_num_chars = len(self.document_text)
+    if self.modality.casefold()=="text":
+      document_text_num_tokens = len(self.document_text.split())
+      document_text_num_chars = len(self.document_text)
+      document_text_snippet = self.document_text[:min(100, document_text_num_chars)]
+    else:
+      document_text_num_tokens = "N/A"
+      document_text_num_chars = "N/A"
+      document_text_num_snippet = "N/A"
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
       f"chunk_id={self.chunk_id}, "
+      f"modality={self.modality}, "
       f"chunk_num_tokens={document_text_num_tokens}, "
       f"chunk_num_chars={document_text_num_chars}, "
-      f"chunk_text={self.document_text[:min(100, document_text_num_chars)]})"
+      f"chunk_text={document_text_snippet})"
     )
 
   class Meta:
