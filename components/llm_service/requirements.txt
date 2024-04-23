@@ -15,5 +15,5 @@ rerankers[transformers]==0.1.2
 Scrapy==2.11.0
 spacy==3.7.2
 sqlalchemy-bigquery @ https://github.com/googleapis/python-bigquery-sqlalchemy/archive/refs/tags/v1.10.0rc1.zip
-sqlparse==0.4.4
+sqlparse==0.5.0
 sqlvalidator==0.0.20
