@@ -29,7 +29,7 @@
       "env_flag": "ENABLE_LLM_SERVICE_PROVIDER"
     },
     "Truss": {
-      "enabled": true,
+      "enabled": false,
       "env_flag": "ENABLE_TRUSS_LLAMA2"
     }
   },
@@ -104,7 +104,7 @@
       "model_endpoint": "truss-llama2-7b-service",
       "is_chat": true,
       "provider": "Truss",
-      "enabled": true,
+      "enabled": false,
       "context_length": 4096,
       "model_params": {
         "temperature": 0.2,
