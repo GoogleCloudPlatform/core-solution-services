@@ -45,7 +45,7 @@ gcloud resource-manager org-policies delete constraints/iam.allowedPolicyMemberD
 
 ### Clone repo
 
-Clone this repo to your local machine to start. Optionally, you can use [Cloud Shell](https://cloud.google.com/shell). Run the rest of the commands inside the repo folder.
+You should start with a clean copy of the repository. Clone this repo to your local machine to start. Optionally, you can use [Cloud Shell](https://cloud.google.com/shell). Run the rest of the commands inside the repo folder.
 
 ```
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
@@ -120,10 +120,8 @@ ls -la /tmp/jumphost_ready
 ```
 - If the file `jumphost_ready` exists, it means the jumphost is ready to deploy the rest of the resources.  If not, please wait for a few minutes.
 
-Run the rest of the deployment steps from within this jumphost.
-
-### Configure repository
-You should start with a clean copy of the repository. Check out the code:
+#### Configure repository in Jumphost
+Check out the code:
 ```
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
 ```
@@ -143,13 +141,18 @@ echo PROJECT_ID=${PROJECT_ID}
 
 # Update project_id values in the source repo
 sb set project-id ${PROJECT_ID}
+```
 
-# Update domain name (for HTTPS load balancer and ingress)
+Run the rest of the deployment steps from within this jumphost.
+
+
+### Create the Cloud infra
+
+Perform this additional repo config step, to update domain name (for HTTPS load balancer and ingress):
+```
 export DOMAIN_NAME=<your-domain-name> # e.g. css.example.com
 sb vars set domain_name ${DOMAIN_NAME}
 ```
-
-### Create the Cloud infra
 
 Apply infra/terraform:
 ```
