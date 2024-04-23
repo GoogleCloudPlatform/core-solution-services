@@ -19,16 +19,16 @@ from pydantic import BaseModel
 
 
 # pylint: disable = line-too-long
-class Data(BaseModel):
-  job_name: Optional[str]
+class BatchJobData(BaseModel):
+  name: Optional[str]
   status: Optional[str]
-
+  type: Optional[str]
 
 class BatchJobModel(BaseModel):
   """Batch Job Response Pydantic Model"""
   success: bool
   message: str
-  data: Optional[Data]
+  data: Optional[BatchJobData]
 
   class Config:
     orm_mode = True
@@ -38,7 +38,8 @@ class BatchJobModel(BaseModel):
             "message": "Successfully initiated the job with type 'emsi_ingestion'."
                        " Please use the job name to track the job status",
             "data": {
-                "job_name": "abcd-ajdf-sdfk-sdff",
+                "name": "abcd-ajdf-sdfk-sdff",
+                "type": "query_engine_build",
                 "status": "active"
             }
         }

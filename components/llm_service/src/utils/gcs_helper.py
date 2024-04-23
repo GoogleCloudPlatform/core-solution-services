@@ -16,6 +16,7 @@
 """
 Google Storage helper functions.
 """
+from pathlib import Path
 from typing import List
 from common.utils.logging_handler import Logger
 from google.cloud import storage
@@ -70,15 +71,13 @@ def set_bucket_viewer_iam(
   bucket.set_iam_policy(policy)
 
 def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
-                  file_name: str, content: str,
-                  content_type="text/plain") -> str:
-  """ Upload content to GCS bucket. Returns URL to file. """
-  Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
+                  file_path: str) -> str:
+  """ Upload file to GCS bucket. Returns URL to file. """
+  Logger.info(f"Uploading {file_path} to GCS bucket {bucket_name}")
   bucket = storage_client.bucket(bucket_name)
+  file_name = Path(file_path).name
   blob = bucket.blob(file_name)
-  blob.upload_from_string(
-    data=content,
-    content_type=content_type
-  )
-  Logger.info(f"Uploaded {len(content)} bytes")
-  return blob.path
+  blob.upload_from_filename(file_path)
+  gcs_url = f"gs://{bucket_name}/{file_name}"
+  Logger.info(f"Uploaded {file_path} to {gcs_url}")
+  return gcs_url

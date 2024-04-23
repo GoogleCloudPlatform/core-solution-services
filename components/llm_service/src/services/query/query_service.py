@@ -578,7 +578,7 @@ def query_engine_build(doc_url: str,
     else:
       raise RuntimeError(f"Invalid query_engine_type {query_engine_type}")
   except Exception as e:
-    # delete query engine model if build unsuccessful
+    # delete query engine models if build unsuccessful
     delete_engine(q_engine, hard_delete=True)
     raise InternalServerError(str(e)) from e
 
@@ -782,6 +782,14 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
       "query_engine_id", "==", q_engine.id
     ).delete()
 
+    QueryReference.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
+    QueryResult.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
     # delete query engine
     QueryEngine.delete_by_id(q_engine.id)
   else:
@@ -797,6 +805,16 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
       "query_engine_id", "==", q_engine.id).fetch()
     for qc in qchunks:
       qc.soft_delete_by_id(qc.id)
+
+    qrefs = QueryReference.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qr in qrefs:
+      qr.soft_delete_by_id(qr.id)
+
+    qres = QueryResult.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qr in qres:
+      qr.soft_delete_by_id(qr.id)
 
     # delete query engine
     QueryEngine.soft_delete_by_id(q_engine.id)
