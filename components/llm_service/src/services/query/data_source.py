@@ -148,7 +148,7 @@ class DataSource:
 
     if doc_text_list is not None:
       # clean text of escape and other unprintable chars
-      # doc_text_list = [self.clean_text(x) for x in doc_text_list]
+      doc_text_list = [self.clean_text(x) for x in doc_text_list]
       # combine text from all pages to try to avoid small chunks
       # when there is just title text on a page, for example
       doc_text = "\n".join(doc_text_list)
