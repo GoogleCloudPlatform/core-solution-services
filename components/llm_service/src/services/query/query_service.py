@@ -394,8 +394,10 @@ def create_query_reference(q_engine: QueryEngine,
   # For image chunk only
   elif modality=="image":
     query_reference_dict["page"]=doc_chunk.page
+    query_reference_dict["chunk_url"]=doc_chunk.chunk_url
   # For video and audio chunks only
   elif modality=="video" | modality=="audio":
+    query_reference_dict["chunk_url"]=doc_chunk.chunk_url
     query_reference_dict["timestamp_start"]=doc_chunk.timestamp_start
     query_reference_dict["timestamp_stop"]=doc_chunk.timestamp_stop
 
