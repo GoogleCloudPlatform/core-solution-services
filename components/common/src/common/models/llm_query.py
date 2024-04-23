@@ -193,6 +193,7 @@ class QueryReference(BaseModel):
   query_engine = TextField(required=True)  # All modalities
   document_id = TextField(required=True)  # All modalities
   document_url = TextField(required=True)  # All modalities
+  modality = TextField(required=True)  # All modalities: text image video audio
   chunk_id = TextField(required=False)  # All modalities
   chunk_url = TextField(required=False)  # Image or video or audio only
   page = TextField(required=False)  # Text or image only
