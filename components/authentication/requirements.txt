@@ -1,5 +1,5 @@
 PyJWT==2.7.0
-fastapi==0.85.1
+fastapi==0.109.1
 firebase-admin==4.5.2
 fireo==1.6.2
 google-cloud-logging==3.5.0
