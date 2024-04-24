@@ -29,6 +29,7 @@ class UserChat(BaseModel):
   """
   id = IDField()
   user_id = TextField(required=True)
+  prompt = TextField(required=False, default="")
   title = TextField(required=False, default="")
   llm_type = TextField(required=False)
   agent_name = TextField(required=False)
