@@ -62,6 +62,7 @@ def query_vertex_search(q_engine: QueryEngine,
 
   # create query document and reference models to store results
   query_references = []
+  n = 0
   for search_result in search_results:
     document_data = \
         proto.Message.to_dict(search_result.document)["derived_struct_data"]
@@ -93,7 +94,9 @@ def query_vertex_search(q_engine: QueryEngine,
       document_id=query_document.id,
       document_url=query_document.doc_url,
       document_text=document_data["snippets"][0]["snippet"],
+      chunk_id=str(n) # fake chunk id for ux's that dedup on chunk id
     )
+    n += 1
     query_reference.save()
     query_references.append(query_reference)
 
