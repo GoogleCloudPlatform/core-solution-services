@@ -156,8 +156,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    embeddings = get_multi_embeddings(text, user_file_bytes,
-                                   user_file_extension, embedding_type)
+    embeddings = get_multi_embeddings(text, user_file_bytes, embedding_type)
 
     return {
         "success": True,

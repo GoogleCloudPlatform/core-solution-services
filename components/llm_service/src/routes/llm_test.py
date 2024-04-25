@@ -136,6 +136,7 @@ def test_generate_embeddings(client_with_emulator):
   assert json_response.get("data") == FAKE_EMBEDDINGS, \
     "returned generated embeddings"
 
+
 def test_generate_embeddings_multi(client_with_emulator):
   url = f"{api_url}/embedding/multi"
 
