@@ -21,29 +21,35 @@ from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.models import QueryEngine
 from config import PROJECT_ID
-from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import CSVLoader
 from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper
+from llama_index.core import SimpleDirectoryReader
+from llama_index.core.node_parser import SentenceWindowNodeParser
+from llama_index.core import Document
 
 # pylint: disable=broad-exception-caught
 
 # text chunk size for embedding data
 Logger = Logger.get_logger(__file__)
-CHUNK_SIZE = 1000
+# number of sentences included before and after the current
+# sentence when creating chunks (chunks have overlapping text)
+CHUNK_SENTENCE_PADDING = 1
 
 class DataSourceFile():
-  """ class storing meta data about a data source file """
+  """ object storing meta data about a data source file """
   def __init__(self,
-               doc_name:str,
-               src_url:str,
-               local_path:str,
-               gcs_path:str = None):
+               doc_name:str=None,
+               src_url:str=None,
+               local_path:str=None,
+               gcs_path:str=None,
+               doc_id:str=None):
     self.doc_name = doc_name
     self.src_url = src_url
     self.local_path = local_path
     self.gcs_path = gcs_path
+    self.doc_id = doc_id
 
 class DataSource:
   """
@@ -53,9 +59,26 @@ class DataSource:
   def __init__(self, storage_client):
     self.storage_client = storage_client
     self.docs_not_processed = []
+    # use llama index sentence window parser
+    self.doc_parser = SentenceWindowNodeParser.from_defaults(
+      window_size=CHUNK_SENTENCE_PADDING,
+      include_metadata=True,
+      window_metadata_key="window_text",
+      original_text_metadata_key="text",
+    )
 
   @classmethod
   def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
+    """
+    Generate a unique downloads bucket name, that obeys the rules of
+    GCS bucket names.
+
+    Args:
+        q_engine: the QueryEngine to generate the bucket name for.
+
+    Returns:
+        bucket name (str)
+    """
     qe_name = q_engine.name.replace(" ", "-")
     qe_name = qe_name.replace("_", "-").lower()
     bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
@@ -84,8 +107,12 @@ class DataSource:
       file_name = Path(blob.name).name
       file_path = os.path.join(temp_dir, file_name)
       blob.download_to_filename(file_path)
-      doc_filepaths.append(
-          DataSourceFile(blob.name, blob.path, file_path, blob.path))
+      gcs_path = blob.path.replace("/b/","")
+      gcs_url = f"gs://{gcs_path}"
+      doc_filepaths.append(DataSourceFile(doc_name=blob.name,
+                                          src_url=blob.public_url,
+                                          local_path=file_path,
+                                          gcs_path=gcs_url))
 
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(
@@ -108,10 +135,6 @@ class DataSource:
 
     text_chunks = None
 
-    # use langchain text splitter
-    text_splitter = CharacterTextSplitter(chunk_size=CHUNK_SIZE,
-                                          chunk_overlap=0)
-
     Logger.info(f"generating index data for {doc_name}")
 
     # read doc data and split into text chunks
@@ -127,10 +150,19 @@ class DataSource:
       self.docs_not_processed.append(doc_url)
 
     if doc_text_list is not None:
-      # split text into chunks
-      text_chunks = []
-      for text in doc_text_list:
-        text_chunks.extend(text_splitter.split_text(text))
+      # clean text of escape and other unprintable chars
+      doc_text_list = [self.clean_text(x) for x in doc_text_list]
+      # combine text from all pages to try to avoid small chunks
+      # when there is just title text on a page, for example
+      doc_text = "\n".join(doc_text_list)
+      # llama-index base class that is used by all parsers
+      doc = Document(text=doc_text)
+      # a node = a chunk of a page
+      chunks = self.doc_parser.get_nodes_from_documents([doc])
+      # this is a sentence parser with overlap --
+      # each text chunk will include the specified
+      # number of sentences before and after the current sentence
+      text_chunks = [c.metadata["window_text"] for c in chunks]
 
       if all(element == "" for element in text_chunks):
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
@@ -139,15 +171,12 @@ class DataSource:
       # clean up text_chunks with empty items.
       text_chunks = [x for x in text_chunks if x.strip() != ""]
 
-      # clean text of escape and other unprintable chars
-      text_chunks = [self.clean_text(x) for x in text_chunks]
-
     return text_chunks
 
   @classmethod
   def text_to_sentence_list(cls, text: str) -> List[str]:
     """
-    Split text into sentences. 
+    Split text into sentences.
     In this class we assume generic text.
     Subclasses may do additional transformation (e.g. html to text).
     """
@@ -156,7 +185,7 @@ class DataSource:
   @classmethod
   def clean_text(cls, text: str) -> List[str]:
     """
-    Produce clean text from text extracted from source document. 
+    Produce clean text from text extracted from source document.
     In this class we assume generic text.
     Subclasses may do additional transformation (e.g. html to text).
     """
@@ -196,6 +225,15 @@ class DataSource:
         for page in range(num_pages):
           doc_text_list.append(reader.pages[page].extract_text())
         Logger.info(f"Finished reading pdf file {doc_name}")
+    elif doc_extension in ["docx", "pptx", "ppt", "pptm"]:
+      doc_text_list = []
+      docs = SimpleDirectoryReader(
+          input_files=[doc_filepath]
+      ).load_data()
+      # each document is read as one chunk, but do this for clarity
+      for d in docs:
+        doc_text_list.append(d.text)
+      Logger.info(f"Finished reading file {doc_name}")
     else:
       # return None if doc type not supported
       Logger.error(

@@ -29,7 +29,7 @@
       "env_flag": "ENABLE_LLM_SERVICE_PROVIDER"
     },
     "Truss": {
-      "enabled": true,
+      "enabled": false,
       "env_flag": "ENABLE_TRUSS_LLAMA2"
     }
   },
@@ -111,13 +111,13 @@
       "model_endpoint": "truss-llama2-7b-service",
       "is_chat": true,
       "provider": "Truss",
-      "enabled": true,
+      "enabled": false,
       "context_length": 4096,
       "model_params": {
         "temperature": 0.2,
         "top_p": 0.95,
         "top_k": 40,
-        "max_length": 2048
+        "max_new_tokens": 1024
       }
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
@@ -133,7 +133,7 @@
       "provider": "Langchain",
       "enabled": true,
       "model_name": "gpt-4",
-      "model_class": "ChatOpenAI",      
+      "model_class": "ChatOpenAI",
       "context_length": 8192,
       "model_params": {
         "temperature": 0
@@ -145,7 +145,7 @@
       "provider": "Langchain",
       "enabled": true,
       "model_name": "gpt-4-1106-preview",
-      "model_class": "ChatOpenAI",      
+      "model_class": "ChatOpenAI",
       "context_length": 128000,
       "model_params": {
         "temperature": 0
@@ -157,7 +157,7 @@
       "provider": "Langchain",
       "enabled": true,
       "model_name": "gpt-3.5-turbo",
-      "model_class": "ChatOpenAI",      
+      "model_class": "ChatOpenAI",
       "context_length": 16385,
       "model_params": {
         "temperature": 0

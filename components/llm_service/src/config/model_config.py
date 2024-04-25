@@ -15,11 +15,11 @@
 """
   LLM Service config object module
 """
-# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
+# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught,protected-access
 # Config dicts that hold the current config for providers, models,
 # embedding models
 
-import inspect
+import importlib
 import json
 import os
 from pathlib import Path
@@ -152,16 +152,16 @@ def load_langchain_classes() -> dict:
   class instance.
   """
   langchain_chat_classes = {
-    k:klass for (k, klass) in inspect.getmembers(langchain_chat)
-    if isinstance(klass, type)
+    k:getattr(importlib.import_module(klass), k)
+    for k,klass in langchain_chat._module_lookup.items()
   }
   langchain_llm_classes = {
     klass().__name__:klass()
     for klass in langchain_llm.get_type_to_cls_dict().values()
   }
   langchain_embedding_classes = {
-    k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
-    if isinstance(klass, type)
+    k:getattr(importlib.import_module(klass), k)
+    for k,klass in langchain_embedding._module_lookup.items()
   }
 
   # special handling for Vertex and OpenAI chat models, which are

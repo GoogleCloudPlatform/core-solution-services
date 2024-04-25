@@ -68,7 +68,7 @@ class SharePointDataSource(DataSource):
       f"Downloaded files will not be uploaded to Google Cloud Storage")
     else:
       # ensure downloads bucket exists, and clear contents
-      create_bucket(self.storage_client, self.bucket_name)
+      create_bucket(self.storage_client, self.bucket_name, make_public=True)
 
     # download files from sharepoint to temp_dir
     datasource_files = \
@@ -83,6 +83,7 @@ class SharePointDataSource(DataSource):
 
         # return public link to blob
         doc.gcs_path = blob.public_url
+        doc.src_url = blob.public_url
 
     return datasource_files
 
@@ -97,6 +98,8 @@ class SharePointDataSource(DataSource):
         userprincipalname=ONEDRIVE_PRINCIPLE_NAME,
         folder_path=sharepoint_folder
     )
+    Logger.info(
+        f"Downloading files from sharepoint folder {sharepoint_folder}...")
     access_token = loader._authenticate_with_msal()
     doc_metadata = loader._connect_download_and_return_metadata(
         access_token,
@@ -106,6 +109,9 @@ class SharePointDataSource(DataSource):
         userprincipalname=loader.userprincipalname,
         isRelativePath=True
     )
+    Logger.info(
+        f"Done: downloaded {len(doc_metadata)} files from "
+        f"sharepoint {sharepoint_folder} to {temp_dir}")
 
     # return a list of DataSourceFile
     datasource_files = []
@@ -114,8 +120,8 @@ class SharePointDataSource(DataSource):
       doc_data = doc_metadata[doc_path]
       datasource_file = DataSourceFile(
         doc_name = doc_data["file_name"],
-        src_url = doc_data["file_id"],
-        local_path = doc_path
+        local_path = doc_path,
+        doc_id = doc_data["file_id"]
       )
       datasource_files.append(datasource_file)
     return datasource_files
