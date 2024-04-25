@@ -33,7 +33,7 @@ from schemas.llm_schema import (LLMGenerateModel,
                                 LLMEmbeddingsModel,
                                 LLMMultiEmbeddingsModel)
 from services.llm_generate import llm_generate, llm_generate_multi
-from services.embeddings import get_embeddings
+from services.embeddings import get_embeddings, get_multi_embeddings
 from utils.file_helper import validate_multi_vision_file_type
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
@@ -152,11 +152,11 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
   is_file_valid, user_file_extension = validate_multi_vision_file_type(
                                         user_file_name, user_file_b64)
   if not is_file_valid:
-    return BadRequest("File type must be a supported image or video.")
+    return BadRequest("File type must be a supported image.")
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    embeddings = get_embeddings(text, user_file_bytes,
+    embeddings = get_multi_embeddings(text, user_file_bytes,
                                    user_file_extension, embedding_type)
 
     return {
@@ -239,13 +239,12 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
   # Make sure that the user file is a valid image or video
   is_file_valid, user_file_extension = validate_multi_vision_file_type(
                                         user_file_name, user_file_b64)
-  if not is_file_valid:
-    return BadRequest("File type must be a supported image or video.")
+  if not is_file_valid or not user_file_extension:
+    return BadRequest("File type must be a supported image")
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    result = await llm_generate_multi(prompt, user_file_bytes,
-                                      user_file_extension, llm_type)
+    result = await llm_generate_multi(prompt, user_file_bytes, llm_type)
 
     return {
         "success": True,

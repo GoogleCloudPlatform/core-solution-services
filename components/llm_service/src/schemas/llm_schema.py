@@ -302,7 +302,7 @@ class LLMMultiEmbeddingsResponse(BaseModel):
   """LLM Multimodal Embeddings Response model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully generated multimodal embeddings"
-  data: Optional[List[float]] = []
+  data: Optional[dict] = {}
 
   class Config():
     orm_mode = True
