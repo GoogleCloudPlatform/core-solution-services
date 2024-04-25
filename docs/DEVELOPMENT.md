@@ -244,7 +244,7 @@ pip install -r requirements.txt
 
 * Set the following variables to your kubernetes cluster name and region. If you are not sure of your cluster name or region check the [GCP cloud console](https://console.cloud.google.com/kubernetes/list/overview).
   ```
-  export REGION=<your cluster region>
+  export REGION=$(gcloud container clusters list --filter=main-cluster --format="value(location)")
   export CLUSTER_NAME=main-cluster
   ```
 

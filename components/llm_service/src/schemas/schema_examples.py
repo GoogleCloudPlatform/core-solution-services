@@ -184,6 +184,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
 CHAT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "user_id": "fake-user-id",
+  "prompt": "test input 1",
   "title": "Test chat",
   "llm_type": "VertexAI-Chat",
   "history": [

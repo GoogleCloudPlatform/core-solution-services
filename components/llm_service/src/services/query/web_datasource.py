@@ -22,6 +22,7 @@ import hashlib
 import os
 import sys
 import tempfile
+from pathlib import Path
 from typing import List
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
@@ -48,6 +49,7 @@ def save_content(filepath: str, file_name: str, content: str) -> None:
   with open(doc_filepath, "w", encoding="utf-8") as f:
     f.write(content)
   Logger.info(f"{len(content)} bytes written")
+  return doc_filepath
 
 def sanitize_url(url) -> str:
   # Remove the scheme (http, https) and domain, and keep the path and query
@@ -105,10 +107,20 @@ class WebDataSourceParser:
       "content_type": content_type,
       "content": file_content
     }
-    save_content(self.filepath, file_name, file_content)
+    saved_path = save_content(self.filepath, file_name, file_content)
     if self.storage_client and self.bucket_name:
+      # rename .htm files to .html for upload to GCS
+      file_extension = Path(file_name).suffix
+      if file_extension == ".htm":
+        new_filename = Path(file_name).stem + ".html"
+        new_filepath = str(Path.joinpath(
+          Path(saved_path).parent,
+          new_filename))
+        os.rename(saved_path, new_filepath)
+        saved_path = new_filepath
+        item["filename"] = new_filename
       gcs_path = upload_to_gcs(self.storage_client, self.bucket_name,
-                               file_name, file_content, content_type)
+                               saved_path)
       item.update({"gcs_path": gcs_path})
     return item
 
@@ -214,7 +226,9 @@ class WebDataSource(DataSource):
         f"No content from: {response.url}, content type: {content_type}")
     else:
       filepath = os.path.join(item["filepath"], item["filename"])
-      data_source_file = DataSourceFile(item["filename"], item["url"], filepath)
+      data_source_file = DataSourceFile(doc_name=item["filename"],
+                                        src_url=item["url"],
+                                        local_path=filepath)
       if "gcs_path" in item:
         data_source_file.gcs_path = item["gcs_path"]
       self.doc_data.append(data_source_file)

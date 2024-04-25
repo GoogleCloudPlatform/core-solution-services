@@ -1,6 +1,6 @@
 # copier:raw
 
-name: GKE - Deploy microservices to a custom project
+name: GKE - Deploy microservices to a custom demo project
 on:
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ env:
   ONEDRIVE_CLIENT_ID: ${{ vars.ONEDRIVE_CLIENT_ID }}
   ONEDRIVE_TENANT_ID: ${{ vars.ONEDRIVE_TENANT_ID }}
   AUTH_AUTO_CREATE_USERS: ${{ vars.AUTH_AUTO_CREATE_USERS }}
-  AUTH_EMAIL_DOMAINS_WHITELIST: ${{ vars.AUTH_EMAIL_DOMAINS_WHITELIST }}  
+  AUTH_EMAIL_DOMAINS_WHITELIST: ${{ vars.AUTH_EMAIL_DOMAINS_WHITELIST }}
   GKE_CLUSTER: main-cluster
   GKE_REGION: us-central1
   KUSTOMIZE_VERSION: 5.0.0
@@ -28,7 +28,7 @@ jobs:
   deploy_backends:
     name: Deploy microservices to GKE cluster
     runs-on: ubuntu-latest
-    environment: custom
+    environment: nasa-demo
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
