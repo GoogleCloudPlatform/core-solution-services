@@ -208,11 +208,12 @@ class QueryReference(BaseModel):
     if self.modality.casefold()=="text":
       document_text_num_tokens = len(self.document_text.split())
       document_text_num_chars = len(self.document_text)
-      document_text_snippet = self.document_text[:min(100, document_text_num_chars)]
+      document_text_snippet = self.document_text[:min(100,
+                                                      document_text_num_chars)]
     else:
       document_text_num_tokens = "N/A"
       document_text_num_chars = "N/A"
-      document_text_num_snippet = "N/A"
+      document_text_snippet = "N/A"
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
