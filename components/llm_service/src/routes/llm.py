@@ -131,7 +131,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
         user_file_name(str), text(str), and embedding_type(str) type for model
 
   Returns:
-      LLMEmbeddingsResponse
+      LLMMultiEmbeddingsResponse
   """
   embeddings_config_dict = {**embeddings_config.dict()}
   text = embeddings_config_dict.get("text")
@@ -151,7 +151,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
 
   is_file_valid, user_file_extension = validate_multi_vision_file_type(
                                         user_file_name, user_file_b64)
-  if not is_file_valid:
+  if not is_file_valid or user_file_extension.startswith("video"):
     return BadRequest("File type must be a supported image.")
 
   try:
@@ -240,11 +240,12 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
   is_file_valid, user_file_extension = validate_multi_vision_file_type(
                                         user_file_name, user_file_b64)
   if not is_file_valid or not user_file_extension:
-    return BadRequest("File type must be a supported image")
+    return BadRequest("File type must be a supported image or video.")
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    result = await llm_generate_multi(prompt, user_file_bytes, llm_type)
+    result = await llm_generate_multi(prompt, user_file_bytes,
+                                    user_file_extension, llm_type)
 
     return {
         "success": True,
