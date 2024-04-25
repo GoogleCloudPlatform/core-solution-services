@@ -78,8 +78,20 @@ FAKE_GENERATE_EMBEDDINGS = {
   "text": "test prompt"
 }
 
+FAKE_GENERATE_EMBEDDINGS_MULTI = {
+  "embedding_type": "Embedding Test",
+  "text": "test prompt",
+  "user_file_b64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs\
+    4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII=",
+  "user_file_name": "test.png"
+}
+
 FAKE_GENERATE_RESPONSE = "test generation"
 FAKE_EMBEDDINGS = [0.01234]
+FAKE_EMBEDDINGS_MULTI = {
+  "image_embeddings": FAKE_EMBEDDINGS,
+  "text_embeddings": FAKE_EMBEDDINGS
+}
 
 @pytest.fixture
 def client_with_emulator(clean_firestore, scope="module"):
@@ -124,6 +136,18 @@ def test_generate_embeddings(client_with_emulator):
   assert json_response.get("data") == FAKE_EMBEDDINGS, \
     "returned generated embeddings"
 
+def test_generate_embeddings_multi(client_with_emulator):
+  url = f"{api_url}/embedding/multi"
+
+  with mock.patch("routes.llm.get_multi_embeddings",
+                  return_value=FAKE_EMBEDDINGS_MULTI):
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_EMBEDDINGS_MULTI)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  assert json_response.get("data") == FAKE_EMBEDDINGS_MULTI, \
+    "returned generated embeddings"
+
 
 def test_llm_generate(client_with_emulator):
   url = f"{api_url}/generate"
@@ -136,6 +160,7 @@ def test_llm_generate(client_with_emulator):
   assert resp.status_code == 200, "Status 200"
   assert json_response.get("content") == FAKE_GENERATE_RESPONSE, \
     "returned generated text"
+
 
 def test_llm_generate_multi(client_with_emulator):
   url = f"{api_url}/generate/multi"
