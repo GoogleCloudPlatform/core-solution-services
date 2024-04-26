@@ -292,7 +292,17 @@ def run_crawler(queue,
                 depth_limit,
                 bucket_name):
   """
-  Separate method to make it easier to run crawler in a subprocess
+  Method to run scrapy crawler in a subprocess.  Results will be put into
+  the provided multiprocess.queue.
+
+  Args:
+    queue: multiprocess.Queue for crawler results (list of DataSourceFile)
+    doc_url: url to download
+    spider_class_name: name of spider class to use for scrapy
+    temp_dir: directory to download files
+    depth_limit: depth limit to crawl. 0=don't crawl, just
+                         download provided URLs
+    bucket_name: name of GCS bucket to save downloaded webpages
   """
   # get the web crawler class
   module = importlib.import_module("services.query.web_datasource")
