@@ -1,0 +1,144 @@
+:root {
+  /* Light theme variables (default) */
+  --scrollbar-thumb-color: #888888c2;
+  --scrollbar-thumb-hover-color: #555555af;
+  --scrollbar-track-color: #f1f1f1;
+}
+
+[data-theme="dark"] {
+  /* Dark theme variables */
+  --scrollbar-thumb-color: #4B5563;
+  --scrollbar-thumb-hover-color: #374151;
+  --scrollbar-track-color: #9CA3AF;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  background: transparent;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+/* Hover state with full opacity */
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color);
+  opacity: 1; /* Fully visible on hover */
+  transition: background 0.4s ease, opacity 0.4s ease;
+  border-radius: 4px;
+}
+
+/* Initial state with reduced opacity or fully transparent */
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  transition: background 0.4s ease, opacity 0.4s ease;
+  border-radius: 4px;
+  opacity: 0; /* Start fully transparent */
+}
+
+.loader {
+  animation: spinPulse 3s infinite linear;
+}
+
+@keyframes spinPulse {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(90deg) scale(0.8);
+  }
+  50% {
+    transform: rotate(180deg) scale(1);
+  }
+  75% {
+    transform: rotate(270deg) scale(0.8);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.inline-ref ol {
+  list-style-type: decimal;
+  margin-left: 20px;
+}
+
+.inline-ref ul {
+  list-style-type: disc;
+  margin-left: 20px;
+}
+
+.inline-ref li {
+  margin-bottom: 0.5rem;
+}
+
+.inline-ref b, strong {
+  font-weight: 600;
+}
+
+.inline-ref {
+  word-wrap: break-word;
+  white-space: pre-wrap; 
+}
+
+.inline-ref p {
+  display: inline;
+}
+
+.inline-ref a {
+  word-break: break-all;
+}
+
+/* AI Chat sidebar responsive widths */
+@media screen and (max-width: 768px) {
+  .chat-p {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  .main-m {
+    margin-left: 0;
+  }
+  .sidebar-w {
+    width: 18rem;
+  }
+}
+
+@media screen and (min-width: 768px) and (max-width: 1366px) {
+  .chat-p {
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+  .main-m {
+    margin-left: 18rem;
+  }
+  .sidebar-w {
+    width: 18rem;
+  }
+}
+
+@media screen and (min-width: 1366px) and (max-width: 1600px) {
+  .chat-p {
+    padding-left: 8rem;
+    padding-right: 8rem;
+  }
+  .main-m {
+    margin-left: 19rem;
+  }
+  .sidebar-w {
+    width: 19rem;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  .chat-p {
+    padding-left: 12rem;
+    padding-right: 12rem;
+  }
+  .main-m {
+    margin-left: 20rem;
+  }
+  .sidebar-w {
+    width: 20rem;
+  }
+}
