@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-argument,broad-exception-raised
+# pylint: disable=unused-argument,broad-exception-raised,line-too-long,protected-access
 """
 Web data sources for Query Engines
 """
 from datetime import datetime
+import importlib
+import multiprocessing
 import re
 import hashlib
 import os
@@ -253,33 +255,23 @@ class WebDataSource(DataSource):
       # ensure downloads bucket exists, and clear contents
       create_bucket(self.storage_client, self.bucket_name)
 
-    spider_class = WebDataSourceSpider
+    spider_class = WebDataSourceSpider.__name__
     if self.depth_limit == 0:
       # for this class, depth_limit=0 means don't crawl, just download the
       # web page(s) supplied.  (for scrapy depth_limit=0 means no limit).
-      spider_class = WebDataSourcePageSpider
+      spider_class = WebDataSourcePageSpider.__name__
 
-    # define Scrapy settings
-    settings = {
-      "ROBOTSTXT_OBEY": False,
-      "DEPTH_LIMIT": self.depth_limit,
-      "LOG_LEVEL": "INFO"
-    }
-    # create the Scrapy crawler process
-    process = CrawlerProcess(settings=settings)
-    crawler = process.create_crawler(spider_class)
-
-    # Connect the item_scraped signal to the handler
-    crawler.signals.connect(self._item_scraped,
-                            signal=signals.item_scraped)
-
-    # start the scrapy crawler
-    process.crawl(crawler,
-                  start_urls=[doc_url],
-                  storage_client=self.storage_client,
-                  bucket_name=self.bucket_name,
-                  filepath=temp_dir)
-    process.start()
+    # Run the crawler in a subprocess.  This is due to limitations on the
+    # Twisted Reactor used in the crawler - it can't be run more than once
+    # in the same process.
+    # See https://stackoverflow.com/questions/39946632/reactornotrestartable-error-in-while-loop-with-scrapy
+    queue = multiprocessing.Queue()
+    process_args = (queue, doc_url, spider_class, temp_dir,
+                    self.depth_limit, self.bucket_name)
+    p = multiprocessing.Process(target=run_crawler, args=process_args)
+    p.start()
+    p.join()
+    self.doc_data = queue.get()
 
     Logger.info(f"Scraped {len(self.doc_data)} links")
     return self.doc_data
@@ -292,6 +284,48 @@ class WebDataSource(DataSource):
   def clean_text(cls, text: str) -> List[str]:
     html_text = html_to_text(text)
     return super().clean_text(html_text)
+
+def run_crawler(queue,
+                doc_url,
+                spider_class_name,
+                temp_dir,
+                depth_limit,
+                bucket_name):
+  """
+  Separate method to make it easier to run crawler in a subprocess
+  """
+  # get the web crawler class
+  module = importlib.import_module("services.query.web_datasource")
+  spider_class = getattr(module, spider_class_name)
+
+  # create datasource class
+  storage_client = storage.Client()
+  data_source = WebDataSource(storage_client, bucket_name, depth_limit)
+
+  # define Scrapy settings
+  settings = {
+    "ROBOTSTXT_OBEY": False,
+    "DEPTH_LIMIT": depth_limit,
+    "LOG_LEVEL": "INFO"
+  }
+  # create the Scrapy crawler process
+  process = CrawlerProcess(settings=settings)
+  crawler = process.create_crawler(spider_class)
+
+  # Connect the item_scraped signal to the handler
+  crawler.signals.connect(data_source._item_scraped,
+                          signal=signals.item_scraped)
+
+  # start the scrapy crawler
+  process.crawl(crawler,
+                start_urls=[doc_url],
+                storage_client=storage_client,
+                bucket_name=bucket_name,
+                filepath=temp_dir)
+  process.start()
+
+  # put results on queue
+  queue.put(data_source.doc_data)
 
 
 def main():
