@@ -2,12 +2,19 @@
 This component is a REACT based frontend UI for GENIE.
 
 # Install
+
 You must deploy GENIE first before deploying this frontend app.  See [the install guide for GENIE.](../../INSTALL.md)
 
-Start from the top level directory of this component:
-```
-cd components/frontend_react
-```
+## Prerequisites
+
+The following prerequisites are necessary to deploy the React frontend app:
+
+| Tool                | Required Version | Installation                                                                                                                                                                                        |
+|---------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+
+| `npm`               | `>= v1.3.7`      | https://developer.hashicorp.com/terraform/downloads                                                                                                                                                 |
+| `solutions-builder` | `>= v1.17.19`    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
+| `firebase CLI`      | `>= v13.1.0`     | `utils/install_firebase.sh v13.1.0`                                                                                                                                                                 |
 
 ## Check solution builder
 
@@ -17,6 +24,11 @@ sb version
 ```
 
 If solution builder is not present, you need to activate a Python virtual environment with the solution-builder package installed.  You can do this using the following commands:
+
+Start from the top level directory of this component:
+```
+cd components/frontend_react
+```
 
 Create a virtual environment and activate it.
 ```
@@ -49,27 +61,23 @@ export GENIE_DOMAIN_NAME=<your-genie-domain-name>
 export CONTACT_EMAIL=<your-contact-email>
 ```
 
-Run these commands to update the config of your local repo.
+Run these commands from the top-level directory of the repository folder to update the config of your local repo.
 ```
+cd core-solution-services
+
 sb set project-id ${PROJECT_ID}
 sb vars set genie-domain-name ${GENIE_DOMAIN_NAME}
 sb vars set firebase-api-key ${FIREBASE_API_KEY}
 sb vars set contact-email ${CONTACT_EMAIL}
 ```
 
-# Local Development
+# Build and deploy the app
 Execute all these commands from the `components/frontend_react/src` directory.
 
 ## Install dependencies
 
 ```bash
 npm install
-```
-
-## Run a local dev server
-
-```bash
-npm run dev
 ```
 
 ## Build for production
@@ -81,5 +89,13 @@ npm run build
 ## Deploy with firebase
 ```bash
 firebase deploy --only hosting
+```
+
+# Development
+
+## Run a local dev server
+
+```bash
+npm run dev
 ```
 
