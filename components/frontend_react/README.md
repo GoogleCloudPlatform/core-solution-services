@@ -12,7 +12,7 @@ The following prerequisites are necessary to deploy the React frontend app:
 
 | Tool                | Required Version | Installation                                                                                                                                                                                        |
 |---------------------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `npm`               | `>= 3.9`         | [Mac](https://www.python.org/ftp/python/3.9.18/python-3.9.18-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
+| `npm`               | `>= 10.2`        | [Mac](https://nodejs.org/en/download/) • [Windows](https://nodejs.org/en/download/) • [Linux](https://nodejs.org/en/download/package-manager/) |
 | `firebase CLI`      | `>= v13.1.0`     | `utils/install_firebase.sh v13.1.0` |
 | `solutions-builder` | `>= v1.17.19`    | https://pypi.org/project/solutions-builder/ |
 
