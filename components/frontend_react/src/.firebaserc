@@ -1,0 +1,5 @@
+{
+  "projects": {
+    "default": "your-project-id" # sb-var:project-id
+  }
+}
