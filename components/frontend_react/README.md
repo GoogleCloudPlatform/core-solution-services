@@ -2,7 +2,7 @@
 This component is a REACT based frontend UI for GENIE.
 
 # Install
-You must deploy GENIE first before deploying this frontend app.  See [../../INSTALL.md](the install guide for GENIE.)
+You must deploy GENIE first before deploying this frontend app.  See [the install guide for GENIE.](../../INSTALL.md)
 
 Start from the top level directory of this component:
 ```
@@ -40,13 +40,14 @@ gcloud auth application-default login
 ```
 
 ### Set environment variables
-- To get your firebase API key, go to [the firebase console for your project](https://console.firebase.google.com/project/<your-project-id>/settings/general).
+- To get your firebase API key, go to the firebase console settings for your project: https://console.firebase.google.com/project/<your-project-id>/settings/general
 - The "genie domain name" is the domain name of your deployed genie backend.
 - The contact email is the email of an admin for your app.
 ```
 export FIREBASE_API_KEY=<your-firebase-api-key>
 export GENIE_DOMAIN_NAME=<your-genie-domain-name>
 export CONTACT_EMAIL=<your-contact-email>
+```
 
 Run these commands to update the config of your local repo.
 ```
