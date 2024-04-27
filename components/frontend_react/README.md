@@ -40,7 +40,7 @@ gcloud auth application-default login
 ```
 
 ### Set environment variables
-- To get your firebase API key, go to the firebase console settings for your project: https://console.firebase.google.com/project/<your-project-id>/settings/general
+- To get your firebase API key, go to the firebase console settings for your project: https://console.firebase.google.com/project/[your-project-id]/settings/general
 - The "genie domain name" is the domain name of your deployed genie backend.
 - The contact email is the email of an admin for your app.
 ```
@@ -80,7 +80,6 @@ npm run build
 
 ## Deploy with firebase
 ```bash
-cd src
 firebase deploy --only hosting
 ```
 
