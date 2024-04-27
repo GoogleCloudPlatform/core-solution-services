@@ -57,7 +57,7 @@ gcloud auth application-default login
 - The contact email is the email of an admin for your app.
 ```
 export FIREBASE_API_KEY=<your-firebase-api-key>
-export GENIE_DOMAIN_NAME=<your-genie-domain-name>
+export DOMAIN_NAME=<your-domain-name>
 export CONTACT_EMAIL=<your-contact-email>
 ```
 
@@ -66,7 +66,7 @@ Run these commands from the top-level directory of the repository folder to upda
 cd core-solution-services
 
 sb set project-id ${PROJECT_ID}
-sb vars set genie-domain-name ${GENIE_DOMAIN_NAME}
+sb vars set domain-name ${DOMAIN_NAME}
 sb vars set firebase-api-key ${FIREBASE_API_KEY}
 sb vars set contact-email ${CONTACT_EMAIL}
 ```
