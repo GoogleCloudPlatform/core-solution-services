@@ -1,0 +1,14 @@
+# Changes here will be overwritten by Copier
+_src_path: /Users/lramsey/work/ailp/lukmanr-gps-core-solution-services/.venv/lib/python3.9/site-packages/solutions_builder/cli/../modules/blank_service
+cloudrun_neg: true
+component_name: frontend_react
+default_deploy: cloudrun
+depend_on_common: false
+deploy_cloudrun: true
+deploy_gke: true
+gcp_region: us-central1
+local_port: '9007'
+module_version: '1.0'
+resource_name: frontend-react
+service_path: frontend-react
+use_github_action: true
