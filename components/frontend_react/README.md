@@ -68,6 +68,7 @@ firebase deploy --only hosting
 # Development
 
 ## Run a local dev server
+This command will start a local instance of the app for development.
 
 ```bash
 npm run dev
