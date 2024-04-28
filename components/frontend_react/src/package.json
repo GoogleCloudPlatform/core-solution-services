@@ -23,7 +23,7 @@
     "axios": "^1.5.0",
     "daisyui": "^3.9.4",
     "dayjs": "^1.11.10",
-    "firebase": "^10.4.0",
+    "firebase": "^10.11.1",
     "formik": "^2.4.4",
     "i18next": "^23.5.1",
     "i18next-browser-languagedetector": "^7.1.0",
