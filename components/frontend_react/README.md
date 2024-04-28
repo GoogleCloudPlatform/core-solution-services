@@ -72,9 +72,14 @@ sb vars set contact-email ${CONTACT_EMAIL}
 ```
 
 # Build and deploy the app
-Execute all these commands from the `components/frontend_react/src` directory.
+
+## Add Google identity provider
+
+Add Google as an identity provider.  You can do this in the [GCP console](https://console.cloud.google.com/customer-identity/providers?referrer=search&project=[your-project-id]) or in the [Firebase console](https://firebase.corp.google.com/project/your-project-id/authentication/providers). 
+
 
 ## Install dependencies
+Execute all commands below from the `components/frontend_react/src` directory.
 
 ```bash
 npm install
@@ -87,6 +92,28 @@ npm run build
 ```
 
 ## Deploy with firebase
+
+- Edit `.firebaserc` to set your project id
+- Create your app in firebase:
+```bash
+firebase apps:create web <your-app-name>
+```
+
+- Run the `firebase apps:sdkconfig WEB` command printed as the output of the `apps:create` command:
+```bash
+firebase apps:sdkconfig WEB <your-firebase-app-id>
+```
+
+### Edit deployment config file
+- Using the output of the `firebase apps:sdkconfig` command edit the config.production.env file to set all the variable values present there.
+- Copy the file to `.env.production`:
+```bash
+cp config.production.env .env.production
+```
+
+### Run firebase deploy
+Deploy the app to firebase hosting with the following command:
+
 ```bash
 firebase deploy --only hosting
 ```
