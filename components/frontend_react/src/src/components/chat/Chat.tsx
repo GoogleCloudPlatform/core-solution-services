@@ -132,7 +132,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
         },
         {
           onSuccess: (resp?: Chat) => {
-            const currChatId = resp?.toString() ?? null
+            const currChatId = resp?.id ?? null
 
             if (currChatId) {
               setResumeChatId(currChatId)

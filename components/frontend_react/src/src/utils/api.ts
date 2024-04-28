@@ -97,7 +97,7 @@ export const resumeChat =
       prompt: userInput,
       llm_type: llmType,
     }
-    return axios.post(url, data, { headers }).then(path(["data", "data", "user_chat_id"]))
+    return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
 
 export const fetchQuery =
