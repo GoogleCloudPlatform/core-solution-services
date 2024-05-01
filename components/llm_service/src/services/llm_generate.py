@@ -82,10 +82,10 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
       response = await llm_truss_service_predict(
           llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_VLLM):
-        model_endpoint = get_provider_value(
-            PROVIDER_VLLM, KEY_MODEL_ENDPOINT, llm_type)
-        response = await llm_vllm_service_predict(
-            llm_type, prompt, model_endpoint)
+      model_endpoint = get_provider_value(
+          PROVIDER_VLLM, KEY_MODEL_ENDPOINT, llm_type)
+      response = await llm_vllm_service_predict(
+          llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
@@ -191,10 +191,10 @@ async def llm_chat(prompt: str, llm_type: str,
       response = await llm_service_predict(
           prompt, is_chat, llm_type, user_chat)
     elif llm_type in get_provider_models(PROVIDER_TRUSS):
-        model_endpoint = get_provider_value(
-            PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
-        response = await llm_truss_service_predict(
-            llm_type, prompt, model_endpoint)
+      model_endpoint = get_provider_value(
+          PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
+      response = await llm_truss_service_predict(
+          llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_VLLM):
       model_endpoint = get_provider_value(
           PROVIDER_VLLM, KEY_MODEL_ENDPOINT, llm_type)

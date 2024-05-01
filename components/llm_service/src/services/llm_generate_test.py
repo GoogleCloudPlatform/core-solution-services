@@ -232,15 +232,15 @@ async def test_llm_truss_service_predict(clean_firestore, test_chat):
 
 @pytest.mark.asyncio
 async def test_llm_vllm_service_predict(clean_firestore, test_chat):
-    get_model_config().llm_model_providers = {
-        PROVIDER_VLLM: TEST_VLLM_CONFIG
-    }
-    get_model_config().llm_models = TEST_VLLM_CONFIG
-    with mock.patch(
-            "services.llm_generate.post_method",
-            return_value=mock.Mock(status_code=200,
-                                   json=lambda: FAKE_VLLM_RESPONSE)):
-        response = await llm_chat(
-            FAKE_PROMPT, VLLM_LLM_GEMMA_CHAT)
+  get_model_config().llm_model_providers = {
+    PROVIDER_VLLM: TEST_VLLM_CONFIG
+  }
+  get_model_config().llm_models = TEST_VLLM_CONFIG
+  with mock.patch(
+          "services.llm_generate.post_method",
+          return_value=mock.Mock(status_code=200,
+                                 json=lambda: FAKE_VLLM_RESPONSE)):
+    response = await llm_chat(
+      FAKE_PROMPT, VLLM_LLM_GEMMA_CHAT)
 
-    assert response == FAKE_GENERATE_RESPONSE
+  assert response == FAKE_GENERATE_RESPONSE
