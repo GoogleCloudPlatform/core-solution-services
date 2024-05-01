@@ -1,5 +1,6 @@
 anyio==3.7.1
 backports-unittest-mock==1.5
+fastapi==0.85.1
 httpx==0.23.1
 mock==4.0.3
 pylint==3.0.0
