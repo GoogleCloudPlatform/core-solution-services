@@ -1,3 +1,17 @@
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the License);
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import { useState, useEffect } from "react"
 import { Form, useFormik, FormikProvider } from "formik"
 import {
@@ -7,14 +21,13 @@ import {
   SalesTags,
   AccreditationStatus,
 } from "@gps-demos/demo-portal-types"
-import { GenericDemo, IDemo } from "@gps-demos/demo-portal-types/src/types"
-import DemoFormFields from "@/components/forms/DemoFormFields"
+import QueryEngineFormFields from "@/components/forms/QueryEngineFormFields"
 import Link from "next/link"
-import { IFormValidationData, IFormVariable } from "@/utils/types"
+import { QueryEngine, IFormValidationData, IFormVariable } from "@/utils/types"
 import { formValidationSchema, initialFormikValues } from "@/utils/forms"
 
-interface NewDemoFormProps {
-  demo: GenericDemo | null
+interface QueryEngineFormProps {
+  queryEngine: QueryEngine | null
   onSubmit: Function
   onSuccess: Function
   onFailure: Function
@@ -22,16 +35,16 @@ interface NewDemoFormProps {
   currentVarsData: IFormVariable[]
 }
 
-const NewDemoForm: React.FunctionComponent<NewDemoFormProps> = ({
+const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   onSubmit,
   onSuccess,
   onFailure,
-  demo,
+  queryEngine,
   token,
   currentVarsData,
 }) => {
   const [submitting, setSubmitting] = useState(false)
-  const [demoInitialFormat, setDemoInitialFormat] = useState({})
+  const [qEngineInitialFormat, setDemoInitialFormat] = useState({})
 
   const defaultValues = initialFormikValues(currentVarsData)
 
@@ -81,28 +94,10 @@ const NewDemoForm: React.FunctionComponent<NewDemoFormProps> = ({
   }
 
   useEffect(() => {
-    if (demo && demo !== null) {
-      const { tags, ...restDemoValues } = demo
-      if (
-        //@ts-ignore
-        restDemoValues?.partnerId === null ||
-        //@ts-ignore
-        restDemoValues?.partnerId === undefined
-      ) {
-        //@ts-ignore
-        delete restDemoValues?.partnerId
-      }
+    if (queryEngine && queryEngine !== null) {
+      const { tags, ...restDemoValues } = queryEngine
 
-      const cloudProducts = [...CloudProducts].filter((cp) =>
-        tags?.includes(cp),
-      )
-      const useCases = [...UseCases].filter((uc) => tags?.includes(uc))
-      const salesTags = [...SalesTags].filter((st) => tags?.includes(st))
-      const accreditationStatus = [...AccreditationStatus].filter((as) =>
-        tags?.includes(as),
-      )
-
-      const demoInitialFormating = Object.assign(
+      const qEngineInitialFormating = Object.assign(
         {},
         restDemoValues,
         { cloudProducts: cloudProducts },
@@ -110,11 +105,11 @@ const NewDemoForm: React.FunctionComponent<NewDemoFormProps> = ({
         { salesTags: salesTags },
         { accreditationStatus: accreditationStatus },
       )
-      setDemoInitialFormat(demoInitialFormating)
+      setDemoInitialFormat(qEngineInitialFormating)
     }
   }, [demo])
 
-  const initialValues = Object.assign({}, defaultValues, demoInitialFormat)
+  const initialValues = Object.assign({}, defaultValues, qEngineInitialFormat)
 
   const formValidationData: IFormValidationData =
     formValidationSchema(currentVarsData)
@@ -170,4 +165,4 @@ const NewDemoForm: React.FunctionComponent<NewDemoFormProps> = ({
   )
 }
 
-export default NewDemoForm
+export default QueryEngineForm
