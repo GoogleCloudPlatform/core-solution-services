@@ -38,6 +38,12 @@ export const links: INavigationItem[] = [
     ),
   },
   {
+    name: "Query Engines",
+    href: "/queryengines",
+    show: () => true,
+    icon: <div className="i-heroicons-tag h-5 w-5" />,
+  },
+  {
     name: "Query History",
     href: "/queries",
     show: () => true,

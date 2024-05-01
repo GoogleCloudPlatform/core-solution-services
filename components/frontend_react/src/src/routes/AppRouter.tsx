@@ -50,6 +50,10 @@ export const AuthAppRouter: React.FunctionComponent<AuthAppRouterProps> = ({
           path="/queries"
           element={<Queries token={token!} />}
         />
+        <Route
+          path="/queryengines"
+          element={<QueryEngines token={token!} />}
+        />
         <Route path="/about" element={<About />} />
         <Route path="/aichat" element={<AIChatRoute />} />
         <Route path="/aiquery" element={<AIQueryRoute />} />
