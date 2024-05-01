@@ -14,13 +14,6 @@
 
 import { useState, useEffect } from "react"
 import { Form, useFormik, FormikProvider } from "formik"
-import {
-  DemoPriorities,
-  CloudProducts,
-  UseCases,
-  SalesTags,
-  AccreditationStatus,
-} from "@gps-demos/demo-portal-types"
 import QueryEngineFormFields from "@/components/forms/QueryEngineFormFields"
 import Link from "next/link"
 import { QueryEngine, IFormValidationData, IFormVariable } from "@/utils/types"
@@ -44,7 +37,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   currentVarsData,
 }) => {
   const [submitting, setSubmitting] = useState(false)
-  const [qEngineInitialFormat, setDemoInitialFormat] = useState({})
+  const [qEngineInitialFormat, setQueryEngineInitialFormat] = useState({})
 
   const defaultValues = initialFormikValues(currentVarsData)
 
@@ -53,33 +46,13 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   }
 
   const handleSubmit = async (values: Record<string, any>) => {
-    const priority =
-      values.priority ?? DemoPriorities[DemoPriorities.length - 1] // Default to lowest priority
+    
+    const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
+            deleted_by, id, last_modified_by, last_modified_time, ...restValues } = values
 
-    values = {
-      ...values,
-      // @ts-ignore
-      priority: parseInt(priority),
-    }
-
-    const {
-      cloudProducts,
-      useCases,
-      salesTags,
-      accreditationStatus,
-      filesfileHideInPDP,
-      ...restValues
-    } = values
-
-    const tags = cloudProducts
-      .concat(useCases)
-      .concat(salesTags)
-      .concat(accreditationStatus)
-
-    const payloadData: IDemo | Record<string, any> = Object.assign(
+    const payloadData: QueryEngine | Record<string, any> = Object.assign(
       {},
       restValues,
-      { tags: tags },
     )
 
     try {
@@ -95,19 +68,16 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
 
   useEffect(() => {
     if (queryEngine && queryEngine !== null) {
-      const { tags, ...restDemoValues } = queryEngine
+      const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
+              deleted_by, id, last_modified_by, last_modified_time, ...restQEValues } = queryEngine
 
-      const qEngineInitialFormating = Object.assign(
+      const qEngineInitialFormatting = Object.assign(
         {},
-        restDemoValues,
-        { cloudProducts: cloudProducts },
-        { useCases: useCases },
-        { salesTags: salesTags },
-        { accreditationStatus: accreditationStatus },
+        restQEValues,
       )
-      setDemoInitialFormat(qEngineInitialFormating)
+      setQueryEngineInitialFormat(qEngineInitialFormatting)
     }
-  }, [demo])
+  }, [queryEngine])
 
   const initialValues = Object.assign({}, defaultValues, qEngineInitialFormat)
 
@@ -129,10 +99,10 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
       <FormikProvider value={formik}>
         <Form spellCheck="true">
           {currentVarsData ? (
-            <DemoFormFields
+            <QueryEngineFormFields
               variableList={currentVarsData}
               formikProps={formik}
-              demo={demo}
+              queryEngine={queryEngine}
               token={token}
               handleFiles={handleFiles}
             />
@@ -156,7 +126,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
                 submitting || Object.keys(formik.errors).length,
               )}
             >
-              {demo?.id ? "Update" : "Submit"}
+              {queryEngine?.id ? "Update" : "Submit"}
             </button>
           </div>
         </Form>

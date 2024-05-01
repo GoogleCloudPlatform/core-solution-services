@@ -14,7 +14,7 @@
 
 import sortBy from "lodash/sortBy"
 
-import { GenericDemo } from "@gps-demos/demo-portal-types/src/types"
+import { QueryEngine } from "@/utils/types"
 import { groupByOrderVariables } from "@/utils/forms"
 import { classNames } from "@/utils/dom"
 
@@ -32,18 +32,18 @@ import DateField from "@/components/forms//fields/DateField"
 import OtherFileNestedField from "@/components/forms/fields/OtherFileNestedField"
 import MultiSelectField from "@/components/forms/fields/MultiSelectField"
 
-interface DemoFormFieldsProps {
+interface QueryEngineFormFieldsProps {
   variableList: IFormVariable[]
   formikProps: any
-  demo: GenericDemo | null
+  queryEngine: QueryEngine | null
   token: string
   handleFiles: Function
 }
 
-const DemoFormFields: React.FC<DemoFormFieldsProps> = ({
+const QueryEngineFormFields: React.FC<QueryEngineFormFieldsProps> = ({
   variableList,
   formikProps,
-  demo,
+  queryEngine,
   token,
   handleFiles,
 }) => {
@@ -80,7 +80,7 @@ const DemoFormFields: React.FC<DemoFormFieldsProps> = ({
           <FileUploadField
             variable={variable}
             formikProps={formikProps}
-            demo={demo}
+            queryEngine={queryEngine}
             token={token}
             handleFilesUpload={handleFiles}
           />
@@ -119,10 +119,6 @@ const DemoFormFields: React.FC<DemoFormFieldsProps> = ({
               (variable: IFormVariable) => (
                 <div
                   className={classNames(
-                    formikProps.values.hasOwnProperty("partnerId") &&
-                      variable.name === "visibleToPartners"
-                      ? "hidden"
-                      : "",
                     "relative w-full",
                   )}
                   key={variable.name}
@@ -136,10 +132,7 @@ const DemoFormFields: React.FC<DemoFormFieldsProps> = ({
                       <div className="ml-1 text-error">*</div>
                     )}
                   </label>
-                  {formikProps.values.hasOwnProperty("partnerId") &&
-                  variable.name === "visibleToPartners"
-                    ? ""
-                    : renderControls(variable)}
+                  {renderControls(variable)}
                 </div>
               ),
             )}
@@ -150,4 +143,4 @@ const DemoFormFields: React.FC<DemoFormFieldsProps> = ({
   )
 }
 
-export default DemoFormFields
+export default QueryEngineFormFields
