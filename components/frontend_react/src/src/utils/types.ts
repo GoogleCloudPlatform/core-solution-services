@@ -159,3 +159,30 @@ export type Chat = {
   agent_name: string | null
   history: ChatContents[]
 }
+
+export type QueryEngine = {
+  archived_at_timestamp: string | null
+  archived_by: string
+  created_by: string
+  created_time: string
+  deleted_at_timestamp: string | null
+  deleted_by: string
+  id: string
+  last_modified_by: string
+  last_modified_time: string
+  name: string
+  llm_type: string | null
+  parent_engine_id: string
+  user_id: string
+  params: string[] | null
+  query_engine_type: string
+  description: string
+  embedding_type: string
+  vector_store: string | null
+  is_public: boolean | null
+  index_id: string | null
+  index_name: string | null
+  endpoint: string | null
+  doc_url: string | null
+  agents: string[] | null
+}
