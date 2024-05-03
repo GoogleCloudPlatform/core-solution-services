@@ -211,9 +211,9 @@ class QueryReference(BaseModel):
       document_text_snippet = self.document_text[:min(100,
                                                       document_text_num_chars)]
     else:
-      document_text_num_tokens = "None"
-      document_text_num_chars = "None"
-      document_text_snippet = "None"
+      document_text_num_tokens = None
+      document_text_num_chars = None
+      document_text_snippet = None
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
