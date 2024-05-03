@@ -70,9 +70,16 @@
     },
     "VertexAI-Gemini-Pro": {
       "is_chat": true,
+      "is_multi": true,
       "provider": "Vertex",
       "model_name": "gemini-pro",
       "context_length": 128000
+    },
+    "VertexAI-Gemini-Pro-Vision": {
+      "is_chat": true,
+      "is_multi": true,
+      "provider": "Vertex",
+      "model_name": "gemini-pro-vision"
     },
     "VertexAI-Chat-Palm2V2-Langchain": {
       "is_chat": true,

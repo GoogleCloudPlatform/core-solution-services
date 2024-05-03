@@ -1,0 +1,101 @@
+apiVersion: skaffold/v4beta1
+kind: Config
+metadata:
+  name: frontend_react
+
+
+
+build:
+  artifacts:
+  - image: frontend-react
+    sync:
+      infer:
+      - '**/*.py'
+      - '**/*.json'
+    docker:
+      cacheFrom:
+      - frontend-react
+      - frontend-react:latest
+
+    
+  googleCloudBuild: {}
+
+# Portforwarding when running `skaffold dev` locally.
+portForward:
+- resourceType: service
+  resourceName: frontend-react
+  port: 80
+  localPort: 9007 # Change this when adding other microservice.
+
+profiles:
+# Profile for building images locally.
+- name: local_build
+  build:
+    artifacts:
+    - image: frontend-react
+      
+      sync:
+        infer:
+        - '**/*.py'
+        - '**/*.json'
+    tagPolicy:
+      gitCommit: {}
+    local:
+      concurrency: 0
+
+# Profile for GKE deployment, building images via CloudBuild
+- &gke-profile # YAML anchor used by "default" profile.
+  name: gke
+  manifests:
+    # Loading kustomize base file for deployment.
+    kustomize:
+      paths:
+      - ./kustomize/base
+    # Substitute system's environment vars to properties.rendered.env
+    hooks:
+      before:
+      - host:
+          dir: ./kustomize/base
+          command: ["sh", "-c",
+            "envsubst < properties.env > properties.rendered.env"]
+      after:
+      - host:
+          dir: ./kustomize/base
+          command: ["sh", "-c", "rm *.rendered.env"]
+  # Simple deployment using kubectl.
+  deploy:
+    kubectl: {}
+
+# Profile for GKE Horizontal Pod Autoscaler.
+# This profile only works with `gke` profile together.
+# E.g. skaffold run -p gke,hpa
+- name: gke-hpa
+  manifests:
+    kustomize:
+      paths:
+      - ./kustomize/hpa
+  # Simple deployment using kubectl.
+  deploy:
+    kubectl: {}
+
+# Profile for Cloud Run deployment, building images via CloudBuild
+- &cloudrun-profile # YAML anchor used by "default" profile.
+  name: cloudrun
+  manifests:
+    rawYaml:
+      - manifests/cloudrun-service.yaml
+  deploy:
+    cloudrun:
+      projectid: your-project-id
+      region: us-central1
+  portForward:
+  - resourceType: service
+    resourceName: frontend-react
+    port: 80
+    localPort: 9007 # Change this when adding other microservice.
+
+# The default-deploy profile refer to cloudrun profile above.
+- <<: *cloudrun-profile
+  name: default-deploy
+
+

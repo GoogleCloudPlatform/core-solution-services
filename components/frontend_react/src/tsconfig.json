@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "useDefineForClassFields": true,
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "esModuleInterop": true, // allow default imports for CommonJS modules
+
+    /* Linting */
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+
+    /* Path imports */
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/mocks/*": ["./__mocks__/*"],
+      "@/public/*": ["./public/*"]
+    },
+    "types": ["bun-types", "node", "jest"]
+  },
+  "include": ["src", "scripts", "__mocks__", "__tests__"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  }
+}
