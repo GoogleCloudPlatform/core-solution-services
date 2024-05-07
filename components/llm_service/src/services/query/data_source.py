@@ -17,6 +17,7 @@ Query Data Sources
 import os
 import re
 import tempfile
+from urllib.parse import unquote
 from copy import copy
 from base64 import b64encode
 from typing import List
@@ -28,7 +29,7 @@ from pypdf import PdfReader, PdfWriter, PageObject
 from pdf2image import convert_from_path
 from langchain_community.document_loaders import CSVLoader
 from utils.errors import NoDocumentsIndexedException
-from utils import text_helper
+from utils import text_helper, gcs_helper
 from llama_index.core.node_parser import SentenceWindowNodeParser
 from llama_index.core import Document
 
@@ -188,7 +189,9 @@ class DataSource:
     doc_chunks = []
     try:
       # Convert PDF to an array of PNGs for each page
-      png_array = None
+      bucket_name = unquote(doc_url.split("/b/")[1].split("/")[0])
+      object_name = unquote(doc_url.split("/o/")[1].split("/")[0])
+
       with tempfile.TemporaryDirectory() as path:
         png_array = convert_from_path(doc_filepath, output_folder=path)
       # Open PDF and iterate over pages
@@ -209,6 +212,11 @@ class DataSource:
             png_bytes = f.read()
           png_b64 = b64encode(png_bytes).decode("utf-8")
 
+          # Upload to Google Cloud Bucket and return gs URL
+          page_png_name = ".png".join(f"{i}_{object_name}".rsplit(".pdf", 1))
+          png_url = gcs_helper.upload_to_gcs(self.storage_client,
+                        bucket_name, page_png_name, png_b64, "image/png")
+
           # Clean up temp files
           os.remove(pdf_doc["filepath"])
           os.remove(png_doc_filepath)
@@ -216,6 +224,7 @@ class DataSource:
           # Push chunk object into chunk array
           chunk_obj = {
             "image_b64": png_b64,
+            "image_url": png_url,
             "text_chunks": text_chunks
           }
           doc_chunks.append(chunk_obj)
