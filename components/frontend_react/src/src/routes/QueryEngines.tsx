@@ -28,7 +28,7 @@ interface QueryEnginesProps {
 const MAX_ENGINE_DISPLAY = 20
 
 const QueryEngines: React.FC<QueryEnginesProps> = ({ token }) => {
-  const [queryEngines, setQueryEngines] = useState<QueryEngine[]>([])
+  const [engines, setQueryEngines] = useState<QueryEngine[]>([])
 
   const { isLoading, data: queryEngines } = useQuery(
     ["QueryEngines"],
@@ -54,7 +54,7 @@ const QueryEngines: React.FC<QueryEnginesProps> = ({ token }) => {
           </tr>
         </thead>
         <tbody className="opacity-80">
-          {queryEngines
+          {engines
             .sort((a, b) => (b.created_time > a.created_time ? 1 : -1))
             .slice(0, MAX_ENGINE_DISPLAY)
             .map((engine, i) => (
