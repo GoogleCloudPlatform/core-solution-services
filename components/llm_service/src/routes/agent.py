@@ -139,7 +139,7 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
   if chat_id:
     user_chat = UserChat.find_by_id(chat_id)
   if not user_chat:
-    user_chat = UserChat(user_id=user.user_id)
+    user_chat = UserChat(user_id=user.user_id, prompt=prompt)
 
   user_chat.update_history(custom_entry={
     f"{CHAT_HUMAN}": prompt,
@@ -250,8 +250,8 @@ async def agent_run(agent_name: str,
     Logger.info(f"Generated output=[{output}]")
 
     # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                         agent_name=agent_name)
+    user_chat = UserChat(user_id=user.user_id, prompt=prompt,
+                         llm_type=llm_type, agent_name=agent_name)
     # Save user chat to retrieve actual ID.
     user_chat.update_history(prompt, output)
     user_chat.save()

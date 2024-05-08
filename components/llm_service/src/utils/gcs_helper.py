@@ -16,6 +16,8 @@
 """
 Google Storage helper functions.
 """
+from pathlib import Path
+from typing import List
 from common.utils.logging_handler import Logger
 from google.cloud import storage
 
@@ -36,29 +38,46 @@ def clear_bucket(storage_client: storage.Client, bucket_name: str) -> None:
 
 def create_bucket(storage_client: storage.Client,
                   bucket_name: str, location: str = None,
-                  clear: bool = True) -> None:
+                  clear: bool = True,
+                  make_public: bool = False) -> None:
   # Check if the bucket exists
   bucket = storage_client.bucket(bucket_name)
   if not bucket.exists():
     # Create new bucket
-    _ = storage_client.create_bucket(bucket_name, location=location)
+    if make_public:
+      _ = storage_client.create_bucket(bucket_name, location=location)
+      set_bucket_viewer_iam(storage_client, bucket_name, ["allUsers"])
+    else:
+      _ = storage_client.create_bucket(bucket_name, location=location)
     Logger.info(f"Bucket {bucket_name} created.")
   else:
     Logger.info(f"Bucket {bucket_name} already exists.")
     if clear:
       clear_bucket(storage_client, bucket_name)
 
-def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
-                  file_name: str, content: str,
-                  content_type="text/plain") -> str:
-  """ Upload content to GCS bucket. Returns URL to file. """
-  Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
-  create_bucket(storage_client, bucket_name)
+def set_bucket_viewer_iam(
+    storage_client: storage.Client,
+    bucket_name: str,
+    members: List[str] = None,
+):
+  """Set viewer IAM Policy on bucket"""
+  if members is None:
+    members = ["allUsers"]
   bucket = storage_client.bucket(bucket_name)
-  blob = bucket.blob(file_name)
-  blob.upload_from_string(
-    data=content,
-    content_type=content_type
+  policy = bucket.get_iam_policy(requested_policy_version=3)
+  policy.bindings.append(
+      {"role": "roles/storage.objectViewer", "members": members}
   )
-  Logger.info(f"Uploaded {len(content)} bytes")
-  return blob.path
+  bucket.set_iam_policy(policy)
+
+def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
+                  file_path: str) -> str:
+  """ Upload file to GCS bucket. Returns URL to file. """
+  Logger.info(f"Uploading {file_path} to GCS bucket {bucket_name}")
+  bucket = storage_client.bucket(bucket_name)
+  file_name = Path(file_path).name
+  blob = bucket.blob(file_name)
+  blob.upload_from_filename(file_path)
+  gcs_url = f"gs://{bucket_name}/{file_name}"
+  Logger.info(f"Uploaded {file_path} to {gcs_url}")
+  return gcs_url

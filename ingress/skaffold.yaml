@@ -23,6 +23,15 @@ profiles:
     deploy:
       kubectl: {}
 
+  - &genie-llama2-profile # YAML anchor used by "genie-llama2" profile.
+    name: genie-llama2
+    manifests:
+      kustomize:
+        paths:
+          - ./kustomize/genie-llama2
+    deploy:
+      kubectl: {}
+
   # The default-deploy profile refers to gke profile above.
   - <<: *gke-profile
     name: default-deploy
@@ -30,3 +39,7 @@ profiles:
   # The genie-deploy profile refers to genie profile above.
   - <<: *genie-profile
     name: genie-deploy
+
+  # The genie-llama2-deploy profile refers to genie-llama2 profile above.
+  - <<: *genie-profile
+    name: genie-llama2-deploy

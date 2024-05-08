@@ -29,7 +29,7 @@ from config import PROJECT_ID, DEFAULT_WEB_DEPTH_LIMIT
 from common.models import QueryEngine, QueryDocument, QueryReference
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSourceFile
-from services.query.web_datasource import WebDataSource, sanitize_url
+from services.query.web_datasource import WebDataSource
 import proto
 
 Logger = Logger.get_logger(__file__)
@@ -62,6 +62,7 @@ def query_vertex_search(q_engine: QueryEngine,
 
   # create query document and reference models to store results
   query_references = []
+  n = 0
   for search_result in search_results:
     document_data = \
         proto.Message.to_dict(search_result.document)["derived_struct_data"]
@@ -93,7 +94,9 @@ def query_vertex_search(q_engine: QueryEngine,
       document_id=query_document.id,
       document_url=query_document.doc_url,
       document_text=document_data["snippets"][0]["snippet"],
+      chunk_id=str(n) # fake chunk id for ux's that dedup on chunk id
     )
+    n += 1
     query_reference.save()
     query_references.append(query_reference)
 
@@ -164,10 +167,11 @@ def perform_vertex_search(data_store_id: str,
   return result_list
 
 
-def build_vertex_search(q_engine: QueryEngine):
+def build_vertex_search(q_engine: QueryEngine) -> \
+    Tuple[List[QueryDocument], List[str]]:
   """
   Build a Vertex Search-based Query Engine
-  
+
   q_engine.doc_url must specify either a gcs uri, an http:// https://
      URL, or bq://<bigquery dataset and table separated by colons>
   ie.
@@ -176,6 +180,13 @@ def build_vertex_search(q_engine: QueryEngine):
   q_engine.doc_url = "bq://BIGQUERY_DATASET:BIGQUERY_TABLE"
     or
   q_engine.doc_url = "https://example.com/news"
+
+  Args:
+    q_engine: QueryEngine to build
+
+  Returns:
+    Tuple of list of QueryDocument objects of docs processed,
+      list of uris of docs not processed
   """
   # initialize some variables
   data_url = q_engine.doc_url
@@ -188,6 +199,10 @@ def build_vertex_search(q_engine: QueryEngine):
   docs_to_be_processed = []
   docs_processed = []
   docs_not_processed = []
+  doc_models_processed = []
+
+  # initialize datastore id
+  data_store_id = None
 
   # validate data_url
   if not (data_url.startswith("bq://")
@@ -196,17 +211,13 @@ def build_vertex_search(q_engine: QueryEngine):
     raise RuntimeError(f"Invalid data url: {data_url}")
 
   try:
-    is_web = False
+    # inventory the documents to be ingested
     if data_url.startswith("http://") or data_url.startswith("https://"):
       # download web docs and store in a GCS bucket
-      gcs_url, web_docs_downloaded = download_web_docs(q_engine, data_url)
-      is_web = True
+      gcs_url, docs_to_be_processed = download_web_docs(q_engine, data_url)
       data_url = gcs_url
-
-    # inventory the documents to be ingested
-    if data_url.startswith("bq://"):
-      table_data = DataSourceFile(data_url.split("bq://")[1], None, None)
-      docs_to_be_processed = [table_data]
+    elif data_url.startswith("bq://"):
+      docs_to_be_processed = [DataSourceFile(src_url=data_url)]
     elif data_url.startswith("gs://"):
       docs_to_be_processed = inventory_gcs_files(data_url)
 
@@ -232,37 +243,26 @@ def build_vertex_search(q_engine: QueryEngine):
     q_engine.index_id = data_store_id
     q_engine.update()
 
-    # if importing from web, build list of web URLs that were imported
-    if is_web:
-      web_docs_processed = []
-      bucket_name = WebDataSource.downloads_bucket_name(q_engine)
-      processed_doc_paths = {
-        doc.split(f"gs://{bucket_name}/")[1] for doc in docs_processed
-      }
-      for doc_url in web_docs_downloaded:
-        if sanitize_url(doc_url) in processed_doc_paths:
-          web_docs_processed.append(doc_url)
-      docs_processed = web_docs_processed
-
     # create QueryDocument models for processed documents
-    for doc_url in docs_processed:
+    for doc in docs_processed:
       query_document = QueryDocument(
         query_engine_id=q_engine.id,
         query_engine=q_engine.name,
-        doc_url=doc_url
+        doc_url=doc.src_url,
+        index_file=doc.gcs_path
       )
       query_document.save()
+      doc_models_processed.append(query_document)
 
   except Exception as e:
     Logger.error(f"Error building vertex search query engine [{str(e)}]")
     Logger.error(traceback.print_exc())
 
     # on build error, delete any vertex search assets that were created
-    delete_vertex_search(q_engine)
-    docs_processed = []
-    docs_not_processed = docs_to_be_processed
+    delete_vertex_search(q_engine, data_store_id)
+    raise e
 
-  return docs_processed, docs_not_processed
+  return doc_models_processed, docs_not_processed
 
 def create_data_store(q_engine: QueryEngine,
                       project_id: str,
@@ -310,7 +310,7 @@ def create_search_engine(q_engine: QueryEngine,
   return operation
 
 def import_documents_to_datastore(data_url: str,
-                                  docs_to_be_processed: List[str],
+                                  docs_to_be_processed: List[DataSourceFile],
                                   project_id: str,
                                   location: str,
                                   data_store_id: str) -> \
@@ -321,8 +321,8 @@ def import_documents_to_datastore(data_url: str,
   
   Args:
     data_url: url of data source (gcs, bq dataset:table)
-    docs_to_be_processed: list of doc urls stored in the data url
-       that should be imported
+    docs_to_be_processed: list of datasource file objects stored in the
+       data url that should be imported
     project_id: id of project of datastore
     location: location of datastore (currently hard coded to "global")
        see: https://cloud.google.com/vertex-ai/docs/general/locations
@@ -357,7 +357,8 @@ def import_documents_to_datastore(data_url: str,
   # create operation to import data
   operation = None
   if data_url.startswith("gs://"):
-    operation = import_documents_gcs(docs_to_be_processed, client, parent)
+    doc_gcs_urls = [doc.gcs_path for doc in docs_to_be_processed]
+    operation = import_documents_gcs(doc_gcs_urls, client, parent)
 
   elif data_url.startswith("bq://"):
     bq_datasource = data_url.split("bq://")[1].split("/")[0]
@@ -385,7 +386,7 @@ def import_documents_to_datastore(data_url: str,
     docs_processed = docs_to_be_processed
   else:
     # TODO: build list of documents processed/not processed from results
-    pass
+    docs_processed = docs_to_be_processed
 
   return docs_processed, docs_not_processed
 
@@ -449,35 +450,50 @@ def datastore_id_from_engine(q_engine: QueryEngine) -> str:
     raise RuntimeError("Invalid datastore id: {data_store_id}")
   return data_store_id
 
-def delete_vertex_search(q_engine: QueryEngine):
+def delete_vertex_search(q_engine: QueryEngine, data_store_id: str=None):
+  """ attempt to delete a vertex search datastore and engine """
   Logger.info(f"deleting vertex search query engine {q_engine.name}")
-  # TODO
-  pass
+  if data_store_id is None:
+    data_store_id = q_engine.index_id
+  try:
+    Logger.info(f"deleting engine {q_engine.name}")
+    client = discoveryengine.EngineServiceClient()
+    request = discoveryengine.DeleteEngineRequest(name=q_engine.name)
+    operation = client.delete_engine(request=request)
+    wait_for_operation(operation)
+    Logger.info(f"successfully deleted engine {q_engine.name}")
+  except Exception as e:
+    Logger.error(f"Exception deleting datastore {data_store_id}: {str(e)}")
 
-def inventory_gcs_files(gcs_url: str) -> List[str]:
+  if data_store_id:
+    try:
+      Logger.info(f"deleting datastore {data_store_id}")
+      client = discoveryengine.DataStoreServiceClient()
+      request = discoveryengine.DeleteDataStoreRequest(name=data_store_id)
+      operation = client.delete_data_store(request=request)
+      wait_for_operation(operation)
+      Logger.info(f"successfully deleted datastore {data_store_id}")
+    except Exception as e:
+      Logger.error(f"Exception deleting datastore {data_store_id}: {str(e)}")
+
+def inventory_gcs_files(gcs_url: str) -> List[DataSourceFile]:
   """ create a list of eligible files for vertex search in the GCS bucket """
   valid_files = []
   storage_client = storage.Client(project=PROJECT_ID)
   bucket_name = gcs_url.split("gs://")[1].split("/")[0]
-  bucket = storage_client.bucket(bucket_name)
   for blob in storage_client.list_blobs(bucket_name):
     file_name = blob.name
-    file_url = f"gs://{bucket_name}/{file_name}"
     file_extension = Path(file_name).suffix
     if file_extension in VALID_FILE_EXTENSIONS:
-      valid_files.append(file_url)
-    elif file_extension == ".htm":
-      # rename .htm files to .html
-      new_blob_name = str(Path.joinpath(
-        Path(file_name).parent,
-        Path(file_name).stem + ".html"))
-      new_blob = bucket.rename_blob(blob, new_blob_name)
-      file_url = f"gs://{bucket_name}/{new_blob.name}"
-      valid_files.append(file_url)
+      file_url = f"gs://{bucket_name}/{file_name}"
+      doc = DataSourceFile(doc_name=Path(file_name).name,
+                           src_url=file_url,
+                           gcs_path=file_url)
+      valid_files.append(doc)
   return valid_files
 
 def download_web_docs(q_engine: QueryEngine, data_url: str) -> \
-    Tuple[str, List[str]]:
+    Tuple[str, List[DataSourceFile]]:
   """
   Download web docs to a GCS bucket.
   Args:
@@ -486,7 +502,7 @@ def download_web_docs(q_engine: QueryEngine, data_url: str) -> \
   Returns:
     gcs_url:  URL of bucket holding files
               (bucket will be created if it doesn't exist)
-    downloaded_doc_urls: list of URLs of web docs that were downloaded
+    downloaded_docs: list of DataSourceFiles representing downloaded web docs
   """
   storage_client = storage.Client(project=PROJECT_ID)
   params = q_engine.params or {}
@@ -506,5 +522,4 @@ def download_web_docs(q_engine: QueryEngine, data_url: str) -> \
   with tempfile.TemporaryDirectory() as temp_dir:
     downloaded_docs = web_data_source.download_documents(data_url, temp_dir)
   gcs_url = f"gs://{bucket_name}"
-  downloaded_doc_urls = [dsfile.src_url for dsfile in downloaded_docs]
-  return gcs_url, downloaded_doc_urls
+  return gcs_url, downloaded_docs

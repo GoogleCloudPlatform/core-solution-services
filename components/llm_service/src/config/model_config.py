@@ -15,11 +15,11 @@
 """
   LLM Service config object module
 """
-# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
+# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught,protected-access
 # Config dicts that hold the current config for providers, models,
 # embedding models
 
-import inspect
+import importlib
 import json
 import os
 from pathlib import Path
@@ -50,6 +50,7 @@ KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
 KEY_MODEL_CONTEXT_LENGTH = "context_length"
 KEY_IS_CHAT = "is_chat"
+KEY_IS_MULTI = "is_multi"
 KEY_MODEL_FILE_URL = "model_file_url"
 KEY_MODEL_PATH = "model_path"
 KEY_MODEL_ENDPOINT = "model_endpoint"
@@ -69,6 +70,7 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_PARAMS,
   KEY_MODEL_CONTEXT_LENGTH,
   KEY_IS_CHAT,
+  KEY_IS_MULTI,
   KEY_MODEL_FILE_URL,
   KEY_MODEL_PATH,
   KEY_MODEL_ENDPOINT,
@@ -107,6 +109,7 @@ TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
 VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
 VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 VERTEX_LLM_TYPE_GEMINI_PRO = "VertexAI-Gemini-Pro"
+VERTEX_LLM_TYPE_GEMINI_PRO_VISION = "VertexAI-Gemini-Pro-Vision"
 VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN = "VertexAI-Chat-Gemini-Pro-Langchain"
 HUGGINGFACE_EMBEDDING = "HuggingFaceEmbeddings"
 
@@ -124,6 +127,7 @@ MODEL_TYPES = [
   VERTEX_LLM_TYPE_BISON_V2_CHAT,
   VERTEX_LLM_TYPE_BISON_V1_CHAT,
   VERTEX_LLM_TYPE_GEMINI_PRO,
+  VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
   VERTEX_LLM_TYPE_GECKO_EMBEDDING,
   VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
   TRUSS_LLM_LLAMA2_CHAT,
@@ -150,16 +154,16 @@ def load_langchain_classes() -> dict:
   class instance.
   """
   langchain_chat_classes = {
-    k:klass for (k, klass) in inspect.getmembers(langchain_chat)
-    if isinstance(klass, type)
+    k:getattr(importlib.import_module(klass), k)
+    for k,klass in langchain_chat._module_lookup.items()
   }
   langchain_llm_classes = {
     klass().__name__:klass()
     for klass in langchain_llm.get_type_to_cls_dict().values()
   }
   langchain_embedding_classes = {
-    k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
-    if isinstance(klass, type)
+    k:getattr(importlib.import_module(klass), k)
+    for k,klass in langchain_embedding._module_lookup.items()
   }
 
   # special handling for Vertex and OpenAI chat models, which are
@@ -634,6 +638,16 @@ class ModelConfig():
       if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and self.is_model_enabled(m)
     ]
     return chat_llm_types
+
+  def get_multi_llm_types(self) -> dict:
+    """ Get all supported and enabled multimodal LLM types, as a list of model
+        identifiers.
+    """
+    multi_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and self.is_model_enabled(m)
+    ]
+    return multi_llm_types
 
   def get_embedding_types(self) -> dict:
     """ Get all supported and enabled embedding types, as a list of model

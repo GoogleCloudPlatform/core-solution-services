@@ -1,0 +1,60 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gke-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: gke-ingress-ip
+    networking.gke.io/managed-certificates: default-managed-cert
+    networking.gke.io/v1beta1.FrontendConfig: default-frontend-config
+    kubernetes.io/ingress.class: "gce"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /authentication/
+            pathType: Prefix
+            backend:
+              service:
+                name: authentication
+                port:
+                  number: 80
+
+          - path: /jobs-service/
+            pathType: Prefix
+            backend:
+              service:
+                name: jobs-service
+                port:
+                  number: 80
+
+          - path: /llm-service/
+            pathType: Prefix
+            backend:
+              service:
+                name: llm-service
+                port:
+                  number: 80
+
+          - path: /tools-service/
+            pathType: Prefix
+            backend:
+              service:
+                name: tools-service
+                port:
+                  number: 80
+
+          - path: /streamlit/
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-streamlit
+                port:
+                  number: 80
+
+          - path: /truss-llama2-7b-service/
+            pathType: Prefix
+            backend:
+              service:
+                name: truss-llama2-7b-service
+                port:
+                  number: 80

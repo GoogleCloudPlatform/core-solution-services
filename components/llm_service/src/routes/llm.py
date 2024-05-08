@@ -15,23 +15,29 @@
 # pylint: disable = broad-except
 
 """ LLM endpoints """
+import os.path
+import base64
+from base64 import b64decode
 from fastapi import APIRouter
 
+from common.utils.logging_handler import Logger
 from common.utils.errors import (PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
 from config import (PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, get_model_config)
 from schemas.llm_schema import (LLMGenerateModel,
+                                LLMMultiGenerateModel,
                                 LLMGetTypesResponse,
                                 LLMGetEmbeddingTypesResponse,
                                 LLMGenerateResponse,
                                 LLMEmbeddingsResponse,
                                 LLMEmbeddingsModel)
-from services.llm_generate import llm_generate
+from services.llm_generate import llm_generate, llm_generate_multi
 from services.embeddings import get_embeddings
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
 
+Logger = Logger.get_logger(__file__)
 
 @router.get(
     "",
@@ -141,6 +147,90 @@ async def generate(gen_config: LLMGenerateModel):
 
   try:
     result = await llm_generate(prompt, llm_type)
+
+    return {
+        "success": True,
+        "message": "Successfully generated text",
+        "content": result
+    }
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
+@router.post(
+    "/generate/multi",
+    name="Generate text with a multimodal LLM",
+    response_model=LLMGenerateResponse)
+async def generate_multi(gen_config: LLMMultiGenerateModel):
+  """
+  Generate text with a multimodal LLM
+
+  Args:
+      gen_config: Input config dictionary,
+        including user_file_b64(str), user_file_name(str),
+        prompt(str), and llm_type(str) type for model
+
+  Returns:
+      LLMMultiGenerateResponse
+  """
+  genconfig_dict = {**gen_config.dict()}
+  user_file_b64 = genconfig_dict.get("user_file_b64")
+  user_file_name = genconfig_dict.get("user_file_name")
+  prompt = genconfig_dict.get("prompt")
+  llm_type = genconfig_dict.get("llm_type")
+
+  if (user_file_b64 is None or user_file_b64 == "" or
+    user_file_name is None or user_file_name == "" or
+    prompt is None or prompt == ""):
+    return BadRequest("Missing or invalid payload parameters")
+
+  if len(prompt) > PAYLOAD_FILE_SIZE:
+    return PayloadTooLargeError(
+      f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
+
+  # Make sure that the user file is a valid image or video
+  vertex_mime_types = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".mp4": "video/mp4",
+    ".mov": "video/mov",
+    ".avi": "video/avi",
+    ".mpeg": "video/mpeg",
+    ".mpg": "video/mpg",
+    ".wmv": "video/wmv"
+  }
+  user_file_extension = os.path.splitext(user_file_name)[1]
+  user_file_extension = vertex_mime_types.get(user_file_extension)
+  if not user_file_extension:
+    return BadRequest("File must be a picture or a video.")
+
+  # Make sure that the user file b64 is a valid image or video
+  image_signatures = {
+      b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A": "png",
+      b"\xFF\xD8\xFF": "jpg",
+      b"\xFF\xD8": "jpeg",
+      b"\x47\x49\x46\x38": "gif",
+      b"\x00\x00\x00 ftyp": "mp4",
+      b"\x00\x00\x00\x14": "mov",
+      b"RIFF": "avi",
+      b"\x00\x00\x01\xba!\x00\x01\x00": "mpeg",
+      b"\x00\x00\x01\xB3": "mpg",
+      b"0&\xb2u\x8ef\xcf\x11": "wmv"
+  }
+  file_header = base64.b64decode(user_file_b64)[:8]  # Get the first 8 bytes
+  user_file_type = None
+  for sig, file_format in image_signatures.items():
+    if file_header.startswith(sig):
+      user_file_type = file_format
+      break
+  if not user_file_type:
+    return BadRequest("File data must be a picture or a video.")
+
+  try:
+    user_file_bytes = b64decode(user_file_b64)
+    result = await llm_generate_multi(prompt, user_file_bytes,
+                                      user_file_extension, llm_type)
 
     return {
         "success": True,

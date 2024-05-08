@@ -19,6 +19,21 @@ components:
     resource_name: frontend-flutterflow
     service_path: frontend-flutterflow
     use_github_action: true
+  frontend_react:
+    cloudrun_neg: true
+    component_name: frontend_react
+    component_template: blank_service
+    default_deploy: cloudrun
+    depend_on_common: false
+    deploy_cloudrun: true
+    deploy_gke: true
+    destination_path: .
+    gcp_region: us-central1
+    local_port: '9007'
+    module_version: '1.0'
+    resource_name: frontend-react
+    service_path: frontend-react
+    use_github_action: true
   jobs_service:
     custom_component: true
     init_script_path: ./components/jobs_service/src/utils/init.py

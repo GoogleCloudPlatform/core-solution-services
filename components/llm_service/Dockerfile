@@ -1,5 +1,5 @@
-ARG COMMON_IMAGE
-FROM ${COMMON_IMAGE}
+ARG COMMON_ML_IMAGE
+FROM ${COMMON_ML_IMAGE}
 
 WORKDIR /opt
 COPY requirements.txt service_requirements.txt
@@ -10,7 +10,7 @@ RUN cat service_requirements.txt >> requirements.txt
 RUN pip install -r requirements.txt
 
 # download spacy model
-RUN python -m spacy download en_core_web_sm
+RUN python -m spacy download en_core_web_md
 
 COPY src/ .
 

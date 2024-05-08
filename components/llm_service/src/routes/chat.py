@@ -257,7 +257,8 @@ async def create_user_chat(gen_config: LLMGenerateModel,
     response = await llm_chat(prompt, llm_type)
 
     # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, llm_type=llm_type)
+    user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
+                         prompt=prompt)
     history = UserChat.get_history_entry(prompt, response)
     user_chat.history = history
     user_chat.save()

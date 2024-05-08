@@ -437,6 +437,10 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
   if query_engine is None or query_engine == "":
     return BadRequest("Missing or invalid payload parameters: query_engine")
 
+  q_engine = QueryEngine.find_by_name(query_engine)
+  if q_engine:
+    return BadRequest(f"Query engine already exists: {query_engine}")
+
   user_id = user_data.get("user_id")
 
   params = genconfig_dict.get("params", {})

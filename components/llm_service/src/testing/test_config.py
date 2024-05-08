@@ -27,12 +27,14 @@ from config import (COHERE_LLM_TYPE,
                     VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN,
                     VERTEX_LLM_TYPE_BISON_TEXT,
                     VERTEX_LLM_TYPE_BISON_CHAT,
+                    VERTEX_LLM_TYPE_GEMINI_PRO,
+                    VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                     PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
                     PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN,
                     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
                     TRUSS_LLM_LLAMA2_CHAT,
-                    KEY_PROVIDER, KEY_IS_CHAT, KEY_ENABLED,
+                    KEY_PROVIDER, KEY_IS_CHAT, KEY_IS_MULTI, KEY_ENABLED,
                     KEY_MODEL_CLASS, KEY_MODEL_PARAMS, KEY_MODEL_NAME,
                     KEY_MODEL_ENDPOINT)
 
@@ -136,6 +138,20 @@ TEST_VERTEX_CONFIG = {
     KEY_IS_CHAT: False,
     KEY_ENABLED: True,
     KEY_MODEL_NAME: "text-bison@002"
+  },
+  VERTEX_LLM_TYPE_GEMINI_PRO: {
+    KEY_PROVIDER: PROVIDER_VERTEX,
+    KEY_IS_CHAT: True,
+    KEY_IS_MULTI: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_NAME: "gemini-pro"
+  },
+  VERTEX_LLM_TYPE_GEMINI_PRO_VISION: {
+    KEY_PROVIDER: PROVIDER_VERTEX,
+    KEY_IS_CHAT: True,
+    KEY_IS_MULTI: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_NAME: "gemini-pro-vision"
   }
 }
 

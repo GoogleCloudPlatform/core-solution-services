@@ -80,8 +80,9 @@ FAKE_QE_BUILD_RESPONSE = {
   "success": True,
   "message": "job created",
   "data": {
-    "job_name": "fake_job_name",
-    "status": "fake_job_status"
+    "name": "fake_job_name",
+    "status": "fake_job_status",
+    "type": "query_engine_build"
   }
 }
 

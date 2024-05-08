@@ -69,11 +69,13 @@ VECTOR_STORES = {
   VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
 }
 
-RERANK_MODEL_NAME = "cross-encoder"
+RERANK_MODEL_NAME = "colbert"
 reranker = Reranker(RERANK_MODEL_NAME, verbose=0)
 
 # minimum number of references to return
 MIN_QUERY_REFERENCES = 2
+# total number of references to return from integrated search
+NUM_INTEGRATED_QUERY_REFERENCES = 6
 
 async def query_generate(
             user_id: str,
@@ -361,27 +363,27 @@ def rerank_references(prompt: str,
   # reranker function requires text and ids as separate params
   query_ref_text = []
   query_ref_ids = []
+  query_ref_lookup = {}
 
   for query_ref in query_references:
     query_doc_chunk = QueryDocumentChunk.find_by_id(query_ref.chunk_id)
     # print(query_ref.id, query_ref_id, query_ref.chunk_id, query_doc_chunk.id)
     query_ref_text.append(query_doc_chunk.clean_text)
     query_ref_ids.append(query_ref.id)
+    query_ref_lookup[query_ref.id] = query_ref
 
   # rerank, passing in QueryReference ids
   ranked_results = reranker.rank(
     query=prompt,
     docs=query_ref_text,
     doc_ids=query_ref_ids)
+  ranked_results = ranked_results.top_k(NUM_INTEGRATED_QUERY_REFERENCES)
 
   # order the original references based on the rank
-  ranked_query_ref_ids = [r.doc_id for r in ranked_results.results]
-  sort_dict = {x: i for i, x in enumerate(ranked_query_ref_ids)}
-  sort_list = [(qr, sort_dict[qr.id]) for qr in query_references]
-  sort_list.sort(key=lambda x: x[1])
-
-  # just return the QueryReferences
-  ranked_query_refs = [qr for qr, i in sort_list]
+  ranked_query_refs = []
+  ranked_query_ref_ids = [r.doc_id for r in ranked_results]
+  for i in ranked_query_ref_ids:
+    ranked_query_refs.append(query_ref_lookup[i])
 
   return ranked_query_refs
 
@@ -661,7 +663,7 @@ def query_engine_build(doc_url: str,
     else:
       raise RuntimeError(f"Invalid query_engine_type {query_engine_type}")
   except Exception as e:
-    # delete query engine model if build unsuccessful
+    # delete query engine models if build unsuccessful
     delete_engine(q_engine, hard_delete=True)
     raise InternalServerError(str(e)) from e
 
@@ -759,6 +761,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       query_doc = QueryDocument(query_engine_id=q_engine.id,
                                 query_engine=q_engine.name,
                                 doc_url=index_doc_url,
+                                index_file=data_source_file.doc_id,
                                 index_start=index_base,
                                 index_end=new_index_base)
       query_doc.save()
@@ -864,6 +867,14 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
       "query_engine_id", "==", q_engine.id
     ).delete()
 
+    QueryReference.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
+    QueryResult.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
     # delete query engine
     QueryEngine.delete_by_id(q_engine.id)
   else:
@@ -879,6 +890,16 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
       "query_engine_id", "==", q_engine.id).fetch()
     for qc in qchunks:
       qc.soft_delete_by_id(qc.id)
+
+    qrefs = QueryReference.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qr in qrefs:
+      qr.soft_delete_by_id(qr.id)
+
+    qres = QueryResult.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qr in qres:
+      qr.soft_delete_by_id(qr.id)
 
     # delete query engine
     QueryEngine.soft_delete_by_id(q_engine.id)
