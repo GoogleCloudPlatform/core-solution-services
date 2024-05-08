@@ -56,9 +56,10 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
              attempt to determine the dataset from the prompt.
     user_email: if present, send the resulting data to this email in a Sheet.
   Return:
-    a dict of "columns: column names, "data": row data. If the db_agent can't
+    output: a dict of "columns: column names, "data": row data. If the db_agent can't
         produce a valid statement and result, the data will be the db_agent's
         explanation.
+    agent_logs: agent logs
   """
   if dataset is None:
     dataset, db_type = map_prompt_to_dataset(prompt, llm_type)
