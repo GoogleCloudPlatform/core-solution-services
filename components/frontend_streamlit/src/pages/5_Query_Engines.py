@@ -53,7 +53,7 @@ def submit_build(engine_name:str, engine_type:str, doc_url:str,
       child_engines)
 
     if output.get("success") is True:
-      Logger.info(f"job output {output}")
+      logging.info(f"job output {output}")
       job_id = output["data"]["name"]
       st.success(f"Query Engine build job created. Job ID: {job_id}")
     else:
