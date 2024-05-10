@@ -214,7 +214,7 @@ def get_context_prompt(user_chat=None,
                        user_query=None) -> str:
   """
   Get context prompt for chat based on previous chat or query history.
- 
+
   Args:
     user_chat (optional): previous user chat
     user_query (optional): previous user query
@@ -300,7 +300,12 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
   output = json_response["data"]["generated_text"]
 
   # if the prompt is repeated as part of the response, remove it
-  output = output.replace(prompt, "")
+  output = output.replace(prompt, "").strip()
+  # Llama 2 often adds quotes
+  if output.startswith('"') or output.startswith("'"):
+    output = output[1:]
+  if output.endswith('"') or output.endswith("'"):
+    output = output[:-1]
 
   return output
 
