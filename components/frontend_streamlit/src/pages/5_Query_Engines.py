@@ -14,7 +14,7 @@
 """
   Streamlit app Query Engine Build Page
 """
-# pylint: disable=invalid-name,logging-not-lazy,consider-using-f-string
+# pylint: disable=invalid-name,logging-not-lazy,consider-using-f-string,logging-fstring-interpolation
 import json
 import moment
 import streamlit as st
