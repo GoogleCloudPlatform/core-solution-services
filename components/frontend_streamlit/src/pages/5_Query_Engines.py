@@ -14,7 +14,7 @@
 """
   Streamlit app Query Engine Build Page
 """
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,logging-not-lazy,consider-using-f-string
 import json
 import moment
 import streamlit as st
@@ -53,7 +53,7 @@ def submit_build(engine_name:str, engine_type:str, doc_url:str,
       child_engines)
 
     if output.get("success") is True:
-      logging.info("job output %s" % output)
+      logging.info(f"job output {output}")
       job_id = output["data"]["name"]
       st.success(f"Query Engine build job created. Job ID: {job_id}")
     else:
