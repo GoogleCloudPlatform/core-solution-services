@@ -159,6 +159,8 @@ def chat_content():
 
   st.text_input("User Input:", on_change=on_input_change, key="user_input")
 
+def reset_content():
+  init_messages()
 
 def chat_page():
   st.title(st.session_state.agent_name + " Agent")
@@ -173,6 +175,7 @@ def chat_page():
   # Set up columns to mimic a right-side sidebar
   main_container = st.container()
   with main_container:
+    chat_header(refresh_func=reset_content)
     chat_content()
 
 
