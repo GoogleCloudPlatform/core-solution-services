@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=unused-argument,broad-exception-raised
+# pylint: disable=unused-argument,broad-exception-raised,line-too-long,protected-access
 """
 Web data sources for Query Engines
 """
 from datetime import datetime
+import importlib
+import multiprocessing
 import re
 import hashlib
 import os
 import sys
 import tempfile
+from pathlib import Path
 from typing import List
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
@@ -48,6 +51,7 @@ def save_content(filepath: str, file_name: str, content: str) -> None:
   with open(doc_filepath, "w", encoding="utf-8") as f:
     f.write(content)
   Logger.info(f"{len(content)} bytes written")
+  return doc_filepath
 
 def sanitize_url(url) -> str:
   # Remove the scheme (http, https) and domain, and keep the path and query
@@ -105,10 +109,20 @@ class WebDataSourceParser:
       "content_type": content_type,
       "content": file_content
     }
-    save_content(self.filepath, file_name, file_content)
+    saved_path = save_content(self.filepath, file_name, file_content)
     if self.storage_client and self.bucket_name:
+      # rename .htm files to .html for upload to GCS
+      file_extension = Path(file_name).suffix
+      if file_extension == ".htm":
+        new_filename = Path(file_name).stem + ".html"
+        new_filepath = str(Path.joinpath(
+          Path(saved_path).parent,
+          new_filename))
+        os.rename(saved_path, new_filepath)
+        saved_path = new_filepath
+        item["filename"] = new_filename
       gcs_path = upload_to_gcs(self.storage_client, self.bucket_name,
-                               file_name, file_content, content_type)
+                               saved_path)
       item.update({"gcs_path": gcs_path})
     return item
 
@@ -214,7 +228,9 @@ class WebDataSource(DataSource):
         f"No content from: {response.url}, content type: {content_type}")
     else:
       filepath = os.path.join(item["filepath"], item["filename"])
-      data_source_file = DataSourceFile(item["filename"], item["url"], filepath)
+      data_source_file = DataSourceFile(doc_name=item["filename"],
+                                        src_url=item["url"],
+                                        local_path=filepath)
       if "gcs_path" in item:
         data_source_file.gcs_path = item["gcs_path"]
       self.doc_data.append(data_source_file)
@@ -239,33 +255,23 @@ class WebDataSource(DataSource):
       # ensure downloads bucket exists, and clear contents
       create_bucket(self.storage_client, self.bucket_name)
 
-    spider_class = WebDataSourceSpider
+    spider_class = WebDataSourceSpider.__name__
     if self.depth_limit == 0:
       # for this class, depth_limit=0 means don't crawl, just download the
       # web page(s) supplied.  (for scrapy depth_limit=0 means no limit).
-      spider_class = WebDataSourcePageSpider
+      spider_class = WebDataSourcePageSpider.__name__
 
-    # define Scrapy settings
-    settings = {
-      "ROBOTSTXT_OBEY": False,
-      "DEPTH_LIMIT": self.depth_limit,
-      "LOG_LEVEL": "INFO"
-    }
-    # create the Scrapy crawler process
-    process = CrawlerProcess(settings=settings)
-    crawler = process.create_crawler(spider_class)
-
-    # Connect the item_scraped signal to the handler
-    crawler.signals.connect(self._item_scraped,
-                            signal=signals.item_scraped)
-
-    # start the scrapy crawler
-    process.crawl(crawler,
-                  start_urls=[doc_url],
-                  storage_client=self.storage_client,
-                  bucket_name=self.bucket_name,
-                  filepath=temp_dir)
-    process.start()
+    # Run the crawler in a subprocess.  This is due to limitations on the
+    # Twisted Reactor used in the crawler - it can't be run more than once
+    # in the same process.
+    # See https://stackoverflow.com/questions/39946632/reactornotrestartable-error-in-while-loop-with-scrapy
+    queue = multiprocessing.Queue()
+    process_args = (queue, doc_url, spider_class, temp_dir,
+                    self.depth_limit, self.bucket_name)
+    p = multiprocessing.Process(target=run_crawler, args=process_args)
+    p.start()
+    p.join()
+    self.doc_data = queue.get()
 
     Logger.info(f"Scraped {len(self.doc_data)} links")
     return self.doc_data
@@ -278,6 +284,58 @@ class WebDataSource(DataSource):
   def clean_text(cls, text: str) -> List[str]:
     html_text = html_to_text(text)
     return super().clean_text(html_text)
+
+def run_crawler(queue,
+                doc_url,
+                spider_class_name,
+                temp_dir,
+                depth_limit,
+                bucket_name):
+  """
+  Method to run scrapy crawler in a subprocess.  Results will be put into
+  the provided multiprocess.queue.
+
+  Args:
+    queue: multiprocess.Queue for crawler results (list of DataSourceFile)
+    doc_url: url to download
+    spider_class_name: name of spider class to use for scrapy
+    temp_dir: directory to download files
+    depth_limit: depth limit to crawl. 0=don't crawl, just
+                         download provided URLs
+    bucket_name: name of GCS bucket to save downloaded webpages
+  """
+  # get the web crawler class
+  module = importlib.import_module("services.query.web_datasource")
+  spider_class = getattr(module, spider_class_name)
+
+  # create datasource class
+  storage_client = storage.Client()
+  data_source = WebDataSource(storage_client, bucket_name, depth_limit)
+
+  # define Scrapy settings
+  settings = {
+    "ROBOTSTXT_OBEY": False,
+    "DEPTH_LIMIT": depth_limit,
+    "LOG_LEVEL": "INFO"
+  }
+  # create the Scrapy crawler process
+  process = CrawlerProcess(settings=settings)
+  crawler = process.create_crawler(spider_class)
+
+  # Connect the item_scraped signal to the handler
+  crawler.signals.connect(data_source._item_scraped,
+                          signal=signals.item_scraped)
+
+  # start the scrapy crawler
+  process.crawl(crawler,
+                start_urls=[doc_url],
+                storage_client=storage_client,
+                bucket_name=bucket_name,
+                filepath=temp_dir)
+  process.start()
+
+  # put results on queue
+  queue.put(data_source.doc_data)
 
 
 def main():

@@ -24,7 +24,8 @@ from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
 from common.utils.batch_jobs import initiate_batch_job
-from common.utils.config import JOB_TYPE_QUERY_ENGINE_BUILD
+from common.utils.config import (JOB_TYPE_QUERY_ENGINE_BUILD,
+                                 JOB_TYPE_QUERY_EXECUTE)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  PayloadTooLargeError)
@@ -45,7 +46,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import (query_generate,
-                                          delete_engine)
+                                          delete_engine, update_user_query)
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -203,7 +204,7 @@ def get_query_list(skip: int = 0,
     "/{query_id}",
     name="Get user query",
     response_model=LLMUserQueryResponse)
-def get_chat(query_id: str):
+def get_query(query_id: str):
   """
   Get a specific user query by id
 
@@ -436,6 +437,10 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
   if query_engine is None or query_engine == "":
     return BadRequest("Missing or invalid payload parameters: query_engine")
 
+  q_engine = QueryEngine.find_by_name(query_engine)
+  if q_engine:
+    return BadRequest(f"Query engine already exists: {query_engine}")
+
   user_id = user_data.get("user_id")
 
   params = genconfig_dict.get("params", {})
@@ -506,29 +511,72 @@ async def query(query_engine_id: str,
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   llm_type = genconfig_dict.get("llm_type")
+  rank_sentences = genconfig_dict.get("rank_sentences", False)
+  Logger.info(f"rank_sentences = {rank_sentences}")
 
   user = User.find_by_email(user_data.get("email"))
 
+  run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
+  Logger.info(f"run_as_batch_job = {run_as_batch_job}")
+
+  user_query = None
+  if run_as_batch_job:
+    # create user query object to hold the query state
+    user_query = UserQuery(user_id=user.user_id,
+                           prompt=prompt, query_engine_id=q_engine.id)
+    user_query.save()
+    user_query.update_history(prompt=prompt)
+    query_data = user_query.get_fields(reformat_datetime=True)
+    query_data["id"] = user_query.id
+
+    # launch batch job to perform query
+    try:
+      data = {
+        "query_engine_id": query_engine_id,
+        "prompt": prompt,
+        "llm_type": llm_type,
+        "user_id": user.id,
+        "user_query_id": user_query.id,
+        "rank_sentences": rank_sentences
+      }
+      env_vars = {
+        "DATABASE_PREFIX": DATABASE_PREFIX,
+        "PROJECT_ID": PROJECT_ID,
+        "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
+        "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
+        "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
+        "PG_HOST": PG_HOST,
+      }
+      response = initiate_batch_job(data, JOB_TYPE_QUERY_EXECUTE, env_vars)
+      Logger.info(f"Batch job response: {response}")
+
+      return {
+        "success": True,
+        "message": "Successfully ran query in batch mode",
+        "data": {
+          "query": query_data,
+          "batch_job": response["data"],
+        },
+      }
+    except Exception as e:
+      Logger.error(e)
+      Logger.error(traceback.print_exc())
+      raise InternalServerError(str(e)) from e
+
+  # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type)
+          user.id, prompt, q_engine, llm_type, user_query, rank_sentences)
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
-    query_reference_dicts = [
-      ref.get_fields(reformat_datetime=True) for ref in query_references
-    ]
 
     # save user query history
-    query_reference_dicts = [
-      ref.get_fields(reformat_datetime=True) for ref in query_references
-    ]
-    user_query = UserQuery(user_id=user.id,
-                          query_engine_id=q_engine.id,
-                          prompt=prompt)
-    user_query.save()
-    user_query.update_history(prompt,
-                              query_result.response,
-                              query_reference_dicts)
+    user_query, query_reference_dicts = \
+        update_user_query(prompt,
+                          query_result.response,
+                          user.id,
+                          q_engine,
+                          query_references, None)
 
     return {
         "success": True,
@@ -579,21 +627,65 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
 
   llm_type = genconfig_dict.get("llm_type")
 
-  try:
-    q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
+  rank_sentences = genconfig_dict.get("rank_sentences", False)
+  Logger.info(f"rank_sentences = {rank_sentences}")
 
+  q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
+
+  run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
+
+  if run_as_batch_job:
+    # launch batch job to perform query
+    try:
+      data = {
+        "query_engine_id": q_engine.id,
+        "prompt": prompt,
+        "llm_type": llm_type,
+        "user_id": user_query.user_id,
+        "user_query_id": user_query.id,
+        "rank_sentences": rank_sentences
+      }
+      env_vars = {
+        "DATABASE_PREFIX": DATABASE_PREFIX,
+        "PROJECT_ID": PROJECT_ID,
+        "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
+        "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
+        "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
+        "PG_HOST": PG_HOST,
+      }
+      response = initiate_batch_job(data, JOB_TYPE_QUERY_EXECUTE, env_vars)
+      Logger.info(f"Batch job response: {response}")
+
+      query_data = user_query.get_fields(reformat_datetime=True)
+      query_data["id"] = user_query.id
+
+      return {
+        "success": True,
+        "message": "Successfully ran query in batch mode",
+        "data": {
+          "query": query_data,
+          "batch_job": response["data"],
+        },
+      }
+    except Exception as e:
+      Logger.error(e)
+      Logger.error(traceback.print_exc())
+      raise InternalServerError(str(e)) from e
+
+  # perform normal synchronous query
+  try:
     query_result, query_references = await query_generate(user_query.user_id,
                                                           prompt,
                                                           q_engine,
                                                           llm_type,
                                                           user_query)
-    query_reference_dicts = [
-      ref.get_fields(reformat_datetime=True) for ref in query_references
-    ]
-    user_query.update_history(prompt,
-                              query_result.response,
-                              query_reference_dicts)
-    user_query.save()
+    # save user query history
+    _, query_reference_dicts = \
+        update_user_query(prompt,
+                          query_result.response,
+                          user_query.user_id,
+                          q_engine,
+                          query_references, None)
 
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "

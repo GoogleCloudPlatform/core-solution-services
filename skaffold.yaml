@@ -33,3 +33,6 @@ requires:
 - configs:
   - frontend_flutterflow
   path: ./components/frontend_flutterflow
+- configs:
+  - frontend_react
+  path: ./components/frontend_react

@@ -17,6 +17,7 @@ Pydantic Model for LLM API's
 from typing import List, Optional
 from pydantic import BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
+                                     LLM_MULTI_GENERATE_EXAMPLE,
                                      QUERY_EXAMPLE,
                                      QUERY_ENGINE_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
@@ -114,6 +115,19 @@ class LLMGenerateModel(BaseModel):
         "example": LLM_GENERATE_EXAMPLE
     }
 
+class LLMMultiGenerateModel(BaseModel):
+  """LLM Multi Generate request model"""
+  prompt: str
+  user_file_b64: str
+  user_file_name: str
+  llm_type: Optional[str]
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": LLM_MULTI_GENERATE_EXAMPLE
+    }
+
 class LLMEmbeddingsModel(BaseModel):
   """LLM Embeddings request model"""
   text: str
@@ -130,6 +144,8 @@ class LLMQueryModel(BaseModel):
   """LLM Query model"""
   prompt: str
   llm_type: Optional[str]
+  run_as_batch_job: Optional[str]
+  rank_sentences: Optional[str]
 
   class Config():
     orm_mode = True

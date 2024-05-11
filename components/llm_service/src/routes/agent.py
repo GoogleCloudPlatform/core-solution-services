@@ -32,7 +32,7 @@ from schemas.agent_schema import (LLMAgentRunResponse,
                                   LLMAgentGetTypeResponse)
 from services.agents.agent_service import (get_all_agents, run_agent)
 from services.agents.agents import BaseAgent
-from services.agents.routing_agent import run_routing_agent
+from services.agents.routing_agent import run_routing_agent, run_intent
 from services.langchain_service import langchain_chat_history
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
                     PROJECT_ID, DATABASE_PREFIX,
@@ -139,7 +139,7 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
   if chat_id:
     user_chat = UserChat.find_by_id(chat_id)
   if not user_chat:
-    user_chat = UserChat(user_id=user.user_id)
+    user_chat = UserChat(user_id=user.user_id, prompt=prompt)
 
   user_chat.update_history(custom_entry={
     f"{CHAT_HUMAN}": prompt,
@@ -148,15 +148,29 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
   chat_data = user_chat.get_fields(reformat_datetime=True)
   chat_data["id"] = user_chat.id
 
+  # Get route as early as possible.
+  route, route_logs = await run_intent(
+    agent_name, prompt, chat_history=user_chat.history)
+  route_parts = route.split(":", 1)
+  route_type = route_parts[0]
+
+  # create default chat_history_entry
+  user_chat.update_history(custom_entry={
+    "route": route_type,
+    "route_name": route,
+    "route_logs": route_logs,
+  })
+  user_chat.save()
+
   if run_as_batch_job:
     # Execute routing agent as batch_job and return job detail.
-
     data = {
       "prompt": prompt,
       "agent_name": agent_name,
       "user_id": user.id,
       "chat_id": user_chat.id,
       "llm_type": llm_type,
+      "route": route,
     }
     if db_result_limit:
       data["db_result_limit"] = db_result_limit
@@ -176,6 +190,8 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
       "success": True,
       "message": "Successfully ran dispatch in batch mode",
       "data": {
+        "route": route_type,
+        "route_name": route,
         "chat": chat_data,
         "batch_job": response["data"],
       },
@@ -185,12 +201,14 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
     # Execute routing agent synchronously.
     route, response_data = await run_routing_agent(
         prompt, agent_name, user, user_chat, llm_type,
-        db_result_limit=db_result_limit)
+        db_result_limit=db_result_limit, route=route)
+
+    response_data["route"] = route_type
+    response_data["route_name"] = route
 
     return {
       "success": True,
       "message": "Successfully ran dispatch",
-      "route": route,
       "data": response_data
     }
 
@@ -232,8 +250,8 @@ async def agent_run(agent_name: str,
     Logger.info(f"Generated output=[{output}]")
 
     # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                         agent_name=agent_name)
+    user_chat = UserChat(user_id=user.user_id, prompt=prompt,
+                         llm_type=llm_type, agent_name=agent_name)
     # Save user chat to retrieve actual ID.
     user_chat.update_history(prompt, output)
     user_chat.save()

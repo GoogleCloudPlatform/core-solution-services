@@ -30,6 +30,7 @@ from pdf2image import convert_from_path
 from langchain_community.document_loaders import CSVLoader
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper, gcs_helper
+from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceWindowNodeParser
 from llama_index.core import Document
 
@@ -42,16 +43,18 @@ Logger = Logger.get_logger(__file__)
 CHUNK_SENTENCE_PADDING = 1
 
 class DataSourceFile():
-  """ class storing meta data about a data source file """
+  """ object storing meta data about a data source file """
   def __init__(self,
-               doc_name:str,
-               src_url:str,
-               local_path:str,
-               gcs_path:str = None):
+               doc_name:str=None,
+               src_url:str=None,
+               local_path:str=None,
+               gcs_path:str=None,
+               doc_id:str=None):
     self.doc_name = doc_name
     self.src_url = src_url
     self.local_path = local_path
     self.gcs_path = gcs_path
+    self.doc_id = doc_id
 
 class DataSource:
   """
@@ -71,6 +74,16 @@ class DataSource:
 
   @classmethod
   def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
+    """
+    Generate a unique downloads bucket name, that obeys the rules of
+    GCS bucket names.
+
+    Args:
+        q_engine: the QueryEngine to generate the bucket name for.
+
+    Returns:
+        bucket name (str)
+    """
     qe_name = q_engine.name.replace(" ", "-")
     qe_name = qe_name.replace("_", "-").lower()
     bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
@@ -99,8 +112,12 @@ class DataSource:
       file_name = Path(blob.name).name
       file_path = os.path.join(temp_dir, file_name)
       blob.download_to_filename(file_path)
-      doc_filepaths.append(
-          DataSourceFile(blob.name, blob.path, file_path, blob.path))
+      gcs_path = blob.path.replace("/b/","")
+      gcs_url = f"gs://{gcs_path}"
+      doc_filepaths.append(DataSourceFile(doc_name=blob.name,
+                                          src_url=blob.public_url,
+                                          local_path=file_path,
+                                          gcs_path=gcs_url))
 
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(
@@ -286,6 +303,15 @@ class DataSource:
         for page in range(num_pages):
           doc_text_list.append(reader.pages[page].extract_text())
         Logger.info(f"Finished reading pdf file {doc_name}")
+    elif doc_extension in ["docx", "pptx", "ppt", "pptm"]:
+      doc_text_list = []
+      docs = SimpleDirectoryReader(
+          input_files=[doc_filepath]
+      ).load_data()
+      # each document is read as one chunk, but do this for clarity
+      for d in docs:
+        doc_text_list.append(d.text)
+      Logger.info(f"Finished reading file {doc_name}")
     else:
       # return None if doc type not supported
       Logger.error(

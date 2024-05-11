@@ -15,11 +15,11 @@
 """
   LLM Service config object module
 """
-# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught
+# pylint: disable=unspecified-encoding,line-too-long,broad-exception-caught,protected-access
 # Config dicts that hold the current config for providers, models,
 # embedding models
 
-import inspect
+import importlib
 import json
 import os
 from pathlib import Path
@@ -50,6 +50,7 @@ KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
 KEY_MODEL_CONTEXT_LENGTH = "context_length"
 KEY_IS_CHAT = "is_chat"
+KEY_IS_MULTI = "is_multi"
 KEY_MODEL_FILE_URL = "model_file_url"
 KEY_MODEL_PATH = "model_path"
 KEY_MODEL_ENDPOINT = "model_endpoint"
@@ -69,6 +70,7 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_PARAMS,
   KEY_MODEL_CONTEXT_LENGTH,
   KEY_IS_CHAT,
+  KEY_IS_MULTI,
   KEY_MODEL_FILE_URL,
   KEY_MODEL_PATH,
   KEY_MODEL_ENDPOINT,
@@ -95,8 +97,9 @@ OPENAI_EMBEDDING_TYPE = "OpenAI-Embedding"
 COHERE_LLM_TYPE = "Cohere"
 LLAMA2CPP_LLM_TYPE = "Llama2cpp"
 LLAMA2CPP_LLM_TYPE_EMBEDDING = "Llama2cpp-Embedding"
+VERTEX_LLM_TYPE_CHAT = "VertexAI-Chat"
 VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
-VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat"
+VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat-Palm2"
 VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat-V1"
 VERTEX_LLM_TYPE_BISON_V2_CHAT = "VertexAI-Chat-Palm2-V2"
 VERTEX_LLM_TYPE_BISON_CHAT_32K = "VertexAI-Chat-Palm2-32k"
@@ -106,10 +109,12 @@ TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
 VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
 VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 VERTEX_LLM_TYPE_GEMINI_PRO = "VertexAI-Gemini-Pro"
+VERTEX_LLM_TYPE_GEMINI_PRO_VISION = "VertexAI-Gemini-Pro-Vision"
 VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN = "VertexAI-Chat-Gemini-Pro-Langchain"
 HUGGINGFACE_EMBEDDING = "HuggingFaceEmbeddings"
 
 MODEL_TYPES = [
+  VERTEX_LLM_TYPE_CHAT,
   OPENAI_LLM_TYPE_GPT3_5,
   OPENAI_LLM_TYPE_GPT4,
   OPENAI_LLM_TYPE_GPT4_LATEST,
@@ -122,6 +127,7 @@ MODEL_TYPES = [
   VERTEX_LLM_TYPE_BISON_V2_CHAT,
   VERTEX_LLM_TYPE_BISON_V1_CHAT,
   VERTEX_LLM_TYPE_GEMINI_PRO,
+  VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
   VERTEX_LLM_TYPE_GECKO_EMBEDDING,
   VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
   TRUSS_LLM_LLAMA2_CHAT,
@@ -148,16 +154,16 @@ def load_langchain_classes() -> dict:
   class instance.
   """
   langchain_chat_classes = {
-    k:klass for (k, klass) in inspect.getmembers(langchain_chat)
-    if isinstance(klass, type)
+    k:getattr(importlib.import_module(klass), k)
+    for k,klass in langchain_chat._module_lookup.items()
   }
   langchain_llm_classes = {
     klass().__name__:klass()
     for klass in langchain_llm.get_type_to_cls_dict().values()
   }
   langchain_embedding_classes = {
-    k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
-    if isinstance(klass, type)
+    k:getattr(importlib.import_module(klass), k)
+    for k,klass in langchain_embedding._module_lookup.items()
   }
 
   # special handling for Vertex and OpenAI chat models, which are
@@ -271,11 +277,11 @@ class ModelConfig():
     Initialize and set config for providers, models and embeddings, based
     on current config dicts (loaded from a config file), environment variables
     and secrets associated with the project.
-    
+
     This method performs the following:
-    
+
     - Validate model config, by checking model type and keys
-    
+
     - Set enabled flags for models.
       A model is enabled if its config setting is enabled, environment
       variables (which override config file settings) are set to true if
@@ -283,7 +289,7 @@ class ModelConfig():
       API key is present (if applicable).
 
     - Set API keys for models.
-    
+
     - Instantiate model classes and store in the config dicts for models and
     Embeddings.
 
@@ -432,6 +438,8 @@ class ModelConfig():
     provider = model_config.get(KEY_PROVIDER, None)
     if provider is not None:
       provider_config = self.get_provider_config(provider)
+      Logger.info(f"provider = {provider}")
+      Logger.info(f"provider_config = {provider_config}")
     return provider, provider_config
 
   def get_provider_models(self, provider_id: str) -> List[str]:
@@ -455,14 +463,21 @@ class ModelConfig():
   def get_provider_value(self, provider_id: str, key: str,
       model_id: str=None, default=None) -> Any:
     """ get config value from provider model config """
+
+    Logger.info("Get provider value:")
+    Logger.info(f"provider_id={provider_id}")
+    Logger.info(f"model_id={model_id}")
+
     if model_id is None:
       # get global provider value
       provider_config = self.get_provider_config(provider_id)
       value = provider_config.get(key, default)
     else:
       provider_config = self.get_provider_model_config(provider_id)
+      Logger.info(f"provider_config={provider_config}")
       model_config = provider_config.get(model_id)
       value = model_config.get(key, default)
+
     if value is None:
       Logger.error(f"key {key} for provider {provider_id} is None")
     return value
@@ -564,7 +579,7 @@ class ModelConfig():
     return api_key
 
   def instantiate_model_class(self, model_id: str) -> Callable:
-    """ 
+    """
     Instantiate the model class for providers that use them (e.g. Langchain)
     """
     langchain_classes = load_langchain_classes()
@@ -597,8 +612,8 @@ class ModelConfig():
     return model_class_instance
 
   def load_model_config(self):
-    """ 
-    Load model config dicts.  
+    """
+    Load model config dicts.
     Refresh api keys and set enabled flags for all models.
     """
     self.read_model_config()
@@ -624,6 +639,16 @@ class ModelConfig():
     ]
     return chat_llm_types
 
+  def get_multi_llm_types(self) -> dict:
+    """ Get all supported and enabled multimodal LLM types, as a list of model
+        identifiers.
+    """
+    multi_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and self.is_model_enabled(m)
+    ]
+    return multi_llm_types
+
   def get_embedding_types(self) -> dict:
     """ Get all supported and enabled embedding types, as a list of model
         identifiers.
@@ -640,7 +665,7 @@ class ModelConfig():
     Args:
       model_id: model identifier
       model_config: model config dict
-    
+
     Raises:
       RuntimeError if model download fails
       InvalidModelConfigException if config is invalid/missing

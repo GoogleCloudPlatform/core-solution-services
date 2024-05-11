@@ -69,18 +69,21 @@ VECTOR_STORES = {
   VECTOR_STORE_LANGCHAIN_PGVECTOR: PostgresVectorStore
 }
 
-RERANK_MODEL_NAME = "cross-encoder"
+RERANK_MODEL_NAME = "colbert"
 reranker = Reranker(RERANK_MODEL_NAME, verbose=0)
 
 # minimum number of references to return
 MIN_QUERY_REFERENCES = 2
+# total number of references to return from integrated search
+NUM_INTEGRATED_QUERY_REFERENCES = 6
 
 async def query_generate(
             user_id: str,
             prompt: str,
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
-            user_query: Optional[UserQuery] = None) -> \
+            user_query: Optional[UserQuery] = None,
+            rank_sentences=False) -> \
                 Tuple[QueryResult, List[QueryReference]]:
   """
   Execute a query over a query engine and generate a response.
@@ -96,6 +99,7 @@ async def query_generate(
     q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
+    rank_sentences: (optional): rank sentences in retrieved chunks
 
   Returns:
     QueryResult object,
@@ -118,13 +122,19 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = retrieve_references(prompt, q_engine, user_id)
+  query_references = retrieve_references(prompt, q_engine, user_id,
+                                         rank_sentences)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
   if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
       len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
+
+  # update user query with ranked references
+  if user_query:
+    update_user_query(
+        prompt, None, user_id, q_engine, query_references, user_query)
 
   # generate question prompt
   question_prompt, query_references = \
@@ -176,63 +186,60 @@ async def generate_question_prompt(prompt: str,
     chat_history = get_context_prompt(user_query=user_query)
 
   # generate default prompt
-  question_prompt = get_question_prompt(prompt, chat_history, query_references)
+  question_prompt = get_question_prompt(
+    prompt, chat_history, query_references, llm_type)
 
   # check prompt against context length of generation model
   try:
     check_context_length(question_prompt, llm_type)
   except ContextWindowExceededException:
-    # if context window length is exceeded, summarize the reference chunks
-    query_references = await summarize_references(query_references, llm_type)
-    question_prompt = get_question_prompt(
-      prompt, chat_history, query_references
-    )
-
+    # first try popping reference results
+    while len(query_references) > MIN_QUERY_REFERENCES:
+      q_ref = query_references.pop()
+      Logger.info(f"Dropped reference {q_ref.id}")
+      question_prompt = get_question_prompt(
+        prompt, chat_history, query_references, llm_type
+      )
+      try:
+        check_context_length(question_prompt, llm_type)
+        break
+      except ContextWindowExceededException:
+        pass
     # check again
     try:
       check_context_length(question_prompt, llm_type)
     except ContextWindowExceededException:
-      # now try popping reference results
-      while len(query_references) > MIN_QUERY_REFERENCES:
-        query_references.pop()
-        question_prompt = get_question_prompt(
-          prompt, chat_history, query_references
-        )
-        try:
-          check_context_length(question_prompt, llm_type)
-          break
-        except ContextWindowExceededException:
-          pass
-      # one final check - this will propagate the exception if the prompt
-      # is still too long
+      # summarize chat history
+      Logger.info(f"Summarizing chat history for {question_prompt}")
+      chat_history = await summarize_history(chat_history, llm_type)
+      question_prompt = get_question_prompt(
+        prompt, chat_history, query_references, llm_type
+      )
+      # exception will be propagated if context is too long at this point
       check_context_length(question_prompt, llm_type)
 
   return question_prompt, query_references
 
-async def summarize_references(query_references: List[QueryReference],
-                         llm_type: str) -> List[QueryReference]:
+async def summarize_history(chat_history: str,
+                            llm_type: str) -> str:
   """
-  Use an LLM to summarize the document text fields of a list of references.
-  Mutates the original objects and updates models in the DB with the
-  summarized text.
+  Use an LLM to summarize a chat history.
 
   Args:
-    query_references: list of query references to summarize
+    chat_history: string of previous chat
     llm_type: model to use to perform the summaries
   Returns:
-    List of query references with summarized document_text fields
+    summarized chat history
   """
-  for query_ref in query_references:
-    summarize_prompt = get_summarize_prompt(query_ref.document_text)
-    summary = await llm_chat(summarize_prompt, llm_type)
-    Logger.info(f"generated summary with LLM {llm_type}: {summary}")
-    query_ref.document_text = summary
-    query_ref.update()
-  return query_references
+  summarize_prompt = get_summarize_prompt(chat_history)
+  summary = await llm_chat(summarize_prompt, llm_type)
+  Logger.info(f"generated summary with LLM {llm_type}: {summary}")
+  return summary
 
 def retrieve_references(prompt: str,
                         q_engine: QueryEngine,
-                        user_id: str) -> List[QueryReference]:
+                        user_id: str,
+                        rank_sentences=False)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -257,7 +264,7 @@ def retrieve_references(prompt: str,
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
-    query_references = query_search(q_engine, prompt)
+    query_references = query_search(q_engine, prompt, rank_sentences)
   return query_references
 
 def query_search(q_engine: QueryEngine,
@@ -303,15 +310,12 @@ def query_search(q_engine: QueryEngine,
 
     clean_text = doc_chunk.clean_text
     if not clean_text:
-      # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
     if rank_sentences:
       # Assemble sentences from a document chunk. Currently it gets the
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
-      # for backwards compatibility with legacy engines break chunks
-      # into sentences here
       if not sentences or len(sentences) == 0:
         sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
@@ -359,27 +363,27 @@ def rerank_references(prompt: str,
   # reranker function requires text and ids as separate params
   query_ref_text = []
   query_ref_ids = []
+  query_ref_lookup = {}
 
   for query_ref in query_references:
     query_doc_chunk = QueryDocumentChunk.find_by_id(query_ref.chunk_id)
     # print(query_ref.id, query_ref_id, query_ref.chunk_id, query_doc_chunk.id)
     query_ref_text.append(query_doc_chunk.clean_text)
     query_ref_ids.append(query_ref.id)
+    query_ref_lookup[query_ref.id] = query_ref
 
   # rerank, passing in QueryReference ids
   ranked_results = reranker.rank(
     query=prompt,
     docs=query_ref_text,
     doc_ids=query_ref_ids)
+  ranked_results = ranked_results.top_k(NUM_INTEGRATED_QUERY_REFERENCES)
 
   # order the original references based on the rank
-  ranked_query_ref_ids = [r.doc_id for r in ranked_results.results]
-  sort_dict = {x: i for i, x in enumerate(ranked_query_ref_ids)}
-  sort_list = [(qr, sort_dict[qr.id]) for qr in query_references]
-  sort_list.sort(key=lambda x: x[1])
-
-  # just return the QueryReferences
-  ranked_query_refs = [qr for qr, i in sort_list]
+  ranked_query_refs = []
+  ranked_query_ref_ids = [r.doc_id for r in ranked_results]
+  for i in ranked_query_ref_ids:
+    ranked_query_refs.append(query_ref_lookup[i])
 
   return ranked_query_refs
 
@@ -418,6 +422,85 @@ def get_similarity(query_embeddings, sentence_embeddings) -> list:
     cos_sim.append(cosine[0])
 
   return cos_sim
+
+async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
+  """
+  Handle a batch job request for query generation.
+
+  Args:
+    request_body: dict of query params
+    job: BatchJobModel model object
+  Returns:
+    dict containing job meta data
+  """
+  query_engine_id = request_body.get("query_engine_id")
+  prompt = request_body.get("prompt")
+  user_id = request_body.get("user_id")
+  user_query_id = request_body.get("user_query_id", None)
+  llm_type = request_body.get("llm_type")
+  rank_sentences = request_body.get("rank_sentences", None)
+
+  q_engine = QueryEngine.find_by_id(query_engine_id)
+  if q_engine is None:
+    raise ResourceNotFoundException(f"Query Engine id {query_engine_id}")
+
+  user_query = None
+  if user_query_id:
+    user_query = UserQuery.find_by_id(user_query_id)
+    if user_query is None:
+      raise ResourceNotFoundException(f"UserQuery id {user_query_id}")
+
+  Logger.info(f"Starting batch job for query on [{q_engine.name}] "
+              f"job id [{job.id}], request_body=[{request_body}]")
+
+  query_result, query_references = await query_generate(
+      user_id, prompt, q_engine, llm_type, user_query, rank_sentences)
+
+  # update user query
+  user_query, query_reference_dicts = \
+      update_user_query(prompt,
+                        query_result.response,
+                        user_id,
+                        q_engine,
+                        query_references,
+                        user_query)
+
+  # update result data in batch job model
+  result_data = {
+    "query_engine_id": q_engine.id,
+    "query_result_id": query_result.id,
+    "user_query_id": user_query.id,
+    "query_references": query_reference_dicts
+  }
+  job.result_data = result_data
+  job.save(merge=True)
+
+  Logger.info(f"Completed batch job query execute for {q_engine.name}")
+
+  return result_data
+
+def update_user_query(prompt: str,
+                      response: str,
+                      user_id: str,
+                      q_engine: QueryEngine,
+                      query_references: List[QueryReference],
+                      user_query: UserQuery = None) -> \
+                      Tuple[UserQuery, dict]:
+  """ Save user query history """
+  query_reference_dicts = [
+    ref.get_fields(reformat_datetime=True) for ref in query_references
+  ]
+
+  # create user query if needed
+  if user_query is None:
+    user_query = UserQuery(user_id=user_id,
+                          query_engine_id=q_engine.id,
+                          prompt=prompt)
+    user_query.save()
+  user_query.update_history(prompt=prompt,
+                            response=response,
+                            references=query_reference_dicts)
+  return user_query, query_reference_dicts
 
 def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   """
@@ -580,7 +663,7 @@ def query_engine_build(doc_url: str,
     else:
       raise RuntimeError(f"Invalid query_engine_type {query_engine_type}")
   except Exception as e:
-    # delete query engine model if build unsuccessful
+    # delete query engine models if build unsuccessful
     delete_engine(q_engine, hard_delete=True)
     raise InternalServerError(str(e)) from e
 
@@ -678,6 +761,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       query_doc = QueryDocument(query_engine_id=q_engine.id,
                                 query_engine=q_engine.name,
                                 doc_url=index_doc_url,
+                                index_file=data_source_file.doc_id,
                                 index_start=index_base,
                                 index_end=new_index_base)
       query_doc.save()
@@ -783,6 +867,14 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
       "query_engine_id", "==", q_engine.id
     ).delete()
 
+    QueryReference.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
+    QueryResult.collection.filter(
+      "query_engine_id", "==", q_engine.id
+    ).delete()
+
     # delete query engine
     QueryEngine.delete_by_id(q_engine.id)
   else:
@@ -798,6 +890,16 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
       "query_engine_id", "==", q_engine.id).fetch()
     for qc in qchunks:
       qc.soft_delete_by_id(qc.id)
+
+    qrefs = QueryReference.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qr in qrefs:
+      qr.soft_delete_by_id(qr.id)
+
+    qres = QueryResult.collection.filter(
+      "query_engine_id", "==", q_engine.id).fetch()
+    for qr in qres:
+      qr.soft_delete_by_id(qr.id)
 
     # delete query engine
     QueryEngine.soft_delete_by_id(q_engine.id)

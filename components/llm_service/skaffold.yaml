@@ -20,8 +20,8 @@ metadata:
 # Requires the common image for shared data models or utils.
 requires:
 - configs:
-  - common
-  path: ../common
+  - common_ml
+  path: ../common_ml
 
 build:
   artifacts:
@@ -35,8 +35,8 @@ build:
       - llm-service
       - llm-service:latest
     requires:
-    - image: common
-      alias: COMMON_IMAGE
+    - image: common-ml
+      alias: COMMON_ML_IMAGE
   googleCloudBuild: {}
 
 # Portforwarding when running `skaffold dev` locally.

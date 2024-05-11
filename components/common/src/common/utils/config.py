@@ -71,11 +71,13 @@ DEFAULT_JOB_REQUESTS = {
 }
 
 JOB_TYPE_QUERY_ENGINE_BUILD = "query_engine_build"
+JOB_TYPE_QUERY_EXECUTE = "query_engine_execute_query"
 JOB_TYPE_AGENT_PLAN_EXECUTE = "agent_plan_execute"
 JOB_TYPE_ROUTING_AGENT = "agent_run_dispatch"
 
 JOB_TYPES_WITH_PREDETERMINED_TITLES = [
     JOB_TYPE_QUERY_ENGINE_BUILD,
+    JOB_TYPE_QUERY_EXECUTE,
     JOB_TYPE_AGENT_PLAN_EXECUTE,
     JOB_TYPE_ROUTING_AGENT
 ]
@@ -87,6 +89,7 @@ class JobTypes(Enum):
   in Jobs Service
   """
   JOB_TYPE_QUERY_ENGINE_BUILD = "query_engine_build"
+  JOB_TYPE_QUERY_EXECUTE = "query_engine_execute_query"
   JOB_TYPE_AGENT_PLAN_EXECUTE = "agent_plan_execute"
   JOB_TYPE_ROUTING_AGENT = "agent_run_dispatch"
 

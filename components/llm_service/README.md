@@ -38,7 +38,38 @@ export REGION=<region-where-endpoint-is-deployed
 export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
 ```
 
-## AlloyDB as a vector database
+## Set up Vector Database (use one of PostgreSQL or AlloyDB)
+### PostgreSQL (Cloud SQL) as a vector database
+```shell
+gcloud secrets create "postgres-user-passwd"
+# Please use single quotes to enclose the password below (esp.
+# if the password contains special characters like $)
+echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+
+export INSTANCE_ID=${PROJECT_ID}-db
+
+# Create a postgreSQL instance
+gcloud services enable sqladmin.googleapis.com
+
+gcloud sql instances create ${INSTANCE_ID} \
+--database-version=POSTGRES_15 \
+--region=us-central1 \
+--tier=db-perf-optimized-N-2 \
+--edition=ENTERPRISE_PLUS \
+--enable-data-cache \
+--storage-size=250 \
+--network default-vpc \
+--enable-google-private-path \
+--availability-type=REGIONAL \
+--no-assign-ip
+
+gcloud sql users set-password postgres \
+--instance=vectordb \
+--password=$(gcloud secrets versions access latest --secret="postgres-user-passwd")
+
+export PG_HOST=$(gcloud sql instances list --format="value(PRIVATE_ADDRESS)")
+```
+### AlloyDB as a vector database
 ```shell
 # Create a secret for postgres password
 gcloud secrets create "postgres-user-passwd"
@@ -51,7 +82,9 @@ echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-pas
 
 # Set the IP address for database host from the output of the above script
 export PG_HOST=<alloydb-ip-address>
-
+```
+### Add PGVector extension
+```shell
 # Create an ephemeral pod (auto-deleted) for running psql client
 kubectl run psql-client --rm -i --tty --image ubuntu -- bash
 ```
@@ -60,7 +93,7 @@ Once inside the temporary sql pod
 apt update -y && apt install -y postgresql-client
 
 export PGPASSWORD=<your-postgres-password>
-export PGHOST=<alloydb-ip-address>
+export PGHOST=<pghost-ip-address>
 psql -U postgres -c "CREATE DATABASE pgvector"
 psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector"
 exit
