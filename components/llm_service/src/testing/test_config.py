@@ -15,11 +15,16 @@
 """ Config used for testing in unit tests """
 # pylint: disable=line-too-long,unused-argument
 import os
+from typing import List, Optional, Any
 from langchain.schema import (Generation, ChatGeneration, LLMResult)
 from langchain.schema.messages import AIMessage
+from langchain_core.language_models.llms import BaseLLM
+from langchain_core.callbacks import CallbackManagerForLLMRun
+
 from config import (COHERE_LLM_TYPE,
                     OPENAI_LLM_TYPE_GPT3_5, OPENAI_LLM_TYPE_GPT4,
                     OPENAI_LLM_TYPE_GPT4_LATEST,
+                    VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN,
                     VERTEX_LLM_TYPE_BISON_TEXT,
                     VERTEX_LLM_TYPE_BISON_CHAT,
                     VERTEX_LLM_TYPE_GEMINI_PRO,
@@ -50,9 +55,34 @@ FAKE_GENERATE_RESULT = LLMResult(generations=[[FAKE_LANGCHAIN_GENERATION]])
 
 FAKE_CHAT_RESULT = LLMResult(generations=[[FAKE_CHAT_RESPONSE]])
 
-class FakeModelClass:
+class FakeModelClass(BaseLLM):
+  """ Fake model class for langchain tests """
   async def agenerate(self, prompts):
     return FAKE_CHAT_RESULT
+
+  def _generate(
+      self,
+      prompts: List[str],
+      stop: Optional[List[str]] = None,
+      run_manager: Optional[CallbackManagerForLLMRun] = None,
+      stream: Optional[bool] = None,
+      **kwargs: Any,
+  ) -> LLMResult:
+    return FAKE_CHAT_RESULT
+
+  def _call(
+      self,
+      prompt: str,
+      stop: Optional[List[str]] = None,
+      run_manager: Optional[CallbackManagerForLLMRun] = None,
+      **kwargs: Any,
+  ) -> str:
+    """Run the LLM on the given prompt and input."""
+    return FAKE_CHAT_RESULT
+
+  @property
+  def _llm_type(self) -> str:
+    return "vertexai"
 
 TEST_COHERE_CONFIG = {
   COHERE_LLM_TYPE: {
@@ -77,6 +107,12 @@ TEST_OPENAI_CONFIG = {
     KEY_MODEL_CLASS: FakeModelClass()
   },
   OPENAI_LLM_TYPE_GPT4_LATEST: {
+    KEY_PROVIDER: PROVIDER_LANGCHAIN,
+    KEY_IS_CHAT: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_CLASS: FakeModelClass()
+  },
+  VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN: {
     KEY_PROVIDER: PROVIDER_LANGCHAIN,
     KEY_IS_CHAT: True,
     KEY_ENABLED: True,

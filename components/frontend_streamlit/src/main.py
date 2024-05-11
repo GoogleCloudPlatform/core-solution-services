@@ -14,15 +14,10 @@
 """
   Streamlit app main file
 """
-import importlib
 import utils
 import streamlit as st
-from styles.pages.login_markup import login_theme
-from common.utils.logging_handler import Logger
+import logging
 
-Logger = Logger.get_logger(__file__)
-login = importlib.import_module("pages.1_Login")
-landing = importlib.import_module("pages.2_Landing")
 
 def app():
   st.set_page_config(
@@ -35,17 +30,16 @@ def app():
     st.title("GENIE v1.0")
 
   if st.session_state.get("auth_token", None):
-    landing.landing_page()
+    st.switch_page("pages/2_Landing.py")
   else:
     # TODO: Implement the actual authentication process via API call.
     # Change this to False for testing with the login page.
-    login_theme()
-    login.login_page()
+    st.switch_page("pages/1_Login.py")
 
 
 if __name__ == "__main__":
   app()
-  Logger.info("Streamlit main page rendered.")
+  logging.info("Streamlit main page rendered.")
   #./main.py is used as an entrypoint for the build,
   # which creates a page that duplicates the Login page named "main".
   utils.hide_pages(["main", "Custom_Chat"])
