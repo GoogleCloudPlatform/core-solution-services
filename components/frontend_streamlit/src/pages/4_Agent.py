@@ -21,7 +21,7 @@ from api import (
     get_chat, run_agent, run_agent_plan, get_plan,
     run_agent_execute_plan)
 from components.chat_history import chat_history_panel
-from common.utils.logging_handler import Logger
+import logging
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
@@ -44,7 +44,7 @@ CHAT_PAGE_STYLES = """
 
 st.session_state.input_loading = False
 
-Logger = Logger.get_logger(__file__)
+
 
 def on_input_change():
   user_input = st.session_state.user_input
@@ -88,7 +88,7 @@ def init_messages():
 
 
 def format_ai_output(text):
-  Logger.info(text)
+  logging.info(text)
 
   text = ansi_escape.sub("", text)
   text = text.replace("> Entering new AgentExecutor chain",
@@ -108,7 +108,7 @@ def chat_content():
   with chat_placeholder.container():
     index = 1
     for item in st.session_state.messages:
-      Logger.info(item)
+      logging.info(item)
 
       if "HumanInput" in item:
         with st.chat_message("user"):
@@ -130,7 +130,7 @@ def chat_content():
           index = 1
 
           plan = get_plan(item["plan"]["id"])
-          Logger.info(plan)
+          logging.info(plan)
 
           for step in plan["plan_steps"]:
             st.text_area(f"step-{index}", step["description"],

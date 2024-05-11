@@ -63,6 +63,11 @@
       },
       "context_length": 128000
     },
+    "VertexAI-Chat-Palm2": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "chat-bison@002"      
+    },
     "VertexAI-Chat-Palm2-V2": {
       "is_chat": true,
       "provider": "Vertex",
