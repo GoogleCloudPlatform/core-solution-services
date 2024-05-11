@@ -27,6 +27,7 @@ from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
 from config import get_agent_config
 from services.agents.agents import BaseAgent
+from services.agents.db_agent import run_db_agent
 from services.agents.utils import agent_executor_arun_with_logs
 
 Logger = Logger.get_logger(__file__)
@@ -72,7 +73,8 @@ def get_all_agents() -> dict:
 
 async def run_agent(agent_name: str,
                     prompt: str,
-                    chat_history: List = None) -> str:
+                    chat_history: List = None,
+                    agent_params: dict = None) -> str:
   """
   Run an agent on user input
 
@@ -80,33 +82,47 @@ async def run_agent(agent_name: str,
       agent_name(str): Agent name
       prompt(str): the user input prompt
       chat_history(List): any previous chat history for context
+      agent_params(dict): dict of additional agent run params
 
   Returns:
       output(str): the output of the agent on the user input
-      action_steps: the list of action steps take by the agent for the run
   """
+  if agent_params is None:
+    agent_params = {}
   Logger.info(f"Running {agent_name} agent "
               f"with prompt=[{prompt}] and "
-              f"chat_history=[{chat_history}]")
+              f"chat_history=[{chat_history}]"
+              f"agent_params=[{agent_params}]")
+
   llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
-  tools = llm_service_agent.get_tools()
-  tools_str = ", ".join(tool.name for tool in tools)
+  # handle database agent runs
+  if AgentCapability.DATABASE in llm_service_agent.capabilities:
+    llm_type = llm_service_agent.llm_type
+    dataset = agent_params.get("dataset", None)
+    user_email = agent_params.get("user_email", None)
+    output = run_db_agent(prompt, llm_type=llm_type,
+                          dataset=dataset, user_email=user_email)
 
-  Logger.info(f"Available tools=[{tools_str}]")
-  langchain_agent = llm_service_agent.load_langchain_agent()
+  else:
+    tools = llm_service_agent.get_tools()
+    tools_str = ", ".join(tool.name for tool in tools)
 
-  agent_executor = AgentExecutor.from_agent_and_tools(
-      agent=langchain_agent, tools=tools)
+    Logger.info(f"Available tools=[{tools_str}]")
+    langchain_agent = llm_service_agent.load_langchain_agent()
 
-  chat_history = chat_history or []
-  agent_inputs = {
-    "input": prompt,
-    "chat_history": chat_history
-  }
+    agent_executor = AgentExecutor.from_agent_and_tools(
+        agent=langchain_agent, tools=tools)
 
-  Logger.info("Running agent executor.... ")
-  output = agent_executor.run(agent_inputs)
+    chat_history = chat_history or []
+    agent_inputs = {
+      "input": prompt,
+      "chat_history": chat_history
+    }
+
+    Logger.info("Running agent executor.... ")
+    output = agent_executor.run(agent_inputs)
+
   Logger.info(f"Agent {agent_name} generated"
               f" output=[{output}]")
   return output

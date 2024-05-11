@@ -23,6 +23,9 @@
       "agent_type": "langchain_ZeroShot",
       "query_engines": "ALL",
       "tools": "ALL"
+    },
+    "DbAgent": {
+      "llm_type": "VertexAI-Chat-Gemini-Pro-Langchain",
     }
   },
   "Datasets":

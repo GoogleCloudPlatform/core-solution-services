@@ -245,8 +245,8 @@ async def agent_run(agent_name: str,
   try:
     user = User.find_by_email(user_data.get("email"))
     llm_type = BaseAgent.get_llm_type_for_agent(agent_name)
-
-    output, agent_logs = await run_agent(agent_name, prompt)
+    runconfig_dict["user_email"] = user.email
+    output, agent_logs = await run_agent(agent_name, prompt, runconfig_dict)
     Logger.info(f"Generated output=[{output}]")
 
     # create new chat for user
@@ -274,66 +274,6 @@ async def agent_run(agent_name: str,
     Logger.error(e)
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
-
-@router.post(
-    "/run_db_agent",
-    name="Run db agent on user input",
-    response_model=LLMAgentRunResponse)
-async def agent_run(run_config: LLMAgentRunModel,
-                    user_data: dict = Depends(validate_token)):
-  """
-  Run DB agent on user input. Store history in new UserChat.
-
-  Args:
-      run_config(LLMAgentRunModel): the config of the Agent model.
-
-  Returns:
-      LLMAgentRunResponse
-  """
-  runconfig_dict = {**run_config.dict()}
-
-  Logger.info(f"Running db_agent agent on {runconfig_dict}")
-
-  prompt = runconfig_dict.get("prompt")
-  if prompt is None or prompt == "":
-    return BadRequest("Missing or invalid payload parameters")
-
-  if len(prompt) > PAYLOAD_FILE_SIZE:
-    return PayloadTooLargeError(
-      f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
-
-  try:
-    user = User.find_by_email(user_data.get("email"))
-
-    output, agent_logs = await run_db_agent(prompt)
-    Logger.info(f"Generated output=[{output}]")
-
-    # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, prompt=prompt,
-                         llm_type=llm_type, agent_name=agent_name)
-    # Save user chat to retrieve actual ID.
-    user_chat.update_history(prompt, output)
-    user_chat.save()
-
-    chat_data = user_chat.get_fields(reformat_datetime=True)
-    chat_data["id"] = user_chat.id
-
-    response_data = {
-      "content": output,
-      "chat": chat_data,
-      "agent_logs": agent_logs
-    }
-
-    return {
-      "success": True,
-      "message": "Successfully ran db agent",
-      "data": response_data
-    }
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
-
 
 
 @router.post(
