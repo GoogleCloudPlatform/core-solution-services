@@ -65,7 +65,7 @@ def landing_header():
     add_logo("../assets/rit_logo.png")
 
   with chat_mode:
-    chat_modes = routing_agent_names + ["Chat", "Plan", "Query"]
+    chat_modes = routing_agent_names + ["Chat", "Plan", "Query", "DbAgent"]
     selected_chat = st.selectbox(
         "Chat Mode", chat_modes)
     st.session_state.default_route = selected_chat
@@ -91,7 +91,7 @@ def chat_header(refresh_func=None):
     if refresh_func:
       st.button("Refresh", type="primary", on_click=refresh_func)
 
-  chat_modes = routing_agent_names + ["Chat", "Plan", "Query"]
+  chat_modes = routing_agent_names + ["Chat", "Plan", "Query", "DbAgent"]
   chat_mode_index = 0
   if st.session_state.default_route:
     while chat_mode_index < len(chat_modes):
