@@ -105,3 +105,28 @@ def chat_header(refresh_func=None):
     selected_chat = st.selectbox(
         "Chat Mode", chat_modes, index=chat_mode_index)
     st.session_state.default_route = selected_chat
+
+# Includes selection boxes for agent name
+def agent_header(refresh_func=None):
+  routing_agents = get_all_routing_agents()
+  routing_agent_names = list(routing_agents.keys())
+
+  agent_name, refresh_button = st.columns([3, 2])
+  with refresh_button:
+    if refresh_func:
+      st.button("Refresh", type="primary", on_click=refresh_func)
+
+  agent_names = routing_agent_names + ["Chat", "Plan", "Query", "DbAgent"]
+  agent_name_index = 0
+  if st.session_state.default_route:
+    while agent_name_index < len(agent_names):
+      if st.session_state.default_route == agent_names[agent_name_index]:
+        break
+      agent_name_index += 1
+    if agent_name_index >= len(agent_names):
+      agent_name_index = 0
+
+  with agent_name:
+    selected_chat = st.selectbox(
+        "Agent", agent_names, index=agent_name_index)
+    st.session_state.agent_name = selected_chat
