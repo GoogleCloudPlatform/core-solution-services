@@ -92,14 +92,23 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
   return output, agent_logs
 
 
-def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
+def map_prompt_to_dataset(prompt: str, llm_type: str) -> Tuple[str, str]:
   """
-  Determine the dataset based on the prompt
+  Determine the dataset based on the prompt.
+  TODO: This currently just returns the default dataset. In the future this
+        method could run a classifier, perhaps as an agent, that picked the
+        appropriate dataset based on the prompt.
+
+  Args:
+    prompt: user query
+    llm_type: model id of LLM to use to generate SQL
+  Returns:
+    tuple of dataset identifier(str), dataset type (str)
   """
   datasets = get_dataset_config()
 
   # TODO: use LLM to map datatype
-  dataset = "fqhc_medical_transactions"
+  dataset = datasets.get("default")
 
   db_type = datasets.get(dataset).get("type")
   return dataset, db_type
