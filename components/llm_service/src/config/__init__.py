@@ -84,6 +84,7 @@ from config.model_config import (
     VERTEX_LLM_TYPE_GEMINI_PRO,
     VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
     TRUSS_LLM_LLAMA2_CHAT,
+    VLLM_LLM_GEMMA_CHAT,
 
     # model config keys
     KEY_ENABLED,
@@ -110,6 +111,7 @@ from config.model_config import (
     PROVIDER_MODEL_GARDEN,
     PROVIDER_LANGCHAIN,
     PROVIDER_TRUSS,
+    PROVIDER_VLLM,
     PROVIDER_LLM_SERVICE,
 
     # model vendors
