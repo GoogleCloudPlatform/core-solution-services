@@ -101,8 +101,9 @@ async def run_agent(agent_name: str,
     llm_type = llm_service_agent.llm_type
     dataset = agent_params.get("dataset", None)
     user_email = agent_params.get("user_email", None)
-    output = run_db_agent(prompt, llm_type=llm_type,
-                          dataset=dataset, user_email=user_email)
+    output, agent_logs = \
+        await run_db_agent(prompt, llm_type=llm_type,
+                           dataset=dataset, user_email=user_email)
 
   else:
     tools = llm_service_agent.get_tools()
@@ -121,7 +122,8 @@ async def run_agent(agent_name: str,
     }
 
     Logger.info("Running agent executor.... ")
-    output = agent_executor.run(agent_inputs)
+    output, agent_logs = await agent_executor_arun_with_logs(
+        agent_executor, agent_inputs)
 
   Logger.info(f"Agent {agent_name} generated"
               f" output=[{output}]")
