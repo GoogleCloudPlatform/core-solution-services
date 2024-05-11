@@ -97,7 +97,7 @@ async def run_agent(agent_name: str,
   llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
   # handle database agent runs
-  if AgentCapability.DATABASE in llm_service_agent.capabilities:
+  if AgentCapability.DATABASE in llm_service_agent.capabilities():
     llm_type = llm_service_agent.llm_type
     dataset = agent_params.get("dataset", None)
     user_email = agent_params.get("user_email", None)
