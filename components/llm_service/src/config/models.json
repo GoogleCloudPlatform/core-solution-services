@@ -31,6 +31,10 @@
     "Truss": {
       "enabled": false,
       "env_flag": "ENABLE_TRUSS_LLAMA2"
+    },
+    "vLLM": {
+      "enabled": true,
+      "env_flag": "ENABLE_VLLM_GEMMA"
     }
   },
   "vendors": {
@@ -62,6 +66,11 @@
         "top_k": 40
       },
       "context_length": 128000
+    },
+    "VertexAI-Chat-Palm2": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "chat-bison@002"      
     },
     "VertexAI-Chat-Palm2-V2": {
       "is_chat": true,
@@ -118,6 +127,19 @@
         "top_p": 0.95,
         "top_k": 40,
         "max_new_tokens": 1024
+      }
+    },
+    "vLLM-Gemma-Chat": {
+      "model_endpoint": "vllm-gemma-service",
+      "is_chat": true,
+      "provider": "vLLM",
+      "enabled": true,
+      "context_length": 8192,
+      "model_params": {
+        "temperature": 0.2,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_length": 2048
       }
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {

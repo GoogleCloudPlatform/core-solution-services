@@ -70,20 +70,22 @@ class UserQuery(BaseModel):
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
 
-  def update_history(self, prompt: str, response: str, references: List[dict]):
+  def update_history(self, prompt: str=None,
+                     response: str=None,
+                     references: List[dict]=None):
     """ Update history with query and response """
     if not self.history:
       self.history = []
 
-    self.history.append(
-      {QUERY_HUMAN: prompt}
-    )
-    self.history.append(
-      {
-        QUERY_AI_RESPONSE: response,
-        QUERY_AI_REFERENCES: references
-      }
-    )
+    if prompt:
+      self.history.append({QUERY_HUMAN: prompt})
+
+    if response:
+      self.history.append({QUERY_AI_RESPONSE: response})
+
+    if references:
+      self.history.append({QUERY_AI_REFERENCES: references})
+
     self.save(merge=True)
 
   @classmethod

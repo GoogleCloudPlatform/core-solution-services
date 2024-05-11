@@ -16,6 +16,7 @@ Query prompt generator methods
 """
 from typing import List
 
+from config import TRUSS_LLM_LLAMA2_CHAT
 from services.query.query_prompt_config import \
   QUESTION_PROMPT, SUMMARY_PROMPT, LLAMA2_QUESTION_PROMPT
 from common.utils.logging_handler import Logger
@@ -33,7 +34,7 @@ def get_question_prompt(prompt: str,
   context_list = [ref.document_text for ref in query_context]
   text_context = "\n\n".join(context_list)
 
-  if llm_type == "Truss-Llama2-Chat":
+  if llm_type == TRUSS_LLM_LLAMA2_CHAT:
     question = LLAMA2_QUESTION_PROMPT.format(
       question=prompt, chat_history=chat_history, context=text_context
     )
