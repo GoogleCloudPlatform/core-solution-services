@@ -20,6 +20,7 @@
 # embedding models
 
 import importlib
+import inspect
 import json
 import os
 from pathlib import Path
@@ -171,7 +172,6 @@ def load_langchain_classes() -> dict:
       for k,klass in langchain_embedding._module_lookup.items()
     }
   else:
-    import inspect
     langchain_embedding_classes = {
       k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
       if isinstance(klass, type)

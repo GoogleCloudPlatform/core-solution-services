@@ -340,12 +340,12 @@ def clean_sql_statement(statement: str) -> str:
   pattern = r"`sql(.*?)`"
   match = re.search(pattern, statement, re.DOTALL)
   cleaned_statement = match.group(1).strip() if match else None
-  if cleaned_statement is None:  
+  if cleaned_statement is None:
     # otherwise search for a SELECT statement and take all text that follows
     pattern = r"(SELECT\s+.*)"
     match = re.search(pattern, statement, re.DOTALL)
     cleaned_statement = match.group(1).strip() if match else None
-  
+
   # replace newlines with spaces
   if cleaned_statement is not None:
     cleaned_statement = cleaned_statement.replace("\n", " ")
