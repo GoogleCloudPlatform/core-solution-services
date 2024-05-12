@@ -74,7 +74,7 @@ def get_all_agents() -> dict:
 async def run_agent(agent_name: str,
                     prompt: str,
                     chat_history: List = None,
-                    agent_params: dict = None) -> str:
+                    agent_params: dict = None) -> Tuple[str, str]:
   """
   Run an agent on user input
 
@@ -86,6 +86,7 @@ async def run_agent(agent_name: str,
 
   Returns:
       output(str): the output of the agent on the user input
+      agent_logs(str): agent log stream
   """
   if agent_params is None:
     agent_params = {}
@@ -129,7 +130,7 @@ async def run_agent(agent_name: str,
 
   Logger.info(f"Agent {agent_name} generated"
               f" output=[{output}] logs [{agent_logs}]")
-  return output
+  return output, agent_logs
 
 
 async def agent_plan(agent_name: str,

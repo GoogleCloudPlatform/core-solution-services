@@ -312,7 +312,7 @@ async def agent_run_chat(agent_name: str, chat_id: str,
   try:
     # run agent to get output
     chat_history = langchain_chat_history(user_chat)
-    output = await run_agent(agent_name, prompt, chat_history)
+    output, agent_logs = await run_agent(agent_name, prompt, chat_history)
     Logger.info(f"Generated output=[{output}]")
 
     # save chat history

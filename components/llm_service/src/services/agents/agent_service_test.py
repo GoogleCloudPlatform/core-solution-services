@@ -112,9 +112,11 @@ async def test_run_db_agent(mock_run_db_agent,
   }
 
   chat_history = create_chat.history
-  output = await run_agent(agent_name, prompt, chat_history, agent_params)
+  output, agent_logs = \
+      await run_agent(agent_name, prompt, chat_history, agent_params)
 
   assert output == FAKE_DB_AGENT_RESULT
+  assert agent_logs == FAKE_AGENT_LOGS
 
 
 @pytest.mark.asyncio
@@ -136,7 +138,9 @@ async def test_run_chat_agent(mock_get_agent,
   agent_params = None
 
   chat_history = create_chat.history
-  output = await run_agent(agent_name, prompt, chat_history, agent_params)
+  output, agent_logs = \
+      await run_agent(agent_name, prompt, chat_history, agent_params)
 
   assert output == FAKE_AGENT_OUTPUT
+  assert agent_logs == FAKE_AGENT_LOGS
 
