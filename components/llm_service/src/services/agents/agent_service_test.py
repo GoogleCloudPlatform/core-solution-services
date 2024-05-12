@@ -120,9 +120,9 @@ async def test_run_db_agent(mock_run_db_agent,
 
 
 @pytest.mark.asyncio
-@mock.patch("services.agents.routing_agent.agent_executor_arun_with_logs")
-@mock.patch("services.agents.routing_agent.AgentExecutor.from_agent_and_tools")
-@mock.patch("services.agents.routing_agent.BaseAgent.get_llm_service_agent")
+@mock.patch("services.agents.agent_service.agent_executor_arun_with_logs")
+@mock.patch("services.agents.agent_service.AgentExecutor.from_agent_and_tools")
+@mock.patch("services.agents.agent_service.BaseAgent.get_llm_service_agent")
 async def test_run_chat_agent(mock_get_agent,
                               mock_agent_executor,
                               mock_agent_executor_arun,
