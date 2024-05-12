@@ -16,20 +16,16 @@
   Unit tests for agent service
 """
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,ungrouped-imports,wrong-import-position
+# pylint: disable=unused-argument,redefined-outer-name,unused-import,ungrouped-imports,wrong-import-position
 
-from copy import deepcopy
 import os
-import json
 import pytest
-import tempfile
 from unittest import mock
 from common.models import User, UserChat
 from common.models.agent import AgentCapability
 from common.utils.logging_handler import Logger
 from config import get_model_config, PROVIDER_LANGCHAIN
-from testing.test_config import (TEST_OPENAI_CONFIG, FakeModelClass,
-                                 FAKE_LANGCHAIN_GENERATION)
+from testing.test_config import TEST_OPENAI_CONFIG, FAKE_LANGCHAIN_GENERATION
 from schemas.schema_examples import (CHAT_EXAMPLE,
                                      USER_EXAMPLE)
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
