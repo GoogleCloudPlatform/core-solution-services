@@ -91,7 +91,6 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
     raise RuntimeError(f"Unsupported agent db type {db_type}")
   return output, agent_logs
 
-
 def map_prompt_to_dataset(prompt: str, llm_type: str) -> Tuple[str, str]:
   """
   Determine the dataset based on the prompt.
@@ -337,15 +336,20 @@ def validate_sql(sql_query: str) -> bool:
 
 def clean_sql_statement(statement: str) -> str:
   """ clean SQL statement to remove \n and enclosing backticks """
-  # Regular expression pattern to match text enclosed in triple backticks
-  # with an optional language designator
-  pattern = r"```(?:\w+\s*)?\n?(.*?)\n?```"
-
-  # Using DOTALL flag to make '.' match newlines as well
-  cleaned_statement = re.sub(pattern, r"\1", statement, flags=re.DOTALL)
-
-  # Strip leading and trailing whitespaces and newlines from the cleaned text
-  return cleaned_statement.strip()
+  # if there is a ```sql <sql>``` present in the string, extract it
+  pattern = r"`sql(.*?)`"
+  match = re.search(pattern, statement, re.DOTALL)
+  cleaned_statement = match.group(1).strip() if match else None
+  if cleaned_statement is None:  
+    # otherwise search for a SELECT statement and take all text that follows
+    pattern = r"(SELECT\s+.*)"
+    match = re.search(pattern, statement, re.DOTALL)
+    cleaned_statement = match.group(1).strip() if match else None
+  
+  # replace newlines with spaces
+  if cleaned_statement is not None:
+    cleaned_statement = cleaned_statement.replace("\n", " ")
+  return cleaned_statement
 
 def extract_columns(sql_query: str) -> List[str]:
   """ Use sqlparse to extract columns from a SQL statement """
