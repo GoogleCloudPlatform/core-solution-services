@@ -21,6 +21,7 @@ from api import (
     get_chat, run_agent, run_agent_plan, get_plan,
     run_agent_execute_plan)
 from components.chat_history import chat_history_panel
+from components.content_header import agent_header
 import logging
 import utils
 
@@ -54,7 +55,7 @@ def on_input_change():
 
   # Send API to llm-service
   st.session_state.input_loading = True
-  if agent_name.lower() == "chat":
+  if agent_name.lower() == "chat" or agent_name.lower() == "dbagent":
     response = run_agent(agent_name, user_input,
                          chat_id=st.session_state.chat_id)
 
@@ -159,8 +160,10 @@ def chat_content():
 
   st.text_input("User Input:", on_change=on_input_change, key="user_input")
 
+def reset_content():
+  init_messages()
 
-def chat_page():
+def agent_page():
   st.title(st.session_state.agent_name + " Agent")
   st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
 
@@ -173,9 +176,10 @@ def chat_page():
   # Set up columns to mimic a right-side sidebar
   main_container = st.container()
   with main_container:
+    agent_header(refresh_func=reset_content)
     chat_content()
 
 
 if __name__ == "__main__":
   utils.init_page()
-  chat_page()
+  agent_page()

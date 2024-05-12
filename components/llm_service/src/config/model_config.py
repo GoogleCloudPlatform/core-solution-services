@@ -20,6 +20,7 @@
 # embedding models
 
 import importlib
+import inspect
 import json
 import os
 from pathlib import Path
@@ -154,7 +155,8 @@ class InvalidModelConfigException(Exception):
 def load_langchain_classes() -> dict:
   """
   Load langchain classes.  Return a dict mapping classname to 
-  class instance.
+  class instance.  The langchain version nightmare makes this step
+  particularly challenging to maintain.
   """
   langchain_chat_classes = {
     k:getattr(importlib.import_module(klass), k)
@@ -164,10 +166,16 @@ def load_langchain_classes() -> dict:
     klass().__name__:klass()
     for klass in langchain_llm.get_type_to_cls_dict().values()
   }
-  langchain_embedding_classes = {
-    k:getattr(importlib.import_module(klass), k)
-    for k,klass in langchain_embedding._module_lookup.items()
-  }
+  if hasattr(langchain_embedding, "_module_lookup"):
+    langchain_embedding_classes = {
+      k:getattr(importlib.import_module(klass), k)
+      for k,klass in langchain_embedding._module_lookup.items()
+    }
+  else:
+    langchain_embedding_classes = {
+      k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
+      if isinstance(klass, type)
+    }
 
   # special handling for Vertex and OpenAI chat models, which are
   # imported in community packages
