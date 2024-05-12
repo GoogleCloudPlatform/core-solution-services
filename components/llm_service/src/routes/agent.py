@@ -246,7 +246,8 @@ async def agent_run(agent_name: str,
     user = User.find_by_email(user_data.get("email"))
     llm_type = BaseAgent.get_llm_type_for_agent(agent_name)
     runconfig_dict["user_email"] = user.email
-    output, agent_logs = await run_agent(agent_name, prompt, runconfig_dict)
+    output, agent_logs = \
+        await run_agent(agent_name, prompt, None, runconfig_dict)
     Logger.info(f"Generated output=[{output}]")
 
     # create new chat for user
@@ -281,7 +282,8 @@ async def agent_run(agent_name: str,
     name="Run agent on user input with chat history",
     response_model=LLMAgentRunResponse)
 async def agent_run_chat(agent_name: str, chat_id: str,
-                         run_config: LLMAgentRunModel):
+                         run_config: LLMAgentRunModel,
+                         user_data: dict = Depends(validate_token)):
   """
   Run agent on user input with prior chat history
 
@@ -311,8 +313,11 @@ async def agent_run_chat(agent_name: str, chat_id: str,
 
   try:
     # run agent to get output
+    user = User.find_by_email(user_data.get("email"))
+    runconfig_dict["user_email"] = user.email
     chat_history = langchain_chat_history(user_chat)
-    output, agent_logs = await run_agent(agent_name, prompt, chat_history)
+    output, agent_logs = \
+        await run_agent(agent_name, prompt, chat_history, runconfig_dict)
     Logger.info(f"Generated output=[{output}]")
 
     # save chat history
@@ -324,6 +329,7 @@ async def agent_run_chat(agent_name: str, chat_id: str,
     response_data = {
       "content": output,
       "chat": chat_data,
+      "agent_logs": agent_logs
     }
 
     return {
