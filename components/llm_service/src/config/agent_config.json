@@ -25,7 +25,7 @@
       "tools": "ALL"
     },
     "DbAgent": {
-      "llm_type": "VertexAI-Chat-Gemini-Pro-Langchain"
+      "llm_type": "OpenAI-GPT4-latest"
     }
   },
   "Datasets":
