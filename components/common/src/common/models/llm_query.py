@@ -207,6 +207,7 @@ class QueryReference(BaseModel):
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
+      f"document_url={self.document_url}, "
       f"chunk_id={self.chunk_id}, "
       f"chunk_num_tokens={document_text_num_tokens}, "
       f"chunk_num_chars={document_text_num_chars}, "

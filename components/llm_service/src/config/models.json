@@ -133,7 +133,7 @@
       "model_endpoint": "vllm-gemma-service",
       "is_chat": true,
       "provider": "vLLM",
-      "enabled": true,
+      "enabled": false,
       "context_length": 8192,
       "model_params": {
         "temperature": 0.2,
