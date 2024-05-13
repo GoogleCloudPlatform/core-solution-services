@@ -30,7 +30,8 @@ from common.models import (UserQuery, QueryResult, QueryEngine,
                            BatchJobModel)
 from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QE_TYPE_LLM_SERVICE,
-                                     QE_TYPE_INTEGRATED_SEARCH)
+                                     QE_TYPE_INTEGRATED_SEARCH,
+                                     QUERY_AI_RESPONSE)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -131,7 +132,9 @@ async def query_generate(
       len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
 
-  # update user query with ranked references
+  # Update user query with ranked references. We do this before generating
+  # the answer so the frontend can display the retrieved results as soon as
+  # they are available.
   if user_query:
     update_user_query(
         prompt, None, user_id, q_engine, query_references, user_query)
@@ -145,6 +148,13 @@ async def query_generate(
 
   # send prompt to model
   question_response = await llm_chat(question_prompt, llm_type)
+
+  # update user query with response
+  if user_query:
+    # insert the response before the just added references
+    user_query.history.insert(
+        len(user_query.history) - 1, {QUERY_AI_RESPONSE: question_response})
+    user_query.update()
 
   # save query result
   query_ref_ids = [ref.id for ref in query_references]
