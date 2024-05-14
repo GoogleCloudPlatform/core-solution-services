@@ -159,6 +159,9 @@ These microservice components also depend on `./components/common`, so additiona
   # install requirements from common
   pip install -r ../common/requirements.txt
 
+   # install requirements from common_ml
+  pip install -r ../common_ml/requirements.txt
+
   # install microservice requirements
   pip install -r requirements.txt
   ```
@@ -420,6 +423,10 @@ Unit tests make use of the firestore emulator.  Tests currently assume that the 
   source .venv/bin/activate
   pip install -r requirements.txt
   pip install -r requirements-test.txt
+
+  # If this component depends on the common_ml folder:
+  pip install -r ../common_ml/requirements.txt
+  pip install -r ../common_ml/requirements-test.txt
 
   # If this component depends on the common folder:
   pip install -r ../common/requirements.txt
