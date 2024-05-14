@@ -56,9 +56,10 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
              attempt to determine the dataset from the prompt.
     user_email: if present, send the resulting data to this email in a Sheet.
   Return:
-    a dict of "columns: column names, "data": row data. If the db_agent can't
-        produce a valid statement and result, the data will be the db_agent's
-        explanation.
+    output: a dict of "columns: column names, "data": row data. If the
+        db_agent can't produce a valid statement and result, the data will
+        be the db_agent's explanation.
+    agent_logs: agent logs
   """
   if dataset is None:
     dataset, db_type = map_prompt_to_dataset(prompt, llm_type)
@@ -90,15 +91,23 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
     raise RuntimeError(f"Unsupported agent db type {db_type}")
   return output, agent_logs
 
-
-def map_prompt_to_dataset(prompt: str, llm_type: str) -> str:
+def map_prompt_to_dataset(prompt: str, llm_type: str) -> Tuple[str, str]:
   """
-  Determine the dataset based on the prompt
+  Determine the dataset based on the prompt.
+  TODO: This currently just returns the default dataset. In the future this
+        method could run a classifier, perhaps as an agent, that picked the
+        appropriate dataset based on the prompt.
+
+  Args:
+    prompt: user query
+    llm_type: model id of LLM to use to generate SQL
+  Returns:
+    tuple of dataset identifier(str), dataset type (str)
   """
   datasets = get_dataset_config()
 
   # TODO: use LLM to map datatype
-  dataset = "fqhc_medical_transactions"
+  dataset = datasets.get("default")
 
   db_type = datasets.get(dataset).get("type")
   return dataset, db_type
@@ -327,15 +336,20 @@ def validate_sql(sql_query: str) -> bool:
 
 def clean_sql_statement(statement: str) -> str:
   """ clean SQL statement to remove \n and enclosing backticks """
-  # Regular expression pattern to match text enclosed in triple backticks
-  # with an optional language designator
-  pattern = r"```(?:\w+\s*)?\n?(.*?)\n?```"
+  # if there is a ```sql <sql>``` present in the string, extract it
+  pattern = r"`sql(.*?)`"
+  match = re.search(pattern, statement, re.DOTALL)
+  cleaned_statement = match.group(1).strip() if match else None
+  if cleaned_statement is None:
+    # otherwise search for a SELECT statement and take all text that follows
+    pattern = r"(SELECT\s+.*)"
+    match = re.search(pattern, statement, re.DOTALL)
+    cleaned_statement = match.group(1).strip() if match else None
 
-  # Using DOTALL flag to make '.' match newlines as well
-  cleaned_statement = re.sub(pattern, r"\1", statement, flags=re.DOTALL)
-
-  # Strip leading and trailing whitespaces and newlines from the cleaned text
-  return cleaned_statement.strip()
+  # replace newlines with spaces
+  if cleaned_statement is not None:
+    cleaned_statement = cleaned_statement.replace("\n", " ")
+  return cleaned_statement
 
 def extract_columns(sql_query: str) -> List[str]:
   """ Use sqlparse to extract columns from a SQL statement """

@@ -53,13 +53,15 @@ def get_agent_class(agent_class):
     return TaskAgent
   elif agent_class in ["Plan", "PlanAgent"]:
     return PlanAgent
+  elif agent_class in ["DbAgent"]:
+    return DbAgent
 
   raise RuntimeError(f"Agent class {agent_class} is not supported.")
 
 
 def get_agent_class_from_name(agent_name):
   """ Get agent class from name """
-  if agent_name in ["Routing", "Chat", "Task", "Plan"]:
+  if agent_name in ["Routing", "Chat", "Task", "Plan", "DbAgent"]:
     return get_agent_class(agent_name)
   else:
     # For other custom agent config.
@@ -367,6 +369,25 @@ class PlanAgent(BaseAgent):
   def capabilities(cls) -> List[str]:
     """ return capabilities of this agent class """
     capabilities = [AgentCapability.PLAN]
+    return capabilities
+
+class DbAgent(BaseAgent):
+  """
+  Db Agent.  This an agent class wrapper for the db agent. 
+  """
+
+  def __init__(self, llm_type: str, name: str):
+    super().__init__(llm_type, name)
+    self.agent_class = None
+
+  @property
+  def output_parser_class(self) -> Type[AgentOutputParser]:
+    return None
+
+  @classmethod
+  def capabilities(cls) -> List[str]:
+    """ return capabilities of this agent class """
+    capabilities = [AgentCapability.DATABASE]
     return capabilities
 
 

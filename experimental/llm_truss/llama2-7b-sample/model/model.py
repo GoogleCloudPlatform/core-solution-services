@@ -21,22 +21,16 @@ if DEFAULT_MAX_LENGTH_STR is None or DEFAULT_MAX_LENGTH_STR == "":
     DEFAULT_MAX_LENGTH_STR = MAX_LENGTH
 DEFAULT_MAX_LENGTH = int(DEFAULT_MAX_LENGTH_STR)
 
-print()
-print("MODEL_NAME: ", MODEL_NAME)
-print("DEFAULT_MAX_LENGTH: ", DEFAULT_MAX_LENGTH)
-print()
-
 PROJECT_ID = os.environ.get("PROJECT_ID")
-
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 if HUGGINGFACE_API_KEY is None:
     try:
+        print(f"Loading HuggingFace API Key from secret manager")
         HUGGINGFACE_API_KEY = secrets.access_secret_version(
             request={
                 "name": "projects/" + PROJECT_ID +
                         "/secrets/huggingface-api-key/versions/latest"
-            }).payload.data.decode("utf-8")
-        HUGGINGFACE_API_KEY = HUGGINGFACE_API_KEY.strip()
+            }).payload.data.decode("utf-8").strip()
     except Exception as exc:
         print(f"ERROR while loading huggingface_api_key: {exc}")
         HUGGINGFACE_API_KEY = None
@@ -45,19 +39,21 @@ assert HUGGINGFACE_API_KEY, "HUGGINGFACE_API_KEY is not set"
 assert PROJECT_ID, "PROJECT_ID is not set"
 
 print()
+print("MODEL_NAME: ", MODEL_NAME)
+print("DEFAULT_MAX_LENGTH: ", DEFAULT_MAX_LENGTH)
 print("HUGGINGFACE_API_KEY: ", HUGGINGFACE_API_KEY)
 print("PROJECT_ID: ", PROJECT_ID)
-print("DEFAULT_MAX_LENGTH: ", DEFAULT_MAX_LENGTH)
 print()
 
 
 class Model:
     def __init__(self, data_dir: str, config: Dict, **kwargs) -> None:
+        self._tokenizer = None
+        self._model = None
         self._data_dir = data_dir
         self._config = config
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print("THE DEVICE INFERENCE IS RUNNING ON IS: ", self.device)
-        self.tokenizer = None
         self.pipeline = None
         self._secrets = kwargs["secrets"]
         self.huggingface_api_token = HUGGINGFACE_API_KEY

@@ -16,15 +16,20 @@ Query Data Sources
 """
 import os
 import re
+import tempfile
+from urllib.parse import unquote
+from copy import copy
+from base64 import b64encode
 from typing import List
 from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.models import QueryEngine
 from config import PROJECT_ID
+from pypdf import PdfReader, PdfWriter, PageObject
+from pdf2image import convert_from_path
 from langchain_community.document_loaders import CSVLoader
-from pypdf import PdfReader
 from utils.errors import NoDocumentsIndexedException
-from utils import text_helper
+from utils import text_helper, gcs_helper
 from llama_index.core import SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceWindowNodeParser
 from llama_index.core import Document
@@ -173,6 +178,79 @@ class DataSource:
 
     return text_chunks
 
+  def chunk_document_multi(self, doc_name: str, doc_url: str,
+                     doc_filepath: str) -> List[str]:
+    """
+    Process a pdf document into multimodal chunks (b64 and text) for embeddings
+
+    Args:
+       doc_name: file name of document
+       doc_url: remote url of document
+       doc_filepath: local file path of document
+    Returns:
+       array where each item is an object representing a page of the document
+       contains two properties for image b64 data & text chunks 
+       or None if the document could not be processed
+    """
+    Logger.info(f"generating index data for {doc_name}")
+
+    # Confirm that this is a PDF
+    try:
+      doc_extension = doc_name.split(".")[-1]
+      doc_extension = doc_extension.lower()
+      if doc_extension != "pdf":
+        raise ValueError(f"File {doc_name} must be a PDF")
+    except Exception as e:
+      Logger.error(f"error reading doc {doc_name}: {e}")
+
+    doc_chunks = []
+    try:
+      # Convert PDF to an array of PNGs for each page
+      bucket_name = unquote(doc_url.split("/b/")[1].split("/")[0])
+      object_name = unquote(doc_url.split("/o/")[1].split("/")[0])
+
+      with tempfile.TemporaryDirectory() as path:
+        png_array = convert_from_path(doc_filepath, output_folder=path)
+      # Open PDF and iterate over pages
+      with open(doc_filepath, "rb") as f:
+        reader = PdfReader(f)
+        num_pages = len(reader.pages)
+        Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
+        for i in range(num_pages):
+          # Create a pdf file for the page and chunk into text chunks
+          pdf_doc = self.create_pdf_page(reader.pages[i], doc_filepath, i)
+          text_chunks = self.chunk_document(pdf_doc["filename"],
+                                            doc_url, pdf_doc["filepath"])
+
+          # Take PNG version of page and convert to b64
+          png_doc_filepath = ".png".join(pdf_doc["filepath"].rsplit(".pdf", 1))
+          png_array[i].save(png_doc_filepath, format="png")
+          with open(png_doc_filepath, "rb") as f:
+            png_bytes = f.read()
+          png_b64 = b64encode(png_bytes).decode("utf-8")
+
+          # Upload to Google Cloud Bucket and return gs URL
+          page_png_name = ".png".join(f"{i}_{object_name}".rsplit(".pdf", 1))
+          png_url = gcs_helper.upload_to_gcs(self.storage_client,
+                        bucket_name, page_png_name, png_b64, "image/png")
+
+          # Clean up temp files
+          os.remove(pdf_doc["filepath"])
+          os.remove(png_doc_filepath)
+
+          # Push chunk object into chunk array
+          chunk_obj = {
+            "image_b64": png_b64,
+            "image_url": png_url,
+            "text_chunks": text_chunks
+          }
+          doc_chunks.append(chunk_obj)
+    except Exception as e:
+      Logger.error(f"error processing doc {doc_name}: {e}")
+
+    # Return array of page data
+    return doc_chunks
+
   @classmethod
   def text_to_sentence_list(cls, text: str) -> List[str]:
     """
@@ -245,3 +323,41 @@ class DataSource:
       doc_text_list = [section.page_content for section in langchain_document]
 
     return doc_text_list
+
+  @staticmethod
+  def create_pdf_page(page: PageObject, doc_filepath: str,
+                       page_index: int) -> List[str]:
+    """
+    Read pypdf PageObject and create a new pdf file for that PageObject
+
+    Args:
+      page: PdfReader page object representing a page from a pdf file
+      doc_filepath: string filepath of the pdf we are reading the page from
+      page_index: int index for the page of doc_filepath file we are on
+    Returns:
+      obj containing strings of the filename and filepath of new pdf
+    """
+
+    # Get file name and temp folder path
+    doc_folder_i = doc_filepath.rfind("/")
+    if doc_folder_i == -1:
+      doc_folder = ""
+    else:
+      doc_folder = doc_filepath[:doc_folder_i+1]
+    doc_file = doc_filepath[doc_folder_i+1:]
+
+    # create a new PDF file and add the cropped page to the new PDF file
+    page_copy = copy(page)
+    page_pdf = PdfWriter()
+    page_pdf.add_page(page_copy)
+
+    # write the new PDF file to a file
+    page_pdf_filename = str(page_index) + doc_file
+    page_pdf_filepath = doc_folder + page_pdf_filename
+    with open(page_pdf_filepath, "wb") as f:
+      page_pdf.write(f)
+
+    return {
+      "filename": page_pdf_filename,
+      "filepath": page_pdf_filepath
+    }

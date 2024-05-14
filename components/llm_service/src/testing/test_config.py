@@ -15,20 +15,25 @@
 """ Config used for testing in unit tests """
 # pylint: disable=line-too-long,unused-argument
 import os
+from typing import List, Optional, Any
 from langchain.schema import (Generation, ChatGeneration, LLMResult)
 from langchain.schema.messages import AIMessage
+from langchain_core.language_models.llms import BaseLLM
+from langchain_core.callbacks import CallbackManagerForLLMRun
+
 from config import (COHERE_LLM_TYPE,
                     OPENAI_LLM_TYPE_GPT3_5, OPENAI_LLM_TYPE_GPT4,
                     OPENAI_LLM_TYPE_GPT4_LATEST,
+                    VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN,
                     VERTEX_LLM_TYPE_BISON_TEXT,
                     VERTEX_LLM_TYPE_BISON_CHAT,
                     VERTEX_LLM_TYPE_GEMINI_PRO,
                     VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                     PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
-                    PROVIDER_TRUSS,
+                    PROVIDER_TRUSS, PROVIDER_VLLM,
                     PROVIDER_MODEL_GARDEN,
                     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
-                    TRUSS_LLM_LLAMA2_CHAT,
+                    TRUSS_LLM_LLAMA2_CHAT, VLLM_LLM_GEMMA_CHAT,
                     KEY_PROVIDER, KEY_IS_CHAT, KEY_IS_MULTI, KEY_ENABLED,
                     KEY_MODEL_CLASS, KEY_MODEL_PARAMS, KEY_MODEL_NAME,
                     KEY_MODEL_ENDPOINT)
@@ -50,9 +55,34 @@ FAKE_GENERATE_RESULT = LLMResult(generations=[[FAKE_LANGCHAIN_GENERATION]])
 
 FAKE_CHAT_RESULT = LLMResult(generations=[[FAKE_CHAT_RESPONSE]])
 
-class FakeModelClass:
+class FakeModelClass(BaseLLM):
+  """ Fake model class for langchain tests """
   async def agenerate(self, prompts):
     return FAKE_CHAT_RESULT
+
+  def _generate(
+      self,
+      prompts: List[str],
+      stop: Optional[List[str]] = None,
+      run_manager: Optional[CallbackManagerForLLMRun] = None,
+      stream: Optional[bool] = None,
+      **kwargs: Any,
+  ) -> LLMResult:
+    return FAKE_CHAT_RESULT
+
+  def _call(
+      self,
+      prompt: str,
+      stop: Optional[List[str]] = None,
+      run_manager: Optional[CallbackManagerForLLMRun] = None,
+      **kwargs: Any,
+  ) -> str:
+    """Run the LLM on the given prompt and input."""
+    return FAKE_CHAT_RESULT
+
+  @property
+  def _llm_type(self) -> str:
+    return "vertexai"
 
 TEST_COHERE_CONFIG = {
   COHERE_LLM_TYPE: {
@@ -77,6 +107,12 @@ TEST_OPENAI_CONFIG = {
     KEY_MODEL_CLASS: FakeModelClass()
   },
   OPENAI_LLM_TYPE_GPT4_LATEST: {
+    KEY_PROVIDER: PROVIDER_LANGCHAIN,
+    KEY_IS_CHAT: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_CLASS: FakeModelClass()
+  },
+  VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN: {
     KEY_PROVIDER: PROVIDER_LANGCHAIN,
     KEY_IS_CHAT: True,
     KEY_ENABLED: True,
@@ -137,6 +173,21 @@ TEST_MODEL_GARDEN_CONFIG = {
 TEST_TRUSS_CONFIG = {
   TRUSS_LLM_LLAMA2_CHAT: {
     KEY_PROVIDER: PROVIDER_TRUSS,
+    KEY_MODEL_ENDPOINT: "fake-endpoint",
+    KEY_IS_CHAT: True,
+    KEY_MODEL_PARAMS: {
+      "temperature": 0.2,
+      "max_tokens": 900,
+      "top_p": 1.0,
+      "top_k": 10
+    },
+    KEY_ENABLED: True
+  }
+}
+
+TEST_VLLM_CONFIG = {
+  VLLM_LLM_GEMMA_CHAT: {
+    KEY_PROVIDER: PROVIDER_VLLM,
     KEY_MODEL_ENDPOINT: "fake-endpoint",
     KEY_IS_CHAT: True,
     KEY_MODEL_PARAMS: {

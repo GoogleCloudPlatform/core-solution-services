@@ -96,7 +96,7 @@ def custom_sidebar(refresh_func=None):
 
       routing_agents = get_all_routing_agents()
       routing_agent_names = list(routing_agents.keys())
-      chat_modes = routing_agent_names + ["Chat", "Plan", "Query"]
+      chat_modes = routing_agent_names + ["Chat", "Plan", "Query", "DbAgent"]
       chat_mode_index = 0
 
       if st.session_state.default_route:

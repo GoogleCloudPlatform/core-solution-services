@@ -162,7 +162,6 @@ def test_llm_generate(client_with_emulator):
   assert json_response.get("content") == FAKE_GENERATE_RESPONSE, \
     "returned generated text"
 
-
 def test_llm_generate_multi(client_with_emulator):
   url = f"{api_url}/generate/multi"
 
