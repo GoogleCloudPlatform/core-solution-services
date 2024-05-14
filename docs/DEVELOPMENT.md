@@ -159,7 +159,7 @@ These microservice components also depend on `./components/common`, so additiona
   # install requirements from common
   pip install -r ../common/requirements.txt
 
-   # install requirements from common_ml
+  # install requirements from common_ml
   pip install -r ../common_ml/requirements.txt
 
   # install microservice requirements
