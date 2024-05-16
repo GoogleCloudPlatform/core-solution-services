@@ -128,46 +128,10 @@ async def run_routing_agent(prompt: str,
     Logger.info(f"Dispatch to DB Query: {dataset_name}")
 
     db_result, agent_logs = await run_db_agent(
-        prompt, llm_type, dataset_name, user.email)
+        prompt, llm_type, dataset_name, user.email,
+        db_result_limit)
 
-    if "error" not in db_result:
-      Logger.info(f"db_result: {db_result}")
-
-      db_result_data = db_result.get("data", None)
-      db_result_output = None
-      if db_result_data:
-        response_output = "Here is the database query result in the attached " \
-                          "resource."
-        db_result_output = []
-        db_result_columns = db_result_data["columns"]
-        Logger.info(f"db_result columns: {db_result_columns}")
-
-        # Convert db_result data, from list of tuple to list of dicts.
-        for row_entry in db_result_data["rows"]:
-          row_entry = list(row_entry)
-          row_dict = {}
-          for index, column in enumerate(db_result_columns):
-            row_dict[column] = row_entry[index]
-          db_result_output.append(row_dict)
-
-          if len(db_result_output) > db_result_limit:
-            break
-      else:
-        response_output = "Unable to find the query result from the database."
-
-    else:
-      # Error in the db_agent's return.
-      response_output = db_result["error"]
-      db_result_output = []
-
-    resources = db_result.get("resources", None)
-    response_data = {
-      f"{CHAT_AI}": response_output,
-      "content": response_output,
-      "db_result": db_result_output,
-      "dataset": dataset_name,
-      "resources": resources,
-    }
+    response_data = db_result
     chat_history_entry = response_data
 
   # Plan route
