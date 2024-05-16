@@ -257,6 +257,7 @@ def retrieve_references(prompt: str,
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
     user_id: user id of user making query
+    rank_sentences (bool): rank sentence relevance in retrieved chunks
   Returns:
     list of QueryReference objects
   """
@@ -274,6 +275,7 @@ def retrieve_references(prompt: str,
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
+    # default if type is not set to llm service query
     query_references = query_search(q_engine, prompt, rank_sentences)
   return query_references
 
