@@ -405,6 +405,7 @@ class ModelConfig():
       raise ModelConfigMissingException(provider_id)
 
     # check provider enable env flag
+    provider_flag_setting = True
     if KEY_ENV_FLAG in provider_config:
       env_flag = provider_config[KEY_ENV_FLAG]
       provider_flag_setting = get_environ_flag(env_flag)
@@ -503,6 +504,7 @@ class ModelConfig():
     if vendor_config is None:
       return True
 
+    vendor_flag_setting = True
     if KEY_ENV_FLAG in vendor_config:
       env_flag = vendor_config[KEY_ENV_FLAG]
       vendor_flag_setting = get_environ_flag(env_flag)
