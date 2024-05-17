@@ -190,28 +190,41 @@ class QueryReference(BaseModel):
   It points to a specific chunk of text in one of the indexed documents.
 
   """
-  id = IDField()
-  query_engine_id = TextField(required=True)
-  query_engine = TextField(required=True)
-  document_id = TextField(required=True)
-  document_url = TextField(required=True)
-  chunk_id = TextField(required=False)
-  document_text = TextField(required=False)
+  id = IDField()  # All modalities
+  query_engine_id = TextField(required=True)  # All modalities
+  query_engine = TextField(required=True)  # All modalities
+  document_id = TextField(required=True)  # All modalities
+  document_url = TextField(required=True)  # All modalities
+  modality = TextField(required=True)  # All modalities: text image video audio
+  chunk_id = TextField(required=False)  # All modalities
+  chunk_url = TextField(required=False)  # Image or video or audio only
+  page = TextField(required=False)  # Text or image only
+  document_text = TextField(required=False)  # Text only
+  timestamp_start = NumberField(required=False)  # Video or audio only
+  timestamp_stop = NumberField(required=False)  # Video or audio only
 
   def __repr__(self) -> str:
     """
     Log-friendly string representation of a QueryReference
     """
-    document_text_num_tokens = len(self.document_text.split())
-    document_text_num_chars = len(self.document_text)
+    if self.modality.casefold()=="text":
+      document_text_num_tokens = len(self.document_text.split())
+      document_text_num_chars = len(self.document_text)
+      document_text_snippet = self.document_text[:min(100,
+                                                      document_text_num_chars)]
+    else:
+      document_text_num_tokens = None
+      document_text_num_chars = None
+      document_text_snippet = None
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
       f"document_url={self.document_url}, "
       f"chunk_id={self.chunk_id}, "
+      f"modality={self.modality}, "
       f"chunk_num_tokens={document_text_num_tokens}, "
       f"chunk_num_chars={document_text_num_chars}, "
-      f"chunk_text={self.document_text[:min(100, document_text_num_chars)]})"
+      f"chunk_text={document_text_snippet})"
     )
 
   class Meta:
@@ -330,13 +343,18 @@ class QueryDocumentChunk(BaseModel):
   """
   QueryDocumentChunk ORM class.
   """
-  id = IDField()
-  query_engine_id = TextField(required=True)
-  query_document_id = TextField(required=True)
-  index = NumberField(required=True)
-  text = TextField(required=True)
-  clean_text = TextField(required=False)
-  sentences = ListField(required=False)
+  id = IDField()  # All modalities
+  query_engine_id = TextField(required=True)  # All modalities
+  query_document_id = TextField(required=True)  # All modalities
+  index = NumberField(required=True)  # All modalities
+  modality = TextField(required=True)  # All modalities: text image video audio
+  page = TextField(required=False)  # Text or image only
+  chunk_url = TextField(required=False)  # Image or video or audio only
+  text = TextField(required=False)  # Text only
+  clean_text = TextField(required=False)  # Text only (optional)
+  sentences = ListField(required=False)  # Text only (optional)
+  timestamp_start = NumberField(required=False)  # Video or audio only
+  timestamp_stop = NumberField(required=False)  # Video or audio only
 
   class Meta:
     ignore_none_field = False

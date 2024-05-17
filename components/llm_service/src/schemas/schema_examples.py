@@ -103,6 +103,7 @@ QUERY_REFERENCE_EXAMPLE_1 = {
   "query_engine": "query-engine-test",
   "document_id": "asd98798as7dhjgkjsdfh1",
   "document_url": "https://example.com/content",
+  "modality": "text",
   "chunk_id": "abcdxxzzyy5678",
   "document_text": "test doc content"
 }
@@ -113,6 +114,7 @@ QUERY_REFERENCE_EXAMPLE_2 = {
   "query_engine": "query-engine-test",
   "document_id": "asd98798as7dhjgkjsdfh1",
   "document_url": "https://example.com/content",
+  "modality": "text",
   "chunk_id": "abcdxxzzyy5678",
   "document_text": "test doc content 2"
 }
@@ -149,6 +151,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_1 = {
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 0,
+  "modality": "text",
   "text": "<p>query_document_chunk_example_1</p>",
   "clean_text": "query_document_chunk_example_1",
   "sentences": ["query_document_chunk_example_1"]
@@ -159,6 +162,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_2 = {
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 1,
+  "modality": "text",
   "text": "<p>query_document_chunk_example_2</p>",
   "clean_text": "query_document_chunk_example_2",
   "sentences": ["query_document_chunk_example_2"]
@@ -169,6 +173,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 2,
+  "modality": "text",
   "text": "<p>query_document_chunk_example_3</p>",
   "clean_text": "query_document_chunk_example_3",
   "sentences": ["query_document_chunk_example_3"]
