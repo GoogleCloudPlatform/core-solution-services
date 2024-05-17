@@ -1,0 +1,102 @@
+# copier:raw
+
+name: GKE - Deploy microservices to demo
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  SKAFFOLD_DEFAULT_REPO: gcr.io/${{ vars.PROJECT_ID }}
+  SKAFFOLD_NAMESPACE: ${{ vars.GKE_NAMESPACE }}
+  DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
+  API_BASE_URL: https://${{ vars.DOMAIN_NAME }}
+  CORS_ALLOW_ORIGINS: ${{ vars.CORS_ALLOW_ORIGINS }}
+  AGENT_CONFIG_PATH: ${{ vars.AGENT_CONFIG_PATH }}
+  ONEDRIVE_CLIENT_ID: ${{ vars.ONEDRIVE_CLIENT_ID }}
+  ONEDRIVE_TENANT_ID: ${{ vars.ONEDRIVE_TENANT_ID }}
+  GKE_CLUSTER: main-cluster
+  GKE_REGION: us-central1
+  KUSTOMIZE_VERSION: 5.0.0
+  SKAFFOLD_VERSION: 2.4.0
+  SKAFFOLD_CACHE_GCS: gs://artifacts.${{ vars.PROJECT_ID }}.appspot.com/skaffold/cache
+  SKAFFOLD_BUILD_CONCURRENCY: 0
+  PG_HOST: ${{ vars.PG_HOST }}
+
+jobs:
+  deploy_backends:
+    name: Deploy microservices to GKE cluster
+    runs-on: ubuntu-latest
+    environment: demo
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - id: auth
+        name: Auth with Service Account
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          # FIXME: Use workload identity instead of service account key.
+          # workload_identity_provider: ''
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: gke-gcloud-auth-plugin, alpha
+
+      - name: Connect to cluster
+        run: |
+          gcloud container clusters get-credentials "${GKE_CLUSTER}" --region ${GKE_REGION} --project ${PROJECT_ID}
+
+      - name: Create namespace if it does not exist
+        run: |
+          kubectl get ns ${SKAFFOLD_NAMESPACE} || kubectl create ns ${SKAFFOLD_NAMESPACE}
+
+      - name: Set up Service Account
+        run: |
+          SKAFFOLD_NAMESPACE=${SKAFFOLD_NAMESPACE} bash setup/setup_ksa.sh
+
+      - name: Install Kustomize
+        run: |
+          wget -O kustomize.tar.gz https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
+          sudo tar -xvf kustomize.tar.gz -C /usr/local/bin/
+
+      - name: Install Solutions Builder
+        run: |
+          pip install -U solutions-builder
+
+      - name: Update the project id in config files
+        run: |
+          sb set project-id ${PROJECT_ID} --yes
+          sb vars set domain_name ${DOMAIN_NAME}
+
+      - name: Install Skaffold release binary
+        run: |
+          curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v${SKAFFOLD_VERSION}/skaffold-linux-amd64
+          sudo install skaffold /usr/local/bin/skaffold
+
+      - name: Set default repo for Skaffold
+        run: |
+          skaffold config set default-repo "${SKAFFOLD_DEFAULT_REPO}"
+
+      - name: Download Skaffold cache if exists
+        run: |
+          gsutil cp ${SKAFFOLD_CACHE_GCS} ~/.skaffold/ || true
+
+      - name: Build and deploy to cluster
+        run: |
+          export PROJECT_ID=${PROJECT_ID}
+          export API_BASE_URL=${API_BASE_URL}
+          export PG_HOST=${PG_HOST}
+          export CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS}
+          export AGENT_CONFIG_PATH=${AGENT_CONFIG_PATH}
+          export ONEDRIVE_CLIENT_ID=${ONEDRIVE_CLIENT_ID}
+          export ONEDRIVE_TENANT_ID=${ONEDRIVE_TENANT_ID}
+          sb deploy -n ${SKAFFOLD_NAMESPACE} --yes
+
+      - name: Upload Skaffold cache
+        if: always()
+        run: |
+          gsutil cp ~/.skaffold/cache ${SKAFFOLD_CACHE_GCS}
+
+# copier:endraw
