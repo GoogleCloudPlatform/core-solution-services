@@ -27,14 +27,14 @@ from api import (
 from components.chat_history import chat_history_panel
 from components.content_header import chat_header
 from styles.pages.chat_markup import chat_theme
-from common.utils.logging_handler import Logger
+import logging
 from common.utils.config import JOB_TYPE_ROUTING_AGENT
 from common.models import JobStatus
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
-Logger = Logger.get_logger(__file__)
+
 
 REFERENCE_CSS_STYLE = """
 {
@@ -86,6 +86,20 @@ REFERENCE_CSS_STYLE = """
 }
 """
 
+STEP_CSS_STYLE = """
+{
+  width: 100%;
+  max-width: 100%;
+  border-radius: 0.5rem;
+  display: inline-block;
+  padding: 0.5rem;
+  background-color: #FFFFFF;
+  border: none;
+  border-width: 1px;
+  margin-bottom: 0.4rem;
+}
+"""
+
 loader_spin_html = "<span class=\"loader\"></span>"
 
 
@@ -103,12 +117,14 @@ def on_submit(user_input):
   with st.chat_message("user"):
     st.write(user_input, is_user=True, key=f"human_{message_index}")
 
+  show_loading()
+
   # Send API to llm-service
   default_route = st.session_state.get("default_route", None)
   routing_agents = get_all_routing_agents()
   routing_agent_names = list(routing_agents.keys())
   chat_llm_type = st.session_state.get("chat_llm_type")
-  Logger.info(f"llm_type in session {chat_llm_type}")
+  logging.info("llm_type in session %s", chat_llm_type)
 
   if default_route is None:
     # pick the first routing agent as default
@@ -121,7 +137,7 @@ def on_submit(user_input):
                             chat_id=st.session_state.get("chat_id"),
                             llm_type=chat_llm_type,
                             run_as_batch_job=True)
-    st.session_state.default_route = response.get("route", None)
+    # st.session_state.default_route = response.get("route", None)
 
   elif default_route in routing_agent_names:
     response = run_dispatch(user_input,
@@ -129,7 +145,7 @@ def on_submit(user_input):
                             chat_id=st.session_state.get("chat_id"),
                             llm_type=chat_llm_type,
                             run_as_batch_job=True)
-    st.session_state.default_route = response.get("route", None)
+    # st.session_state.default_route = response.get("route", None)
 
   elif default_route == "Chat":
     response = run_chat(user_input,
@@ -158,32 +174,21 @@ def on_submit(user_input):
 
     # If the response has a batch async job, keep pulling the job result.
     if "batch_job" in response:
+      if st.session_state.get("debug"):
+        with st.expander("batch_job info:"):
+          st.write(response)
       update_async_job(response["batch_job"]["id"])
+
+def show_loading():
+  global spinner_container
+  with spinner_container:
+    with st.chat_message("ai"):
+      st.write("Loading...")
 
 def hide_loading():
   global spinner_container
   with spinner_container:
     st.write("")
-
-def format_ai_output(text):
-  text = text.strip()
-
-  # Clean up ASCI code and text formatting code.
-  text = ansi_escape.sub("", text)
-  text = re.sub(r"\[1;3m", "\n", text)
-  text = re.sub(r"\[[\d;]+m", "", text)
-
-  # Reformat steps.
-  text = text.replace("> Entering new AgentExecutor chain",
-                      "**Entering new AgentExecutor chain**")
-  text = text.replace("Task:", "- **Task**:")
-  text = text.replace("Observation:", "---\n**Observation**:")
-  text = text.replace("Thought:", "- **Thought**:")
-  text = text.replace("Action:", "- **Action**:")
-  text = text.replace("Action Input:", "- **Action Input**:")
-  text = text.replace("Route:", "- **Route**:")
-  text = text.replace("> Finished chain", "**Finished chain**")
-  return text
 
 
 def dedup_list(items, dedup_key):
@@ -195,8 +200,7 @@ def dedup_list(items, dedup_key):
 
 def chat_metadata():
   if st.session_state.debug:
-    with st.expander("DEBUG: session_state"):
-      st.write(st.session_state.get("landing_user_input"))
+    with st.expander("DEBUG: session_state.messages"):
       st.write(st.session_state.get("messages"))
 
   if st.session_state.chat_id:
@@ -234,7 +238,11 @@ def update_async_job(job_id, loop_seconds=1, timeout_seconds=180):
 
     elif job["status"] == JobStatus.JOB_STATUS_FAILED.value:
       hide_loading()
-      st.write("Job failed.")
+      with st.chat_message("ai"):
+        st.write("Something went wrong.")
+        if st.session_state.get("debug"):
+          with st.expander("Job failed."):
+            st.write(job)
       return
 
     time.sleep(loop_seconds)
@@ -299,26 +307,16 @@ def display_message(item, item_index):
   if "route_name" in item and "AIOutput" not in item:
     route_name = item["route_name"]
     with st.chat_message("ai"):
-      st.write(
-          f"Using route **`{route_name}`** to respond.",
-          key=f"ai_{item_index}",
-      )
+      st.write(f"Using route **`{route_name}`** to respond.")
 
   route_logs = item.get("route_logs", None)
   if route_logs and route_logs.strip() != "":
     with st.expander("Expand to see Agent's thought process"):
-      st.write(format_ai_output(route_logs))
+      utils.print_ai_output(route_logs)
 
   if "AIOutput" in item:
     with st.chat_message("ai"):
-      ai_output = item["AIOutput"]
-      ai_output = format_ai_output(ai_output)
-      st.write(
-          ai_output,
-          key=f"ai_{item_index}",
-          unsafe_allow_html=False,
-          is_table=False,  # TODO: Detect whether an output content type.
-      )
+      utils.print_ai_output(item["AIOutput"])
 
   # Append all query references.
   if item.get("db_result", None):
@@ -383,14 +381,15 @@ def display_message(item, item_index):
   if "plan" in item:
     with st.chat_message("ai"):
       plan_index = 1
-
       plan = get_plan(item["plan"]["id"])
-      Logger.info(plan)
+      logging.info(plan)
 
       for step in plan["plan_steps"]:
-        st.text_area(f"step-{item_index}", step["description"],
-                      height=30, disabled=True,
-                      label_visibility="hidden")
+        with stylable_container(
+          key=f"ref_{plan_index}",
+          css_styles=STEP_CSS_STYLE
+        ):
+          st.markdown(step["description"])
         plan_index += 1
 
       plan_id = plan["id"]
@@ -411,9 +410,9 @@ def display_message(item, item_index):
         })
 
   agent_logs = item.get("agent_logs", None)
-  if agent_logs and agent_logs.strip() != "":
+  if agent_logs:
     with st.expander("Expand to see Agent's thought process"):
-      st.write(format_ai_output(agent_logs))
+      utils.print_ai_output(agent_logs)
 
   item_index += 1
 
@@ -452,7 +451,7 @@ def chat_page():
 
     # Pass prompt from the Landing page if any.
     landing_user_input = st.session_state.get("landing_user_input", None)
-    Logger.info(f"Landing input [{landing_user_input}]")
+    logging.info("Landing input [%s]", landing_user_input)
 
     if not st.session_state.chat_id and landing_user_input:
       user_input = st.session_state.landing_user_input

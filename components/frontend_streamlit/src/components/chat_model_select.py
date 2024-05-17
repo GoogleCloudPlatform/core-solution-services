@@ -18,9 +18,8 @@ Model select component
 
 import streamlit as st
 from api import get_all_chat_llm_types
-from common.utils.logging_handler import Logger
+import logging
 
-Logger = Logger.get_logger(__file__)
 
 def chat_model_select():
   chat_llm_types = get_all_chat_llm_types(
@@ -37,4 +36,4 @@ def chat_model_select():
     selected_model = st.selectbox(
         "Model", chat_llm_types, index=selected_model_index)
     st.session_state.chat_llm_type = selected_model
-    Logger.info(f"setting chat_llm_type to {selected_model}")
+    logging.info("setting chat_llm_type to %s", selected_model)

@@ -2,27 +2,30 @@
   "Agents":
   {
     "Routing": {
-      "llm_type": "OpenAI-GPT4",
+      "llm_type": "VertexAI-Chat-Gemini-Pro-Langchain",
       "agent_type": "langchain_Conversational",
       "tools": "",
       "datasets": "fqhc_medical_transactions"
     },
     "Chat": {
-      "llm_type": "VertexAI-Chat-Palm2V2-Langchain",
+      "llm_type": "VertexAI-Chat-Gemini-Pro-Langchain",
       "agent_type": "langchain_Conversational",
       "tools": "search_tool,query_tool",
       "query_engines": "ALL"
     },
     "Task": {
-      "llm_type": "OpenAI-GPT4-latest",
+      "llm_type": "VertexAI-Chat-Palm2V2-Langchain",
       "agent_type": "langchain_StructuredChatAgent",
       "tools": "ALL"
     },
     "Plan": {
-      "llm_type": "OpenAI-GPT4-latest",
+      "llm_type": "VertexAI-Chat-Palm2V2-Langchain",
       "agent_type": "langchain_ZeroShot",
       "query_engines": "ALL",
       "tools": "ALL"
+    },
+    "DbAgent": {
+      "llm_type": "OpenAI-GPT4-latest"
     }
   },
   "Datasets":
@@ -32,7 +35,7 @@
       "type": "SQL"
     },
     "medical_providers": {
-      "description": "For queries about medical providers with name, address and medical specialty.",
+      "description": "For queries about medical providers with medical name, address and specialty, including heart doctors.",
       "type": "SQL"
     },
     "default": "fqhc_medical_transactions"

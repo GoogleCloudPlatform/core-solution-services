@@ -58,7 +58,7 @@ def task_picker_display():
   with st.container():
     agent_name = st.selectbox(
         "Agent:",
-        ("Chat", "Plan"))
+        ("Chat", "Plan", "DbAgent"))
     chat_button = st.button("Start", key=2)
     if chat_button:
       st.session_state.agent_name = agent_name

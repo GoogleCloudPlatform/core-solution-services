@@ -21,7 +21,8 @@ from api import (
     get_chat, run_agent, run_agent_plan, get_plan,
     run_agent_execute_plan)
 from components.chat_history import chat_history_panel
-from common.utils.logging_handler import Logger
+from components.content_header import agent_header
+import logging
 import utils
 
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
@@ -44,7 +45,7 @@ CHAT_PAGE_STYLES = """
 
 st.session_state.input_loading = False
 
-Logger = Logger.get_logger(__file__)
+
 
 def on_input_change():
   user_input = st.session_state.user_input
@@ -54,7 +55,7 @@ def on_input_change():
 
   # Send API to llm-service
   st.session_state.input_loading = True
-  if agent_name.lower() == "chat":
+  if agent_name.lower() == "chat" or agent_name.lower() == "dbagent":
     response = run_agent(agent_name, user_input,
                          chat_id=st.session_state.chat_id)
 
@@ -88,7 +89,7 @@ def init_messages():
 
 
 def format_ai_output(text):
-  Logger.info(text)
+  logging.info(text)
 
   text = ansi_escape.sub("", text)
   text = text.replace("> Entering new AgentExecutor chain",
@@ -108,7 +109,7 @@ def chat_content():
   with chat_placeholder.container():
     index = 1
     for item in st.session_state.messages:
-      Logger.info(item)
+      logging.info(item)
 
       if "HumanInput" in item:
         with st.chat_message("user"):
@@ -130,7 +131,7 @@ def chat_content():
           index = 1
 
           plan = get_plan(item["plan"]["id"])
-          Logger.info(plan)
+          logging.info(plan)
 
           for step in plan["plan_steps"]:
             st.text_area(f"step-{index}", step["description"],
@@ -159,8 +160,10 @@ def chat_content():
 
   st.text_input("User Input:", on_change=on_input_change, key="user_input")
 
+def reset_content():
+  init_messages()
 
-def chat_page():
+def agent_page():
   st.title(st.session_state.agent_name + " Agent")
   st.markdown(CHAT_PAGE_STYLES, unsafe_allow_html=True)
 
@@ -173,9 +176,10 @@ def chat_page():
   # Set up columns to mimic a right-side sidebar
   main_container = st.container()
   with main_container:
+    agent_header(refresh_func=reset_content)
     chat_content()
 
 
 if __name__ == "__main__":
   utils.init_page()
-  chat_page()
+  agent_page()

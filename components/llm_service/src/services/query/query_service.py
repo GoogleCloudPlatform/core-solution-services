@@ -30,7 +30,8 @@ from common.models import (UserQuery, QueryResult, QueryEngine,
                            BatchJobModel)
 from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QE_TYPE_LLM_SERVICE,
-                                     QE_TYPE_INTEGRATED_SEARCH)
+                                     QE_TYPE_INTEGRATED_SEARCH,
+                                     QUERY_AI_RESPONSE)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -82,7 +83,8 @@ async def query_generate(
             prompt: str,
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
-            user_query: Optional[UserQuery] = None) -> \
+            user_query: Optional[UserQuery] = None,
+            rank_sentences=False) -> \
                 Tuple[QueryResult, List[QueryReference]]:
   """
   Execute a query over a query engine and generate a response.
@@ -98,6 +100,7 @@ async def query_generate(
     q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
+    rank_sentences: (optional): rank sentences in retrieved chunks
 
   Returns:
     QueryResult object,
@@ -120,13 +123,21 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = retrieve_references(prompt, q_engine, user_id)
+  query_references = retrieve_references(prompt, q_engine, user_id,
+                                         rank_sentences)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
   if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
       len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
+
+  # Update user query with ranked references. We do this before generating
+  # the answer so the frontend can display the retrieved results as soon as
+  # they are available.
+  if user_query:
+    update_user_query(
+        prompt, None, user_id, q_engine, query_references, user_query)
 
   # generate question prompt
   question_prompt, query_references = \
@@ -137,6 +148,13 @@ async def query_generate(
 
   # send prompt to model
   question_response = await llm_chat(question_prompt, llm_type)
+
+  # update user query with response
+  if user_query:
+    # insert the response before the just added references
+    user_query.history.insert(
+        len(user_query.history) - 1, {QUERY_AI_RESPONSE: question_response})
+    user_query.update()
 
   # save query result
   query_ref_ids = [ref.id for ref in query_references]
@@ -230,7 +248,8 @@ async def summarize_history(chat_history: str,
 
 def retrieve_references(prompt: str,
                         q_engine: QueryEngine,
-                        user_id: str) -> List[QueryReference]:
+                        user_id: str,
+                        rank_sentences=False)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -255,7 +274,7 @@ def retrieve_references(prompt: str,
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
-    query_references = query_search(q_engine, prompt)
+    query_references = query_search(q_engine, prompt, rank_sentences)
   return query_references
 
 def query_search(q_engine: QueryEngine,
@@ -301,15 +320,12 @@ def query_search(q_engine: QueryEngine,
 
     clean_text = doc_chunk.clean_text
     if not clean_text:
-      # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
     if rank_sentences:
       # Assemble sentences from a document chunk. Currently it gets the
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
-      # for backwards compatibility with legacy engines break chunks
-      # into sentences here
       if not sentences or len(sentences) == 0:
         sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
@@ -416,6 +432,85 @@ def get_similarity(query_embeddings, sentence_embeddings) -> list:
     cos_sim.append(cosine[0])
 
   return cos_sim
+
+async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
+  """
+  Handle a batch job request for query generation.
+
+  Args:
+    request_body: dict of query params
+    job: BatchJobModel model object
+  Returns:
+    dict containing job meta data
+  """
+  query_engine_id = request_body.get("query_engine_id")
+  prompt = request_body.get("prompt")
+  user_id = request_body.get("user_id")
+  user_query_id = request_body.get("user_query_id", None)
+  llm_type = request_body.get("llm_type")
+  rank_sentences = request_body.get("rank_sentences", None)
+
+  q_engine = QueryEngine.find_by_id(query_engine_id)
+  if q_engine is None:
+    raise ResourceNotFoundException(f"Query Engine id {query_engine_id}")
+
+  user_query = None
+  if user_query_id:
+    user_query = UserQuery.find_by_id(user_query_id)
+    if user_query is None:
+      raise ResourceNotFoundException(f"UserQuery id {user_query_id}")
+
+  Logger.info(f"Starting batch job for query on [{q_engine.name}] "
+              f"job id [{job.id}], request_body=[{request_body}]")
+
+  query_result, query_references = await query_generate(
+      user_id, prompt, q_engine, llm_type, user_query, rank_sentences)
+
+  # update user query
+  user_query, query_reference_dicts = \
+      update_user_query(prompt,
+                        query_result.response,
+                        user_id,
+                        q_engine,
+                        query_references,
+                        user_query)
+
+  # update result data in batch job model
+  result_data = {
+    "query_engine_id": q_engine.id,
+    "query_result_id": query_result.id,
+    "user_query_id": user_query.id,
+    "query_references": query_reference_dicts
+  }
+  job.result_data = result_data
+  job.save(merge=True)
+
+  Logger.info(f"Completed batch job query execute for {q_engine.name}")
+
+  return result_data
+
+def update_user_query(prompt: str,
+                      response: str,
+                      user_id: str,
+                      q_engine: QueryEngine,
+                      query_references: List[QueryReference],
+                      user_query: UserQuery = None) -> \
+                      Tuple[UserQuery, dict]:
+  """ Save user query history """
+  query_reference_dicts = [
+    ref.get_fields(reformat_datetime=True) for ref in query_references
+  ]
+
+  # create user query if needed
+  if user_query is None:
+    user_query = UserQuery(user_id=user_id,
+                          query_engine_id=q_engine.id,
+                          prompt=prompt)
+    user_query.save()
+  user_query.update_history(prompt=prompt,
+                            response=response,
+                            references=query_reference_dicts)
+  return user_query, query_reference_dicts
 
 def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   """

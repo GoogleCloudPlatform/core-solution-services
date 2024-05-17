@@ -13,9 +13,10 @@
 # limitations under the License.
 
 """ Agent service """
-# pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-argument
+# pylint: disable=consider-using-dict-items,consider-iterating-dictionary,unused-argument,broad-exception-raised,broad-exception-caught
 
 import re
+import ast
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
@@ -26,13 +27,16 @@ from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
 from config import get_agent_config
 from services.agents.agents import BaseAgent
+from services.agents.db_agent import run_db_agent
 from services.agents.utils import agent_executor_arun_with_logs
 
 Logger = Logger.get_logger(__file__)
 
+
 def batch_execute_plan(request_body: Dict, job: BatchJobModel) -> Dict:
   # TODO
   pass
+
 
 def get_agent_config_by_name(agent_name: str) -> dict:
   if agent_name in get_agent_config():
@@ -45,10 +49,12 @@ def get_model_garden_agent_config() -> dict:
       BaseAgent.get_agents_by_capability(AgentCapability.PLAN.value)
   return planning_agents
 
+
 def get_plan_agent_config() -> dict:
   planning_agents = \
       BaseAgent.get_agents_by_capability(AgentCapability.PLAN.value)
   return planning_agents
+
 
 def get_task_agent_config() -> dict:
   task_agents = \
@@ -65,9 +71,10 @@ def get_all_agents() -> dict:
   return agent_config
 
 
-async def run_agent(agent_name:str,
-                    prompt:str,
-                    chat_history:List = None) -> str:
+async def run_agent(agent_name: str,
+                    prompt: str,
+                    chat_history: List = None,
+                    agent_params: dict = None) -> Tuple[str, str]:
   """
   Run an agent on user input
 
@@ -75,42 +82,61 @@ async def run_agent(agent_name:str,
       agent_name(str): Agent name
       prompt(str): the user input prompt
       chat_history(List): any previous chat history for context
+      agent_params(dict): dict of additional agent run params
 
   Returns:
       output(str): the output of the agent on the user input
-      action_steps: the list of action steps take by the agent for the run
+      agent_logs(str): agent log stream
   """
+  if agent_params is None:
+    agent_params = {}
   Logger.info(f"Running {agent_name} agent "
               f"with prompt=[{prompt}] and "
-              f"chat_history=[{chat_history}]")
+              f"chat_history=[{chat_history}]"
+              f"agent_params=[{agent_params}]")
+
   llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
-  tools = llm_service_agent.get_tools()
-  tools_str = ", ".join(tool.name for tool in tools)
+  # handle database agent runs
+  agent_logs = ""
+  output = ""
+  if AgentCapability.DATABASE in llm_service_agent.capabilities():
+    llm_type = llm_service_agent.llm_type
+    dataset = agent_params.get("dataset", None)
+    user_email = agent_params.get("user_email", None)
+    output, agent_logs = \
+        await run_db_agent(prompt, llm_type=llm_type,
+                           dataset=dataset, user_email=user_email)
 
-  Logger.info(f"Available tools=[{tools_str}]")
-  langchain_agent = llm_service_agent.load_langchain_agent()
+  else:
+    tools = llm_service_agent.get_tools()
+    tools_str = ", ".join(tool.name for tool in tools)
 
-  agent_executor = AgentExecutor.from_agent_and_tools(
-      agent=langchain_agent, tools=tools)
+    Logger.info(f"Available tools=[{tools_str}]")
+    langchain_agent = llm_service_agent.load_langchain_agent()
 
-  chat_history = chat_history or []
-  agent_inputs = {
-    "input": prompt,
-    "chat_history": chat_history
-  }
+    agent_executor = AgentExecutor.from_agent_and_tools(
+        agent=langchain_agent, tools=tools)
 
-  Logger.info("Running agent executor.... ")
-  output = agent_executor.run(agent_inputs)
+    chat_history = chat_history or []
+    agent_inputs = {
+      "input": prompt,
+      "chat_history": chat_history
+    }
+
+    Logger.info("Running agent executor.... ")
+    output, agent_logs = await agent_executor_arun_with_logs(
+        agent_executor, agent_inputs)
+
   Logger.info(f"Agent {agent_name} generated"
-              f" output=[{output}]")
-  return output
+              f" output=[{output}] logs [{agent_logs}]")
+  return output, agent_logs
 
 
-async def agent_plan(agent_name:str,
-                     prompt:str,
-                     user_id:str,
-                     chat_history:List = None) -> Tuple[str, UserPlan]:
+async def agent_plan(agent_name: str,
+                     prompt: str,
+                     user_id: str,
+                     chat_history: List = None) -> Tuple[str, UserPlan]:
   """
   Run an agent on user input to generate a plan
 
@@ -165,6 +191,7 @@ async def agent_plan(agent_name:str,
               f"raw_plan_steps={raw_plan_steps}")
   return output, user_plan
 
+
 def parse_agent_response(header: str, text: str) -> str:
   """
   Parse agent response prior to action header
@@ -174,6 +201,7 @@ def parse_agent_response(header: str, text: str) -> str:
     return text[:header_index]
   else:
     return text
+
 
 def parse_action_output(header: str, text: str) -> List[str]:
   """
@@ -198,14 +226,63 @@ def parse_action_output(header: str, text: str) -> List[str]:
 
   return steps
 
-def parse_plan_step(text:str) -> dict:
+
+def parse_plan_step(text: str) -> dict:
   step_regex = re.compile(
       r"[\d|#]+\.\s.*\[(.*)\]\s?(.*)", re.DOTALL)
   matches = step_regex.findall(text)
   return matches
 
+
+def parse_agent_execution_result(text):
+  match_iter = re.finditer(
+    r"(Action:|Observation:|Thought:|> Finished chain)", text)
+  indices = [m.start(0) for m in match_iter]
+  indices = [0] + indices + [len(text)]
+
+  i = 0
+  part_list = []
+  while i < len(indices) - 1:
+    pos_start = indices[i]
+    pos_end = indices[i + 1]
+    part_text = text[pos_start:pos_end]
+    part_list.append(parse_agent_execution_chain(part_text))
+    i += 1
+
+  return part_list
+
+
+def parse_agent_execution_chain(text):
+  match = re.match(r"(Action|Observation|Thought):((.|\n)*)", text)
+  if not match:
+    return {
+        "text_content": text,
+    }
+
+  part_type = match[1]
+  part_dict = {
+      "type": part_type
+  }
+
+  try:
+    json_match = re.match(r"[\s\n]*```((.|\n)*)[\s\n]*```", match[2])
+    if json_match:
+      json_dict = ast.literal_eval(json_match[1].strip())
+    else:
+      json_dict = ast.literal_eval(match[2].strip())
+    part_dict["json_content"] = json_dict
+
+  except Exception:
+    text_content = match[2]
+    if text_content[:2] == "> ":
+      text_content = text_content[2:]
+    part_dict["text_content"] = match[2]
+
+  return part_dict
+
+
 async def agent_execute_plan(
-    agent_name: str, user_plan: UserPlan=None) -> str:
+        agent_name: str, user_plan: UserPlan = None) -> str:
   """
   Execute a given plan_steps.
   """
@@ -228,11 +305,11 @@ async def agent_execute_plan(
   task_response = user_plan.task_response
   prompt = "Execute the plan provided below. "
   prompt += \
-    f"The plan was created by an AI Planning Assistant." \
-    f"The original task request by the human user was \"{task_prompt}\".\n" \
-    f"The response of the planning agent was \"{task_response}\", \n" \
-    f"followed by the plan listed below.\n" \
-    f"Plan: \n"
+      f"The plan was created by an AI Planning Assistant." \
+      f"The original task request by the human user was \"{task_prompt}\".\n" \
+      f"The response of the planning agent was \"{task_response}\", \n" \
+      f"followed by the plan listed below.\n" \
+      f"Plan: \n"
 
   plan_steps = []
   for step in user_plan.plan_steps:
@@ -251,4 +328,8 @@ async def agent_execute_plan(
 
   Logger.info(f"Agent {agent_name} generated"
               f" output=[{output}]")
+
+  agent_logs = parse_agent_execution_result(agent_logs)
+  Logger.info(f"agent_logs: \n{agent_logs}")
+
   return output, agent_logs

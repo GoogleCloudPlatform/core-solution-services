@@ -6,13 +6,18 @@ invoke==2.0.0
 langchain-google-vertexai==0.1.1
 langchain-openai==0.0.8
 llama-index-readers-microsoft-onedrive==0.1.7
+llamaindex-py-client==0.1.16
+numpy==1.25.0
+openai==1.14.2
+packaging==23.2
+pandas==2.1.1
+pdf2image==1.17.0
 pgvector==0.2.3
 psycopg2-binary==2.9.9
 pyarrow==14.0.1
 pypdf==4.0.1
 python-multipart==0.0.6
 python-pptx==0.6.23
-rerankers[transformers]==0.1.2
 Scrapy==2.11.0
 spacy==3.7.2
 sqlalchemy-bigquery @ https://github.com/googleapis/python-bigquery-sqlalchemy/archive/refs/tags/v1.10.0rc1.zip
