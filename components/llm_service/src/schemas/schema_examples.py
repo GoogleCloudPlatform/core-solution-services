@@ -32,6 +32,13 @@ LLM_EMBEDDINGS_EXAMPLE = {
   "text": "",
 }
 
+LLM_MULTI_EMBEDDINGS_EXAMPLE = {
+  "embedding_type": "",
+  "user_file_b64": "",
+  "user_file_name": "",
+  "text": "",
+}
+
 QUERY_EXAMPLE = {
   "prompt": "test prompt",
   "llm_type": "VertexAI-Chat",
