@@ -61,6 +61,7 @@ from config.config import (
     DEFAULT_CHAT_LLM_TYPE,
     DEFAULT_QUERY_CHAT_MODEL,
     DEFAULT_QUERY_EMBEDDING_MODEL,
+    DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
     DEFAULT_MULTI_LLM_TYPE,
 
     # query engine and other defaults

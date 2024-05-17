@@ -205,6 +205,10 @@
       "provider": "Vertex",
       "model_name": "textembedding-gecko"
     },
+    "VertexAI-Embedding-Vision": {
+      "provider": "Vertex",
+      "model_name": "multimodalembedding@001"
+    },
     "OpenAI-Embedding": {
       "provider": "Langchain"
     },

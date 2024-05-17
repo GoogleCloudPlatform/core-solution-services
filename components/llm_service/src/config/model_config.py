@@ -106,6 +106,7 @@ VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat-V1"
 VERTEX_LLM_TYPE_BISON_V2_CHAT = "VertexAI-Chat-Palm2-V2"
 VERTEX_LLM_TYPE_BISON_CHAT_32K = "VertexAI-Chat-Palm2-32k"
 VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
+VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION = "VertexAI-Embedding-Vision"
 VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT = "VertexAI-ModelGarden-LLAMA2-Chat"
 TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
 VLLM_LLM_GEMMA_CHAT = "vLLM-Gemma-Chat"
@@ -132,6 +133,7 @@ MODEL_TYPES = [
   VERTEX_LLM_TYPE_GEMINI_PRO,
   VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
   VERTEX_LLM_TYPE_GECKO_EMBEDDING,
+  VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
   VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
   TRUSS_LLM_LLAMA2_CHAT,
   VLLM_LLM_GEMMA_CHAT,
@@ -405,6 +407,7 @@ class ModelConfig():
       raise ModelConfigMissingException(provider_id)
 
     # check provider enable env flag
+    provider_flag_setting = None
     if KEY_ENV_FLAG in provider_config:
       env_flag = provider_config[KEY_ENV_FLAG]
       provider_flag_setting = get_environ_flag(env_flag)
@@ -503,6 +506,7 @@ class ModelConfig():
     if vendor_config is None:
       return True
 
+    vendor_flag_setting = None
     if KEY_ENV_FLAG in vendor_config:
       env_flag = vendor_config[KEY_ENV_FLAG]
       vendor_flag_setting = get_environ_flag(env_flag)
