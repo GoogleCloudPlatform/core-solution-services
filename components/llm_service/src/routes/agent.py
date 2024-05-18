@@ -260,11 +260,14 @@ async def agent_run(agent_name: str,
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
 
-    response_data = {
-      "content": output,
-      "chat": chat_data,
-      "agent_logs": agent_logs
-    }
+    if "db_result" in output or "route" in output:
+      response_data = output
+    else:
+      response_data = {
+        "content": output,
+        "chat": chat_data,
+        "agent_logs": agent_logs
+      }
 
     return {
       "success": True,
@@ -326,11 +329,14 @@ async def agent_run_chat(agent_name: str, chat_id: str,
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
 
-    response_data = {
-      "content": output,
-      "chat": chat_data,
-      "agent_logs": agent_logs
-    }
+    if "db_result" in output or "route" in output:
+      response_data = output
+    else:
+      response_data = {
+        "content": output,
+        "chat": chat_data,
+        "agent_logs": agent_logs
+      }
 
     return {
         "success": True,

@@ -14,6 +14,7 @@
 
 """Config file for utils"""
 # pylint: disable=logging-fstring-interpolation
+from contextlib import contextmanager
 import json
 import os
 from enum import Enum
@@ -22,6 +23,17 @@ from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
 
+@contextmanager
+def set_env_var(key, value):
+  original_value = os.environ.get(key)
+  os.environ[key] = value
+  try:
+    yield
+  finally:
+    if original_value is None:
+      del os.environ[key]
+    else:
+      os.environ[key] = original_value
 
 def get_environ_flag(env_flag_str, default=True):
   default_str = str(default)
