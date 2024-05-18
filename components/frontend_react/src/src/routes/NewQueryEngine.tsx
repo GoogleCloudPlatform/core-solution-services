@@ -146,7 +146,7 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
               onFailure={onFailure}
               queryEngine={queryEngine}
               token={token || ""}
-              currentVarsData={DEMO_FORM_DATA}
+              currentVarsData={QUERY_ENGINE_FORM_DATA}
             />
           </div>
 
