@@ -178,6 +178,7 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
           </div>
         </div>
       </div>
+    </div>
   )
 }
 

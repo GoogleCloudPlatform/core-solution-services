@@ -40,7 +40,8 @@
     "theme-change": "^2.5.0",
     "unocss": "^0.58.3",
     "yup": "^1.2.0",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zustand": "^3.6.9"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.22.20",

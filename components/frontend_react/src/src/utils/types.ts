@@ -22,6 +22,8 @@ export type INavigationItem = {
   icon?: ReactNode
 }
 
+export type Theme = "light" | "dark"
+
 export type IAuthProvider = "google" | "password"
 
 export type IAppConfig = {
