@@ -14,6 +14,11 @@
 
 import RouteList from "@/navigation/RouteList"
 import { INavigationItem } from "@/utils/types"
+import { PlusIcon } from "@heroicons/react/24/outline"
+import { classNames } from "@/utils/dom"
+import themeStore from "@/store/theme"
+
+const theme = themeStore((state) => state.theme)
 
 // These are i18n link names, put the label in the common.json file
 export const links: INavigationItem[] = [
@@ -42,6 +47,19 @@ export const links: INavigationItem[] = [
     href: "/queryengines",
     show: () => true,
     icon: <div className="i-heroicons-tag h-5 w-5" />,
+  },
+  {
+    name: "Add Query Engine",
+    href: "/queryengines/new",
+    show: () => true,
+    icon: (
+      <PlusIcon
+        className={classNames(
+          theme === "light" ? "text-primary-content" : "text-base-content",
+          "h-5 w-5",
+        )}
+      />
+    ),
   },
   {
     name: "Query History",
