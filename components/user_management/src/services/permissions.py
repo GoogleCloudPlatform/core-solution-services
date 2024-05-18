@@ -24,6 +24,7 @@ def check_and_create_permission(data, module_name, application_name):
   """Creates if permission with same name exist and
     creates permission if there is no conflict"""
   permission_exists = None
+  permission_uuid - None
   if data.get("name"):
     permission_exists = Permission.find_by_name(data["name"])
     permission_uuid = permission_exists.get_fields().get("uuid")
