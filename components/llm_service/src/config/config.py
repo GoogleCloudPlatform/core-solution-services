@@ -32,9 +32,13 @@ from config.model_config import (ModelConfig, VENDOR_OPENAI,
                                 PROVIDER_VERTEX, VENDOR_COHERE,
                                 PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
                                 PROVIDER_TRUSS, PROVIDER_LLM_SERVICE,
+                                PROVIDER_VLLM, VLLM_LLM_GEMMA_CHAT,
+                                VERTEX_LLM_TYPE_CHAT,
                                 VERTEX_LLM_TYPE_BISON_CHAT, TRUSS_LLM_LLAMA2_CHAT,
-                                VERTEX_LLM_TYPE_GECKO_EMBEDDING
-                                )
+                                VERTEX_LLM_TYPE_GECKO_EMBEDDING,
+                                VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
+                                VERTEX_LLM_TYPE_GEMINI_PRO,
+                                VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
@@ -99,6 +103,7 @@ ENABLE_GOOGLE_LLM = mc.is_provider_enabled(PROVIDER_VERTEX)
 ENABLE_GOOGLE_MODEL_GARDEN = \
     mc.is_provider_enabled(PROVIDER_MODEL_GARDEN)
 ENABLE_TRUSS_LLAMA2 = mc.is_provider_enabled(PROVIDER_TRUSS)
+ENABLE_VLLM_GEMMA = mc.is_provider_enabled(PROVIDER_VLLM)
 
 # vendor enabled flags
 ENABLE_OPENAI_LLM = mc.is_vendor_enabled(VENDOR_OPENAI)
@@ -109,15 +114,19 @@ Logger.info(f"ENABLE_OPENAI_LLM = {ENABLE_OPENAI_LLM}")
 Logger.info(f"ENABLE_COHERE_LLM = {ENABLE_COHERE_LLM}")
 Logger.info(f"ENABLE_GOOGLE_MODEL_GARDEN = {ENABLE_GOOGLE_MODEL_GARDEN}")
 Logger.info(f"ENABLE_TRUSS_LLAMA2 = {ENABLE_TRUSS_LLAMA2}")
+Logger.info(f"ENABLE_VLLM_GEMMA = {ENABLE_VLLM_GEMMA}")
 
 # API Keys
 _, OPENAI_API_KEY = mc.get_vendor_api_key(VENDOR_OPENAI)
 _, COHERE_API_KEY = mc.get_vendor_api_key(VENDOR_COHERE)
 
 # default models
-DEFAULT_LLM_TYPE = VERTEX_LLM_TYPE_BISON_CHAT
+DEFAULT_LLM_TYPE = VERTEX_LLM_TYPE_CHAT
+DEFAULT_CHAT_LLM_TYPE = VERTEX_LLM_TYPE_CHAT
+DEFAULT_MULTI_LLM_TYPE = VERTEX_LLM_TYPE_GEMINI_PRO_VISION
 DEFAULT_QUERY_CHAT_MODEL = VERTEX_LLM_TYPE_BISON_CHAT
 DEFAULT_QUERY_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING
+DEFAULT_QUERY_MULTI_EMBEDDING_MODEL = VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION
 
 # other defaults
 DEFAULT_WEB_DEPTH_LIMIT = 1

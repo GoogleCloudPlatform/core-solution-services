@@ -246,6 +246,7 @@ def test_get_all_users_by_user_group(clean_firestore):
     **BASIC_USER_MODEL_EXAMPLE, "user_groups": [group_uuid_2],
     "user_type_ref": "", "user_type": "coach"
   }]
+  ref_user_id = None
   for user in users:
     user_dict = {**user}
     create_user = User.from_dict(user_dict)
@@ -279,6 +280,7 @@ def test_get_all_users_by_status(clean_firestore):
     **BASIC_USER_MODEL_EXAMPLE, "status": "inactive",
     "user_type_ref": "", "user_groups": []
   }]
+  ref_user_id = None
   for user in users:
     user_dict = {**user}
     create_user = User.from_dict(user_dict)

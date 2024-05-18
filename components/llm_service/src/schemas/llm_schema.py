@@ -17,10 +17,12 @@ Pydantic Model for LLM API's
 from typing import List, Optional
 from pydantic import BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
+                                     LLM_MULTI_GENERATE_EXAMPLE,
                                      QUERY_EXAMPLE,
                                      QUERY_ENGINE_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
-                                     LLM_EMBEDDINGS_EXAMPLE)
+                                     LLM_EMBEDDINGS_EXAMPLE,
+                                     LLM_MULTI_EMBEDDINGS_EXAMPLE)
 
 class ChatModel(BaseModel):
   id: Optional[str] = None
@@ -114,6 +116,19 @@ class LLMGenerateModel(BaseModel):
         "example": LLM_GENERATE_EXAMPLE
     }
 
+class LLMMultiGenerateModel(BaseModel):
+  """LLM Multi Generate request model"""
+  prompt: str
+  user_file_b64: str
+  user_file_name: str
+  llm_type: Optional[str]
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": LLM_MULTI_GENERATE_EXAMPLE
+    }
+
 class LLMEmbeddingsModel(BaseModel):
   """LLM Embeddings request model"""
   text: str
@@ -125,11 +140,25 @@ class LLMEmbeddingsModel(BaseModel):
         "example": LLM_EMBEDDINGS_EXAMPLE
     }
 
+class LLMMultiEmbeddingsModel(BaseModel):
+  """LLM Multimodal Embeddings request model"""
+  text: str
+  user_file_b64: str
+  user_file_name: str
+  embedding_type: Optional[str] = None
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": LLM_MULTI_EMBEDDINGS_EXAMPLE
+    }
 
 class LLMQueryModel(BaseModel):
   """LLM Query model"""
   prompt: str
   llm_type: Optional[str]
+  run_as_batch_job: Optional[str]
+  rank_sentences: Optional[str]
 
   class Config():
     orm_mode = True
@@ -266,7 +295,23 @@ class LLMEmbeddingsResponse(BaseModel):
     schema_extra = {
         "example": {
             "success": True,
-            "message": "Successfully generated text",
+            "message": "Successfully generated embeddings",
+            "data": None
+        }
+    }
+
+class LLMMultiEmbeddingsResponse(BaseModel):
+  """LLM Multimodal Embeddings Response model"""
+  success: Optional[bool] = True
+  message: Optional[str] = "Successfully generated multimodal embeddings"
+  data: Optional[dict] = {}
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": {
+            "success": True,
+            "message": "Successfully generated multimodal embeddings",
             "data": None
         }
     }

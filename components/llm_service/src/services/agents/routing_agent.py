@@ -15,6 +15,10 @@
 """ Routing Agent """
 from typing import List, Tuple, Dict
 from langchain.agents import AgentExecutor
+from langchain.chains.router.llm_router import (
+    LLMRouterChain, RouterOutputParser)
+from langchain.chains.router.multi_prompt_prompt import MULTI_PROMPT_ROUTER_TEMPLATE
+from langchain.prompts import PromptTemplate
 from common.models import QueryEngine, User, UserChat, BatchJobModel, JobStatus
 from common.models.agent import AgentCapability
 from common.models.llm import CHAT_AI
@@ -29,15 +33,17 @@ from services.agents.agent_service import (
     run_agent)
 from services.agents.utils import agent_executor_arun_with_logs
 from services.query.query_service import query_generate
+from services import langchain_service
 
 Logger = Logger.get_logger(__file__)
-
+DEFAULT_ROUTE = "Chat"
 
 async def run_routing_agent(prompt: str,
                             agent_name: str,
                             user: User,
                             user_chat: UserChat,
                             llm_type: str = None,
+                            route: str = None,
                             db_result_limit: int = 10) -> Tuple[str, dict]:
   """
   Determine intent from user prompt for best route to fulfill user
@@ -49,29 +55,31 @@ async def run_routing_agent(prompt: str,
     user_chat: optional existing user chat object for previous chat history
     llm_type: optional llm_type to use for agents, otherwise llm_type of
       routing agent is used
+    route: predefined route. If non-empty, it will bypass the run_intent.
   Returns:
     tuple of route (AgentCapability value), response data dict
   """
 
-  # get the intent based on prompt by running intent agent
-  route, route_logs = await run_intent(
-      agent_name, prompt, chat_history=user_chat.history)
+  # Get the intent based on prompt by running intent agent
+  if not route:
+    route, route_logs = await run_intent(
+        agent_name, prompt, chat_history=user_chat.history)
 
-  Logger.info(f"Intent chooses this best route: {route}, "
-              f"based on user prompt: {prompt}")
-  Logger.info(f"Chosen route: {route}")
+    Logger.info(f"Intent chooses this best route: {route}, "
+                f"based on user prompt: {prompt}")
+    Logger.info(f"Chosen route: {route}")
+    assert route is not None
+
+    # create default chat_history_entry
+    user_chat.update_history(custom_entry={
+      "route": route.split(":", 1)[0],
+      "route_name": route,
+      "route_logs": route_logs,
+    })
 
   route_parts = route.split(":", 1)
   route_type = route_parts[0]
   agent_logs = None
-
-  # create default chat_history_entry
-  chat_history_entry = {
-    "route": route_type,
-    "route_name": route,
-    "route_logs": route_logs,
-  }
-  user_chat.update_history(custom_entry=chat_history_entry)
   chat_history_entry = {}
 
   # get routing agent model
@@ -110,7 +118,6 @@ async def run_routing_agent(prompt: str,
     }
     chat_history_entry = response_data
     chat_history_entry[CHAT_AI] = query_result.response
-    agent_logs = route_logs
 
   # Database route
   elif route_type == AgentCapability.DATABASE.value:
@@ -121,46 +128,10 @@ async def run_routing_agent(prompt: str,
     Logger.info(f"Dispatch to DB Query: {dataset_name}")
 
     db_result, agent_logs = await run_db_agent(
-        prompt, llm_type, dataset_name, user.email)
+        prompt, llm_type, dataset_name, user.email,
+        db_result_limit)
 
-    if "error" not in db_result:
-      print(f"db_result: {db_result}")
-
-      db_result_data = db_result.get("data", None)
-      db_result_output = None
-      if db_result_data:
-        response_output = "Here is the database query result in the attached " \
-                          "resource."
-        db_result_output = []
-        db_result_columns = db_result_data["columns"]
-        Logger.info(f"db_result columns: {db_result_columns}")
-
-        # Convert db_result data, from list of tuple to list of dicts.
-        for row_entry in db_result_data["rows"]:
-          row_entry = list(row_entry)
-          row_dict = {}
-          for index, column in enumerate(db_result_columns):
-            row_dict[column] = row_entry[index]
-          db_result_output.append(row_dict)
-
-          if len(db_result_output) > db_result_limit:
-            break
-      else:
-        response_output = "Unable to find the query result from the database."
-
-    else:
-      # Error in the db_agent's return.
-      response_output = db_result["error"]
-      db_result_output = []
-
-    resources = db_result.get("resources", None)
-    response_data = {
-      f"{CHAT_AI}": response_output,
-      "content": response_output,
-      "db_result": db_result_output,
-      "dataset": dataset_name,
-      "resources": resources,
-    }
+    response_data = db_result
     chat_history_entry = response_data
 
   # Plan route
@@ -193,10 +164,6 @@ async def run_routing_agent(prompt: str,
     chat_history_entry["agent_logs"] = agent_logs
     response_data["agent_logs"] = agent_logs
 
-  if route_logs:
-    chat_history_entry["route_logs"] = route_logs
-    response_data["route_logs"] = route_logs
-
   # update chat data in response
   user_chat.update_history(custom_entry=chat_history_entry)
   user_chat.save()
@@ -213,7 +180,8 @@ async def run_routing_agent(prompt: str,
 
 
 async def run_intent(
-        agent_name: str, prompt: str, chat_history: List = None) -> dict:
+        agent_name: str, prompt: str, chat_history: List = None,
+        use_router_chain: bool = True) -> dict:
   """
   Evaluate a prompt to get the intent with best matched route.
 
@@ -241,84 +209,114 @@ async def run_intent(
 
   # get llm service routing agent
   llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
+  routing_agent_config = get_agent_config()[agent_name]
 
   # load corresponding langchain agent and instantiate agent_executor
   langchain_agent = llm_service_agent.load_langchain_agent()
   intent_agent_tools = llm_service_agent.get_tools()
   Logger.info(f"Routing agent tools [{intent_agent_tools}]")
 
-  agent_executor = AgentExecutor.from_agent_and_tools(
-      agent=langchain_agent, tools=intent_agent_tools)
+  # Get all route options.
+  route_list = get_route_list(llm_service_agent)
+  Logger.info(f"route_list: {route_list}")
+  agent_logs = None
 
-  # get dispatch prompt
-  dispatch_prompt = get_dispatch_prompt(llm_service_agent)
+  if use_router_chain:
+    Logger.info("Evaluating intent using RouterChain")
 
-  agent_inputs = {
-    "input": dispatch_prompt + prompt,
-    "chat_history": []
-  }
+    llm = langchain_service.get_model(routing_agent_config["llm_type"])
+    router_chain = generate_router_chain(llm, route_list)
+    result = router_chain.route(inputs ={
+      "input": prompt,
+      "verbose": True
+    })
+    Logger.info(f"RouterChain result: {result}")
+    route = result.destination
 
-  Logger.info("Running agent executor to get best matched route.... ")
-  output, agent_logs = await agent_executor_arun_with_logs(
-      agent_executor, agent_inputs)
+  else:
+    agent_executor = AgentExecutor.from_agent_and_tools(
+        agent=langchain_agent, tools=intent_agent_tools)
 
-  Logger.info(f"Agent {agent_name} generated output=[{output}]")
-  Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
+    # get dispatch prompt
+    dispatch_prompt = get_dispatch_prompt(route_list)
 
-  routes = parse_action_output("Route:", output) or []
-  Logger.info(f"Output routes: {routes}")
+    agent_inputs = {
+      "input": dispatch_prompt + prompt,
+      "chat_history": []
+    }
 
-  # If no best route(s) found, pass to Chat agent.
-  if not routes or len(routes) == 0:
-    return AgentCapability.CHAT.value, agent_logs
+    Logger.info("Running agent executor to get best matched route.... ")
+    output, agent_logs = await agent_executor_arun_with_logs(
+        agent_executor, agent_inputs)
 
-  # TODO: Refactor this with RoutingAgentOutputParser
-  # Get the route for the best matched (first) returned routes.
-  route, detail = parse_plan_step(routes[0])[0]
-  Logger.info(f"route: {route}, {detail}")
+    Logger.info(f"Agent {agent_name} generated output=[{output}]")
+    Logger.info(f"run_intent - agent_logs: \n{agent_logs}")
+    routes = parse_action_output("Route:", output) or []
+
+    Logger.info(f"Output routes: {routes}")
+
+    # If no best route(s) found, pass to Chat agent.
+    if not routes or len(routes) == 0:
+      return AgentCapability.CHAT.value, agent_logs
+
+    # TODO: Refactor this with RoutingAgentOutputParser
+    # Get the route for the best matched (first) returned routes.
+    route, detail = parse_plan_step(routes[0])[0]
+    Logger.info(f"route: {route}, {detail}")
+
+  # If no route found, use default Chat route.
+  if not route:
+    route = DEFAULT_ROUTE
 
   return route, agent_logs
 
-
-def get_dispatch_prompt(llm_service_agent: BaseAgent) -> str:
-  """ Construct dispatch prompt for intent agent """
-
+def get_route_list(llm_service_agent: BaseAgent) -> list:
   agent_name = llm_service_agent.name
-
-  intent_list_str = ""
-  intent_list = [
-    f"- [{AgentCapability.CHAT.value}]"
-    " to to perform generic chat conversation.",
-    f"- [{AgentCapability.PLAN.value}]"
-    " to compose, generate or create a plan.",
+  route_list = [
+    {
+      "name": f"{AgentCapability.CHAT.value}",
+      "description": "to to perform generic chat conversation.",
+    },
+    {
+      "name": f"{AgentCapability.PLAN.value}",
+      "description": " to compose, generate or create a plan.",
+    }
   ]
-  for intent in intent_list:
-    intent_list_str += \
-      intent + "\n"
 
-  # get query engines for this agent with their description as topics.
+  # Adding query engines to route list.
   query_engines = llm_service_agent.get_query_engines(agent_name)
-  Logger.info(f"query_engines for {agent_name}: {query_engines}")
   for qe in query_engines:
-    intent_list_str += \
-      f"- [{AgentCapability.QUERY.value}:{qe.name}]" \
-      f" to run a query on a search engine for information (not raw data)" \
-      f" on the topics of {qe.description} \n"
+    route_list.append({
+      "name": f"{AgentCapability.QUERY.value}:{qe.name}",
+      "description": \
+        f" to run a query on a search engine for information (not raw data)" \
+        f" on the topics of {qe.description} \n"
+    })
 
   # get datasets for this with their descriptions as topics
   datasets = llm_service_agent.get_datasets(agent_name)
-  Logger.info(f"datasets for {agent_name}: {datasets}")
   for ds_name, ds_config in datasets.items():
     description = ds_config["description"]
-    intent_list_str += \
-        f"- [{AgentCapability.DATABASE.value}:{ds_name}]" \
+    route_list.append({
+      "name": f"{AgentCapability.DATABASE.value}:{ds_name}",
+      "description": \
         f" to use SQL to retrieve rows of data from a database for data " \
         f"related to these areas: {description} \n"
+    })
+
+  return route_list
+
+def get_dispatch_prompt(route_list) -> str:
+  """ Construct dispatch prompt for intent agent """
+
+  route_list_str = ""
+  for route in route_list:
+    route_list_str += f" - [{route['name']}] {route['description']}\n"
 
   dispatch_prompt = \
       "The AI Routing Assistant has access to the following routes " + \
       "for a user prompt:\n" + \
-      f"{intent_list_str}\n" + \
+      f"{route_list_str}\n" + \
       "Choose one route based on the question below:\n"
   Logger.info(f"dispatch_prompt: \n{dispatch_prompt}")
 
@@ -333,6 +331,7 @@ async def batch_run_dispatch(request_body: Dict, job: BatchJobModel) -> Dict:
   chat_id = request_body["chat_id"]
   llm_type = request_body["llm_type"]
   db_result_limit = request_body.get("db_result_limit")
+  route = request_body.get("route", None)
 
   user = User.find_by_id(user_id)
   user_chat = UserChat.find_by_id(chat_id)
@@ -346,9 +345,28 @@ async def batch_run_dispatch(request_body: Dict, job: BatchJobModel) -> Dict:
 
   route, response_data = await run_routing_agent(
       prompt, agent_name, user, user_chat, llm_type,
-      db_result_limit=db_result_limit)
+      db_result_limit=db_result_limit, route=route)
 
   job.message = f"Successfully ran dispatch with route: {route}"
   job.result_data = response_data
   job.status = JobStatus.JOB_STATUS_SUCCEEDED.value
   job.save()
+
+
+def generate_router_chain(llm, route_list):
+  """
+  Generates the router chains from the prompt infos.
+  :param route_list The prompt information generated above.
+  """
+  destinations = [
+      f"{route['name']}: {route['description']}" for route in route_list]
+  destinations_str = "\n".join(destinations)
+  router_template = MULTI_PROMPT_ROUTER_TEMPLATE.format(
+      destinations=destinations_str)
+  router_prompt = PromptTemplate(
+      template=router_template,
+      input_variables=["input"],
+      output_parser=RouterOutputParser()
+  )
+  router_chain = LLMRouterChain.from_llm(llm, router_prompt)
+  return router_chain

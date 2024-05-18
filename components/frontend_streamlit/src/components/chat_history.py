@@ -17,19 +17,18 @@ Chat history panel for UI
 """
 
 import streamlit as st
-from common.utils.logging_handler import Logger
+import logging
 from api import get_all_chats, delete_chat
 from styles.chat_history_styles import history_styles
 import utils
 
-Logger = Logger.get_logger(__file__)
 
 def get_agent_chats(selected_agent):
   """
   List all chat history for a given agent
   """
   index = 0
-  Logger.info(f"get_chat_agents with {selected_agent}")
+  logging.info("get_chat_agents with %s", selected_agent)
   for user_chat in (st.session_state.user_chats or []):
 
     first_history_item = user_chat["history"][0]

@@ -40,13 +40,32 @@ const References: React.FC<ReferencesProps> = ({ references }) => {
     return url
   }
 
+  const getLastPathSegment = (urlString: string): string => {
+    try {
+      const url = new URL(urlString)
+      const pathSegments = url.pathname.split('/').filter(Boolean)
+      return pathSegments.pop() || url.pathname // Return domain if no segments
+    } catch (error) {
+      // Handle invalid URL gracefully 
+      console.error("Invalid ref URL:", urlString)
+      return ''
+    }
+  }
+
   const renderLinkTitle = (url: string): string => {
     const decodedUrl = decodeURIComponent(url)
 
-    const basename = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1)
+    var basename = decodedUrl.substring(decodedUrl.lastIndexOf('/') + 1)
 
     // To remove the file extension, uncomment the next line
     // const titleWithoutExtension = basename.replace(/\.[^/.]+$/, "")
+
+    // if the basename doesn't contain a file name, display the last segment of the URL path
+    // so for urls like "https://a.com/b/c/" return 'c'
+    // for urls like "https://a.com/" return "a.com"
+    if (basename.length == 0) {
+      basename = getLastPathSegment(decodedUrl)
+    }
 
     return basename
   }

@@ -60,6 +60,14 @@ const QueryWindow: React.FC<QueryWindowProps> = ({ onSubmit, messages, activeJob
           }
         </div>
       )
+    } else if (message.AIReferences) {
+      return (
+        <div className="ml-12 mb-2">
+          <Expander title={"References"}>
+            <References references={message.AIReferences} />
+          </Expander>
+        </div>
+      )
     } else {
       return
     }

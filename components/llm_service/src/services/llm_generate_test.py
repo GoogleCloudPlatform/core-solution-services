@@ -26,8 +26,10 @@ os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
 os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
+os.environ["VLLM_GEMMA_ENDPOINT"] = "fake-endpoint"
 
-from services.llm_generate import llm_generate, llm_chat
+from services.llm_generate import llm_generate, llm_chat, llm_generate_multi
+from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
 from vertexai.preview.language_models import TextGenerationResponse
 from common.models import User, UserChat
@@ -47,17 +49,20 @@ with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
                                        TEST_OPENAI_CONFIG,
                                        TEST_VERTEX_CONFIG,
                                        TEST_MODEL_GARDEN_CONFIG,
-                                       TEST_TRUSS_CONFIG)
+                                       TEST_TRUSS_CONFIG,
+                                       TEST_VLLM_CONFIG)
       from config import (get_model_config,
                           COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
                           VERTEX_LLM_TYPE_BISON_CHAT,
+                          VERTEX_LLM_TYPE_GEMINI_PRO,
+                          VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                           PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
-                          PROVIDER_TRUSS,
+                          PROVIDER_TRUSS, PROVIDER_VLLM,
                           PROVIDER_MODEL_GARDEN,
                           VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
-                          TRUSS_LLM_LLAMA2_CHAT)
+                          TRUSS_LLM_LLAMA2_CHAT, VLLM_LLM_GEMMA_CHAT)
 
 FAKE_GOOGLE_RESPONSE = TextGenerationResponse(text=FAKE_GENERATE_RESPONSE,
                                               _prediction_response={})
@@ -66,7 +71,12 @@ FAKE_MODEL_GARDEN_RESPONSE = Prediction(predictions=[FAKE_PREDICTION_RESPONSE],
 FAKE_TRUSS_RESPONSE = {
   "data": {"generated_text": FAKE_GENERATE_RESPONSE}
 }
+FAKE_VLLM_RESPONSE = {
+    "data": {"generated_text": FAKE_GENERATE_RESPONSE}
+}
 
+FAKE_FILE_NAME = "test.png"
+FAKE_FILE_TYPE = "image/png"
 FAKE_PROMPT = "test prompt"
 
 
@@ -136,6 +146,30 @@ async def test_llm_generate_google(clean_firestore):
 
 
 @pytest.mark.asyncio
+async def test_llm_generate_multi(clean_firestore):
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
+
+  with open(FAKE_FILE_NAME, "ab") as f:
+    pass
+  fake_file=open(FAKE_FILE_NAME, "rb")
+  os.remove(FAKE_FILE_NAME)
+  fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
+  fake_file_bytes = await fake_upload_file.read()
+
+  with mock.patch(
+  "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
+  return_value=FAKE_GOOGLE_RESPONSE):
+    response = await llm_generate_multi(FAKE_PROMPT, fake_file_bytes,
+                            FAKE_FILE_TYPE, VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
+
+  fake_file.close()
+  assert response == FAKE_GENERATE_RESPONSE
+
+
+@pytest.mark.asyncio
 async def test_llm_chat_google(clean_firestore, test_chat):
   get_model_config().llm_model_providers = {
     PROVIDER_VERTEX: TEST_VERTEX_CONFIG
@@ -193,5 +227,20 @@ async def test_llm_truss_service_predict(clean_firestore, test_chat):
                                  json=lambda: FAKE_TRUSS_RESPONSE)):
     response = await llm_chat(
       FAKE_PROMPT, TRUSS_LLM_LLAMA2_CHAT)
+
+  assert response == FAKE_GENERATE_RESPONSE
+
+@pytest.mark.asyncio
+async def test_llm_vllm_service_predict(clean_firestore, test_chat):
+  get_model_config().llm_model_providers = {
+    PROVIDER_VLLM: TEST_VLLM_CONFIG
+  }
+  get_model_config().llm_models = TEST_VLLM_CONFIG
+  with mock.patch(
+          "services.llm_generate.post_method",
+          return_value=mock.Mock(status_code=200,
+                                 json=lambda: FAKE_VLLM_RESPONSE)):
+    response = await llm_chat(
+      FAKE_PROMPT, VLLM_LLM_GEMMA_CHAT)
 
   assert response == FAKE_GENERATE_RESPONSE

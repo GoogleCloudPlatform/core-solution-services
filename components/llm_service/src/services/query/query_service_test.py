@@ -17,6 +17,7 @@
 """
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable=unused-argument,redefined-outer-name,ungrouped-imports,unused-import
+from copy import deepcopy
 from pathlib import Path
 import pytest
 from typing import List
@@ -34,13 +35,20 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
                                      QUERY_REFERENCE_EXAMPLE_1,
                                      QUERY_REFERENCE_EXAMPLE_2)
-from config import get_model_config, ModelConfig, MODEL_CONFIG_PATH
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            User, QueryDocument, QueryDocumentChunk,
                            QueryReference)
+from common.models.llm_query import (QUERY_HUMAN,
+                                     QUERY_AI_RESPONSE,
+                                     QUERY_AI_REFERENCES)
 from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.utils.logging_handler import Logger
+from common.utils.config import set_env_var
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+
+with set_env_var("PG_HOST", ""):
+  from config import get_model_config, ModelConfig, MODEL_CONFIG_PATH
+
 from services.query.query_service import (query_generate,
                                           query_search,
                                           query_engine_build,
@@ -198,6 +206,41 @@ async def test_query_generate(mock_query_search, mock_llm_chat,
   assert len(query_references) == 2
   assert query_references[0] == create_query_reference
   assert query_references[1] == create_query_reference_2
+
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.llm_chat")
+@mock.patch("services.query.query_service.query_search")
+async def test_query_generate_continue(mock_query_search, mock_llm_chat,
+                        restore_config, create_engine, create_user,
+                        create_user_query,
+                        create_query_result, create_query_reference,
+                        create_query_reference_2):
+  prompt = QUERY_EXAMPLE["prompt"]
+  mock_query_search.return_value = [create_query_reference,
+                                    create_query_reference_2]
+  mock_llm_chat.return_value = FAKE_GENERATE_RESPONSE
+  initial_history = deepcopy(create_user_query.history)
+  initial_len = len(initial_history)
+  Logger.info(f"initial history {initial_history}")
+  query_result, query_references = \
+      await query_generate(create_user.id,
+                           prompt, create_engine,
+                           user_query=create_user_query)
+  assert query_result.query_engine_id == create_engine.id
+  assert query_result.prompt == prompt
+  assert query_result.response == FAKE_GENERATE_RESPONSE
+  assert len(query_references) == 2
+  assert query_references[0] == create_query_reference
+  assert query_references[1] == create_query_reference_2
+
+  # check user_query update
+  query_history = create_user_query.reload().history
+  Logger.info(f"updated history {query_history}")
+  assert len(query_history) == initial_len + 3
+  assert QUERY_HUMAN in query_history[initial_len]
+  assert QUERY_AI_RESPONSE in query_history[initial_len + 1]
+  assert QUERY_AI_REFERENCES in query_history[initial_len + 2]
+
 
 @mock.patch("services.query.query_service.embeddings.get_embeddings")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
