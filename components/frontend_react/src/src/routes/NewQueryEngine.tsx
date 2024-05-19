@@ -1,32 +1,41 @@
 import QueryEngineForm from "@/components/forms/QueryEngineForm"
 import Header from "@/components/typography/Header"
-import { useData } from "@/contexts/data"
+import { fetchAllEngines, createQueryEngine } from "@/utils/api"
 import Loading from "@/navigation/Loading"
 import { QUERY_ENGINE_FORM_DATA } from "@/utils/data"
-import { QueryEngine } from "@/utils/types"
+import { QueryEngine, QueryEngineBuildJob } from "@/utils/types"
 import { TrashIcon } from "@heroicons/react/24/outline"
 import axios from "axios"
 import { useRouter } from "next/router"
 import nookies from "nookies"
 import React, { useEffect, useState } from "react"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { ALERT_TYPE } from "@/utils/types"
 import Link from "next/link"
 
 // TODO: import { userStore } from "@/store"
 // TODO: import { alertStore } from "@/store"
 
-interface INewQueryEngineProps {}
+interface INewQueryEngineProps {
+  initialQueryEngineId: string | null
+}
 
 const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
   const router = useRouter()
   const [formError, setFormError] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [queryEngine, setQueryEngine] = useState<QueryEngine | null>(null)
-  const { queryEngines, updateQueryEngines } = useData()
   const isAdmin = true   // TODO: userStore((state) => state.isAdmin)
   const { id } = router.query
   const setAlert = alertStore((state) => state.setAlert)
+
+  const [queryEngines, setQueryEngines] = useState<QueryEngine[]>([])
+  const [queryEngine, setQueryEngine] = useState<QueryEngine | null>(null)
+
+  const { isLoading, data: queryEngines } = useQuery(
+    ["QueryEngines"],
+    fetchAllEngines(token),
+  )
 
   useEffect(() => {
     if (!queryEngines || !id) return
@@ -36,6 +45,10 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
 
   const token = nookies.get().token
   const options = { headers: { Authorization: `Bearer ${token}` } }
+
+  const buildQueryEngine = useMutation({
+    mutationFn: createQueryEngine(token),
+  })
 
   const onSubmit = async (newQueryEngine: QueryEngine) => {
     // Update existing queryEngine
@@ -53,15 +66,26 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
             res.data.queryEngine,
           ]
           setFormError(false)
-          updateQueryEngines(updated)
+          setQueryEngines(updated)
         })
     }
     // Else, create a new queryEngine
-    return await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/query/engine/`,
-      newQueryEngine,
-      options,
+    buildQueryEngine.mutate(
+      {
+        queryEngine: queryEngine
+      },
+      {
+        onSuccess: (resp?: QueryEngineBuildJob) => {
+          // TODO
+        },
+        onError: () => {
+          setActiveJob(false)
+          // TODO
+        }
+      }
     )
+    
+    
   }
   const onSuccess = () => setFormSubmitted(true)
   const onFailure = (error: unknown) => {

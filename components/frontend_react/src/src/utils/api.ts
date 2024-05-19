@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { envOrFail } from "@/utils/env"
-import { Chat, Query, QueryEngine } from "@/utils/types"
+import { Chat, Query, QueryEngine, QueryEngineBuildJob } from "@/utils/types"
 import axios from "axios"
 import { path } from "ramda"
 
@@ -124,6 +124,42 @@ export const fetchAllEngines =
     const url = `${endpoint}/query`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
+  }
+
+  request_body = {
+    "query_engine": name,
+    "query_engine_type": engine_type,
+    "doc_url": doc_url,
+    "embedding_type": embedding_type,
+    "vector_store": vector_store,
+    "description": description,
+    "params": {
+      "depth_limit": depth_limit,
+      "agents": agents,
+      "associated_engines": child_engines,
+    }
+  }
+
+export const createQueryEngine =
+  (token: string) => async ({
+    queryEngine,
+  }: RunQueryParams): Promise<QueryEngineBuildJob | undefined> => {
+    const url = `${endpoint}/query/engine`
+    const headers = { Authorization: `Bearer ${token}` }
+    const data = {
+      "query_engine": queryEngine.name,
+      "query_engine_type": queryEngine.query_engine_type,
+      "doc_url": queryEngine.doc_url,
+      "embedding_type": queryEngine.embedding_type,
+      "vector_store": queryEngine.vector_store,
+      "description": queryEngine.description,
+      "params": {
+        "depth_limit": queryEngine.params.depth_limit,
+        "agents": queryEngine.params.agents,
+        "associated_engines": queryEngine.params.child_engines,
+      }
+    }
+    return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
 
 export const createQuery =

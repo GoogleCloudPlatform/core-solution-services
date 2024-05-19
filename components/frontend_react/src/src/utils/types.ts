@@ -125,6 +125,12 @@ export type QueryEngine = {
   agents: string[] | null  
 }
 
+export type QueryEngineBuildJob = {
+  name: string
+  type: string
+  status: string
+}
+
 export interface QueryResponse {
   response: string
 }
