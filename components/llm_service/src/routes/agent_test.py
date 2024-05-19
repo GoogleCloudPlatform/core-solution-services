@@ -180,7 +180,7 @@ def test_run_agent_chat(create_user, create_chat, client_with_emulator):
 def test_run_agent_db(mock_run_db_agent, create_user, client_with_emulator):
   """ Test run_agent with db agent """
   mock_run_db_agent.return_value = FAKE_DB_AGENT_RESULT, FAKE_AGENT_LOGS
-  
+
   url = f"{api_url}/run/DbAgent"
   resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
 
