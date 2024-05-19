@@ -24,16 +24,19 @@ from fastapi.testclient import TestClient
 from unittest import mock
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
                                      USER_EXAMPLE)
-from testing.test_config import API_URL
 from common.models.llm import CHAT_HUMAN, CHAT_AI
 from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+from common.utils.config import set_env_var
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
+
+with set_env_var("PG_HOST", ""):
+  from testing.test_config import API_URL
 
 
 FAKE_AGENT_RUN_PARAMS = {
@@ -43,6 +46,27 @@ FAKE_AGENT_RUN_PARAMS = {
 
 FAKE_GENERATE_RESPONSE = "test generation"
 FAKE_AGENT_LOGS = "fake agent thought process logs"
+
+FAKE_AGENT_OUTPUT = "fake agent output"
+FAKE_DATASET = "fake-dataset"
+
+FAKE_DB_AGENT_RESULT = {
+  "db_result": [
+    {
+      "column-a": "fake-a1",
+      "column-b": "fake-b1"
+    },
+    {
+      "column-a": "fake-a2",
+      "column-b": "fake-b2"
+    }
+  ],
+  "dataset": FAKE_DATASET,
+  "resources": {"Spreadsheet": "https://example.com"},
+  CHAT_AI: FAKE_AGENT_OUTPUT,
+  "content": FAKE_AGENT_OUTPUT,
+}
+
 
 # assigning url
 api_url = f"{API_URL}/agent"
@@ -116,7 +140,7 @@ def test_run_agent(create_user, client_with_emulator):
 
 @pytest.mark.anyio
 def test_run_agent_chat(create_user, create_chat, client_with_emulator):
-  """ Test run_agent_chat """
+  """ Test run_agent with chat agent """
   chatid = CHAT_EXAMPLE["id"]
 
   url = f"{api_url}/run/Chat/{chatid}"
@@ -151,3 +175,15 @@ def test_run_agent_chat(create_user, create_chat, client_with_emulator):
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "retrieved user chat response"
 
+@pytest.mark.anyio
+@mock.patch("services.agents.agent_service.run_db_agent")
+def test_run_agent_db(mock_run_db_agent, create_user, client_with_emulator):
+  """ Test run_agent with db agent """
+  mock_run_db_agent.return_value = FAKE_DB_AGENT_RESULT, FAKE_AGENT_LOGS
+  
+  url = f"{api_url}/run/DbAgent"
+  resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  response_data = json_response.get("data")
