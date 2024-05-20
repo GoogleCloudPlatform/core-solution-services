@@ -725,10 +725,10 @@ def query_engine_build(doc_url: str,
   docs_not_processed = []
 
   try:  #SC240520: NOTE: Need to understand differences between these three diff types of query_engine_type
-    if query_engine_type == QE_TYPE_VERTEX_SEARCH:
+    if query_engine_type == QE_TYPE_VERTEX_SEARCH:  #SC240520: NOTE: Work on this query_engine_type, second - How much of this needs to change for multi?
       docs_processed, docs_not_processed = build_vertex_search(q_engine)
 
-    elif query_engine_type == QE_TYPE_LLM_SERVICE:  #SC240520: Work on this query_engine_type, first
+    elif query_engine_type == QE_TYPE_LLM_SERVICE:  #SC240520: NOTE: Work on this query_engine_type, first
       # retrieve vector store class and store type in q_engine
       qe_vector_store = vector_store_from_query_engine(q_engine)
       q_engine.vector_store = qe_vector_store.vector_store_type
