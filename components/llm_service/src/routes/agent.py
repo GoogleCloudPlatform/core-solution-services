@@ -25,7 +25,7 @@ from common.utils.batch_jobs import initiate_batch_job
 from common.utils.errors import (ResourceNotFoundException,
                                  PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
-from common.utils.config import JOB_TYPE_ROUTING_AGENT
+from common.utils.config import JOB_TYPE_ROUTING_AGENT, JOB_TYPE_AGENT_RUN
 from schemas.agent_schema import (LLMAgentRunResponse,
                                   LLMAgentRunModel,
                                   LLMAgentGetAllResponse,
@@ -38,6 +38,11 @@ from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
                     PROJECT_ID, DATABASE_PREFIX,
                     ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
                     DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH)
+
+from config import (PAYLOAD_FILE_SIZE,
+                    ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
+                    DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST,
+                    ONEDRIVE_CLIENT_ID, ONEDRIVE_TENANT_ID)
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
@@ -242,10 +247,60 @@ async def agent_run(agent_name: str,
     return PayloadTooLargeError(
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
+  run_as_batch_job = runconfig_dict.get("run_as_batch_job", False)
+  Logger.info(f"run_as_batch_job = {run_as_batch_job}")
+
+  user = User.find_by_email(user_data.get("email"))
+  llm_type = BaseAgent.get_llm_type_for_agent(agent_name)
+  runconfig_dict["user_email"] = user.email
+
+  if run_as_batch_job:
+    # create new chat for user
+    user_chat = UserChat(user_id=user.user_id, prompt=prompt,
+                         llm_type=llm_type, agent_name=agent_name)
+    # Save user chat to retrieve actual ID.
+    user_chat.update_history(prompt, output)
+    user_chat.save()
+
+    chat_data = user_chat.get_fields(reformat_datetime=True)
+    chat_data["id"] = user_chat.id
+
+    # launch batch job to perform query
+    try:
+      data = {
+        "agent_name": agent_name,
+        "prompt": prompt,
+        "llm_type": llm_type,
+        "user_id": user.id,
+        "user_chat_id": user_chat.id,
+        "dataset": runconfig_dict["dataset"]
+      }
+      env_vars = {
+        "DATABASE_PREFIX": DATABASE_PREFIX,
+        "PROJECT_ID": PROJECT_ID,
+        "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
+        "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
+        "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
+        "PG_HOST": PG_HOST,
+      }
+      response = initiate_batch_job(data, JOB_TYPE_AGENT_RUN, env_vars)
+      Logger.info(f"Batch job response: {response}")
+
+      return {
+        "success": True,
+        "message": "Successfully ran query in batch mode",
+        "data": {
+          "query": query_data,
+          "batch_job": response["data"],
+        },
+      }
+    except Exception as e:
+      Logger.error(e)
+      Logger.error(traceback.print_exc())
+      raise InternalServerError(str(e)) from e
+
+  # normal sync execution
   try:
-    user = User.find_by_email(user_data.get("email"))
-    llm_type = BaseAgent.get_llm_type_for_agent(agent_name)
-    runconfig_dict["user_email"] = user.email
     output, agent_logs = \
         await run_agent(agent_name, prompt, None, runconfig_dict)
     Logger.info(f"Generated output=[{output}]")
@@ -268,12 +323,19 @@ async def agent_run(agent_name: str,
         "chat": chat_data,
         "agent_logs": agent_logs
       }
-
-    return {
+  
+    response = {
       "success": True,
       "message": "Successfully ran agent",
       "data": response_data
     }
+    
+    Logger.info(
+      f"run agent prompt=[{prompt}] agent=[{agent_name}]"
+      f" response [{response}]")
+    
+    return response
+    
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())

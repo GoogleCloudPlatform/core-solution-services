@@ -70,6 +70,39 @@ def get_all_agents() -> dict:
   agent_config.update(get_plan_agent_config())
   return agent_config
 
+async def batch_run_agent(request_body: Dict, job: BatchJobModel) -> Dict:
+  # execute routing agent
+  prompt = request_body["prompt"]
+  agent_name = request_body["agent_name"]
+  user_id = request_body["user_id"]
+  chat_id = request_body["user_chat_id"]
+  llm_type = request_body["llm_type"]
+  db_result_limit = request_body.get("db_result_limit", None)
+  dataset = request_body.get("dataset", None)
+
+  user = User.find_by_id(user_id)
+  user_chat = UserChat.find_by_id(chat_id)
+  user_chat.update_history(custom_entry={
+    "batch_job": {
+      "job_id": job.id,
+      "job_name": job.name,
+    },
+  })
+  user_chat.save()
+
+  agent_params = {}
+  agent_params["db_result_limit"] = db_result_limit
+  agent_params["user_email"] = user.email
+  agent_params["dataset"] = dataset
+  
+  route, response_data = await run_agent(
+      agent_name, prompt, user_chat.history, agent_params)
+
+  job.message = f"Successfully ran agent: {agent_name}"
+  job.result_data = response_data
+  job.status = JobStatus.JOB_STATUS_SUCCEEDED.value
+  job.save()
+
 
 async def run_agent(agent_name: str,
                     prompt: str,
@@ -104,9 +137,11 @@ async def run_agent(agent_name: str,
     llm_type = llm_service_agent.llm_type
     dataset = agent_params.get("dataset", None)
     user_email = agent_params.get("user_email", None)
+    db_result_limit = agent_params.get("db_result_limit", None)
     output, agent_logs = \
         await run_db_agent(prompt, llm_type=llm_type,
-                           dataset=dataset, user_email=user_email)
+                           dataset=dataset, user_email=user_email,
+                           db_result_limit)
 
   else:
     tools = llm_service_agent.get_tools()

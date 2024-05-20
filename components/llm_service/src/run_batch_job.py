@@ -19,6 +19,7 @@ import asyncio
 from absl import flags, app
 from common.utils.config import (JOB_TYPE_QUERY_ENGINE_BUILD,
                                  JOB_TYPE_QUERY_EXECUTE,
+                                 JOB_TYPE_AGENT_RUN,
                                  JOB_TYPE_AGENT_PLAN_EXECUTE,
                                  JOB_TYPE_ROUTING_AGENT)
 from common.utils.logging_handler import Logger
@@ -27,7 +28,8 @@ from common.models.batch_job import BatchJobModel, JobStatus
 from services.query.query_service import (batch_build_query_engine,
                                           batch_query_generate)
 from services.agents.routing_agent import batch_run_dispatch
-from services.agents.agent_service import batch_execute_plan
+from services.agents.agent_service import (batch_agent_run,
+                                           batch_execute_plan)
 from config import JOB_NAMESPACE
 
 # pylint: disable=broad-exception-raised
@@ -52,6 +54,8 @@ def main(argv):
     elif job.type ==  JOB_TYPE_QUERY_EXECUTE:
       _ = asyncio.get_event_loop().run_until_complete(
         batch_query_generate(request_body, job))
+    elif job.type == JOB_TYPE_AGENT_RUN:
+      _ = batch_agent_run(request_body, job)
     elif job.type == JOB_TYPE_AGENT_PLAN_EXECUTE:
       _ = batch_execute_plan(request_body, job)
     elif job.type == JOB_TYPE_ROUTING_AGENT:
