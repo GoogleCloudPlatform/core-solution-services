@@ -20,9 +20,9 @@ import ast
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
-from common.models import BatchJobModel
-from common.models.agent import (AgentCapability,
-                                 UserPlan, PlanStep)
+from common.models import User, UserChat, UserPlan, PlanStep
+from common.models.batch_job import BatchJobModel, JobStatus
+from common.models.agent import AgentCapability
 from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
 from config import get_agent_config
@@ -76,7 +76,6 @@ async def batch_run_agent(request_body: Dict, job: BatchJobModel) -> Dict:
   agent_name = request_body["agent_name"]
   user_id = request_body["user_id"]
   chat_id = request_body["user_chat_id"]
-  llm_type = request_body["llm_type"]
   db_result_limit = request_body.get("db_result_limit", None)
   dataset = request_body.get("dataset", None)
 
@@ -94,8 +93,8 @@ async def batch_run_agent(request_body: Dict, job: BatchJobModel) -> Dict:
   agent_params["db_result_limit"] = db_result_limit
   agent_params["user_email"] = user.email
   agent_params["dataset"] = dataset
-  
-  route, response_data = await run_agent(
+
+  response_data, _ = await run_agent(
       agent_name, prompt, user_chat.history, agent_params)
 
   job.message = f"Successfully ran agent: {agent_name}"
@@ -141,7 +140,7 @@ async def run_agent(agent_name: str,
     output, agent_logs = \
         await run_db_agent(prompt, llm_type=llm_type,
                            dataset=dataset, user_email=user_email,
-                           db_result_limit)
+                           db_result_limit=db_result_limit)
 
   else:
     tools = llm_service_agent.get_tools()

@@ -37,11 +37,7 @@ from services.langchain_service import langchain_chat_history
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
                     PROJECT_ID, DATABASE_PREFIX,
                     ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH)
-
-from config import (PAYLOAD_FILE_SIZE,
-                    ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST,
+                    DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH,
                     ONEDRIVE_CLIENT_ID, ONEDRIVE_TENANT_ID)
 
 Logger = Logger.get_logger(__file__)
@@ -188,6 +184,8 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
       "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
       "PG_HOST": PG_HOST,
       "AGENT_CONFIG_PATH": AGENT_CONFIG_PATH,
+      "ONEDRIVE_CLIENT_ID": ONEDRIVE_CLIENT_ID,
+      "ONEDRIVE_TENANT_ID": ONEDRIVE_TENANT_ID
     }
     response = initiate_batch_job(data, JOB_TYPE_ROUTING_AGENT, env_vars)
     Logger.info(f"Batch job response: {response}")
@@ -254,19 +252,21 @@ async def agent_run(agent_name: str,
   llm_type = BaseAgent.get_llm_type_for_agent(agent_name)
   runconfig_dict["user_email"] = user.email
 
-  if run_as_batch_job:
-    # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, prompt=prompt,
-                         llm_type=llm_type, agent_name=agent_name)
-    # Save user chat to retrieve actual ID.
-    user_chat.update_history(prompt, output)
-    user_chat.save()
+  # create new chat for user
+  user_chat = UserChat(user_id=user.user_id, prompt=prompt,
+                       llm_type=llm_type, agent_name=agent_name)
 
-    chat_data = user_chat.get_fields(reformat_datetime=True)
-    chat_data["id"] = user_chat.id
+  # Save user chat to retrieve actual ID.
+  user_chat.update_history(prompt)
+  user_chat.save()
 
-    # launch batch job to perform query
-    try:
+  chat_data = user_chat.get_fields(reformat_datetime=True)
+  chat_data["id"] = user_chat.id
+
+  try:
+    if run_as_batch_job:
+
+      # launch batch job to perform query
       data = {
         "agent_name": agent_name,
         "prompt": prompt,
@@ -282,60 +282,52 @@ async def agent_run(agent_name: str,
         "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
         "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
         "PG_HOST": PG_HOST,
+        "AGENT_CONFIG_PATH": AGENT_CONFIG_PATH,
+        "ONEDRIVE_CLIENT_ID": ONEDRIVE_CLIENT_ID,
+        "ONEDRIVE_TENANT_ID": ONEDRIVE_TENANT_ID
       }
       response = initiate_batch_job(data, JOB_TYPE_AGENT_RUN, env_vars)
       Logger.info(f"Batch job response: {response}")
 
       return {
         "success": True,
-        "message": "Successfully ran query in batch mode",
+        "message": "Successfully ran agent in batch mode",
         "data": {
-          "query": query_data,
+          "chat": chat_data,
           "batch_job": response["data"],
         },
       }
-    except Exception as e:
-      Logger.error(e)
-      Logger.error(traceback.print_exc())
-      raise InternalServerError(str(e)) from e
 
-  # normal sync execution
-  try:
-    output, agent_logs = \
-        await run_agent(agent_name, prompt, None, runconfig_dict)
-    Logger.info(f"Generated output=[{output}]")
-
-    # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, prompt=prompt,
-                         llm_type=llm_type, agent_name=agent_name)
-    # Save user chat to retrieve actual ID.
-    user_chat.update_history(prompt, output)
-    user_chat.save()
-
-    chat_data = user_chat.get_fields(reformat_datetime=True)
-    chat_data["id"] = user_chat.id
-
-    if "db_result" in output or "route" in output:
-      response_data = output
     else:
-      response_data = {
-        "content": output,
-        "chat": chat_data,
-        "agent_logs": agent_logs
+      # synchronous execution
+      output, agent_logs = \
+          await run_agent(agent_name, prompt, None, runconfig_dict)
+      Logger.info(f"Generated output=[{output}]")
+
+      user_chat.update_history(None, output)
+      user_chat.save(merge=True)
+
+      if "db_result" in output or "route" in output:
+        response_data = output
+      else:
+        response_data = {
+          "content": output,
+          "chat": chat_data,
+          "agent_logs": agent_logs
+        }
+
+      response = {
+        "success": True,
+        "message": "Successfully ran agent",
+        "data": response_data
       }
-  
-    response = {
-      "success": True,
-      "message": "Successfully ran agent",
-      "data": response_data
-    }
-    
-    Logger.info(
-      f"run agent prompt=[{prompt}] agent=[{agent_name}]"
-      f" response [{response}]")
-    
-    return response
-    
+
+      Logger.info(
+        f"run agent prompt=[{prompt}] agent=[{agent_name}]"
+        f" response [{response}]")
+
+      return response
+
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
