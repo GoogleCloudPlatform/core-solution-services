@@ -86,6 +86,8 @@ class FakeModelClass(BaseLLM):
     return "vertexai"
 
 CHAT_AGENT = "Chat"
+FAKE_AGENT_LOGS = "fake logs"
+FAKE_AGENT_OUTPUT = "fake agent output"
 
 class FakeAgentExecutor():
   async def arun(self, prompt):

@@ -24,11 +24,15 @@ from unittest import mock
 from common.models import User, UserChat
 from common.models.agent import AgentCapability
 from common.utils.logging_handler import Logger
-from config import get_model_config, PROVIDER_LANGCHAIN
-from testing.test_config import TEST_OPENAI_CONFIG, FAKE_LANGCHAIN_GENERATION
 from schemas.schema_examples import (CHAT_EXAMPLE,
                                      USER_EXAMPLE)
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+from common.utils.config import set_env_var
+with set_env_var("PG_HOST", ""):
+  from config import get_model_config, PROVIDER_LANGCHAIN
+  from testing.test_config import (API_URL, FakeAgentExecutor, FakeAgent,
+                                   FAKE_AGENT_LOGS, FAKE_AGENT_OUTPUT,
+                                   TEST_OPENAI_CONFIG)
 from services.agents.agent_service import run_agent
 
 Logger = Logger.get_logger(__file__)
@@ -38,8 +42,6 @@ os.environ["PROJECT_ID"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
-FAKE_AGENT_LOGS = "fake logs"
-FAKE_AGENT_OUTPUT = "fake agent output"
 DB_AGENT = "DbAgent"
 CHAT_AGENT = "Chat"
 
@@ -75,25 +77,6 @@ def test_model_config(firestore_emulator, clean_firestore):
     PROVIDER_LANGCHAIN: TEST_OPENAI_CONFIG
   }
   get_model_config().llm_models = TEST_OPENAI_CONFIG
-
-
-class FakeAgentExecutor():
-  async def arun(self, prompt):
-    return FAKE_AGENT_OUTPUT
-
-class FakeLangchainAgent():
-  pass
-
-class FakeAgent():
-  """ Fake agent class """
-  def __init__(self):
-    self.name = CHAT_AGENT
-  def get_tools(self):
-    return []
-  def load_langchain_agent(self):
-    return FakeLangchainAgent()
-  def capabilities(self):
-    return [AgentCapability.CHAT]
 
 
 @pytest.mark.asyncio
