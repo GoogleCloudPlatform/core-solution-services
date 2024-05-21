@@ -257,9 +257,6 @@ async def agent_run(agent_name: str,
   user_chat.save()  
   user_chat.update_history(prompt=prompt)
 
-  chat_data = user_chat.get_fields(reformat_datetime=True)
-  chat_data["id"] = user_chat.id
-
   try:
     if run_as_batch_job:
 
@@ -285,7 +282,10 @@ async def agent_run(agent_name: str,
       }
       response = initiate_batch_job(data, JOB_TYPE_AGENT_RUN, env_vars)
       Logger.info(f"Batch job response: {response}")
-
+      
+      chat_data = user_chat.get_fields(reformat_datetime=True)
+      chat_data["id"] = user_chat.id
+      
       return {
         "success": True,
         "message": "Successfully ran agent in batch mode",
@@ -301,7 +301,9 @@ async def agent_run(agent_name: str,
           await run_agent(agent_name, prompt, user_chat, runconfig_dict)
       Logger.info(f"Generated output=[{output}]")
 
-      user_chat.update_history(response=output["content"])
+      user_chat.reload()
+      chat_data = user_chat.get_fields(reformat_datetime=True)
+      chat_data["id"] = user_chat.id
 
       if "db_result" in output or "route" in output:
         response_data = output

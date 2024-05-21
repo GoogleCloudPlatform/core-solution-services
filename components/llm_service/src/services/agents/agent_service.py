@@ -132,15 +132,17 @@ async def run_agent(agent_name: str,
 
   llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
-  # handle database agent runs
   agent_logs = ""
+  output = ""
   response_data = {}
+  
   if AgentCapability.DATABASE in llm_service_agent.capabilities():
+    # handle database agent runs
     llm_type = llm_service_agent.llm_type
     dataset = agent_params.get("dataset", None)
     user_email = agent_params.get("user_email", None)
     db_result_limit = agent_params.get("db_result_limit", None)
-    response_data, agent_logs = \
+    output, agent_logs = \
         await run_db_agent(prompt, llm_type=llm_type,
                            dataset=dataset, user_email=user_email,
                            db_result_limit=db_result_limit)
@@ -162,17 +164,19 @@ async def run_agent(agent_name: str,
     }
 
     Logger.info("Running agent executor.... ")
-    response_data, agent_logs = await agent_executor_arun_with_logs(
+    output, agent_logs = await agent_executor_arun_with_logs(
         agent_executor, agent_inputs)
 
+  response_data["content"] = output
+  
   # add agent's thought process to response
   if agent_logs:
     response_data["agent_logs"] = agent_logs
 
   # update chat data in response
   if user_chat:
-    user_chat.update_history(custom_entry=response_data)
-    user_chat.save(merge=True)
+    user_chat.update_history(response=output,
+                             custom_entry=response_data)
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
     response_data["chat"] = chat_data

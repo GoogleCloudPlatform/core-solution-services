@@ -36,7 +36,7 @@ os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
 
 with set_env_var("PG_HOST", ""):
-  from testing.test_config import API_URL
+  from testing.test_config import API_URL, FakeAgentExecutor, FakeAgent
 
 
 FAKE_AGENT_RUN_PARAMS = {
@@ -108,14 +108,22 @@ def test_get_agent_list(clean_firestore, client_with_emulator):
 
 
 @pytest.mark.anyio
-def test_run_agent(create_user, client_with_emulator):
+@mock.patch("services.agents.agent_service.agent_executor_arun_with_logs")
+@mock.patch("services.agents.agent_service.AgentExecutor.from_agent_and_tools")
+@mock.patch("services.agents.agent_service.BaseAgent.get_llm_service_agent")
+def test_run_agent(mock_get_agent,
+                   mock_agent_executor,
+                   mock_agent_executor_arun,
+                   create_user, client_with_emulator):
   """ Test run_agent """
+
+  mock_get_agent.return_value = FakeAgent()
+  mock_agent_executor.return_value = FakeAgentExecutor()
+  mock_agent_executor_arun.return_value = FAKE_AGENT_OUTPUT, FAKE_AGENT_LOGS
+
   userid = CHAT_EXAMPLE["user_id"]
   url = f"{api_url}/run/Chat"
-
-  with mock.patch("routes.agent.run_agent",
-                  return_value = (FAKE_GENERATE_RESPONSE, FAKE_AGENT_LOGS)):
-    resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
+  resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
@@ -125,7 +133,7 @@ def test_run_agent(create_user, client_with_emulator):
     {CHAT_HUMAN: FAKE_AGENT_RUN_PARAMS["prompt"]}, \
     "returned chat data prompt"
   assert chat_data["history"][1] == \
-    {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
+    {CHAT_AI: FAKE_AGENT_OUTPUT}, \
     "returned chat data generated text"
 
   user_chats = UserChat.find_by_user(userid)
@@ -135,7 +143,7 @@ def test_run_agent(create_user, client_with_emulator):
     {CHAT_HUMAN: FAKE_AGENT_RUN_PARAMS["prompt"]}, \
     "retrieved user chat prompt"
   assert user_chat.history[1] == \
-    {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
+    {CHAT_AI: FAKE_AGENT_OUTPUT}, \
     "retrieved user chat response"
 
 @pytest.mark.anyio
