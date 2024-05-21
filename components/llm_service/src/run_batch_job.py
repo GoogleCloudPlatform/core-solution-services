@@ -55,7 +55,7 @@ def main(argv):
       _ = asyncio.get_event_loop().run_until_complete(
         batch_query_generate(request_body, job))
     elif job.type == JOB_TYPE_AGENT_RUN:
-      _ = batch_agent_run(request_body, job)
+      _ = batch_run_agent(request_body, job)
     elif job.type == JOB_TYPE_AGENT_PLAN_EXECUTE:
       _ = batch_execute_plan(request_body, job)
     elif job.type == JOB_TYPE_ROUTING_AGENT:
