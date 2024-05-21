@@ -254,7 +254,7 @@ async def agent_run(agent_name: str,
   # create new chat for user
   user_chat = UserChat(user_id=user.user_id, prompt=prompt,
                        llm_type=llm_type, agent_name=agent_name)
-  user_chat.save()  
+  user_chat.save()
   user_chat.update_history(prompt=prompt)
 
   try:
@@ -282,10 +282,10 @@ async def agent_run(agent_name: str,
       }
       response = initiate_batch_job(data, JOB_TYPE_AGENT_RUN, env_vars)
       Logger.info(f"Batch job response: {response}")
-      
+
       chat_data = user_chat.get_fields(reformat_datetime=True)
       chat_data["id"] = user_chat.id
-      
+
       return {
         "success": True,
         "message": "Successfully ran agent in batch mode",

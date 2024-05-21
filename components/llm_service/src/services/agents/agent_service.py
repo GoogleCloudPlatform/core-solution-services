@@ -135,7 +135,7 @@ async def run_agent(agent_name: str,
   agent_logs = ""
   output = ""
   response_data = {}
-  
+
   if AgentCapability.DATABASE in llm_service_agent.capabilities():
     # handle database agent runs
     llm_type = llm_service_agent.llm_type
@@ -168,7 +168,7 @@ async def run_agent(agent_name: str,
         agent_executor, agent_inputs)
 
   response_data["content"] = output
-  
+
   # add agent's thought process to response
   if agent_logs:
     response_data["agent_logs"] = agent_logs
