@@ -132,7 +132,7 @@ async def run_routing_agent(prompt: str,
         db_result_limit)
 
     response_data = db_result
-    chat_history_entry = response_data
+    chat_history_entry["resources"] = db_result.get("resources", None)
 
   # Plan route
   elif route_type == AgentCapability.PLAN.value:

@@ -97,7 +97,7 @@ async def test_run_db_agent(mock_run_db_agent,
   output, agent_logs = \
       await run_agent(agent_name, prompt, create_chat, agent_params)
 
-  assert output == FAKE_DB_AGENT_RESULT
+  assert output["content"] == FAKE_DB_AGENT_RESULT
   assert agent_logs == FAKE_AGENT_LOGS
 
 
@@ -122,6 +122,6 @@ async def test_run_chat_agent(mock_get_agent,
   output, agent_logs = \
       await run_agent(agent_name, prompt, create_chat, agent_params)
 
-  assert output == FAKE_AGENT_OUTPUT
+  assert output["content"] == FAKE_AGENT_OUTPUT
   assert agent_logs == FAKE_AGENT_LOGS
 

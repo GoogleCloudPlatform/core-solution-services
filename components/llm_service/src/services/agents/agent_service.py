@@ -21,8 +21,9 @@ from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
 from common.models import User, UserChat, UserPlan, PlanStep
-from common.models.batch_job import BatchJobModel, JobStatus
 from common.models.agent import AgentCapability
+from common.models.batch_job import BatchJobModel, JobStatus
+from common.models.llm import CHAT_AI
 from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
 from config import get_agent_config
@@ -134,8 +135,9 @@ async def run_agent(agent_name: str,
 
   agent_logs = ""
   output = ""
+  agent_response = None
   response_data = {}
-
+  chat_history_entry = {}
   if AgentCapability.DATABASE in llm_service_agent.capabilities():
     # handle database agent runs
     llm_type = llm_service_agent.llm_type
@@ -146,7 +148,7 @@ async def run_agent(agent_name: str,
         await run_db_agent(prompt, llm_type=llm_type,
                            dataset=dataset, user_email=user_email,
                            db_result_limit=db_result_limit)
-
+    chat_history_entry["resources"] = output.get("resources", None)
   else:
     tools = llm_service_agent.get_tools()
     tools_str = ", ".join(tool.name for tool in tools)
@@ -166,17 +168,21 @@ async def run_agent(agent_name: str,
     Logger.info("Running agent executor.... ")
     output, agent_logs = await agent_executor_arun_with_logs(
         agent_executor, agent_inputs)
-
+    agent_response = output
+  
+  chat_history_entry["agent_logs"] = agent_logs or None
   response_data["content"] = output
-
+  
   # add agent's thought process to response
   if agent_logs:
     response_data["agent_logs"] = agent_logs
 
+  Logger.info(f"Chat data=[{response_data}]")
+
   # update chat data in response
   if user_chat:
-    user_chat.update_history(response=output,
-                             custom_entry=response_data)
+    user_chat.update_history(response=agent_response,
+                             custom_entry=chat_history_entry)
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
     response_data["chat"] = chat_data
