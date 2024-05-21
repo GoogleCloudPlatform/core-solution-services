@@ -23,7 +23,6 @@ from langchain.agents import AgentExecutor
 from common.models import User, UserChat, UserPlan, PlanStep
 from common.models.agent import AgentCapability
 from common.models.batch_job import BatchJobModel, JobStatus
-from common.models.llm import CHAT_AI
 from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
 from config import get_agent_config
@@ -169,10 +168,10 @@ async def run_agent(agent_name: str,
     output, agent_logs = await agent_executor_arun_with_logs(
         agent_executor, agent_inputs)
     agent_response = output
-  
+
   chat_history_entry["agent_logs"] = agent_logs or None
   response_data["content"] = output
-  
+
   # add agent's thought process to response
   if agent_logs:
     response_data["agent_logs"] = agent_logs
