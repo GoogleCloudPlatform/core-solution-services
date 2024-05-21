@@ -254,10 +254,8 @@ async def agent_run(agent_name: str,
   # create new chat for user
   user_chat = UserChat(user_id=user.user_id, prompt=prompt,
                        llm_type=llm_type, agent_name=agent_name)
-
-  # Save user chat to retrieve actual ID.
-  user_chat.update_history(prompt)
-  user_chat.save()
+  user_chat.save()  
+  user_chat.update_history(prompt=prompt)
 
   chat_data = user_chat.get_fields(reformat_datetime=True)
   chat_data["id"] = user_chat.id
@@ -303,8 +301,7 @@ async def agent_run(agent_name: str,
           await run_agent(agent_name, prompt, user_chat, runconfig_dict)
       Logger.info(f"Generated output=[{output}]")
 
-      user_chat.update_history(None, output)
-      user_chat.save(merge=True)
+      user_chat.update_history(response=output["content"])
 
       if "db_result" in output or "route" in output:
         response_data = output
