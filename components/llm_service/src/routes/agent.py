@@ -33,7 +33,6 @@ from schemas.agent_schema import (LLMAgentRunResponse,
 from services.agents.agent_service import (get_all_agents, run_agent)
 from services.agents.agents import BaseAgent
 from services.agents.routing_agent import run_routing_agent, run_intent
-from services.langchain_service import langchain_chat_history
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
                     PROJECT_ID, DATABASE_PREFIX,
                     ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
@@ -301,7 +300,7 @@ async def agent_run(agent_name: str,
     else:
       # synchronous execution
       output, agent_logs = \
-          await run_agent(agent_name, prompt, None, runconfig_dict)
+          await run_agent(agent_name, prompt, user_chat, runconfig_dict)
       Logger.info(f"Generated output=[{output}]")
 
       user_chat.update_history(None, output)
@@ -372,9 +371,8 @@ async def agent_run_chat(agent_name: str, chat_id: str,
     # run agent to get output
     user = User.find_by_email(user_data.get("email"))
     runconfig_dict["user_email"] = user.email
-    chat_history = langchain_chat_history(user_chat)
     output, agent_logs = \
-        await run_agent(agent_name, prompt, chat_history, runconfig_dict)
+        await run_agent(agent_name, prompt, user_chat, runconfig_dict)
     Logger.info(f"Generated output=[{output}]")
 
     # save chat history

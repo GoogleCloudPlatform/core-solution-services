@@ -111,9 +111,8 @@ async def test_run_db_agent(mock_run_db_agent,
     "user_email": create_user.email
   }
 
-  chat_history = create_chat.history
   output, agent_logs = \
-      await run_agent(agent_name, prompt, chat_history, agent_params)
+      await run_agent(agent_name, prompt, create_chat, agent_params)
 
   assert output == FAKE_DB_AGENT_RESULT
   assert agent_logs == FAKE_AGENT_LOGS
@@ -137,9 +136,8 @@ async def test_run_chat_agent(mock_get_agent,
   prompt = "how do you handle a broody chicken?"
   agent_params = None
 
-  chat_history = create_chat.history
   output, agent_logs = \
-      await run_agent(agent_name, prompt, chat_history, agent_params)
+      await run_agent(agent_name, prompt, create_chat, agent_params)
 
   assert output == FAKE_AGENT_OUTPUT
   assert agent_logs == FAKE_AGENT_LOGS

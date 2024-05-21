@@ -95,7 +95,7 @@ async def batch_run_agent(request_body: Dict, job: BatchJobModel) -> Dict:
   agent_params["dataset"] = dataset
 
   response_data, _ = await run_agent(
-      agent_name, prompt, user_chat.history, agent_params)
+      agent_name, prompt, user_chat, agent_params)
 
   job.message = f"Successfully ran agent: {agent_name}"
   job.result_data = response_data
@@ -105,7 +105,7 @@ async def batch_run_agent(request_body: Dict, job: BatchJobModel) -> Dict:
 
 async def run_agent(agent_name: str,
                     prompt: str,
-                    chat_history: List = None,
+                    user_chat: UserChat = None,
                     agent_params: dict = None) -> Tuple[str, str]:
   """
   Run an agent on user input
@@ -113,7 +113,7 @@ async def run_agent(agent_name: str,
   Args:
       agent_name(str): Agent name
       prompt(str): the user input prompt
-      chat_history(List): any previous chat history for context
+      user_chat(UserChat): previous chat for context
       agent_params(dict): dict of additional agent run params
 
   Returns:
@@ -122,6 +122,9 @@ async def run_agent(agent_name: str,
   """
   if agent_params is None:
     agent_params = {}
+  chat_history = []
+  if user_chat:
+    chat_history = user_chat.history
   Logger.info(f"Running {agent_name} agent "
               f"with prompt=[{prompt}] and "
               f"chat_history=[{chat_history}]"
@@ -131,13 +134,13 @@ async def run_agent(agent_name: str,
 
   # handle database agent runs
   agent_logs = ""
-  output = ""
+  response_data = {}
   if AgentCapability.DATABASE in llm_service_agent.capabilities():
     llm_type = llm_service_agent.llm_type
     dataset = agent_params.get("dataset", None)
     user_email = agent_params.get("user_email", None)
     db_result_limit = agent_params.get("db_result_limit", None)
-    output, agent_logs = \
+    response_data, agent_logs = \
         await run_db_agent(prompt, llm_type=llm_type,
                            dataset=dataset, user_email=user_email,
                            db_result_limit=db_result_limit)
@@ -159,12 +162,24 @@ async def run_agent(agent_name: str,
     }
 
     Logger.info("Running agent executor.... ")
-    output, agent_logs = await agent_executor_arun_with_logs(
+    response_data, agent_logs = await agent_executor_arun_with_logs(
         agent_executor, agent_inputs)
 
+  # add agent's thought process to response
+  if agent_logs:
+    response_data["agent_logs"] = agent_logs
+
+  # update chat data in response
+  if user_chat:
+    user_chat.update_history(custom_entry=response_data)
+    user_chat.save(merge=True)
+    chat_data = user_chat.get_fields(reformat_datetime=True)
+    chat_data["id"] = user_chat.id
+    response_data["chat"] = chat_data
+
   Logger.info(f"Agent {agent_name} generated"
-              f" output=[{output}] logs [{agent_logs}]")
-  return output, agent_logs
+              f" output=[{response_data}] logs [{agent_logs}]")
+  return response_data, agent_logs
 
 
 async def agent_plan(agent_name: str,
