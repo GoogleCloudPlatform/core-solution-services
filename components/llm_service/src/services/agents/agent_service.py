@@ -20,9 +20,9 @@ import ast
 from typing import List, Tuple, Dict
 
 from langchain.agents import AgentExecutor
-from common.models import BatchJobModel
-from common.models.agent import (AgentCapability,
-                                 UserPlan, PlanStep)
+from common.models import User, UserChat, UserPlan, PlanStep
+from common.models.agent import AgentCapability
+from common.models.batch_job import BatchJobModel, JobStatus
 from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
 from config import get_agent_config
@@ -70,10 +70,42 @@ def get_all_agents() -> dict:
   agent_config.update(get_plan_agent_config())
   return agent_config
 
+async def batch_run_agent(request_body: Dict, job: BatchJobModel) -> Dict:
+  # execute routing agent
+  prompt = request_body["prompt"]
+  agent_name = request_body["agent_name"]
+  user_id = request_body["user_id"]
+  chat_id = request_body["user_chat_id"]
+  db_result_limit = request_body.get("db_result_limit", None)
+  dataset = request_body.get("dataset", None)
+
+  user = User.find_by_id(user_id)
+  user_chat = UserChat.find_by_id(chat_id)
+  user_chat.update_history(custom_entry={
+    "batch_job": {
+      "job_id": job.id,
+      "job_name": job.name,
+    },
+  })
+  user_chat.save()
+
+  agent_params = {}
+  agent_params["db_result_limit"] = db_result_limit
+  agent_params["user_email"] = user.email
+  agent_params["dataset"] = dataset
+
+  response_data, _ = await run_agent(
+      agent_name, prompt, user_chat, agent_params)
+
+  job.message = f"Successfully ran agent: {agent_name}"
+  job.result_data = response_data
+  job.status = JobStatus.JOB_STATUS_SUCCEEDED.value
+  job.save()
+
 
 async def run_agent(agent_name: str,
                     prompt: str,
-                    chat_history: List = None,
+                    user_chat: UserChat = None,
                     agent_params: dict = None) -> Tuple[str, str]:
   """
   Run an agent on user input
@@ -81,7 +113,7 @@ async def run_agent(agent_name: str,
   Args:
       agent_name(str): Agent name
       prompt(str): the user input prompt
-      chat_history(List): any previous chat history for context
+      user_chat(UserChat): previous chat for context
       agent_params(dict): dict of additional agent run params
 
   Returns:
@@ -90,6 +122,9 @@ async def run_agent(agent_name: str,
   """
   if agent_params is None:
     agent_params = {}
+  chat_history = []
+  if user_chat:
+    chat_history = user_chat.history
   Logger.info(f"Running {agent_name} agent "
               f"with prompt=[{prompt}] and "
               f"chat_history=[{chat_history}]"
@@ -97,17 +132,22 @@ async def run_agent(agent_name: str,
 
   llm_service_agent = BaseAgent.get_llm_service_agent(agent_name)
 
-  # handle database agent runs
   agent_logs = ""
   output = ""
+  agent_response = None
+  response_data = {}
+  chat_history_entry = {}
   if AgentCapability.DATABASE in llm_service_agent.capabilities():
+    # handle database agent runs
     llm_type = llm_service_agent.llm_type
     dataset = agent_params.get("dataset", None)
     user_email = agent_params.get("user_email", None)
+    db_result_limit = agent_params.get("db_result_limit", None)
     output, agent_logs = \
         await run_db_agent(prompt, llm_type=llm_type,
-                           dataset=dataset, user_email=user_email)
-
+                           dataset=dataset, user_email=user_email,
+                           db_result_limit=db_result_limit)
+    chat_history_entry["resources"] = output.get("resources", None)
   else:
     tools = llm_service_agent.get_tools()
     tools_str = ", ".join(tool.name for tool in tools)
@@ -127,10 +167,28 @@ async def run_agent(agent_name: str,
     Logger.info("Running agent executor.... ")
     output, agent_logs = await agent_executor_arun_with_logs(
         agent_executor, agent_inputs)
+    agent_response = output
+
+  chat_history_entry["agent_logs"] = agent_logs or None
+  response_data["content"] = output
+
+  # add agent's thought process to response
+  if agent_logs:
+    response_data["agent_logs"] = agent_logs
+
+  Logger.info(f"Chat data=[{response_data}]")
+
+  # update chat data in response
+  if user_chat:
+    user_chat.update_history(response=agent_response,
+                             custom_entry=chat_history_entry)
+    chat_data = user_chat.get_fields(reformat_datetime=True)
+    chat_data["id"] = user_chat.id
+    response_data["chat"] = chat_data
 
   Logger.info(f"Agent {agent_name} generated"
-              f" output=[{output}] logs [{agent_logs}]")
-  return output, agent_logs
+              f" output=[{response_data}] logs [{agent_logs}]")
+  return response_data, agent_logs
 
 
 async def agent_plan(agent_name: str,

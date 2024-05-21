@@ -16,6 +16,7 @@
 # pylint: disable=line-too-long,unused-argument
 import os
 from typing import List, Optional, Any
+from common.models.agent import AgentCapability
 from langchain.schema import (Generation, ChatGeneration, LLMResult)
 from langchain.schema.messages import AIMessage
 from langchain_core.language_models.llms import BaseLLM
@@ -83,6 +84,29 @@ class FakeModelClass(BaseLLM):
   @property
   def _llm_type(self) -> str:
     return "vertexai"
+
+CHAT_AGENT = "Chat"
+FAKE_AGENT_LOGS = "fake logs"
+FAKE_AGENT_OUTPUT = "fake agent output"
+
+class FakeAgentExecutor():
+  async def arun(self, prompt):
+    return FAKE_AGENT_OUTPUT
+
+class FakeLangchainAgent():
+  pass
+
+class FakeAgent():
+  """ Fake agent class """
+  def __init__(self):
+    self.name = CHAT_AGENT
+  def get_tools(self):
+    return []
+  def load_langchain_agent(self):
+    return FakeLangchainAgent()
+  def capabilities(self):
+    return [AgentCapability.CHAT]
+
 
 TEST_COHERE_CONFIG = {
   COHERE_LLM_TYPE: {
