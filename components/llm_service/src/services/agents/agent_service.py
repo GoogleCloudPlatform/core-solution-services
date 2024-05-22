@@ -137,7 +137,7 @@ async def run_agent(agent_name: str,
   agent_response = None
   response_data = {}
   chat_history_entry = {}
-  
+
   if AgentCapability.DATABASE in llm_service_agent.capabilities():
     # handle database agent runs
     llm_type = llm_service_agent.llm_type
@@ -189,7 +189,7 @@ async def run_agent(agent_name: str,
     response_data["chat"] = chat_data
 
   Logger.info(f"Agent {agent_name} generated"
-              f" chat_history=[{chat_history_entry}]")
+              f" chat_history=[{chat_history_entry}]"
               f" output=[{response_data}] logs [{agent_logs}]")
   return response_data, agent_logs
 
