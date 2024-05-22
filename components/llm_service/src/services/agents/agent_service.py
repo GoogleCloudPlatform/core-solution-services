@@ -23,6 +23,7 @@ from langchain.agents import AgentExecutor
 from common.models import User, UserChat, UserPlan, PlanStep
 from common.models.agent import AgentCapability
 from common.models.batch_job import BatchJobModel, JobStatus
+from common.models.llm import CHAT_AI
 from common.utils.http_exceptions import BadRequest
 from common.utils.logging_handler import Logger
 from config import get_agent_config
@@ -149,7 +150,7 @@ async def run_agent(agent_name: str,
                            dataset=dataset, user_email=user_email,
                            db_result_limit=db_result_limit)
     chat_history_entry["resources"] = output.get("resources", None)
-    agent_response = output.get("{CHAT_AI}", None)
+    agent_response = output.get(f"{CHAT_AI}", None)
   else:
     tools = llm_service_agent.get_tools()
     tools_str = ", ".join(tool.name for tool in tools)
