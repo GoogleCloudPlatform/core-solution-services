@@ -24,8 +24,13 @@ import shutil
 import tempfile
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Optional
 from google.cloud import aiplatform, storage
+import pyparsing
+from pyparsing import (
+    Suppress, Regex, QuotedString, Word, alphanums, oneOf, Literal,
+    Forward, delimitedList, ZeroOrMore, ParseException, ParseResults
+    )
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
@@ -96,15 +101,77 @@ class VectorStore(ABC):
 
   @abstractmethod
   def similarity_search(self, q_engine: QueryEngine,
-                        query_embedding: List[float]) -> List[int]:
+                        query_embedding: List[float],
+                        filter: Optional[str] = None) -> List[int]:
     """
     Retrieve text matches for query embeddings.
+    Allows filter expressions to limit documents based on metadata.
+    Filter expressions use the Vertex Search syntax as documented here:
+        https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
+
     Args:
       q_engine: QueryEngine model
       query_embedding: single embedding array for query
+      filter: (optional) filter expression
     Returns:
       list of indexes that are matched of length NUM_MATCH_RESULTS
     """
+  
+  def parse_filter(self, filter_str: str) -> ParseResults:
+    """
+    Parse filter expressions in the Vertex Search format:
+      https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
+    
+    Returns:
+      A pyparsing ParseResults object
+    """
+    # Define basic elements
+    LPAR, RPAR, COMMA, COLON = map(Suppress, "(),:")
+    double = Regex(r"[+-]?\d+\.?\d*").setParseAction(lambda t: float(t[0]))
+    literal = QuotedString('"')
+    text_field = Word(alphanums + "_")
+    numerical_field = Word(alphanums + "_")
+    comparison = oneOf("< <= >= > =")
+    bound_type = oneOf("e i")
+
+    # Define lower and upper bounds
+    lower_bound = (double + pyparsing.Optional(bound_type)) | "*"
+    upper_bound = (double + pyparsing.Optional(bound_type)) | "*"
+
+    # Define expressions
+    simple_text_expr = (
+        text_field
+        + COLON
+        + Literal("ANY")
+        + LPAR
+        + delimitedList(literal, delim=COMMA)
+        + RPAR
+    )
+    simple_numerical_expr = (
+        numerical_field
+        + COLON
+        + Literal("IN")
+        + LPAR
+        + lower_bound
+        + COMMA
+        + upper_bound
+        + RPAR
+    ) | (numerical_field + comparison + double)
+
+    expression = Forward()
+    expression <<= (
+        pyparsing.Optional(oneOf("- NOT"))
+        + (simple_text_expr | simple_numerical_expr | (LPAR + expression + RPAR))
+    )
+
+    # Define the full filter with AND/OR combinations
+    filter_expr = expression + ZeroOrMore((oneOf("AND OR") + expression))
+
+    # parse the filter expression
+    result = filter_expr.parseString(filter_str)
+
+    return result
+
 
 class MatchingEngineVectorStore(VectorStore):
   """
@@ -332,7 +399,9 @@ class LangChainVectorStore(VectorStore):
     return new_index_base
 
   def similarity_search(self, q_engine: QueryEngine,
-                       query_embedding: List[float]) -> List[int]:
+                       query_embedding: List[float],
+                       filter: Optional[str] = None) -> List[int]:
+    langchain_filter = self.translate_filter(filter)
     results = self.lc_vector_store.similarity_search_with_score_by_vector(
         embedding=query_embedding,
         k=NUM_MATCH_RESULTS
@@ -353,6 +422,39 @@ class LangChainVectorStore(VectorStore):
   def deploy(self):
     """ Create matching engine index and endpoint """
     pass
+
+  def translate_filter(self, parsed_filter: ParseResults) -> dict:
+    """
+    Converts a parsed filter expression into a dictionary representation
+    of the filter compatible with langchain vector store filters.
+    """
+    if isinstance(parsed_filter, str):
+      # Handle single field name (no operator/value)
+      return {parsed_filter: {}}
+
+    if isinstance(parsed_filter, list) and len(parsed_filter) == 2:
+      # Handle numerical comparisons
+      field_name, (operator, value) = parsed_filter
+      return {field_name: {operator.upper(): value}}
+
+    if isinstance(parsed_filter, list) and len(parsed_filter) == 4:
+      # Handle "ANY" filter
+      field_name, _, _, literals = parsed_filter
+      return {field_name: {"IN": list(literals)}}
+
+    if isinstance(parsed_filter, list) and len(parsed_filter) == 6:
+      # Handle "IN" filter
+      field_name, _, _, lower, _, upper = parsed_filter
+      return {field_name: {"BETWEEN": [lower, upper]}}
+
+    if isinstance(parsed_filter, list) and len(parsed_filter) > 2:
+      # Handle "AND" or "OR" combinations
+      operator = parsed_filter[1]
+      clauses = [translate_filter(expr) for expr in parsed_filter[0::2]]
+      return {operator.upper(): clauses}
+
+    return {}
+    
 
 class LLMServicePGVector(LangchainPGVector):
   """
