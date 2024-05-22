@@ -87,7 +87,7 @@ async def batch_run_agent(request_body: Dict, job: BatchJobModel) -> Dict:
       "job_name": job.name,
     },
   })
-  user_chat.save()
+  user_chat.save(merge=True)
 
   agent_params = {}
   agent_params["db_result_limit"] = db_result_limit
@@ -137,6 +137,7 @@ async def run_agent(agent_name: str,
   agent_response = None
   response_data = {}
   chat_history_entry = {}
+  
   if AgentCapability.DATABASE in llm_service_agent.capabilities():
     # handle database agent runs
     llm_type = llm_service_agent.llm_type
@@ -148,6 +149,7 @@ async def run_agent(agent_name: str,
                            dataset=dataset, user_email=user_email,
                            db_result_limit=db_result_limit)
     chat_history_entry["resources"] = output.get("resources", None)
+    agent_response = output.get("{CHAT_AI}", None)
   else:
     tools = llm_service_agent.get_tools()
     tools_str = ", ".join(tool.name for tool in tools)
@@ -187,6 +189,7 @@ async def run_agent(agent_name: str,
     response_data["chat"] = chat_data
 
   Logger.info(f"Agent {agent_name} generated"
+              f" chat_history=[{chat_history_entry}]")
               f" output=[{response_data}] logs [{agent_logs}]")
   return response_data, agent_logs
 
