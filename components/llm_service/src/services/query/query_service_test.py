@@ -282,7 +282,7 @@ def test_build_doc_index(mock_process_documents, create_engine,
   )
   with mock.patch("google.cloud.storage.Client"):
     docs_processed, docs_not_processed = \
-        build_doc_index(doc_url, create_engine, qe_vector_store)
+        build_doc_index(doc_url, create_engine, qe_vector_store, False)
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
@@ -294,6 +294,6 @@ def test_process_documents(mock_get_datasource, create_engine):
   Path(DSF1.local_path).touch()
   Path(DSF2.local_path).touch()
   docs_processed, docs_not_processed = \
-      process_documents(doc_url, qe_vector_store, create_engine, None)
+      process_documents(doc_url, qe_vector_store, create_engine, None, False)
   assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
   assert set(docs_not_processed) == {DSF3.src_url}
