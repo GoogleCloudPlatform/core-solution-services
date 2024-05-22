@@ -27,7 +27,7 @@ from common.utils.logging_handler import Logger
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
                            QueryReference, QueryDocumentChunk,
-                           BatchJobModel)
+                           BatchJobModel)  #SC240520: NOTE: Already includes Shelley's new fields for data models
 from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QE_TYPE_LLM_SERVICE,
                                      QE_TYPE_INTEGRATED_SEARCH,
@@ -603,7 +603,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   llm_type = request_body.get("llm_type")
   embedding_type = request_body.get("embedding_type")
   vector_store_type = request_body.get("vector_store")
-  params = request_body.get("params")  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false)
+  params = request_body.get("params")  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false) - Make it part of params
 
   Logger.info(f"Starting batch job for query engine [{query_engine}] "
               f"job id [{job.id}], request_body=[{request_body}]")
@@ -613,13 +613,13 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"llm type: [{llm_type}]")
   Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"vector store type: [{vector_store_type}]")
-  Logger.info(f"params: [{params}]")  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false)
+  Logger.info(f"params: [{params}]")  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false) - Make it part of params
 
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url, query_engine, user_id,
                          query_engine_type,
                          llm_type, description,
-                         embedding_type, vector_store_type, params)  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false)
+                         embedding_type, vector_store_type, params)  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false) - Make it part of params
 
   # update result data in batch job model
   docs_processed_urls = [doc.doc_url for doc in docs_processed]
@@ -644,11 +644,11 @@ def query_engine_build(doc_url: str,
                        embedding_type: Optional[str] = None,
                        vector_store_type: Optional[str] = None,
                        params: Optional[dict] = None
-                       ) -> Tuple[str, List[QueryDocument], List[str]]:  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false)
+                       ) -> Tuple[str, List[QueryDocument], List[str]]:  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false) - Make it part of params
   """
   Build a new query engine.
 
-  Args:  #SC240520: If multi flag should be its own input arg, then add it to this list
+  Args:  #SC240520: If multi flag should be its own input arg, then add it to this list - No, it should be part of params
     doc_url: the URL to the set of documents to be indexed
     query_engine: the name of the query engine to create
     user_id: user id of engine creator
@@ -685,7 +685,7 @@ def query_engine_build(doc_url: str,
     # no vector store set for vertex search or integrated search
     vector_store_type = None
 
-  # process special build params  #SC240520: if multi flag should be part of params, then extract it here
+  # process special build params  #SC240520: if multi flag should be part of params, then extract it here - and move this code up, so that we can use the multi flag to decide what the llm_type and embedding_type defaults should be
   params = params or {}
   is_public = True
   if "is_public" in params and isinstance(params["is_public"], str):
@@ -716,7 +716,7 @@ def query_engine_build(doc_url: str,
                          is_public=is_public,
                          doc_url=doc_url,
                          agents=associated_agents,
-                         params=params)  #SC240520: Pass in multi flag, either as its own input arg or as part of params
+                         params=params)  #SC240520: NOTE: Pass in multi flag, either as its own input arg or as part of params - make it part of params, so nothing needs to change here
 
   q_engine.save()  #SC240520: NOTE: At this point the q_engine should be fully multimodal, if multi flag is true
 
@@ -825,7 +825,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                index_doc_url,
                                                doc_filepath)  #SC240520: Rename text_chunks to something less modality-specific like doc_chunks - If multi flag is true, then call Raven's chunker, but if multi flag is false, then keep this chunker
 
-      if text_chunks is None or len(text_chunks) == 0:  #SC240520: Rename text_chunks to doc_chunks - Also make sure output of Raven's chunker will meet these conditions too
+      if text_chunks is None or len(text_chunks) == 0:  #SC240520: Rename text_chunks to doc_chunks - Also make sure output of Raven's chunker will meet these conditions too (i.e., length = number of doc_chunks)
         # unable to process this doc; skip
         continue
 
@@ -851,8 +851,8 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       for i in range(0, len(text_chunks)):  #SC240520: Rename text_chunks to doc_chunks - Also make sure output of Raven's chunker will meet these conditions too (length = number of doc_chunks)
         # break chunks into sentences and store in chunk model
-        clean_text = data_source.clean_text(text_chunks[i])  #SC240520: Only do this if doc_chunks[i].modality == "text"
-        sentences = data_source.text_to_sentence_list(text_chunks[i])  #SC240520: Only do this if doc_chunks[i].modality == "text"
+        clean_text = data_source.clean_text(text_chunks[i])  #SC240520: Only do this if doc_chunks[i].modality.casefold() == "text"
+        sentences = data_source.text_to_sentence_list(text_chunks[i])  #SC240520: Only do this if doc_chunks[i].modality.casefold() == "text"
 
         query_doc_chunk = QueryDocumentChunk(
                               query_engine_id=q_engine.id,
