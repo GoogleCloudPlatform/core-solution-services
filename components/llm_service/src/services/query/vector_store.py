@@ -27,10 +27,9 @@ from pathlib import Path
 from typing import List, Tuple, Any, Optional
 from google.cloud import aiplatform, storage
 import pyparsing
-from pyparsing import (
-    Suppress, Regex, QuotedString, Word, alphanums, oneOf, Literal,
-    Forward, delimitedList, ZeroOrMore, ParseException, ParseResults
-    )
+from pyparsing import (Word, alphas, nums, Combine, Suppress, Group, Keyword,
+                       OneOrMore, delimitedList, oneOf, quotedString, 
+                       infixNotation, opAssoc, ParseResults)
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
@@ -126,51 +125,38 @@ class VectorStore(ABC):
       A pyparsing ParseResults object
     """
     # Define basic elements
-    LPAR, RPAR, COMMA, COLON = map(Suppress, "(),:")
-    double = Regex(r"[+-]?\d+\.?\d*").setParseAction(lambda t: float(t[0]))
-    literal = QuotedString('"')
-    text_field = Word(alphanums + "_")
-    numerical_field = Word(alphanums + "_")
-    comparison = oneOf("< <= >= > =")
-    bound_type = oneOf("e i")
+    identifier = Word(alphas, alphas + nums + "_")
+    number = Combine(pyparsing.Optional(oneOf("+ -")) + Word(nums) + pyparsing.Optional("." + Word(nums)))
+    comparison_op = oneOf("<= < >= > =")
+    literal = quotedString.setParseAction(lambda t: t[0][1:-1])
 
-    # Define lower and upper bounds
-    lower_bound = (double + pyparsing.Optional(bound_type)) | "*"
-    upper_bound = (double + pyparsing.Optional(bound_type)) | "*"
+    # Define expression elements
+    any_expr = (Keyword("ANY") + Suppress("(") + Group(delimitedList(literal)) + Suppress(")"))
+    in_expr = (Keyword("IN") + Suppress("(") + Group(number | "*") + Suppress(",") + Group(number | "*") + Suppress(")"))
+    comparison_expr = (identifier + comparison_op + number)
 
-    # Define expressions
-    simple_text_expr = (
-        text_field
-        + COLON
-        + Literal("ANY")
-        + LPAR
-        + delimitedList(literal, delim=COMMA)
-        + RPAR
-    )
-    simple_numerical_expr = (
-        numerical_field
-        + COLON
-        + Literal("IN")
-        + LPAR
-        + lower_bound
-        + COMMA
-        + upper_bound
-        + RPAR
-    ) | (numerical_field + comparison + double)
+    # Define a simple expression
+    simple_expr = (identifier + Suppress(":") + (any_expr | in_expr | comparison_expr))
 
-    expression = Forward()
-    expression <<= (
-        pyparsing.Optional(oneOf("- NOT"))
-        + (simple_text_expr | simple_numerical_expr | (LPAR + expression + RPAR))
+    # Define logical operators and negation
+    logical_op = oneOf("AND OR")
+    not_op = oneOf("NOT -")
+
+    # Define the full expression with precedence
+    expression = infixNotation(
+        simple_expr,
+        [
+            (not_op, 1, opAssoc.RIGHT),
+            (logical_op, 2, opAssoc.LEFT),
+        ]
     )
 
-    # Define the full filter with AND/OR combinations
-    filter_expr = expression + ZeroOrMore((oneOf("AND OR") + expression))
+    # Define the parser
+    filter_expr = OneOrMore(expression)
 
-    # parse the filter expression
-    result = filter_expr.parseString(filter_str)
-
-    return result
+    parsed_expr = filter_expr.parseString(expression, parseAll=True)
+    
+    return parsed_expr
 
 
 class MatchingEngineVectorStore(VectorStore):
