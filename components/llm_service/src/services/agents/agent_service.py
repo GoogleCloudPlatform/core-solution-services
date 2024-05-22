@@ -149,7 +149,10 @@ async def run_agent(agent_name: str,
         await run_db_agent(prompt, llm_type=llm_type,
                            dataset=dataset, user_email=user_email,
                            db_result_limit=db_result_limit)
-    chat_history_entry["resources"] = output.get("resources", None)
+    if output.get("resources", None):
+      chat_history_entry["resources"] = output.get("resources")
+    if output.get("db_result", None):
+      chat_history_entry["db_result"] = output.get("db_result")
     agent_response = output.get(f"{CHAT_AI}", None)
   else:
     tools = llm_service_agent.get_tools()
