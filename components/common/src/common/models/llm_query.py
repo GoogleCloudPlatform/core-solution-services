@@ -198,7 +198,7 @@ class QueryReference(BaseModel):
   modality = TextField(required=True)  # All modalities: text image video audio
   chunk_id = TextField(required=False)  # All modalities
   chunk_url = TextField(required=False)  # Image or video or audio only
-  page = TextField(required=False)  # Text or image only
+  page = NumberField(required=False)  # Text or image only
   document_text = TextField(required=False)  # Text only
   timestamp_start = NumberField(required=False)  # Video or audio only
   timestamp_stop = NumberField(required=False)  # Video or audio only
@@ -348,7 +348,7 @@ class QueryDocumentChunk(BaseModel):
   query_document_id = TextField(required=True)  # All modalities
   index = NumberField(required=True)  # All modalities
   modality = TextField(required=True)  # All modalities: text image video audio
-  page = TextField(required=False)  # Text or image only
+  page = NumberField(required=False)  # Text or image only
   chunk_url = TextField(required=False)  # Image or video or audio only
   text = TextField(required=False)  # Text only
   clean_text = TextField(required=False)  # Text only (optional)
