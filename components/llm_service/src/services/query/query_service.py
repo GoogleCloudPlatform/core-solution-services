@@ -416,7 +416,7 @@ def make_query_reference(q_engine: QueryEngine,
     query_reference_dict["page"]=doc_chunk.page
     query_reference_dict["chunk_url"]=doc_chunk.chunk_url
   # For video and audio chunks only
-  elif modality=="video" | modality=="audio":
+  elif modality=="video" or modality=="audio":
     query_reference_dict["chunk_url"]=doc_chunk.chunk_url
     query_reference_dict["timestamp_start"]=doc_chunk.timestamp_start
     query_reference_dict["timestamp_stop"]=doc_chunk.timestamp_stop
@@ -739,10 +739,10 @@ def query_engine_build(doc_url: str,
   docs_not_processed = []
 
   try:  #SC240520: NOTE: Need to understand differences between these three diff types of query_engine_type
-    if query_engine_type == QE_TYPE_VERTEX_SEARCH:  #SC240520: NOTE: Work on this query_engine_type, second - How much of this needs to change for multi?
+    if query_engine_type == QE_TYPE_VERTEX_SEARCH:  #SC240520: NOTE: Work on this query_engine_type later - How much of this needs to change for multi?
       docs_processed, docs_not_processed = build_vertex_search(q_engine)
 
-    elif query_engine_type == QE_TYPE_LLM_SERVICE:  #SC240520: NOTE: Work on this query_engine_type, first
+    elif query_engine_type == QE_TYPE_LLM_SERVICE:  #SC240520: NOTE: Work on this query_engine_type first
       # retrieve vector store class and store type in q_engine
       qe_vector_store = vector_store_from_query_engine(q_engine)
       q_engine.vector_store = qe_vector_store.vector_store_type
@@ -751,7 +751,7 @@ def query_engine_build(doc_url: str,
       docs_processed, docs_not_processed = \
           build_doc_index(doc_url, q_engine, qe_vector_store, is_multimodal)  #SC240520: DONE: Pass in multi flag
 
-    elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:  #SSC240520: NOTE: Need to change any of this, or does it all work out on its own, recursively?
+    elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:  #SC240520: NOTE: Need to change any of this, or does it all work out on its own, recursively?
       # for each associated query engine store the current engine as its parent
       for aq_engine in associated_query_engines:
         aq_engine.parent_engine_id = q_engine.id
@@ -880,19 +880,20 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                 index_end=new_index_base)
       query_doc.save()
 
-      for i in range(0, len(doc_chunks)):  #SC240520: Rename text_chunks to doc_chunks - Also make sure output of Raven's chunker will meet these conditions too (length = number of doc_chunks)
+      for i in range(0, len(doc_chunks)):  #SC240520: DONE: Rename text_chunks to doc_chunks - Also make sure output of Raven's chunker will meet these conditions too (length = number of doc_chunks)
         
-        # Get string for doc_chunks[i] to make QueryDocumentChunk object
+        # Get string representing doc_chunks[i]
+        # Will use string to make QueryDocumentChunk object
         if is_multimodal:
-          # doc_chunks[i] is an image
-          # String holds url where image is saved
+          # doc_chunks[i] is an image, so
+          # string holds url where image is saved
           doc_chunk=doc_chunks[i]["image_url"]
         else:
-          # doc_chunks[i] is text
+          # doc_chunks[i] is text, so
           # String holds text itself
           doc_chunk=doc_chunks[i]
 
-        # Make QueryDocumentChunk object out of doc_chunks[i]
+        # Make QueryDocumentChunk object for doc_chunk
         query_doc_chunk = make_query_document_chunk(
           query_engine_id=q_engine.id,
           query_document_id=query_doc.id,
@@ -924,8 +925,8 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
   return docs_processed, data_source.docs_not_processed
 
 # Create a single QueryDocumentChunk object
-def make_query_document_chunk(query_engine_id: int,
-                              query_document_id: int,
+def make_query_document_chunk(query_engine_id: str,
+                              query_document_id: str,
                               index: int,
                               doc_chunk: str,
                               page: int,
@@ -939,11 +940,11 @@ def make_query_document_chunk(query_engine_id: int,
   Args:
     query_engine_id: The ID of the query engine
     query_document_id: The ID of the document that the doc_chunk came from
-    index: The index that should be assigned to the doc_chunk 
+    index: The index assigned to the doc_chunk 
     doc_chunk: String representing the doc_chunk
       If doc_chunk is text, then string holds the text itself
-      If doc_chunk is an image, then string holds url of the cloud bucket
-        where the image is saved
+      If doc_chunk is an image, then string holds the url
+        of the cloud bucket where the image is saved
     page: The page of the document that the doc_chunk came from
     data_source: The data source class of the document
     is_multimodal: True if multimodal processing, False if text-only
@@ -986,22 +987,22 @@ def make_query_document_chunk(query_engine_id: int,
   query_document_chunk_dict["modality"]=modality
   # For text chunk only
   if modality=="text":
-    # doc_chunk is string holding text itself
+    # doc_chunk is a string holding text itself
     query_document_chunk_dict["page"]=page
     query_document_chunk_dict["text"]=doc_chunk
     query_document_chunk_dict["clean_text"]=clean_text
     query_document_chunk_dict["sentences"]=sentences
   # For image chunk only
   elif modality=="image":
-    # doc_chunk is string holding url that image is saved to
+    # doc_chunk is a string holding url that image is saved to
     query_document_chunk_dict["page"]=page
     query_document_chunk_dict["chunk_url"]=doc_chunk
   # For video and audio chunks only
-  if modality=="video" | modality=="audio":
+  if modality=="video" or modality=="audio":
     pass
 
   # Create query_document_chunk out of dict
-  query_document_chunk = QueryDocumentChunk.from_dict(query_document_chunk)
+  query_document_chunk = QueryDocumentChunk.from_dict(query_document_chunk_dict)
 
   # Return query_document_chunk
   return query_document_chunk
