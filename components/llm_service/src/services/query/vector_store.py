@@ -28,8 +28,8 @@ from typing import List, Tuple, Any, Optional
 from google.cloud import aiplatform, storage
 import pyparsing
 from pyparsing import (Word, alphas, nums, Combine, Suppress, Group, Keyword,
-                       OneOrMore, delimitedList, oneOf, quotedString, 
-                       infixNotation, opAssoc, ParseResults)
+                       OneOrMore, ParseResults, delimited_list, one_of, quoted_string, 
+                       infix_notation, opAssoc, ParserElement, quoted_string)
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
@@ -124,14 +124,17 @@ class VectorStore(ABC):
     Returns:
       A pyparsing ParseResults object
     """
+    # Enable packrat parsing for better performance
+    ParserElement.enablePackrat()
+
     # Define basic elements
     identifier = Word(alphas, alphas + nums + "_")
-    number = Combine(pyparsing.Optional(oneOf("+ -")) + Word(nums) + pyparsing.Optional("." + Word(nums)))
-    comparison_op = oneOf("<= < >= > =")
-    literal = quotedString.setParseAction(lambda t: t[0][1:-1])
+    number = Combine(pyparsing.Optional(one_of("+ -")) + Word(nums) + pyparsing.Optional("." + Word(nums)))
+    comparison_op = one_of("<= < >= > =")
+    literal = quoted_string.set_parse_action(lambda t: t[0][1:-1])
 
     # Define expression elements
-    any_expr = (Keyword("ANY") + Suppress("(") + Group(delimitedList(literal)) + Suppress(")"))
+    any_expr = (Keyword("ANY") + Suppress("(") + Group(delimited_list(literal)) + Suppress(")"))
     in_expr = (Keyword("IN") + Suppress("(") + Group(number | "*") + Suppress(",") + Group(number | "*") + Suppress(")"))
     comparison_expr = (identifier + comparison_op + number)
 
@@ -139,11 +142,11 @@ class VectorStore(ABC):
     simple_expr = (identifier + Suppress(":") + (any_expr | in_expr | comparison_expr))
 
     # Define logical operators and negation
-    logical_op = oneOf("AND OR")
-    not_op = oneOf("NOT -")
+    logical_op = one_of("AND OR")
+    not_op = one_of("NOT -")
 
     # Define the full expression with precedence
-    expression = infixNotation(
+    expression = infix_notation(
         simple_expr,
         [
             (not_op, 1, opAssoc.RIGHT),
@@ -154,7 +157,8 @@ class VectorStore(ABC):
     # Define the parser
     filter_expr = OneOrMore(expression)
 
-    parsed_expr = filter_expr.parseString(expression, parseAll=True)
+    # parse expression
+    parsed_expr = filter_expr.parse_string(filter_str, parse_all=True)
     
     return parsed_expr
 
