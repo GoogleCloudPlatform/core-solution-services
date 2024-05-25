@@ -757,13 +757,20 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       if text_chunks is None or len(text_chunks) == 0:
         # unable to process this doc; skip
+        Logger.error(f"unable to chunk doc [{index_doc_url}]")
         continue
 
       Logger.info(f"doc chunks extracted for [{doc_name}]")
 
       # generate embedding data and store in vector store
-      new_index_base = \
-          qe_vector_store.index_document(doc_name, text_chunks, index_base)
+      try:
+        new_index_base = \
+            qe_vector_store.index_document(doc_name, text_chunks, index_base)
+      except Exception as e:
+        # unable to process this doc; skip
+        Logger.error(f"error indexing doc [{index_doc_url}]: {str(e)}")
+        data_source.docs_not_processed.append(index_doc_url)
+        continue
 
       Logger.info(f"doc successfully indexed [{doc_name}]")
 

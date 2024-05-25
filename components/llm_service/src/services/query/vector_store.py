@@ -166,6 +166,10 @@ class MatchingEngineVectorStore(VectorStore):
           self.embedding_type
       )
 
+      # check for success
+      if not chunk_embeddings or not all(is_successful):
+        raise RuntimeError(f"failed to generate embeddings for {doc_name}")
+
       Logger.info(f"generated embeddings for chunks"
                   f" {chunk_index} to {end_chunk_index}")
 
@@ -317,10 +321,14 @@ class LangChainVectorStore(VectorStore):
     ids = list(range(index_base, index_base + len(text_chunks)))
 
     # Convert chunks to embeddings
-    _, chunk_embeddings = embeddings.get_embeddings(
+    is_successful, chunk_embeddings = embeddings.get_embeddings(
         text_chunks,
         self.embedding_type
     )
+
+    # check for success
+    if not chunk_embeddings or not all(is_successful):
+      raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
     # add embeddings to vector store
     self.lc_vector_store.add_embeddings(texts=text_chunks,
