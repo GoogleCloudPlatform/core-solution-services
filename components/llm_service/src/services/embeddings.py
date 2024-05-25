@@ -88,7 +88,7 @@ async def get_multi_embeddings(
 
   Logger.info(f"generating multimodal embeddings with {embedding_type}")
 
-  embeddings = generate_multi_embeddings(
+  embeddings = await generate_multi_embeddings(
       user_text, embedding_type,
       user_file_bytes)
 
@@ -158,7 +158,7 @@ def generate_embeddings(batch: List[str], embedding_type: str) -> \
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
   return embeddings
 
-def generate_multi_embeddings(user_text: str, embedding_type: str,
+async def generate_multi_embeddings(user_text: str, embedding_type: str,
           user_file_bytes: bytes) -> (dict):
   """
   Generate embeddings for a list of strings
@@ -173,8 +173,8 @@ def generate_multi_embeddings(user_text: str, embedding_type: str,
   Logger.info(f"generating embeddings for embedding type {embedding_type}")
 
   if embedding_type in get_provider_embedding_types(PROVIDER_VERTEX):
-    embeddings = get_vertex_multi_embeddings(embedding_type, user_text,
-                                             user_file_bytes)
+    embeddings = await get_vertex_multi_embeddings(embedding_type, user_text,
+                                                   user_file_bytes)
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
   return embeddings
@@ -218,7 +218,7 @@ def get_vertex_embeddings(embedding_type: str,
     Logger.error(f"error generating Vertex embeddings {str(e)}")
     return [None for _ in range(len(sentence_list))]
 
-def get_vertex_multi_embeddings(embedding_type: str,
+async def get_vertex_multi_embeddings(embedding_type: str,
     user_text: str, user_file_bytes: bytes) -> (dict):
   """
   Generate a image embedding from a Vertex model
@@ -234,23 +234,29 @@ def get_vertex_multi_embeddings(embedding_type: str,
   if google_llm is None:
     raise RuntimeError(
         f"Vertex model name not found for embedding type {embedding_type}")
+    
+  def _async_vertex_multi_embeddings():
+    try:
+      user_file_image = Image(image_bytes=user_file_bytes)
+      vertex_model = MultiModalEmbeddingModel.from_pretrained(
+        google_llm)
+      embeddings = vertex_model.get_embeddings(
+        image=user_file_image,
+        contextual_text=user_text
+      )
 
-  try:
-    user_file_image = Image(image_bytes=user_file_bytes)
-    vertex_model = MultiModalEmbeddingModel.from_pretrained(
-      google_llm)
-    embeddings = vertex_model.get_embeddings(
-      image=user_file_image,
-      contextual_text=user_text
-    )
+      return_value = {}
+      return_value["text_embeddings"] = embeddings.text_embedding
+      return_value["image_embeddings"] = embeddings.image_embedding
 
-    return_value = {}
-    return_value["text_embeddings"] = embeddings.image_embedding
-    return_value["image_embeddings"] = embeddings.image_embedding
-
-    return return_value
-  except Exception:
-    return f"Error generating embeddings with embedding type {embedding_type}"
+      return return_value
+    except Exception as e:
+      Logger.error(f"error generating Vertex embeddings {str(e)}")
+      raise e
+  
+  return_value = await asyncio.to_thread(_async_vertex_multi_embeddings)
+  
+  return return_value
 
 def get_langchain_embeddings(embedding_type: str,
     sentence_list: List[str]) -> List[Optional[List[float]]]:
