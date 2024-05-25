@@ -30,16 +30,19 @@ from config import (get_model_config, get_provider_embedding_types,
                     KEY_MODEL_TOKEN_LIMIT,
                     PROVIDER_VERTEX, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
-                    DEFAULT_QUERY_MULTI_EMBEDDING_MODEL)
+                    DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
+                    REGION)
 from langchain.schema.embeddings import Embeddings
 
 # pylint: disable=broad-exception-caught
 
-# Create a rate limit of 300 requests per minute.
-API_CALLS_PER_SECOND = int(300 / 60)
-
-# According to the docs, each request can process 5 instances per request
-ITEMS_PER_REQUEST = 5
+# per Vertex docs
+# https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
+# if region is us-central1 items per request is 250, in other regions it is 5
+if REGION == "us-central1":
+  ITEMS_PER_REQUEST = 250
+else:
+  ITEMS_PER_REQUEST = 5
 
 Logger = Logger.get_logger(__file__)
 
@@ -98,7 +101,6 @@ def _generate_embeddings_batched(embedding_type,
   # Prepare the batches using a generator
   batches = _generate_batches(text_chunks, ITEMS_PER_REQUEST)
 
-  seconds_per_job = 1 / API_CALLS_PER_SECOND
 
   with ThreadPoolExecutor() as executor:
     futures = []
