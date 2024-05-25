@@ -30,8 +30,10 @@ with set_env_var("PG_HOST", ""):
 
 Logger = Logger.get_logger(__file__)
 
-FAKE_VERTEX_EMBEDDINGS = [TextEmbedding([0.0]), TextEmbedding([0.1]), TextEmbedding([0.2])]
-FAKE_EMBEDDINGS = np.array([embedding.values for embedding in FAKE_VERTEX_EMBEDDINGS])
+FAKE_VERTEX_EMBEDDINGS = \
+    [TextEmbedding([0.0]), TextEmbedding([0.1]), TextEmbedding([0.2])]
+FAKE_EMBEDDINGS = \
+    np.array([embedding.values for embedding in FAKE_VERTEX_EMBEDDINGS])
 
 @pytest.mark.asyncio
 @mock.patch("services.embeddings.TextEmbeddingModel.get_embeddings")
