@@ -242,13 +242,14 @@ async def test_query_generate_continue(mock_query_search, mock_llm_chat,
   assert QUERY_AI_REFERENCES in query_history[initial_len + 2]
 
 
+@pytest.mark.asyncio
 @mock.patch("services.query.query_service.embeddings.get_embeddings")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 @mock.patch("services.query.query_service.get_top_relevant_sentences")
-def test_query_search(mock_get_top_relevant_sentences,
-                      mock_get_vector_store, mock_get_embeddings,
-                      create_engine, create_user, create_query_docs,
-                      create_query_doc_chunks):
+async def test_query_search(mock_get_top_relevant_sentences,
+                            mock_get_vector_store, mock_get_embeddings,
+                            create_engine, create_user, create_query_docs,
+                            create_query_doc_chunks):
   # test llm service query search
   qdoc_chunk1 = create_query_doc_chunks[0]
   qdoc_chunk2 = create_query_doc_chunks[1]
@@ -257,7 +258,7 @@ def test_query_search(mock_get_top_relevant_sentences,
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_get_top_relevant_sentences.return_value = "test sentence"
   prompt = QUERY_EXAMPLE["prompt"]
-  query_references = query_search(create_engine, prompt)
+  query_references = await query_search(create_engine, prompt)
   assert len(query_references) == len(create_query_doc_chunks)
   assert query_references[0].chunk_id == qdoc_chunk1.id
   assert query_references[1].chunk_id == qdoc_chunk2.id
@@ -275,7 +276,8 @@ def test_query_search(mock_get_top_relevant_sentences,
 
   assert docs_processed == []
   assert docs_not_processed == []
-  query_references = retrieve_references(prompt, q_engine_2, create_user.id)
+  query_references = \
+      await retrieve_references(prompt, q_engine_2, create_user.id)
   assert len(query_references) == len(create_query_doc_chunks)
   assert query_references[0].chunk_id == qdoc_chunk1.id
   assert query_references[1].chunk_id == qdoc_chunk2.id

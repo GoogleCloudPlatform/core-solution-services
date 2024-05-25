@@ -123,8 +123,8 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = retrieve_references(prompt, q_engine, user_id,
-                                         rank_sentences)
+  query_references = await retrieve_references(prompt, q_engine, user_id,
+                                               rank_sentences)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -246,10 +246,10 @@ async def summarize_history(chat_history: str,
   Logger.info(f"generated summary with LLM {llm_type}: {summary}")
   return summary
 
-def retrieve_references(prompt: str,
-                        q_engine: QueryEngine,
-                        user_id: str,
-                        rank_sentences=False)-> List[QueryReference]:
+async def retrieve_references(prompt: str,
+                              q_engine: QueryEngine,
+                              user_id: str,
+                              rank_sentences=False)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -264,24 +264,25 @@ def retrieve_references(prompt: str,
   # perform retrieval for prompt
   query_references = []
   if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
-    query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
+    query_references = \
+         await query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
   elif q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
     child_engines = QueryEngine.find_children(q_engine)
     for child_engine in child_engines:
       # make a recursive call to retrieve references for child engine
-      child_query_references = retrieve_references(prompt,
-                                                   child_engine,
-                                                   user_id)
+      child_query_references = await retrieve_references(prompt,
+                                                         child_engine,
+                                                         user_id)
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
     # default if type is not set to llm service query
-    query_references = query_search(q_engine, prompt, rank_sentences)
+    query_references = await query_search(q_engine, prompt, rank_sentences)
   return query_references
 
-def query_search(q_engine: QueryEngine,
-                 query_prompt: str,
-                 rank_sentences=False) -> List[QueryReference]:
+async def query_search(q_engine: QueryEngine,
+                       query_prompt: str,
+                       rank_sentences=False) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -298,8 +299,8 @@ def query_search(q_engine: QueryEngine,
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
-  _, query_embeddings = embeddings.get_embeddings([query_prompt],
-                                                  q_engine.embedding_type)
+  _, query_embeddings = \
+      await embeddings.get_embeddings([query_prompt], q_engine.embedding_type)
   query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store

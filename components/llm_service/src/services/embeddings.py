@@ -14,8 +14,8 @@
 """
 Generate Query embeddings. Currently, using Vertex TextEmbedding model.
 """
+import asyncio
 import json
-import time
 from typing import List, Optional, Generator, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
@@ -46,7 +46,7 @@ else:
 
 Logger = Logger.get_logger(__file__)
 
-def get_embeddings(
+async def get_embeddings(
     text_chunks: List[str], embedding_type: str = None) -> (
     Tuple)[List[bool], np.ndarray]:
   """
@@ -64,13 +64,13 @@ def get_embeddings(
 
   Logger.info(f"generating embeddings with {embedding_type}")
 
-  is_successful, embeddings = _generate_embeddings_batched(
+  is_successful, embeddings = await _generate_embeddings_batched(
       embedding_type,
       text_chunks)
 
   return is_successful, embeddings
 
-def get_multi_embeddings(
+async def get_multi_embeddings(
     user_text: List[str], user_file_bytes: str,
     embedding_type: str = None) -> (dict):
   """
@@ -94,32 +94,36 @@ def get_multi_embeddings(
 
   return embeddings
 
-def _generate_embeddings_batched(embedding_type,
-                                 text_chunks):
+async def _generate_embeddings_batched(embedding_type,
+                                       text_chunks):
   embeddings_list: List[List[float]] = []
 
   # Prepare the batches using a generator
   batches = _generate_batches(text_chunks, ITEMS_PER_REQUEST)
 
-
-  with ThreadPoolExecutor() as executor:
+  loop = asyncio.get_running_loop()
+  with ThreadPoolExecutor() as pool:
     futures = []
     for batch in batches:
       futures.append(
-          executor.submit(generate_embeddings, batch, embedding_type)
+        loop.run_in_executor(
+            pool, generate_embeddings, batch, embedding_type)
       )
-      time.sleep(seconds_per_job)
-
+    futures = await asyncio.gather(*futures)
     for future in futures:
-      embeddings_list.extend(future.result())
+      embeddings_list.extend(future)
 
   is_successful = [
       embedding is not None for sentence, embedding in zip(
         text_chunks, embeddings_list)
   ]
-  embeddings_list_successful = np.stack(
-    [embedding for embedding in embeddings_list if embedding is not None]
-  )
+  try:
+    embeddings_list_successful = np.stack(
+      [embedding for embedding in embeddings_list if embedding is not None]
+    )
+  except ValueError as e:
+    Logger.error(f"error generating embeddings: {str(e)}")
+    embeddings_list_successful = []
   return is_successful, embeddings_list_successful
 
 # Generator function to yield batches of text_chunks
@@ -210,13 +214,14 @@ def get_vertex_embeddings(embedding_type: str,
     return_value = [embedding.values for embedding in embeddings]
 
     return return_value
-  except Exception:
+  except Exception as e:
+    Logger.error(f"error generating Vertex embeddings {str(e)}")
     return [None for _ in range(len(sentence_list))]
 
 def get_vertex_multi_embeddings(embedding_type: str,
     user_text: str, user_file_bytes: bytes) -> (dict):
   """
-  Generate an embedding from a Vertex model
+  Generate a image embedding from a Vertex model
   Args:
     embedding_type: str - vertex model identifier
     user_text: str - context text to generate embeddings for
@@ -312,10 +317,24 @@ class LangchainEmbeddings(Embeddings):
   """ Langchain wrapper for our embeddings """
   def embed_query(self, text: str) -> List[float]:
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
-    embeddings = get_embeddings([text], embedding_type)
+    _, embeddings = asyncio.get_event_loop().run_until_complete(
+        get_embeddings([text], embedding_type))
     return embeddings[0]
 
   def embed_documents(self, texts: List[str]) -> List[List[float]]:
     embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
-    _, embeddings = get_embeddings(texts, embedding_type)
+    _, embeddings = asyncio.get_event_loop().run_until_complete(
+        get_embeddings(texts, embedding_type))
+    return embeddings
+
+  async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
+    """Asynchronous Embed search docs."""
+    embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
+    _, embeddings = await get_embeddings(texts, embedding_type)
+    return embeddings
+
+  async def aembed_query(self, text: str) -> List[float]:
+    """Asynchronous Embed query text."""
+    embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
+    _, embeddings = await get_embeddings([text], embedding_type)
     return embeddings
