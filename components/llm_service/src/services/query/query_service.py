@@ -724,6 +724,7 @@ async def build_doc_index(doc_url: str, q_engine: QueryEngine,
 
   except Exception as e:
     Logger.error(f"Error creating doc index {e}")
+    Logger.error(traceback.print_exc())    
     raise InternalServerError(str(e)) from e
 
 async def process_documents(doc_url: str, qe_vector_store: VectorStore,

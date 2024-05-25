@@ -189,7 +189,7 @@ class MatchingEngineVectorStore(VectorStore):
       )
 
       # check for success
-      if not chunk_embeddings or not all(is_successful):
+      if len(chunk_embeddings) == 0 or not all(is_successful):
         raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
       Logger.info(f"generated embeddings for chunks"
@@ -349,7 +349,7 @@ class LangChainVectorStore(VectorStore):
     )
 
     # check for success
-    if not chunk_embeddings or not all(is_successful):
+    if len(chunk_embeddings) == 0 or not all(is_successful):
       raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
     # add embeddings to vector store
