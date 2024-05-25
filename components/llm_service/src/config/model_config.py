@@ -50,6 +50,7 @@ KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
 KEY_MODEL_CONTEXT_LENGTH = "context_length"
+KEY_MODEL_TOKEN_LIMIT = "token_limit"
 KEY_IS_CHAT = "is_chat"
 KEY_IS_MULTI = "is_multi"
 KEY_MODEL_FILE_URL = "model_file_url"
@@ -70,6 +71,7 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_NAME,
   KEY_MODEL_PARAMS,
   KEY_MODEL_CONTEXT_LENGTH,
+  KEY_MODEL_TOKEN_LIMIT,
   KEY_IS_CHAT,
   KEY_IS_MULTI,
   KEY_MODEL_FILE_URL,

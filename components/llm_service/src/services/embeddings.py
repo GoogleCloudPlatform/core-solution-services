@@ -27,6 +27,7 @@ from common.utils.request_handler import post_method
 from common.utils.token_handler import UserCredentials
 from config import (get_model_config, get_provider_embedding_types,
                     KEY_MODEL_NAME, KEY_MODEL_CLASS, KEY_MODEL_ENDPOINT,
+                    KEY_MODEL_TOKEN_LIMIT,
                     PROVIDER_VERTEX, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
                     DEFAULT_QUERY_MULTI_EMBEDDING_MODEL)
@@ -187,6 +188,19 @@ def get_vertex_embeddings(embedding_type: str,
   if google_llm is None:
     raise RuntimeError(
         f"Vertex model name not found for embedding type {embedding_type}")
+
+  # check token length for each chunk
+  # if the limit is exeeded just log the error - the API will silently truncate
+  # the text
+  token_limit = get_model_config().get_config_value(
+      embedding_type, KEY_MODEL_TOKEN_LIMIT, None)
+  if token_limit:
+    for chunk in sentence_list:
+      if len(chunk) > token_limit:
+        Logger.error(
+            f"chunk exceeds model {embedding_type} token limit {token_limit}")
+  Logger.info(f"generating Vertex embeddings for {len(sentence_list)} chunk(s)"
+              f" embedding model {google_llm}")
   vertex_model = TextEmbeddingModel.from_pretrained(google_llm)
   try:
     embeddings = vertex_model.get_embeddings(sentence_list)
