@@ -75,8 +75,8 @@ class VectorStore(ABC):
     """
 
   @abstractmethod
-  def index_document(self, doc_name: str, text_chunks: List[str],
-                          index_base: int) -> int:
+  async def index_document(self, doc_name: str, text_chunks: List[str],
+                           index_base: int) -> int:
     """
     Generate index for a document in this vector store
     Args:
@@ -151,8 +151,8 @@ class MatchingEngineVectorStore(VectorStore):
   def vector_store_type(self):
     return VECTOR_STORE_MATCHING_ENGINE
 
-  def index_document(self, doc_name: str, text_chunks: List[str],
-                     index_base: int) -> int:
+  async def index_document(self, doc_name: str, text_chunks: List[str],
+                           index_base: int) -> int:
     """
     Generate matching engine index data files in a local directory.
     Args:
@@ -183,7 +183,7 @@ class MatchingEngineVectorStore(VectorStore):
       embeddings_dir = Path(tempfile.mkdtemp())
 
       # Convert chunks to embeddings in batches, to manage API throttling
-      is_successful, chunk_embeddings = embeddings.get_embeddings(
+      is_successful, chunk_embeddings = await embeddings.get_embeddings(
           process_chunks,
           self.embedding_type
       )
@@ -337,13 +337,13 @@ class LangChainVectorStore(VectorStore):
           f"vector store {self.q_engine.vector_store} not found in config")
     return lc_vectorstore
 
-  def index_document(self, doc_name: str, text_chunks: List[str],
-                          index_base: int) -> int:
+  async def index_document(self, doc_name: str, text_chunks: List[str],
+                           index_base: int) -> int:
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(text_chunks)))
 
     # Convert chunks to embeddings
-    is_successful, chunk_embeddings = embeddings.get_embeddings(
+    is_successful, chunk_embeddings = await embeddings.get_embeddings(
         text_chunks,
         self.embedding_type
     )

@@ -159,8 +159,8 @@ class FakeVectorStore(VectorStore):
     pass
   def init_index(self):
     pass
-  def index_document(self, doc_name: str, text_chunks: List[str],
-                          index_base: int) -> int:
+  async def index_document(self, doc_name: str, text_chunks: List[str],
+                           index_base: int) -> int:
     return 0
   def deploy(self):
     pass
@@ -270,9 +270,10 @@ async def test_query_search(mock_get_top_relevant_sentences,
     "associated_engines": create_engine.name
   }
   q_engine_2, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, "test integrated search", create_user.id,
-                         query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
-                         params=build_params)
+      await query_engine_build(doc_url, "test integrated search",
+                               create_user.id,
+                               query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
+                               params=build_params)
 
   assert docs_processed == []
   assert docs_not_processed == []
@@ -284,9 +285,10 @@ async def test_query_search(mock_get_top_relevant_sentences,
   assert query_references[2].chunk_id == qdoc_chunk3.id
 
 
+@pytest.mark.asyncio
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
-def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
+async def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
                             create_query_docs, create_user):
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_build_doc_index.return_value = (
@@ -295,7 +297,8 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   )
   doc_url = FAKE_GCS_PATH
   q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, QUERY_ENGINE_EXAMPLE["name"], create_user.id)
+      await query_engine_build(doc_url,
+                               QUERY_ENGINE_EXAMPLE["name"], create_user.id)
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
@@ -308,16 +311,18 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
     "associated_engines": q_engine.name
   }
   q_engine_2, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, "test integrated search", create_user.id,
-                         query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
-                         params=build_params)
+      await query_engine_build(doc_url,
+                               "test integrated search", create_user.id,
+                               query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
+                               params=build_params)
   assert docs_processed == []
   assert docs_not_processed == []
   q_engine = QueryEngine.find_by_id(q_engine.id)
   assert q_engine.parent_engine_id == q_engine_2.id
 
+@pytest.mark.asyncio
 @mock.patch("services.query.query_service.process_documents")
-def test_build_doc_index(mock_process_documents, create_engine,
+async def test_build_doc_index(mock_process_documents, create_engine,
                          create_query_docs):
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
@@ -327,18 +332,20 @@ def test_build_doc_index(mock_process_documents, create_engine,
   )
   with mock.patch("google.cloud.storage.Client"):
     docs_processed, docs_not_processed = \
-        build_doc_index(doc_url, create_engine, qe_vector_store)
+        await build_doc_index(doc_url, create_engine, qe_vector_store)
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
+@pytest.mark.asyncio
 @mock.patch("services.query.query_service.datasource_from_url")
-def test_process_documents(mock_get_datasource, create_engine):
+async def test_process_documents(mock_get_datasource, create_engine):
   mock_get_datasource.return_value = FakeDataSource()
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
   Path(DSF1.local_path).touch()
   Path(DSF2.local_path).touch()
   docs_processed, docs_not_processed = \
-      process_documents(doc_url, qe_vector_store, create_engine, None)
-  assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
+      await process_documents(doc_url, qe_vector_store, create_engine, None)
+  assert {doc.doc_url for doc in docs_processed} == \
+         {DSF1.src_url, DSF2.src_url}
   assert set(docs_not_processed) == {DSF3.src_url}
