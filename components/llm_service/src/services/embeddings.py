@@ -234,7 +234,7 @@ async def get_vertex_multi_embeddings(embedding_type: str,
   if google_llm is None:
     raise RuntimeError(
         f"Vertex model name not found for embedding type {embedding_type}")
-    
+
   def _async_vertex_multi_embeddings():
     try:
       user_file_image = Image(image_bytes=user_file_bytes)
@@ -253,9 +253,9 @@ async def get_vertex_multi_embeddings(embedding_type: str,
     except Exception as e:
       Logger.error(f"error generating Vertex embeddings {str(e)}")
       raise e
-  
+
   return_value = await asyncio.to_thread(_async_vertex_multi_embeddings)
-  
+
   return return_value
 
 def get_langchain_embeddings(embedding_type: str,
