@@ -440,7 +440,7 @@ def wait_for_operation(operation):
     result = None
   else:
     # wait for result
-    result = operation.result()
+    result = operation.result(timeout=10000)
   return result
 
 def datastore_id_from_engine(q_engine: QueryEngine) -> str:
