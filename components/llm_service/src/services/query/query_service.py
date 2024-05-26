@@ -379,9 +379,8 @@ def rerank_references(prompt: str,
   query_ref_lookup = {}
 
   for query_ref in query_references:
-    query_doc_chunk = QueryDocumentChunk.find_by_id(query_ref.chunk_id)
-    # print(query_ref.id, query_ref_id, query_ref.chunk_id, query_doc_chunk.id)
-    query_ref_text.append(query_doc_chunk.clean_text)
+    Logger.info(f"Query ref {query_ref.id}, {query_ref.chunk_id}")
+    query_ref_text.append(query_ref.document_text)
     query_ref_ids.append(query_ref.id)
     query_ref_lookup[query_ref.id] = query_ref
 
@@ -724,7 +723,7 @@ async def build_doc_index(doc_url: str, q_engine: QueryEngine,
 
   except Exception as e:
     Logger.error(f"Error creating doc index {e}")
-    Logger.error(traceback.print_exc())    
+    Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
 async def process_documents(doc_url: str, qe_vector_store: VectorStore,
