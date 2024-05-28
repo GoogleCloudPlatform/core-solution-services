@@ -203,7 +203,8 @@
     },
     "VertexAI-Embedding": {
       "provider": "Vertex",
-      "model_name": "textembedding-gecko"
+      "model_name": "text-embedding-004",
+      "token_limit": 2000
     },
     "VertexAI-Embedding-Vision": {
       "provider": "Vertex",

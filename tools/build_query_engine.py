@@ -35,5 +35,5 @@ if __name__ == "__main__":
         f" query_engine {query_engine}, for user id {user_id}")
 
   params = {}
-  query_engine_build(doc_url, query_engine, user_id)
+  await query_engine_build(doc_url, query_engine, user_id)
   
