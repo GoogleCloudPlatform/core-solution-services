@@ -417,16 +417,21 @@ Unit tests make use of the firestore emulator.  Tests currently assume that the 
   export BASE_DIR=$(pwd)
   export PROJECT_ID=<your-dev-project-id>
 
-  # Go to a specific microservice folder:
+  # If you need to test the llm_service microservice:
+  cd components/llm_service
+  python3 -m venv .venv
+  source .venv/bin/activate
+  pip install -r ../common_ml/requirements.txt
+  pip install -r ../common_ml/requirements-test.txt
+  pip install -r requirements.txt
+  pip install -r requirements-test.txt
+
+  # If you need to test any other specific microservice, other than llm_service:
   cd components/<component_name>
   python3 -m venv .venv
   source .venv/bin/activate
   pip install -r requirements.txt
   pip install -r requirements-test.txt
-
-  # If this component depends on the common_ml folder:
-  pip install -r ../common_ml/requirements.txt
-  pip install -r ../common_ml/requirements-test.txt
 
   # If this component depends on the common folder:
   pip install -r ../common/requirements.txt
