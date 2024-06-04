@@ -14,6 +14,7 @@
 """
 Query Engine Service
 """
+from copy import deepcopy
 import tempfile
 import traceback
 import os
@@ -777,10 +778,13 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       # generate embedding data and store in vector store
       try:
         metadata = metadata_manifest.get(doc_url, None)
+        metadata_list = []
+        if metadata is not None:
+          metadata_list = [deepcopy(metadata) for chunk in text_chunks]
         new_index_base = \
             await qe_vector_store.index_document(doc_name,
                                                  text_chunks, index_base,
-                                                 metadata)
+                                                 metadata_list)
       except Exception as e:
         # unable to process this doc; skip
         Logger.error(f"error indexing doc [{index_doc_url}]: {str(e)}")
