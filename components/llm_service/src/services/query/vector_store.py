@@ -14,7 +14,7 @@
 """
 Query Vector Store
 """
-# pylint: disable=broad-exception-caught,ungrouped-imports
+# pylint: disable=broad-exception-caught,ungrouped-imports,invalid-name
 
 from abc import ABC, abstractmethod
 import json
@@ -28,10 +28,9 @@ from pathlib import Path
 from typing import List, Tuple, Any, Optional
 from google.cloud import aiplatform, storage
 import pyparsing
-from pyparsing import (Word, alphas, nums, alphanums, Combine, Suppress,
-                       Group, Keyword, OneOrMore, ParseResults, delimited_list,
-                       oneOf, quoted_string, infix_notation, opAssoc,
-                       ParserElement, QuotedString, Regex)
+from pyparsing import (Word, alphanums, Suppress, ParseResults,
+                       delimitedList, Literal, Forward, ZeroOrMore,
+                       oneOf, ParserElement, QuotedString, Regex)
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
@@ -81,13 +80,15 @@ class VectorStore(ABC):
 
   @abstractmethod
   async def index_document(self, doc_name: str, text_chunks: List[str],
-                           index_base: int) -> int:
+                           index_base: int,
+                           metadata: List[dict] = None) -> int:
     """
     Generate index for a document in this vector store
     Args:
       doc_name (str): name of document to be indexed
       text_chunks (List[str]): list of text content chunks for document
       index_base (int): index to start from; each chunk gets its own index
+      metadata (List[dict]): list of metadata dicts for chunks
     Returns:
       new_index_base: updated query engine index base
     """
@@ -103,7 +104,7 @@ class VectorStore(ABC):
   @abstractmethod
   def similarity_search(self, q_engine: QueryEngine,
                         query_embedding: List[float],
-                        filter: Optional[str] = None) -> List[int]:
+                        query_filter: Optional[str] = None) -> List[int]:
     """
     Retrieve text matches for query embeddings.
     Allows filter expressions to limit documents based on metadata.
@@ -113,11 +114,11 @@ class VectorStore(ABC):
     Args:
       q_engine: QueryEngine model
       query_embedding: single embedding array for query
-      filter: (optional) filter expression
+      query_filter: (optional) filter expression
     Returns:
       list of indexes that are matched of length NUM_MATCH_RESULTS
     """
-  
+
   def parse_filter(self, filter_str: str) -> ParseResults:
     """
     Parse filter expressions in the Vertex Search format:
@@ -165,7 +166,8 @@ class VectorStore(ABC):
     expression = Forward()
     expression <<= (
         pyparsing.Optional(oneOf("- NOT"))
-        + (simple_text_expr | simple_numerical_expr | (LPAR + expression + RPAR))
+        + (simple_text_expr | simple_numerical_expr | \
+          (LPAR + expression + RPAR))
     )
 
     # Define the full filter with AND/OR combinations
@@ -173,7 +175,7 @@ class VectorStore(ABC):
 
     # parse expression
     parsed_expr = filter_expr.parse_string(filter_str, parse_all=True)
-    
+
     return parsed_expr
 
 
@@ -222,7 +224,8 @@ class MatchingEngineVectorStore(VectorStore):
     return VECTOR_STORE_MATCHING_ENGINE
 
   async def index_document(self, doc_name: str, text_chunks: List[str],
-                           index_base: int) -> int:
+                           index_base: int,
+                           metadata: List[dict] = None) -> int:
     """
     Generate matching engine index data files in a local directory.
     Args:
@@ -363,7 +366,8 @@ class MatchingEngineVectorStore(VectorStore):
       Logger.error(f"Error creating ME index or endpoint {e}")
 
   def similarity_search(self, q_engine: QueryEngine,
-                        query_embedding: List[float]) -> List[int]:
+                        query_embedding: List[float],
+                        query_filter: Optional[str] = None) -> List[int]:
     """
     Retrieve text matches for query embeddings.
     Args:
@@ -408,7 +412,8 @@ class LangChainVectorStore(VectorStore):
     return lc_vectorstore
 
   async def index_document(self, doc_name: str, text_chunks: List[str],
-                           index_base: int) -> int:
+                           index_base: int,
+                           metadata: List[dict] = None) -> int:
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(text_chunks)))
 
@@ -425,7 +430,8 @@ class LangChainVectorStore(VectorStore):
     # add embeddings to vector store
     self.lc_vector_store.add_embeddings(texts=text_chunks,
                                         embeddings=chunk_embeddings,
-                                        ids=ids)
+                                        ids=ids,
+                                        metadatas=metadata)
     # return new index base
     new_index_base = index_base + len(text_chunks)
     self.index_length = new_index_base
@@ -433,11 +439,12 @@ class LangChainVectorStore(VectorStore):
 
   def similarity_search(self, q_engine: QueryEngine,
                        query_embedding: List[float],
-                       filter: Optional[str] = None) -> List[int]:
+                       query_filter: Optional[str] = None) -> List[int]:
     langchain_filter = self.translate_filter(filter)
     results = self.lc_vector_store.similarity_search_with_score_by_vector(
         embedding=query_embedding,
-        k=NUM_MATCH_RESULTS
+        k=NUM_MATCH_RESULTS,
+        filter=langchain_filter
     )
     processed_results = self.process_results(results)
     return processed_results
@@ -483,11 +490,11 @@ class LangChainVectorStore(VectorStore):
     if isinstance(parsed_filter, list) and len(parsed_filter) > 2:
       # Handle "AND" or "OR" combinations
       operator = parsed_filter[1]
-      clauses = [translate_filter(expr) for expr in parsed_filter[0::2]]
+      clauses = [self.translate_filter(expr) for expr in parsed_filter[0::2]]
       return {operator.upper(): clauses}
 
     return {}
-    
+
 
 class LLMServicePGVector(LangchainPGVector):
   """

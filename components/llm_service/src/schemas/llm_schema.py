@@ -159,6 +159,7 @@ class LLMQueryModel(BaseModel):
   llm_type: Optional[str]
   run_as_batch_job: Optional[str]
   rank_sentences: Optional[str]
+  filter: Optional[dict]
 
   class Config():
     orm_mode = True

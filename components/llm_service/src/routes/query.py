@@ -514,6 +514,9 @@ async def query(query_engine_id: str,
   rank_sentences = genconfig_dict.get("rank_sentences", False)
   Logger.info(f"rank_sentences = {rank_sentences}")
 
+  query_filter = genconfig_dict.get("query_filter")
+  Logger.info(f"query_filter = {query_filter}")
+
   user = User.find_by_email(user_data.get("email"))
 
   run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
@@ -537,7 +540,8 @@ async def query(query_engine_id: str,
         "llm_type": llm_type,
         "user_id": user.id,
         "user_query_id": user_query.id,
-        "rank_sentences": rank_sentences
+        "rank_sentences": rank_sentences,
+        "query_filter": query_filter
       }
       env_vars = {
         "DATABASE_PREFIX": DATABASE_PREFIX,

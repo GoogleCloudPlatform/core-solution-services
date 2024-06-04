@@ -42,6 +42,7 @@ LLM_MULTI_EMBEDDINGS_EXAMPLE = {
 QUERY_EXAMPLE = {
   "prompt": "test prompt",
   "llm_type": "VertexAI-Chat",
+  "filter": "{'Title':'Document Title'}"
 }
 
 USER_QUERY_EXAMPLE = {
@@ -139,7 +140,11 @@ QUERY_DOCUMENT_EXAMPLE_2 = {
   "query_engine": "query-engine-test",
   "doc_url": "abcd.com/pdf2",
   "index_start": 0,
-  "index_end": 11
+  "index_end": 11,
+  "metadata": {
+    "author": "Michael Moorcock",
+    "title": "The Eternal Champion"
+  }
 }
 
 QUERY_DOCUMENT_EXAMPLE_3 = {

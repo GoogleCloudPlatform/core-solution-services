@@ -120,6 +120,7 @@ class QueryEngine(BaseModel):
   doc_url = TextField(required=False)
   agents = ListField(required=False)
   parent_engine_id = TextField(required=False)
+  metadata_url = TextField(required=False)
   params = MapField(default={})
 
   class Meta:
@@ -255,6 +256,7 @@ class QueryDocument(BaseModel):
   index_file = TextField(required=False)
   index_start = NumberField(required=False)
   index_end = NumberField(required=False)
+  metadata = MapField(required=False)
 
   class Meta:
     ignore_none_field = False
