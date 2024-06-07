@@ -361,7 +361,7 @@ def run_chat(prompt: str, chat_id: str = None,
 def build_query_engine(name: str, engine_type: str, doc_url: str,
                        depth_limit: int, embedding_type: str,
                        vector_store: str, description: str, agents: str,
-                       child_engines: str,
+                       child_engines: str, is_multimodal: str,
                        auth_token=None):
   """
   Start a query engine build job
@@ -383,6 +383,7 @@ def build_query_engine(name: str, engine_type: str, doc_url: str,
       "depth_limit": depth_limit,
       "agents": agents,
       "associated_engines": child_engines,
+      "is_multimodal": is_multimodal,
     }
   }
   logging.info("Sending request_body=%s to %s", request_body, api_url)
