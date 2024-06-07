@@ -201,7 +201,7 @@ def query_engine_page():
     description = st.text_area("Description")
     agents = st.text_area("Agents")
     child_engines = st.text_area("Child Engines")
-    is_multimodal = st.toggle("Multimodal Engine? (text + image)")
+    is_multimodal = st.toggle("Multimodal Engine?")
 
     submit = st.form_submit_button("Build")
   if submit:
