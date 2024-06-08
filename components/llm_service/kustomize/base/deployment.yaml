@@ -73,3 +73,5 @@ spec:
         - name: API_BASE_URL
           # Required format: api/version
           value: api/v1
+      nodeSelector:
+        cloud.google.com/gke-nodepool: llm-pool
