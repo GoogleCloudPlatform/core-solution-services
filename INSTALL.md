@@ -220,7 +220,7 @@ kubectl get nodes
 
 > Note that when you deply the ingress below you may need to wait some time (in some cases, hours) before the https cert is active.
 
-You must set these environment variables prior to deployment.  The jump host includes a script to automatically set these variables on login:
+You must set these environment variables prior to deployment.  The jump host includes a script to automatically set these variables on login: `/etc/profile.d/genie_env.sh`.
 ```
 export PROJECT_ID=$(gcloud config get project)
 export NAMESPACE=default
