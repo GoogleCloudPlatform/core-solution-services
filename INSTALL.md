@@ -193,13 +193,12 @@ sudo bash -c "echo 'export REGION=$REGION' >> /etc/profile.d/genie_env.sh"
   - Set the IP address in the A record to the external IP address in the ingress.
 
 * Apply infra/terraform for LLM service:
+  - This will create a `$PROJECT_ID-llm-docs` bucket and upload the sample doc `llm-sample-doc.pdf` to it.
+  - It will add required Firestore indexes.
 
 ```
 sb infra apply 4-llm
 ```
-
-  - This will create a `$PROJECT_ID-llm-docs` bucket and upload the sample doc `llm-sample-doc.pdf` to it.
-  - It will add required Firestore indexes.
 
 
 ### Before Deploy
