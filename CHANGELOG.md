@@ -10,15 +10,22 @@ New features:
 - Add Integrated Search query engine type, allowing RAG retrieval across query engines
 - RAG: Significant improvements to chunking; now checking context window length
 - Integrate with LlamaIndex for chunking, data connectors
-- Update to latest langchain libraries (April 2024)
+- Update langchain libraries (April 2024)
 - Add SharePoint/OneDrive data connector, support SharePoint data sources
 - Improved agent dispatch using langchain LLMRouterChain
 - Background job-based queries and agent dispatch
 - Add support for Huggingface embeddings
+- Support multimodal embeddings
+- Support multimodel llm generation with Gemini
+- Include instructions to upgrade/resize llm-service node pool
 
 ### Core Solution Services
 - Create separate common_ml image to improve build/deploy times for LLM Service
 - Pin version of firestore emulator used in unit tests and deploy. Requires firestore emulator to be started manually for unit tests.
+
+### Fixes
+- Vertex embeddings now check token length limit, and use latest guidance on API max chunks and rate limits
+- Allow DbAgent to be called directly via agent run endpoint
 
 ### Known Issues
 - e2e testing not currently enabled
