@@ -317,11 +317,17 @@ altogether with all services deployment.
 
 > [Streamlit](https://streamlit.io) is an open-source Python library that makes it easy to create custom web apps. It's a popular choice for data scientists and machine learning engineers who want to quickly create interactive dashboards and visualizations
 
-### (Optional) Deploy or run the frontend apps manually
+### (Optional) Deploy or run frontend apps manually
 
 See [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
 
 See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the Streamlit app.
+
+### React app
+> [React](https://react.dev/) is a popular frontend development framework.
+
+The codebase includes a React app that supports Chat and Query (RAG) for end users, along with Google Identity login.  See the [components/frontend_react/README.md](components/frontend_react/README.md) for instructions on bnuilding and deploying the React app.
+
 
 ## Node-pool configuration (Optional)
 
