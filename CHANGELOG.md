@@ -13,7 +13,7 @@ New features:
 - Update langchain libraries (April 2024)
 - Add SharePoint/OneDrive data connector, support SharePoint data sources
 - Improved agent dispatch using langchain LLMRouterChain
-- Background job-based queries and agent dispatch
+- Background job-based queries, agent dispatch and agent runs
 - Add support for Huggingface embeddings
 - Support multimodal embeddings
 - Support multimodel llm generation with Gemini
