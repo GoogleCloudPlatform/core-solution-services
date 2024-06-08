@@ -148,14 +148,14 @@ Run the rest of the deployment steps from within this jumphost.
 
 ### Create the Cloud infra
 
-Perform this additional repo config step, to update domain name (for HTTPS load balancer and ingress):
+- Perform this additional repo config step, to update domain name (for HTTPS load balancer and ingress):
 ```
 export DOMAIN_NAME=<your-domain-name> # e.g. css.example.com
 export API_BASE_URL=https://${DOMAIN_NAME}
 sb vars set domain_name ${DOMAIN_NAME}
 ```
 
-On the jump host, run this command to ensure that these env vars are always set upon login:
+- On the jump host, run this command to ensure that these env vars are always set upon login:
 ```
 sudo bash -c "cat << EOF >> /etc/profile.d/genie_env.sh
 export DOMAIN_NAME=$DOMAIN_NAME
@@ -163,25 +163,25 @@ export API_BASE_URL=https://${DOMAIN_NAME}
 EOF"
 ```
 
-Apply infra/terraform:
+- Apply bootstrap terraform:
 ```
 sb infra apply 1-bootstrap
 ```
 
-Note in the following step there is a known issue with firebase setup: `Error 409: Database already exists.`  If this error occurs, consult the Troubleshooting section to apply the fix, then re-run the 2-foundation step.
+- Apply foundations terraform.  Note in the following step there is a known issue with firebase setup: `Error 409: Database already exists.`  If this error occurs, consult the Troubleshooting section to apply the fix, then re-run the 2-foundation step.
 
 ```
 sb infra apply 2-foundation
 ```
 
-Proceed with the install:
+- Proceed with the GKE and ingress install:
 
 ```
 sb infra apply 3-gke
 sb infra apply 3-gke-ingress
 ```
 
-On the jump host, run this to update the env vars profile:
+- On the jump host, run this to update the env vars profile:
 ```
 export REGION=$(gcloud container clusters list --filter=main-cluster --format="value(location)")
 sudo bash -c "echo 'export REGION=$REGION' >> /etc/profile.d/genie_env.sh"
