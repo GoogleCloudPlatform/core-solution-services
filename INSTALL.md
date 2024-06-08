@@ -308,23 +308,60 @@ See [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a Flu
 
 See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the Streamlit app.
 
+## Node-pools configuration (Optional)
+
+### List current node-pools
+```shell
+gcloud container node-pools list --cluster=main-cluster --region ${REGION} --project ${PROJECT_ID}
+```
+
+### Create node-pool for LLM Service (if missing or upgrading)
+Ref: https://cloud.google.com/kubernetes-engine/docs/how-to/node-pools
+```shell
+gcloud container node-pools create llm-pool \
+  --project=${PROJECT_ID} \
+  --location=${REGION} \
+  --node-locations=${REGION}-a \
+  --cluster=main-cluster \
+  --service-account gke-sa@${PROJECT_ID}.iam.gserviceaccount.com \
+  --machine-type=n1-standard-8 \
+  --disk-type pd-balanced \
+  --disk-size 1000 \
+  --num-nodes=1
+```
+### Update LLM node pool
+```shell
+gcloud container node-pools update llm-pool \
+  --project=${PROJECT_ID} \
+  --location=${REGION} \
+  --cluster=main-cluster \
+  --machine-type n1-standard-8 \
+  --disk-type pd-balanced \
+  --disk-size 1000
+```
+### Resize LLM node pool
+```shell
+gcloud container clusters resize main-cluster \
+  --project=${PROJECT_ID} \
+  --location=${REGION} \
+  --node-pool llm-pool \
+  --num-nodes 2
+```
+
 ## Troubleshooting
 
 Please refer to [TROUBLESHOOTING.md](https://github.com/GoogleCloudPlatform/solutions-builder/blob/main/docs/TROUBLESHOOTING.md) for any Terraform errors
 
 ### Firestore database already exists
-```commandline
-╷
+```shell
 │ Error: Error creating Database: googleapi: Error 409: Database already exists. Please use another database_id
 │
 │   with google_firestore_database.database,
 │   on firestore_setup.tf line 42, in resource "google_firestore_database" "database":
 │   42: resource "google_firestore_database" "database" {
-│
-╵
 ```
 Fix
-```commandline
+```shell
 cd terraform/stages/2-foundation/
 terraform import google_firestore_database.database "(default)"
 cd -
@@ -349,7 +386,7 @@ cd -
     ```
 
 ### Running user-tool gives an error
-```commandline
+```shell
 user@jump-host:/home/user/core-solution-services$ PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py create_user --base-url=$BASE_URL
 API base URL: http://x.x.x.x
 User email (user@example.com):
@@ -357,29 +394,29 @@ User email (user@example.com):
   return query.where(field_path, op_string, value)
 ```
 Fix
-```commandline
+```shell
 pip install -r components/common/requirements.txt
 pip install -r components/authentication/requirements.txt
 ```
 
 ### Docker not working for current user
-```commandline
+```shell
 docker: Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/containers/create": dial unix /var/run/docker.sock: connect: permission denied.
 ```
 Fix
-```commandline
+```shell
 sudo usermod -aG docker ${USER}
 ```
 Log out and log back in again to re-evaluate group memberships
 
 
 ### sb deploy --dev fails for Mac OS
-```commandline
+```shell
 sh: envsubst: command not found
 build [frontend-flutterflow] failed: exit status 127
 ```
 Fix
-```commandline
+```shell
 brew install gettext
 brew link --force gettext 
 ```
