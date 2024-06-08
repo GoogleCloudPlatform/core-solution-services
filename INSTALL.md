@@ -55,7 +55,7 @@ cd core-solution-services
 Checkout the release tag for the desired release.
 
 ```
-git checkout v0.2.0
+git checkout v0.3.0
 ```
 
 ### Verify your Python version and create a virtual env
@@ -130,7 +130,7 @@ Checkout the release tag for the desired release.
 
 ```
 cd core-solution-services
-git checkout v0.2.0
+git checkout v0.3.0
 ```
 
 Configure the repository:
@@ -151,7 +151,16 @@ Run the rest of the deployment steps from within this jumphost.
 Perform this additional repo config step, to update domain name (for HTTPS load balancer and ingress):
 ```
 export DOMAIN_NAME=<your-domain-name> # e.g. css.example.com
+export API_BASE_URL=https://${DOMAIN_NAME}
 sb vars set domain_name ${DOMAIN_NAME}
+```
+
+On the jump host, run this command to ensure that these env vars are always set upon login:
+```
+sudo bash -c "cat << EOF >> /etc/profile.d/genie_env.sh
+export DOMAIN_NAME=$DOMAIN_NAME
+export API_BASE_URL=https://${DOMAIN_NAME}
+EOF"
 ```
 
 Apply infra/terraform:
@@ -170,6 +179,12 @@ Proceed with the install:
 ```
 sb infra apply 3-gke
 sb infra apply 3-gke-ingress
+```
+
+On the jump host, run this to update the env vars profile:
+```
+export REGION=$(gcloud container clusters list --filter=main-cluster --format="value(location)")
+sudo bash -c "echo 'export REGION=$REGION' >> /etc/profile.d/genie_env.sh"
 ```
 
 (Optional) Add an A record to your DNS:
@@ -204,9 +219,7 @@ kubectl get nodes
 
 > Note that when you deply the ingress below you may need to wait some time (in some cases, hours) before the https cert is active.
 
-### Option 1: Deploy GENIE microservices to the GKE cluster
-
-You must set these environment variables prior to deployment.  If you re-login and redeploy from the jump host make sure to set these variables in your shell again:
+You must set these environment variables prior to deployment.  The jump host includes a script to automatically set these variables on login:
 ```
 export PROJECT_ID=$(gcloud config get project)
 export NAMESPACE=default
@@ -215,6 +228,8 @@ export DOMAIN_NAME=<your domain>
 export API_BASE_URL=https://${DOMAIN_NAME}
 export APP_BASE_PATH="/streamlit"
 ```
+
+### Option 1: Deploy GENIE microservices to the GKE cluster
 
 If you are installing GENIE you can deploy a subset of the microservices used by GENIE.  Depending on your use case for GENIE you may not need the tools service (only needed if you are using agents that use tools).
 
