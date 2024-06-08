@@ -2,18 +2,57 @@
 
 ## Setup
 
-Set API Keys to environment variables:
+### Setting up LLM model vendors (optional)
+We support OpenAI and Cohere as API LLM vendors currently.  Additional vendors that are supported by langchain would be easy to add.
+
+To add support for OpenAI or Cohere:
+
+* Set API Keys to environment variables:
+
+  - OpenAI
 ```
 export OPENAI_API_KEY="<Your API key>"
+```
+
+  - Cohere
+```
 export COHERE_API_KEY="<Your API key>"
 ```
 
-Run the following to update API Keys to Cloud Secret.
+* Run the following to update API Keys to Cloud Secret:
+
+ - OpenAI
 ```
 gcloud secrets create "openai-api-key"
-gcloud secrets create "cohere-api-key"
 echo $OPENAI_API_KEY | gcloud secrets versions add "openai-api-key" --data-file=-
+```
+
+ - Cohere
+```
+gcloud secrets create "cohere-api-key"
 echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=-
+```
+
+* Update `models.json` to enable the vendor:
+
+```
+...
+
+  "vendors": {
+    "OpenAI": {
+      "enabled": true,
+      "api_key": "openai-api-key",
+      "env_flag": "ENABLE_OPENAI_LLM"
+    },
+    "Cohere": {
+      "enabled": true,
+      "api_key": "cohere-api-key",
+      "env_flag": "ENABLE_COHERE_LLM"
+    }
+  },
+
+...
+
 ```
 
 ## Adding Optional LLM Models
