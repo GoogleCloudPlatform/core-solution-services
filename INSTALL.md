@@ -323,12 +323,24 @@ See [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a Flu
 
 See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the Streamlit app.
 
-## Node-pools configuration (Optional)
+## Node-pool configuration (Optional)
+
+This section contains instructions on how to create a node pool specifc to the LLM Service.  You may need to do this if you are experiencing crashes due to the LLM Service container running out of memory (this can happen when using the DB Agent for example), or if you want to increase performance on query engine builds.
+
+For a production deployment, we recommend configuring a separate node pool for the LLM Service.
 
 ### List current node-pools
 ```shell
 gcloud container node-pools list --cluster=main-cluster --region ${REGION} --project ${PROJECT_ID}
 ```
+
+### Update kustomize config
+Append this entry to the end of `components/llm_service/kustomize/base/deployment.yaml`:
+```
+      nodeSelector:
+        cloud.google.com/gke-nodepool: llm-pool
+```
+Take care with the indentation - the nodeSelector directive should be under the `template:` `spec:` and at the same level as `containers:` and `serviceAccountName:`.
 
 ### Create node-pool for LLM Service (if missing or upgrading)
 Ref: https://cloud.google.com/kubernetes-engine/docs/how-to/node-pools
