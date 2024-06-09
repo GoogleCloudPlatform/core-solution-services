@@ -257,10 +257,18 @@ gcloud secrets create "onedrive-principle-name"
 echo '<your-onedrive-client-secret>' | gcloud secrets versions add "onedrive-client-secret" --data-file=-
 
 echo '<your-onedrive-principle-name>' | gcloud secrets versions add "onedrive-principle-name" --data-file=-
+```
 
-# prior to deploy you must set these env vars
+Prior to deploy you must set these env vars:
+```
 export ONEDRIVE_CLIENT_ID="<your-onedrive-client-id>"
 export ONEDRIVE_TENANT_ID="<your-onedrive-tenant-id>"
+```
+
+Write these to the env vars profile so they are always set when you deploy from the jump host:
+```shell
+sudo bash -c "echo 'export ONEDRIVE_CLIENT_ID=${ONEDRIVE_CLIENT_ID}' >> /etc/profile.d/genie_env.sh"
+sudo bash -c "echo 'export ONEDRIVE_TENANT_ID=${ONEDRIVE_TENANT_ID}' >> /etc/profile.d/genie_env.sh"
 ```
 
 ## Troubleshoot
