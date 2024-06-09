@@ -157,10 +157,14 @@ sudo bash -c "echo 'export PG_HOST=${PG_HOST}' >> /etc/profile.d/genie_env.sh"
 ```
 
 
-## After Deployment
+## After Deployment (optional)
+This section includes optional steps to perform depending on your installation.
 
-### Create a BOT account
-Create `llm-backend-robot-username` account for LLM service authentication
+### Create a BOT account to authenticate to other services
+
+This bot account is needed if you are using agents that use the Tools Service.  The LLM Service uses this account to authenticate to the Tools Service, to perform actions like sending emails or creating Sheets.
+
+Create `llm-backend-robot-username` account for LLM service authentication:
 ```
 # Setting BASE_URL Without trailing slash.
 BASE_URL=https://your.domain.com
@@ -168,6 +172,7 @@ PYTHONPATH=components/common/src/ python components/authentication/scripts/user_
 ```
 
 ### Create a Query Engine
+You can use the method below to create a query engine from the command line, to test your installation, or to ensure that at least one query engine is present.  Query Engines can also be created using the "Query Engines" page in streamlit.
 
 Get the access token for a particular user:
 ```
