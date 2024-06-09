@@ -27,6 +27,7 @@ New features:
 ### Fixes
 - Vertex embeddings now check token length limit, and use latest guidance on API max chunks and rate limits
 - Allow DbAgent to be called directly via agent run endpoint
+- Do not require OpenAI api key for default install
 
 ### Known Issues
 - e2e testing not currently enabled
