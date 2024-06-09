@@ -22,6 +22,8 @@ env:
   AGENT_CONFIG_PATH: ${{ vars.AGENT_CONFIG_PATH }}
   ONEDRIVE_CLIENT_ID: ${{ vars.ONEDRIVE_CLIENT_ID }}
   ONEDRIVE_TENANT_ID: ${{ vars.ONEDRIVE_TENANT_ID }}
+  AUTH_AUTO_CREATE_USERS: ${{ vars.AUTH_AUTO_CREATE_USERS }}
+  AUTH_EMAIL_DOMAINS_WHITELIST: ${{ vars.AUTH_EMAIL_DOMAINS_WHITELIST }}    
   GKE_CLUSTER: main-cluster
   GKE_REGION: us-central1
   KUSTOMIZE_VERSION: 5.0.0
@@ -71,7 +73,7 @@ jobs:
 
       - name: Install Solutions Builder
         run: |
-          pip install -U solutions-builder
+          pip install -U solutions-builder pyyaml-include==1.3.1
 
       - name: Update the project id in config files
         run: |

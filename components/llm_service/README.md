@@ -2,18 +2,58 @@
 
 ## Setup
 
-Set API Keys to environment variables:
+### Setting up LLM model vendors (optional)
+We support OpenAI and Cohere as API LLM vendors currently.  Additional vendors that are supported by langchain would be easy to add.
+
+To add support for OpenAI or Cohere:
+
+* Set API Keys to environment variables:
+
+OpenAI
 ```
 export OPENAI_API_KEY="<Your API key>"
+```
+
+Cohere
+
+```
 export COHERE_API_KEY="<Your API key>"
 ```
 
-Run the following to update API Keys to Cloud Secret.
+* Run the following to update API Keys to Cloud Secret:
+
+OpenAI
 ```
 gcloud secrets create "openai-api-key"
-gcloud secrets create "cohere-api-key"
 echo $OPENAI_API_KEY | gcloud secrets versions add "openai-api-key" --data-file=-
+```
+
+Cohere
+```
+gcloud secrets create "cohere-api-key"
 echo $COHERE_API_KEY | gcloud secrets versions add "cohere-api-key" --data-file=-
+```
+
+* Update `models.json` to enable the vendor:
+
+```
+...
+
+  "vendors": {
+    "OpenAI": {
+      "enabled": true,
+      "api_key": "openai-api-key",
+      "env_flag": "ENABLE_OPENAI_LLM"
+    },
+    "Cohere": {
+      "enabled": true,
+      "api_key": "cohere-api-key",
+      "env_flag": "ENABLE_COHERE_LLM"
+    }
+  },
+
+...
+
 ```
 
 ## Adding Optional LLM Models
@@ -34,61 +74,72 @@ You can deploy Llama2 using [Model Garden](https://cloud.google.com/model-garden
 To use the online prediction endpoint, set the following environment variable before the deployment:
 
 ```shell
-export REGION=<region-where-endpoint-is-deployed
+export REGION=<region-where-endpoint-is-deployed>
 export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
 ```
 
-## Set up Vector Database (use one of PostgreSQL or AlloyDB)
-### PostgreSQL (Cloud SQL) as a vector database
+## Set up PGVector Vector Database (using one of CloudSQL or AlloyDB)
+
+Create a secret for postgreSQL password:
+
 ```shell
 gcloud secrets create "postgres-user-passwd"
-# Please use single quotes to enclose the password below (esp.
-# if the password contains special characters like $)
-echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+```
 
+Store the password in the secret.  Note: use single quotes to enclose the password if the password contains special characters like '$'.
+```shell
+echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+```
+
+### PostgreSQL (Cloud SQL) as a vector database
+
+Create a postgreSQL instance:
+```
 export INSTANCE_ID=${PROJECT_ID}-db
 
-# Create a postgreSQL instance
 gcloud services enable sqladmin.googleapis.com
 
 gcloud sql instances create ${INSTANCE_ID} \
---database-version=POSTGRES_15 \
---region=us-central1 \
---tier=db-perf-optimized-N-2 \
---edition=ENTERPRISE_PLUS \
---enable-data-cache \
---storage-size=250 \
---network default-vpc \
---enable-google-private-path \
---availability-type=REGIONAL \
---no-assign-ip
+  --database-version=POSTGRES_15 \
+  --region=us-central1 \
+  --tier=db-perf-optimized-N-2 \
+  --edition=ENTERPRISE_PLUS \
+  --enable-data-cache \
+  --storage-size=250 \
+  --network default-vpc \
+  --enable-google-private-path \
+  --availability-type=REGIONAL \
+  --no-assign-ip
 
 gcloud sql users set-password postgres \
---instance=vectordb \
---password=$(gcloud secrets versions access latest --secret="postgres-user-passwd")
+  --instance=vectordb \
+  --password=$(gcloud secrets versions access latest --secret="postgres-user-passwd")
 
 export PG_HOST=$(gcloud sql instances list --format="value(PRIVATE_ADDRESS)")
 ```
+
 ### AlloyDB as a vector database
+
+Run this script to create an AlloyDB instance:
 ```shell
-# Create a secret for postgres password
-gcloud secrets create "postgres-user-passwd"
-# Please use single quotes to enclose the password below (esp.
-# if the password contains special characters like $)
-echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
-
-# Create an AlloyDB instance
 ./utils/alloy_db.sh
+```
 
-# Set the IP address for database host from the output of the above script
+Set the IP address for database host from the output of the above script:
+```shell
 export PG_HOST=<alloydb-ip-address>
 ```
+
 ### Add PGVector extension
+
+Create an ephemeral pod (auto-deleted) for running psql client:
+
 ```shell
-# Create an ephemeral pod (auto-deleted) for running psql client
 kubectl run psql-client --rm -i --tty --image ubuntu -- bash
 ```
-Once inside the temporary sql pod
+
+Once inside the temporary sql pod:
+
 ```commandline
 apt update -y && apt install -y postgresql-client
 
@@ -99,10 +150,21 @@ psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector"
 exit
 ```
 
-## After Deployment
+### Update environment vars profile with PG_HOST
+Write to env vars profile:
+```shell
+sudo bash -c "echo 'export PG_HOST=${PG_HOST}' >> /etc/profile.d/genie_env.sh"
+```
 
-### Create a BOT account
-Create `llm-backend-robot-username` account for LLM service authentication
+
+## After Deployment (optional)
+This section includes optional steps to perform depending on your installation.
+
+### Create a BOT account to authenticate to other services
+
+This bot account is needed if you are using agents that use the Tools Service.  The LLM Service uses this account to authenticate to the Tools Service, to perform actions like sending emails or creating Sheets.
+
+Create `llm-backend-robot-username` account for LLM service authentication:
 ```
 # Setting BASE_URL Without trailing slash.
 BASE_URL=https://your.domain.com
@@ -110,6 +172,7 @@ PYTHONPATH=components/common/src/ python components/authentication/scripts/user_
 ```
 
 ### Create a Query Engine
+You can use the method below to create a query engine from the command line, to test your installation, or to ensure that at least one query engine is present.  Query Engines can also be created using the "Query Engines" page in streamlit.
 
 Get the access token for a particular user:
 ```
@@ -194,10 +257,18 @@ gcloud secrets create "onedrive-principle-name"
 echo '<your-onedrive-client-secret>' | gcloud secrets versions add "onedrive-client-secret" --data-file=-
 
 echo '<your-onedrive-principle-name>' | gcloud secrets versions add "onedrive-principle-name" --data-file=-
+```
 
-# prior to deploy you must set these env vars
+Prior to deploy you must set these env vars:
+```
 export ONEDRIVE_CLIENT_ID="<your-onedrive-client-id>"
 export ONEDRIVE_TENANT_ID="<your-onedrive-tenant-id>"
+```
+
+Write these to the env vars profile so they are always set when you deploy from the jump host:
+```shell
+sudo bash -c "echo 'export ONEDRIVE_CLIENT_ID=${ONEDRIVE_CLIENT_ID}' >> /etc/profile.d/genie_env.sh"
+sudo bash -c "echo 'export ONEDRIVE_TENANT_ID=${ONEDRIVE_TENANT_ID}' >> /etc/profile.d/genie_env.sh"
 ```
 
 ## Troubleshoot

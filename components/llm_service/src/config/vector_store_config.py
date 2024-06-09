@@ -34,11 +34,6 @@ VECTOR_STORES = [
   VECTOR_STORE_LANGCHAIN_PGVECTOR
 ]
 
-# default vector store used for query engines
-DEFAULT_VECTOR_STORE = get_env_setting("DEFAULT_VECTOR_STORE",
-                                       VECTOR_STORE_MATCHING_ENGINE)
-Logger.info(f"Default vector store = [{DEFAULT_VECTOR_STORE}]")
-
 # postgres
 # TODO: create secrets for this
 PG_HOST = get_env_setting("PG_HOST", None)
@@ -77,3 +72,10 @@ if PG_PASSWD and PG_HOST:
     Logger.error(f"Cannot connect to pgvector instance at {PG_HOST}: {str(e)}")
 else:
   Logger.info(f"PG_HOST is set to [{PG_HOST}], not connecting to pgvector")
+
+# default vector store used for query engines
+DEFAULT_VECTOR_STORE = get_env_setting("DEFAULT_VECTOR_STORE",
+                                       VECTOR_STORE_MATCHING_ENGINE)
+if PG_PASSWD and PG_HOST:
+  DEFAULT_VECTOR_STORE = VECTOR_STORE_LANGCHAIN_PGVECTOR
+Logger.info(f"Default vector store = [{DEFAULT_VECTOR_STORE}]")

@@ -338,13 +338,17 @@ class ModelConfig():
         model_config[KEY_ENABLED] = False
         continue
       provider_enabled = self.is_provider_enabled(provider_id)
+      Logger.info(
+            f"Provider [{provider_id}] enablement status [{provider_enabled}]")
 
-      # Get api keys if present. If an api key secret is configured and
-      # the key is missing, disable the model.
-      api_key = self.get_api_key(model_id)
-      api_check = True
-      if self.get_config_value(model_id, KEY_API_KEY):
-        api_check = api_key is not None
+      api_check = False
+      if provider_enabled:
+        # Get api keys if present. If an api key secret is configured and
+        # the key is missing, disable the model.
+        api_key = self.get_api_key(model_id)
+        api_check = True
+        if self.get_config_value(model_id, KEY_API_KEY):
+          api_check = api_key is not None
 
       # set model_enabled flag based on conjunction of settings
       model_enabled = \
@@ -354,6 +358,7 @@ class ModelConfig():
           vendor_enabled
 
       model_config[KEY_ENABLED] = model_enabled
+      Logger.info(f"Model [{model_id}] enablement status [{model_enabled}]")
 
       # instantiate model class if necessary (mainly langchain models)
       if model_enabled and KEY_MODEL_CLASS in model_config:
