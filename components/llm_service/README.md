@@ -78,7 +78,7 @@ export REGION=<region-where-endpoint-is-deployed>
 export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
 ```
 
-## Set up PGVector Vector Database (using one of PostgreSQL or AlloyDB)
+## Set up PGVector Vector Database (using one of CloudSQL or AlloyDB)
 
 Create a secret for postgreSQL password:
 
