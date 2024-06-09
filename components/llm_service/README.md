@@ -74,65 +74,72 @@ You can deploy Llama2 using [Model Garden](https://cloud.google.com/model-garden
 To use the online prediction endpoint, set the following environment variable before the deployment:
 
 ```shell
-export REGION=<region-where-endpoint-is-deployed
+export REGION=<region-where-endpoint-is-deployed>
 export MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID = "end-point-service-id"
 ```
 
-## Set up Vector Database (use one of PostgreSQL or AlloyDB)
-### PostgreSQL (Cloud SQL) as a vector database
+## Set up PGVector Vector Database (using one of PostgreSQL or AlloyDB)
+
+Create a secret for postgreSQL password:
+
 ```shell
 gcloud secrets create "postgres-user-passwd"
-# Please use single quotes to enclose the password below (esp.
-# if the password contains special characters like $)
-echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+```
 
+Store the password in the secret.  Note: use single quotes to enclose the password if the password contains special characters like '$'.
+```shell
+echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
+```
+
+### PostgreSQL (Cloud SQL) as a vector database
+
+Create a postgreSQL instance:
+```
 export INSTANCE_ID=${PROJECT_ID}-db
 
-# Create a postgreSQL instance
 gcloud services enable sqladmin.googleapis.com
 
 gcloud sql instances create ${INSTANCE_ID} \
---database-version=POSTGRES_15 \
---region=us-central1 \
---tier=db-perf-optimized-N-2 \
---edition=ENTERPRISE_PLUS \
---enable-data-cache \
---storage-size=250 \
---network default-vpc \
---enable-google-private-path \
---availability-type=REGIONAL \
---no-assign-ip
+  --database-version=POSTGRES_15 \
+  --region=us-central1 \
+  --tier=db-perf-optimized-N-2 \
+  --edition=ENTERPRISE_PLUS \
+  --enable-data-cache \
+  --storage-size=250 \
+  --network default-vpc \
+  --enable-google-private-path \
+  --availability-type=REGIONAL \
+  --no-assign-ip
 
 gcloud sql users set-password postgres \
---instance=vectordb \
---password=$(gcloud secrets versions access latest --secret="postgres-user-passwd")
+  --instance=vectordb \
+  --password=$(gcloud secrets versions access latest --secret="postgres-user-passwd")
 
 export PG_HOST=$(gcloud sql instances list --format="value(PRIVATE_ADDRESS)")
 ```
+
 ### AlloyDB as a vector database
+
+Run this script to create an AlloyDB instance:
 ```shell
-# Create a secret for postgres password
-gcloud secrets create "postgres-user-passwd"
-# Please use single quotes to enclose the password below (esp.
-# if the password contains special characters like $)
-echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
-
-# Create an AlloyDB instance
 ./utils/alloy_db.sh
+```
 
-# Set the IP address for database host from the output of the above script
+Set the IP address for database host from the output of the above script:
+```shell
 export PG_HOST=<alloydb-ip-address>
-
-# write to env vars profile
-sudo bash -c "echo 'export PG_HOST=${PG_HOST}' >> /etc/profile.d/genie_env.sh"
 ```
 
 ### Add PGVector extension
+
+Create an ephemeral pod (auto-deleted) for running psql client:
+
 ```shell
-# Create an ephemeral pod (auto-deleted) for running psql client
 kubectl run psql-client --rm -i --tty --image ubuntu -- bash
 ```
-Once inside the temporary sql pod
+
+Once inside the temporary sql pod:
+
 ```commandline
 apt update -y && apt install -y postgresql-client
 
@@ -142,6 +149,13 @@ psql -U postgres -c "CREATE DATABASE pgvector"
 psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector"
 exit
 ```
+
+### Update environment vars profile with PG_HOST
+Write to env vars profile:
+```shell
+sudo bash -c "echo 'export PG_HOST=${PG_HOST}' >> /etc/profile.d/genie_env.sh"
+```
+
 
 ## After Deployment
 
