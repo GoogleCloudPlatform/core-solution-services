@@ -8,8 +8,9 @@ New features:
 
 - Add VertexSearch query engine type, using Vertex Search to index data and perform RAG retrieval
 - Add Integrated Search query engine type, allowing RAG retrieval across query engines
-- RAG: Significant improvements to chunking; now checking context window length
-- Integrate with LlamaIndex for chunking, data connectors
+- Add new React-based frontend app (see [README](./components/frontend_react/README.md) to install and deploy)
+- RAG: Significant improvements to chunking; now checking context window length for generation
+- Integrate with LlamaIndex for chunking and data connectors
 - Update langchain libraries (April 2024)
 - Add SharePoint/OneDrive data connector, support SharePoint data sources
 - Improved agent dispatch using langchain LLMRouterChain
@@ -23,6 +24,7 @@ New features:
 - Create separate common_ml image to improve build/deploy times for LLM Service
 - Pin version of firestore emulator used in unit tests and deploy. Requires firestore emulator to be started manually for unit tests.
 - Create an environment variable profile on the jumphost during install
+- Add documentation for setting up the CI/CD pipeline in Github
 
 ### Fixes
 - Vertex embeddings now check token length limit, and use latest guidance on API max chunks and rate limits
