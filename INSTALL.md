@@ -95,6 +95,8 @@ sb set project-id ${PROJECT_ID}
 
 > If you choose to run this setup in your local machine, you can skip this section. However, we recommend using a jump host to ensure a consistent install environment.
 
+> During the install process we create an environment variable profile in /etc/profile.d/genie_env.sh. This file captures the environment variables used for configuration of the microservices, and since it is sourced any time a user logs in, ensures all variables will be set correctly during a deploy.  If you are not using a jump host we still recommend that you create this file.
+
 Run the following to create a Compute Engine VM as the jump host.
 ```
 sb infra apply 0-jumphost

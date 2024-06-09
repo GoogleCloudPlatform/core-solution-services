@@ -22,6 +22,7 @@ New features:
 ### Core Solution Services
 - Create separate common_ml image to improve build/deploy times for LLM Service
 - Pin version of firestore emulator used in unit tests and deploy. Requires firestore emulator to be started manually for unit tests.
+- Create an environment variable profile on the jumphost during install
 
 ### Fixes
 - Vertex embeddings now check token length limit, and use latest guidance on API max chunks and rate limits
