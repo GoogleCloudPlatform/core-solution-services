@@ -122,7 +122,11 @@ echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-pas
 
 # Set the IP address for database host from the output of the above script
 export PG_HOST=<alloydb-ip-address>
+
+# write to env vars profile
+sudo bash -c "echo 'export PG_HOST=${PG_HOST}' >> /etc/profile.d/genie_env.sh"
 ```
+
 ### Add PGVector extension
 ```shell
 # Create an ephemeral pod (auto-deleted) for running psql client

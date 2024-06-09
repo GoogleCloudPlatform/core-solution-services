@@ -75,6 +75,3 @@ gcloud alloydb instances list
 export PG_HOST=$(gcloud alloydb instances describe ${INSTANCE_ID} \
  --cluster ${CLUSTER_ID} --region ${REGION} --format="value(ipAddress)")
 echo "AlloyDB Host IP address is ${PG_HOST}"
-
-# write to env vars profile
-sudo bash -c "echo 'export PG_HOST=${PG_HOST}' >> /etc/profile.d/genie_env.sh"
