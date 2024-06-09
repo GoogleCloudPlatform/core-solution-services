@@ -16,7 +16,7 @@ pgvector==0.2.3
 psycopg2-binary==2.9.9
 pyarrow==14.0.1
 pypdf==4.0.1
-python-multipart==0.0.6
+python-multipart==0.0.7
 python-pptx==0.6.23
 Scrapy==2.11.0
 spacy==3.7.2
