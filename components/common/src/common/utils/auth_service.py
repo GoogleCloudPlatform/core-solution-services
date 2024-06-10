@@ -33,7 +33,12 @@ def validate_token(token: auth_scheme = Depends()):
   Main validation function that is depended on by all microservices.
   """
   try:
+    print("common.src.common.src.utils.auth_service.validate_token")
+    print(token)
     user_data = validate_oauth_token(token)
+    print("common.src.common.src.utils.auth_service.validate_token")
+    print(user_data)
+
     if not user_data:
       user_data = validate_service_account_token(token)
 
@@ -56,6 +61,10 @@ def validate_oauth_token(token: auth_scheme = Depends()):
     raise TokenNotFoundError("Unauthorized: token is empty.")
 
   token_dict = dict(token)
+
+  print("common.src.common.src.utils.auth_service.validate_oauth_token")
+  print(token_dict)
+
   if token_dict["credentials"]:
     api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
         "api/v1/validate"

@@ -59,7 +59,15 @@ def validate_id_token(token: auth_scheme = Depends()):
     if token is None:
       raise TokenNotFoundError("Token not found")
     token_dict = dict(token)
+
+    print("authentication.src.routes.validate_token.validate_id_token")
+    print(token_dict)
+
     token_data = validate_token(token_dict["credentials"])
+
+    print("authentication.src.routes.validate_token.validate_id_token")
+    print(token_data)
+
     user_email = token_data["email"]
     email_domain = user_email.split("@")[1]
     create_if_not_exist = False

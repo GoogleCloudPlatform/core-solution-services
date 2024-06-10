@@ -71,6 +71,9 @@ def validate_token(bearer_token):
   token = bearer_token
   decoded_token = None
 
+  print("authentication.src.services.validation_service.validate_token")
+  print(token)
+
   cached_token = get_token_cache(f"cache::{token}")
   decoded_token = cached_token if cached_token else verify_id_token(token)
   if not cached_token:
