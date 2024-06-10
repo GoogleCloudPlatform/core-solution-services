@@ -148,7 +148,7 @@ class InvalidModelConfigException(Exception):
 
 def load_langchain_classes() -> dict:
   """
-  Load langchain classes.  Return a dict mapping classname to 
+  Load langchain classes.  Return a dict mapping classname to
   class instance.
   """
   langchain_chat_classes = {
@@ -275,11 +275,11 @@ class ModelConfig():
     Initialize and set config for providers, models and embeddings, based
     on current config dicts (loaded from a config file), environment variables
     and secrets associated with the project.
-    
+
     This method performs the following:
-    
+
     - Validate model config, by checking model type and keys
-    
+
     - Set enabled flags for models.
       A model is enabled if its config setting is enabled, environment
       variables (which override config file settings) are set to true if
@@ -287,7 +287,7 @@ class ModelConfig():
       API key is present (if applicable).
 
     - Set API keys for models.
-    
+
     - Instantiate model classes and store in the config dicts for models and
     Embeddings.
 
@@ -392,6 +392,7 @@ class ModelConfig():
       raise ModelConfigMissingException(provider_id)
 
     # check provider enable env flag
+    provider_flag_setting = None
     if KEY_ENV_FLAG in provider_config:
       env_flag = provider_config[KEY_ENV_FLAG]
       provider_flag_setting = get_environ_flag(env_flag)
@@ -481,6 +482,7 @@ class ModelConfig():
     if vendor_config is None:
       return True
 
+    vendor_flag_setting = None
     if KEY_ENV_FLAG in vendor_config:
       env_flag = vendor_config[KEY_ENV_FLAG]
       vendor_flag_setting = get_environ_flag(env_flag)
@@ -568,7 +570,7 @@ class ModelConfig():
     return api_key
 
   def instantiate_model_class(self, model_id: str) -> Callable:
-    """ 
+    """
     Instantiate the model class for providers that use them (e.g. Langchain)
     """
     langchain_classes = load_langchain_classes()
@@ -601,8 +603,8 @@ class ModelConfig():
     return model_class_instance
 
   def load_model_config(self):
-    """ 
-    Load model config dicts.  
+    """
+    Load model config dicts.
     Refresh api keys and set enabled flags for all models.
     """
     self.read_model_config()
@@ -654,7 +656,7 @@ class ModelConfig():
     Args:
       model_id: model identifier
       model_config: model config dict
-    
+
     Raises:
       RuntimeError if model download fails
       InvalidModelConfigException if config is invalid/missing
