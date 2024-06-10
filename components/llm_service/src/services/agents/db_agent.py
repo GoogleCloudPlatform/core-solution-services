@@ -44,9 +44,10 @@ import sqlvalidator
 
 Logger = Logger.get_logger(__file__)
 
+DEFAULT_DB_RESULT_LIMIT = 10
 
 async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
-                       user_email:str = None, db_result_limit: int = 10) -> \
+                       user_email:str = None, db_result_limit: int = None) -> \
                        Tuple[dict, str]:
   """
   Run the DB agent on a user prompt and return the resulting data.
@@ -98,7 +99,7 @@ async def run_db_agent(prompt: str, llm_type: str = None, dataset = None,
   return response_output, agent_logs
 
 def process_db_result(db_result: dict, dataset_name: str,
-                      db_result_limit: int = 10):
+                      db_result_limit: int = None):
   """
   Process db result to make it suitable for return via API
   Args:
@@ -108,6 +109,8 @@ def process_db_result(db_result: dict, dataset_name: str,
   Return:
     dict of results that conform to agent output format
   """
+  if db_result_limit is None:
+    db_result_limit = DEFAULT_DB_RESULT_LIMIT
 
   if "error" not in db_result:
     Logger.info(f"db_result: {db_result}")

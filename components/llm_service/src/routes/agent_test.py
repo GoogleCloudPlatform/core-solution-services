@@ -24,16 +24,19 @@ from fastapi.testclient import TestClient
 from unittest import mock
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
                                      USER_EXAMPLE)
-from testing.test_config import API_URL
 from common.models.llm import CHAT_HUMAN, CHAT_AI
 from common.models import UserChat, User
 from common.utils.http_exceptions import add_exception_handlers
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+from common.utils.config import set_env_var
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
 os.environ["OPENAI_API_KEY"] = "fake-key"
 os.environ["COHERE_API_KEY"] = "fake-key"
+
+with set_env_var("PG_HOST", ""):
+  from testing.test_config import API_URL, FakeAgentExecutor, FakeAgent
 
 
 FAKE_AGENT_RUN_PARAMS = {
@@ -43,6 +46,27 @@ FAKE_AGENT_RUN_PARAMS = {
 
 FAKE_GENERATE_RESPONSE = "test generation"
 FAKE_AGENT_LOGS = "fake agent thought process logs"
+
+FAKE_AGENT_OUTPUT = "fake agent output"
+FAKE_DATASET = "fake-dataset"
+
+FAKE_DB_AGENT_RESULT = {
+  "db_result": [
+    {
+      "column-a": "fake-a1",
+      "column-b": "fake-b1"
+    },
+    {
+      "column-a": "fake-a2",
+      "column-b": "fake-b2"
+    }
+  ],
+  "dataset": FAKE_DATASET,
+  "resources": {"Spreadsheet": "https://example.com"},
+  CHAT_AI: FAKE_AGENT_OUTPUT,
+  "content": FAKE_AGENT_OUTPUT,
+}
+
 
 # assigning url
 api_url = f"{API_URL}/agent"
@@ -84,14 +108,22 @@ def test_get_agent_list(clean_firestore, client_with_emulator):
 
 
 @pytest.mark.anyio
-def test_run_agent(create_user, client_with_emulator):
+@mock.patch("services.agents.agent_service.agent_executor_arun_with_logs")
+@mock.patch("services.agents.agent_service.AgentExecutor.from_agent_and_tools")
+@mock.patch("services.agents.agent_service.BaseAgent.get_llm_service_agent")
+def test_run_agent(mock_get_agent,
+                   mock_agent_executor,
+                   mock_agent_executor_arun,
+                   create_user, client_with_emulator):
   """ Test run_agent """
+
+  mock_get_agent.return_value = FakeAgent()
+  mock_agent_executor.return_value = FakeAgentExecutor()
+  mock_agent_executor_arun.return_value = FAKE_AGENT_OUTPUT, FAKE_AGENT_LOGS
+
   userid = CHAT_EXAMPLE["user_id"]
   url = f"{api_url}/run/Chat"
-
-  with mock.patch("routes.agent.run_agent",
-                  return_value = (FAKE_GENERATE_RESPONSE, FAKE_AGENT_LOGS)):
-    resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
+  resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
@@ -101,7 +133,7 @@ def test_run_agent(create_user, client_with_emulator):
     {CHAT_HUMAN: FAKE_AGENT_RUN_PARAMS["prompt"]}, \
     "returned chat data prompt"
   assert chat_data["history"][1] == \
-    {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
+    {CHAT_AI: FAKE_AGENT_OUTPUT}, \
     "returned chat data generated text"
 
   user_chats = UserChat.find_by_user(userid)
@@ -111,12 +143,12 @@ def test_run_agent(create_user, client_with_emulator):
     {CHAT_HUMAN: FAKE_AGENT_RUN_PARAMS["prompt"]}, \
     "retrieved user chat prompt"
   assert user_chat.history[1] == \
-    {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
+    {CHAT_AI: FAKE_AGENT_OUTPUT}, \
     "retrieved user chat response"
 
 @pytest.mark.anyio
 def test_run_agent_chat(create_user, create_chat, client_with_emulator):
-  """ Test run_agent_chat """
+  """ Test run_agent with chat agent """
   chatid = CHAT_EXAMPLE["id"]
 
   url = f"{api_url}/run/Chat/{chatid}"
@@ -151,3 +183,15 @@ def test_run_agent_chat(create_user, create_chat, client_with_emulator):
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "retrieved user chat response"
 
+@pytest.mark.anyio
+@mock.patch("services.agents.agent_service.run_db_agent")
+def test_run_agent_db(mock_run_db_agent, create_user, client_with_emulator):
+  """ Test run_agent with db agent """
+  mock_run_db_agent.return_value = FAKE_DB_AGENT_RESULT, FAKE_AGENT_LOGS
+
+  url = f"{api_url}/run/DbAgent"
+  resp = client_with_emulator.post(url, json=FAKE_AGENT_RUN_PARAMS)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  response_data = json_response.get("data")
