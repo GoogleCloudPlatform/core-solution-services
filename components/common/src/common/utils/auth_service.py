@@ -33,10 +33,11 @@ def validate_token(token: auth_scheme = Depends()):
   Main validation function that is depended on by all microservices.
   """
   try:
-    print("common.src.common.src.utils.auth_service.validate_token")
+    print("common.auth_service.validate_token - token")
     print(token)
     user_data = validate_oauth_token(token)
-    print("common.src.common.src.utils.auth_service.validate_token")
+
+    print("common.auth_service.validate_token - user_data")
     print(user_data)
 
     if not user_data:
@@ -62,12 +63,16 @@ def validate_oauth_token(token: auth_scheme = Depends()):
 
   token_dict = dict(token)
 
-  print("common.src.common.src.utils.auth_service.validate_oauth_token")
+  print("common.auth_service.validate_oauth_token - token_dict")
   print(token_dict)
 
   if token_dict["credentials"]:
+    print("found credentials")
     api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
         "api/v1/validate"
+    print(f"api_endpoint {api_endpoint}")
+    print(f"token_dict['scheme'] {token_dict['scheme']}")
+    print(f"token_dict['credentials'] {token_dict['credentials']}")
     res = requests.get(
         url=api_endpoint,
         headers={
