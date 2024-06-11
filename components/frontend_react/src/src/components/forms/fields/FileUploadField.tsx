@@ -22,19 +22,16 @@ import FieldErrorMessage from "@/components/forms/FieldErrorMessage"
 import DocumentUpload from "@/components/DocumentUpload"
 import {
   downloadFile,
-  downloadPartnerFile,
   fileNameByPath,
 } from "@/utils/forms"
 import { XMarkIcon } from "@heroicons/react/24/outline"
 import { useState } from "react"
 import DeleteFilesModal from "@/components/DeleteFilesModal"
-import { GenericDemo } from "@gps-demos/demo-portal-types/src/types"
 
 interface IFileUploadFieldProps {
   variable: IFormVariable
   formikProps: FormikContextType<any>
   handleFilesUpload: Function
-  demo: GenericDemo | null
   token: string
 }
 
@@ -129,11 +126,7 @@ const FileUploadField: React.FC<IFileUploadFieldProps> = ({
                   className="cursor-pointer text-xs hover:text-primary-content"
                   onClick={() => {
                     const file = value.fileName ?? ""
-                    if (demo && "partnerId" in demo) {
-                      downloadPartnerFile(demo.partnerId, demo.id, file)
-                    } else {
                       downloadFile(value.fileURL, file, token)
-                    }
                   }}
                 >
                   {value.fileName}

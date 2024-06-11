@@ -29,7 +29,6 @@ import TeamListField from "@/components/forms/fields/TeamListField"
 import PersonaListField from "@/components/forms/fields/PersonaListField"
 import FileUploadField from "@/components/forms/fields/FileUploadField"
 import DateField from "@/components/forms//fields/DateField"
-import OtherFileNestedField from "@/components/forms/fields/OtherFileNestedField"
 import MultiSelectField from "@/components/forms/fields/MultiSelectField"
 
 interface QueryEngineFormFieldsProps {
@@ -84,11 +83,6 @@ const QueryEngineFormFields: React.FC<QueryEngineFormFieldsProps> = ({
             token={token}
             handleFilesUpload={handleFiles}
           />
-        )
-
-      case "file(other)":
-        return (
-          <OtherFileNestedField variable={variable} formikProps={formikProps} />
         )
 
       case "list(string)":
