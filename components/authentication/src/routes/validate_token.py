@@ -79,7 +79,8 @@ def validate_id_token(token: auth_scheme = Depends()):
     ## we get this far
     print("AUTH_AUTO_CREATE_USERS", AUTH_AUTO_CREATE_USERS)
     print("AUTH_EMAIL_DOMAINS_WHITELIST", AUTH_EMAIL_DOMAINS_WHITELIST)
-    print("email_domain in AUTH_EMAIL_DOMAINS_WHITELIST", email_domain in AUTH_EMAIL_DOMAINS_WHITELIST)
+    print("email_domain in AUTH_EMAIL_DOMAINS_WHITELIST",
+          email_domain in AUTH_EMAIL_DOMAINS_WHITELIST)
     print("create_if_not_exist", create_if_not_exist)
 
     user = get_user_by_email(user_email,
