@@ -32,10 +32,14 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
   const [queryEngines, setQueryEngines] = useState<QueryEngine[]>([])
   const [queryEngine, setQueryEngine] = useState<QueryEngine | null>(null)
 
-  const { isLoading, data: queryEngines } = useQuery(
+  const { isLoading, data: engineList } = useQuery(
     ["QueryEngines"],
     fetchAllEngines(token),
   )
+
+  useEffect(() => {
+    setQueryEngines(engineList ?? [])
+  }, [engineList])
 
   useEffect(() => {
     if (!queryEngines || !id) return

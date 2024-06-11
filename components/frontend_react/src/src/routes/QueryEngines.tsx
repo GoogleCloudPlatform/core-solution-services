@@ -30,9 +30,9 @@ const MAX_ENGINE_DISPLAY = 20
 const QueryEngines: React.FC<QueryEnginesProps> = ({ token }) => {
   const [engines, setQueryEngines] = useState<QueryEngine[]>([])
 
-  const { isLoading, data: queryEngines } = useQuery(
-    ["QueryEngines"],
-    fetchAllEngines(token),
+  const { data: queryEngines, isLoading, error: enginesError } = useQuery(
+    ["fetchEngines"], 
+    fetchAllEngines(token)
   )
 
   useEffect(() => {
