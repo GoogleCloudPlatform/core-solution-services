@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import axios from "axios"
 import groupBy from "lodash/groupBy"
+import fileDownload from "js-file-download"
 import { IFormVariable, IFormValidationData } from "@/utils/types"
 import * as yup from "yup"
 import startCase from "lodash/startCase"
@@ -37,6 +39,50 @@ export const fileNameByPath = (filePath: string) => {
   } else {
     return null
   }
+}
+
+export const getFileURL = async (pathURL: string, userToken: string) => {
+  const downloadURL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/demos/downloadFile/?filePath=${pathURL}`
+  try {
+    const res = await axios.get(downloadURL, {
+      headers: {
+        Authorization: `Bearer ${userToken}`,
+      },
+    })
+    return res.data.url as string
+  } catch (error) {
+    console.error(error)
+    return null
+  }
+}
+
+
+export const downloadFile = async (
+  filePath: string,
+  fileName: string,
+  userToken: string,
+) => {
+  const downloadURL = (await getFileURL(filePath, userToken)) as string | null
+
+  if (!downloadURL) {
+    throw new Error(`File not found: ${fileName}`)
+  }
+
+  if (window) {
+    window.open(downloadURL)
+    return
+  }
+
+  return axios
+    .get(downloadURL, {
+      responseType: "blob",
+      // headers: {
+      //   Authorization: `Bearer ${userToken}`,
+      // },
+    })
+    .then((res) => {
+      fileDownload(res.data, fileName)
+    })
 }
 
 export const formValidationSchema = (variableList: IFormVariable[]) => {
