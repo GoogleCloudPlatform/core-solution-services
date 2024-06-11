@@ -126,20 +126,6 @@ export const fetchAllEngines =
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
 
-  request_body = {
-    "query_engine": name,
-    "query_engine_type": engine_type,
-    "doc_url": doc_url,
-    "embedding_type": embedding_type,
-    "vector_store": vector_store,
-    "description": description,
-    "params": {
-      "depth_limit": depth_limit,
-      "agents": agents,
-      "associated_engines": child_engines,
-    }
-  }
-
 export const createQueryEngine =
   (token: string) => async ({
     queryEngine,
