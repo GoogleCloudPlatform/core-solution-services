@@ -15,7 +15,7 @@
 import { useState, useEffect } from "react"
 import { Form, useFormik, FormikProvider } from "formik"
 import QueryEngineFormFields from "@/components/forms/QueryEngineFormFields"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { IFormValidationData, IFormVariable } from "@/utils/types"
 import { IQueryEngine } from "@/utils/models"
 import { formValidationSchema, initialFormikValues } from "@/utils/forms"

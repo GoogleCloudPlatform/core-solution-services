@@ -6,12 +6,12 @@ import { QUERY_ENGINE_FORM_DATA } from "@/utils/data"
 import { QueryEngine, QueryEngineBuildJob } from "@/utils/types"
 import { TrashIcon } from "@heroicons/react/24/outline"
 import axios from "axios"
-import { useRouter } from "next/router"
 import nookies from "nookies"
 import React, { useEffect, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { ALERT_TYPE } from "@/utils/types"
-import Link from "next/link"
+import { Link, useNavigate } from "react-router-dom"
+import { useQueryParams } from "@/utils/routing"
 
 // TODO: import { userStore } from "@/store"
 // TODO: import { alertStore } from "@/store"
@@ -21,12 +21,15 @@ interface INewQueryEngineProps {
 }
 
 const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
-  const router = useRouter()
   const [formError, setFormError] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const isAdmin = true   // TODO: userStore((state) => state.isAdmin)
-  const { id } = router.query
+
+  const params = useQueryParams()
+  const id = params.get("qe_id")
+  const navigate = useNavigate()
+  
   const setAlert = alertStore((state) => state.setAlert)
 
   const [queryEngines, setQueryEngines] = useState<QueryEngine[]>([])
@@ -108,7 +111,7 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
       `${process.env.NEXT_PUBLIC_API_BASE_URL}/query/engine/${queryEngine.id}/`,
       options,
     )
-    router.push("/", undefined, { shallow: true })
+    navigate("")
   }
 
   useEffect(() => {

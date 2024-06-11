@@ -2,8 +2,10 @@ import Loading from "@/navigation/Loading"
 import axios from "axios"
 import { useFormikContext } from "formik"
 import { useRouter } from "next/router"
+import { useNavigate } from "react-router-dom"
 import nookies from "nookies"
 import { useState } from "react"
+import { useQueryParams } from "@/utils/routing"
 
 type IfileFormat = {
   fileName: string | null | undefined
@@ -28,8 +30,10 @@ const DeleteFilesModal: React.FC<IDeleteFilesModal> = ({
   const [loading, setLoading] = useState(false)
   const { setFieldValue } = useFormikContext()
   const token = nookies.get().token
-  const router = useRouter()
-  const { id } = router.query
+  const navigate = useNavigate()
+  
+  const params = useQueryParams()
+  const id = params.get("id")
 
   if (!fileData) throw new Error("Missing supporting files")
 
@@ -63,7 +67,7 @@ const DeleteFilesModal: React.FC<IDeleteFilesModal> = ({
         setLoading(false)
         setModal(false)
         modalClose && modalClose(false)
-        router.push(`/input/?id=${id}`, undefined, { shallow: true })
+        navigate(`/input/?id=${id}`)
       })
   }
 
