@@ -90,11 +90,81 @@ export const formValidationSchema = (variableList: IFormVariable[]) => {
 
   variableList.forEach((variable) => {
     variable.required
+      ? (formValidationData[variable.name] =
+          variable.validations === "email"
+            ? yup
+                .string()
+                .email(`${startCase(variable.display)} must be a valid email`)
+                .required(
+                  `A value for ${startCase(variable.display)} is required`,
+                )
+            : variable.type === "number"
+            ? yup
+                .number()
+                .typeError(
+                  `A value for ${startCase(variable.display)} must be a number`,
+                )
+                .integer(
+                  `A value for ${startCase(variable.display)} must be a number`,
+                )
+                .min(
+                  0,
+                  `A value for ${startCase(
+                    variable.display,
+                  )} must be a positive number`,
+                )
+                .required(
+                  `A value for ${startCase(variable.display)} is required`,
+                )
+            : variable.type === "string(textarea)"
+            ? yup
+                .string()
+                .min(20, "Too Short!")
+                .required(
+                  `A value for ${startCase(variable.display)} is required`,
+                )
+            : yup
+                .string()
+                .min(2, "Too Short!")
+                .max(
+                  formValidationData[variable.type] === "string" ? 20 : 180,
+                  "Too Long!",
+                )
+                .required(
+                  `A value for ${startCase(variable.display)} is required`,
+                ))
+      : variable.type === "string(textarea)"
+      ? (formValidationData[variable.name] = yup.string().min(20, "Too Short!"))
+      : variable.validations === "email"
       ? (formValidationData[variable.name] = yup
           .string()
           .min(4, "Too Short!")
           .max(20, "Too Long!")
           .required(`A value for ${startCase(variable.name)} is required`))
+          .email(`${startCase(variable.display)} must be a valid email`))
+      : variable.type === "file"
+      ? (formValidationData[variable.name] = yup.object().shape({
+          type: yup.string(),
+          description: yup.string(),
+          link: yup.object().shape({
+            name: yup.string(),
+            href: yup
+              .string()
+              .matches(/^https?:\/\//, "Enter valid File Link!"),
+          }),
+        }))
+      : variable.type === "file(other)"
+      ? (formValidationData[variable.name] = yup.array().of(
+          yup.object().shape({
+            type: yup.string(),
+            stage: yup.string(),
+            description: yup.string(),
+            name: yup.string(),
+            href: yup
+              .string()
+              .matches(/^https?:\/\//, "Remove and Enter valid File Link!"),
+          }),
+        ))
       : {}
   })
 
