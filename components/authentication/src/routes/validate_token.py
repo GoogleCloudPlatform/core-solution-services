@@ -76,6 +76,12 @@ def validate_id_token(token: auth_scheme = Depends()):
     if AUTH_AUTO_CREATE_USERS and email_domain in AUTH_EMAIL_DOMAINS_WHITELIST:
       create_if_not_exist = True
 
+    ## we get this far
+    print("AUTH_AUTO_CREATE_USERS", AUTH_AUTO_CREATE_USERS)
+    print("AUTH_EMAIL_DOMAINS_WHITELIST", AUTH_EMAIL_DOMAINS_WHITELIST)
+    print("email_domain in AUTH_EMAIL_DOMAINS_WHITELIST", email_domain in AUTH_EMAIL_DOMAINS_WHITELIST)
+    print("create_if_not_exist", create_if_not_exist)
+
     user = get_user_by_email(user_email,
                              check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER,
                              create_if_not_exist=create_if_not_exist)

@@ -250,3 +250,5 @@ And make sure it is exported.
 3. Update `src/utils/Appconfig.ts` to include the name of the new provider in `authProviders` field.
 
 4. Update `src/navigation/SignInForm.tsx`. Add code to render the new provider sign in and to submit it.
+
+5. Add to AUTHORIZED_DOMAIN environment variable the new email domain.
