@@ -22,6 +22,9 @@ import startCase from "lodash/startCase"
 export const groupVariables = (variableList: IFormVariable[]) =>
   groupBy(variableList, "group")
 
+export const groupByOrderVariables = (variableList: IFormVariable[]) =>
+  groupBy(variableList, "order")
+
 export const initialFormikValues = (variableList: IFormVariable[]) => {
   let initialFormData = variableList.reduce((formatDefault, formVarsdata) => {
     const defaultValue = formVarsdata.default !== "" ? formVarsdata.default : ""
@@ -55,7 +58,6 @@ export const getFileURL = async (pathURL: string, userToken: string) => {
     return null
   }
 }
-
 
 export const downloadFile = async (
   filePath: string,
@@ -140,7 +142,7 @@ export const formValidationSchema = (variableList: IFormVariable[]) => {
           .string()
           .min(4, "Too Short!")
           .max(20, "Too Long!")
-          .required(`A value for ${startCase(variable.name)} is required`))
+          .required(`A value for ${startCase(variable.name)} is required`)
           .email(`${startCase(variable.display)} must be a valid email`))
       : variable.type === "file"
       ? (formValidationData[variable.name] = yup.object().shape({
