@@ -66,3 +66,7 @@ Please follow the [INSTALL](./INSTALL.md) guide to install the platform. Note we
 ## Development
 
 Please refer to the [DEVELOPMENT](./docs/DEVELOPMENT.md) guide to develop on the platform.
+
+## Deployment with CI/CD
+
+Please refer to the [CICD](./docs/CICD.md) guide to setup automated deployment with Github actions for the platform.

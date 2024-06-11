@@ -39,12 +39,12 @@
   },
   "vendors": {
     "OpenAI": {
-      "enabled": true,
+      "enabled": false,
       "api_key": "openai-api-key",
       "env_flag": "ENABLE_OPENAI_LLM"
     },
     "Cohere": {
-      "enabled": true,
+      "enabled": false,
       "api_key": "cohere-api-key",
       "env_flag": "ENABLE_COHERE_LLM"
     }
