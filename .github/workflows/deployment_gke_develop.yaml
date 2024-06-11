@@ -29,6 +29,8 @@ env:
   SKAFFOLD_CACHE_GCS: gs://artifacts.${{ vars.PROJECT_ID }}.appspot.com/skaffold/cache
   SKAFFOLD_BUILD_CONCURRENCY: 0
   PG_HOST: ${{ vars.PG_HOST }}
+  AUTH_AUTO_CREATE_USERS: ${{ vars.AUTH_AUTO_CREATE_USERS }}
+  AUTH_EMAIL_DOMAINS_WHITELIST: ${{ vars.AUTH_EMAIL_DOMAINS_WHITELIST }}
 
 jobs:
   deploy_backends:
