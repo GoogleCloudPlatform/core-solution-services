@@ -58,7 +58,7 @@ export const AuthAppRouter: React.FunctionComponent<AuthAppRouterProps> = ({
         />
         <Route
           path="/queryengines/new"
-          element={<NewQueryEngine />}
+          element={<NewQueryEngine token={token!} />}
         />
         <Route path="/about" element={<About />} />
         <Route path="/aichat" element={<AIChatRoute />} />

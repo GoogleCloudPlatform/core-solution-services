@@ -6,25 +6,22 @@ import { QUERY_ENGINE_FORM_DATA } from "@/utils/data"
 import { QueryEngine, QueryEngineBuildJob } from "@/utils/types"
 import { TrashIcon } from "@heroicons/react/24/outline"
 import axios from "axios"
-import nookies from "nookies"
 import React, { useEffect, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { ALERT_TYPE } from "@/utils/types"
 import { Link, useNavigate } from "react-router-dom"
 import { useQueryParams } from "@/utils/routing"
-
-// TODO: import { userStore } from "@/store"
-// TODO: import { alertStore } from "@/store"
+import { userStore, alertStore } from "@/store"
 
 interface INewQueryEngineProps {
-  initialQueryEngineId: string | null
+  token: string
 }
 
-const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
+const NewQueryEngine: React.FC<INewQueryEngineProps> = ({ token }) => {
   const [formError, setFormError] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const isAdmin = true   // TODO: userStore((state) => state.isAdmin)
+  const isAdmin = userStore((state) => state.isAdmin)
 
   const params = useQueryParams()
   const id = params.get("qe_id")
@@ -50,7 +47,6 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = () => {
     setQueryEngine(queryEngineToUpdate)
   }, [queryEngines])
 
-  const token = nookies.get().token
   const options = { headers: { Authorization: `Bearer ${token}` } }
 
   const buildQueryEngine = useMutation({
