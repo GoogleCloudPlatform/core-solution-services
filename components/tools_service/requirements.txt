@@ -5,7 +5,7 @@ google-cloud-resource-manager==1.9.1
 google-cloud-storage==2.10.0
 gspread==5.12.2
 invoke==2.0.0
-langchain==0.0.329
+langchain==0.1.0
 numpy==1.25.0
 openai==0.28.1
 packaging==21.3
