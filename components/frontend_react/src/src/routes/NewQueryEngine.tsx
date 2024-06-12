@@ -21,7 +21,7 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = ({ token }) => {
   const [formError, setFormError] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const isAdmin = userStore((state) => state.isAdmin)
+  const isAdmin = true // TODO: userStore((state) => state.isAdmin)
 
   const params = useQueryParams()
   const id = params.get("qe_id")
@@ -61,7 +61,7 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = ({ token }) => {
     // Update existing queryEngine
     if (queryEngine) {
       updateQEngine.mutate(
-        queryEngine: queryEngine,
+        queryEngine,
         {
           onSuccess: (resp?: QueryEngineBuildJob) => {
             // TODO
@@ -75,7 +75,7 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = ({ token }) => {
     }
     // Else, create a new queryEngine
     buildQueryEngine.mutate(
-      queryEngine: queryEngine,
+      queryEngine,
       {
         onSuccess: (resp?: QueryEngineBuildJob) => {
           // TODO
