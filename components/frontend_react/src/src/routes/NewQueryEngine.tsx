@@ -1,6 +1,6 @@
 import QueryEngineForm from "@/components/forms/QueryEngineForm"
 import Header from "@/components/typography/Header"
-import { fetchAllEngines, createQueryEngine } from "@/utils/api"
+import { fetchAllEngines, createQueryEngine, updateQueryEngine } from "@/utils/api"
 import Loading from "@/navigation/Loading"
 import { QUERY_ENGINE_FORM_DATA } from "@/utils/data"
 import { QueryEngine, QueryEngineBuildJob } from "@/utils/types"
@@ -53,30 +53,29 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = ({ token }) => {
     mutationFn: createQueryEngine(token),
   })
 
+  const updateQEngine = useMutation({
+    mutationFn: updateQueryEngine(token),
+  })
+
   const onSubmit = async (newQueryEngine: QueryEngine) => {
     // Update existing queryEngine
     if (queryEngine) {
-      return await axios
-        .put(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/query/engine/${queryEngine.id}/`,
-          newQueryEngine,
-          options,
-        )
-        .then(async (res) => {
-          // Update queryEngines context data
-          const updated = [
-            ...queryEngines!.filter((d) => d.id !== res.data.queryEngine.id),
-            res.data.queryEngine,
-          ]
-          setFormError(false)
-          setQueryEngines(updated)
-        })
+      updateQEngine.mutate(
+        queryEngine: queryEngine,
+        {
+          onSuccess: (resp?: QueryEngineBuildJob) => {
+            // TODO
+          },
+          onError: () => {
+            setActiveJob(false)
+            // TODO
+          }
+        }
+      )      
     }
     // Else, create a new queryEngine
     buildQueryEngine.mutate(
-      {
-        queryEngine: queryEngine
-      },
+      queryEngine: queryEngine,
       {
         onSuccess: (resp?: QueryEngineBuildJob) => {
           // TODO
@@ -87,8 +86,6 @@ const NewQueryEngine: React.FC<INewQueryEngineProps> = ({ token }) => {
         }
       }
     )
-    
-    
   }
   const onSuccess = () => setFormSubmitted(true)
   const onFailure = (error: unknown) => {

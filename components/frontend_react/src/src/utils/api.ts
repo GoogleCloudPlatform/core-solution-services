@@ -127,9 +127,7 @@ export const fetchAllEngines =
   }
 
 export const createQueryEngine =
-  (token: string) => async ({
-    queryEngine,
-  }: RunQueryParams): Promise<QueryEngineBuildJob | undefined> => {
+  (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngineBuildJob | undefined> => {
     const url = `${endpoint}/query/engine`
     const headers = { Authorization: `Bearer ${token}` }
     const data = {
@@ -146,6 +144,16 @@ export const createQueryEngine =
       }
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
+  }
+
+export const updateQueryEngine =
+  (token: string) => (queryEngine: QueryEngine): Promise<QueryEngine | undefined> => {
+    const url = `${endpoint}/query/engine/${queryEngine.id}`
+    const headers = { Authorization: `Bearer ${token}` }
+    const data = {
+      "description": queryEngine.description,
+    }
+    return axios.put(url, data, { headers }).then(path(["data", "data"]))
   }
 
 export const createQuery =
