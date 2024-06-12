@@ -16,7 +16,7 @@
 
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
-from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError
+from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError, get_user
 
 from common.utils.errors import TokenNotFoundError, UnauthorizedUserError
 from common.utils.http_exceptions import (BadRequest, InvalidToken,
@@ -59,14 +59,7 @@ def validate_id_token(token: auth_scheme = Depends()):
     if token is None:
       raise TokenNotFoundError("Token not found")
     token_dict = dict(token)
-
-    print("authentication.src.routes.validate_token.validate_id_token")
-    print(token_dict)
-
     token_data = validate_token(token_dict["credentials"])
-
-    print("authentication.src.routes.validate_token.validate_id_token")
-    print(token_data)
 
     user_email = token_data["email"]
     email_domain = user_email.split("@")[1]
@@ -76,12 +69,19 @@ def validate_id_token(token: auth_scheme = Depends()):
     if AUTH_AUTO_CREATE_USERS and email_domain in AUTH_EMAIL_DOMAINS_WHITELIST:
       create_if_not_exist = True
 
-    ## we get this far
+    ## check env variables
     print("AUTH_AUTO_CREATE_USERS", AUTH_AUTO_CREATE_USERS)
     print("AUTH_EMAIL_DOMAINS_WHITELIST", AUTH_EMAIL_DOMAINS_WHITELIST)
     print("email_domain in AUTH_EMAIL_DOMAINS_WHITELIST",
           email_domain in AUTH_EMAIL_DOMAINS_WHITELIST)
     print("create_if_not_exist", create_if_not_exist)
+
+    # check custom claims
+    user = get_user(token_data["user_id"])
+    print(user.custom_claims)
+    print(user.custom_claims.get('admin'))
+    print(user.custom_claims.get('level'))
+    print(user.email)
 
     user = get_user_by_email(user_email,
                              check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER,

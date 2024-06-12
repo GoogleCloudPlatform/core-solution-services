@@ -71,16 +71,13 @@ def validate_token(bearer_token):
   token = bearer_token
   decoded_token = None
 
-  print("authentication.src.services.validation_service.validate_token")
-  print(token)
-
   cached_token = get_token_cache(f"cache::{token}")
   decoded_token = cached_token if cached_token else verify_id_token(token)
   if not cached_token:
     cached_token = set_token_cache(f"cache::{token}", decoded_token)
     Logger.info(f"Id Token caching status: {cached_token}")
 
-  Logger.info(f"Id Token: {decoded_token}")
+  Logger.info(f"decoded_token: {decoded_token}")
   return decoded_token
 
 
