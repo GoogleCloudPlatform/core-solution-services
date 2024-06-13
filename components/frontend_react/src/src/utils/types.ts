@@ -125,10 +125,21 @@ export type QueryEngine = {
   agents: string[] | null  
 }
 
+export type QueryEngineBuild = {
+  doc_url: string
+  query_engine: string
+  query_engine_type: string
+  llm_type: string
+  embedding_type: string
+  vector_store: string
+}
+
 export type QueryEngineBuildJob = {
   name: string
   type: string
   status: string
+  input_data: QueryEngineBuild
+  created_time: string
 }
 
 export interface QueryResponse {

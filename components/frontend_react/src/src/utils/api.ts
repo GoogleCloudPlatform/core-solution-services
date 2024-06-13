@@ -40,9 +40,18 @@ interface ResumeChatParams {
   llmType: string
 }
 
+interface JobStatusResponse {
+  status: "succeeded" | "failed" | "active"
+}
+
 const endpoint = envOrFail(
   "VITE_PUBLIC_API_ENDPOINT",
   import.meta.env.VITE_PUBLIC_API_ENDPOINT,
+)
+
+const jobsEndpoint = envOrFail(
+  "VITE_PUBLIC_API_JOBS_ENDPOINT",
+  import.meta.env.VITE_PUBLIC_API_JOBS_ENDPOINT,
 )
 
 export const fetchAllChatModels =
@@ -186,3 +195,27 @@ export const resumeQuery =
     }
     return axios.post(url, data, { headers }).then(path(["data", "data", "user_query_id"]))
   }
+
+export const getJobStatus =
+  async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
+    if (!token) return Promise.resolve(undefined)
+    const url = `${jobsEndpoint}/jobs/agent_run/${jobId}`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+ }
+
+export const getEngineJobStatus =
+  async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
+    if (!token) return Promise.resolve(undefined)
+    const url = `${jobsEndpoint}/jobs/query_engine_build/${jobId}`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+ }
+
+export const fetchAllEngineJobs =
+  async (token: string): Promise<QueryEngineBuildJob[] | undefined> => {
+    if (!token) return Promise.resolve(undefined)
+    const url = `${jobsEndpoint}/jobs/query_engine_build`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+ }
