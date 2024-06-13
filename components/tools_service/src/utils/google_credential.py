@@ -34,7 +34,7 @@ def get_google_credential():
   # Write credential files to local tmp as the temporary approach.
   oauth_token = get_secret("tools-gmail-oauth-token")
   token_file_path = "/tmp/oauth_token.json"
-  client_secrets = get_secret("tools-gmail-client-secrets")
+  client_secrets = get_secret("tools-gmail-client-secret")
   client_secrets_file_path = "/tmp/client_secrets.json"
 
   with open(token_file_path, "w", encoding="utf-8") as file:

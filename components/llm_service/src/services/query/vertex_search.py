@@ -37,9 +37,9 @@ Logger = Logger.get_logger(__file__)
 # valid file extensions for Vertex Search
 VALID_FILE_EXTENSIONS = [".pdf", ".html", ".csv", ".json"]
 
-def query_vertex_search(q_engine: QueryEngine,
-                        search_query: str,
-                        num_results: int) -> List[QueryReference]:
+async def query_vertex_search(q_engine: QueryEngine,
+                              search_query: str,
+                              num_results: int) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents from a vertex search engine.
@@ -56,9 +56,9 @@ def query_vertex_search(q_engine: QueryEngine,
   data_store_id = q_engine.index_id
 
   # get search results from vertex
-  search_results = perform_vertex_search(data_store_id,
-                                         search_query,
-                                         num_results)
+  search_results = await perform_vertex_search(data_store_id,
+                                               search_query,
+                                               num_results)
 
   # create query document and reference models to store results
   query_references = []
@@ -102,10 +102,10 @@ def query_vertex_search(q_engine: QueryEngine,
 
   return query_references
 
-def perform_vertex_search(data_store_id: str,
-                          search_query: str,
-                          num_results: int) -> \
-                          List[discoveryengine.SearchResponse.SearchResult]:
+async def perform_vertex_search(data_store_id: str,
+                                search_query: str,
+                                num_results: int) -> \
+    List[discoveryengine.SearchResponse.SearchResult]:
   """ Send a search request to Vertex Search """
   project_id = PROJECT_ID
   location = "global"
@@ -117,7 +117,8 @@ def perform_vertex_search(data_store_id: str,
   )
 
   # Create a client
-  client = discoveryengine.SearchServiceClient(client_options=client_options)
+  client = \
+      discoveryengine.SearchServiceAsyncClient(client_options=client_options)
 
   # The full resource name of the search engine serving config, e.g.
   # "projects/{project_id}/locations/{location}/dataStores/{data_store_id}"
@@ -159,7 +160,7 @@ def perform_vertex_search(data_store_id: str,
   )
 
   # perform search with client
-  response = client.search(request)
+  response = await client.search(request)
 
   # get list of results
   result_list = response.results
@@ -439,7 +440,7 @@ def wait_for_operation(operation):
     result = None
   else:
     # wait for result
-    result = operation.result()
+    result = operation.result(timeout=10000)
   return result
 
 def datastore_id_from_engine(q_engine: QueryEngine) -> str:

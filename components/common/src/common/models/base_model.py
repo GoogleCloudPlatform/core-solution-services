@@ -146,6 +146,11 @@ class BaseModel(Model):
           f"{cls.collection_name} with id {doc_id} is not found")
     return obj
 
+
+  def reload(self):
+    """ reload this model """
+    return self.find_by_id(self.id)
+
   @classmethod
   def delete_by_id(cls, doc_id):
     """Deletes from the Database the object of this type by id (not key)

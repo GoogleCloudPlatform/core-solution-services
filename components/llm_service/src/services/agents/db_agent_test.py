@@ -36,6 +36,10 @@ FAKE_SQL_QUERY_RESULT = {
   "rows": [[1],[2],[3]]
 }
 
+FAKE_SQL_QUERY_RESPONSE = [
+  {"test": 1}, {"test": 2}, {"test": 3}
+]
+
 FAKE_SQL_STATEMENT = "SELECT test FROM testdb"
 
 FAKE_SPREADSHEET_OUTPUT = {"sheet_url": "test url"}
@@ -83,5 +87,5 @@ async def test_run_db_agent(mock_create_google_sheet,
   prompt = "how much data is too much?"
   output, _ = await run_db_agent(prompt, dataset=dataset)
 
-  assert output["data"] == FAKE_SQL_QUERY_RESULT
+  assert output["db_result"] == FAKE_SQL_QUERY_RESPONSE
   assert output["resources"]["Spreadsheet"] == "test url"
