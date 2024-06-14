@@ -46,8 +46,8 @@ export const links: INavigationItem[] = [
     icon: <div className="i-heroicons-tag h-5 w-5" />,
   },
   {
-    name: "Add Query Engine",
-    href: "/queryengines/new",
+    name: "Query Engines Admin",
+    href: "/queryengines/admin",
     show: () => true,
     icon: <PlusIcon className="text-primary-content h-5 w-5" />,
   },

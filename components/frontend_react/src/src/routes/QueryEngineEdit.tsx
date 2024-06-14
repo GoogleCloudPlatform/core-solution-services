@@ -22,13 +22,13 @@ interface IQueryEngineProps {
   token: string
 }
 
-const QueryEngine: React.FC<IQueryEngineProps> = ({ token }) => {
+const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const [formError, setFormError] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const isAdmin = true // TODO: userStore((state) => state.isAdmin)
 
-  const [activeTab, setActiveTab] = useState<TAB>(TAB.MISSION)
+  const [activeTab, setActiveTab] = useState<TAB>(TAB.QUERY_ENGINE)
 
   const params = useQueryParams()
   const id = params.get("qe_id")
@@ -213,4 +213,4 @@ const QueryEngine: React.FC<IQueryEngineProps> = ({ token }) => {
   )
 }
 
-export default QueryEngine
+export default QueryEngineEdit

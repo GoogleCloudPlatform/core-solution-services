@@ -19,7 +19,7 @@ import AnalyticsOutlet from "@/routes/AnalyticsOutlet"
 import Conversations from "@/routes/Conversations"
 import Queries from "@/routes/Queries"
 import QueryEngines from "@/routes/QueryEngines"
-import QueryEngine from "@/routes/QueryEngine"
+import QueryEngineAdmin from "@/routes/QueryEngineAdmin"
 import Firestore from "@/routes/FirestoreUsers"
 import Home from "@/routes/Home"
 import NotFound from "@/routes/NotFound"
@@ -57,8 +57,8 @@ export const AuthAppRouter: React.FunctionComponent<AuthAppRouterProps> = ({
           element={<QueryEngines token={token!} />}
         />
         <Route
-          path="/queryengines/new"
-          element={<QueryEngine token={token!} />}
+          path="/queryengines/admin"
+          element={<QueryEngineAdmin token={token!} />}
         />
         <Route path="/about" element={<About />} />
         <Route path="/aichat" element={<AIChatRoute />} />

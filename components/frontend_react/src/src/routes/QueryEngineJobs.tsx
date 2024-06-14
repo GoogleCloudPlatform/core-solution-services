@@ -45,17 +45,17 @@ const QueryEngineJobs: React.FC<QueryEngineJobProps> = ({ token }) => {
   useEffect(() => {  
     const pollJobStatus = async () => {
       jobRunning = false
-      queryEngineJobs.map(job, i) => (
+      queryEngineJobs.forEach(async (job) => {
         if (job.status === "pending" || job.status === "running") {
           try {
             const jobUpdate = await getEngineJobStatus(job.name, token)
-            queryEngineJobs[i].status = jobUpdate?.status
+            job.status = jobUpdate?.status
           } catch (error) {
             console.log("Error polling")
           }
           jobRunning = true
         }
-      )
+      })
       if (!jobRunning) {
         clearInterval(pollIntervalId)
       }

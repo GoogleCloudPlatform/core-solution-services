@@ -1,0 +1,71 @@
+import React, { useState } from "react"
+import { classNames } from "@/utils/dom"
+import { useNavigate } from "react-router-dom"
+import { useQueryParams } from "@/utils/routing"
+import { userStore } from "@/store"
+import QueryEngineEdit from "@/routes/QueryEngineEdit"
+import QueryEngineJobs from "@/routes/QueryEngineJobs"
+
+enum TAB {
+  QUERY_ENGINE = "Query Engine",
+  QUERY_ENGINE_JOBS = "Query Engine Jobs",
+}
+
+interface IQueryEngineAdminProps {
+  token: string
+}
+
+const QueryEngineAdmin: React.FC<IQueryEngineAdminProps> = ({ token }) => {
+
+  const isAdmin = true // TODO: userStore((state) => state.isAdmin)
+
+  const [activeTab, setActiveTab] = useState<TAB>(TAB.QUERY_ENGINE)
+
+  const params = useQueryParams()
+  const id = params.get("qe_id")
+  const navigate = useNavigate()
+  
+  const renderTab = (tab: TAB) => {
+    return (
+      <a
+        role="tab"
+        data-testid={tab}
+        className={classNames(
+          "tab px-6 md:px-12 font-bold",
+          activeTab == tab ? "border-b-2 border-primary text-base-content" : "",
+        )}
+        onClick={(e) => {
+          e.preventDefault()
+          setActiveTab(tab)
+        }}
+      >
+        {tab}
+      </a>
+    )
+  }
+
+  return (
+    <div className="mb-4 mt-2 rounded-lg border border-base-300 bg-base-100 p-4 text-sm">
+      <div className="tabs">
+        <div>{renderTab(TAB.QUERY_ENGINE)}</div>
+        <div>{renderTab(TAB.QUERY_ENGINE_JOBS)}</div>
+      </div>
+
+      <div className="p-0">
+        {activeTab === TAB.QUERY_ENGINE && (
+          <div className="border-t border-base-300 p-2">
+            <QueryEngineEdit token={token!} />
+          </div>
+        )}
+
+        {activeTab === TAB.QUERY_ENGINE_JOBS && (
+          <div className="border-t border-base-300 p-2">
+            <QueryEngineJobs token={token!} />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default QueryEngineAdmin
