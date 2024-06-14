@@ -27,6 +27,7 @@ from common.utils.http_exceptions import (InternalServerError,
 from schemas.sign_in_schema import (SignInWithCredentialsModel,
                                     SignInWithCredentialsResponseModel,
                                     SignInWithTokenResponseModel)
+from common.utils.auth_service import validate_token
 from services.validation_service import validate_google_oauth_token
 from config import (AUTH_REQUIRE_FIRESTORE_USER,
                     FIREBASE_API_KEY,
@@ -44,11 +45,22 @@ router = APIRouter(
     tags=["Sign In"], prefix="/sign-in", responses=ERROR_RESPONSES)
 
 
+@router.post("/authorize")
+def authorize_with_token(provider_id_token: str,
+                         user_data: dict = Depends(validate_token)):
+
+  print(provider_id_token)
+  print(user_data)
+
+  return {
+    "success": True
+  }
+
 @router.post("/token", response_model=SignInWithTokenResponseModel)
 def sign_in_with_token(token: auth_scheme = Depends()):
   """This endpoint will take the Google oauth token as an Authorization header
   and returns the firebase id_token and refresh token.
-  
+
   If the user does not exist in the user store a user model will be created.
   """
 
@@ -110,7 +122,7 @@ def sign_in_with_token(token: auth_scheme = Depends()):
 def sign_in_with_credentials(credentials: SignInWithCredentialsModel):
   """This endpoint will take the user email and password as an input
   and returns an id token and refresh token from the IDP.
-  
+
   If the user does not exist in the user store a user model will be created.
   """
   try:
