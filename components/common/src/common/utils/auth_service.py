@@ -64,8 +64,6 @@ def validate_oauth_token(token: auth_scheme = Depends()):
   if token_dict["credentials"]:
     api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
         "api/v1/validate"
-    print(f"api_endpoint {api_endpoint}")
-    print(f"token_dict['scheme'] {token_dict['scheme']}")
     print(f"token_dict['credentials'] {token_dict['credentials']}")
     res = requests.get(
         url=api_endpoint,
