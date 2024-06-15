@@ -52,7 +52,8 @@ def authorize_with_token(provider_id_token: str,
                          token: auth_scheme = Depends()):
 
   # print("token", token)
-  result = verify_id_token(token)
+  token_dict = dict(token)
+  result = verify_id_token(token_dict["credentials"])
   user_id = result["user_id"]
   print("user_id", user_id)
 
