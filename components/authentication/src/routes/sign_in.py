@@ -18,7 +18,7 @@ import json
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from requests.exceptions import ConnectTimeout
-from firebase_admin.auth import verify_id_token
+from firebase_admin.auth import verify_id_token, get_user, set_custom_user_claims
 from common.utils.user_handler import get_user_by_email, create_user_in_firestore
 from common.utils.logging_handler import Logger
 from common.utils.sessions import create_session
@@ -51,21 +51,30 @@ router = APIRouter(
 def authorize_with_token(provider_id_token: str,
                          token: auth_scheme = Depends()):
 
-  print("!!token passed to authorize", token)
+  # validate the Firebase auth token
   token_dict = dict(token)
   result = verify_id_token(token_dict["credentials"])
+  # get the user ID
   user_id = result["user_id"]
-  print("user_id", user_id)
 
-  # print(provider_id_token)
+  # decode the auth provider id token to retrieve the roles
   payload = provider_id_token.split(".")[1]
   decoded_payload = base64.b64decode(payload)
   decoded_token = json.loads(decoded_payload.decode())
-  print(decoded_token)
+
+  # update firebase user with roles defined by auth provider
   if "roles" in decoded_token:
-    print("roles", decoded_token["roles"])
+    roles = decoded_token["roles"]
+    print("!! Auth provider roles", roles)
   else:
-    print("no roles")
+    roles = ["0"]
+
+  user = get_user(user_id)
+  if user.custom_claims:
+      print("!! Current firebase custom claims", user.custom_claims)
+
+  set_custom_user_claims(user_id, { "roles": roles })
+  print("!! Updated firebase custom claims", user.custom_claims)
 
   return {
     "success": True
