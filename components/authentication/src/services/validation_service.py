@@ -69,6 +69,9 @@ def validate_token(bearer_token):
         Decoded Token and User type: Dict
   """
   token = bearer_token
+
+  print("!!token passed to verify", token)
+
   decoded_token = None
 
   cached_token = get_token_cache(f"cache::{token}")
