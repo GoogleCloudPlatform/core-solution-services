@@ -13,6 +13,8 @@
 # limitations under the License.
 """ Sign In endpoints """
 import requests
+import base64
+import json
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from requests.exceptions import ConnectTimeout
@@ -47,10 +49,15 @@ router = APIRouter(
 
 @router.post("/authorize")
 def authorize_with_token(provider_id_token: str,
-                         user_data: dict = Depends(validate_token)):
+                         token: auth_scheme = Depends()):
 
   print(provider_id_token)
-  print(user_data)
+  print(token)
+
+  payload = provider_id_token.split('.')[1]
+  decoded_payload = base64.b64decode(payload)
+  decoded_token = json.loads(decoded_payload.decode())
+  print(decoded_token)
 
   return {
     "success": True
