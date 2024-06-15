@@ -18,6 +18,7 @@ import json
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from requests.exceptions import ConnectTimeout
+from firebase_admin.auth import verify_id_token
 from common.utils.user_handler import get_user_by_email, create_user_in_firestore
 from common.utils.logging_handler import Logger
 from common.utils.sessions import create_session
@@ -29,7 +30,6 @@ from common.utils.http_exceptions import (InternalServerError,
 from schemas.sign_in_schema import (SignInWithCredentialsModel,
                                     SignInWithCredentialsResponseModel,
                                     SignInWithTokenResponseModel)
-from common.utils.auth_service import validate_token
 from services.validation_service import validate_google_oauth_token
 from config import (AUTH_REQUIRE_FIRESTORE_USER,
                     FIREBASE_API_KEY,
@@ -51,13 +51,20 @@ router = APIRouter(
 def authorize_with_token(provider_id_token: str,
                          token: auth_scheme = Depends()):
 
-  print(provider_id_token)
-  print(token)
+  # print("token", token)
+  result = verify_id_token(token)
+  user_id = result["user_id"]
+  print("user_id", user_id)
 
-  payload = provider_id_token.split('.')[1]
+  # print(provider_id_token)
+  payload = provider_id_token.split(".")[1]
   decoded_payload = base64.b64decode(payload)
   decoded_token = json.loads(decoded_payload.decode())
   print(decoded_token)
+  if "roles" in decoded_token:
+    print("roles", decoded_token["roles"])
+  else:
+    print("no roles")
 
   return {
     "success": True
