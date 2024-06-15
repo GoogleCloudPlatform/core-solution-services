@@ -17,10 +17,19 @@ import config
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from routes import (refresh_token, validate_token, password, sign_in, sign_up)
+from common.config import CORS_ALLOW_ORIGINS
 from common.utils.http_exceptions import add_exception_handlers
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ALLOW_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 """
 For Local Development

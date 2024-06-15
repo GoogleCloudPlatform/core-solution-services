@@ -71,9 +71,11 @@ def authorize_with_token(provider_id_token: str,
 
   user = get_user(user_id)
   if user.custom_claims:
-      print("!! Current firebase custom claims", user.custom_claims)
-
+    print("!! Current firebase custom claims", user.custom_claims)
   set_custom_user_claims(user_id, { "roles": roles })
+
+  # check that fierbase auth user has the new roles
+  user = get_user(user_id)
   print("!! Updated firebase custom claims", user.custom_claims)
 
   return {
