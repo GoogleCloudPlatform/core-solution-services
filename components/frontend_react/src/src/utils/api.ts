@@ -147,9 +147,9 @@ export const createQueryEngine =
       "vector_store": queryEngine.vector_store,
       "description": queryEngine.description,
       "params": {
-        "depth_limit": queryEngine.params.depth_limit,
-        "agents": queryEngine.params.agents,
-        "associated_engines": queryEngine.params.child_engines,
+        "depth_limit": queryEngine.depth_limit,
+        "agents": queryEngine.agents,
+        "associated_engines": queryEngine.child_engines,
       }
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))

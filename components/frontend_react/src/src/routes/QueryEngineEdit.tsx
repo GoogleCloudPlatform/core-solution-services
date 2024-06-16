@@ -81,21 +81,23 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
       )      
     }
     // Else, create a new queryEngine
-    buildQueryEngine.mutate(
-      queryEngine,
-      {
-        onSuccess: (resp?: QueryEngineBuildJob) => {
-          setAlert({
-            message: "Submitted QueryEngine Build Job: " + resp.name,
-            type: ALERT_TYPE.SUCCESS,
-          })
-        },
-        onError: () => {
-          setActiveJob(false)
-          // TODO
+    else {
+      buildQueryEngine.mutate(
+        newQueryEngine,
+        {
+          onSuccess: (resp?: QueryEngineBuildJob) => {
+            setAlert({
+              message: "Submitted QueryEngine Build Job: " + resp.name,
+              type: ALERT_TYPE.SUCCESS,
+            })
+          },
+          onError: () => {
+            setActiveJob(false)
+            // TODO
+          }
         }
-      }
-    )
+      )
+    }
   }
   const onSuccess = () => setFormSubmitted(true)
   const onFailure = (error: unknown) => {

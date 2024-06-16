@@ -171,7 +171,6 @@ export type QueryEngine = {
   llm_type: string | null
   parent_engine_id: string
   user_id: string
-  params: string[] | null
   query_engine_type: string
   description: string
   embedding_type: string
@@ -181,7 +180,10 @@ export type QueryEngine = {
   index_name: string | null
   endpoint: string | null
   doc_url: string | null
+  params: string[] | null
+  depth_limit: number | null
   agents: string[] | null  
+  child_engines: string[] | null
 }
 
 export type QueryEngineBuild = {
