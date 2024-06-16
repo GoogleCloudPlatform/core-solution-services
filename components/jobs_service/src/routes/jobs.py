@@ -15,6 +15,7 @@
 # pylint: disable = broad-except,unused-import
 
 """ Service to monitor batch jobs """
+import json
 import traceback
 from fastapi import APIRouter
 from common.utils.batch_jobs import (get_all_jobs, get_job_status,
@@ -70,14 +71,14 @@ def get_all_job_status(job_type_const: JobTypes):
   """ Get status of all jobs by type """
   job_type = job_type_const.value
   try:
-    data = get_all_jobs(job_type)
+    jobs = get_all_jobs(job_type)
+    for job in jobs:
+      job["input_data"] = json.loads(job["input_data"])
     response = {
-        "success":
-            True,
+        "success": True,
         "message":
             f"Successfully fetched all the batch jobs of type {job_type}",
-        "data":
-            data
+        "data": jobs
     }
     return response
   except Exception as e:

@@ -65,7 +65,7 @@ const QueryEngines: React.FC<QueryEnginesProps> = ({ token }) => {
                   i % 2 === 0 ? "bg-base-200" : "bg-base-100",
                 )}
               >
-                <td className="text-sm lg:text-base">
+                <td className="text-sm lg:min-w-60">
                   <Link
                     to={`/aiquery`}
                     className="text-primary text-sm transition hover:underline lg:text-base"
@@ -73,14 +73,14 @@ const QueryEngines: React.FC<QueryEnginesProps> = ({ token }) => {
                     {engine.name}
                   </Link>
                 </td>
-                <td className="text-xs md:text-sm lg:min-w-56 lg:text-base">
+                <td className="text-xs md:text-sm lg:min-w-46 lg:text-base">
                   {QUERY_ENGINE_TYPES[engine.query_engine_type]}
                 </td>
                 <td className="text-xs md:text-sm lg:min-w-56 lg:text-base">
                   {engine.doc_url}
                 </td>
                 <td className="text-xs md:text-sm lg:min-w-56 lg:text-base">
-                  {dayjs(engine.created_time).format("MMM D, YYYY • h:mm A")}
+                  {dayjs(engine.created_time).format("MMM D • h:mm A")}
                 </td>
               </tr>
             ))}

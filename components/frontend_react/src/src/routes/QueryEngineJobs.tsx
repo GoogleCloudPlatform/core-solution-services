@@ -25,7 +25,7 @@ interface QueryEngineJobProps {
   token: string
 }
 
-const MAX_ENGINE_DISPLAY = 20
+const MAX_JOB_DISPLAY = 20
 
 const QueryEngineJobs: React.FC<QueryEngineJobProps> = ({ token }) => {
   const [queryEngineJobs, setQueryEngineJobs] = useState<QueryEngineBuildJob[]>([])
@@ -72,6 +72,15 @@ const QueryEngineJobs: React.FC<QueryEngineJobProps> = ({ token }) => {
 
   if (isLoading) return <Loading />
 
+  if (engineJobsError) {
+    console.log("Error loading engine jobs")
+    return (
+      <div className="overflow-x-auto custom-scrollbar">
+        Cannot load Query Engine Jobs
+      </div>
+    )
+  }
+
   return (
     <div className="overflow-x-auto custom-scrollbar">
       <table className="table-lg table-zebra table w-full">
@@ -87,7 +96,7 @@ const QueryEngineJobs: React.FC<QueryEngineJobProps> = ({ token }) => {
         <tbody className="opacity-80">
           {queryEngineJobs
             .sort((a, b) => (b.created_time > a.created_time ? 1 : -1))
-            .slice(0, MAX_ENGINE_DISPLAY)
+            .slice(0, MAX_JOB_DISPLAY)
             .map((job, i) => (
               <tr
                 key={job.name}
@@ -111,7 +120,7 @@ const QueryEngineJobs: React.FC<QueryEngineJobProps> = ({ token }) => {
                   {job.status}
                 </td>
                 <td className="text-xs md:text-sm lg:min-w-56 lg:text-base">
-                  {dayjs(job.created_time).format("MMM D, YYYY • h:mm A")}
+                  {dayjs(job.created_time).format("MMM D • h:mm A")}
                 </td>
               </tr>
             ))}

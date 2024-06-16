@@ -213,9 +213,9 @@ export const getEngineJobStatus =
  }
 
 export const fetchAllEngineJobs =
-  async (token: string): Promise<QueryEngineBuildJob[] | undefined> => {
-    if (!token) return Promise.resolve(undefined)
+  (token: string) => (): Promise<QueryEngineBuildJob[] | undefined> => {
     const url = `${jobsEndpoint}/jobs/query_engine_build`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
  }
+

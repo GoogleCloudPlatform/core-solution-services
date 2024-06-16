@@ -224,7 +224,7 @@ export type QueryEngineBuildJob = {
   last_modified_time: string
   type: string
   status: string
-  input_data: any
+  input_data: QueryEngineBuild
   created_time: string
   result_data: any
   message: string
