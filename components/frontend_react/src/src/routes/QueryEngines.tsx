@@ -15,7 +15,7 @@
 import Loading from "@/navigation/Loading"
 import { fetchAllEngines } from "@/utils/api"
 import { classNames } from "@/utils/dom"
-import { QueryEngine } from "@/utils/types"
+import { QueryEngine, QUERY_ENGINE_TYPES } from "@/utils/types"
 import { useQuery } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import { useEffect, useState } from "react"
@@ -74,7 +74,7 @@ const QueryEngines: React.FC<QueryEnginesProps> = ({ token }) => {
                   </Link>
                 </td>
                 <td className="text-xs md:text-sm lg:min-w-56 lg:text-base">
-                  {engine.type}
+                  {QUERY_ENGINE_TYPES[engine.query_engine_type]}
                 </td>
                 <td className="text-xs md:text-sm lg:min-w-56 lg:text-base">
                   {engine.doc_url}

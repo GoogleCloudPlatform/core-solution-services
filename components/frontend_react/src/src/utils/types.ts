@@ -157,6 +157,12 @@ export type Chat = {
   history: ChatContents[]
 }
 
+export const QUERY_ENGINE_TYPES = {
+  "qe_vertex_search": "Vertex Search",
+  "qe_llm_service": "GENIE Search",
+  "qe_integrated_search": "Integrated Search"
+}
+
 export type QueryEngine = {
   id: string
   name: string
@@ -186,19 +192,45 @@ export type QueryEngine = {
   child_engines: string[] | null
 }
 
+export type QueryEngineBuildParams = {
+  depth_limit: string | null
+  agents: string | null
+  associated_engines: string | null
+}
+
 export type QueryEngineBuild = {
+  user_id: string
   doc_url: string
   query_engine: string
   query_engine_type: string
   llm_type: string
   embedding_type: string
   vector_store: string
+  description: string
+  params: QueryEngineBuildParams
 }
 
 export type QueryEngineBuildJob = {
+  id: string
+  uuid: string
   name: string
+  archived_at_timestamp: string | null
+  archived_by: string
+  created_by: string
+  created_time: string
+  deleted_at_timestamp: string | null
+  deleted_by: string
+  last_modified_by: string
+  last_modified_time: string
   type: string
   status: string
-  input_data: QueryEngineBuild
+  input_data: any
   created_time: string
+  result_data: any
+  message: string
+  generated_item_id: any
+  output_gcs_path: any
+  errors: any
+  job_logs: any
+  metadata: any  
 }
