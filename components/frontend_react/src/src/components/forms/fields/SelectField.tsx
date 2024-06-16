@@ -37,13 +37,15 @@ const SelectField: React.FC<SelectField> = ({ variable, formikProps }) => {
         >
           <option value="">Select</option>
           {variable.options?.map((option: any) => {
+            let selectOption: string = option
+            let selectValue: string = option
+            if (typeof option == 'object') {
+              selectOption = option.option
+              selectValue = option.value
+            }
             return (
-              <option key={option} value={option}>
-                {variable.name === "priority"
-                  ? `P${option}`
-                  : variable.name === "classification"
-                  ? startCase(option as string)
-                  : option}
+              <option key={selectOption} value={selectValue}>
+                {selectOption}
               </option>
             )
           })}
