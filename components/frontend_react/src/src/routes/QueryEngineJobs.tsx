@@ -44,7 +44,7 @@ const QueryEngineJobs: React.FC<QueryEngineJobProps> = ({ token }) => {
 
   useEffect(() => {  
     const pollJobStatus = async () => {
-      jobRunning = false
+      let jobRunning = false
       queryEngineJobs.forEach(async (job) => {
         if (job.status === "pending" || job.status === "running") {
           try {
