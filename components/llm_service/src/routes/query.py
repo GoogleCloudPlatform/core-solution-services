@@ -67,6 +67,7 @@ def get_engine_list():
     "id": qe.id,
     "name": qe.name,
     "query_engine_type": qe.query_engine_type,
+    "doc_url": qe.doc_url,
     "description": qe.description,
     "llm_type": qe.llm_type,
     "embedding_type": qe.embedding_type,
