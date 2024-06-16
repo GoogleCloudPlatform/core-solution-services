@@ -13,11 +13,6 @@ import { Link, useNavigate } from "react-router-dom"
 import { useQueryParams } from "@/utils/routing"
 import { userStore, alertStore } from "@/store"
 
-enum TAB {
-  QUERY_ENGINE = "Query Engine",
-  QUERY_ENGINE_JOBS = "Query Engine Jobs",
-}
-
 interface IQueryEngineProps {
   token: string
 }
@@ -27,8 +22,6 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const isAdmin = true // TODO: userStore((state) => state.isAdmin)
-
-  const [activeTab, setActiveTab] = useState<TAB>(TAB.QUERY_ENGINE)
 
   const params = useQueryParams()
   const id = params.get("qe_id")
