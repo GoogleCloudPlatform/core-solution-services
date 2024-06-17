@@ -14,7 +14,7 @@
 
 import QueryEngineForm from "@/components/forms/QueryEngineForm"
 import Header from "@/components/typography/Header"
-import { fetchAllEngines, createQueryEngine, updateQueryEngine } from "@/utils/api"
+import { fetchAllEngines, createQueryEngine, updateQueryEngine, deleteQueryEngine } from "@/utils/api"
 import Loading from "@/navigation/Loading"
 import { QUERY_ENGINE_FORM_DATA } from "@/utils/data"
 import { QueryEngine, QueryEngineBuildJob } from "@/utils/types"
@@ -38,7 +38,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const isAdmin = true // TODO: userStore((state) => state.isAdmin)
 
   const params = useQueryParams()
-  const id = params.get("qe_id")
+  const id = params.get("id")
   const navigate = useNavigate()
   
   const setAlert = alertStore((state) => state.setAlert)
@@ -61,14 +61,16 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
     setQueryEngine(queryEngineToUpdate)
   }, [queryEngines])
 
-  const options = { headers: { Authorization: `Bearer ${token}` } }
-
   const buildQueryEngine = useMutation({
     mutationFn: createQueryEngine(token),
   })
 
   const updateQEngine = useMutation({
     mutationFn: updateQueryEngine(token),
+  })
+
+  const deleteQEngine = useMutation({
+    mutationFn: deleteQueryEngine(token),
   })
 
   const onSubmit = async (newQueryEngine: QueryEngine) => {
@@ -119,11 +121,25 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const deleteQueryEngineDetails = async () => {
     if (!queryEngine) throw new Error("No id of queryEngine to delete")
     setDeleting(true)
-    await axios.delete(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/query/engine/${queryEngine.id}/`,
-      options,
-    )
-    navigate("")
+
+    deleteQEngine.mutate(
+      queryEngine,
+      {
+        onSuccess: (resp?: boolean) => {
+          if (resp) {
+            setAlert({
+              message: "Deleted successfully!",
+              type: ALERT_TYPE.SUCCESS,
+              durationMs: 4000,
+            })            
+          }
+        },
+        onError: () => {
+          // TODO
+        }
+      }
+    )          
+    navigate("/queryengines/admin")
   }
 
   useEffect(() => {
@@ -158,7 +174,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
           <div className="relative">
             {queryEngine && (
               <>
-                <Link href={`/query/engine/${queryEngine.id}/`}>
+                <Link href={`/queryengines/detail?id=${queryEngine.id}`}>
                   <button className="btn btn-outline btn-sm cursor-pointer absolute right-20 top-0 z-10">
                     View Details
                   </button>

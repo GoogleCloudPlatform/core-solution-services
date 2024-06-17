@@ -67,7 +67,7 @@ const QueryEngines: React.FC<QueryEnginesProps> = ({ token }) => {
               >
                 <td className="text-sm lg:min-w-60">
                   <Link
-                    to={`/aiquery`}
+                    to={`/queryengines/admin?id=${engine.id}`}
                     className="text-primary text-sm transition hover:underline lg:text-base"
                   >
                     {engine.name}
