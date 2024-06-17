@@ -90,6 +90,18 @@
       "provider": "Vertex",
       "model_name": "gemini-pro-vision"
     },
+    "VertexAI-Gemini-1.5-Pro": {
+      "is_chat": true,
+      "is_multi": true,
+      "provider": "Vertex",
+      "model_name": "gemini-1.5-pro-001"
+    },
+    "VertexAI-Gemini-1.5-Flash": {
+      "is_chat": true,
+      "is_multi": true,
+      "provider": "Vertex",
+      "model_name": "gemini-1.5-flash-001"
+    },
     "VertexAI-Chat-Palm2V2-Langchain": {
       "is_chat": true,
       "provider": "Langchain",
