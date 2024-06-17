@@ -94,7 +94,7 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     type: "select",
     description: "",
     options: [{option: "Vertex Search", value: "qe_vertex_search"},
-              {option: "GENIE", value: "qe_llm_service"},
+              {option: "GENIE Search", value: "qe_llm_service"},
               {option: "Integrated Search", value: "qe_integrated_search"}],
     default: "GENIE",
     required: true,
