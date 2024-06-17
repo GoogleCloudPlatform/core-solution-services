@@ -20,6 +20,7 @@ import Conversations from "@/routes/Conversations"
 import Queries from "@/routes/Queries"
 import QueryEngines from "@/routes/QueryEngines"
 import QueryEngineAdmin from "@/routes/QueryEngineAdmin"
+import QueryEngineDetail from "@/routes/QueryEngineDetail"
 import Firestore from "@/routes/FirestoreUsers"
 import Home from "@/routes/Home"
 import NotFound from "@/routes/NotFound"
@@ -59,6 +60,10 @@ export const AuthAppRouter: React.FunctionComponent<AuthAppRouterProps> = ({
         <Route
           path="/queryengines/admin"
           element={<QueryEngineAdmin token={token!} />}
+        />
+        <Route
+          path="/queryengines/detail"
+          element={<QueryEngineDetail token={token!} />}
         />
         <Route path="/about" element={<About />} />
         <Route path="/aichat" element={<AIChatRoute />} />
