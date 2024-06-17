@@ -135,6 +135,14 @@ export const fetchAllEngines =
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
 
+export const fetchEngine =
+  (token: string, engineId: string | null) => (): Promise<QueryEngine | undefined | null> => {
+    if (!engineId) return Promise.resolve(null)
+    const url = `${endpoint}/query/engine/${queryId}`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+  }
+
 export const createQueryEngine =
   (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngineBuildJob | undefined> => {
     const url = `${endpoint}/query/engine`
@@ -156,13 +164,21 @@ export const createQueryEngine =
   }
 
 export const updateQueryEngine =
-  (token: string) => (queryEngine: QueryEngine): Promise<QueryEngine | undefined> => {
+  (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngine | undefined> => {
     const url = `${endpoint}/query/engine/${queryEngine.id}`
     const headers = { Authorization: `Bearer ${token}` }
     const data = {
       "description": queryEngine.description,
     }
     return axios.put(url, data, { headers }).then(path(["data", "data"]))
+  }
+
+export const deleteQueryEngine =
+  (token: string) => async (queryEngine: QueryEngine): Promise<boolean | undefined> => {
+    const url = `${endpoint}/query/engine/${queryEngine.id}`
+    const headers = { Authorization: `Bearer ${token}` }
+    const data = {}
+    return axios.delete(url, data, { headers }).then(path(["data", "success"]))
   }
 
 export const createQuery =
