@@ -43,6 +43,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryEngineModel,
                                 LLMGetQueryEnginesResponse,
                                 LLMQueryEngineURLResponse,
+                                LLMQueryEngineResponse,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import (query_generate,
@@ -135,6 +136,45 @@ def get_urls_for_query_engine(query_engine_id: str):
       "message": "Successfully retrieved document URLs "
                  f"for query engine {query_engine_id}",
       "data": url_list
+    }
+  except ResourceNotFoundException as e:
+    raise ResourceNotFound(str(e)) from e
+  except Exception as e:
+    Logger.error(e)
+    Logger.error(traceback.print_exc())
+    raise InternalServerError(str(e)) from e
+
+@router.get(
+  "/engine/{query_engine_id}",
+  name="Get details for query engine",
+  response_model=LLMQueryEngineResponse)
+def get_query_engine(query_engine_id: str):
+  """
+  Get details for a Query Engine
+  Args:
+    query_engine_id (str):
+  Returns:
+      LLMQueryEngineResponse
+  """
+  try:
+    Logger.info(f"Get details for a Query Engine={query_engine_id}")
+
+    # get engine model
+    q_engine = QueryEngine.find_by_id(query_engine_id)
+    if q_engine is None:
+      raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
+    
+    # get query docs
+    query_docs = QueryDocument.find_by_query_engine_id(query_engine_id)
+    url_list = list(map(lambda query_doc: query_doc.doc_url, query_docs))
+    
+    response_data = q_engine.get_fields(reformat_datetime=True)
+    response_data["url_list"] = url_list
+    return {
+      "success": True,
+      "message": "Successfully retrieved details "
+                 f"for query engine {query_engine_id}",
+      "data": response_data
     }
   except ResourceNotFoundException as e:
     raise ResourceNotFound(str(e)) from e
@@ -407,7 +447,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       gen_config (LLMQueryEngineModel)
       user_data (dict)
   Returns:
-      LLMQueryEngineResponse
+      BatchJobModel
   """
 
   genconfig_dict = {**gen_config.dict()}
