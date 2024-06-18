@@ -68,15 +68,23 @@ FAKE_INTENT_OUTPUT = \
     f"Route:\n1. Use [Database:{FAKE_DATASET}] to query a database"
 
 FAKE_DB_AGENT_RESULT = {
-  "data": {
-    "columns": ["column-a", "column-b"],
-    "rows": [
-      ["fake-a1", "fake-b1"],
-      ["fake-a2", "fake-b2"],
-    ],
-  },
-  "resources": {"Spreadsheet": "https://example.com"}
+  "db_result": [
+    {
+      "column-a": "fake-a1",
+      "column-b": "fake-b1"
+    },
+    {
+      "column-a": "fake-a2",
+      "column-b": "fake-b2"
+    }
+  ],
+  "dataset": FAKE_DATASET,
+  "resources": {"Spreadsheet": "https://example.com"},
+  CHAT_AI: FAKE_AGENT_OUTPUT,
+  "content": FAKE_AGENT_OUTPUT,
 }
+
+
 
 FAKE_REFERENCES = USER_QUERY_EXAMPLE["history"][1]["AIReferences"]
 

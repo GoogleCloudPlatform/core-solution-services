@@ -1,7 +1,6 @@
 PyJWT==2.7.0
 fastapi==0.85.1
 firebase-admin==4.5.2
-fireo==1.6.2
 google-cloud-logging==3.5.0
 google-cloud-secret-manager==2.16.1
 protobuf==3.20.3

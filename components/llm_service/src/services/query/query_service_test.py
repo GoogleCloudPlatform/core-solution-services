@@ -17,6 +17,7 @@
 """
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable=unused-argument,redefined-outer-name,ungrouped-imports,unused-import
+from copy import deepcopy
 from pathlib import Path
 import pytest
 from typing import List
@@ -34,13 +35,20 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
                                      QUERY_REFERENCE_EXAMPLE_1,
                                      QUERY_REFERENCE_EXAMPLE_2)
-from config import get_model_config, ModelConfig, MODEL_CONFIG_PATH
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            User, QueryDocument, QueryDocumentChunk,
                            QueryReference)
+from common.models.llm_query import (QUERY_HUMAN,
+                                     QUERY_AI_RESPONSE,
+                                     QUERY_AI_REFERENCES)
 from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.utils.logging_handler import Logger
+from common.utils.config import set_env_var
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+
+with set_env_var("PG_HOST", ""):
+  from config import get_model_config, ModelConfig, MODEL_CONFIG_PATH
+
 from services.query.query_service import (query_generate,
                                           query_search,
                                           query_engine_build,
@@ -151,8 +159,8 @@ class FakeVectorStore(VectorStore):
     pass
   def init_index(self):
     pass
-  def index_document(self, doc_name: str, text_chunks: List[str],
-                          index_base: int) -> int:
+  async def index_document(self, doc_name: str, text_chunks: List[str],
+                           index_base: int) -> int:
     return 0
   def deploy(self):
     pass
@@ -199,13 +207,49 @@ async def test_query_generate(mock_query_search, mock_llm_chat,
   assert query_references[0] == create_query_reference
   assert query_references[1] == create_query_reference_2
 
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.llm_chat")
+@mock.patch("services.query.query_service.query_search")
+async def test_query_generate_continue(mock_query_search, mock_llm_chat,
+                        restore_config, create_engine, create_user,
+                        create_user_query,
+                        create_query_result, create_query_reference,
+                        create_query_reference_2):
+  prompt = QUERY_EXAMPLE["prompt"]
+  mock_query_search.return_value = [create_query_reference,
+                                    create_query_reference_2]
+  mock_llm_chat.return_value = FAKE_GENERATE_RESPONSE
+  initial_history = deepcopy(create_user_query.history)
+  initial_len = len(initial_history)
+  Logger.info(f"initial history {initial_history}")
+  query_result, query_references = \
+      await query_generate(create_user.id,
+                           prompt, create_engine,
+                           user_query=create_user_query)
+  assert query_result.query_engine_id == create_engine.id
+  assert query_result.prompt == prompt
+  assert query_result.response == FAKE_GENERATE_RESPONSE
+  assert len(query_references) == 2
+  assert query_references[0] == create_query_reference
+  assert query_references[1] == create_query_reference_2
+
+  # check user_query update
+  query_history = create_user_query.reload().history
+  Logger.info(f"updated history {query_history}")
+  assert len(query_history) == initial_len + 3
+  assert QUERY_HUMAN in query_history[initial_len]
+  assert QUERY_AI_RESPONSE in query_history[initial_len + 1]
+  assert QUERY_AI_REFERENCES in query_history[initial_len + 2]
+
+
+@pytest.mark.asyncio
 @mock.patch("services.query.query_service.embeddings.get_embeddings")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 @mock.patch("services.query.query_service.get_top_relevant_sentences")
-def test_query_search(mock_get_top_relevant_sentences,
-                      mock_get_vector_store, mock_get_embeddings,
-                      create_engine, create_user, create_query_docs,
-                      create_query_doc_chunks):
+async def test_query_search(mock_get_top_relevant_sentences,
+                            mock_get_vector_store, mock_get_embeddings,
+                            create_engine, create_user, create_query_docs,
+                            create_query_doc_chunks):
   # test llm service query search
   qdoc_chunk1 = create_query_doc_chunks[0]
   qdoc_chunk2 = create_query_doc_chunks[1]
@@ -214,7 +258,7 @@ def test_query_search(mock_get_top_relevant_sentences,
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_get_top_relevant_sentences.return_value = "test sentence"
   prompt = QUERY_EXAMPLE["prompt"]
-  query_references = query_search(create_engine, prompt)
+  query_references = await query_search(create_engine, prompt)
   assert len(query_references) == len(create_query_doc_chunks)
   assert query_references[0].chunk_id == qdoc_chunk1.id
   assert query_references[1].chunk_id == qdoc_chunk2.id
@@ -226,22 +270,25 @@ def test_query_search(mock_get_top_relevant_sentences,
     "associated_engines": create_engine.name
   }
   q_engine_2, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, "test integrated search", create_user.id,
-                         query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
-                         params=build_params)
+      await query_engine_build(doc_url, "test integrated search",
+                               create_user.id,
+                               query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
+                               params=build_params)
 
   assert docs_processed == []
   assert docs_not_processed == []
-  query_references = retrieve_references(prompt, q_engine_2, create_user.id)
+  query_references = \
+      await retrieve_references(prompt, q_engine_2, create_user.id)
   assert len(query_references) == len(create_query_doc_chunks)
   assert query_references[0].chunk_id == qdoc_chunk1.id
   assert query_references[1].chunk_id == qdoc_chunk2.id
   assert query_references[2].chunk_id == qdoc_chunk3.id
 
 
+@pytest.mark.asyncio
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
-def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
+async def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
                             create_query_docs, create_user):
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_build_doc_index.return_value = (
@@ -250,7 +297,8 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   )
   doc_url = FAKE_GCS_PATH
   q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, QUERY_ENGINE_EXAMPLE["name"], create_user.id)
+      await query_engine_build(doc_url,
+                               QUERY_ENGINE_EXAMPLE["name"], create_user.id)
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
@@ -263,16 +311,18 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
     "associated_engines": q_engine.name
   }
   q_engine_2, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, "test integrated search", create_user.id,
-                         query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
-                         params=build_params)
+      await query_engine_build(doc_url,
+                               "test integrated search", create_user.id,
+                               query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
+                               params=build_params)
   assert docs_processed == []
   assert docs_not_processed == []
   q_engine = QueryEngine.find_by_id(q_engine.id)
   assert q_engine.parent_engine_id == q_engine_2.id
 
+@pytest.mark.asyncio
 @mock.patch("services.query.query_service.process_documents")
-def test_build_doc_index(mock_process_documents, create_engine,
+async def test_build_doc_index(mock_process_documents, create_engine,
                          create_query_docs):
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
@@ -282,18 +332,20 @@ def test_build_doc_index(mock_process_documents, create_engine,
   )
   with mock.patch("google.cloud.storage.Client"):
     docs_processed, docs_not_processed = \
-        build_doc_index(doc_url, create_engine, qe_vector_store)
+        await build_doc_index(doc_url, create_engine, qe_vector_store)
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
+@pytest.mark.asyncio
 @mock.patch("services.query.query_service.datasource_from_url")
-def test_process_documents(mock_get_datasource, create_engine):
+async def test_process_documents(mock_get_datasource, create_engine):
   mock_get_datasource.return_value = FakeDataSource()
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
   Path(DSF1.local_path).touch()
   Path(DSF2.local_path).touch()
   docs_processed, docs_not_processed = \
-      process_documents(doc_url, qe_vector_store, create_engine, None)
-  assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
+      await process_documents(doc_url, qe_vector_store, create_engine, None)
+  assert {doc.doc_url for doc in docs_processed} == \
+         {DSF1.src_url, DSF2.src_url}
   assert set(docs_not_processed) == {DSF3.src_url}

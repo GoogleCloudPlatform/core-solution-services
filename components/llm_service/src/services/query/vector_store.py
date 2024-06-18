@@ -20,6 +20,7 @@ from abc import ABC, abstractmethod
 import json
 import gc
 import os
+import re
 import shutil
 import tempfile
 import numpy as np
@@ -74,8 +75,8 @@ class VectorStore(ABC):
     """
 
   @abstractmethod
-  def index_document(self, doc_name: str, text_chunks: List[str],
-                          index_base: int) -> int:
+  async def index_document(self, doc_name: str, text_chunks: List[str],
+                           index_base: int) -> int:
     """
     Generate index for a document in this vector store
     Args:
@@ -113,13 +114,34 @@ class MatchingEngineVectorStore(VectorStore):
   def __init__(self, q_engine: QueryEngine, embedding_type:str=None) -> None:
     super().__init__(q_engine)
     self.storage_client = storage.Client(project=PROJECT_ID)
-    self.bucket_name = f"{PROJECT_ID}-{self.q_engine.name}-data"
+    self.bucket_name = self.data_bucket_name(q_engine)
     self.bucket_uri = f"gs://{self.bucket_name}"
-    self.index_name = self.q_engine.name.replace("-", "_") + "_MEindex"
+    qe_name = q_engine.name.replace(" ", "-")
+    qe_name = qe_name.replace("_", "-").lower()
+    self.index_name = qe_name + "_MEindex"
     self.index_endpoint = None
     self.tree_ah_index = None
     self.index_description = ("Matching Engine index for LLM Service "
                               "query engine: " + self.q_engine.name)
+
+  @classmethod
+  def data_bucket_name(cls, q_engine: QueryEngine) -> str:
+    """
+    Generate a unique index data bucket name, that obeys the rules of
+    GCS bucket names.
+
+    Args:
+        q_engine: the QueryEngine to generate the bucket name for.
+
+    Returns:
+        bucket name (str)
+    """
+    qe_name = q_engine.name.replace(" ", "-")
+    qe_name = qe_name.replace("_", "-").lower()
+    bucket_name = f"{PROJECT_ID}-{qe_name}-data"
+    if not re.fullmatch("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucket_name):
+      raise RuntimeError(f"Invalid downloads bucket name {bucket_name}")
+    return bucket_name
 
   def init_index(self):
     # create bucket for ME index data
@@ -129,8 +151,8 @@ class MatchingEngineVectorStore(VectorStore):
   def vector_store_type(self):
     return VECTOR_STORE_MATCHING_ENGINE
 
-  def index_document(self, doc_name: str, text_chunks: List[str],
-                     index_base: int) -> int:
+  async def index_document(self, doc_name: str, text_chunks: List[str],
+                           index_base: int) -> int:
     """
     Generate matching engine index data files in a local directory.
     Args:
@@ -161,10 +183,14 @@ class MatchingEngineVectorStore(VectorStore):
       embeddings_dir = Path(tempfile.mkdtemp())
 
       # Convert chunks to embeddings in batches, to manage API throttling
-      is_successful, chunk_embeddings = embeddings.get_embeddings(
+      is_successful, chunk_embeddings = await embeddings.get_embeddings(
           process_chunks,
           self.embedding_type
       )
+
+      # check for success
+      if len(chunk_embeddings) == 0 or not all(is_successful):
+        raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
       Logger.info(f"generated embeddings for chunks"
                   f" {chunk_index} to {end_chunk_index}")
@@ -311,16 +337,20 @@ class LangChainVectorStore(VectorStore):
           f"vector store {self.q_engine.vector_store} not found in config")
     return lc_vectorstore
 
-  def index_document(self, doc_name: str, text_chunks: List[str],
-                          index_base: int) -> int:
+  async def index_document(self, doc_name: str, text_chunks: List[str],
+                           index_base: int) -> int:
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(text_chunks)))
 
     # Convert chunks to embeddings
-    _, chunk_embeddings = embeddings.get_embeddings(
+    is_successful, chunk_embeddings = await embeddings.get_embeddings(
         text_chunks,
         self.embedding_type
     )
+
+    # check for success
+    if len(chunk_embeddings) == 0 or not all(is_successful):
+      raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
     # add embeddings to vector store
     self.lc_vector_store.add_embeddings(texts=text_chunks,
