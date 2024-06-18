@@ -72,7 +72,7 @@ def get_embedding_types(is_multi: bool = None):
 
   Args:
     is_multi: `bool`
-      Optional: Is embedding type multimodal <br/>\
+      Optional: Is embedding type multimodal <br/>
 
   Returns:
       LLMGetEmbeddingTypesResponse
@@ -82,8 +82,10 @@ def get_embedding_types(is_multi: bool = None):
       embedding_types = get_model_config().get_multi_embedding_types()
     elif is_multi is False:
       embedding_types = get_model_config().get_non_multi_embedding_types()
-    else:
+    elif is_multi is None:
       embedding_types = get_model_config().get_embedding_types()
+    else:
+      return BadRequest("Missing or invalid payload parameters")
 
     return {
       "success": True,

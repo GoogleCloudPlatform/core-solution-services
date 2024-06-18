@@ -20,7 +20,7 @@ import moment
 import streamlit as st
 from api import (build_query_engine, update_query_engine,
                  delete_query_engine,
-                 get_all_embedding_types,
+                 get_embedding_types,
                  get_all_vector_stores, get_all_query_engines,
                  get_all_docs_of_query_engine,
                  get_all_jobs)
@@ -73,8 +73,6 @@ def submit_update(query_engine_id:str, name:str, description:str):
 
 
 def query_engine_page():
-  # Get all embedding types as a list
-  embedding_types = get_all_embedding_types()
   # Get all vector stores as a list
   vector_store_list = get_all_vector_stores()
 
@@ -192,18 +190,25 @@ def query_engine_page():
     depth_limit = st.selectbox(
         "Web depth limit:",
         [0,1,2,3])
-    embedding_type = st.selectbox(
-        "Embedding:",
-        embedding_types)
+    placeholder_is_multimodal = st.empty()
+    placeholder_embedding_type = st.empty()
     vector_store = st.selectbox(
         "Vector Store:",
         vector_store_list)
     description = st.text_area("Description")
     agents = st.text_area("Agents")
     child_engines = st.text_area("Child Engines")
-    is_multimodal = st.toggle("Multimodal Engine?")
-
     submit = st.form_submit_button("Build")
+
+  with placeholder_is_multimodal:
+    is_multimodal = st.toggle("Multimodal Engine?", False)
+
+  with placeholder_embedding_type:
+    embedding_types = get_embedding_types(None, is_multimodal)
+    embedding_type = st.selectbox(
+        "Embedding:",
+        embedding_types)
+
   if submit:
     submit_build(
       engine_name, engine_type,
