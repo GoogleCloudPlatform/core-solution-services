@@ -22,7 +22,9 @@ from firebase_admin.auth import verify_id_token, get_user, set_custom_user_claim
 from common.utils.user_handler import get_user_by_email, create_user_in_firestore
 from common.utils.logging_handler import Logger
 from common.utils.sessions import create_session
-from common.utils.errors import (InvalidTokenError, InvalidCredentialsError)
+from common.utils.errors import (InvalidTokenError,
+                                 UnauthorizedUserError,
+                                 InvalidCredentialsError)
 from common.utils.http_exceptions import (InternalServerError,
                                           Unauthenticated,
                                           ConnectionTimeout,
@@ -47,40 +49,54 @@ router = APIRouter(
     tags=["Sign In"], prefix="/sign-in", responses=ERROR_RESPONSES)
 
 
-@router.post("/authorize")
-def authorize_with_token(provider_id_token: str,
-                         token: auth_scheme = Depends()):
+@router.post("/roles")
+def extract_roles_from_auth_provider_token(
+  provider_id_token: str, token: auth_scheme = Depends()):
+  """This endpoint will take the Firebase id token as an Authorization header
+  and the oAuth provider id token and transfer role claims from the auth
+  provider to the Firebase user.
+  """
+  try:
+    # validate the Firebase token - throws an error if not valid
+    token_dict = dict(token)
+    result = verify_id_token(token_dict["credentials"])
 
-  # validate the Firebase auth token
-  token_dict = dict(token)
-  result = verify_id_token(token_dict["credentials"])
-  # get the user ID
-  user_id = result["user_id"]
+    # decode the auth provider id token to retrieve the roles
+    payload = provider_id_token.split(".")[1]
+    decoded_payload = base64.b64decode(payload)
+    decoded_token = json.loads(decoded_payload.decode())
 
-  # decode the auth provider id token to retrieve the roles
-  payload = provider_id_token.split(".")[1]
-  decoded_payload = base64.b64decode(payload)
-  decoded_token = json.loads(decoded_payload.decode())
+    # check for roles defined by the auth provider
+    if "roles" in decoded_token:
+      roles = decoded_token["roles"]
+      print("Auth provider-defined roles", roles)
+    else:
+      roles = ["L1"]
 
-  # update firebase user with roles defined by auth provider
-  if "roles" in decoded_token:
-    roles = decoded_token["roles"]
-    print("!! Auth provider roles", roles)
-  else:
-    roles = ["0"]
+    # get the Firebase user
+    user_id = result["user_id"]
+    user = get_user(user_id)
+    if user.custom_claims:
+      print("Current Firebase custom claims", user.custom_claims)
 
-  user = get_user(user_id)
-  if user.custom_claims:
-    print("!! Current firebase custom claims", user.custom_claims)
-  set_custom_user_claims(user_id, { "roles": roles })
+    # update firebase user with roles defined by auth provider
+    set_custom_user_claims(user_id, { "roles": roles })
 
-  # check that fierbase auth user has the new roles
-  user = get_user(user_id)
-  print("!! Updated firebase custom claims", user.custom_claims)
+    # # check that fierbase auth user has the new roles
+    # user = get_user(user_id)
+    # print("Updated firebase custom claims", user.custom_claims)
 
-  return {
-    "success": True
-  }
+    return {
+      "success": True,
+      "message":
+        f"Successfully retreieved roles from auth provider for {user_id}"
+    }
+
+  except (InvalidTokenError, UnauthorizedUserError) as e:
+    raise Unauthenticated(str(e)) from e
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
 
 @router.post("/token", response_model=SignInWithTokenResponseModel)
 def sign_in_with_token(token: auth_scheme = Depends()):

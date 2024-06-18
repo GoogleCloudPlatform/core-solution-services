@@ -22,7 +22,6 @@ from routes import (refresh_token, validate_token, password, sign_in, sign_up)
 from common.config import CORS_ALLOW_ORIGINS
 from common.utils.http_exceptions import add_exception_handlers
 
-print("!!CORS_ALLOW_ORIGINS", CORS_ALLOW_ORIGINS)
 
 app = FastAPI()
 app.add_middleware(
