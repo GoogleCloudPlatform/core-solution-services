@@ -83,6 +83,7 @@ QUERY_ENGINE_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "name": "query-engine-test",
   "description": "sample description",
+  "doc_url": "https://example.com",
   "query_engine_type": "qe_llm_service",
   "embedding_type": "VertexAI-Chat",
   "vector_store": "langchain_pgvector",

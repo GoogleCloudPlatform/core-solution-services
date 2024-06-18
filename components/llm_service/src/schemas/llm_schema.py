@@ -189,16 +189,16 @@ class LLMQueryEngineModel(BaseModel):
 class LLMQueryEngineResponse(BaseModel):
   """LLM Generate Response model"""
   success: Optional[bool] = True
-  message: Optional[str] = "Successfully generated text"
-  data: Optional[str] = ""
+  message: Optional[str] = "Successfully retrieved query engine"
+  data: Optional[dict] = {}
 
   class Config():
     orm_mode = True
     schema_extra = {
         "example": {
             "success": True,
-            "message": "Successfully generated text",
-            "data": None
+            "message": "Successfully retrieved query engine",
+            "data": QUERY_ENGINE_EXAMPLE
         }
     }
 

@@ -22,6 +22,8 @@ export type INavigationItem = {
   icon?: ReactNode
 }
 
+export type Theme = "light" | "dark"
+
 export type IAuthProvider = "google" | "password"
 
 export type IAppConfig = {
@@ -96,11 +98,6 @@ export interface IAlert {
   closeable?: boolean
 }
 
-export type QueryEngine = {
-  id: string
-  name: string
-}
-
 export interface QueryResponse {
   response: string
 }
@@ -158,4 +155,82 @@ export type Chat = {
   user_id: string
   agent_name: string | null
   history: ChatContents[]
+}
+
+export const QUERY_ENGINE_TYPES = {
+  "qe_vertex_search": "Vertex Search",
+  "qe_llm_service": "GENIE Search",
+  "qe_integrated_search": "Integrated Search"
+}
+
+export type QueryEngine = {
+  id: string
+  name: string
+  archived_at_timestamp: string | null
+  archived_by: string
+  created_by: string
+  created_time: string
+  deleted_at_timestamp: string | null
+  deleted_by: string
+  last_modified_by: string
+  last_modified_time: string
+  llm_type: string | null
+  parent_engine_id: string
+  user_id: string
+  query_engine_type: string
+  description: string
+  embedding_type: string
+  vector_store: string | null
+  is_public: boolean | null
+  index_id: string | null
+  index_name: string | null
+  endpoint: string | null
+  doc_url: string | null
+  params: string[] | null
+  depth_limit: number | null
+  agents: string[] | null  
+  child_engines: string[] | null
+}
+
+export type QueryEngineBuildParams = {
+  depth_limit: string | null
+  agents: string | null
+  associated_engines: string | null
+}
+
+export type QueryEngineBuild = {
+  user_id: string
+  doc_url: string
+  query_engine: string
+  query_engine_type: string
+  llm_type: string
+  embedding_type: string
+  vector_store: string
+  description: string
+  params: QueryEngineBuildParams
+}
+
+export type QueryEngineBuildJob = {
+  id: string
+  uuid: string
+  name: string
+  archived_at_timestamp: string | null
+  archived_by: string
+  created_by: string
+  created_time: string
+  deleted_at_timestamp: string | null
+  deleted_by: string
+  last_modified_by: string
+  last_modified_time: string
+  type: string
+  status: string
+  input_data: QueryEngineBuild
+  created_time: string
+  result_data: any
+  message: string
+  generated_item_id: any
+  output_gcs_path: any
+  errors: any
+  job_logs: any
+  metadata: any  
 }
