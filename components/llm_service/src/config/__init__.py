@@ -100,6 +100,7 @@ from config.model_config import (
     KEY_MODEL_NAME,
     KEY_MODEL_PARAMS,
     KEY_MODEL_CONTEXT_LENGTH,
+    KEY_MODEL_TOKEN_LIMIT,
     KEY_IS_CHAT,
     KEY_IS_MULTI,
     KEY_MODEL_FILE_URL,

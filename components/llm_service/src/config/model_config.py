@@ -50,6 +50,7 @@ KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
 KEY_MODEL_CONTEXT_LENGTH = "context_length"
+KEY_MODEL_TOKEN_LIMIT = "token_limit"
 KEY_IS_CHAT = "is_chat"
 KEY_IS_MULTI = "is_multi"
 KEY_MODEL_FILE_URL = "model_file_url"
@@ -70,6 +71,7 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_NAME,
   KEY_MODEL_PARAMS,
   KEY_MODEL_CONTEXT_LENGTH,
+  KEY_MODEL_TOKEN_LIMIT,
   KEY_IS_CHAT,
   KEY_IS_MULTI,
   KEY_MODEL_FILE_URL,
@@ -336,13 +338,17 @@ class ModelConfig():
         model_config[KEY_ENABLED] = False
         continue
       provider_enabled = self.is_provider_enabled(provider_id)
+      Logger.info(
+            f"Provider [{provider_id}] enablement status [{provider_enabled}]")
 
-      # Get api keys if present. If an api key secret is configured and
-      # the key is missing, disable the model.
-      api_key = self.get_api_key(model_id)
-      api_check = True
-      if self.get_config_value(model_id, KEY_API_KEY):
-        api_check = api_key is not None
+      api_check = False
+      if provider_enabled:
+        # Get api keys if present. If an api key secret is configured and
+        # the key is missing, disable the model.
+        api_key = self.get_api_key(model_id)
+        api_check = True
+        if self.get_config_value(model_id, KEY_API_KEY):
+          api_check = api_key is not None
 
       # set model_enabled flag based on conjunction of settings
       model_enabled = \
@@ -352,6 +358,7 @@ class ModelConfig():
           vendor_enabled
 
       model_config[KEY_ENABLED] = model_enabled
+      Logger.info(f"Model [{model_id}] enablement status [{model_enabled}]")
 
       # instantiate model class if necessary (mainly langchain models)
       if model_enabled and KEY_MODEL_CLASS in model_config:
@@ -407,7 +414,7 @@ class ModelConfig():
       raise ModelConfigMissingException(provider_id)
 
     # check provider enable env flag
-    provider_flag_setting = None
+    provider_flag_setting = True
     if KEY_ENV_FLAG in provider_config:
       env_flag = provider_config[KEY_ENV_FLAG]
       provider_flag_setting = get_environ_flag(env_flag)
@@ -452,8 +459,8 @@ class ModelConfig():
     provider = model_config.get(KEY_PROVIDER, None)
     if provider is not None:
       provider_config = self.get_provider_config(provider)
-      Logger.info(f"provider = {provider}")
-      Logger.info(f"provider_config = {provider_config}")
+      Logger.debug(f"provider = {provider}")
+      Logger.debug(f"provider_config = {provider_config}")
     return provider, provider_config
 
   def get_provider_models(self, provider_id: str) -> List[str]:
@@ -488,7 +495,7 @@ class ModelConfig():
       value = provider_config.get(key, default)
     else:
       provider_config = self.get_provider_model_config(provider_id)
-      Logger.info(f"provider_config={provider_config}")
+      Logger.debug(f"provider_config={provider_config}")
       model_config = provider_config.get(model_id)
       value = model_config.get(key, default)
 
@@ -506,7 +513,7 @@ class ModelConfig():
     if vendor_config is None:
       return True
 
-    vendor_flag_setting = None
+    vendor_flag_setting = True
     if KEY_ENV_FLAG in vendor_config:
       env_flag = vendor_config[KEY_ENV_FLAG]
       vendor_flag_setting = get_environ_flag(env_flag)
