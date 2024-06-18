@@ -49,7 +49,6 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token)):
   Returns:
       LLMGetTypesResponse
   """
-  print(f"get_chat_llm_list user_data {user_data}")
   try:
     return {
       "success": True,

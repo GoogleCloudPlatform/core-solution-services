@@ -77,7 +77,7 @@ def validate_token(bearer_token):
     cached_token = set_token_cache(f"cache::{token}", decoded_token)
     Logger.info(f"Id Token caching status: {cached_token}")
 
-  Logger.info(f"decoded_token: {decoded_token}")
+  Logger.info(f"Id Token: {decoded_token}")
   return decoded_token
 
 

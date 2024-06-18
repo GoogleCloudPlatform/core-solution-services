@@ -34,10 +34,6 @@ def validate_token(token: auth_scheme = Depends()):
   """
   try:
     user_data = validate_oauth_token(token)
-
-    print("user_data")
-    print(user_data)
-
     if not user_data:
       user_data = validate_service_account_token(token)
 
@@ -60,11 +56,9 @@ def validate_oauth_token(token: auth_scheme = Depends()):
     raise TokenNotFoundError("Unauthorized: token is empty.")
 
   token_dict = dict(token)
-
   if token_dict["credentials"]:
     api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
         "api/v1/validate"
-    print(f"token_dict['credentials'] {token_dict['credentials']}")
     res = requests.get(
         url=api_endpoint,
         headers={
