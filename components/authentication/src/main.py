@@ -32,15 +32,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-"""
-For Local Development
-import sys
-sys.path.append("../../../common/src")
-import os
-os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
-"""
-
 # Basic API config
 service_title = "Authentication"
 service_path = "authentication"

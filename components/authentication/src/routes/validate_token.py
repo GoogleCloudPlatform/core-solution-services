@@ -16,7 +16,7 @@
 
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
-from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError, get_user
+from firebase_admin.auth import InvalidIdTokenError, ExpiredIdTokenError
 
 from common.utils.errors import TokenNotFoundError, UnauthorizedUserError
 from common.utils.http_exceptions import (BadRequest, InvalidToken,
