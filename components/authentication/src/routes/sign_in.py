@@ -40,6 +40,9 @@ from config import (AUTH_REQUIRE_FIRESTORE_USER,
 
 # pylint: disable = broad-exception-raised
 
+# if no roles are provided by auth provider
+DEFAULT_ROLE_SET = ["L1"]
+
 IDP_SIGN_IN_URL = f"{IDP_URL}:signInWithIdp?key={FIREBASE_API_KEY}"
 Logger = Logger.get_logger(__file__)
 
@@ -50,7 +53,7 @@ router = APIRouter(
 
 
 @router.post("/roles")
-def extract_roles_from_auth_provider_token(
+def save_roles_from_auth_provider_token(
   provider_id_token: str, token: auth_scheme = Depends()):
   """This endpoint will take the Firebase id token as an Authorization header
   and the oAuth provider id token and transfer role claims from the auth
@@ -60,21 +63,28 @@ def extract_roles_from_auth_provider_token(
     # validate the Firebase token - throws an error if not valid
     token_dict = dict(token)
     result = verify_id_token(token_dict["credentials"])
-
-    # decode the auth provider id token to retrieve the roles
-    payload = provider_id_token.split(".")[1]
-    decoded_payload = base64.b64decode(payload)
-    decoded_token = json.loads(decoded_payload.decode())
-
-    # check for roles defined by the auth provider
-    if "roles" in decoded_token:
-      roles = decoded_token["roles"]
-      print("Auth provider-defined roles", roles)
-    else:
-      roles = ["L1"]
-
     # get the Firebase user
     user_id = result["user_id"]
+
+    if provider_id_token is None:
+      print("No provider id token. Assigning default roles.")
+      # update firebase user with default roles
+      roles = DEFAULT_ROLE_SET
+
+    else:
+
+      # decode the auth provider id token to retrieve the roles
+      payload = provider_id_token.split(".")[1]
+      decoded_payload = base64.b64decode(payload)
+      decoded_token = json.loads(decoded_payload.decode())
+
+      # check for roles defined by the auth provider
+      if "roles" in decoded_token:
+        roles = decoded_token["roles"]
+        print("Auth provider-defined roles", roles)
+      else:
+        roles = DEFAULT_ROLE_SET
+
     user = get_user(user_id)
     if user.custom_claims:
       print("Current Firebase custom claims", user.custom_claims)
@@ -82,9 +92,9 @@ def extract_roles_from_auth_provider_token(
     # update firebase user with roles defined by auth provider
     set_custom_user_claims(user_id, { "roles": roles })
 
-    # # check that fierbase auth user has the new roles
-    # user = get_user(user_id)
-    # print("Updated firebase custom claims", user.custom_claims)
+    # check that fierbase auth user has the new roles
+    user = get_user(user_id)
+    print("New firebase custom claims", user.custom_claims)
 
     return {
       "success": True,
