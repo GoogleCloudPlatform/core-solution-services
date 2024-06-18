@@ -65,18 +65,30 @@ def get_llm_list():
     "/embedding_types",
     name="Get supported embedding types",
     response_model=LLMGetEmbeddingTypesResponse)
-def get_embedding_types():
+def get_embedding_types(is_multi: bool = None):
   """
-  Get supported embedding types
+  Get supported embedding types, optionally filter by
+  multimodal capabilities
+
+  Args:
+    is_multi: `bool`
+      Optional: Is embedding type multimodal <br/>\
 
   Returns:
       LLMGetEmbeddingTypesResponse
   """
   try:
+    if is_multi is True:
+      embedding_types = get_model_config().get_multi_embedding_types()
+    elif is_multi is False:
+      embedding_types = get_model_config().get_non_multi_embedding_types()
+    else:
+      embedding_types = get_model_config().get_embedding_types()
+
     return {
       "success": True,
       "message": "Successfully retrieved embedding types",
-      "data": get_model_config().get_embedding_types()
+      "data": embedding_types
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e

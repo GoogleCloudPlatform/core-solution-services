@@ -207,7 +207,8 @@
     },
     "VertexAI-Embedding-Vision": {
       "provider": "Vertex",
-      "model_name": "multimodalembedding@001"
+      "model_name": "multimodalembedding@001",
+      "is_multi": true
     },
     "OpenAI-Embedding": {
       "provider": "Langchain"
