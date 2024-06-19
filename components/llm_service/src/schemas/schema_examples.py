@@ -92,6 +92,40 @@ QUERY_ENGINE_EXAMPLE = {
   "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840435"
 } #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real.
 
+#SC240619: DONE: Create QUERY_ENGINE_EXAMPLE_MULTI with is_multimodal set to True
+QUERY_ENGINE_EXAMPLE_MULTI = {
+  "id": "asd98798as7dhjgkjsdf2",
+  "name": "query-engine-test-multi",
+  "description": "sample description",
+  "query_engine_type": "qe_llm_service",
+  "embedding_type": "VertexAI-Chat",
+  "vector_store": "langchain_pgvector",
+  "created_by": "fake-user-id",
+  "is_public": True,
+  "is_multimodal": True,
+  "index_id": "projects/83285581741/locations/us-central1/indexes/682347240495461172",
+  "index_name": "query_engine_test_multi_MEindex",
+  "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840436"
+}
+
+#SC240619: DONE: Create QUERY_ENGINE_EXAMPLE_TEXTONLY with is_multimodal set to False
+# Identical to QUERY_ENGINE_EXAMPLE
+# but with is_multimodal explicitly set to False
+QUERY_ENGINE_EXAMPLE_TEXTONLY = {
+  "id": "asd98798as7dhjgkjsdf3",
+  "name": "query-engine-test-textonly",
+  "description": "sample description",
+  "query_engine_type": "qe_llm_service",
+  "embedding_type": "VertexAI-Chat",
+  "vector_store": "langchain_pgvector",
+  "created_by": "fake-user-id",
+  "is_public": True,
+  "is_multimodal": False,
+  "index_id": "projects/83285581741/locations/us-central1/indexes/682347240495461173",
+  "index_name": "query_engine_test_textonly_MEindex",
+  "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840437"
+}
+
 QUERY_RESULT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "query_engine_id": "asd98798as7dhjgkjsdfh",
@@ -126,9 +160,61 @@ QUERY_REFERENCE_EXAMPLE_2 = {
   "document_text": "test doc content 2"
 }
 
-#SC240619: TO DO: Need to create a QUERY_REFERENCE_EXAMPLE_3_image for an image chunk
+#SC240619: DONE: Need to create a QUERY_REFERENCE_EXAMPLE_3_IMAGE for an image chunk from a query engine with is_multimodal=True
+QUERY_REFERENCE_EXAMPLE_3_IMAGE = {
+  "id": "sfdhsjkdlkgjdslffddsh",
+  "query_engine_id": "asd98798as7dhjgkjsdf2",
+  "query_engine": "query-engine-test-multi",
+  "document_id": "asd98798as7dhjgkjsdfh1",
+  "document_url": "https://example.com/content",
+  "modality": "image",
+  "chunk_id": "abcdxxzzyy8756",
+  "chunk_url": "https://example.com/content_page1.png",
+  "page": 1,
+}
 
-#SC240619: TO DO: Need to create a QUERY_REFERENCE_EXAMPLE_4_image for an image chunk
+#SC240619: DONE: Need to create a QUERY_REFERENCE_EXAMPLE_4_IMAGE for an image chunk from a query engine with is_multimodal=True
+QUERY_REFERENCE_EXAMPLE_4_IMAGE = {
+  "id": "fjdkglsldkghfkdlrishckdw",
+  "query_engine_id": "asd98798as7dhjgkjsdf2",
+  "query_engine": "query-engine-test-multi",
+  "document_id": "asd98798as7dhjgkjsdfh1",
+  "document_url": "https://example.com/content",
+  "modality": "image",
+  "chunk_id": "abcdxxzzyy8757",
+  "chunk_url": "https://example.com/content_page2.png",
+  "page": 2,
+}
+
+#SC240619: DONE: Need to create a QUERY_REFERENCE_EXAMPLE_5_TEXT for an text chunk from a query engine with is_multimodal=False (instead of just not there at all)
+# Identical to QUERY_REFERENCE_EXAMPLE_2
+# but with a query engine with is_multimodal 
+# explicitly set to False
+QUERY_REFERENCE_EXAMPLE_5_TEXT = {
+  "id": "easd98798as7dhjgkjsdf",
+  "query_engine_id": "asd98798as7dhjgkjsdf3",
+  "query_engine": "query-engine-test-textonly",
+  "document_id": "asd98798as7dhjgkjsdfh1",
+  "document_url": "https://example.com/content",
+  "modality": "text",
+  "chunk_id": "abcdxxzzyy5678",
+  "document_text": "test doc content",
+}
+
+#SC240619: DONE: Need to create a QUERY_REFERENCE_EXAMPLE_6_TEXT for an image chunk from a query engine with is_multimodal=True
+# Identical to QUERY_REFERENCE_EXAMPLE_2
+# but with a query engine with is_multimodal 
+# explicitly set to False
+QUERY_REFERENCE_EXAMPLE_4_IMAGE = {
+  "id": "fasd98798as7dhjgkjsdf",
+  "query_engine_id": "asd98798as7dhjgkjsdf3",
+  "query_engine": "query-engine-test-textonly",
+  "document_id": "asd98798as7dhjgkjsdfh1",
+  "document_url": "https://example.com/content",
+  "modality": "text",
+  "chunk_id": "abcdxxzzyy5678",
+  "document_text": "test doc content 2",
+}
 
 QUERY_DOCUMENT_EXAMPLE_1 = {
   "id": "asd98798as7dhjgkjsdfh1",
@@ -190,11 +276,83 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
   "sentences": ["query_document_chunk_example_3"]
 }
 
-#SC240619: TO DO: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_4_image for an image chunk
+#SC240619: DONE: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_4_IMAGE for an image chunk
+QUERY_DOCUMENT_CHUNK_EXAMPLE_4_IMAGE = {
+  "id": "asd98798as7dhjhkkjhk14",
+  "query_engine_id": "asd98798as7dhjgkjsdf2",
+  "query_document_id": "asd98798as7dhjgkjsdfh1",
+  "index": 0,
+  "modality": "image",
+  "page": 1,
+  "chunk_url": "bcd.com/pdf3_page1"
+} #SC240619: DONE: Refer to new query engine, one with is_multimodal set to True
 
-#SC240619: TO DO: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_5_image for an image chunk
+#SC240619: DONE: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_5_IMAGE for an image chunk
+QUERY_DOCUMENT_CHUNK_EXAMPLE_5_IMAGE = {
+  "id": "asd98798as7dhjhkkjhk15",
+  "query_engine_id": "sd98798as7dhjgkjsdf2", 
+  "query_document_id": "asd98798as7dhjgkjsdfh1",
+  "index": 1,
+  "modality": "image",
+  "page": 2,
+  "chunk_url": "bcd.com/pdf3_page2"
+} #SC240619: DONE: Refer to new query engine, one with is_multimodal set to True
 
-#SC240619: TO DO: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_6_image for an image chunk
+#SC240619: DONE: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_6_IMAGE for an image chunk
+QUERY_DOCUMENT_CHUNK_EXAMPLE_6_IMAGE = {
+  "id": "asd98798as7dhjhkkjhk16",
+  "query_engine_id": "sd98798as7dhjgkjsdf2",
+  "query_document_id": "asd98798as7dhjgkjsdfh1",
+  "index": 2,
+  "modality": "image",
+  "page": 3,
+  "chunk_url": "bcd.com/pdf3_page3"
+} #SC240619: DONE: Refer to new query engine, one with is_multimodal set to True
+
+# SC240619: DONE: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_7_TEXT for a text chunk in a query engine with is_multimodal explicitly set to False
+# Identical to QUERY_DOCUMENT_CHUNK_EXAMPLE_1
+# but with a query engine with is_multimodal
+# explicitly set to False
+QUERY_DOCUMENT_CHUNK_EXAMPLE_7_TEXT = {
+  "id": "asd98798as7dhjhkkjhk1",
+  "query_engine_id": "asd98798as7dhjgkjsdf3",
+  "query_document_id": "asd98798as7dhjgkjsdfh1",
+  "index": 0,
+  "modality": "text",
+  "text": "<p>query_document_chunk_example_1</p>",
+  "clean_text": "query_document_chunk_example_1",
+  "sentences": ["query_document_chunk_example_1"]
+}
+
+# SC240619: DONE: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_8_TEXT for a text chunk in a query engine with is_multimodal explicitly set to False
+# Identical to QUERY_DOCUMENT_CHUNK_EXAMPLE_2
+# but with a query engine with is_multimodal
+# explicitly set to False
+QUERY_DOCUMENT_CHUNK_EXAMPLE_8_TEXT = {
+  "id": "asd98798as7dhjhkkjhk12",
+  "query_engine_id": "asd98798as7dhjgkjsdf3",
+  "query_document_id": "asd98798as7dhjgkjsdfh1",
+  "index": 1,
+  "modality": "text",
+  "text": "<p>query_document_chunk_example_2</p>",
+  "clean_text": "query_document_chunk_example_2",
+  "sentences": ["query_document_chunk_example_2"]
+}
+
+# SC240619: DONE: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_9_TEXT for a text chunk in a query engine with is_multimodal explicitly set to False
+# Identical to QUERY_DOCUMENT_CHUNK_EXAMPLE_3
+# but using a query engine with is_multimodal
+# explicitly set to False
+QUERY_DOCUMENT_CHUNK_EXAMPLE_9_TEXT = {
+  "id": "asd98798as7dhjhkkjhk13",
+  "query_engine_id": "asd98798as7dhjgkjsdf3",
+  "query_document_id": "asd98798as7dhjgkjsdfh1",
+  "index": 2,
+  "modality": "text",
+  "text": "<p>query_document_chunk_example_3</p>",
+  "clean_text": "query_document_chunk_example_3",
+  "sentences": ["query_document_chunk_example_3"]
+}
 
 CHAT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
