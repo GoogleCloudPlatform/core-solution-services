@@ -120,7 +120,7 @@ class QueryEngine(BaseModel):
   doc_url = TextField(required=False)
   agents = ListField(required=False)
   parent_engine_id = TextField(required=False)
-  metadata_url = TextField(required=False)
+  manifest_url = TextField(required=False)
   params = MapField(default={})
 
   class Meta:
