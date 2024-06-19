@@ -34,7 +34,7 @@ class SharePointDataSource(DataSource):
   Class for sharepoint data sources.
   """
 
-  def __init__(self, q_engine, storage_client, bucket_name=None):
+  def __init__(self, storage_client, bucket_name=None):
     """
     Initialize the SharePointDataSource.
 
@@ -43,7 +43,7 @@ class SharePointDataSource(DataSource):
       bucket_name (str): name of GCS bucket to save downloaded documents.
                          If None files will not be saved to GCS.
     """
-    super().__init__(q_engine, storage_client)
+    super().__init__(storage_client)
     self.bucket_name = bucket_name
     self.doc_data = []
 

@@ -871,7 +871,7 @@ def datasource_from_url(doc_url: str,
   elif doc_url.startswith("shpt://"):
     # Create bucket name using query_engine name
     bucket_name = SharePointDataSource.downloads_bucket_name(q_engine)
-    return SharePointDataSource(q_engine, storage_client,
+    return SharePointDataSource(storage_client,
                                 bucket_name=bucket_name)
   else:
     raise InternalServerError(
