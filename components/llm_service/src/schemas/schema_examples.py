@@ -198,7 +198,7 @@ QUERY_REFERENCE_EXAMPLE_5_TEXT = {
   "document_url": "https://example.com/content",
   "modality": "text",
   "chunk_id": "abcdxxzzyy5678",
-  "document_text": "test doc content",
+  "document_text": "test doc content"
 }
 
 #SC240619: DONE: Need to create a QUERY_REFERENCE_EXAMPLE_6_TEXT for an image chunk from a query engine with is_multimodal=True
@@ -213,7 +213,7 @@ QUERY_REFERENCE_EXAMPLE_4_IMAGE = {
   "document_url": "https://example.com/content",
   "modality": "text",
   "chunk_id": "abcdxxzzyy5678",
-  "document_text": "test doc content 2",
+  "document_text": "test doc content 2"
 }
 
 QUERY_DOCUMENT_EXAMPLE_1 = {
@@ -284,7 +284,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_4_IMAGE = {
   "index": 0,
   "modality": "image",
   "page": 1,
-  "chunk_url": "bcd.com/pdf3_page1"
+  "chunk_url": "bcd.com/pdf3_page1",
 } #SC240619: DONE: Refer to new query engine, one with is_multimodal set to True
 
 #SC240619: DONE: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_5_IMAGE for an image chunk
@@ -295,7 +295,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_5_IMAGE = {
   "index": 1,
   "modality": "image",
   "page": 2,
-  "chunk_url": "bcd.com/pdf3_page2"
+  "chunk_url": "bcd.com/pdf3_page2",
 } #SC240619: DONE: Refer to new query engine, one with is_multimodal set to True
 
 #SC240619: DONE: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_6_IMAGE for an image chunk
@@ -306,7 +306,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_6_IMAGE = {
   "index": 2,
   "modality": "image",
   "page": 3,
-  "chunk_url": "bcd.com/pdf3_page3"
+  "chunk_url": "bcd.com/pdf3_page3",
 } #SC240619: DONE: Refer to new query engine, one with is_multimodal set to True
 
 # SC240619: DONE: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_7_TEXT for a text chunk in a query engine with is_multimodal explicitly set to False
