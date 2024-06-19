@@ -87,7 +87,7 @@ async def query_generate(
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
             rank_sentences=False) -> \
-                Tuple[QueryResult, List[QueryReference]]: #SC2405XX: NOTE: Multi flag will be saved inside q_engine, either as its own input arg or as part of params
+                Tuple[QueryResult, List[QueryReference]]: #SC2405XX: NOTE: Multi flag will be saved inside q_engine, as part of params
   """
   Execute a query over a query engine and generate a response.
 
@@ -771,7 +771,7 @@ def query_engine_build(doc_url: str,
 def build_doc_index(doc_url: str, q_engine: QueryEngine,
                     qe_vector_store: VectorStore,
                     is_multimodal: bool) -> \
-        Tuple[List[QueryDocument], List[str]]:  #SC240520: DONE: Pass in multi flag
+        Tuple[List[QueryDocument], List[str]]:  #SC240520: DONE: Pass in multi flag, #SC240619: TO DO: Make is_multimodal optional with default False
   """
   Build the document index.
   Supports GCS URLs and http(s)://, containing PDF files, text
@@ -781,7 +781,7 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
     doc_url: URL pointing to folder of documents
     q_engine: the query engine name to build the index for
     qe_vector_store: the vector store used for the query engine
-    is_multimodal: True if multimodal processing, False if text-only
+    is_multimodal: True if multimodal processing, False if text-only #SC240619: Specify default value is False
 
   Returns:
     Tuple of list of QueryDocument objects of docs processed,
@@ -815,7 +815,7 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
 def process_documents(doc_url: str, qe_vector_store: VectorStore,
                       q_engine: QueryEngine, storage_client,
                       is_multimodal: bool) -> \
-                      Tuple[List[QueryDocument], List[str]]:  #SC240520: DONE: Pass in multi flag - Also NOTE: Need to provide url of where image-chunks are stored, or do we assume that is in a standard sub-folder/sibling-folder of docs_url? Assume it is in same as docs_url, for now
+                      Tuple[List[QueryDocument], List[str]]:  #SC240520: DONE: Pass in multi flag - Also NOTE: Need to provide url of where image-chunks are stored, or do we assume that is in a standard sub-folder/sibling-folder of docs_url? Assume it is in same as docs_url, for now, #SC240619: TO DO: Make is_multimodal optional with default False
   """
   Process docs in data source and upload embeddings to vector store  #SC240520: DONE: Add list of input args, including multi flag
   
@@ -824,7 +824,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
     qe_vector_store: the vector store used for the query engine
     q_engine: the query engine name to build the index for
     storage_client: client used for storing the data source
-    is_multimodal: True if multimodal processing, False if text-only
+    is_multimodal: True if multimodal processing, False if text-only  #SC240619: TO DO: Specify default value is False
   
   Returns:
      Tuple of list of QueryDocument objects for docs processed,
@@ -886,7 +886,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
         # Will use string to make QueryDocumentChunk object
         if is_multimodal:
           # doc_chunks[i] is an image, so
-          # string holds url where image is saved
+          # String holds url where image is saved
           doc_chunk=doc_chunks[i]["image_url"]
         else:
           # doc_chunks[i] is text, so

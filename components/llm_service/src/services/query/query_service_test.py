@@ -74,6 +74,10 @@ def create_query_reference_2(firestore_emulator, clean_firestore):
   query_reference.save()
   return query_reference
 
+#SC240619: TO DO: Code up create_query_reference_3_image out of QUERY_REFERENCE_EXAMPLE_3_image
+
+#SC240619: TO DO: Code up create_query_reference_4_image out of QUERY_REFERENCE_EXAMPLE_4_image
+
 @pytest.fixture
 def create_user(firestore_emulator, clean_firestore):
   user_dict = USER_EXAMPLE
@@ -120,6 +124,9 @@ def create_query_doc_chunks(firestore_emulator, clean_firestore):
   qdoc_chunk2.save()
   qdoc_chunk3 = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_3)
   qdoc_chunk3.save()
+  #SC240619: TO DO: Create qdoc_chunk4_image out of QUERY_DOCUMENT_CHUNK_EXAMPLE_4_IMAGE
+  #SC240619: TO DO: Create qdoc_chunk5_image out of QUERY_DOCUMENT_CHUNK_EXAMPLE_5_IMAGE
+  #SC240619: TO DO: Create qdoc_chunk6_image out of QUERY_DOCUMENT_CHUNK_EXAMPLE_6_IMAGE
   return [qdoc_chunk1, qdoc_chunk2, qdoc_chunk3]
 
 FAKE_QUERY_PARAMS = QUERY_EXAMPLE
@@ -178,6 +185,8 @@ class FakeDataSource(DataSource):
     else:
       chunk_list = None
     return chunk_list
+  
+  #SC240619: TO DO: Code up chunk_documents_multi function for the FakeDataSource class
 
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.llm_chat")
@@ -238,7 +247,6 @@ def test_query_search(mock_get_top_relevant_sentences,
   assert query_references[1].chunk_id == qdoc_chunk2.id
   assert query_references[2].chunk_id == qdoc_chunk3.id
 
-
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
@@ -250,7 +258,7 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   )
   doc_url = FAKE_GCS_PATH
   q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, QUERY_ENGINE_EXAMPLE["name"], create_user.id)
+      query_engine_build(doc_url, QUERY_ENGINE_EXAMPLE["name"], create_user.id) #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
@@ -271,6 +279,8 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   q_engine = QueryEngine.find_by_id(q_engine.id)
   assert q_engine.parent_engine_id == q_engine_2.id
 
+#SC240619: TO DO: Code up test for query_engine_build function for creating a multimodal query engine, with is_multimodal=True in params input, and also with no is_multimodal in params input, and do an assert check that is_multimodal is in params - that's all the extra assert checks you need to put in here, since it doesn't actually run build_doc_index since that has its own test further down
+
 @mock.patch("services.query.query_service.process_documents")
 def test_build_doc_index(mock_process_documents, create_engine,
                          create_query_docs):
@@ -286,6 +296,8 @@ def test_build_doc_index(mock_process_documents, create_engine,
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
+#SC240619: TO DO: Code up text for build_doc_index function with is_multimodal=True input, and with no is_multimodal input, and then do same assert checks as before
+
 @mock.patch("services.query.query_service.datasource_from_url")
 def test_process_documents(mock_get_datasource, create_engine):
   mock_get_datasource.return_value = FakeDataSource()
@@ -297,3 +309,7 @@ def test_process_documents(mock_get_datasource, create_engine):
       process_documents(doc_url, qe_vector_store, create_engine, None, False)
   assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
   assert set(docs_not_processed) == {DSF3.src_url}
+
+#SC240619: TO DO: Once again, code up test for process_documents function with is_multimodal=True input, and with no is_multimodal input, and then do same assert checks as before
+
+#SC240619: NOTE: None of these tests actually test the chunking code (neither the existing text-only chunk_document function nor Raven's new multi-modal chunk_document_multi function, and that's why Raven had to test his new chunk_document_multi function using a notebook

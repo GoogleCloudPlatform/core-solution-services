@@ -90,7 +90,7 @@ QUERY_ENGINE_EXAMPLE = {
   "index_id": "projects/83285581741/locations/us-central1/indexes/682347240495461171",
   "index_name": "query_engine_test_MEindex",
   "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840435"
-}
+} #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real.
 
 QUERY_RESULT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
@@ -125,6 +125,10 @@ QUERY_REFERENCE_EXAMPLE_2 = {
   "chunk_id": "abcdxxzzyy5678",
   "document_text": "test doc content 2"
 }
+
+#SC240619: TO DO: Need to create a QUERY_REFERENCE_EXAMPLE_3_image for an image chunk
+
+#SC240619: TO DO: Need to create a QUERY_REFERENCE_EXAMPLE_4_image for an image chunk
 
 QUERY_DOCUMENT_EXAMPLE_1 = {
   "id": "asd98798as7dhjgkjsdfh1",
@@ -185,6 +189,12 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
   "clean_text": "query_document_chunk_example_3",
   "sentences": ["query_document_chunk_example_3"]
 }
+
+#SC240619: TO DO: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_4_image for an image chunk
+
+#SC240619: TO DO: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_5_image for an image chunk
+
+#SC240619: TO DO: Need to create QUERY_DOCUMENT_CHUNK_EXAMPLE_6_image for an image chunk
 
 CHAT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
