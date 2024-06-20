@@ -407,17 +407,37 @@ def test_query_engine_build_multi(mock_get_vector_store, mock_build_doc_index,
       [create_query_docs[2]]
   )
   doc_url = FAKE_GCS_PATH
+  build_params = {
+    "is_multimodal": "True"
+  }
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url=doc_url, 
-                         query_engine=QUERY_ENGINE_EXAMPLE_MULTI["name"], 
+                         query_engine=QUERY_ENGINE_EXAMPLE["name"], 
                          user_id=create_user.id,
-                         params=QUERY_ENGINE_EXAMPLE_MULTI["params"]) #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real
+                         params=build_params) #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real
   assert q_engine.created_by == create_user.id
-  assert q_engine.name == QUERY_ENGINE_EXAMPLE_MULTI["name"]
+  assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
-  assert q_engine.params["is_multimodal"].lower() == QUERY_ENGINE_EXAMPLE_MULTI["params"]["is_multimodal"].lower() #QUERY_ENGINE_EXAMPLE_MULTI["params"]["is_multimodal"] #SC240619: DONE: Make is_multimodal be a field of params dict
+  assert q_engine.params["is_multimodal"].lower() == build_params["is_multimodal"].lower() #QUERY_ENGINE_EXAMPLE_MULTI["params"]["is_multimodal"] #SC240619: DONE: Make is_multimodal be a field of params dict
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
+
+  # test integrated search build
+  doc_url = ""
+  build_params = {
+    "associated_engines": q_engine.name,
+    "is_multimodal": "True"
+  }
+  q_engine_2, docs_processed, docs_not_processed = \
+      query_engine_build(doc_url=doc_url, 
+                         query_engine="test integrated search", 
+                         user_id=create_user.id,
+                         query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
+                         params=build_params)
+  assert docs_processed == []
+  assert docs_not_processed == []
+  q_engine = QueryEngine.find_by_id(q_engine.id)
+  assert q_engine.parent_engine_id == q_engine_2.id
 
 #SC240619: DONE: Code up test for query_engine_build function for creating a query engine with is_multimodal=False in params input, and do an assert check that is_multimodal is in params - that's all the extra assert checks you need to put in here, since it doesn't actually run build_doc_index since that has its own test further down
 # Test of query_engine_build function, with optional input argument params,
@@ -433,22 +453,26 @@ def test_query_engine_build_textonly(mock_get_vector_store, mock_build_doc_index
       [create_query_docs[2]]
   )
   doc_url = FAKE_GCS_PATH
+  build_params = {
+    "is_multimodal": "False"
+  }
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url=doc_url, 
-                         query_engine=QUERY_ENGINE_EXAMPLE_TEXTONLY["name"], 
+                         query_engine=QUERY_ENGINE_EXAMPLE["name"], 
                          user_id=create_user.id,
-                         params=QUERY_ENGINE_EXAMPLE_TEXTONLY["params"]) #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real
+                         params=build_params) #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real
   assert q_engine.created_by == create_user.id
-  assert q_engine.name == QUERY_ENGINE_EXAMPLE_TEXTONLY["name"]
+  assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
-  assert q_engine.params["is_multimodal"].lower() == QUERY_ENGINE_EXAMPLE_TEXTONLY["params"]["is_multimodal"].lower() #SC240619: DONE: Make is_multimodal be a field of params dict
+  assert q_engine.params["is_multimodal"].lower() == build_params["is_multimodal"].lower() #SC240619: DONE: Make is_multimodal be a field of params dict
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
   # test integrated search build
   doc_url = ""
   build_params = {
-    "associated_engines": q_engine.name
+    "associated_engines": q_engine.name,
+    "is_multimodal": "False"
   }
   q_engine_2, docs_processed, docs_not_processed = \
       query_engine_build(doc_url=doc_url, 
@@ -486,7 +510,7 @@ def test_build_doc_index(mock_process_documents, create_engine,
 # is_multimodal=True
 # Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.process_documents")
-def test_build_doc_index_multi(mock_process_documents, create_engine_multi,
+def test_build_doc_index_multi(mock_process_documents, create_engine,
                                create_query_docs):
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
@@ -497,7 +521,7 @@ def test_build_doc_index_multi(mock_process_documents, create_engine_multi,
   with mock.patch("google.cloud.storage.Client"):
     docs_processed, docs_not_processed = \
         build_doc_index(doc_url=doc_url,
-                        q_engine=create_engine_multi,
+                        q_engine=create_engine,
                         qe_vector_store=qe_vector_store, 
                         is_multimodal=True)
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
@@ -508,7 +532,7 @@ def test_build_doc_index_multi(mock_process_documents, create_engine_multi,
 # is_multimodal=False
 # Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.process_documents")
-def test_build_doc_index_textonly(mock_process_documents, create_engine_textonly,
+def test_build_doc_index_textonly(mock_process_documents, create_engine,
                                   create_query_docs):
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
@@ -519,7 +543,7 @@ def test_build_doc_index_textonly(mock_process_documents, create_engine_textonly
   with mock.patch("google.cloud.storage.Client"):
     docs_processed, docs_not_processed = \
         build_doc_index(doc_url=doc_url,
-                        q_engine=create_engine_textonly,
+                        q_engine=create_engine,
                         qe_vector_store=qe_vector_store,
                         is_multimodal=False)
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
@@ -548,7 +572,7 @@ def test_process_documents(mock_get_datasource, create_engine):
 # is_multimodal=True
 # Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.datasource_from_url")
-def test_process_documents_multi(mock_get_datasource, create_engine_multi):
+def test_process_documents_multi(mock_get_datasource, create_engine):
   mock_get_datasource.return_value = FakeDataSource()
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
@@ -557,7 +581,7 @@ def test_process_documents_multi(mock_get_datasource, create_engine_multi):
   docs_processed, docs_not_processed = \
       process_documents(doc_url=doc_url,
                         qe_vector_store=qe_vector_store,
-                        q_engine=create_engine_multi,
+                        q_engine=create_engine,
                         storage_client=None,
                         is_multimodal=True)
   assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
@@ -568,7 +592,7 @@ def test_process_documents_multi(mock_get_datasource, create_engine_multi):
 # is_multimodal=False
 # Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.datasource_from_url")
-def test_process_documents_textonly(mock_get_datasource, create_engine_textonly):
+def test_process_documents_textonly(mock_get_datasource, create_engine):
   mock_get_datasource.return_value = FakeDataSource()
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
@@ -577,7 +601,7 @@ def test_process_documents_textonly(mock_get_datasource, create_engine_textonly)
   docs_processed, docs_not_processed = \
       process_documents(doc_url=doc_url,
                         qe_vector_store=qe_vector_store,
-                        q_engine=create_engine_textonly,
+                        q_engine=create_engine,
                         storage_client=None,
                         is_multimodal=False)
   assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
