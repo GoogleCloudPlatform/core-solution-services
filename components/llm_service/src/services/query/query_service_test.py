@@ -179,7 +179,7 @@ class FakeDataSource(DataSource):
     else:
       chunk_list = None
     return chunk_list
-  
+
   def chunk_document_multi(self, doc_name:str, doc_url: str,
                             doc_filepath: str) -> List[str]:
     if doc_url == QUERY_DOCUMENT_EXAMPLE_1["doc_url"]:
@@ -261,8 +261,10 @@ def test_query_search(mock_get_top_relevant_sentences,
 # Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
-def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
-                            create_query_docs, create_user):
+def test_query_engine_build(mock_get_vector_store,
+                            mock_build_doc_index,
+                            create_query_docs,
+                            create_user):
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_build_doc_index.return_value = (
       [create_query_docs[0], create_query_docs[1]],
@@ -270,8 +272,8 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   )
   doc_url = FAKE_GCS_PATH
   q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url=doc_url, 
-                         query_engine=QUERY_ENGINE_EXAMPLE["name"], 
+      query_engine_build(doc_url=doc_url,
+                         query_engine=QUERY_ENGINE_EXAMPLE["name"],
                          user_id=create_user.id)
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
@@ -285,8 +287,8 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
     "associated_engines": q_engine.name
   }
   q_engine_2, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url=doc_url, 
-                         query_engine="test integrated search", 
+      query_engine_build(doc_url=doc_url,
+                         query_engine="test integrated search",
                          user_id=create_user.id,
                          query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
                          params=build_params)
@@ -300,8 +302,10 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
 # Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
-def test_query_engine_build_multi(mock_get_vector_store, mock_build_doc_index,
-                                  create_query_docs, create_user):
+def test_query_engine_build_multi(mock_get_vector_store,
+                                  mock_build_doc_index,
+                                  create_query_docs,
+                                  create_user):
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_build_doc_index.return_value = (
       [create_query_docs[0], create_query_docs[1]],
@@ -312,14 +316,15 @@ def test_query_engine_build_multi(mock_get_vector_store, mock_build_doc_index,
     "is_multimodal": "True"
   }
   q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url=doc_url, 
-                         query_engine=QUERY_ENGINE_EXAMPLE["name"], 
+      query_engine_build(doc_url=doc_url,
+                         query_engine=QUERY_ENGINE_EXAMPLE["name"],
                          user_id=create_user.id,
                          params=build_params)
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
-  assert q_engine.params["is_multimodal"].lower() == build_params["is_multimodal"].lower()
+  assert q_engine.params["is_multimodal"].lower() ==\
+    build_params["is_multimodal"].lower()
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
@@ -329,9 +334,9 @@ def test_query_engine_build_multi(mock_get_vector_store, mock_build_doc_index,
     "associated_engines": q_engine.name,
     "is_multimodal": "True"
   }
-  q_engine_2, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url=doc_url, 
-                         query_engine="test integrated search", 
+  q_engine_2, docs_processed, docs_not_processed =\
+      query_engine_build(doc_url=doc_url,
+                         query_engine="test integrated search",
                          user_id=create_user.id,
                          query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
                          params=build_params)
@@ -345,8 +350,10 @@ def test_query_engine_build_multi(mock_get_vector_store, mock_build_doc_index,
 # Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
-def test_query_engine_build_textonly(mock_get_vector_store, mock_build_doc_index,
-                                     create_query_docs, create_user):
+def test_query_engine_build_textonly(mock_get_vector_store,
+                                     mock_build_doc_index,
+                                     create_query_docs,
+                                     create_user):
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_build_doc_index.return_value = (
       [create_query_docs[0], create_query_docs[1]],
@@ -356,15 +363,16 @@ def test_query_engine_build_textonly(mock_get_vector_store, mock_build_doc_index
   build_params = {
     "is_multimodal": "False"
   }
-  q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url=doc_url, 
-                         query_engine=QUERY_ENGINE_EXAMPLE["name"], 
+  q_engine, docs_processed, docs_not_processed =\
+      query_engine_build(doc_url=doc_url,
+                         query_engine=QUERY_ENGINE_EXAMPLE["name"],
                          user_id=create_user.id,
                          params=build_params)
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
-  assert q_engine.params["is_multimodal"].lower() == build_params["is_multimodal"].lower()
+  assert q_engine.params["is_multimodal"].lower() ==\
+    build_params["is_multimodal"].lower()
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
@@ -375,8 +383,8 @@ def test_query_engine_build_textonly(mock_get_vector_store, mock_build_doc_index
     "is_multimodal": "False"
   }
   q_engine_2, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url=doc_url, 
-                         query_engine="test integrated search", 
+      query_engine_build(doc_url=doc_url,
+                         query_engine="test integrated search",
                          user_id=create_user.id,
                          query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
                          params=build_params)
@@ -421,7 +429,7 @@ def test_build_doc_index_multi(mock_process_documents, create_engine,
     docs_processed, docs_not_processed = \
         build_doc_index(doc_url=doc_url,
                         q_engine=create_engine,
-                        qe_vector_store=qe_vector_store, 
+                        qe_vector_store=qe_vector_store,
                         is_multimodal=True)
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]

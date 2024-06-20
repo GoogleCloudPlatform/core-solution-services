@@ -186,7 +186,7 @@ async def generate_question_prompt(prompt: str,
     user_query (optional): existing user query for context
 
   Returns:
-    question prompt (str)  # SC2405XX: NOTE: What will this be, for multi? (not just a string!)
+    question prompt (str)
     list of QueryReference objects
 
   Raises:
@@ -416,7 +416,7 @@ def make_query_reference(q_engine: QueryEngine,
     query_reference_dict["page"]=doc_chunk.page
     query_reference_dict["chunk_url"]=doc_chunk.chunk_url
   # For video and audio chunks only
-  elif modality=="video" or modality=="audio":
+  elif modality in {"video", "audio"}:
     query_reference_dict["chunk_url"]=doc_chunk.chunk_url
     query_reference_dict["timestamp_start"]=doc_chunk.timestamp_start
     query_reference_dict["timestamp_stop"]=doc_chunk.timestamp_stop
@@ -781,7 +781,7 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
     doc_url: URL pointing to folder of documents
     q_engine: the query engine name to build the index for
     qe_vector_store: the vector store used for the query engine
-    is_multimodal: True if multimodal processing, False if text-only (default False)
+    is_multimodal: True if multimodal, False if text-only (default False)
 
   Returns:
     Tuple of list of QueryDocument objects of docs processed,
@@ -824,7 +824,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
     qe_vector_store: the vector store used for the query engine
     q_engine: the query engine name to build the index for
     storage_client: client used for storing the data source
-    is_multimodal: True if multimodal processing, False if text-only (default False)
+    is_multimodal: True if multimodal, False if text-only (default False)
   
   Returns:
      Tuple of list of QueryDocument objects for docs processed,
@@ -881,7 +881,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       query_doc.save()
 
       for i in range(0, len(doc_chunks)):
-        
+
         # Get string representing doc_chunks[i]
         # Will use string to make QueryDocumentChunk object
         if is_multimodal:
@@ -938,12 +938,12 @@ def make_query_document_chunk(query_engine_id: str,
     is_multimodal: True if multimodal processing, False if text-only
   
   Returns:
-    query_document_chunk: The QueryDocumentChunk object corresponding to the doc_chunk
+    query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
   """
 
   # Set modality
   if is_multimodal:
-    modality="image"  # Must fix later, should not assume all multimodal chunks are images
+    modality="image"  # Fix later to not assume all multimodal docs are images
   else:
     modality="text"
 
@@ -986,7 +986,7 @@ def make_query_document_chunk(query_engine_id: str,
     query_document_chunk_dict["page"]=page
     query_document_chunk_dict["chunk_url"]=doc_chunk
   # For video and audio chunks only
-  if modality=="video" or modality=="audio":
+  elif modality in {"video", "audio"}:
     pass
 
   # Create query_document_chunk out of dict
