@@ -668,7 +668,9 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       new_index_base = \
           qe_vector_store.index_document(doc_name, embed_chunks, index_base)
 
-      Logger.info(f"doc successfully indexed {len(embed_chunks)} chunks for [{doc_name}]")
+      Logger.info(
+        f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"
+      )
 
       # cleanup temp local file
       os.remove(doc_filepath)

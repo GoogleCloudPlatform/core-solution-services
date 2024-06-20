@@ -42,13 +42,14 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     "/chat_types",
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
-def get_chat_llm_list():
+def get_chat_llm_list(user_data: dict = Depends(validate_token)):
   """
   Get available Chat LLMs
 
   Returns:
       LLMGetTypesResponse
   """
+  print(f"get_chat_llm_list user_data {user_data}")
   try:
     return {
       "success": True,
