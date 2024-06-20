@@ -178,9 +178,8 @@ class FakeDataSource(DataSource):
       chunk_list = [QUERY_DOCUMENT_CHUNK_EXAMPLE_2["text"]] # List of one string
     else:
       chunk_list = None
-    return chunk_list #SC240619: DONE: Why are we returning a string, instead of a list of strings?  It should be a list of strings.
+    return chunk_list
   
-  #SC240619: DONE: Code up chunk_documents_multi function for the FakeDataSource class
   def chunk_document_multi(self, doc_name:str, doc_url: str,
                             doc_filepath: str) -> List[str]:
     if doc_url == QUERY_DOCUMENT_EXAMPLE_1["doc_url"]:
@@ -197,10 +196,7 @@ class FakeDataSource(DataSource):
       }] # List of one dict
     else:
       chunk_list = None
-    return chunk_list #SC240619: DONE: Why are we returning a dict, instead of a list of dicts?  It should be a list of dicts
-  #SC240619: DONE: In definition of chunk_document_multi, shouldn't it return a List[dict], not a List[str]? Yes, it should return a list of dicts, and now it does
- 
-  #SC240619: NOTE: Where are chunk_document and chunk_document_multi methods used in these unit tests?
+    return chunk_list
 
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.llm_chat")
@@ -276,7 +272,7 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url=doc_url, 
                          query_engine=QUERY_ENGINE_EXAMPLE["name"], 
-                         user_id=create_user.id) #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real
+                         user_id=create_user.id)
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
@@ -299,7 +295,6 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   q_engine = QueryEngine.find_by_id(q_engine.id)
   assert q_engine.parent_engine_id == q_engine_2.id
 
-#SC240619: DONE: Code up test for query_engine_build function for creating a query engine with is_multimodal=True in params input, and do an assert check that is_multimodal is in params - that's all the extra assert checks you need to put in here, since it doesn't actually run build_doc_index since that has its own test further down
 # Test of query_engine_build function, with optional input argument params,
 # which includes is_multimodal=True
 # Uses same 3 example docs as other tests of this function
@@ -320,11 +315,11 @@ def test_query_engine_build_multi(mock_get_vector_store, mock_build_doc_index,
       query_engine_build(doc_url=doc_url, 
                          query_engine=QUERY_ENGINE_EXAMPLE["name"], 
                          user_id=create_user.id,
-                         params=build_params) #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real
+                         params=build_params)
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
-  assert q_engine.params["is_multimodal"].lower() == build_params["is_multimodal"].lower() #QUERY_ENGINE_EXAMPLE_MULTI["params"]["is_multimodal"] #SC240619: DONE: Make is_multimodal be a field of params dict
+  assert q_engine.params["is_multimodal"].lower() == build_params["is_multimodal"].lower()
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
@@ -345,7 +340,6 @@ def test_query_engine_build_multi(mock_get_vector_store, mock_build_doc_index,
   q_engine = QueryEngine.find_by_id(q_engine.id)
   assert q_engine.parent_engine_id == q_engine_2.id
 
-#SC240619: DONE: Code up test for query_engine_build function for creating a query engine with is_multimodal=False in params input, and do an assert check that is_multimodal is in params - that's all the extra assert checks you need to put in here, since it doesn't actually run build_doc_index since that has its own test further down
 # Test of query_engine_build function, with optional input argument params,
 # which includes is_multimodal=False
 # Uses same 3 example docs as other tests of this function
@@ -366,11 +360,11 @@ def test_query_engine_build_textonly(mock_get_vector_store, mock_build_doc_index
       query_engine_build(doc_url=doc_url, 
                          query_engine=QUERY_ENGINE_EXAMPLE["name"], 
                          user_id=create_user.id,
-                         params=build_params) #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real
+                         params=build_params)
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
-  assert q_engine.params["is_multimodal"].lower() == build_params["is_multimodal"].lower() #SC240619: DONE: Make is_multimodal be a field of params dict
+  assert q_engine.params["is_multimodal"].lower() == build_params["is_multimodal"].lower()
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
@@ -407,11 +401,10 @@ def test_build_doc_index(mock_process_documents, create_engine,
     docs_processed, docs_not_processed = \
         build_doc_index(doc_url=doc_url,
                         q_engine=create_engine,
-                        qe_vector_store=qe_vector_store) #SC240624: DONE: Do not pass in is_multimodal input at all
+                        qe_vector_store=qe_vector_store)
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
-#SC240619: DONE: Code up test for build_doc_index function with is_multimodal=True input, and then do same assert checks as before
 # Test of build_doc_index function, with optional input argument
 # is_multimodal=True
 # Uses same 3 example docs as other tests of this function
@@ -433,7 +426,6 @@ def test_build_doc_index_multi(mock_process_documents, create_engine,
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
-#SC240619: DONE: Code up test for build_doc_index function with is_multimodal=False input, and then do same asser checks as before
 # Test of build_doc_index function, with optional input argument
 # is_multimodal=False
 # Uses same 3 example docs as other tests of this function
@@ -469,11 +461,10 @@ def test_process_documents(mock_get_datasource, create_engine):
       process_documents(doc_url=doc_url,
                         qe_vector_store=qe_vector_store,
                         q_engine=create_engine,
-                        storage_client=None) #SC240619: Do not pass in is_multimodal input at all
+                        storage_client=None)
   assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
   assert set(docs_not_processed) == {DSF3.src_url}
 
-#SC240619: DONE: Once again, code up test for process_documents function with is_multimodal=True input, and then do same assert checks as before
 # Test of process_documents function, with optional input argument
 # is_multimodal=True
 # Uses same 3 example docs as other tests of this function
@@ -493,7 +484,6 @@ def test_process_documents_multi(mock_get_datasource, create_engine):
   assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
   assert set(docs_not_processed) == {DSF3.src_url}
 
-#SC240619: DONE: Once again, code up test for process_documents function with is_multimodal=False input, and then do same assert checks as before
 # Test of process_documents function, with optional input argument
 # is_multimodal=False
 # Uses same 3 example docs as other tests of this function
@@ -512,5 +502,3 @@ def test_process_documents_textonly(mock_get_datasource, create_engine):
                         is_multimodal=False)
   assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
   assert set(docs_not_processed) == {DSF3.src_url}
-
-#SC240619: NOTE: None of these tests actually test the chunking code (neither the existing text-only chunk_document function nor Raven's new multi-modal chunk_document_multi function, and that's why Raven had to test his new chunk_document_multi function using a notebook

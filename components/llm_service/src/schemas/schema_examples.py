@@ -90,7 +90,7 @@ QUERY_ENGINE_EXAMPLE = {
   "index_id": "projects/83285581741/locations/us-central1/indexes/682347240495461171",
   "index_name": "query_engine_test_MEindex",
   "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840435"
-} #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real.
+}
 
 QUERY_RESULT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
