@@ -770,7 +770,7 @@ def query_engine_build(doc_url: str,
 
 def build_doc_index(doc_url: str, q_engine: QueryEngine,
                     qe_vector_store: VectorStore,
-                    is_multimodal: bool = False) -> \
+                    is_multimodal: Optional[bool] = False) -> \
         Tuple[List[QueryDocument], List[str]]:  #SC240520: DONE: Pass in multi flag, #SC240619: DONE: Make is_multimodal optional with default False
   """
   Build the document index.
@@ -814,7 +814,7 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
 
 def process_documents(doc_url: str, qe_vector_store: VectorStore,
                       q_engine: QueryEngine, storage_client,
-                      is_multimodal: bool = False) -> \
+                      is_multimodal: Optional[bool] = False) -> \
                       Tuple[List[QueryDocument], List[str]]:  #SC240520: DONE: Pass in multi flag - Also NOTE: Need to provide url of where image-chunks are stored, or do we assume that is in a standard sub-folder/sibling-folder of docs_url? Assume it is in same as docs_url, for now, #SC240619: DONE: Make is_multimodal optional with default False
   """
   Process docs in data source and upload embeddings to vector store  #SC240520: DONE: Add list of input args, including multi flag
