@@ -27,7 +27,7 @@ from common.utils.logging_handler import Logger
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            QueryDocument,
                            QueryReference, QueryDocumentChunk,
-                           BatchJobModel)  #SC240520: NOTE: Already includes Shelley's new fields for data models
+                           BatchJobModel)
 from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QE_TYPE_LLM_SERVICE,
                                      QE_TYPE_INTEGRATED_SEARCH,
@@ -45,7 +45,7 @@ from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore,
                                          NUM_MATCH_RESULTS)
-from services.query.data_source import DataSource  #SC240520: NOTE: Already includes Raven's new chunker method
+from services.query.data_source import DataSource
 from services.query.web_datasource import WebDataSource
 from services.query.sharepoint_datasource import SharePointDataSource
 from services.query.vertex_search import (build_vertex_search,
@@ -58,7 +58,7 @@ from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_MULTI_LLM_TYPE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
                     DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
-                    DEFAULT_WEB_DEPTH_LIMIT)  #SC240520: DONE: Import config for Raven's multi embedding model and multi LLM
+                    DEFAULT_WEB_DEPTH_LIMIT)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
@@ -605,7 +605,7 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   llm_type = request_body.get("llm_type")
   embedding_type = request_body.get("embedding_type")
   vector_store_type = request_body.get("vector_store")
-  params = request_body.get("params")  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false) - Make it part of params
+  params = request_body.get("params")
 
   Logger.info(f"Starting batch job for query engine [{query_engine}] "
               f"job id [{job.id}], request_body=[{request_body}]")
@@ -615,13 +615,13 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"llm type: [{llm_type}]")
   Logger.info(f"embedding type: [{embedding_type}]")
   Logger.info(f"vector store type: [{vector_store_type}]")
-  Logger.info(f"params: [{params}]")  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false) - Make it part of params
+  Logger.info(f"params: [{params}]")
 
   q_engine, docs_processed, docs_not_processed = \
       query_engine_build(doc_url, query_engine, user_id,
                          query_engine_type,
                          llm_type, description,
-                         embedding_type, vector_store_type, params)  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false) - Make it part of params
+                         embedding_type, vector_store_type, params)
 
   # update result data in batch job model
   docs_processed_urls = [doc.doc_url for doc in docs_processed]
@@ -646,11 +646,11 @@ def query_engine_build(doc_url: str,
                        embedding_type: Optional[str] = None,
                        vector_store_type: Optional[str] = None,
                        params: Optional[dict] = None
-                       ) -> Tuple[str, List[QueryDocument], List[str]]:  #SC240520: NOTE: Should multi flag be its own input arg, or just part of params? (true=multimodal, false=textonly, default false) - Make it part of params
+                       ) -> Tuple[str, List[QueryDocument], List[str]]:
   """
   Build a new query engine.
 
-  Args:  #SC240520: NOTE: If multi flag should be its own input arg, then add it to this list - No, it should be part of params
+  Args:
     doc_url: the URL to the set of documents to be indexed
     query_engine: the name of the query engine to create
     user_id: user id of engine creator
@@ -672,7 +672,7 @@ def query_engine_build(doc_url: str,
   if q_engine is not None:
     raise ValidationError(f"Query engine {query_engine} already exists")
 
-  # process special build params  #SC240520: if multi flag should be part of params, then extract it here - and move this code up, so that we can use the multi flag to decide what the llm_type and embedding_type defaults should be
+  # process special build params
   params = params or {}
 
   is_multimodal = False
@@ -699,13 +699,13 @@ def query_engine_build(doc_url: str,
     ]
 
   # create model
-  if llm_type is None:  #SC240520: DONE: if multi flag is true, then change llm_type
+  if llm_type is None:
     if is_multimodal:
       llm_type = DEFAULT_MULTI_LLM_TYPE
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
-  if embedding_type is None:  #SC240520: DONE: if multi flag is true, then change embedding_type
+  if embedding_type is None:
     if is_multimodal:
       embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
     else:
@@ -730,28 +730,28 @@ def query_engine_build(doc_url: str,
                          is_public=is_public,
                          doc_url=doc_url,
                          agents=associated_agents,
-                         params=params)  #SC240520: NOTE: Pass in multi flag, either as its own input arg or as part of params - make it part of params, so nothing needs to change here
+                         params=params)
 
-  q_engine.save()  #SC240520: NOTE: At this point the q_engine should be fully multimodal, if multi flag is true
+  q_engine.save()
 
   # build document index
   docs_processed = []
   docs_not_processed = []
 
-  try:  #SC240520: NOTE: Need to understand differences between these three diff types of query_engine_type
-    if query_engine_type == QE_TYPE_VERTEX_SEARCH:  #SC240520: NOTE: Work on this query_engine_type later - How much of this needs to change for multi?
+  try:  #SC2405XX: NOTE: Need to understand differences between these three diff types of query_engine_type
+    if query_engine_type == QE_TYPE_VERTEX_SEARCH:  #SC2405XX: NOTE: Work on this query_engine_type later - How much of this needs to change for multi?
       docs_processed, docs_not_processed = build_vertex_search(q_engine)
 
-    elif query_engine_type == QE_TYPE_LLM_SERVICE:  #SC240520: NOTE: Work on this query_engine_type first
+    elif query_engine_type == QE_TYPE_LLM_SERVICE:  #SC2405XX: DONE: Work on this query_engine_type first
       # retrieve vector store class and store type in q_engine
       qe_vector_store = vector_store_from_query_engine(q_engine)
       q_engine.vector_store = qe_vector_store.vector_store_type
       q_engine.update()
 
       docs_processed, docs_not_processed = \
-          build_doc_index(doc_url, q_engine, qe_vector_store, is_multimodal)  #SC240520: DONE: Pass in multi flag
+          build_doc_index(doc_url, q_engine, qe_vector_store, is_multimodal)
 
-    elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:  #SC240520: NOTE: Need to change any of this, or does it all work out on its own, recursively?
+    elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:  #SC2405XX: NOTE: Need to change any of this, or does it all work out on its own, recursively?
       # for each associated query engine store the current engine as its parent
       for aq_engine in associated_query_engines:
         aq_engine.parent_engine_id = q_engine.id
@@ -771,17 +771,17 @@ def query_engine_build(doc_url: str,
 def build_doc_index(doc_url: str, q_engine: QueryEngine,
                     qe_vector_store: VectorStore,
                     is_multimodal: Optional[bool] = False) -> \
-        Tuple[List[QueryDocument], List[str]]:  #SC240520: DONE: Pass in multi flag, #SC240619: DONE: Make is_multimodal optional with default False
+        Tuple[List[QueryDocument], List[str]]:
   """
   Build the document index.
   Supports GCS URLs and http(s)://, containing PDF files, text
   files, html, csv.
 
-  Args:  #SC240520: DONE: Add multi flag at end of this list, also update other args in this list
+  Args:
     doc_url: URL pointing to folder of documents
     q_engine: the query engine name to build the index for
     qe_vector_store: the vector store used for the query engine
-    is_multimodal: True if multimodal processing, False if text-only (default False) #SC240619: DONE: Specify default value is False
+    is_multimodal: True if multimodal processing, False if text-only (default False)
 
   Returns:
     Tuple of list of QueryDocument objects of docs processed,
@@ -795,14 +795,14 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
   try:
     # process docs at url and upload embeddings to vector store
     docs_processed, docs_not_processed = process_documents(
-      doc_url, qe_vector_store, q_engine, storage_client, is_multimodal)  #SC240520: DONE: Pass in multi flag - Also NOTE: Need to provide url of where image-chunks are stored, or should that be a standard subfolder/siblingfolder of doc_url? Don't need to pass in that url for the chunked images, since it will always be the same as the doc_url, for now
+      doc_url, qe_vector_store, q_engine, storage_client, is_multimodal)
 
     # make sure we actually processed some docs
     if len(docs_processed) == 0:
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # deploy vector store (e.g. create endpoint for database)  #SC240520: DONE: Edit comment so that it is not specifically about matching engine (since it could by alloydb or cloudsql too)?
+    # deploy vector store (e.g. create endpoint for database)
     # db vector stores typically don't require this step.
     qe_vector_store.deploy()
 
@@ -815,16 +815,16 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
 def process_documents(doc_url: str, qe_vector_store: VectorStore,
                       q_engine: QueryEngine, storage_client,
                       is_multimodal: Optional[bool] = False) -> \
-                      Tuple[List[QueryDocument], List[str]]:  #SC240520: DONE: Pass in multi flag - Also NOTE: Need to provide url of where image-chunks are stored, or do we assume that is in a standard sub-folder/sibling-folder of docs_url? Assume it is in same as docs_url, for now, #SC240619: DONE: Make is_multimodal optional with default False
+                      Tuple[List[QueryDocument], List[str]]:  #SC2405XX: NOTE: Need to save images in standard sub-folder/sibling-folder of docs_url? Assume it is in same as docs_url, for now
   """
-  Process docs in data source and upload embeddings to vector store  #SC240520: DONE: Add list of input args, including multi flag
+  Process docs in data source and upload embeddings to vector store
   
   Args:
     doc_url: URL pointing to folder of documents
     qe_vector_store: the vector store used for the query engine
     q_engine: the query engine name to build the index for
     storage_client: client used for storing the data source
-    is_multimodal: True if multimodal processing, False if text-only (default False)  #SC240619: DONE: Specify default value is False
+    is_multimodal: True if multimodal processing, False if text-only (default False)
   
   Returns:
      Tuple of list of QueryDocument objects for docs processed,
@@ -835,7 +835,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
-    data_source_files = data_source.download_documents(doc_url, temp_dir)  #SC240520: NOTE: Can we put image-chunks in same doc_url, or will that cause problems when another user tries to build q_engine off of same docs_url? Ignore for now
+    data_source_files = data_source.download_documents(doc_url, temp_dir)  #SC2405XX: NOTE: Can we put image-chunks in same doc_url, or will that cause problems when another user tries to build q_engine off of same docs_url? Ignore for now
 
     # counter for unique index ids
     index_base = 0
@@ -854,9 +854,9 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
       else:
         doc_chunks = data_source.chunk_document(doc_name,
                                                 index_doc_url,
-                                                doc_filepath)  #SC240520: DONE: Rename text_chunks to something less modality-specific like doc_chunks - If multi flag is true, then call Raven's chunker, but if multi flag is false, then keep this chunker
+                                                doc_filepath)
 
-      if doc_chunks is None or len(doc_chunks) == 0:  #SC240520: DONE: Rename text_chunks to doc_chunks - Also make sure output of Raven's chunker will meet these conditions too (i.e., length = number of doc_chunks)
+      if doc_chunks is None or len(doc_chunks) == 0:
         # unable to process this doc; skip
         continue
 
@@ -880,7 +880,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                 index_end=new_index_base)
       query_doc.save()
 
-      for i in range(0, len(doc_chunks)):  #SC240520: DONE: Rename text_chunks to doc_chunks - Also make sure output of Raven's chunker will meet these conditions too (length = number of doc_chunks)
+      for i in range(0, len(doc_chunks)):
         
         # Get string representing doc_chunks[i]
         # Will use string to make QueryDocumentChunk object
@@ -903,18 +903,6 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
           data_source=data_source,
           is_multimodal=is_multimodal,
         )
-        ## break chunks into sentences and store in chunk model
-        #clean_text = data_source.clean_text(doc_chunks[i])  #SC240520: DONE: Only do this if doc_chunks[i] is text
-        #sentences = data_source.text_to_sentence_list(doc_chunks[i])  #SC240520: DONE: Only do this if doc_chunks[i] is text
-        #
-        #query_doc_chunk = QueryDocumentChunk(
-        #                      query_engine_id=q_engine.id,
-        #                      query_document_id=query_doc.id,
-        #                      index=i+index_base,
-        #                      modality="text",
-        #                      text=text_chunks[i],
-        #                      clean_text=clean_text,
-        #                      sentences=sentences)  #SC240520: DONE: Create/call function make_query_doc_chunk that first checks doc_chunks[i].modality.casefold() to decide what fields of dict to create, like make_query_reference function above
         query_doc_chunk.save()
 
       Logger.info(f"doc chunk models created for [{doc_name}]")
@@ -931,8 +919,8 @@ def make_query_document_chunk(query_engine_id: str,
                               doc_chunk: str,
                               page: int,
                               data_source: DataSource,
-                              is_multimodal: bool,
-) -> QueryDocumentChunk:
+                              is_multimodal: bool) -> \
+                                QueryDocumentChunk:
   """
   Make a single QueryDocumentChunk object, with appropriate fields
   for modality
