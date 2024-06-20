@@ -355,8 +355,8 @@ def test_query_search(mock_get_top_relevant_sentences,
   assert query_references[1].chunk_id == qdoc_chunk2.id
   assert query_references[2].chunk_id == qdoc_chunk3.id
 
-# Test of query_engine_build function with no optional input argument params
-# Uses same 3 example docs as other tests of build_doc_index
+# Test of query_engine_build function, with no optional input argument params
+# Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
@@ -394,9 +394,9 @@ def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   assert q_engine.parent_engine_id == q_engine_2.id
 
 #SC240619: DONE: Code up test for query_engine_build function for creating a query engine with is_multimodal=True in params input, and do an assert check that is_multimodal is in params - that's all the extra assert checks you need to put in here, since it doesn't actually run build_doc_index since that has its own test further down
-# Test of query_engine_build function with optional input argument params,
+# Test of query_engine_build function, with optional input argument params,
 # which includes is_multimodal=True
-# Uses same 3 example docs as other tests of build_doc_index
+# Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 def test_query_engine_build_multi(mock_get_vector_store, mock_build_doc_index,
@@ -420,9 +420,9 @@ def test_query_engine_build_multi(mock_get_vector_store, mock_build_doc_index,
   assert docs_not_processed == [create_query_docs[2]]
 
 #SC240619: DONE: Code up test for query_engine_build function for creating a query engine with is_multimodal=False in params input, and do an assert check that is_multimodal is in params - that's all the extra assert checks you need to put in here, since it doesn't actually run build_doc_index since that has its own test further down
-# Test of query_engine_build function with optional input argument params,
+# Test of query_engine_build function, with optional input argument params,
 # which includes is_multimodal=False
-# Uses same 3 example docs as other tests of build_doc_index
+# Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 def test_query_engine_build_textonly(mock_get_vector_store, mock_build_doc_index,
@@ -461,9 +461,9 @@ def test_query_engine_build_textonly(mock_get_vector_store, mock_build_doc_index
   q_engine = QueryEngine.find_by_id(q_engine.id)
   assert q_engine.parent_engine_id == q_engine_2.id
 
-# Test of build_doc_index function with no optional input argument 
+# Test of build_doc_index function, with no optional input argument
 # is_multimodal (which defaults to False)
-# Uses same 3 example docs as other tests of build_doc_index
+# Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.process_documents")
 def test_build_doc_index(mock_process_documents, create_engine,
                          create_query_docs):
@@ -482,9 +482,9 @@ def test_build_doc_index(mock_process_documents, create_engine,
   assert docs_not_processed == [create_query_docs[2]]
 
 #SC240619: DONE: Code up test for build_doc_index function with is_multimodal=True input, and then do same assert checks as before
-# Test of build_doc_index function with optional input argument 
+# Test of build_doc_index function, with optional input argument
 # is_multimodal=True
-# Uses same 3 example docs as other tests of build_doc_index
+# Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.process_documents")
 def test_build_doc_index_multi(mock_process_documents, create_engine_multi,
                                create_query_docs):
@@ -504,9 +504,9 @@ def test_build_doc_index_multi(mock_process_documents, create_engine_multi,
   assert docs_not_processed == [create_query_docs[2]]
 
 #SC240619: DONE: Code up test for build_doc_index function with is_multimodal=False input, and then do same asser checks as before
-# Test of query_engine_build function with optional input argument 
+# Test of build_doc_index function, with optional input argument
 # is_multimodal=False
-# Uses same 3 example docs as other tests of build_doc_index
+# Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.process_documents")
 def test_build_doc_index_textonly(mock_process_documents, create_engine_textonly,
                                   create_query_docs):
@@ -525,9 +525,9 @@ def test_build_doc_index_textonly(mock_process_documents, create_engine_textonly
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
-# Test of process_documents function with no optional input argument 
+# Test of process_documents function, with no optional input argument
 # is_multimodal (which defaults to False)
-# Uses same 3 example docs as other tests of build_doc_index
+# Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.datasource_from_url")
 def test_process_documents(mock_get_datasource, create_engine):
   mock_get_datasource.return_value = FakeDataSource()
@@ -544,9 +544,9 @@ def test_process_documents(mock_get_datasource, create_engine):
   assert set(docs_not_processed) == {DSF3.src_url}
 
 #SC240619: DONE: Once again, code up test for process_documents function with is_multimodal=True input, and then do same assert checks as before
-# Test of process_documents function with optional input argument 
+# Test of process_documents function, with optional input argument
 # is_multimodal=True
-# Uses same 3 example docs as other tests of build_doc_index
+# Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.datasource_from_url")
 def test_process_documents_multi(mock_get_datasource, create_engine_multi):
   mock_get_datasource.return_value = FakeDataSource()
@@ -564,9 +564,9 @@ def test_process_documents_multi(mock_get_datasource, create_engine_multi):
   assert set(docs_not_processed) == {DSF3.src_url}
 
 #SC240619: DONE: Once again, code up test for process_documents function with is_multimodal=False input, and then do same assert checks as before
-# Test of query_engine_build function with optional input argument 
+# Test of process_documents function, with optional input argument
 # is_multimodal=False
-# Uses same 3 example docs as other tests of build_doc_index
+# Uses same 3 example docs as other tests of this function
 @mock.patch("services.query.query_service.datasource_from_url")
 def test_process_documents_textonly(mock_get_datasource, create_engine_textonly):
   mock_get_datasource.return_value = FakeDataSource()
