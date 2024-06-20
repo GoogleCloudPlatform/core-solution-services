@@ -87,7 +87,7 @@ async def query_generate(
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
             rank_sentences=False) -> \
-                Tuple[QueryResult, List[QueryReference]]: #SC2405XX: NOTE: Multi flag will be saved inside q_engine, as part of params
+                Tuple[QueryResult, List[QueryReference]]:
   """
   Execute a query over a query engine and generate a response.
 
@@ -115,14 +115,14 @@ async def query_generate(
               f"llm_type=[{llm_type}], "
               f"user_id=[{user_id}], "
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
-              f"user_query=[{user_query}]") #SC2405XX: NOTE: Also log multi flag?
+              f"user_query=[{user_query}]")
 
   # determine question generation model
   if llm_type is None:
     if q_engine.llm_type is not None:
       llm_type = q_engine.llm_type
     else:
-      llm_type = DEFAULT_QUERY_CHAT_MODEL  #SC2405XX: NOTE: If multi flag is true, then set different default LLM
+      llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
   query_references = retrieve_references(prompt, q_engine, user_id,
@@ -132,7 +132,7 @@ async def query_generate(
   # from multiple child engines.
   if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
       len(query_references) > 1:
-    query_references = rerank_references(prompt, query_references)  #SC2405XX: NOTE: Does this need to change?
+    query_references = rerank_references(prompt, query_references)
 
   # Update user query with ranked references. We do this before generating
   # the answer so the frontend can display the retrieved results as soon as
@@ -146,10 +146,10 @@ async def query_generate(
       await generate_question_prompt(prompt,
                                      llm_type,
                                      query_references,
-                                     user_query)  #SC2405XX: NOTE: llm_type should already specify whether multi LLM is needed
+                                     user_query)
 
   # send prompt to model
-  question_response = await llm_chat(question_prompt, llm_type)  #SC2405XX: NOTE: llm_type should already specify whether multi LLM is needed
+  question_response = await llm_chat(question_prompt, llm_type)
 
   # update user query with response
   if user_query:
@@ -173,7 +173,7 @@ async def generate_question_prompt(prompt: str,
                                    llm_type: str,
                                    query_references: List[QueryReference],
                                    user_query=None) -> \
-                                   Tuple[str, QueryReference]:  #SC2405XX: NOTE: llm_type should already specify if multi LLM is needed
+                                   Tuple[str, QueryReference]:
   """
   Generate question prompt for RAG, given initial prompt and retrieved
   references.  If necessary, trim context or references to fit context window
@@ -199,11 +199,11 @@ async def generate_question_prompt(prompt: str,
 
   # generate default prompt
   question_prompt = get_question_prompt(
-    prompt, chat_history, query_references, llm_type)  #SC2405XX: NOTE: llm_type should already specify whether multi LLM is needed, also modality field of each query_reference will also specify
+    prompt, chat_history, query_references, llm_type)
 
   # check prompt against context length of generation model
   try:
-    check_context_length(question_prompt, llm_type)  #SC2405XX: Must factor in how much diff modalities will eat up context
+    check_context_length(question_prompt, llm_type)
   except ContextWindowExceededException:
     # first try popping reference results
     while len(query_references) > MIN_QUERY_REFERENCES:
@@ -223,7 +223,7 @@ async def generate_question_prompt(prompt: str,
     except ContextWindowExceededException:
       # summarize chat history
       Logger.info(f"Summarizing chat history for {question_prompt}")
-      chat_history = await summarize_history(chat_history, llm_type)  #SC2405XX: Must factor in how much diff modalities will eat up context
+      chat_history = await summarize_history(chat_history, llm_type)
       question_prompt = get_question_prompt(
         prompt, chat_history, query_references, llm_type
       )
@@ -233,7 +233,7 @@ async def generate_question_prompt(prompt: str,
   return question_prompt, query_references
 
 async def summarize_history(chat_history: str,
-                            llm_type: str) -> str:  #SC2405XX: NOTE: llm_type will already specify whether multi LLM is needed
+                            llm_type: str) -> str:
   """
   Use an LLM to summarize a chat history.
 
@@ -243,15 +243,15 @@ async def summarize_history(chat_history: str,
   Returns:
     summarized chat history
   """
-  summarize_prompt = get_summarize_prompt(chat_history)  #SC2405XX: NOTE: Must factor in how much diff modalities will eat up context?
-  summary = await llm_chat(summarize_prompt, llm_type)  #SC2405XX: NOTE: llm_type will already specify whether multi LLM is needed?
+  summarize_prompt = get_summarize_prompt(chat_history)
+  summary = await llm_chat(summarize_prompt, llm_type)
   Logger.info(f"generated summary with LLM {llm_type}: {summary}")
   return summary
 
 def retrieve_references(prompt: str,
                         q_engine: QueryEngine,
                         user_id: str,
-                        rank_sentences=False)-> List[QueryReference]:  #SC2405XX: NOTE: q_engine args will already contain multi flag and corresponding llm_type and embedding_type
+                        rank_sentences=False)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -281,13 +281,13 @@ def retrieve_references(prompt: str,
 
 def query_search(q_engine: QueryEngine,
                  query_prompt: str,
-                 rank_sentences=False) -> List[QueryReference]:  #SC2405XX: NOTE: q_engine args will already contain multi flag and corresponding llm_type and embedding_type
+                 rank_sentences=False) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
 
   Args:
-    q_engine: QueryEngine to search  #SC2405XX: Name of q_engine, or the q_engine object itself?
+    q_engine: QueryEngine to search
     query_prompt (str):  user query
     rank_sentences: rank sentence relevance in retrieved chunks
 
@@ -299,7 +299,7 @@ def query_search(q_engine: QueryEngine,
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
   _, query_embeddings = embeddings.get_embeddings([query_prompt],
-                                                  q_engine.embedding_type)  #SC2405XX: NOTE: q_engine.embedding_type should already correspond to multi flag
+                                                  q_engine.embedding_type)
   query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
@@ -326,7 +326,7 @@ def query_search(q_engine: QueryEngine,
       doc_chunk=doc_chunk,
       query_embeddings=query_embeddings,
       rank_sentences=rank_sentences
-    )  #SC2405XX: NOTE: Should already set up appropriate fields for multi flag, from previous PR
+    )
     query_reference.save()
     query_references.append(query_reference)
 
@@ -341,7 +341,7 @@ def make_query_reference(q_engine: QueryEngine,
                            doc_chunk: QueryDocumentChunk,
                            query_embeddings: List[Optional[List[float]]],
                            rank_sentences: bool = False,
-) -> QueryReference:  #SC2405XX: NOTE: Should already set up appropriate fields for multi flag, from previous PR
+) -> QueryReference:
   """
   Make a single QueryReference object, with appropriate fields
   for modality
@@ -453,7 +453,7 @@ def rerank_references(prompt: str,
   for query_ref in query_references:
     query_doc_chunk = QueryDocumentChunk.find_by_id(query_ref.chunk_id)
     # print(query_ref.id, query_ref_id, query_ref.chunk_id, query_doc_chunk.id)
-    query_ref_text.append(query_doc_chunk.clean_text)  #SC2405XX: Set fields appropriate to query_doc_chunk.modality.casefold()
+    query_ref_text.append(query_doc_chunk.clean_text)
     query_ref_ids.append(query_ref.id)
     query_ref_lookup[query_ref.id] = query_ref
 
@@ -473,10 +473,10 @@ def rerank_references(prompt: str,
   return ranked_query_refs
 
 def get_top_relevant_sentences(q_engine, query_embeddings,
-    sentences, expand_neighbors=2, highlight_top_sentence=False) -> list:  #SC2405XX: NOTE: Should only call this function on doc_chunks that have sentences (i.e. are text modality)
+    sentences, expand_neighbors=2, highlight_top_sentence=False) -> list:
 
   _, sentence_embeddings = embeddings.get_embeddings(sentences,
-                                                     q_engine.embedding_type)  #SC2405XX: NOTE: embedding_type should already specify whether multi model is needed
+                                                     q_engine.embedding_type)
   similarity_scores = get_similarity(query_embeddings, sentence_embeddings)
   Logger.info("Similarity scores of query_embeddings and sentence_embeddings: "
               f"{len(similarity_scores)}")
@@ -518,11 +518,11 @@ async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
   Returns:
     dict containing job meta data
   """
-  query_engine_id = request_body.get("query_engine_id")  #SC2405XX: NOTE: query engine params should already contain multi flag and appropriate llm type and embedding model type
+  query_engine_id = request_body.get("query_engine_id")
   prompt = request_body.get("prompt")
   user_id = request_body.get("user_id")
   user_query_id = request_body.get("user_query_id", None)
-  llm_type = request_body.get("llm_type")  #SC2405XX: NOTE: llm_type should already specify if multi LLM is needed
+  llm_type = request_body.get("llm_type")
   rank_sentences = request_body.get("rank_sentences", None)
 
   q_engine = QueryEngine.find_by_id(query_engine_id)
@@ -539,7 +539,7 @@ async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
               f"job id [{job.id}], request_body=[{request_body}]")
 
   query_result, query_references = await query_generate(
-      user_id, prompt, q_engine, llm_type, user_query, rank_sentences)  #SC2405XX: NOTE: q_engine should already contain multi flag and appropriate llm_type and embedding_type
+      user_id, prompt, q_engine, llm_type, user_query, rank_sentences)
 
   # update user query
   user_query, query_reference_dicts = \
@@ -548,7 +548,7 @@ async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
                         user_id,
                         q_engine,
                         query_references,
-                        user_query)  #SC2405XX: NOTE: Need to fix?
+                        user_query)
 
   # update result data in batch job model
   result_data = {
@@ -570,7 +570,7 @@ def update_user_query(prompt: str,
                       q_engine: QueryEngine,
                       query_references: List[QueryReference],
                       user_query: UserQuery = None) -> \
-                      Tuple[UserQuery, dict]:  #SC2405XX: NOTE: Need to fix?
+                      Tuple[UserQuery, dict]:
   """ Save user query history """
   query_reference_dicts = [
     ref.get_fields(reformat_datetime=True) for ref in query_references
@@ -738,11 +738,11 @@ def query_engine_build(doc_url: str,
   docs_processed = []
   docs_not_processed = []
 
-  try:  #SC2405XX: NOTE: Need to understand differences between these three diff types of query_engine_type
-    if query_engine_type == QE_TYPE_VERTEX_SEARCH:  #SC2405XX: NOTE: Work on this query_engine_type later - How much of this needs to change for multi?
+  try:
+    if query_engine_type == QE_TYPE_VERTEX_SEARCH:
       docs_processed, docs_not_processed = build_vertex_search(q_engine)
 
-    elif query_engine_type == QE_TYPE_LLM_SERVICE:  #SC2405XX: DONE: Work on this query_engine_type first
+    elif query_engine_type == QE_TYPE_LLM_SERVICE:
       # retrieve vector store class and store type in q_engine
       qe_vector_store = vector_store_from_query_engine(q_engine)
       q_engine.vector_store = qe_vector_store.vector_store_type
@@ -751,7 +751,7 @@ def query_engine_build(doc_url: str,
       docs_processed, docs_not_processed = \
           build_doc_index(doc_url, q_engine, qe_vector_store, is_multimodal)
 
-    elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:  #SC2405XX: NOTE: Need to change any of this, or does it all work out on its own, recursively?
+    elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
       # for each associated query engine store the current engine as its parent
       for aq_engine in associated_query_engines:
         aq_engine.parent_engine_id = q_engine.id
@@ -815,7 +815,7 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
 def process_documents(doc_url: str, qe_vector_store: VectorStore,
                       q_engine: QueryEngine, storage_client,
                       is_multimodal: Optional[bool] = False) -> \
-                      Tuple[List[QueryDocument], List[str]]:  #SC2405XX: NOTE: Need to save images in standard sub-folder/sibling-folder of docs_url? Assume it is in same as docs_url, for now
+                      Tuple[List[QueryDocument], List[str]]:
   """
   Process docs in data source and upload embeddings to vector store
   
@@ -835,7 +835,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
-    data_source_files = data_source.download_documents(doc_url, temp_dir)  #SC2405XX: NOTE: Can we put image-chunks in same doc_url, or will that cause problems when another user tries to build q_engine off of same docs_url? Ignore for now
+    data_source_files = data_source.download_documents(doc_url, temp_dir)
 
     # counter for unique index ids
     index_base = 0
@@ -864,7 +864,7 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       # generate embedding data and store in vector store
       new_index_base = \
-          qe_vector_store.index_document(doc_name, doc_chunks, index_base)  #SC24520: DONE: Rename text_chunks to doc_chunks - Also make sure output of Raven's chunker can be passed into this method too
+          qe_vector_store.index_document(doc_name, doc_chunks, index_base)
 
       Logger.info(f"doc successfully indexed [{doc_name}]")
 
