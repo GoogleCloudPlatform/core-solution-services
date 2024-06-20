@@ -78,6 +78,9 @@ USER_QUERY_EXAMPLE = {
   ]
 }
 
+PARAMS = {
+    "is_public": "True",
+}
 QUERY_ENGINE_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "name": "query-engine-test",
@@ -86,13 +89,17 @@ QUERY_ENGINE_EXAMPLE = {
   "embedding_type": "VertexAI-Chat",
   "vector_store": "langchain_pgvector",
   "created_by": "fake-user-id",
-  "is_public": True,
+  "params": PARAMS,
   "index_id": "projects/83285581741/locations/us-central1/indexes/682347240495461171",
   "index_name": "query_engine_test_MEindex",
   "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840435"
 } #SC240619: DONE: Is this a real query engine somewhere?  Which project?  No it is not real.
 
 #SC240619: DONE: Create QUERY_ENGINE_EXAMPLE_MULTI with is_multimodal set to True
+PARAMS_MULTI = {
+    "is_public": "True",
+    "is_multimodal": "True",
+}
 QUERY_ENGINE_EXAMPLE_MULTI = {
   "id": "asd98798as7dhjgkjsdf2",
   "name": "query-engine-test-multi",
@@ -101,8 +108,7 @@ QUERY_ENGINE_EXAMPLE_MULTI = {
   "embedding_type": "VertexAI-Chat",
   "vector_store": "langchain_pgvector",
   "created_by": "fake-user-id",
-  "is_public": True,
-  "is_multimodal": True,
+  "params": PARAMS_MULTI,
   "index_id": "projects/83285581741/locations/us-central1/indexes/682347240495461172",
   "index_name": "query_engine_test_multi_MEindex",
   "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840436"
@@ -111,6 +117,10 @@ QUERY_ENGINE_EXAMPLE_MULTI = {
 #SC240619: DONE: Create QUERY_ENGINE_EXAMPLE_TEXTONLY with is_multimodal set to False
 # Identical to QUERY_ENGINE_EXAMPLE
 # but with is_multimodal explicitly set to False
+PARAMS_TEXTONLY = {
+    "is_public": "True",
+    "is_multimodal": "True",
+}
 QUERY_ENGINE_EXAMPLE_TEXTONLY = {
   "id": "asd98798as7dhjgkjsdf3",
   "name": "query-engine-test-textonly",
@@ -119,8 +129,7 @@ QUERY_ENGINE_EXAMPLE_TEXTONLY = {
   "embedding_type": "VertexAI-Chat",
   "vector_store": "langchain_pgvector",
   "created_by": "fake-user-id",
-  "is_public": True,
-  "is_multimodal": False,
+  "params": PARAMS_TEXTONLY,
   "index_id": "projects/83285581741/locations/us-central1/indexes/682347240495461173",
   "index_name": "query_engine_test_textonly_MEindex",
   "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840437"
@@ -205,7 +214,7 @@ QUERY_REFERENCE_EXAMPLE_5_TEXT = {
 # Identical to QUERY_REFERENCE_EXAMPLE_2
 # but with a query engine with is_multimodal 
 # explicitly set to False
-QUERY_REFERENCE_EXAMPLE_4_IMAGE = {
+QUERY_REFERENCE_EXAMPLE_6_TEXT = {
   "id": "fasd98798as7dhjgkjsdf",
   "query_engine_id": "asd98798as7dhjgkjsdf3",
   "query_engine": "query-engine-test-textonly",
