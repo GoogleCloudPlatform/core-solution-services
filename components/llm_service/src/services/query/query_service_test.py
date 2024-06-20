@@ -25,27 +25,15 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
                                      USER_QUERY_EXAMPLE,
                                      USER_EXAMPLE,
                                      QUERY_ENGINE_EXAMPLE,
-                                     #QUERY_ENGINE_EXAMPLE_MULTI,
-                                     #QUERY_ENGINE_EXAMPLE_TEXTONLY,
                                      QUERY_DOCUMENT_EXAMPLE_1,
                                      QUERY_DOCUMENT_EXAMPLE_2,
                                      QUERY_DOCUMENT_EXAMPLE_3,
                                      QUERY_DOCUMENT_CHUNK_EXAMPLE_1,
                                      QUERY_DOCUMENT_CHUNK_EXAMPLE_2,
                                      QUERY_DOCUMENT_CHUNK_EXAMPLE_3,
-                                     #QUERY_DOCUMENT_CHUNK_EXAMPLE_4_IMAGE,
-                                     #QUERY_DOCUMENT_CHUNK_EXAMPLE_5_IMAGE,
-                                     #QUERY_DOCUMENT_CHUNK_EXAMPLE_6_IMAGE,
-                                     #QUERY_DOCUMENT_CHUNK_EXAMPLE_7_TEXT,
-                                     #QUERY_DOCUMENT_CHUNK_EXAMPLE_8_TEXT,
-                                     #QUERY_DOCUMENT_CHUNK_EXAMPLE_9_TEXT,
                                      QUERY_RESULT_EXAMPLE,
                                      QUERY_REFERENCE_EXAMPLE_1,
                                      QUERY_REFERENCE_EXAMPLE_2,
-                                     #QUERY_REFERENCE_EXAMPLE_3_IMAGE,
-                                     #QUERY_REFERENCE_EXAMPLE_4_IMAGE,
-                                     #QUERY_REFERENCE_EXAMPLE_5_TEXT,
-                                     #QUERY_REFERENCE_EXAMPLE_6_TEXT)
 )
 from config import get_model_config, ModelConfig, MODEL_CONFIG_PATH
 from common.models import (UserQuery, QueryResult, QueryEngine,
@@ -87,34 +75,6 @@ def create_query_reference_2(firestore_emulator, clean_firestore):
   query_reference.save()
   return query_reference
 
-#SC240619: DONE: Code up create_query_reference_3_image out of QUERY_REFERENCE_EXAMPLE_3_image
-#def create_query_reference_3_image(firestore_emulator, clean_firestore):
-#  query_reference_dict = QUERY_REFERENCE_EXAMPLE_3_IMAGE
-#  query_reference = QueryReference.from_dict(query_reference_dict)
-#  query_reference.save()
-#  return query_reference
-
-#SC240619: DONE: Code up create_query_reference_4_image out of QUERY_REFERENCE_EXAMPLE_4_image
-#def create_query_reference_4_image(firestore_emulator, clean_firestore):
-#  query_reference_dict = QUERY_REFERENCE_EXAMPLE_4_IMAGE
-#  query_reference = QueryReference.from_dict(query_reference_dict)
-#  query_reference.save()
-#  return query_reference
-
-#SC240619: DONE: Code up create_query_reference_5_text out of QUERY_REFERENCE_EXAMPLE_5_TEXT
-#def create_query_reference_5_text(firestore_emulator, clean_firestore):
-#  query_reference_dict = QUERY_REFERENCE_EXAMPLE_5_TEXT
-#  query_reference = QueryReference.from_dict(query_reference_dict)
-#  query_reference.save()
-#  return query_reference
-
-#SC240619: DONE: Code up create_query_reference_6_text out of QUERY_REFERENCE_EXAMPLE_6_TEXT
-#def create_query_reference_6_text(firestore_emulator, clean_firestore):
-#  query_reference_dict = QUERY_REFERENCE_EXAMPLE_6_TEXT
-#  query_reference = QueryReference.from_dict(query_reference_dict)
-#  query_reference.save()
-#  return query_reference
-
 @pytest.fixture
 def create_user(firestore_emulator, clean_firestore):
   user_dict = USER_EXAMPLE
@@ -128,24 +88,6 @@ def create_engine(firestore_emulator, clean_firestore):
   q_engine = QueryEngine.from_dict(query_engine_dict)
   q_engine.save()
   return q_engine
-
-#SC40619: DONE: Code function to create multimodal qe out of QUERY_ENGINE_EXAMPLE_MULTI
-#@pytest.fixture
-#def create_engine_multi(firestore_emulator, clean_firestore):
-#  query_engine_dict = QUERY_ENGINE_EXAMPLE_MULTI
-#  q_engine = QueryEngine.from_dict(query_engine_dict)
-#  q_engine.save()
-#  return q_engine
-
-#SC40619: DONE: Code function to create multimodal qe out of QUERY_ENGINE_EXAMPLE_TEXTONLY
-# create_engine_textonly is identical to create_engine
-# except with is_multimodal explicitly set to False
-#@pytest.fixture
-#def create_engine_textonly(firestore_emulator, clean_firestore):
-#  query_engine_dict = QUERY_ENGINE_EXAMPLE_TEXTONLY
-#  q_engine = QueryEngine.from_dict(query_engine_dict)
-#  q_engine.save()
-#  return q_engine
 
 @pytest.fixture
 def create_user_query(firestore_emulator, clean_firestore):
@@ -180,43 +122,6 @@ def create_query_doc_chunks(firestore_emulator, clean_firestore):
   qdoc_chunk3 = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_3)
   qdoc_chunk3.save()
   return [qdoc_chunk1, qdoc_chunk2, qdoc_chunk3]
-
-#def create_query_doc_chunks_image(firestore_emulator, clean_firestore):
-#  #SC240619: DONE: Create qdoc_chunk4_image out of QUERY_DOCUMENT_CHUNK_EXAMPLE_4_IMAGE
-#  qdoc_chunk4_image = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_4_IMAGE)
-#  qdoc_chunk4_image.save()
-#  #SC240619: DONE: Create qdoc_chunk5_image out of QUERY_DOCUMENT_CHUNK_EXAMPLE_5_IMAGE
-#  qdoc_chunk5_image = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_5_IMAGE)
-#  qdoc_chunk5_image.save()
-#  #SC240619: DONE: Create qdoc_chunk6_image out of QUERY_DOCUMENT_CHUNK_EXAMPLE_6_IMAGE
-#  qdoc_chunk6_image = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_6_IMAGE)
-#  qdoc_chunk6_image.save()
-#  return [qdoc_chunk4_image, qdoc_chunk5_image, qdoc_chunk6_image]
-
-# create_query_doc_chunks_text is idential to
-# create_query_doc_chunks except the doc chunks
-# are made with a query engine with is_multimodal
-# explicitly set to False
-#def create_query_doc_chunks_text(firestore_emulator, clean_firestore):
-#  #SC240619: DONE: Create qdoc_chunk7_text out of QUERY_DOCUMENT_CHUNK_EXAMPLE_7_TEXT
-#  # qdoc_chunk7_text is identical to qdoc_chunk1
-#  # except with a query engine with is_multimodal
-#  # explicitly set to False
-#  qdoc_chunk7_text = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_7_TEXT)
-#  qdoc_chunk7_text.save()
-#  #SC240619: DONE: Create qdoc_chunk8_text out of QUERY_DOCUMENT_CHUNK_EXAMPLE_8_TEXT
-#  # qdoc_chunk8_text is identical to qdoc_chunk2
-#  # except with a query engine with is_multimodal
-#  # explicitly set to False
-#  qdoc_chunk8_text = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_8_TEXT)
-#  qdoc_chunk8_text.save()
-#  #SC240619: DONE: Create qdoc_chunk9_text out of QUERY_DOCUMENT_CHUNK_EXAMPLE_9_TEXT
-#  # qdoc_chunk9_text is identical to qdoc_chunk3
-#  # except with a query engine with is_multimodal
-#  # explicitly set to False
-#  qdoc_chunk9_text = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_9_TEXT)
-#  qdoc_chunk9_text.save()
-#  return [qdoc_chunk7_text, qdoc_chunk8_text, qdoc_chunk9_text]
 
 FAKE_QUERY_PARAMS = QUERY_EXAMPLE
 
