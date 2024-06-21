@@ -163,11 +163,11 @@ def get_query_engine(query_engine_id: str):
     q_engine = QueryEngine.find_by_id(query_engine_id)
     if q_engine is None:
       raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
-    
+
     # get query docs
     query_docs = QueryDocument.find_by_query_engine_id(query_engine_id)
     url_list = list(map(lambda query_doc: query_doc.doc_url, query_docs))
-    
+
     response_data = q_engine.get_fields(reformat_datetime=True)
     response_data["url_list"] = url_list
     return {
@@ -611,7 +611,9 @@ async def query(query_engine_id: str,
   # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type, user_query, rank_sentences)
+          user.id, prompt, q_engine, llm_type, user_query, rank_sentences,
+          query_filter)
+
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
 
@@ -621,7 +623,8 @@ async def query(query_engine_id: str,
                           query_result.response,
                           user.id,
                           q_engine,
-                          query_references, None)
+                          query_references, None,
+                          query_filter)
 
     return {
         "success": True,
@@ -730,7 +733,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
                           query_result.response,
                           user_query.user_id,
                           q_engine,
-                          query_references, None)
+                          query_references)
 
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "

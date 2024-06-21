@@ -25,7 +25,7 @@ import shutil
 import tempfile
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple, Any, Optional
+from typing import List, Tuple, Any, Optional, Union
 from google.cloud import aiplatform, storage
 import pyparsing
 from pyparsing import (Word, alphanums, Suppress, ParseResults,
@@ -119,7 +119,7 @@ class VectorStore(ABC):
       list of indexes that are matched of length NUM_MATCH_RESULTS
     """
 
-  def parse_filter(self, filter_str: str) -> ParseResults:
+  def parse_filter(self, filter_str: str) -> Union[ParseResults, dict]:
     """
     Parse filter expressions in the Vertex Search format:
       https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
@@ -440,7 +440,8 @@ class LangChainVectorStore(VectorStore):
   def similarity_search(self, q_engine: QueryEngine,
                        query_embedding: List[float],
                        query_filter: Optional[str] = None) -> List[int]:
-    langchain_filter = self.translate_filter(filter)
+    parsed_filter = self.parse_filter(query_filter)
+    langchain_filter = self.translate_filter(parsed_filter)
     results = self.lc_vector_store.similarity_search_with_score_by_vector(
         embedding=query_embedding,
         k=NUM_MATCH_RESULTS,
@@ -448,6 +449,15 @@ class LangChainVectorStore(VectorStore):
     )
     processed_results = self.process_results(results)
     return processed_results
+
+  def parse_filter(self, filter_str: str) -> Union[ParseResults, dict]:
+    """
+    Parse a filter for a langchain vector store.
+    For now assume this is a string specifying a json dict
+    {"key":""}
+    """
+    filter_dict = json.loads(filter_str)
+    return filter_dict
 
   def process_results(self, results: List[Any]) -> List[int]:
     """
@@ -463,11 +473,15 @@ class LangChainVectorStore(VectorStore):
     """ Create matching engine index and endpoint """
     pass
 
-  def translate_filter(self, parsed_filter: ParseResults) -> dict:
+  def translate_filter(self,
+                       parsed_filter: Union[str, dict, ParseResults]) -> dict:
     """
     Converts a parsed filter expression into a dictionary representation
     of the filter compatible with langchain vector store filters.
     """
+    if isinstance(parsed_filter, dict):
+      return parsed_filter
+
     if isinstance(parsed_filter, str):
       # Handle single field name (no operator/value)
       return {parsed_filter: {}}

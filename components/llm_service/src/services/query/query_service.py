@@ -505,7 +505,8 @@ def update_user_query(prompt: str,
                       user_id: str,
                       q_engine: QueryEngine,
                       query_references: List[QueryReference],
-                      user_query: UserQuery = None) -> \
+                      user_query: UserQuery = None,
+                      query_filter=None) -> \
                       Tuple[UserQuery, dict]:
   """ Save user query history """
   query_reference_dicts = [
@@ -521,6 +522,12 @@ def update_user_query(prompt: str,
   user_query.update_history(prompt=prompt,
                             response=response,
                             references=query_reference_dicts)
+
+  if query_filter:
+    user_query.update_history(custom_entry={
+      "query_filter": query_filter,
+    })
+
   return user_query, query_reference_dicts
 
 async def batch_build_query_engine(request_body: Dict,
@@ -644,6 +651,10 @@ async def query_engine_build(doc_url: str,
       for qe_name in associated_qe_names
     ]
 
+  manifest_url = None
+  if "manifest_url" in params:
+    manifest_url = params["manifest_url"]
+
   # create query engine model
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
@@ -654,6 +665,7 @@ async def query_engine_build(doc_url: str,
                          vector_store=vector_store_type,
                          is_public=is_public,
                          doc_url=doc_url,
+                         manifest_url=manifest_url,
                          agents=associated_agents,
                          params=params)
 
@@ -777,7 +789,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       # generate embedding data and store in vector store
       try:
-        metadata = metadata_manifest.get(doc_url, None)
+        metadata = metadata_manifest.get(doc_name, None)
         metadata_list = []
         if metadata is not None:
           metadata_list = [deepcopy(metadata) for chunk in text_chunks]

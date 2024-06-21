@@ -72,7 +72,8 @@ class UserQuery(BaseModel):
 
   def update_history(self, prompt: str=None,
                      response: str=None,
-                     references: List[dict]=None):
+                     references: List[dict]=None,
+                     custom_entry=None):
     """ Update history with query and response """
     if not self.history:
       self.history = []
@@ -85,6 +86,9 @@ class UserQuery(BaseModel):
 
     if references:
       self.history.append({QUERY_AI_REFERENCES: references})
+
+    if custom_entry:
+      self.history.append(custom_entry)
 
     self.save(merge=True)
 
