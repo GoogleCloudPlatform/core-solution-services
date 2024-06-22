@@ -1,5 +1,15 @@
 {
   "projects": {
-    "default": "your-project-id"
-  }
+    "default": "nasa-genie-dev"
+  },
+  "targets": {
+    "nasa-genie-dev": {
+      "hosting": {
+        "genie-admin": [
+          "nasa-genie-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
