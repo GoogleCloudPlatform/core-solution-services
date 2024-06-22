@@ -15,8 +15,6 @@
 # pylint: disable = broad-except
 
 """ LLM endpoints """
-import os.path
-import base64
 from base64 import b64decode
 from fastapi import APIRouter
 
@@ -31,9 +29,12 @@ from schemas.llm_schema import (LLMGenerateModel,
                                 LLMGetEmbeddingTypesResponse,
                                 LLMGenerateResponse,
                                 LLMEmbeddingsResponse,
-                                LLMEmbeddingsModel)
+                                LLMMultiEmbeddingsResponse,
+                                LLMEmbeddingsModel,
+                                LLMMultiEmbeddingsModel)
 from services.llm_generate import llm_generate, llm_generate_multi
-from services.embeddings import get_embeddings
+from services.embeddings import get_embeddings, get_multi_embeddings
+from utils.file_helper import validate_multi_vision_file_type
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
 
@@ -107,7 +108,7 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
   embedding_type = embeddings_config_dict.get("embedding_type")
 
   try:
-    _, embeddings = get_embeddings(text, embedding_type)
+    _, embeddings = await get_embeddings(text, embedding_type)
 
     return {
         "success": True,
@@ -117,6 +118,54 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
+@router.post(
+    "/embedding/multi",
+    name="Generate multimodal embeddings from LLM",
+    response_model=LLMMultiEmbeddingsResponse)
+async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
+  """
+  Generate multimodal embeddings with an LLM
+
+  Args:
+      embeddings_config: Input config dictionary, user_file_b64(str),
+        user_file_name(str), text(str), and embedding_type(str) type for model
+
+  Returns:
+      LLMMultiEmbeddingsResponse
+  """
+  embeddings_config_dict = {**embeddings_config.dict()}
+  text = embeddings_config_dict.get("text")
+  embedding_type = embeddings_config_dict.get("embedding_type")
+  user_file_b64 = embeddings_config_dict.get("user_file_b64")
+  user_file_name = embeddings_config_dict.get("user_file_name")
+
+  if (user_file_b64 is None or user_file_b64 == "" or
+    user_file_name is None or user_file_name == "" or
+    text is None or text == ""):
+    return BadRequest("Missing or invalid payload parameters")
+
+  if len(text) > PAYLOAD_FILE_SIZE:
+    return PayloadTooLargeError(
+      f"Text must be less than {PAYLOAD_FILE_SIZE}")
+
+
+  is_file_valid, user_file_extension = validate_multi_vision_file_type(
+                                        user_file_name, user_file_b64)
+  if not is_file_valid or user_file_extension.startswith("video"):
+    return BadRequest("File type must be a supported image.")
+
+  try:
+    user_file_bytes = b64decode(user_file_b64)
+    embeddings = \
+        await get_multi_embeddings(text, user_file_bytes, embedding_type)
+
+    return {
+        "success": True,
+        "message": "Successfully generated embeddings",
+        "data": embeddings
+    }
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
 
 @router.post(
     "/generate",
@@ -188,49 +237,15 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   # Make sure that the user file is a valid image or video
-  vertex_mime_types = {
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".gif": "image/gif",
-    ".mp4": "video/mp4",
-    ".mov": "video/mov",
-    ".avi": "video/avi",
-    ".mpeg": "video/mpeg",
-    ".mpg": "video/mpg",
-    ".wmv": "video/wmv"
-  }
-  user_file_extension = os.path.splitext(user_file_name)[1]
-  user_file_extension = vertex_mime_types.get(user_file_extension)
-  if not user_file_extension:
-    return BadRequest("File must be a picture or a video.")
-
-  # Make sure that the user file b64 is a valid image or video
-  image_signatures = {
-      b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A": "png",
-      b"\xFF\xD8\xFF": "jpg",
-      b"\xFF\xD8": "jpeg",
-      b"\x47\x49\x46\x38": "gif",
-      b"\x00\x00\x00 ftyp": "mp4",
-      b"\x00\x00\x00\x14": "mov",
-      b"RIFF": "avi",
-      b"\x00\x00\x01\xba!\x00\x01\x00": "mpeg",
-      b"\x00\x00\x01\xB3": "mpg",
-      b"0&\xb2u\x8ef\xcf\x11": "wmv"
-  }
-  file_header = base64.b64decode(user_file_b64)[:8]  # Get the first 8 bytes
-  user_file_type = None
-  for sig, file_format in image_signatures.items():
-    if file_header.startswith(sig):
-      user_file_type = file_format
-      break
-  if not user_file_type:
-    return BadRequest("File data must be a picture or a video.")
+  is_file_valid, user_file_extension = validate_multi_vision_file_type(
+                                        user_file_name, user_file_b64)
+  if not is_file_valid or not user_file_extension:
+    return BadRequest("File type must be a supported image or video.")
 
   try:
     user_file_bytes = b64decode(user_file_b64)
     result = await llm_generate_multi(prompt, user_file_bytes,
-                                      user_file_extension, llm_type)
+                                    user_file_extension, llm_type)
 
     return {
         "success": True,

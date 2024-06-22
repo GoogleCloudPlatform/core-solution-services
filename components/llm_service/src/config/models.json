@@ -31,16 +31,20 @@
     "Truss": {
       "enabled": false,
       "env_flag": "ENABLE_TRUSS_LLAMA2"
+    },
+    "vLLM": {
+      "enabled": true,
+      "env_flag": "ENABLE_VLLM_GEMMA"
     }
   },
   "vendors": {
     "OpenAI": {
-      "enabled": true,
+      "enabled": false,
       "api_key": "openai-api-key",
       "env_flag": "ENABLE_OPENAI_LLM"
     },
     "Cohere": {
-      "enabled": true,
+      "enabled": false,
       "api_key": "cohere-api-key",
       "env_flag": "ENABLE_COHERE_LLM"
     }
@@ -64,6 +68,11 @@
         "top_k": 40
       },
       "context_length": 128000
+    },
+    "VertexAI-Chat-Palm2": {
+      "is_chat": true,
+      "provider": "Vertex",
+      "model_name": "chat-bison@002"      
     },
     "VertexAI-Chat-Palm2-V2": {
       "enabled": false,
@@ -128,6 +137,19 @@
         "max_new_tokens": 512
       }
     },
+    "vLLM-Gemma-Chat": {
+      "model_endpoint": "vllm-gemma-service",
+      "is_chat": true,
+      "provider": "vLLM",
+      "enabled": false,
+      "context_length": 8192,
+      "model_params": {
+        "temperature": 0.2,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_length": 2048
+      }
+    },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
       "is_chat": true,
       "provider": "ModelGarden",
@@ -189,7 +211,12 @@
     },
     "VertexAI-Embedding": {
       "provider": "Vertex",
-      "model_name": "textembedding-gecko"
+      "model_name": "text-embedding-004",
+      "token_limit": 2000
+    },
+    "VertexAI-Embedding-Vision": {
+      "provider": "Vertex",
+      "model_name": "multimodalembedding@001"
     },
     "OpenAI-Embedding": {
       "provider": "Langchain"

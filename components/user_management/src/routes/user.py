@@ -740,6 +740,7 @@ def create_inspace_user_account(user_id: str):
     # ---- Try fetching Inspace User
     response_message = None
     status_code, inspace_user_res = get_inspace_user_helper(user)
+    response_message = ""
     if status_code == 200:
       inspace_mapping = {
         "is_inspace_user": True,

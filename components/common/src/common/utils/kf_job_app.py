@@ -221,6 +221,7 @@ def kube_create_job_object(name,
   body.spec = client.V1JobSpec(
       backoff_limit=0,
       template=template.template)
+  body.spec.ttl_seconds_after_finished = 86400
   return body
 
 

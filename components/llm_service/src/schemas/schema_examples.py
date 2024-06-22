@@ -32,9 +32,17 @@ LLM_EMBEDDINGS_EXAMPLE = {
   "text": "",
 }
 
+LLM_MULTI_EMBEDDINGS_EXAMPLE = {
+  "embedding_type": "",
+  "user_file_b64": "",
+  "user_file_name": "",
+  "text": "",
+}
+
 QUERY_EXAMPLE = {
   "prompt": "test prompt",
   "llm_type": "VertexAI-Chat",
+  "query_filter": "{'Title':'Document Title'}"
 }
 
 USER_QUERY_EXAMPLE = {
@@ -75,6 +83,7 @@ QUERY_ENGINE_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "name": "query-engine-test",
   "description": "sample description",
+  "doc_url": "https://example.com",
   "query_engine_type": "qe_llm_service",
   "embedding_type": "VertexAI-Chat",
   "vector_store": "langchain_pgvector",
@@ -132,7 +141,11 @@ QUERY_DOCUMENT_EXAMPLE_2 = {
   "query_engine": "query-engine-test",
   "doc_url": "abcd.com/pdf2",
   "index_start": 0,
-  "index_end": 11
+  "index_end": 11,
+  "metadata": {
+    "author": "Michael Moorcock",
+    "title": "The Eternal Champion"
+  }
 }
 
 QUERY_DOCUMENT_EXAMPLE_3 = {

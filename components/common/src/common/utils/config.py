@@ -14,6 +14,7 @@
 
 """Config file for utils"""
 # pylint: disable=logging-fstring-interpolation
+from contextlib import contextmanager
 import json
 import os
 from enum import Enum
@@ -22,6 +23,17 @@ from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
 
+@contextmanager
+def set_env_var(key, value):
+  original_value = os.environ.get(key)
+  os.environ[key] = value
+  try:
+    yield
+  finally:
+    if original_value is None:
+      del os.environ[key]
+    else:
+      os.environ[key] = original_value
 
 def get_environ_flag(env_flag_str, default=True):
   default_str = str(default)
@@ -71,11 +83,15 @@ DEFAULT_JOB_REQUESTS = {
 }
 
 JOB_TYPE_QUERY_ENGINE_BUILD = "query_engine_build"
+JOB_TYPE_QUERY_EXECUTE = "query_engine_execute_query"
 JOB_TYPE_AGENT_PLAN_EXECUTE = "agent_plan_execute"
+JOB_TYPE_AGENT_RUN = "agent_run"
 JOB_TYPE_ROUTING_AGENT = "agent_run_dispatch"
 
 JOB_TYPES_WITH_PREDETERMINED_TITLES = [
     JOB_TYPE_QUERY_ENGINE_BUILD,
+    JOB_TYPE_QUERY_EXECUTE,
+    JOB_TYPE_AGENT_RUN,
     JOB_TYPE_AGENT_PLAN_EXECUTE,
     JOB_TYPE_ROUTING_AGENT
 ]
@@ -87,6 +103,8 @@ class JobTypes(Enum):
   in Jobs Service
   """
   JOB_TYPE_QUERY_ENGINE_BUILD = "query_engine_build"
+  JOB_TYPE_QUERY_EXECUTE = "query_engine_execute_query"
+  JOB_TYPE_AGENT_RUN = "agent_run"
   JOB_TYPE_AGENT_PLAN_EXECUTE = "agent_plan_execute"
   JOB_TYPE_ROUTING_AGENT = "agent_run_dispatch"
 

@@ -7,7 +7,7 @@ You must deploy GENIE first before deploying this frontend app.  See [the instal
 
 ## Prerequisites
 
-The following prerequisites are necessary to deploy the React frontend app:
+The following prerequisites must be installed to deploy the React frontend app:
 
 
 | Tool                | Required Version | Installation                                                                                                                                                                                        |
@@ -53,9 +53,10 @@ firebase apps:sdkconfig WEB <your-firebase-app-id>
 
 ### Edit deployment config file
 - Using the output of the `firebase apps:sdkconfig` command edit the config.production.env file to set all the variable values present there.
-- Copy the file to `.env.production`:
+- Copy the file to `.env.production` and `.env.development`:
 ```bash
 cp config.production.env .env.production
+cp config.production.env .env.development
 ```
 
 ### Run firebase deploy

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import GlobalAlert from "@/components/banner/GlobalAlert"
 import Navbar from "@/navigation/Navbar"
 import { AuthAppRouter } from "@/routes/AppRouter"
 import { UserNavigation } from "@/utils/AppConfig"
@@ -25,6 +26,11 @@ const MainContent: React.FC<IMainContent> = ({ user }) => {
   return (
     <div className="bg-base-100 border-primary/80 flex min-h-[calc(100vh-1.5rem)] max-h-[calc(100vh-20.3rem)] flex-col rounded-none border-2 px-4 py-4 md:rounded-2xl md:px-6 xl:px-10 xl:py-6">
       <Navbar user={user} userRoutes={UserNavigation} />
+      <div className="absolute top-10 z-10 flex w-full justify-center">
+        <div className="mx-4 max-w-xl">
+          <GlobalAlert />
+        </div>
+      </div>
       <div className="bg-base-100 mt-8 flex flex-grow flex-col">
         <AuthAppRouter user={user} />
       </div>

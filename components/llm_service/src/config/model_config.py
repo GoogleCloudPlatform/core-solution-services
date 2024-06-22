@@ -20,6 +20,7 @@
 # embedding models
 
 import importlib
+import inspect
 import json
 import os
 from pathlib import Path
@@ -49,6 +50,7 @@ KEY_MODEL_CLASS = "model_class"
 KEY_MODEL_NAME = "model_name"
 KEY_MODEL_PARAMS = "model_params"
 KEY_MODEL_CONTEXT_LENGTH = "context_length"
+KEY_MODEL_TOKEN_LIMIT = "token_limit"
 KEY_IS_CHAT = "is_chat"
 KEY_IS_MULTI = "is_multi"
 KEY_MODEL_FILE_URL = "model_file_url"
@@ -69,6 +71,7 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_NAME,
   KEY_MODEL_PARAMS,
   KEY_MODEL_CONTEXT_LENGTH,
+  KEY_MODEL_TOKEN_LIMIT,
   KEY_IS_CHAT,
   KEY_IS_MULTI,
   KEY_MODEL_FILE_URL,
@@ -83,6 +86,7 @@ PROVIDER_VERTEX = "Vertex"
 PROVIDER_MODEL_GARDEN = "ModelGarden"
 PROVIDER_LANGCHAIN = "Langchain"
 PROVIDER_TRUSS = "Truss"
+PROVIDER_VLLM = "vLLM"
 PROVIDER_LLM_SERVICE = "LLMService"
 
 # model vendors
@@ -97,14 +101,17 @@ OPENAI_EMBEDDING_TYPE = "OpenAI-Embedding"
 COHERE_LLM_TYPE = "Cohere"
 LLAMA2CPP_LLM_TYPE = "Llama2cpp"
 LLAMA2CPP_LLM_TYPE_EMBEDDING = "Llama2cpp-Embedding"
+VERTEX_LLM_TYPE_CHAT = "VertexAI-Chat"
 VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
-VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat"
+VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat-Palm2"
 VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat-V1"
 VERTEX_LLM_TYPE_BISON_V2_CHAT = "VertexAI-Chat-Palm2-V2"
 VERTEX_LLM_TYPE_BISON_CHAT_32K = "VertexAI-Chat-Palm2-32k"
 VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
+VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION = "VertexAI-Embedding-Vision"
 VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT = "VertexAI-ModelGarden-LLAMA2-Chat"
 TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
+VLLM_LLM_GEMMA_CHAT = "vLLM-Gemma-Chat"
 VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
 VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 VERTEX_LLM_TYPE_GEMINI_PRO = "VertexAI-Gemini-Pro"
@@ -113,6 +120,7 @@ VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN = "VertexAI-Chat-Gemini-Pro-Langchain"
 HUGGINGFACE_EMBEDDING = "HuggingFaceEmbeddings"
 
 MODEL_TYPES = [
+  VERTEX_LLM_TYPE_CHAT,
   OPENAI_LLM_TYPE_GPT3_5,
   OPENAI_LLM_TYPE_GPT4,
   OPENAI_LLM_TYPE_GPT4_LATEST,
@@ -127,8 +135,10 @@ MODEL_TYPES = [
   VERTEX_LLM_TYPE_GEMINI_PRO,
   VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
   VERTEX_LLM_TYPE_GECKO_EMBEDDING,
+  VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
   VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
   TRUSS_LLM_LLAMA2_CHAT,
+  VLLM_LLM_GEMMA_CHAT,
   VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
   VERTEX_LLM_TYPE_BISON_CHAT_32K,
   VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN,
@@ -148,8 +158,9 @@ class InvalidModelConfigException(Exception):
 
 def load_langchain_classes() -> dict:
   """
-  Load langchain classes.  Return a dict mapping classname to
-  class instance.
+  Load langchain classes.  Return a dict mapping classname to 
+  class instance.  The langchain version nightmare makes this step
+  particularly challenging to maintain.
   """
   langchain_chat_classes = {
     k:getattr(importlib.import_module(klass), k)
@@ -159,10 +170,16 @@ def load_langchain_classes() -> dict:
     klass().__name__:klass()
     for klass in langchain_llm.get_type_to_cls_dict().values()
   }
-  langchain_embedding_classes = {
-    k:getattr(importlib.import_module(klass), k)
-    for k,klass in langchain_embedding._module_lookup.items()
-  }
+  if hasattr(langchain_embedding, "_module_lookup"):
+    langchain_embedding_classes = {
+      k:getattr(importlib.import_module(klass), k)
+      for k,klass in langchain_embedding._module_lookup.items()
+    }
+  else:
+    langchain_embedding_classes = {
+      k:klass for (k, klass) in inspect.getmembers(langchain_embedding)
+      if isinstance(klass, type)
+    }
 
   # special handling for Vertex and OpenAI chat models, which are
   # imported in community packages
@@ -321,13 +338,17 @@ class ModelConfig():
         model_config[KEY_ENABLED] = False
         continue
       provider_enabled = self.is_provider_enabled(provider_id)
+      Logger.info(
+            f"Provider [{provider_id}] enablement status [{provider_enabled}]")
 
-      # Get api keys if present. If an api key secret is configured and
-      # the key is missing, disable the model.
-      api_key = self.get_api_key(model_id)
-      api_check = True
-      if self.get_config_value(model_id, KEY_API_KEY):
-        api_check = api_key is not None
+      api_check = False
+      if provider_enabled:
+        # Get api keys if present. If an api key secret is configured and
+        # the key is missing, disable the model.
+        api_key = self.get_api_key(model_id)
+        api_check = True
+        if self.get_config_value(model_id, KEY_API_KEY):
+          api_check = api_key is not None
 
       # set model_enabled flag based on conjunction of settings
       model_enabled = \
@@ -337,6 +358,7 @@ class ModelConfig():
           vendor_enabled
 
       model_config[KEY_ENABLED] = model_enabled
+      Logger.info(f"Model [{model_id}] enablement status [{model_enabled}]")
 
       # instantiate model class if necessary (mainly langchain models)
       if model_enabled and KEY_MODEL_CLASS in model_config:
@@ -392,7 +414,7 @@ class ModelConfig():
       raise ModelConfigMissingException(provider_id)
 
     # check provider enable env flag
-    provider_flag_setting = None
+    provider_flag_setting = True
     if KEY_ENV_FLAG in provider_config:
       env_flag = provider_config[KEY_ENV_FLAG]
       provider_flag_setting = get_environ_flag(env_flag)
@@ -437,6 +459,8 @@ class ModelConfig():
     provider = model_config.get(KEY_PROVIDER, None)
     if provider is not None:
       provider_config = self.get_provider_config(provider)
+      Logger.debug(f"provider = {provider}")
+      Logger.debug(f"provider_config = {provider_config}")
     return provider, provider_config
 
   def get_provider_models(self, provider_id: str) -> List[str]:
@@ -448,7 +472,7 @@ class ModelConfig():
     ]
     return provider_models
 
-  def get_provider_model_config(self, provider_id: str) -> List[str]:
+  def get_provider_model_config(self, provider_id: str) -> dict:
     """ get model config dict for provider models """
     provider_model_config = {
       model_id: model_config
@@ -458,16 +482,23 @@ class ModelConfig():
     return provider_model_config
 
   def get_provider_value(self, provider_id: str, key: str,
-      model_id: str=None, default=None) -> Any:
+                         model_id: str = None, default=None) -> Any:
     """ get config value from provider model config """
+
+    Logger.info("Get provider value:")
+    Logger.info(f"provider_id={provider_id}")
+    Logger.info(f"model_id={model_id}")
+
     if model_id is None:
       # get global provider value
       provider_config = self.get_provider_config(provider_id)
       value = provider_config.get(key, default)
     else:
       provider_config = self.get_provider_model_config(provider_id)
+      Logger.debug(f"provider_config={provider_config}")
       model_config = provider_config.get(model_id)
       value = model_config.get(key, default)
+
     if value is None:
       Logger.error(f"key {key} for provider {provider_id} is None")
     return value
@@ -482,7 +513,7 @@ class ModelConfig():
     if vendor_config is None:
       return True
 
-    vendor_flag_setting = None
+    vendor_flag_setting = True
     if KEY_ENV_FLAG in vendor_config:
       env_flag = vendor_config[KEY_ENV_FLAG]
       vendor_flag_setting = get_environ_flag(env_flag)

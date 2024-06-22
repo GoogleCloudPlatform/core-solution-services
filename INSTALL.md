@@ -55,7 +55,7 @@ cd core-solution-services
 Checkout the release tag for the desired release.
 
 ```
-git checkout v0.2.0
+git checkout v0.3.0
 ```
 
 ### Verify your Python version and create a virtual env
@@ -95,6 +95,8 @@ sb set project-id ${PROJECT_ID}
 
 > If you choose to run this setup in your local machine, you can skip this section. However, we recommend using a jump host to ensure a consistent install environment.
 
+> During the install process we create an environment variable profile in /etc/profile.d/genie_env.sh. This file captures the environment variables used for configuration of the microservices, and since it is sourced any time a user logs in, ensures all variables will be set correctly during a deploy.  If you are not using a jump host we still recommend that you create this file.
+
 Run the following to create a Compute Engine VM as the jump host.
 ```
 sb infra apply 0-jumphost
@@ -130,7 +132,7 @@ Checkout the release tag for the desired release.
 
 ```
 cd core-solution-services
-git checkout v0.2.0
+git checkout v0.3.0
 ```
 
 Configure the repository:
@@ -148,41 +150,57 @@ Run the rest of the deployment steps from within this jumphost.
 
 ### Create the Cloud infra
 
-Perform this additional repo config step, to update domain name (for HTTPS load balancer and ingress):
+* Perform this additional repo config step, to update domain name (for HTTPS load balancer and ingress):
 ```
 export DOMAIN_NAME=<your-domain-name> # e.g. css.example.com
+export API_BASE_URL=https://${DOMAIN_NAME}
 sb vars set domain_name ${DOMAIN_NAME}
 ```
 
-Apply infra/terraform:
+* On the jump host, run this command to ensure that these env vars are always set upon login:
+```
+sudo bash -c "cat << EOF >> /etc/profile.d/genie_env.sh
+export DOMAIN_NAME=$DOMAIN_NAME
+export API_BASE_URL=https://${DOMAIN_NAME}
+EOF"
+```
+
+* Apply bootstrap terraform:
 ```
 sb infra apply 1-bootstrap
 ```
 
-Note in the following step there is a known issue with firebase setup: `Error 409: Database already exists.`  If this error occurs, consult the Troubleshooting section to apply the fix, then re-run the 2-foundation step.
+* Apply foundations terraform.  Note in the following step there is a known issue with firebase setup: `Error 409: Database already exists.`  If this error occurs, consult the Troubleshooting section to apply the fix, then re-run the 2-foundation step.
 
 ```
 sb infra apply 2-foundation
 ```
 
-Proceed with the install:
+* Proceed with the GKE and ingress install:
 
 ```
 sb infra apply 3-gke
 sb infra apply 3-gke-ingress
 ```
 
-(Optional) Add an A record to your DNS:
-![Alt text](.github/assets/dns_a_record.png)
-- Set the IP address in the A record to the external IP address in the ingress.
+* On the jump host, run this to update the env vars profile:
+```
+export REGION=$(gcloud container clusters list --filter=main-cluster --format="value(location)")
+sudo bash -c "echo 'export REGION=$REGION' >> /etc/profile.d/genie_env.sh"
+```
 
-- Apply infra/terraform for LLM service:
+* (Optional) Add an A record to your DNS:
+![Alt text](.github/assets/dns_a_record.png)
+
+  - Set the IP address in the A record to the external IP address in the ingress.
+
+* Apply infra/terraform for LLM service:
+  - This will create a `$PROJECT_ID-llm-docs` bucket and upload the sample doc `llm-sample-doc.pdf` to it.
+  - It will add required Firestore indexes.
 
 ```
 sb infra apply 4-llm
 ```
-- This will create a `$PROJECT_ID-llm-docs` bucket and upload the sample doc `llm-sample-doc.pdf` to it.
-- It will add required Firestore indexes.
 
 
 ### Before Deploy
@@ -204,9 +222,7 @@ kubectl get nodes
 
 > Note that when you deply the ingress below you may need to wait some time (in some cases, hours) before the https cert is active.
 
-### Option 1: Deploy GENIE microservices to the GKE cluster
-
-You must set these environment variables prior to deployment.  If you re-login and redeploy from the jump host make sure to set these variables in your shell again:
+You must set these environment variables prior to deployment.  The jump host includes a script to automatically set these variables on login: `/etc/profile.d/genie_env.sh`.
 ```
 export PROJECT_ID=$(gcloud config get project)
 export NAMESPACE=default
@@ -215,6 +231,8 @@ export DOMAIN_NAME=<your domain>
 export API_BASE_URL=https://${DOMAIN_NAME}
 export APP_BASE_PATH="/streamlit"
 ```
+
+### Option 1: Deploy GENIE microservices to the GKE cluster
 
 If you are installing GENIE you can deploy a subset of the microservices used by GENIE.  Depending on your use case for GENIE you may not need the tools service (only needed if you are using agents that use tools).
 
@@ -302,29 +320,84 @@ altogether with all services deployment.
 
 > [Streamlit](https://streamlit.io) is an open-source Python library that makes it easy to create custom web apps. It's a popular choice for data scientists and machine learning engineers who want to quickly create interactive dashboards and visualizations
 
-### (Optional) Deploy or run the frontend apps manually
+### (Optional) Deploy or run frontend apps manually
 
 See [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
 
 See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the Streamlit app.
+
+### React app
+> [React](https://react.dev/) is a popular frontend development framework.
+
+The codebase includes a React app that supports Chat and Query (RAG) for end users, along with Google Identity login.  See the [components/frontend_react/README.md](components/frontend_react/README.md) for instructions on bnuilding and deploying the React app.
+
+
+## Node-pool configuration (Optional)
+
+This section contains instructions on how to create a node pool specifc to the LLM Service.  You may need to do this if you are experiencing crashes due to the LLM Service container running out of memory (this can happen when using the DB Agent for example), or if you want to increase performance on query engine builds.
+
+For a production deployment, we recommend configuring a separate node pool for the LLM Service.
+
+### List current node-pools
+```shell
+gcloud container node-pools list --cluster=main-cluster --region ${REGION} --project ${PROJECT_ID}
+```
+
+### Update kustomize config
+Append this entry to the end of `components/llm_service/kustomize/base/deployment.yaml`:
+```
+      nodeSelector:
+        cloud.google.com/gke-nodepool: llm-pool
+```
+Take care with the indentation - the nodeSelector directive should be under the `template:` `spec:` and at the same level as `containers:` and `serviceAccountName:`.
+
+### Create node-pool for LLM Service (if missing or upgrading)
+Ref: https://cloud.google.com/kubernetes-engine/docs/how-to/node-pools
+```shell
+gcloud container node-pools create llm-pool \
+  --project=${PROJECT_ID} \
+  --location=${REGION} \
+  --node-locations=${REGION}-a \
+  --cluster=main-cluster \
+  --service-account gke-sa@${PROJECT_ID}.iam.gserviceaccount.com \
+  --machine-type=n1-standard-8 \
+  --disk-type pd-balanced \
+  --disk-size 1000 \
+  --num-nodes=1
+```
+### Update LLM node pool
+```shell
+gcloud container node-pools update llm-pool \
+  --project=${PROJECT_ID} \
+  --location=${REGION} \
+  --cluster=main-cluster \
+  --machine-type n1-standard-8 \
+  --disk-type pd-balanced \
+  --disk-size 1000
+```
+### Resize LLM node pool
+```shell
+gcloud container clusters resize main-cluster \
+  --project=${PROJECT_ID} \
+  --location=${REGION} \
+  --node-pool llm-pool \
+  --num-nodes 2
+```
 
 ## Troubleshooting
 
 Please refer to [TROUBLESHOOTING.md](https://github.com/GoogleCloudPlatform/solutions-builder/blob/main/docs/TROUBLESHOOTING.md) for any Terraform errors
 
 ### Firestore database already exists
-```commandline
-╷
+```shell
 │ Error: Error creating Database: googleapi: Error 409: Database already exists. Please use another database_id
 │
 │   with google_firestore_database.database,
 │   on firestore_setup.tf line 42, in resource "google_firestore_database" "database":
 │   42: resource "google_firestore_database" "database" {
-│
-╵
 ```
 Fix
-```commandline
+```shell
 cd terraform/stages/2-foundation/
 terraform import google_firestore_database.database "(default)"
 cd -
@@ -349,7 +422,7 @@ cd -
     ```
 
 ### Running user-tool gives an error
-```commandline
+```shell
 user@jump-host:/home/user/core-solution-services$ PYTHONPATH=components/common/src/ python components/authentication/scripts/user_tool.py create_user --base-url=$BASE_URL
 API base URL: http://x.x.x.x
 User email (user@example.com):
@@ -357,29 +430,29 @@ User email (user@example.com):
   return query.where(field_path, op_string, value)
 ```
 Fix
-```commandline
+```shell
 pip install -r components/common/requirements.txt
 pip install -r components/authentication/requirements.txt
 ```
 
 ### Docker not working for current user
-```commandline
+```shell
 docker: Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/containers/create": dial unix /var/run/docker.sock: connect: permission denied.
 ```
 Fix
-```commandline
+```shell
 sudo usermod -aG docker ${USER}
 ```
 Log out and log back in again to re-evaluate group memberships
 
 
 ### sb deploy --dev fails for Mac OS
-```commandline
+```shell
 sh: envsubst: command not found
 build [frontend-flutterflow] failed: exit status 127
 ```
 Fix
-```commandline
+```shell
 brew install gettext
 brew link --force gettext 
 ```

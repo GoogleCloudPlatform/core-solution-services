@@ -25,19 +25,19 @@ from common.utils.batch_jobs import initiate_batch_job
 from common.utils.errors import (ResourceNotFoundException,
                                  PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
-from common.utils.config import JOB_TYPE_ROUTING_AGENT
+from common.utils.config import JOB_TYPE_ROUTING_AGENT, JOB_TYPE_AGENT_RUN
 from schemas.agent_schema import (LLMAgentRunResponse,
                                   LLMAgentRunModel,
                                   LLMAgentGetAllResponse,
                                   LLMAgentGetTypeResponse)
 from services.agents.agent_service import (get_all_agents, run_agent)
 from services.agents.agents import BaseAgent
-from services.agents.routing_agent import run_routing_agent
-from services.langchain_service import langchain_chat_history
+from services.agents.routing_agent import run_routing_agent, run_intent
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
                     PROJECT_ID, DATABASE_PREFIX,
                     ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
-                    DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH)
+                    DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH,
+                    ONEDRIVE_CLIENT_ID, ONEDRIVE_TENANT_ID)
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
@@ -148,15 +148,29 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
   chat_data = user_chat.get_fields(reformat_datetime=True)
   chat_data["id"] = user_chat.id
 
+  # Get route as early as possible.
+  route, route_logs = await run_intent(
+    agent_name, prompt, chat_history=user_chat.history)
+  route_parts = route.split(":", 1)
+  route_type = route_parts[0]
+
+  # create default chat_history_entry
+  user_chat.update_history(custom_entry={
+    "route": route_type,
+    "route_name": route,
+    "route_logs": route_logs,
+  })
+  user_chat.save()
+
   if run_as_batch_job:
     # Execute routing agent as batch_job and return job detail.
-
     data = {
       "prompt": prompt,
       "agent_name": agent_name,
       "user_id": user.id,
       "chat_id": user_chat.id,
       "llm_type": llm_type,
+      "route": route,
     }
     if db_result_limit:
       data["db_result_limit"] = db_result_limit
@@ -169,6 +183,8 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
       "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
       "PG_HOST": PG_HOST,
       "AGENT_CONFIG_PATH": AGENT_CONFIG_PATH,
+      "ONEDRIVE_CLIENT_ID": ONEDRIVE_CLIENT_ID,
+      "ONEDRIVE_TENANT_ID": ONEDRIVE_TENANT_ID
     }
     response = initiate_batch_job(data, JOB_TYPE_ROUTING_AGENT, env_vars)
     Logger.info(f"Batch job response: {response}")
@@ -176,6 +192,8 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
       "success": True,
       "message": "Successfully ran dispatch in batch mode",
       "data": {
+        "route": route_type,
+        "route_name": route,
         "chat": chat_data,
         "batch_job": response["data"],
       },
@@ -185,12 +203,14 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
     # Execute routing agent synchronously.
     route, response_data = await run_routing_agent(
         prompt, agent_name, user, user_chat, llm_type,
-        db_result_limit=db_result_limit)
+        db_result_limit=db_result_limit, route=route)
+
+    response_data["route"] = route_type
+    response_data["route_name"] = route
 
     return {
       "success": True,
       "message": "Successfully ran dispatch",
-      "route": route,
       "data": response_data
     }
 
@@ -224,34 +244,88 @@ async def agent_run(agent_name: str,
     return PayloadTooLargeError(
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
+  run_as_batch_job = runconfig_dict.get("run_as_batch_job", False)
+  Logger.info(f"run_as_batch_job = {run_as_batch_job}")
+
+  user = User.find_by_email(user_data.get("email"))
+  llm_type = BaseAgent.get_llm_type_for_agent(agent_name)
+  runconfig_dict["user_email"] = user.email
+
+  # create new chat for user
+  user_chat = UserChat(user_id=user.user_id, prompt=prompt,
+                       llm_type=llm_type, agent_name=agent_name)
+  user_chat.save()
+  user_chat.update_history(prompt=prompt)
+
   try:
-    user = User.find_by_email(user_data.get("email"))
-    llm_type = BaseAgent.get_llm_type_for_agent(agent_name)
+    if run_as_batch_job:
 
-    output, agent_logs = await run_agent(agent_name, prompt)
-    Logger.info(f"Generated output=[{output}]")
+      # launch batch job to perform query
+      data = {
+        "agent_name": agent_name,
+        "prompt": prompt,
+        "llm_type": llm_type,
+        "user_id": user.id,
+        "user_chat_id": user_chat.id,
+        "dataset": runconfig_dict["dataset"]
+      }
+      env_vars = {
+        "DATABASE_PREFIX": DATABASE_PREFIX,
+        "PROJECT_ID": PROJECT_ID,
+        "ENABLE_OPENAI_LLM": str(ENABLE_OPENAI_LLM),
+        "ENABLE_COHERE_LLM": str(ENABLE_COHERE_LLM),
+        "DEFAULT_VECTOR_STORE": str(DEFAULT_VECTOR_STORE),
+        "PG_HOST": PG_HOST,
+        "AGENT_CONFIG_PATH": AGENT_CONFIG_PATH,
+        "ONEDRIVE_CLIENT_ID": ONEDRIVE_CLIENT_ID,
+        "ONEDRIVE_TENANT_ID": ONEDRIVE_TENANT_ID
+      }
+      response = initiate_batch_job(data, JOB_TYPE_AGENT_RUN, env_vars)
+      Logger.info(f"Batch job response: {response}")
 
-    # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, prompt=prompt,
-                         llm_type=llm_type, agent_name=agent_name)
-    # Save user chat to retrieve actual ID.
-    user_chat.update_history(prompt, output)
-    user_chat.save()
+      chat_data = user_chat.get_fields(reformat_datetime=True)
+      chat_data["id"] = user_chat.id
 
-    chat_data = user_chat.get_fields(reformat_datetime=True)
-    chat_data["id"] = user_chat.id
+      return {
+        "success": True,
+        "message": "Successfully ran agent in batch mode",
+        "data": {
+          "chat": chat_data,
+          "batch_job": response["data"],
+        },
+      }
 
-    response_data = {
-      "content": output,
-      "chat": chat_data,
-      "agent_logs": agent_logs
-    }
+    else:
+      # synchronous execution
+      output, agent_logs = \
+          await run_agent(agent_name, prompt, user_chat, runconfig_dict)
+      Logger.info(f"Generated output=[{output}]")
 
-    return {
-      "success": True,
-      "message": "Successfully ran agent",
-      "data": response_data
-    }
+      user_chat.reload()
+      chat_data = user_chat.get_fields(reformat_datetime=True)
+      chat_data["id"] = user_chat.id
+
+      if "db_result" in output or "route" in output:
+        response_data = output
+      else:
+        response_data = {
+          "content": output,
+          "chat": chat_data,
+          "agent_logs": agent_logs
+        }
+
+      response = {
+        "success": True,
+        "message": "Successfully ran agent",
+        "data": response_data
+      }
+
+      Logger.info(
+        f"run agent prompt=[{prompt}] agent=[{agent_name}]"
+        f" response [{response}]")
+
+      return response
+
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
@@ -263,7 +337,8 @@ async def agent_run(agent_name: str,
     name="Run agent on user input with chat history",
     response_model=LLMAgentRunResponse)
 async def agent_run_chat(agent_name: str, chat_id: str,
-                         run_config: LLMAgentRunModel):
+                         run_config: LLMAgentRunModel,
+                         user_data: dict = Depends(validate_token)):
   """
   Run agent on user input with prior chat history
 
@@ -293,8 +368,10 @@ async def agent_run_chat(agent_name: str, chat_id: str,
 
   try:
     # run agent to get output
-    chat_history = langchain_chat_history(user_chat)
-    output = await run_agent(agent_name, prompt, chat_history)
+    user = User.find_by_email(user_data.get("email"))
+    runconfig_dict["user_email"] = user.email
+    output, agent_logs = \
+        await run_agent(agent_name, prompt, user_chat, runconfig_dict)
     Logger.info(f"Generated output=[{output}]")
 
     # save chat history
@@ -303,10 +380,14 @@ async def agent_run_chat(agent_name: str, chat_id: str,
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
 
-    response_data = {
-      "content": output,
-      "chat": chat_data,
-    }
+    if "db_result" in output or "route" in output:
+      response_data = output
+    else:
+      response_data = {
+        "content": output,
+        "chat": chat_data,
+        "agent_logs": agent_logs
+      }
 
     return {
         "success": True,

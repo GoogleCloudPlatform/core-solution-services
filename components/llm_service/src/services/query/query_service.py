@@ -14,6 +14,7 @@
 """
 Query Engine Service
 """
+from copy import deepcopy
 import tempfile
 import traceback
 import os
@@ -30,7 +31,8 @@ from common.models import (UserQuery, QueryResult, QueryEngine,
                            BatchJobModel)
 from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QE_TYPE_LLM_SERVICE,
-                                     QE_TYPE_INTEGRATED_SEARCH)
+                                     QE_TYPE_INTEGRATED_SEARCH,
+                                     QUERY_AI_RESPONSE)
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -82,7 +84,9 @@ async def query_generate(
             prompt: str,
             q_engine: QueryEngine,
             llm_type: Optional[str] = None,
-            user_query: Optional[UserQuery] = None) -> \
+            user_query: Optional[UserQuery] = None,
+            rank_sentences=False,
+            query_filter: Optional[dict]=None) -> \
                 Tuple[QueryResult, List[QueryReference]]:
   """
   Execute a query over a query engine and generate a response.
@@ -98,6 +102,8 @@ async def query_generate(
     q_engine: the name of the query engine to use
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
+    rank_sentences: (optional): rank sentences in retrieved chunks
+    query_filter: (optional): dict of key value pairs for filtering results
 
   Returns:
     QueryResult object,
@@ -120,13 +126,21 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = retrieve_references(prompt, q_engine, user_id)
+  query_references = await retrieve_references(prompt, q_engine, user_id,
+                                               rank_sentences, query_filter)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
   if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
       len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
+
+  # Update user query with ranked references. We do this before generating
+  # the answer so the frontend can display the retrieved results as soon as
+  # they are available.
+  if user_query:
+    update_user_query(
+        prompt, None, user_id, q_engine, query_references, user_query)
 
   # generate question prompt
   question_prompt, query_references = \
@@ -137,6 +151,13 @@ async def query_generate(
 
   # send prompt to model
   question_response = await llm_chat(question_prompt, llm_type)
+
+  # update user query with response
+  if user_query:
+    # insert the response before the just added references
+    user_query.history.insert(
+        len(user_query.history) - 1, {QUERY_AI_RESPONSE: question_response})
+    user_query.save(merge=True)
 
   # save query result
   query_ref_ids = [ref.id for ref in query_references]
@@ -228,9 +249,11 @@ async def summarize_history(chat_history: str,
   Logger.info(f"generated summary with LLM {llm_type}: {summary}")
   return summary
 
-def retrieve_references(prompt: str,
-                        q_engine: QueryEngine,
-                        user_id: str) -> List[QueryReference]:
+async def retrieve_references(prompt: str,
+                              q_engine: QueryEngine,
+                              user_id: str,
+                              rank_sentences: bool = False,
+                              query_filter: str = None)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -238,29 +261,36 @@ def retrieve_references(prompt: str,
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
     user_id: user id of user making query
+    rank_sentences (bool): rank sentence relevance in retrieved chunks
   Returns:
     list of QueryReference objects
   """
   # perform retrieval for prompt
   query_references = []
   if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
-    query_references = query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
+    query_references = \
+         await query_vertex_search(q_engine, prompt,
+                                   NUM_MATCH_RESULTS, query_filter)
   elif q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
     child_engines = QueryEngine.find_children(q_engine)
     for child_engine in child_engines:
       # make a recursive call to retrieve references for child engine
-      child_query_references = retrieve_references(prompt,
-                                                   child_engine,
-                                                   user_id)
+      child_query_references = await retrieve_references(prompt,
+                                                         child_engine,
+                                                         user_id,
+                                                         query_filter)
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
-    query_references = query_search(q_engine, prompt)
+    # default if type is not set to llm service query
+    query_references = await query_search(q_engine, prompt,
+                                          rank_sentences, query_filter)
   return query_references
 
-def query_search(q_engine: QueryEngine,
-                 query_prompt: str,
-                 rank_sentences=False) -> List[QueryReference]:
+async def query_search(q_engine: QueryEngine,
+                       query_prompt: str,
+                       rank_sentences: bool = False,
+                       query_filter: str = None) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -277,14 +307,15 @@ def query_search(q_engine: QueryEngine,
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
-  _, query_embeddings = embeddings.get_embeddings([query_prompt],
-                                                  q_engine.embedding_type)
+  _, query_embeddings = \
+      await embeddings.get_embeddings([query_prompt], q_engine.embedding_type)
   query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
-                                                         query_embedding)
+                                                         query_embedding,
+                                                         query_filter)
   query_references = []
 
   # Assemble document chunk models from vector store indexes
@@ -301,15 +332,12 @@ def query_search(q_engine: QueryEngine,
 
     clean_text = doc_chunk.clean_text
     if not clean_text:
-      # for backwards compatibility with existing query engines
       clean_text = text_helper.clean_text(doc_chunk.text)
 
     if rank_sentences:
       # Assemble sentences from a document chunk. Currently it gets the
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
-      # for backwards compatibility with legacy engines break chunks
-      # into sentences here
       if not sentences or len(sentences) == 0:
         sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
@@ -360,9 +388,8 @@ def rerank_references(prompt: str,
   query_ref_lookup = {}
 
   for query_ref in query_references:
-    query_doc_chunk = QueryDocumentChunk.find_by_id(query_ref.chunk_id)
-    # print(query_ref.id, query_ref_id, query_ref.chunk_id, query_doc_chunk.id)
-    query_ref_text.append(query_doc_chunk.clean_text)
+    Logger.info(f"Query ref {query_ref.id}, {query_ref.chunk_id}")
+    query_ref_text.append(query_ref.document_text)
     query_ref_ids.append(query_ref.id)
     query_ref_lookup[query_ref.id] = query_ref
 
@@ -417,7 +444,94 @@ def get_similarity(query_embeddings, sentence_embeddings) -> list:
 
   return cos_sim
 
-def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
+async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
+  """
+  Handle a batch job request for query generation.
+
+  Args:
+    request_body: dict of query params
+    job: BatchJobModel model object
+  Returns:
+    dict containing job meta data
+  """
+  query_engine_id = request_body.get("query_engine_id")
+  prompt = request_body.get("prompt")
+  user_id = request_body.get("user_id")
+  user_query_id = request_body.get("user_query_id", None)
+  llm_type = request_body.get("llm_type")
+  rank_sentences = request_body.get("rank_sentences", None)
+
+  q_engine = QueryEngine.find_by_id(query_engine_id)
+  if q_engine is None:
+    raise ResourceNotFoundException(f"Query Engine id {query_engine_id}")
+
+  user_query = None
+  if user_query_id:
+    user_query = UserQuery.find_by_id(user_query_id)
+    if user_query is None:
+      raise ResourceNotFoundException(f"UserQuery id {user_query_id}")
+
+  Logger.info(f"Starting batch job for query on [{q_engine.name}] "
+              f"job id [{job.id}], request_body=[{request_body}]")
+
+  query_result, query_references = await query_generate(
+      user_id, prompt, q_engine, llm_type, user_query, rank_sentences)
+
+  # update user query
+  user_query, query_reference_dicts = \
+      update_user_query(prompt,
+                        query_result.response,
+                        user_id,
+                        q_engine,
+                        query_references,
+                        user_query)
+
+  # update result data in batch job model
+  result_data = {
+    "query_engine_id": q_engine.id,
+    "query_result_id": query_result.id,
+    "user_query_id": user_query.id,
+    "query_references": query_reference_dicts
+  }
+  job.result_data = result_data
+  job.save(merge=True)
+
+  Logger.info(f"Completed batch job query execute for {q_engine.name}")
+
+  return result_data
+
+def update_user_query(prompt: str,
+                      response: str,
+                      user_id: str,
+                      q_engine: QueryEngine,
+                      query_references: List[QueryReference],
+                      user_query: UserQuery = None,
+                      query_filter=None) -> \
+                      Tuple[UserQuery, dict]:
+  """ Save user query history """
+  query_reference_dicts = [
+    ref.get_fields(reformat_datetime=True) for ref in query_references
+  ]
+
+  # create user query if needed
+  if user_query is None:
+    user_query = UserQuery(user_id=user_id,
+                          query_engine_id=q_engine.id,
+                          prompt=prompt)
+    user_query.save()
+  user_query.update_history(prompt=prompt,
+                            response=response,
+                            references=query_reference_dicts)
+
+  if query_filter:
+    user_query.update_history(custom_entry={
+      "query_filter": query_filter,
+    })
+
+  return user_query, query_reference_dicts
+
+async def batch_build_query_engine(request_body: Dict,
+                                   job: BatchJobModel) -> Dict:
   """
   Handle a batch job request for query engine build.
 
@@ -448,10 +562,10 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
   Logger.info(f"params: [{params}]")
 
   q_engine, docs_processed, docs_not_processed = \
-      query_engine_build(doc_url, query_engine, user_id,
-                         query_engine_type,
-                         llm_type, description,
-                         embedding_type, vector_store_type, params)
+      await query_engine_build(doc_url, query_engine, user_id,
+                               query_engine_type,
+                               llm_type, description,
+                               embedding_type, vector_store_type, params)
 
   # update result data in batch job model
   docs_processed_urls = [doc.doc_url for doc in docs_processed]
@@ -467,16 +581,16 @@ def batch_build_query_engine(request_body: Dict, job: BatchJobModel) -> Dict:
 
   return result_data
 
-def query_engine_build(doc_url: str,
-                       query_engine: str,
-                       user_id: str,
-                       query_engine_type: Optional[str] = None,
-                       llm_type: Optional[str] = None,
-                       query_description: Optional[str] = None,
-                       embedding_type: Optional[str] = None,
-                       vector_store_type: Optional[str] = None,
-                       params: Optional[dict] = None
-                       ) -> Tuple[str, List[QueryDocument], List[str]]:
+async def query_engine_build(doc_url: str,
+                             query_engine: str,
+                             user_id: str,
+                             query_engine_type: Optional[str] = None,
+                             llm_type: Optional[str] = None,
+                             query_description: Optional[str] = None,
+                             embedding_type: Optional[str] = None,
+                             vector_store_type: Optional[str] = None,
+                             params: Optional[dict] = None
+                             ) -> Tuple[str, List[QueryDocument], List[str]]:
   """
   Build a new query engine.
 
@@ -537,6 +651,10 @@ def query_engine_build(doc_url: str,
       for qe_name in associated_qe_names
     ]
 
+  manifest_url = None
+  if "manifest_url" in params:
+    manifest_url = params["manifest_url"]
+
   # create query engine model
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
@@ -547,6 +665,7 @@ def query_engine_build(doc_url: str,
                          vector_store=vector_store_type,
                          is_public=is_public,
                          doc_url=doc_url,
+                         manifest_url=manifest_url,
                          agents=associated_agents,
                          params=params)
 
@@ -567,7 +686,7 @@ def query_engine_build(doc_url: str,
       q_engine.update()
 
       docs_processed, docs_not_processed = \
-          build_doc_index(doc_url, q_engine, qe_vector_store)
+          await build_doc_index(doc_url, q_engine, qe_vector_store)
 
     elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
       # for each associated query engine store the current engine as its parent
@@ -586,8 +705,8 @@ def query_engine_build(doc_url: str,
 
   return q_engine, docs_processed, docs_not_processed
 
-def build_doc_index(doc_url: str, q_engine: QueryEngine,
-                    qe_vector_store: VectorStore) -> \
+async def build_doc_index(doc_url: str, q_engine: QueryEngine,
+                          qe_vector_store: VectorStore) -> \
         Tuple[List[QueryDocument], List[str]]:
   """
   Build the document index.
@@ -609,7 +728,7 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
 
   try:
     # process docs at url and upload embeddings to vector store
-    docs_processed, docs_not_processed = process_documents(
+    docs_processed, docs_not_processed = await process_documents(
       doc_url, qe_vector_store, q_engine, storage_client)
 
     # make sure we actually processed some docs
@@ -625,11 +744,12 @@ def build_doc_index(doc_url: str, q_engine: QueryEngine,
 
   except Exception as e:
     Logger.error(f"Error creating doc index {e}")
+    Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
-def process_documents(doc_url: str, qe_vector_store: VectorStore,
-                      q_engine: QueryEngine, storage_client) -> \
-                      Tuple[List[QueryDocument], List[str]]:
+async def process_documents(doc_url: str, qe_vector_store: VectorStore,
+                            q_engine: QueryEngine, storage_client) -> \
+                            Tuple[List[QueryDocument], List[str]]:
   """
   Process docs in data source and upload embeddings to vector store
   Returns:
@@ -638,6 +758,9 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
   """
   # get datasource class for doc_url
   data_source = datasource_from_url(doc_url, q_engine, storage_client)
+
+  # initialize metadata
+  metadata_manifest = data_source.init_metadata(q_engine)
 
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
@@ -660,13 +783,26 @@ def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       if text_chunks is None or len(text_chunks) == 0:
         # unable to process this doc; skip
+        Logger.error(f"unable to chunk doc [{index_doc_url}]")
         continue
 
       Logger.info(f"doc chunks extracted for [{doc_name}]")
 
       # generate embedding data and store in vector store
-      new_index_base = \
-          qe_vector_store.index_document(doc_name, embed_chunks, index_base)
+      try:
+        metadata = metadata_manifest.get(doc_name, None)
+        metadata_list = []
+        if metadata is not None:
+          metadata_list = [deepcopy(metadata) for chunk in text_chunks]
+        new_index_base = \
+            await qe_vector_store.index_document(doc_name,
+                                                 embed_chunks, index_base,
+                                                 metadata_list)
+      except Exception as e:
+        # unable to process this doc; skip
+        Logger.error(f"error indexing doc [{index_doc_url}]: {str(e)}")
+        data_source.docs_not_processed.append(index_doc_url)
+        continue
 
       Logger.info(
         f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"

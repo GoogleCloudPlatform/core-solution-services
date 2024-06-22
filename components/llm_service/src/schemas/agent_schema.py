@@ -63,6 +63,7 @@ class LLMAgentRunModel(BaseModel):
   llm_type: str = None
   db_result_limit: int = 10
   run_as_batch_job: bool = False
+  dataset: str = None
 
   class Config():
     orm_mode = True

@@ -70,20 +70,26 @@ class UserQuery(BaseModel):
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
 
-  def update_history(self, prompt: str, response: str, references: List[dict]):
+  def update_history(self, prompt: str=None,
+                     response: str=None,
+                     references: List[dict]=None,
+                     custom_entry=None):
     """ Update history with query and response """
     if not self.history:
       self.history = []
 
-    self.history.append(
-      {QUERY_HUMAN: prompt}
-    )
-    self.history.append(
-      {
-        QUERY_AI_RESPONSE: response,
-        QUERY_AI_REFERENCES: references
-      }
-    )
+    if prompt:
+      self.history.append({QUERY_HUMAN: prompt})
+
+    if response:
+      self.history.append({QUERY_AI_RESPONSE: response})
+
+    if references:
+      self.history.append({QUERY_AI_REFERENCES: references})
+
+    if custom_entry:
+      self.history.append(custom_entry)
+
     self.save(merge=True)
 
   @classmethod
@@ -118,6 +124,7 @@ class QueryEngine(BaseModel):
   doc_url = TextField(required=False)
   agents = ListField(required=False)
   parent_engine_id = TextField(required=False)
+  manifest_url = TextField(required=False)
   params = MapField(default={})
 
   class Meta:
@@ -205,6 +212,7 @@ class QueryReference(BaseModel):
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
+      f"document_url={self.document_url}, "
       f"chunk_id={self.chunk_id}, "
       f"chunk_num_tokens={document_text_num_tokens}, "
       f"chunk_num_chars={document_text_num_chars}, "
@@ -252,6 +260,7 @@ class QueryDocument(BaseModel):
   index_file = TextField(required=False)
   index_start = NumberField(required=False)
   index_end = NumberField(required=False)
+  metadata = MapField(required=False)
 
   class Meta:
     ignore_none_field = False

@@ -35,7 +35,7 @@ from config import (get_model_config, get_provider_models,
                     get_provider_value, get_provider_model_config,
                     get_model_config_value,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
-                    PROVIDER_MODEL_GARDEN,
+                    PROVIDER_MODEL_GARDEN, PROVIDER_VLLM,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
@@ -80,6 +80,11 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
       model_endpoint = get_provider_value(
           PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
+          llm_type, prompt, model_endpoint)
+    elif llm_type in get_provider_models(PROVIDER_VLLM):
+      model_endpoint = get_provider_value(
+          PROVIDER_VLLM, KEY_MODEL_ENDPOINT, llm_type)
+      response = await llm_vllm_service_predict(
           llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
@@ -152,7 +157,7 @@ async def llm_generate_multi(prompt: str, user_file_bytes: bytes,
 
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
-                   user_query: Optional[UserChat] = None) -> str:
+                   user_query: Optional[UserQuery] = None) -> str:
   """
   Send a prompt to a chat model and return response.
   Args:
@@ -183,12 +188,17 @@ async def llm_chat(prompt: str, llm_type: str,
     # call the appropriate provider to generate the chat response
     if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
       is_chat = True
-      response = await llm_service_predict(prompt, is_chat, llm_type,
-                                           user_chat)
+      response = await llm_service_predict(
+          prompt, is_chat, llm_type, user_chat)
     elif llm_type in get_provider_models(PROVIDER_TRUSS):
       model_endpoint = get_provider_value(
           PROVIDER_TRUSS, KEY_MODEL_ENDPOINT, llm_type)
       response = await llm_truss_service_predict(
+          llm_type, prompt, model_endpoint)
+    elif llm_type in get_provider_models(PROVIDER_VLLM):
+      model_endpoint = get_provider_value(
+          PROVIDER_VLLM, KEY_MODEL_ENDPOINT, llm_type)
+      response = await llm_vllm_service_predict(
           llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
@@ -270,6 +280,7 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
   """
   Send a prompt to an instance of the LLM service and return response.
   Args:
+    llm_type:
     prompt: the text prompt to pass to the LLM
     model_endpoint: model endpoint ip to be used for prediction and port number
       (e.g: xx.xxx.xxx.xx:8080)
@@ -306,6 +317,47 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
     output = output[1:]
   if output.endswith('"') or output.endswith("'"):
     output = output[:-1]
+
+  return output
+
+async def llm_vllm_service_predict(llm_type: str, prompt: str,
+                                   model_endpoint: str,
+                                   parameters: dict = None) -> str:
+  """
+  Send a prompt to an instance of the LLM service and return response.
+  Args:
+    llm_type:
+    prompt: the text prompt to pass to the LLM
+    model_endpoint: model endpoint ip to be used for prediction and port number
+      (e.g: xx.xxx.xxx.xx:8080)
+    parameters (optional):  parameters to be used for prediction
+  Returns:
+    the text response: str
+  """
+  if parameters is None:
+    parameters = get_provider_value(
+        PROVIDER_VLLM, KEY_MODEL_PARAMS, llm_type)
+
+  parameters.update({"prompt": f"<start_of_turn>user\n{prompt}<end_of_turn>\n"})
+
+  api_url = f"http://{model_endpoint}/generate"
+  Logger.info(f"Generating text using vLLM Hosted Model "
+              f"api_url=[{api_url}], prompt=[{prompt}], "
+              f"parameters=[{parameters}.")
+
+  resp = post_method(api_url, request_body=parameters)
+
+  if resp.status_code != 200:
+    raise InternalServerError(
+      f"Error status {resp.status_code}: {str(resp)}")
+
+  json_response = resp.json()
+
+  Logger.info(f"Got LLM service response {json_response}")
+  output = json_response["data"]["generated_text"]
+
+  # if the prompt is repeated as part of the response, remove it
+  output = output.replace(prompt, "")
 
   return output
 
@@ -372,7 +424,7 @@ async def model_garden_predict(prompt: str,
   Generate text with a Model Garden model.
   Args:
     prompt: the text prompt to pass to the LLM
-    aip_endpoint_name: endpoint id from the Vertex AI online predictions
+    llm_type:
     parameters (optional):  parameters to be used for prediction
   Returns:
     the prediction text.
@@ -388,7 +440,7 @@ async def model_garden_predict(prompt: str,
 
   if parameters is None:
     parameters = get_provider_value(PROVIDER_MODEL_GARDEN,
-      KEY_MODEL_PARAMS, llm_type)
+                                    KEY_MODEL_PARAMS, llm_type)
 
   parameters.update({"prompt": f"'{prompt}'"})
 
@@ -448,7 +500,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
       parameters = model_config.get(KEY_MODEL_PARAMS)
   else:
     parameters = get_provider_value(PROVIDER_VERTEX,
-        KEY_MODEL_PARAMS)
+                                    KEY_MODEL_PARAMS)
 
   try:
     if is_chat:
