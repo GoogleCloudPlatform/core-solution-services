@@ -160,7 +160,8 @@ class FakeVectorStore(VectorStore):
   def init_index(self):
     pass
   async def index_document(self, doc_name: str, text_chunks: List[str],
-                           index_base: int) -> int:
+                           index_base: int,
+                           metadata: List[dict] = None) -> int:
     return 0
   def deploy(self):
     pass
