@@ -454,9 +454,12 @@ class LangChainVectorStore(VectorStore):
     """
     Parse a filter for a langchain vector store.
     For now assume this is a string specifying a json dict
-    {"key":""}
+    {"key":{"$op": "value"}}
     """
-    filter_dict = json.loads(filter_str)
+    if filter_str is not None:
+      filter_dict = json.loads(filter_str)
+    else:
+      filter_dict = None
     return filter_dict
 
   def process_results(self, results: List[Any]) -> List[int]:
