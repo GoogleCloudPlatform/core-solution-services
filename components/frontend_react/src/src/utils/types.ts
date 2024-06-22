@@ -186,6 +186,7 @@ export type QueryEngine = {
   index_name: string | null
   endpoint: string | null
   doc_url: string | null
+  manifest_url: string | null
   params: string[] | null
   depth_limit: number | null
   agents: string[] | null  
@@ -196,6 +197,7 @@ export type QueryEngineBuildParams = {
   depth_limit: string | null
   agents: string | null
   associated_engines: string | null
+  manifest_url: string | null
 }
 
 export type QueryEngineBuild = {
