@@ -1,20 +1,58 @@
 {
-  "A59449_20240106.pdf": {
-    "author": "American Hospital Association",
-    "title": "Billing and Coding: Dental Services",
-    "publish_date": "01/06/2024",
-    "topics": "medicaid,billing,dental billing,cdt codes"
-  },
-  "Federally Qualified Health Center (FQHC) - Dental Billing Guide - Horizon NJ Health.pdf": {
-    "author": "Horizon NJ Health",
-    "title": "Federally Qualified Health Center (FQHC) - Dental Billing Guide",
-    "publish_date": "3/31/2021",
-    "topics": "medicaid,billing,dental billing,medicaid billing policy"
-  },
-  "Mary Foley - Understanding the Prospective Payment System.pdf": {
-    "author": "Mary Foley",
-    "title": "Understanding the Prospective Payment System",
-    "publish_date": "04/01/2013",
-    "topics": "medicaid payments,Federally Qualified Health Centers"
-  }
+  "JGR Solid Earth - 2015 - Watkins - Improved methods for observing Earth s time variable mass distribution with GRACE using.pdf": 
+    {
+      "authors": ["Michael M. Watkins", "David N. Wiese", "Dah-Ning Yuan", "Carmen Boening", "Felix W. Landerer"], 
+      "title": "Improved methods for observing Earth’s time variable mass distribution with GRACE using spherical cap mascons", 
+      "publish_date": "04/07/2015", 
+      "topics": ["GRACE", "gravity", "mascons", "hydrology"]
+    },
+  "PhysRevLett.112.091302.pdf": 
+    {
+      "authors": ["M. Arik", "S. Aune", "K. Barth", "A. Belov", "S. Borghi", "H. Bräuninger", "G. Cantatore", "J. M. Carmona", "S. A. Cetin", "J. I. Collar", "E. Da Riva", "T. Dafni", "M. Davenport", "C. Eleftheriadis", "N. Elias", "G. Fanourakis", "E. Ferrer-Ribas", "P. Friedrich", "J. Galán", "J. A. García", "A. Gardikiotis", "J. G. Garza", "E. N. Gazis", "T. Geralis", "E. Georgiopoulou", "I. Giomataris", "S. Gninenko", "H. Gómez", "M. Gómez Marzoa", "E. Gruber", "T. Guthörl", "R. Hartmann", "S. Hauf", "F. Haug", "M. D. Hasinoff", "D. H. H. Hoffmann", "F. J. Iguaz", "I. G. Irastorza", "J. Jacoby", "K. Jakovčić", "M. Karuza", "K. Königsmann", "R. Kotthaus", "M. Krčmar", "M. Kuster", "B. Lakić", "P. M. Lang", "J. M. Laurent", "A. Liolios", "A. Ljubičić", "G. Luzón", "S. Neff", "T. Niinikoski", "A. Nordt", "T. Papaevangelou", "M. J. Pivovaroff", "G. Raffelt", "H. Riege", "A. Rodríguez", "M. Rosu", "J. Ruz", "I. Savvidis", "I. Shilon", "P. S. Silva", "S. K. Solanki", "L. Stewart", "A. Tomás", "M. Tsagri", "K. van Bibber", "T. Vafeiadis", "J. Villar", "J. K. Vogel", "S. C. Yildiz", "K. Zioutas"], 
+      "title": "Search for Solar Axions by the CERN Axion Solar Telescope with 3He Buffer Gas: Closing the Hot Dark Matter Gap", 
+      "publish_date": "03/04/2014", 
+      "topics": ["axions", "dark matter", "telescope", "physics"]
+    },
+  "tc-11-2773-2017.pdf": 
+    {
+      "authors": ["Nat Wilson", "Fiammetta Straneo", "Patrick Heimbach"], 
+      "title": "Satellite-derived submarine melt rates and mass balance (2011–2015) for Greenland’s largest remaining ice tongues", 
+      "publish_date": "12/05/2017", 
+      "topics": ["glacier", "melt", "Greenland", "ice"]
+    },
+  "stz697.pdf": 
+    {
+      "authors": ["M. D. Campbell-Brown"], 
+      "title": "Solar cycle variation in radar meteor rates", 
+      "publish_date": "03/08/2019", 
+      "topics": ["solar", "radar", "meteor", "atmosphere"]
+    },
+  "stz640.pdf": 
+    {
+      "authors": ["Illya Plotnikov", "Lorenzo Sironi"], 
+      "title": "The synchrotron maser emission from relativistic shocks in Fast Radio Bursts: 1D PIC simulations of cold pair plasmas", 
+      "publish_date": "03/06/2019", 
+      "topics": ["radio", "shock", "maser", "plasma"]
+    },
+  "stz003.pdf": 
+    {
+      "authors": ["L. O. Kerber", "M. Libralato", "S. O. Souza", "R. A. P. Oliveira", "S. Ortolani", "A. Pérez-Villegas", "B. Barbuy", "B. Dias", "E. Bica", "D. Nardiello"], 
+      "title": "A deep view of a fossil relic in the Galactic bulge: the Globular Cluster HP 1", 
+      "publish_date": "01/05/2019", 
+      "topics": ["galaxy", "cluster", "stars", "infrared"]
+    },
+  "sty3359.pdf": 
+    {
+      "authors": ["Stavros Akras", "Marcelo L. Leal-Ferreira", "Lizette Guzman-Ramirez", "Gerardo Ramos-Larios"], 
+      "title": "A machine learning approach for identification and classification of symbiotic stars using 2MASS and WISE", 
+      "publish_date": "12/11/2018", 
+      "topics": ["stars", "machine learning", "infrared", "photometry"]
+    },
+  "s11214-015-0150-2.pdf": 
+    {
+      "authors": ["T.D. Phan", "M.A. Shay", "J.P. Eastwood", "V. Angelopoulos", "M. Oieroset", "M. Oka", "M. Fujimoto"], 
+      "title": "Establishing the Context for Reconnection Diffusion Region Encounters and Strategies for the Capture and Transmission of Diffusion Region Burst Data by MMS", 
+      "publish_date": "04/15/2015", 
+      "topics": ["magnetic reconnection", "diffusion region", "magnetopause", "magnetotail"]
+    }
 }
