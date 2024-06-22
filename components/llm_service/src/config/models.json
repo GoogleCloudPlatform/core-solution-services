@@ -51,11 +51,13 @@
   },
   "models": {
     "VertexAI-Text": {
+      "enabled": false,
       "is_chat": false,
       "provider": "Vertex",
       "model_name": "text-bison@002"
     },
     "VertexAI-Chat": {
+      "enabled": true,
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "gemini-pro",
@@ -73,11 +75,13 @@
       "model_name": "chat-bison@002"      
     },
     "VertexAI-Chat-Palm2-V2": {
+      "enabled": false,
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "chat-bison@002"
     },
     "VertexAI-Gemini-Pro": {
+      "enabled": false,
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
@@ -91,6 +95,7 @@
       "model_name": "gemini-pro-vision"
     },
     "VertexAI-Chat-Palm2V2-Langchain": {
+      "enabled": false,
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "chat-bison@002",
@@ -98,12 +103,14 @@
       "context_length": 2048
     },
     "VertexAI-Chat-Palm2-32k": {
+      "enabled": false,
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "chat-bison-32k",
       "context_length": 32000
     },
     "VertexAI-Chat-Palm2-32k-Langchain": {
+      "enabled": false,
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "chat-bison-32k",
@@ -111,6 +118,7 @@
       "context_length": 32000
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {
+      "enabled": false,
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "gemini-pro",
@@ -123,10 +131,10 @@
       "enabled": false,
       "context_length": 4096,
       "model_params": {
-        "temperature": 0.2,
+        "temperature": 0.1,
         "top_p": 0.95,
         "top_k": 40,
-        "max_new_tokens": 1024
+        "max_new_tokens": 512
       }
     },
     "vLLM-Gemma-Chat": {
@@ -165,7 +173,7 @@
       "vendor": "OpenAI",
       "is_chat": true,
       "provider": "Langchain",
-      "enabled": true,
+      "enabled": false,
       "model_name": "gpt-4-1106-preview",
       "model_class": "ChatOpenAI",
       "context_length": 128000,
@@ -177,7 +185,7 @@
       "vendor": "OpenAI",
       "is_chat": true,
       "provider": "Langchain",
-      "enabled": true,
+      "enabled": false,
       "model_name": "gpt-3.5-turbo",
       "model_class": "ChatOpenAI",
       "context_length": 16385,
@@ -189,7 +197,7 @@
       "vendor": "Cohere",
       "is_chat": true,
       "provider": "Langchain",
-      "enabled": true,
+      "enabled": false,
       "model_class": "ChatCohere"
     }
   },

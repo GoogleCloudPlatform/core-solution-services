@@ -776,9 +776,10 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       Logger.info(f"processing [{doc_name}]")
 
-      text_chunks = data_source.chunk_document(doc_name,
-                                               index_doc_url,
-                                               doc_filepath)
+      text_chunks, embed_chunks = data_source.chunk_document(
+        doc_name,
+        index_doc_url,
+        doc_filepath)
 
       if text_chunks is None or len(text_chunks) == 0:
         # unable to process this doc; skip
@@ -795,7 +796,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           metadata_list = [deepcopy(metadata) for chunk in text_chunks]
         new_index_base = \
             await qe_vector_store.index_document(doc_name,
-                                                 text_chunks, index_base,
+                                                 embed_chunks, index_base,
                                                  metadata_list)
       except Exception as e:
         # unable to process this doc; skip
@@ -803,7 +804,9 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         data_source.docs_not_processed.append(index_doc_url)
         continue
 
-      Logger.info(f"doc successfully indexed [{doc_name}]")
+      Logger.info(
+        f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"
+      )
 
       # cleanup temp local file
       os.remove(doc_filepath)
