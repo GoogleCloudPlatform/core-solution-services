@@ -140,8 +140,8 @@ class VectorStore(ABC):
     bound_type = oneOf("e i")
 
     # Define lower and upper bounds
-    lower_bound = (double + pyparsing.Optional(bound_type)) | "*"
-    upper_bound = (double + pyparsing.Optional(bound_type)) | "*"
+    lower_bound = (double + pyparsing.Optional(bound_type)) | oneOf("*")
+    upper_bound = (double + pyparsing.Optional(bound_type)) | oneOf("*")
 
     # Define expressions
     simple_text_expr = (
