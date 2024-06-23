@@ -113,6 +113,17 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     order: 2,
   },
   {
+    name: "manifest_url",
+    display: "Manifest URL",
+    type: "string",
+    placeholder: "Manifest URL for document metadata: gs://<file.json>",
+    description: "",
+    default: "",
+    required: false,
+    group: "queryengine",
+    order: 3,
+  },
+  {
     name: "vector_store",
     display: "Vector Store",
     type: "select",
@@ -122,7 +133,7 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     default: "PGVector",
     required: true,
     group: "queryengine",
-    order: 3,
+    order: 4,
   },
   {
     name: "embedding_type",
@@ -135,7 +146,7 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     default: "Vertex",
     required: true,
     group: "queryengine",
-    order: 3,
+    order: 4,
   },
   {
     name: "depth_limit",
@@ -146,7 +157,7 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     default: 0,
     required: false,
     group: "queryengine",
-    order: 3,
+    order: 4,
   },
   {
     name: "description",
