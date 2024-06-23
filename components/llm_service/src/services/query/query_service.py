@@ -272,7 +272,7 @@ async def retrieve_references(prompt: str,
   # get firebase user
   user = get_user(user_id)
   # get roles
-  role = None
+  roles = None
   if user.custom_claims:
     if "roles" in user.custom_claims:
       roles = user.custom_claims["roles"]
