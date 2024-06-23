@@ -34,14 +34,12 @@ from schemas.sign_in_schema import (SignInWithCredentialsModel,
                                     SignInWithTokenResponseModel)
 from services.validation_service import validate_google_oauth_token
 from config import (AUTH_REQUIRE_FIRESTORE_USER,
+                    AUTH_RBAC_DEFAULT_ROLE_SET,
                     FIREBASE_API_KEY,
                     IDP_URL,
                     ERROR_RESPONSES)
 
 # pylint: disable = broad-exception-raised
-
-# if no roles are provided by auth provider
-DEFAULT_ROLE_SET = ["L1"]
 
 IDP_SIGN_IN_URL = f"{IDP_URL}:signInWithIdp?key={FIREBASE_API_KEY}"
 Logger = Logger.get_logger(__file__)
@@ -66,24 +64,18 @@ def save_roles_from_auth_provider_token(
     # get the Firebase user
     user_id = result["user_id"]
 
-    if provider_id_token is None:
-      print("No provider id token. Assigning default roles.")
-      # update firebase user with default roles
-      roles = DEFAULT_ROLE_SET
+    # assume default roles
+    roles = AUTH_RBAC_DEFAULT_ROLE_SET
 
-    else:
-
+    if provider_id_token is not None:
       # decode the auth provider id token to retrieve the roles
       payload = provider_id_token.split(".")[1]
       decoded_payload = base64.b64decode(payload)
       decoded_token = json.loads(decoded_payload.decode())
-
       # check for roles defined by the auth provider
       if "roles" in decoded_token:
         roles = decoded_token["roles"]
         print("Auth provider-defined roles", roles)
-      else:
-        roles = DEFAULT_ROLE_SET
 
     user = get_user(user_id)
     if user.custom_claims:
