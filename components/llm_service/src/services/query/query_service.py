@@ -36,6 +36,7 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
+from firebase_admin.auth import get_user
 from services import embeddings
 from services.llm_generate import (get_context_prompt,
                                    llm_chat,
@@ -267,6 +268,16 @@ async def retrieve_references(prompt: str,
   """
   # perform retrieval for prompt
   query_references = []
+
+  # get firebase user
+  user = get_user(user_id)
+  # get roles
+  role = None
+  if user.custom_claims:
+    if "roles" in user.custom_claims:
+      roles = user.custom_claims["roles"]
+      print(f"retrieve references roles: {roles}")
+
   if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
     query_references = \
          await query_vertex_search(q_engine, prompt,
