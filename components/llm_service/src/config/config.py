@@ -165,6 +165,24 @@ def get_agent_config() -> dict:
 # load agent config
 get_agent_config()
 
+# document manifest config
+DEFAULT_DOCUMENT_MANIFEST = None
+def get_default_manifest() -> dict:
+  return DEFAULT_DOCUMENT_MANIFEST
+
+DEFAULT_DOCUMENT_MANIFEST_PATH = \
+    os.environ.get("DEFAULT_DOCUMENT_MANIFEST_PATH")
+if not DEFAULT_DOCUMENT_MANIFEST_PATH:
+  DEFAULT_DOCUMENT_MANIFEST_PATH = os.path.join(
+      os.path.dirname(__file__), "document_manifest.json")
+      try:
+        default_manifest = load_config_json(DEFAULT_DOCUMENT_MANIFEST_PATH)
+        Logger.info(
+            f"Loaded default manifest from {DEFAULT_DOCUMENT_MANIFEST_PATH}")
+        DEFAULT_DOCUMENT_MANIFEST = default_manifest
+      except:
+        Logger.info("Unable to load default manifest")
+
 # services config
 SERVICES = {
   "user-management": {

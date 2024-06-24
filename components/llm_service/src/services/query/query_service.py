@@ -817,7 +817,8 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                 doc_url=index_doc_url,
                                 index_file=data_source_file.doc_id,
                                 index_start=index_base,
-                                index_end=new_index_base)
+                                index_end=new_index_base,
+                                metadata=metadata)
       query_doc.save()
 
       for i in range(0, len(text_chunks)):
