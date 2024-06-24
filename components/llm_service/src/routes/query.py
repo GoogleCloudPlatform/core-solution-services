@@ -36,6 +36,7 @@ from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
                     DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST,
                     ONEDRIVE_CLIENT_ID, ONEDRIVE_TENANT_ID)
+from firebase_admin.auth import get_user
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
@@ -558,6 +559,7 @@ async def query(query_engine_id: str,
   query_filter = genconfig_dict.get("query_filter")
   Logger.info(f"query_filter = {query_filter}")
 
+  # get the User GENIE stores
   user = User.find_by_email(user_data.get("email"))
 
   run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
@@ -608,10 +610,13 @@ async def query(query_engine_id: str,
       Logger.error(traceback.print_exc())
       raise InternalServerError(str(e)) from e
 
+  # get roles from firebase token user id
+  roles = get_roles(user_data)
+
   # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type, user_query, rank_sentences,
+          user.id, prompt, q_engine, roles, llm_type, user_query, rank_sentences,
           query_filter)
 
     Logger.info(f"Query response="
@@ -645,7 +650,10 @@ async def query(query_engine_id: str,
     "/{user_query_id}",
     name="Continue chat with a prior user query",
     response_model=LLMQueryResponse)
-async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
+async def query_continue(
+  user_query_id: str,
+  gen_config: LLMQueryModel,
+  user_data: dict = Depends(validate_token)):
   """
   Continue a prior user query.  Perform a new search and
   add those references along with prior query/chat history as context.
@@ -720,11 +728,15 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
       Logger.error(traceback.print_exc())
       raise InternalServerError(str(e)) from e
 
+  # get roles from firebase token user id
+  roles = get_roles(user_data)
+
   # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(user_query.user_id,
                                                           prompt,
                                                           q_engine,
+                                                          roles,
                                                           llm_type,
                                                           user_query)
     # save user query history
@@ -754,3 +766,16 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
     Logger.error(e)
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
+
+
+def get_roles(user_data):
+  # get firebase user
+  user = get_user(user_data.user_id)
+  # get roles
+  roles = None
+  if user.custom_claims:
+    if "roles" in user.custom_claims:
+      roles = user.custom_claims["roles"]
+      print(f"Retrieved roles for {user_data.user_id} from firebase ID token: {roles}")
+
+  return roles
