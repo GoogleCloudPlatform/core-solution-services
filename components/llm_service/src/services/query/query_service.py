@@ -83,7 +83,7 @@ async def query_generate(
             user_id: str,
             prompt: str,
             q_engine: QueryEngine,
-            roles: Optional[str] = None,
+            roles: List[str],
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
             rank_sentences=False,
@@ -254,7 +254,7 @@ async def summarize_history(chat_history: str,
 async def retrieve_references(prompt: str,
                               q_engine: QueryEngine,
                               user_id: str,
-                              roles,
+                              roles: List[str],
                               rank_sentences: bool = False,
                               query_filter: str = None)-> List[QueryReference]:
   """
@@ -294,6 +294,7 @@ async def retrieve_references(prompt: str,
 
 async def query_search(q_engine: QueryEngine,
                        query_prompt: str,
+                       roles: List[str],
                        rank_sentences: bool = False,
                        query_filter: str = None) -> List[QueryReference]:
   """

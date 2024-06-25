@@ -616,8 +616,8 @@ async def query(query_engine_id: str,
   # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, roles, llm_type, user_query, rank_sentences,
-          query_filter)
+          user.id, prompt, q_engine, roles, llm_type,
+          user_query, rank_sentences, query_filter)
 
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
@@ -770,12 +770,13 @@ async def query_continue(
 
 def get_roles(user_data):
   # get firebase user
-  user = get_user(user_data.user_id)
+  print(user_data)
+  user = get_user(user_data['user_id'])
   # get roles
   roles = None
   if user.custom_claims:
     if "roles" in user.custom_claims:
       roles = user.custom_claims["roles"]
-      print(f"Retrieved roles for {user_data.user_id} from firebase ID token: {roles}")
+      print(f"firebase ID token {user_data['user_id']} has roles: {roles}")
 
   return roles
