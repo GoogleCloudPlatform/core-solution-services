@@ -770,13 +770,18 @@ async def query_continue(
 
 def get_roles(user_data):
   # get firebase user
-  print(user_data)
-  user = get_user(user_data['user_id'])
+  print(f"!!user_data: {user_data}")
+  # user = get_user(user_data["user_id"])
   # get roles
   roles = None
-  if user.custom_claims:
-    if "roles" in user.custom_claims:
-      roles = user.custom_claims["roles"]
-      print(f"firebase ID token {user_data['user_id']} has roles: {roles}")
+  if "roles" in user_data:
+    roles = user_data["roles"]
+
+  print(f"!!firebase ID token for {user_data['user_id']} has roles: {roles}")
+
+  # # if user.custom_claims:
+  #   if "roles" in user.custom_claims:
+  #     roles = user.custom_claims["roles"]
+  #     print(f"firebase ID token {user_data['user_id']} has roles: {roles}")
 
   return roles
