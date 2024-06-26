@@ -752,7 +752,10 @@ async def query_engine_build(doc_url: str,
       q_engine.update()
 
       docs_processed, docs_not_processed = \
-          await build_doc_index(doc_url, q_engine, qe_vector_store, is_multimodal)
+          await build_doc_index(doc_url,
+                                q_engine,
+                                qe_vector_store,
+                                is_multimodal)
 
     elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
       # for each associated query engine store the current engine as its parent
