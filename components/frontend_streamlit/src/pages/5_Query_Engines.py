@@ -45,12 +45,13 @@ def reload():
 
 def submit_build(engine_name:str, engine_type:str, doc_url:str,
                  depth_limit: int, embedding_type:str, vector_store:str,
-                 description:str, agents:str, child_engines:str):
+                 description:str, agents:str, child_engines:str,
+                 is_multimodal:str):
   try:
     output = build_query_engine(
       engine_name, engine_type, doc_url,
       depth_limit, embedding_type, vector_store, description, agents,
-      child_engines)
+      child_engines, is_multimodal)
 
     if output.get("success") is True:
       logging.info(f"job output {output}")
@@ -172,7 +173,8 @@ def query_engine_page():
               input_data["vector_store"],
               input_data["description"],
               input_data["agents"],
-              input_data["child_engines"])
+              input_data["child_engines"],
+              input_data["is_multimodal"])
             st.toast(
                 "Job re-submitted with query engine: {job['query_engine']}")
 
@@ -199,13 +201,14 @@ def query_engine_page():
     description = st.text_area("Description")
     agents = st.text_area("Agents")
     child_engines = st.text_area("Child Engines")
+    is_multimodal = st.toggle("Multimodal Engine?")
 
     submit = st.form_submit_button("Build")
   if submit:
     submit_build(
       engine_name, engine_type,
       doc_url, depth_limit, embedding_type, vector_store, description, agents,
-      child_engines
+      child_engines, str(is_multimodal)
     )
 
 

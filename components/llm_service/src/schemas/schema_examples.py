@@ -92,6 +92,19 @@ QUERY_ENGINE_EXAMPLE = {
   "endpoint": "projects/83285581741/locations/us-central1/indexEndpoints/420294037177840435"
 }
 
+QUERY_ENGINE_BUILD_EXAMPLE = {
+  "name": "query-engine-build-or-update-test",
+  "query_engine_type": "qe_llm_service",
+  "doc_url": "gs-for-cloud-storage-bucket",
+  "embedding_type": "VertexAI-Chat",
+  "vector_store": "langchain_pgvector",
+  "description": "sample description",
+  "params": {
+      "depth_limit": "0",
+      "is_multimodal": "True",
+      }
+  }
+
 QUERY_RESULT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "query_engine_id": "asd98798as7dhjgkjsdfh",

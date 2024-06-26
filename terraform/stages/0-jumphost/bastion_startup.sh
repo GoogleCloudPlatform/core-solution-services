@@ -59,8 +59,32 @@ python -m pip install --upgrade pip
 python -m pip install --upgrade pyopenssl
 python -m pip install google-cloud-firestore google-cloud-bigquery firebase-admin
 python -m pip install solutions-builder --ignore-installed PyYAML
+
 # Install dependencies for running user-tool
 python -m pip install fireo==2.1.0 regex fastapi google-cloud-secret-manager
+
+# add aliases profile script
+cat << EOF | sudo tee /etc/profile.d/00-aliases.sh
+alias kd='kubectl delete pod '
+alias kl='kubectl logs '
+alias klt='kubectl logs -f '
+alias kp='kubectl get pods'
+alias gs='git status'
+alias gb='git branch'
+alias gr='git remote -r'
+alias gd='git diff'
+alias hg='history | grep '
+EOF
+
+# add environment vars profile script
+cat << EOF | sudo tee /etc/profile.d/genie_env.sh
+export AUTH_AUTO_CREATE_USERS=true
+export AUTH_EMAIL_DOMAINS_WHITELIST=google.com
+export CORS_ALLOW_ORIGINS="*"
+export PROJECT_ID=$(gcloud config get project)
+export NAMESPACE=default
+export APP_BASE_PATH="/streamlit"
+EOF
 
 # Mark installation as complete
 touch jumphost_ready
