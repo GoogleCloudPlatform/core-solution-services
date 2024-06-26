@@ -36,7 +36,6 @@ from config import (PROJECT_ID, DATABASE_PREFIX, PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
                     DEFAULT_VECTOR_STORE, VECTOR_STORES, PG_HOST,
                     ONEDRIVE_CLIENT_ID, ONEDRIVE_TENANT_ID)
-from firebase_admin.auth import get_user
 from schemas.llm_schema import (LLMQueryModel,
                                 LLMUserAllQueriesResponse,
                                 LLMUserQueryResponse,
@@ -610,13 +609,10 @@ async def query(query_engine_id: str,
       Logger.error(traceback.print_exc())
       raise InternalServerError(str(e)) from e
 
-  # get roles from firebase token user id
-  roles = get_roles(user_data)
-
   # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, roles, llm_type,
+          user.id, prompt, q_engine, user_data, llm_type,
           user_query, rank_sentences, query_filter)
 
     Logger.info(f"Query response="
@@ -728,15 +724,12 @@ async def query_continue(
       Logger.error(traceback.print_exc())
       raise InternalServerError(str(e)) from e
 
-  # get roles from firebase token user id
-  roles = get_roles(user_data)
-
   # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(user_query.user_id,
                                                           prompt,
                                                           q_engine,
-                                                          roles,
+                                                          user_data,
                                                           llm_type,
                                                           user_query)
     # save user query history
@@ -766,26 +759,3 @@ async def query_continue(
     Logger.error(e)
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
-
-
-def get_roles(user_data):
-  # get firebase user
-  print(f"!! user_data: {user_data}")
-  user = get_user(user_data["user_id"])
-  print(f"!! user: {user}")
-
-  # get roles
-  roles = None
-  if "roles" in user_data:
-    roles = user_data["roles"]
-    print(f"!! roles: {roles} from user_data")
-
-
-  # if user.custom_claims:
-  if "roles" in user.custom_claims:
-    roles = user.custom_claims["roles"]
-    print(f"!! roles: {roles} from user.custom_claims")
-
-  print(f"!! firebase ID token for {user_data['user_id']} has roles: {roles}")
-
-  return roles

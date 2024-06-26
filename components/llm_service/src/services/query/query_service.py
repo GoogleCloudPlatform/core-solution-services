@@ -36,6 +36,7 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
+from firebase_admin.auth import get_user
 from services import embeddings
 from services.llm_generate import (get_context_prompt,
                                    llm_chat,
@@ -79,11 +80,30 @@ MIN_QUERY_REFERENCES = 2
 # total number of references to return from integrated search
 NUM_INTEGRATED_QUERY_REFERENCES = 6
 
+
+def create_authz_filter(user_data):
+  # get firebase user
+  print(f"!! user_data: {user_data}")
+  user = get_user(user_data["user_id"])
+  print(f"!! user: {user}")
+
+  # get roles
+  roles = None
+  if user.custom_claims:
+    if "roles" in user.custom_claims:
+      roles = user.custom_claims["roles"]
+      print(f"!! roles: {roles} from user.custom_claims")
+
+  print(f"!! firebase ID token for {user_data['user_id']} has roles: {roles}")
+
+  return roles
+
+
 async def query_generate(
             user_id: str,
             prompt: str,
             q_engine: QueryEngine,
-            roles: List[str],
+            user_data: dict,
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
             rank_sentences=False,
@@ -116,9 +136,12 @@ async def query_generate(
   Logger.info(f"Executing query: "
               f"llm_type=[{llm_type}], "
               f"user_id=[{user_id}], "
-              f"roles=[{roles}], "
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
+
+  print(f"!! query_generate query filter = {query_filter}")
+  roles = create_authz_filter(user_data)
+  print(f"!! query_generate roles = {roles}")
 
   # determine question generation model
   if llm_type is None:
@@ -128,7 +151,7 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = await retrieve_references(prompt, q_engine, user_id, roles,
+  query_references = await retrieve_references(prompt, q_engine, user_id, user_data,
                                                rank_sentences, query_filter)
 
   # Rerank references. Only need to do this if performing integrated search
@@ -254,7 +277,7 @@ async def summarize_history(chat_history: str,
 async def retrieve_references(prompt: str,
                               q_engine: QueryEngine,
                               user_id: str,
-                              roles: List[str],
+                              user_data: dict,
                               rank_sentences: bool = False,
                               query_filter: str = None)-> List[QueryReference]:
   """
@@ -282,7 +305,7 @@ async def retrieve_references(prompt: str,
       child_query_references = await retrieve_references(prompt,
                                                          child_engine,
                                                          user_id,
-                                                         roles,
+                                                         user_data,
                                                          query_filter)
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
@@ -294,7 +317,7 @@ async def retrieve_references(prompt: str,
 
 async def query_search(q_engine: QueryEngine,
                        query_prompt: str,
-                       roles: List[str],
+                       user_data: dict,
                        rank_sentences: bool = False,
                        query_filter: str = None) -> List[QueryReference]:
   """
