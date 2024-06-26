@@ -611,9 +611,14 @@ async def query(query_engine_id: str,
 
   # perform normal synchronous query
   try:
-    query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, user_data, llm_type,
-          user_query, rank_sentences, query_filter)
+    query_result, query_references = await query_generate(user.id,
+                                                          prompt,
+                                                          q_engine,
+                                                          user_data,
+                                                          llm_type,
+                                                          user_query,
+                                                          rank_sentences,
+                                                          query_filter)
 
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
@@ -682,6 +687,9 @@ async def query_continue(
   rank_sentences = genconfig_dict.get("rank_sentences", False)
   Logger.info(f"rank_sentences = {rank_sentences}")
 
+  query_filter = genconfig_dict.get("query_filter")
+  Logger.info(f"query_filter = {query_filter}")
+
   q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
 
   run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
@@ -731,7 +739,9 @@ async def query_continue(
                                                           q_engine,
                                                           user_data,
                                                           llm_type,
-                                                          user_query)
+                                                          user_query,
+                                                          rank_sentences,
+                                                          query_filter)
     # save user query history
     _, query_reference_dicts = \
         update_user_query(prompt,

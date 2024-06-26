@@ -98,7 +98,6 @@ def create_authz_filter(user_data):
 
   return roles
 
-
 async def query_generate(
             user_id: str,
             prompt: str,
@@ -142,6 +141,8 @@ async def query_generate(
   print(f"!! query_generate query filter = {query_filter}")
   roles = create_authz_filter(user_data)
   print(f"!! query_generate roles = {roles}")
+  query_filter["authz"] = { "$==": roles[0] }
+  print(f"!! query_generate query filter = {query_filter}")
 
   # determine question generation model
   if llm_type is None:
