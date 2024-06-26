@@ -70,7 +70,9 @@ def save_roles_from_auth_provider_token(
     if provider_id_token is not None:
       # decode the auth provider id token to retrieve the roles
       payload = provider_id_token.split(".")[1]
-      decoded_payload = base64.b64decode(payload)
+      # do not know why I need this for some tokens, only sometimes
+      # https://stackoverflow.com/questions/2941995/python-ignore-incorrect-padding-error-when-base64-decoding
+      decoded_payload = base64.b64decode(payload + "==")
       decoded_token = json.loads(decoded_payload.decode())
       # check for roles defined by the auth provider
       if "roles" in decoded_token:

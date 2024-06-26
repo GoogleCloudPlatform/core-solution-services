@@ -52,7 +52,7 @@ Logger.info(f"AUTH_EMAIL_DOMAINS_WHITELIST: {AUTH_EMAIL_DOMAINS_WHITELIST}")
 
 # Default role for RBAC
 AUTH_RBAC_DEFAULT_ROLE_SET = os.getenv(
-    "AUTH_RBAC_DEFAULT_ROLE_SET", "L1").split(",")
+    "AUTH_RBAC_DEFAULT_ROLE_SET", "Controlled:Low").split(",")
 
 # Retrieving FIREBASE_API_KEY from secrets manager.
 FIREBASE_API_KEY = None
