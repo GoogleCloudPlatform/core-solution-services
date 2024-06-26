@@ -151,8 +151,12 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = await retrieve_references(prompt, q_engine, user_id, user_data,
-                                               rank_sentences, query_filter)
+  query_references = await retrieve_references(prompt,
+                                               q_engine,
+                                               user_id,
+                                               user_data,
+                                               rank_sentences,
+                                               query_filter)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -311,7 +315,7 @@ async def retrieve_references(prompt: str,
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
     # default if type is not set to llm service query
-    query_references = await query_search(q_engine, prompt,
+    query_references = await query_search(q_engine, prompt, user_data,
                                           rank_sentences, query_filter)
   return query_references
 
