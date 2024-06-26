@@ -18,6 +18,7 @@ from copy import deepcopy
 import tempfile
 import traceback
 import os
+import json
 from numpy.linalg import norm
 import numpy as np
 import pandas as pd
@@ -138,9 +139,10 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
-  print(f"!! query_generate query filter = {query_filter}")
   roles = create_authz_filter(user_data)
   print(f"!! query_generate roles = {roles}")
+  print(f"!! query_generate query filter = {query_filter}")
+  query_filter = json.loads(query_filter)
   query_filter["authz"] = { "$==": roles[0] }
   print(f"!! query_generate query filter = {query_filter}")
 
@@ -284,7 +286,7 @@ async def retrieve_references(prompt: str,
                               user_id: str,
                               user_data: dict,
                               rank_sentences: bool = False,
-                              query_filter: str = None)-> List[QueryReference]:
+                              query_filter: dict = None)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -324,7 +326,7 @@ async def query_search(q_engine: QueryEngine,
                        query_prompt: str,
                        user_data: dict,
                        rank_sentences: bool = False,
-                       query_filter: str = None) -> List[QueryReference]:
+                       query_filter: dict = None) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.

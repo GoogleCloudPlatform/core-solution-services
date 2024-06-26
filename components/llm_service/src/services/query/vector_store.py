@@ -439,12 +439,12 @@ class LangChainVectorStore(VectorStore):
 
   def similarity_search(self, q_engine: QueryEngine,
                        query_embedding: List[float],
-                       query_filter: Optional[str] = None) -> List[int]:
+                       query_filter: dict = None) -> List[int]:
 
-    print(f"!! sim_search query_filter={query_filter}")
-    parsed_filter = self.parse_filter(query_filter)
-    print(f"!! sim_search parsed_filter={parsed_filter}")
-    langchain_filter = self.translate_filter(parsed_filter)
+    # print(f"!! sim_search query_filter={query_filter}")
+    # parsed_filter = self.parse_filter(query_filter)
+    print(f"!! sim_search parsed_filter={query_filter}")
+    langchain_filter = self.translate_filter(query_filter)
     print(f"!! sim_search langchain_filter={langchain_filter}")
     results = self.lc_vector_store.similarity_search_with_score_by_vector(
         embedding=query_embedding,
