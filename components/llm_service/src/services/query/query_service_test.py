@@ -35,7 +35,6 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
                                      QUERY_REFERENCE_EXAMPLE_1,
                                      QUERY_REFERENCE_EXAMPLE_2)
-from config import get_model_config, ModelConfig, MODEL_CONFIG_PATH
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            User, QueryDocument, QueryDocumentChunk,
                            QueryReference)
