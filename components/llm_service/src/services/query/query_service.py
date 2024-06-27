@@ -96,8 +96,9 @@ def create_authz_filter(user_data):
       print(f"!! roles: {roles} from user.custom_claims")
 
   print(f"!! firebase ID token for {user_data['user_id']} has roles: {roles}")
+  # !! need to change this later to accomodate more than one
+  return { "$==": roles[0] }
 
-  return roles
 
 async def query_generate(
             user_id: str,
@@ -139,11 +140,12 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
-  roles = create_authz_filter(user_data)
-  print(f"!! query_generate roles = {roles}")
+  authz_filter = create_authz_filter(user_data)
+  print(f"!! query_generate authz_filter = {authz_filter}")
+
   print(f"!! query_generate query filter = {query_filter}")
   query_filter = json.loads(query_filter)
-  query_filter["authz"] = { "$==": roles[0] }
+  query_filter["authz"] = authz_filter
   print(f"!! query_generate query filter = {query_filter}")
 
   # determine question generation model
@@ -157,7 +159,6 @@ async def query_generate(
   query_references = await retrieve_references(prompt,
                                                q_engine,
                                                user_id,
-                                               user_data,
                                                rank_sentences,
                                                query_filter)
 
@@ -284,7 +285,6 @@ async def summarize_history(chat_history: str,
 async def retrieve_references(prompt: str,
                               q_engine: QueryEngine,
                               user_id: str,
-                              user_data: dict,
                               rank_sentences: bool = False,
                               query_filter: dict = None)-> List[QueryReference]:
   """
@@ -312,19 +312,17 @@ async def retrieve_references(prompt: str,
       child_query_references = await retrieve_references(prompt,
                                                          child_engine,
                                                          user_id,
-                                                         user_data,
                                                          query_filter)
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
     # default if type is not set to llm service query
-    query_references = await query_search(q_engine, prompt, user_data,
+    query_references = await query_search(q_engine, prompt,
                                           rank_sentences, query_filter)
   return query_references
 
 async def query_search(q_engine: QueryEngine,
                        query_prompt: str,
-                       user_data: dict,
                        rank_sentences: bool = False,
                        query_filter: dict = None) -> List[QueryReference]:
   """

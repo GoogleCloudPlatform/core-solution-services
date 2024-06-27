@@ -441,7 +441,6 @@ class LangChainVectorStore(VectorStore):
                        query_embedding: List[float],
                        query_filter: dict = None) -> List[int]:
 
-    # print(f"!! sim_search query_filter={query_filter}")
     # parsed_filter = self.parse_filter(query_filter)
     print(f"!! sim_search parsed_filter={query_filter}")
     langchain_filter = self.translate_filter(query_filter)
