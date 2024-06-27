@@ -175,13 +175,13 @@ DEFAULT_DOCUMENT_MANIFEST_PATH = \
 if not DEFAULT_DOCUMENT_MANIFEST_PATH:
   DEFAULT_DOCUMENT_MANIFEST_PATH = os.path.join(
       os.path.dirname(__file__), "document_manifest.json")
-      try:
-        default_manifest = load_config_json(DEFAULT_DOCUMENT_MANIFEST_PATH)
-        Logger.info(
-            f"Loaded default manifest from {DEFAULT_DOCUMENT_MANIFEST_PATH}")
-        DEFAULT_DOCUMENT_MANIFEST = default_manifest
-      except:
-        Logger.info("Unable to load default manifest")
+  try:
+    default_manifest = load_config_json(DEFAULT_DOCUMENT_MANIFEST_PATH)
+    Logger.info(
+        f"Loaded default manifest from {DEFAULT_DOCUMENT_MANIFEST_PATH}")
+    DEFAULT_DOCUMENT_MANIFEST = default_manifest
+  except Exception:
+    Logger.info("Unable to load default manifest")
 
 # services config
 SERVICES = {
