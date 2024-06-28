@@ -440,8 +440,11 @@ class LangChainVectorStore(VectorStore):
   def similarity_search(self, q_engine: QueryEngine,
                        query_embedding: List[float],
                        query_filter: Optional[str] = None) -> List[int]:
-    parsed_filter = self.parse_filter(query_filter)
-    langchain_filter = self.translate_filter(parsed_filter)
+    langchain_filter = None
+    if query_filter:
+      parsed_filter = self.parse_filter(query_filter)
+      langchain_filter = self.translate_filter(parsed_filter)
+    
     results = self.lc_vector_store.similarity_search_with_score_by_vector(
         embedding=query_embedding,
         k=NUM_MATCH_RESULTS,
@@ -510,7 +513,7 @@ class LangChainVectorStore(VectorStore):
       clauses = [self.translate_filter(expr) for expr in parsed_filter[0::2]]
       return {operator.upper(): clauses}
 
-    return {}
+    return None
 
 
 class LLMServicePGVector(LangchainPGVector):
