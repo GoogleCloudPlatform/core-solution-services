@@ -18,6 +18,7 @@ from copy import deepcopy
 import tempfile
 import traceback
 import os
+import json
 from numpy.linalg import norm
 import numpy as np
 import pandas as pd
@@ -36,6 +37,7 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
+from firebase_admin.auth import get_user
 from services import embeddings
 from services.llm_generate import (get_context_prompt,
                                    llm_chat,
@@ -79,10 +81,30 @@ MIN_QUERY_REFERENCES = 2
 # total number of references to return from integrated search
 NUM_INTEGRATED_QUERY_REFERENCES = 6
 
+
+def create_authz_filter(user_data):
+  # get firebase user
+  print(f"!! user_data: {user_data}")
+  user = get_user(user_data["user_id"])
+  print(f"!! user: {user}")
+
+  # get roles
+  roles = None
+  if user.custom_claims:
+    if "roles" in user.custom_claims:
+      roles = user.custom_claims["roles"]
+      print(f"!! roles: {roles} from user.custom_claims")
+
+  print(f"!! firebase ID token for {user_data['user_id']} has roles: {roles}")
+  # !! need to change this later to accomodate more than one
+  return { "$eq": roles[0] }
+
+
 async def query_generate(
             user_id: str,
             prompt: str,
             q_engine: QueryEngine,
+            user_data: dict,
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
             rank_sentences=False,
@@ -118,6 +140,19 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
+  authz_filter = create_authz_filter(user_data)
+  print(f"!! query_generate authz_filter = {authz_filter}")
+
+  print(f"!! query_generate query filter = {query_filter}")
+
+  if query_filter is not None:
+    query_filter = json.loads(query_filter)
+  else:
+    query_filter = {}
+
+  query_filter["authz"] = authz_filter
+  print(f"!! query_generate query filter = {query_filter}")
+
   # determine question generation model
   if llm_type is None:
     if q_engine.llm_type is not None:
@@ -126,8 +161,11 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = await retrieve_references(prompt, q_engine, user_id,
-                                               rank_sentences, query_filter)
+  query_references = await retrieve_references(prompt,
+                                               q_engine,
+                                               user_id,
+                                               rank_sentences,
+                                               query_filter)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -253,7 +291,7 @@ async def retrieve_references(prompt: str,
                               q_engine: QueryEngine,
                               user_id: str,
                               rank_sentences: bool = False,
-                              query_filter: str = None)-> List[QueryReference]:
+                              query_filter: dict = None)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -267,6 +305,7 @@ async def retrieve_references(prompt: str,
   """
   # perform retrieval for prompt
   query_references = []
+
   if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
     query_references = \
          await query_vertex_search(q_engine, prompt,
@@ -290,7 +329,7 @@ async def retrieve_references(prompt: str,
 async def query_search(q_engine: QueryEngine,
                        query_prompt: str,
                        rank_sentences: bool = False,
-                       query_filter: str = None) -> List[QueryReference]:
+                       query_filter: dict = None) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
