@@ -444,7 +444,7 @@ class LangChainVectorStore(VectorStore):
     if query_filter:
       parsed_filter = self.parse_filter(query_filter)
       langchain_filter = self.translate_filter(parsed_filter)
-    
+
     results = self.lc_vector_store.similarity_search_with_score_by_vector(
         embedding=query_embedding,
         k=NUM_MATCH_RESULTS,
