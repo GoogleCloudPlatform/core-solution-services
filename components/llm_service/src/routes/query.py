@@ -558,6 +558,7 @@ async def query(query_engine_id: str,
   query_filter = genconfig_dict.get("query_filter")
   Logger.info(f"query_filter = {query_filter}")
 
+  # get the User GENIE stores
   user = User.find_by_email(user_data.get("email"))
 
   run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
@@ -610,9 +611,14 @@ async def query(query_engine_id: str,
 
   # perform normal synchronous query
   try:
-    query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type, user_query, rank_sentences,
-          query_filter)
+    query_result, query_references = await query_generate(user.id,
+                                                          prompt,
+                                                          q_engine,
+                                                          user_data,
+                                                          llm_type,
+                                                          user_query,
+                                                          rank_sentences,
+                                                          query_filter)
 
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
@@ -645,7 +651,10 @@ async def query(query_engine_id: str,
     "/{user_query_id}",
     name="Continue chat with a prior user query",
     response_model=LLMQueryResponse)
-async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
+async def query_continue(
+  user_query_id: str,
+  gen_config: LLMQueryModel,
+  user_data: dict = Depends(validate_token)):
   """
   Continue a prior user query.  Perform a new search and
   add those references along with prior query/chat history as context.
@@ -677,6 +686,9 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
 
   rank_sentences = genconfig_dict.get("rank_sentences", False)
   Logger.info(f"rank_sentences = {rank_sentences}")
+
+  query_filter = genconfig_dict.get("query_filter")
+  Logger.info(f"query_filter = {query_filter}")
 
   q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
 
@@ -725,8 +737,11 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
     query_result, query_references = await query_generate(user_query.user_id,
                                                           prompt,
                                                           q_engine,
+                                                          user_data,
                                                           llm_type,
-                                                          user_query)
+                                                          user_query,
+                                                          rank_sentences,
+                                                          query_filter)
     # save user query history
     _, query_reference_dicts = \
         update_user_query(prompt,

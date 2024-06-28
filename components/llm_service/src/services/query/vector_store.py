@@ -123,7 +123,7 @@ class VectorStore(ABC):
     """
     Parse filter expressions in the Vertex Search format:
       https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
-    
+
     Returns:
       A pyparsing ParseResults object
     """
