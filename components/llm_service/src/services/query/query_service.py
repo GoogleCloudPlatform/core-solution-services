@@ -97,7 +97,7 @@ def create_authz_filter(user_data):
 
   print(f"!! firebase ID token for {user_data['user_id']} has roles: {roles}")
   # !! need to change this later to accomodate more than one
-  return { "$eq": roles[0] }
+  return { "eq": roles[0] }
 
 
 async def query_generate(
