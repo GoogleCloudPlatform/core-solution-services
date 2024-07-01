@@ -212,7 +212,9 @@ class DataSource:
       with tempfile.TemporaryDirectory() as path:
         png_array = convert_from_path(doc_filepath, output_folder=path)
       # Open PDF and iterate over pages
+      Logger.info(f"About to open pdf doc {doc_name} and filepath {doc_filepath}") #SC240701
       with open(doc_filepath, "rb") as f:
+        Logger.info(f"Just opened {doc_name} at filepath {doc_filepath}") #SC240701
         reader = PdfReader(f)
         num_pages = len(reader.pages)
         Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
