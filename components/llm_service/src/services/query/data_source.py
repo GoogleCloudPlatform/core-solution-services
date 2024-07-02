@@ -14,6 +14,7 @@
 """
 Query Data Sources
 """
+import traceback
 import os
 import re
 import tempfile
@@ -192,19 +193,28 @@ class DataSource:
        contains two properties for image b64 data & text chunks 
        or None if the document could not be processed
     """
-    Logger.info(f"generating index data for {doc_name}")
+    #Logger.info(f"generating index data for {doc_name}") #SC240701
+    Logger.info(f"generating index data for {doc_name} - SC240701") #SC240701
 
     # Confirm that this is a PDF
+    Logger.info(f"About to enter the first whole try/except statement with file {doc_name} #SC240702")
     try:
+      Logger.info(f"  Just entered first try with file {doc_name} #SC240702")
       doc_extension = doc_name.split(".")[-1]
       doc_extension = doc_extension.lower()
       if doc_extension != "pdf":
         raise ValueError(f"File {doc_name} must be a PDF")
+      Logger.info(f"  About to finish the first try with file {doc_name} #SC240702")
     except Exception as e:
+      Logger.info(f"  Just entered the first except with file {doc_name} #SC2240702")
       Logger.error(f"error reading doc {doc_name}: {e}")
+      Logger.info(f"  About to finish the first except with {doc_name} #SC240702")
+    Logger.info(f"Just finished the first whole try/except statement with file {doc_name} #SC240702")
 
     doc_chunks = []
+    Logger.info(f"About to enter the second whole try/except statement with file {doc_name} #SC240702")
     try:
+      Logger.info(f"  Just entered the second try with file {doc_name} #SC240702")
       # Convert PDF to an array of PNGs for each page
       bucket_name = unquote(doc_url.split("/b/")[1].split("/")[0])
       object_name = unquote(doc_url.split("/o/")[1].split("/")[0])
@@ -212,9 +222,9 @@ class DataSource:
       with tempfile.TemporaryDirectory() as path:
         png_array = convert_from_path(doc_filepath, output_folder=path)
       # Open PDF and iterate over pages
-      Logger.info(f"About to open pdf doc {doc_name} and filepath {doc_filepath}") #SC240701
+      Logger.info(f"About to open pdf doc {doc_name} and filepath {doc_filepath} - SC240702") #SC240702
       with open(doc_filepath, "rb") as f:
-        Logger.info(f"Just opened {doc_name} at filepath {doc_filepath}") #SC240701
+        Logger.info(f"Just opened {doc_name} at filepath {doc_filepath} - SC240702") #SC240702
         reader = PdfReader(f)
         num_pages = len(reader.pages)
         Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
@@ -247,8 +257,13 @@ class DataSource:
             "text_chunks": text_chunks
           }
           doc_chunks.append(chunk_obj)
+      Logger.info(f"  About to finish the second try with file {doc_name} #SC240702")
     except Exception as e:
+      Logger.info(f"  Just started the second except with file {doc_name} #SC240702")
       Logger.error(f"error processing doc {doc_name}: {e}")
+      Logger.error(traceback.print_exc())
+      Logger.info(f"  About to finish the second except with file {doc_name} #SC240702")
+    Logger.info(f"Just finished the second whole try/except statement with file {doc_name} #SC240702")
 
     # Return array of page data
     return doc_chunks
