@@ -215,12 +215,20 @@ class DataSource:
     Logger.info(f"About to enter the second whole try/except statement with file {doc_name} #SC240702")
     try:
       Logger.info(f"  Just entered the second try with file {doc_name} #SC240702")
+      Logger.info(f"  doc_name={doc_name} #SC240702")
+      Logger.info(f"  doc_url={doc_url} #SC240702")
+      Logger.info(f"  doc_filepath={doc_filepath} #SC240702")
       # Convert PDF to an array of PNGs for each page
-      bucket_name = unquote(doc_url.split("/b/")[1].split("/")[0])
+      #bucket_name = unquote(doc_url.split("/b/")[1].split("/")[0])
+      bucket_name = unquote(doc_url.split("://")[1].split("/")[0])
       object_name = unquote(doc_url.split("/o/")[1].split("/")[0])
+      Logger.info(f"  bucket_name={bucket_name} #SC240702")
+      Logger.info(f"  object_name={object_name} #SC240702")
 
+      Logger.info(f"  tempfile.TemporaryDirectory()={tempfile.TemporaryDirectory()} #SC240702")
       with tempfile.TemporaryDirectory() as path:
         png_array = convert_from_path(doc_filepath, output_folder=path)
+      Logger.info(f"  png_array={png_array} #SC240702")
       # Open PDF and iterate over pages
       Logger.info(f"About to open pdf doc {doc_name} and filepath {doc_filepath} - SC240702") #SC240702
       with open(doc_filepath, "rb") as f:
@@ -243,8 +251,10 @@ class DataSource:
 
           # Upload to Google Cloud Bucket and return gs URL
           page_png_name = ".png".join(f"{i}_{object_name}".rsplit(".pdf", 1))
+          #png_url = gcs_helper.upload_to_gcs(self.storage_client,
+          #              bucket_name, page_png_name, png_b64, "image/png")
           png_url = gcs_helper.upload_to_gcs(self.storage_client,
-                        bucket_name, page_png_name, png_b64, "image/png")
+                        bucket_name, png_doc_filepath)
 
           # Clean up temp files
           os.remove(pdf_doc["filepath"])

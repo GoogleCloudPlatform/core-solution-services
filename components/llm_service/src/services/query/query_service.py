@@ -855,6 +855,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       Logger.info(f"processing [{doc_name}]")
 
       if is_multimodal:
+        Logger.info(f"From process_documents: index_doc_url={index_doc_url} #SC240702")
         doc_chunks = data_source.chunk_document_multi(doc_name,
                                                       index_doc_url,
                                                       doc_filepath)
