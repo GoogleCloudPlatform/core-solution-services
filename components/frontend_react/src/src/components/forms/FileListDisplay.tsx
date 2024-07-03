@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-interface SearchProps {}
+interface FileListDisplay {
+  label: string
+  value: string
+}
 
-const Search: React.FunctionComponent<SearchProps> = ({}) => {
+const FileListDisplay: React.FC<FileListDisplay> = ({ label, value }) => {
   return (
-    <div className="border-base-300 relative flex h-full flex-grow items-center gap-4 rounded-lg border px-2">
-      <div className="i-heroicons-magnifying-glass pointer-events-none absolute h-5 w-5 opacity-70" />
-      <input
-        className="bg-base-100 w-full py-1 pl-8 outline-none"
-        placeholder="Search"
-      />
+    <div className="w-full">
+      <span className="mr-2 font-semibold capitalize">{label}</span>
+      {value}
     </div>
   )
 }
 
-export default Search
+export default FileListDisplay

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { envOrFail } from "@/utils/env"
-import { Chat, Query, QueryEngine } from "@/utils/types"
+import { Chat, Query, QueryEngine, QueryEngineBuildJob } from "@/utils/types"
 import axios from "axios"
 import { path } from "ramda"
 
@@ -40,9 +40,18 @@ interface ResumeChatParams {
   llmType: string
 }
 
+interface JobStatusResponse {
+  status: "succeeded" | "failed" | "active"
+}
+
 const endpoint = envOrFail(
   "VITE_PUBLIC_API_ENDPOINT",
   import.meta.env.VITE_PUBLIC_API_ENDPOINT,
+)
+
+const jobsEndpoint = envOrFail(
+  "VITE_PUBLIC_API_JOBS_ENDPOINT",
+  import.meta.env.VITE_PUBLIC_API_JOBS_ENDPOINT,
 )
 
 export const fetchAllChatModels =
@@ -126,6 +135,53 @@ export const fetchAllEngines =
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
 
+export const fetchEngine =
+  (token: string, engineId: string | null) => (): Promise<QueryEngine | undefined | null> => {
+    if (!engineId) return Promise.resolve(null)
+    const url = `${endpoint}/query/engine/${queryId}`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+  }
+
+export const createQueryEngine =
+  (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngineBuildJob | undefined> => {
+    const url = `${endpoint}/query/engine`
+    const headers = { Authorization: `Bearer ${token}` }
+    const data = {
+      "query_engine": queryEngine.name,
+      "query_engine_type": queryEngine.query_engine_type,
+      "doc_url": queryEngine.doc_url,
+      "embedding_type": queryEngine.embedding_type,
+      "vector_store": queryEngine.vector_store,
+      "description": queryEngine.description,
+      "params": {
+        "depth_limit": queryEngine.depth_limit,
+        "agents": queryEngine.agents,
+        "associated_engines": queryEngine.child_engines,
+        "manifest_url": queryEngine.manifest_url,
+      }
+    }
+    return axios.post(url, data, { headers }).then(path(["data", "data"]))
+  }
+
+export const updateQueryEngine =
+  (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngine | undefined> => {
+    const url = `${endpoint}/query/engine/${queryEngine.id}`
+    const headers = { Authorization: `Bearer ${token}` }
+    const data = {
+      "description": queryEngine.description,
+    }
+    return axios.put(url, data, { headers }).then(path(["data", "data"]))
+  }
+
+export const deleteQueryEngine =
+  (token: string) => async (queryEngine: QueryEngine): Promise<boolean | undefined> => {
+    const url = `${endpoint}/query/engine/${queryEngine.id}`
+    const headers = { Authorization: `Bearer ${token}` }
+    const data = {}
+    return axios.delete(url, data, { headers }).then(path(["data", "success"]))
+  }
+
 export const createQuery =
   (token: string) => async ({
     engine,
@@ -156,3 +212,27 @@ export const resumeQuery =
     }
     return axios.post(url, data, { headers }).then(path(["data", "data", "user_query_id"]))
   }
+
+export const getJobStatus =
+  async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
+    if (!token) return Promise.resolve(undefined)
+    const url = `${jobsEndpoint}/jobs/agent_run/${jobId}`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+ }
+
+export const getEngineJobStatus =
+  async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
+    if (!token) return Promise.resolve(undefined)
+    const url = `${jobsEndpoint}/jobs/query_engine_build/${jobId}`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+ }
+
+export const fetchAllEngineJobs =
+  (token: string) => (): Promise<QueryEngineBuildJob[] | undefined> => {
+    const url = `${jobsEndpoint}/jobs/query_engine_build`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+ }
+
