@@ -194,7 +194,7 @@ class DataSource:
        or None if the document could not be processed
     """
     #Logger.info(f"generating index data for {doc_name}") #SC240701
-    Logger.info(f"generating index data for {doc_name} - SC240701") #SC240701
+    Logger.info(f"generating index data for {doc_name} - SC240703") #SC240701
 
     # Confirm that this is a PDF
     Logger.info(f"About to enter the first whole try/except statement with file {doc_name} #SC240702")
