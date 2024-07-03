@@ -7,7 +7,6 @@
     ]
   },
   "hosting": {
-    "target": "genie-admin",
     "public": "dist",
     "ignore": [
       "firebase.json",
