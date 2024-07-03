@@ -17,16 +17,19 @@
 """Firebase token validation"""
 import json
 import requests
+from firebase_admin.auth import get_user
 from fastapi import Depends
 from fastapi.security import HTTPBearer
 from common.utils.errors import InvalidTokenError
 from common.config import SERVICES
 from common.utils.errors import TokenNotFoundError
 from common.utils.http_exceptions import (InternalServerError, Unauthenticated)
+from common.utils.logging_handler import Logger
 
 auth_scheme = HTTPBearer(auto_error=False)
 AUTH_SERVICE_NAME = SERVICES["authentication"]["host"]
 
+Logger = Logger.get_logger(__file__)
 
 def validate_token(token: auth_scheme = Depends()):
   """
@@ -156,3 +159,20 @@ def user_verification(token: str) -> json:
       timeout=10)
 
   return response
+
+def create_authz_filter(user_data):
+  # get firebase user
+  Logger.info(f"user_data: {user_data}")
+  user = get_user(user_data["user_id"])
+  Logger.info(f"user: {user}")
+
+  # get roles
+  roles = None
+  if user.custom_claims:
+    if "roles" in user.custom_claims:
+      roles = user.custom_claims["roles"]
+      Logger.info(f"roles: {roles} from user.custom_claims")
+
+  Logger.info(f"firebase ID token for {user_data['user_id']} has roles {roles}")
+  # TODO: change this later to accomodate more than one
+  return { "contains": roles[0] }

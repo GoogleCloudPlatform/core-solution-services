@@ -34,10 +34,10 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QE_TYPE_LLM_SERVICE,
                                      QE_TYPE_INTEGRATED_SEARCH,
                                      QUERY_AI_RESPONSE)
+from common.utils.auth_service import create_authz_filter
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
-from firebase_admin.auth import get_user
 from services import embeddings
 from services.llm_generate import (get_context_prompt,
                                    llm_chat,
@@ -82,24 +82,6 @@ MIN_QUERY_REFERENCES = 2
 NUM_INTEGRATED_QUERY_REFERENCES = 6
 
 
-def create_authz_filter(user_data):
-  # get firebase user
-  print(f"!! user_data: {user_data}")
-  user = get_user(user_data["user_id"])
-  print(f"!! user: {user}")
-
-  # get roles
-  roles = None
-  if user.custom_claims:
-    if "roles" in user.custom_claims:
-      roles = user.custom_claims["roles"]
-      print(f"!! roles: {roles} from user.custom_claims")
-
-  print(f"!! firebase ID token for {user_data['user_id']} has roles: {roles}")
-  # !! need to change this later to accomodate more than one
-  return { "contains": roles[0] }
-
-
 async def query_generate(
             user_id: str,
             prompt: str,
@@ -141,9 +123,7 @@ async def query_generate(
               f"user_query=[{user_query}]")
 
   authz_filter = create_authz_filter(user_data)
-  print(f"!! query_generate authz_filter = {authz_filter}")
-
-  print(f"!! query_generate query filter = {query_filter}")
+  Logger.info(f"query_generate authz_filter = {authz_filter}")
 
   if query_filter is not None:
     query_filter = json.loads(query_filter)
@@ -151,7 +131,7 @@ async def query_generate(
     query_filter = {}
 
   query_filter["authz"] = authz_filter
-  print(f"!! query_generate query filter = {query_filter}")
+  Logger.info(f"query_generate query filter = {query_filter}")
 
   # determine question generation model
   if llm_type is None:

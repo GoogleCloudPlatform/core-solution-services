@@ -77,18 +77,18 @@ def save_roles_from_auth_provider_token(
       # check for roles defined by the auth provider
       if "roles" in decoded_token:
         roles = decoded_token["roles"]
-        print("Auth provider-defined roles", roles)
+        Logger.info(f"Auth provider-defined roles: {roles}")
 
     user = get_user(user_id)
     if user.custom_claims:
-      print("Current Firebase custom claims", user.custom_claims)
+      Logger.info("Current Firebase custom claims: {user.custom_claims}")
 
     # update firebase user with roles defined by auth provider
     set_custom_user_claims(user_id, { "roles": roles })
 
     # check that fierbase auth user has the new roles
     user = get_user(user_id)
-    print("New firebase custom claims", user.custom_claims)
+    Logger.info("New firebase custom claims: {user.custom_claims}")
 
     return {
       "success": True,
