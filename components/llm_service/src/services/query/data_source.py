@@ -219,11 +219,16 @@ class DataSource:
       Logger.info(f"  doc_url={doc_url} #SC240702")
       Logger.info(f"  doc_filepath={doc_filepath} #SC240702")
       # Convert PDF to an array of PNGs for each page
-      #bucket_name = unquote(doc_url.split("/b/")[1].split("/")[0])
-      bucket_name = unquote(doc_url.split("://")[1].split("/")[0])
-      object_name = unquote(doc_url.split("/o/")[1].split("/")[0])
+      if doc_url.startswith("https://storage.googleapis.com/"):
+        bucket_name = unquote(doc_url.split("https://storage.googleapis.com/")[1].split("/")[0])
+      elif doc_url.startswith("gs://"):
+        bucket_name = unquote(doc_url.split("gs://")[1].split("/")[0])
+      else:
+        raise ValueError(f"Invalid Doc URL: {doc_url}")
+      #object_name = unquote(doc_url.split("/o/")[1].split("/")[0])
+      #object_name = unquote(doc_url.split["/"])[-1]
       Logger.info(f"  bucket_name={bucket_name} #SC240702")
-      Logger.info(f"  object_name={object_name} #SC240702")
+      # Logger.info(f"  object_name={object_name} #SC240702")
 
       Logger.info(f"  tempfile.TemporaryDirectory()={tempfile.TemporaryDirectory()} #SC240702")
       with tempfile.TemporaryDirectory() as path:
@@ -250,7 +255,7 @@ class DataSource:
           png_b64 = b64encode(png_bytes).decode("utf-8")
 
           # Upload to Google Cloud Bucket and return gs URL
-          page_png_name = ".png".join(f"{i}_{object_name}".rsplit(".pdf", 1))
+          #page_png_name = ".png".join(f"{i}_{object_name}".rsplit(".pdf", 1))
           #png_url = gcs_helper.upload_to_gcs(self.storage_client,
           #              bucket_name, page_png_name, png_b64, "image/png")
           png_url = gcs_helper.upload_to_gcs(self.storage_client,
