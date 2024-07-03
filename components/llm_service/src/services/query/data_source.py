@@ -26,7 +26,7 @@ from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.models import QueryEngine
-from config import PROJECT_ID
+from config import PROJECT_ID, get_default_manifest
 from pypdf import PdfReader, PdfWriter, PageObject
 from pdf2image import convert_from_path
 from langchain_community.document_loaders import CSVLoader
@@ -127,7 +127,7 @@ class DataSource:
 
     return doc_filepaths
 
-  def init_metadata(self, q_engine):
+  def init_metadata(self, q_engine: QueryEngine) -> dict:
     """ 
     Load metadata from manifest, if it is defined in the query engine
     
@@ -137,10 +137,14 @@ class DataSource:
           "attr": "value"
         }
        "doc2_url": {
+          ...
         }
       }
+    Args:
+        q_engine: query engine
     Returns:
-      a dict representation of the manifest
+      A dict representation of the manifest. If there is no manifest available
+      returns empty dict.
     """
     manifest_url = q_engine.manifest_url
     manifest_spec = {}
@@ -150,7 +154,12 @@ class DataSource:
       # download manifest from gs:// bucket
       blob = get_blob_from_gcs_path(manifest_url)
       manifest_spec = json.loads(blob.download_as_string())
-
+      Logger.info(f"loaded document manifest from {manifest_url}")
+    else:
+      default_manifest = get_default_manifest()
+      if default_manifest:
+        manifest_spec = default_manifest
+        Logger.info("using default manifest")
     return manifest_spec
 
   def chunk_document(self, doc_name: str, doc_url: str,
