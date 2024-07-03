@@ -1,6 +1,5 @@
 cohere==4.32
 docx2txt==0.8
-firebase-admin==4.5.2
 google-cloud-discoveryengine==0.11.11
 google-cloud-bigquery-storage==2.24.0
 invoke==2.0.0

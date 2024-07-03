@@ -24,7 +24,6 @@ from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.utils.token_handler import UserCredentials
-import firebase_admin
 from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
@@ -43,7 +42,6 @@ from config.model_config import (ModelConfig, VENDOR_OPENAI,
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()
-default_firebase_app = firebase_admin.initialize_app()
 
 PORT = os.environ["PORT"] if os.environ.get("PORT") is not None else 80
 PROJECT_ID = os.environ.get("PROJECT_ID")

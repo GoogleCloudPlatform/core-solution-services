@@ -17,6 +17,7 @@
 """Firebase token validation"""
 import json
 import requests
+import firebase_admin
 from firebase_admin.auth import get_user
 from fastapi import Depends
 from fastapi.security import HTTPBearer
@@ -28,6 +29,8 @@ from common.utils.logging_handler import Logger
 
 auth_scheme = HTTPBearer(auto_error=False)
 AUTH_SERVICE_NAME = SERVICES["authentication"]["host"]
+
+default_firebase_app = firebase_admin.initialize_app()
 
 Logger = Logger.get_logger(__file__)
 
