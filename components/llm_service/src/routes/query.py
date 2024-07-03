@@ -163,11 +163,11 @@ def get_query_engine(query_engine_id: str):
     q_engine = QueryEngine.find_by_id(query_engine_id)
     if q_engine is None:
       raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
-    
+
     # get query docs
     query_docs = QueryDocument.find_by_query_engine_id(query_engine_id)
     url_list = list(map(lambda query_doc: query_doc.doc_url, query_docs))
-    
+
     response_data = q_engine.get_fields(reformat_datetime=True)
     response_data["url_list"] = url_list
     return {
