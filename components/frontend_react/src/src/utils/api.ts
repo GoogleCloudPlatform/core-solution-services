@@ -158,6 +158,7 @@ export const createQueryEngine =
         "depth_limit": queryEngine.depth_limit,
         "agents": queryEngine.agents,
         "associated_engines": queryEngine.child_engines,
+        "manifest_url": queryEngine.manifest_url,
       }
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
