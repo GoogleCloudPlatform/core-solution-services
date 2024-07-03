@@ -14,6 +14,7 @@
 """
 Query Data Sources
 """
+import json
 import os
 import re
 import tempfile
@@ -23,6 +24,7 @@ from base64 import b64encode
 from typing import List
 from pathlib import Path
 from common.utils.logging_handler import Logger
+from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.models import QueryEngine
 from config import PROJECT_ID
 from pypdf import PdfReader, PdfWriter, PageObject
@@ -124,6 +126,32 @@ class DataSource:
           f"No documents can be indexed at url {doc_url}")
 
     return doc_filepaths
+
+  def init_metadata(self, q_engine):
+    """ 
+    Load metadata from manifest, if it is defined in the query engine
+    
+    Manifest spec looks like:
+      {"doc1_url": {
+          "title": "blah",
+          "attr": "value"
+        }
+       "doc2_url": {
+        }
+      }
+    Returns:
+      a dict representation of the manifest
+    """
+    manifest_url = q_engine.manifest_url
+    manifest_spec = {}
+    if manifest_url:
+      if not manifest_url.startswith("gs://"):
+        raise RuntimeError("unsupported manifest URL {manifest_url}")
+      # download manifest from gs:// bucket
+      blob = get_blob_from_gcs_path(manifest_url)
+      manifest_spec = json.loads(blob.download_as_string())
+
+    return manifest_spec
 
   def chunk_document(self, doc_name: str, doc_url: str,
                      doc_filepath: str) -> List[str]:

@@ -14,7 +14,7 @@
 """
 Query Vector Store
 """
-# pylint: disable=broad-exception-caught,ungrouped-imports
+# pylint: disable=broad-exception-caught,ungrouped-imports,invalid-name
 
 from abc import ABC, abstractmethod
 import json
@@ -25,8 +25,12 @@ import shutil
 import tempfile
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Optional, Union
 from google.cloud import aiplatform, storage
+import pyparsing
+from pyparsing import (Word, alphanums, Suppress, ParseResults,
+                       delimitedList, Literal, Forward, ZeroOrMore,
+                       oneOf, ParserElement, QuotedString, Regex)
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
@@ -76,13 +80,15 @@ class VectorStore(ABC):
 
   @abstractmethod
   async def index_document(self, doc_name: str, text_chunks: List[str],
-                           index_base: int) -> int:
+                           index_base: int,
+                           metadata: List[dict] = None) -> int:
     """
     Generate index for a document in this vector store
     Args:
       doc_name (str): name of document to be indexed
       text_chunks (List[str]): list of text content chunks for document
       index_base (int): index to start from; each chunk gets its own index
+      metadata (List[dict]): list of metadata dicts for chunks
     Returns:
       new_index_base: updated query engine index base
     """
@@ -97,15 +103,81 @@ class VectorStore(ABC):
 
   @abstractmethod
   def similarity_search(self, q_engine: QueryEngine,
-                        query_embedding: List[float]) -> List[int]:
+                        query_embedding: List[float],
+                        query_filter: Optional[str] = None) -> List[int]:
     """
     Retrieve text matches for query embeddings.
+    Allows filter expressions to limit documents based on metadata.
+    Filter expressions use the Vertex Search syntax as documented here:
+        https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
+
     Args:
       q_engine: QueryEngine model
       query_embedding: single embedding array for query
+      query_filter: (optional) filter expression
     Returns:
       list of indexes that are matched of length NUM_MATCH_RESULTS
     """
+
+  def parse_filter(self, filter_str: str) -> Union[ParseResults, dict]:
+    """
+    Parse filter expressions in the Vertex Search format:
+      https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
+    
+    Returns:
+      A pyparsing ParseResults object
+    """
+    # Enable packrat parsing for better performance
+    ParserElement.enable_packrat()
+
+    # Define basic elements
+    LPAR, RPAR, COMMA, COLON = map(Suppress, "(),:")
+    double = Regex(r"[+-]?\d+\.?\d*").set_parse_action(lambda t: float(t[0]))
+    literal = QuotedString('"')
+    text_field = Word(alphanums + "_")
+    numerical_field = Word(alphanums + "_")
+    comparison = oneOf("< <= >= > =")
+    bound_type = oneOf("e i")
+
+    # Define lower and upper bounds
+    lower_bound = (double + pyparsing.Optional(bound_type)) | oneOf("*")
+    upper_bound = (double + pyparsing.Optional(bound_type)) | oneOf("*")
+
+    # Define expressions
+    simple_text_expr = (
+        text_field
+        + COLON
+        + Literal("ANY")
+        + LPAR
+        + delimitedList(literal, delim=COMMA)
+        + RPAR
+    )
+    simple_numerical_expr = (
+        numerical_field
+        + COLON
+        + Literal("IN")
+        + LPAR
+        + lower_bound
+        + COMMA
+        + upper_bound
+        + RPAR
+    ) | (numerical_field + comparison + double)
+
+    expression = Forward()
+    expression <<= (
+        pyparsing.Optional(oneOf("- NOT"))
+        + (simple_text_expr | simple_numerical_expr | \
+          (LPAR + expression + RPAR))
+    )
+
+    # Define the full filter with AND/OR combinations
+    filter_expr = expression + ZeroOrMore((oneOf("AND OR") + expression))
+
+    # parse expression
+    parsed_expr = filter_expr.parse_string(filter_str, parse_all=True)
+
+    return parsed_expr
+
 
 class MatchingEngineVectorStore(VectorStore):
   """
@@ -152,7 +224,8 @@ class MatchingEngineVectorStore(VectorStore):
     return VECTOR_STORE_MATCHING_ENGINE
 
   async def index_document(self, doc_name: str, text_chunks: List[str],
-                           index_base: int) -> int:
+                           index_base: int,
+                           metadata: List[dict] = None) -> int:
     """
     Generate matching engine index data files in a local directory.
     Args:
@@ -293,7 +366,8 @@ class MatchingEngineVectorStore(VectorStore):
       Logger.error(f"Error creating ME index or endpoint {e}")
 
   def similarity_search(self, q_engine: QueryEngine,
-                        query_embedding: List[float]) -> List[int]:
+                        query_embedding: List[float],
+                        query_filter: Optional[str] = None) -> List[int]:
     """
     Retrieve text matches for query embeddings.
     Args:
@@ -338,7 +412,8 @@ class LangChainVectorStore(VectorStore):
     return lc_vectorstore
 
   async def index_document(self, doc_name: str, text_chunks: List[str],
-                           index_base: int) -> int:
+                           index_base: int,
+                           metadata: List[dict] = None) -> int:
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(text_chunks)))
 
@@ -355,20 +430,34 @@ class LangChainVectorStore(VectorStore):
     # add embeddings to vector store
     self.lc_vector_store.add_embeddings(texts=text_chunks,
                                         embeddings=chunk_embeddings,
-                                        ids=ids)
+                                        ids=ids,
+                                        metadatas=metadata)
     # return new index base
     new_index_base = index_base + len(text_chunks)
     self.index_length = new_index_base
     return new_index_base
 
   def similarity_search(self, q_engine: QueryEngine,
-                       query_embedding: List[float]) -> List[int]:
+                       query_embedding: List[float],
+                       query_filter: Optional[str] = None) -> List[int]:
+    parsed_filter = self.parse_filter(query_filter)
+    langchain_filter = self.translate_filter(parsed_filter)
     results = self.lc_vector_store.similarity_search_with_score_by_vector(
         embedding=query_embedding,
-        k=NUM_MATCH_RESULTS
+        k=NUM_MATCH_RESULTS,
+        filter=langchain_filter
     )
     processed_results = self.process_results(results)
     return processed_results
+
+  def parse_filter(self, filter_str: str) -> Union[ParseResults, dict]:
+    """
+    Parse a filter for a langchain vector store.
+    For now assume this is a string specifying a json dict
+    {"key":""}
+    """
+    filter_dict = json.loads(filter_str)
+    return filter_dict
 
   def process_results(self, results: List[Any]) -> List[int]:
     """
@@ -383,6 +472,43 @@ class LangChainVectorStore(VectorStore):
   def deploy(self):
     """ Create matching engine index and endpoint """
     pass
+
+  def translate_filter(self,
+                       parsed_filter: Union[str, dict, ParseResults]) -> dict:
+    """
+    Converts a parsed filter expression into a dictionary representation
+    of the filter compatible with langchain vector store filters.
+    """
+    if isinstance(parsed_filter, dict):
+      return parsed_filter
+
+    if isinstance(parsed_filter, str):
+      # Handle single field name (no operator/value)
+      return {parsed_filter: {}}
+
+    if isinstance(parsed_filter, list) and len(parsed_filter) == 2:
+      # Handle numerical comparisons
+      field_name, (operator, value) = parsed_filter
+      return {field_name: {operator.upper(): value}}
+
+    if isinstance(parsed_filter, list) and len(parsed_filter) == 4:
+      # Handle "ANY" filter
+      field_name, _, _, literals = parsed_filter
+      return {field_name: {"IN": list(literals)}}
+
+    if isinstance(parsed_filter, list) and len(parsed_filter) == 6:
+      # Handle "IN" filter
+      field_name, _, _, lower, _, upper = parsed_filter
+      return {field_name: {"BETWEEN": [lower, upper]}}
+
+    if isinstance(parsed_filter, list) and len(parsed_filter) > 2:
+      # Handle "AND" or "OR" combinations
+      operator = parsed_filter[1]
+      clauses = [self.translate_filter(expr) for expr in parsed_filter[0::2]]
+      return {operator.upper(): clauses}
+
+    return {}
+
 
 class LLMServicePGVector(LangchainPGVector):
   """

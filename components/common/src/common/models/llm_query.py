@@ -72,7 +72,8 @@ class UserQuery(BaseModel):
 
   def update_history(self, prompt: str=None,
                      response: str=None,
-                     references: List[dict]=None):
+                     references: List[dict]=None,
+                     custom_entry=None):
     """ Update history with query and response """
     if not self.history:
       self.history = []
@@ -85,6 +86,9 @@ class UserQuery(BaseModel):
 
     if references:
       self.history.append({QUERY_AI_REFERENCES: references})
+
+    if custom_entry:
+      self.history.append(custom_entry)
 
     self.save(merge=True)
 
@@ -120,6 +124,7 @@ class QueryEngine(BaseModel):
   doc_url = TextField(required=False)
   agents = ListField(required=False)
   parent_engine_id = TextField(required=False)
+  manifest_url = TextField(required=False)
   params = MapField(default={})
 
   class Meta:
@@ -255,6 +260,7 @@ class QueryDocument(BaseModel):
   index_file = TextField(required=False)
   index_start = NumberField(required=False)
   index_end = NumberField(required=False)
+  metadata = MapField(required=False)
 
   class Meta:
     ignore_none_field = False

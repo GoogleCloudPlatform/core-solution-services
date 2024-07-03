@@ -20,7 +20,7 @@
 from copy import deepcopy
 from pathlib import Path
 import pytest
-from typing import List
+from typing import List, Optional
 from unittest import mock
 from schemas.schema_examples import (QUERY_EXAMPLE,
                                      USER_QUERY_EXAMPLE,
@@ -160,12 +160,14 @@ class FakeVectorStore(VectorStore):
   def init_index(self):
     pass
   async def index_document(self, doc_name: str, text_chunks: List[str],
-                           index_base: int) -> int:
+                           index_base: int,
+                           metadata: List[dict] = None) -> int:
     return 0
   def deploy(self):
     pass
   def similarity_search(self, q_engine: QueryEngine,
-                        query_embedding: List[float]) -> List[int]:
+                        query_embedding: List[float],
+                        query_filter: Optional[str]) -> List[int]:
     return [0,1,2]
 
 class FakeDataSource(DataSource):

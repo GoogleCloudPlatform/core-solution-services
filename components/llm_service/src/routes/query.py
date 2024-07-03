@@ -555,6 +555,9 @@ async def query(query_engine_id: str,
   rank_sentences = genconfig_dict.get("rank_sentences", False)
   Logger.info(f"rank_sentences = {rank_sentences}")
 
+  query_filter = genconfig_dict.get("query_filter")
+  Logger.info(f"query_filter = {query_filter}")
+
   user = User.find_by_email(user_data.get("email"))
 
   run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
@@ -578,7 +581,8 @@ async def query(query_engine_id: str,
         "llm_type": llm_type,
         "user_id": user.id,
         "user_query_id": user_query.id,
-        "rank_sentences": rank_sentences
+        "rank_sentences": rank_sentences,
+        "query_filter": query_filter
       }
       env_vars = {
         "DATABASE_PREFIX": DATABASE_PREFIX,
@@ -607,7 +611,9 @@ async def query(query_engine_id: str,
   # perform normal synchronous query
   try:
     query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type, user_query, rank_sentences)
+          user.id, prompt, q_engine, llm_type, user_query, rank_sentences,
+          query_filter)
+
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
 
@@ -617,7 +623,8 @@ async def query(query_engine_id: str,
                           query_result.response,
                           user.id,
                           q_engine,
-                          query_references, None)
+                          query_references, None,
+                          query_filter)
 
     return {
         "success": True,
@@ -726,7 +733,7 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
                           query_result.response,
                           user_query.user_id,
                           q_engine,
-                          query_references, None)
+                          query_references)
 
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "
