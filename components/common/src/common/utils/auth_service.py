@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable = consider-using-f-string
+# pylint: disable = consider-using-f-string,logging-fstring-interpolation
 
 """Firebase token validation"""
 import json
