@@ -41,7 +41,7 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     "/chat_types",
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
-def get_chat_llm_list(user_data: dict = Depends(validate_token)):
+def get_chat_llm_list():
   """
   Get available Chat LLMs
 
