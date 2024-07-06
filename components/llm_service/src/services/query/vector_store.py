@@ -373,9 +373,11 @@ class MatchingEngineVectorStore(VectorStore):
     Args:
       q_engine: QueryEngine model
       query_embedding: single embedding array for query
+      query_filter: (optional) filter expression
     Returns:
       list of indexes that are matched of length NUM_MATCH_RESULTS
     """
+    # TODO: implement query filters for matching engine
     index_endpoint = aiplatform.MatchingEngineIndexEndpoint(q_engine.endpoint)
 
     match_indexes_list = index_endpoint.find_neighbors(
@@ -440,6 +442,16 @@ class LangChainVectorStore(VectorStore):
   def similarity_search(self, q_engine: QueryEngine,
                        query_embedding: List[float],
                        query_filter: Optional[str] = None) -> List[int]:
+    """
+    Retrieve text matches for query embeddings from a langchain
+    vector store.
+    Args:
+      q_engine: QueryEngine model
+      query_embedding: single embedding array for query
+      query_filter: (optional) filter expression
+    Returns:
+      list of indexes that are matched of length NUM_MATCH_RESULTS
+    """
     langchain_filter = None
     if query_filter:
       parsed_filter = self.parse_filter(query_filter)
