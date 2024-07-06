@@ -171,11 +171,15 @@ def create_authz_filter(user_data):
 
   # get roles
   roles = None
-  if user.custom_claims:
-    if "roles" in user.custom_claims:
-      roles = user.custom_claims["roles"]
-      Logger.info(f"roles: {roles} from user.custom_claims")
+  if user.custom_claims and "roles" in user.custom_claims:
+    roles = user.custom_claims["roles"]
+    Logger.info(f"roles: {roles} from user.custom_claims")
 
   Logger.info(f"firebase ID token for {user_data['user_id']} has roles {roles}")
   # TODO: change this later to accomodate more than one
-  return { "contains": roles[0] }
+  if roles:
+    authz_filter = { "contains": roles[0] }
+  else:
+    authz_filter = None
+
+  return authz_filter

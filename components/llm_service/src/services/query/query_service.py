@@ -122,6 +122,7 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
+  # process query filter and RBAC roles for user
   authz_filter = create_authz_filter(user_data)
   Logger.info(f"query_generate authz_filter = {authz_filter}")
 
@@ -130,7 +131,11 @@ async def query_generate(
   else:
     query_filter = {}
 
-  query_filter["authz"] = authz_filter
+  if authz_filter:
+    query_filter["authz"] = authz_filter
+
+  if not query_filter:
+    query_filter = None
   Logger.info(f"query_generate query filter = {query_filter}")
 
   # determine question generation model
