@@ -42,7 +42,7 @@ LLM_MULTI_EMBEDDINGS_EXAMPLE = {
 QUERY_EXAMPLE = {
   "prompt": "test prompt",
   "llm_type": "VertexAI-Chat",
-  "query_filter": "{'Title':'Document Title'}"
+  "query_filter": "{\"Title\":\"Document Title\"}"
 }
 
 USER_QUERY_EXAMPLE = {

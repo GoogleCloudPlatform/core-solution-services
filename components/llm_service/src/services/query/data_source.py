@@ -26,7 +26,7 @@ from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.models import QueryEngine
-from config import PROJECT_ID
+from config import PROJECT_ID, get_default_manifest
 from pypdf import PdfReader, PdfWriter, PageObject
 from pdf2image import convert_from_path
 from langchain_community.document_loaders import CSVLoader
@@ -127,7 +127,7 @@ class DataSource:
 
     return doc_filepaths
 
-  def init_metadata(self, q_engine):
+  def init_metadata(self, q_engine: QueryEngine) -> dict:
     """ 
     Load metadata from manifest, if it is defined in the query engine
     
@@ -137,10 +137,14 @@ class DataSource:
           "attr": "value"
         }
        "doc2_url": {
+          ...
         }
       }
+    Args:
+        q_engine: query engine
     Returns:
-      a dict representation of the manifest
+      A dict representation of the manifest. If there is no manifest available
+      returns empty dict.
     """
     manifest_url = q_engine.manifest_url
     manifest_spec = {}
@@ -150,11 +154,16 @@ class DataSource:
       # download manifest from gs:// bucket
       blob = get_blob_from_gcs_path(manifest_url)
       manifest_spec = json.loads(blob.download_as_string())
-
+      Logger.info(f"loaded document manifest from {manifest_url}")
+    else:
+      default_manifest = get_default_manifest()
+      if default_manifest:
+        manifest_spec = default_manifest
+        Logger.info("using default manifest")
     return manifest_spec
 
   def chunk_document(self, doc_name: str, doc_url: str,
-                     doc_filepath: str) -> List[str]:
+                     doc_filepath: str):
     """
     Process doc into chunks for embeddings
 
@@ -166,6 +175,7 @@ class DataSource:
        list of text chunks or None if the document could not be processed
     """
 
+    embed_chunks = None
     text_chunks = None
 
     Logger.info(f"generating index data for {doc_name}")
@@ -192,19 +202,19 @@ class DataSource:
       doc = Document(text=doc_text)
       # a node = a chunk of a page
       chunks = self.doc_parser.get_nodes_from_documents([doc])
+      # remove any empty chunks
+      chunks = [c for c in chunks if c.metadata["text"].strip() != ""]
       # this is a sentence parser with overlap --
       # each text chunk will include the specified
       # number of sentences before and after the current sentence
+      embed_chunks = [c.metadata["text"] for c in chunks]
       text_chunks = [c.metadata["window_text"] for c in chunks]
 
       if all(element == "" for element in text_chunks):
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
         self.docs_not_processed.append(doc_url)
 
-      # clean up text_chunks with empty items.
-      text_chunks = [x for x in text_chunks if x.strip() != ""]
-
-    return text_chunks
+    return text_chunks, embed_chunks
 
   def chunk_document_multi(self, doc_name: str, doc_url: str,
                      doc_filepath: str) -> List[str]:

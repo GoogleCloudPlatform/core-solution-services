@@ -13,13 +13,18 @@
 # limitations under the License.
 """ Sign In endpoints """
 import requests
+import base64
+import json
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from requests.exceptions import ConnectTimeout
+from firebase_admin.auth import verify_id_token, get_user, set_custom_user_claims
 from common.utils.user_handler import get_user_by_email, create_user_in_firestore
 from common.utils.logging_handler import Logger
 from common.utils.sessions import create_session
-from common.utils.errors import (InvalidTokenError, InvalidCredentialsError)
+from common.utils.errors import (InvalidTokenError,
+                                 UnauthorizedUserError,
+                                 InvalidCredentialsError)
 from common.utils.http_exceptions import (InternalServerError,
                                           Unauthenticated,
                                           ConnectionTimeout,
@@ -29,6 +34,7 @@ from schemas.sign_in_schema import (SignInWithCredentialsModel,
                                     SignInWithTokenResponseModel)
 from services.validation_service import validate_google_oauth_token
 from config import (AUTH_REQUIRE_FIRESTORE_USER,
+                    AUTH_RBAC_DEFAULT_ROLE_SET,
                     FIREBASE_API_KEY,
                     IDP_URL,
                     ERROR_RESPONSES)
@@ -44,11 +50,63 @@ router = APIRouter(
     tags=["Sign In"], prefix="/sign-in", responses=ERROR_RESPONSES)
 
 
+@router.post("/roles")
+def save_roles_from_auth_provider_token(
+  provider_id_token: str, token: auth_scheme = Depends()):
+  """This endpoint will take the Firebase id token as an Authorization header
+  and the oAuth provider id token and transfer role claims from the auth
+  provider to the Firebase user.
+  """
+  try:
+    # validate the Firebase token - throws an error if not valid
+    token_dict = dict(token)
+    result = verify_id_token(token_dict["credentials"])
+    # get the Firebase user
+    user_id = result["user_id"]
+
+    # assume default roles
+    roles = AUTH_RBAC_DEFAULT_ROLE_SET
+
+    if provider_id_token is not None:
+      # decode the auth provider id token to retrieve the roles
+      payload = provider_id_token.split(".")[1]
+      # do not know why I need this for some tokens, only sometimes
+      # https://stackoverflow.com/questions/2941995/python-ignore-incorrect-padding-error-when-base64-decoding
+      decoded_payload = base64.b64decode(payload + "==")
+      decoded_token = json.loads(decoded_payload.decode())
+      # check for roles defined by the auth provider
+      if "roles" in decoded_token:
+        roles = decoded_token["roles"]
+        Logger.info(f"Auth provider-defined roles: {roles}")
+
+    user = get_user(user_id)
+    if user.custom_claims:
+      Logger.info("Current Firebase custom claims: {user.custom_claims}")
+
+    # update firebase user with roles defined by auth provider
+    set_custom_user_claims(user_id, { "roles": roles })
+
+    # check that fierbase auth user has the new roles
+    user = get_user(user_id)
+    Logger.info("New firebase custom claims: {user.custom_claims}")
+
+    return {
+      "success": True,
+      "message":
+        f"Successfully retreieved roles from auth provider for {user_id}"
+    }
+
+  except (InvalidTokenError, UnauthorizedUserError) as e:
+    raise Unauthenticated(str(e)) from e
+  except Exception as e:
+    raise InternalServerError(str(e)) from e
+
+
 @router.post("/token", response_model=SignInWithTokenResponseModel)
 def sign_in_with_token(token: auth_scheme = Depends()):
   """This endpoint will take the Google oauth token as an Authorization header
   and returns the firebase id_token and refresh token.
-  
+
   If the user does not exist in the user store a user model will be created.
   """
 
@@ -110,7 +168,7 @@ def sign_in_with_token(token: auth_scheme = Depends()):
 def sign_in_with_credentials(credentials: SignInWithCredentialsModel):
   """This endpoint will take the user email and password as an input
   and returns an id token and refresh token from the IDP.
-  
+
   If the user does not exist in the user store a user model will be created.
   """
   try:

@@ -18,6 +18,7 @@ from copy import deepcopy
 import tempfile
 import traceback
 import os
+import json
 from numpy.linalg import norm
 import numpy as np
 import pandas as pd
@@ -33,6 +34,7 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QE_TYPE_LLM_SERVICE,
                                      QE_TYPE_INTEGRATED_SEARCH,
                                      QUERY_AI_RESPONSE)
+from common.utils.auth_service import create_authz_filter
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -79,10 +81,12 @@ MIN_QUERY_REFERENCES = 2
 # total number of references to return from integrated search
 NUM_INTEGRATED_QUERY_REFERENCES = 6
 
+
 async def query_generate(
             user_id: str,
             prompt: str,
             q_engine: QueryEngine,
+            user_data: Optional[dict] = None,
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
             rank_sentences=False,
@@ -100,6 +104,7 @@ async def query_generate(
     user_id: user id of user making query
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
+    user_data (optional): dict of user data from auth token
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
     rank_sentences: (optional): rank sentences in retrieved chunks
@@ -118,6 +123,22 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
+  # process query filter and RBAC roles for user
+  authz_filter = create_authz_filter(user_data)
+  Logger.info(f"query_generate authz_filter = {authz_filter}")
+
+  if query_filter is not None:
+    query_filter = json.loads(query_filter)
+  else:
+    query_filter = {}
+
+  if authz_filter:
+    query_filter.update(authz_filter)
+
+  if not query_filter:
+    query_filter = None
+  Logger.info(f"query_generate query filter = {query_filter}")
+
   # determine question generation model
   if llm_type is None:
     if q_engine.llm_type is not None:
@@ -126,8 +147,11 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = await retrieve_references(prompt, q_engine, user_id,
-                                               rank_sentences, query_filter)
+  query_references = await retrieve_references(prompt,
+                                               q_engine,
+                                               user_id,
+                                               rank_sentences,
+                                               query_filter)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -253,7 +277,7 @@ async def retrieve_references(prompt: str,
                               q_engine: QueryEngine,
                               user_id: str,
                               rank_sentences: bool = False,
-                              query_filter: str = None)-> List[QueryReference]:
+                              query_filter: dict = None)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -267,6 +291,7 @@ async def retrieve_references(prompt: str,
   """
   # perform retrieval for prompt
   query_references = []
+
   if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
     query_references = \
          await query_vertex_search(q_engine, prompt,
@@ -290,7 +315,7 @@ async def retrieve_references(prompt: str,
 async def query_search(q_engine: QueryEngine,
                        query_prompt: str,
                        rank_sentences: bool = False,
-                       query_filter: str = None) -> List[QueryReference]:
+                       query_filter: dict = None) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -776,9 +801,10 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       Logger.info(f"processing [{doc_name}]")
 
-      text_chunks = data_source.chunk_document(doc_name,
-                                               index_doc_url,
-                                               doc_filepath)
+      text_chunks, embed_chunks = data_source.chunk_document(
+        doc_name,
+        index_doc_url,
+        doc_filepath)
 
       if text_chunks is None or len(text_chunks) == 0:
         # unable to process this doc; skip
@@ -795,7 +821,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           metadata_list = [deepcopy(metadata) for chunk in text_chunks]
         new_index_base = \
             await qe_vector_store.index_document(doc_name,
-                                                 text_chunks, index_base,
+                                                 embed_chunks, index_base,
                                                  metadata_list)
       except Exception as e:
         # unable to process this doc; skip
@@ -803,7 +829,9 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         data_source.docs_not_processed.append(index_doc_url)
         continue
 
-      Logger.info(f"doc successfully indexed [{doc_name}]")
+      Logger.info(
+        f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"
+      )
 
       # cleanup temp local file
       os.remove(doc_filepath)
@@ -814,7 +842,8 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                 doc_url=index_doc_url,
                                 index_file=data_source_file.doc_id,
                                 index_start=index_base,
-                                index_end=new_index_base)
+                                index_end=new_index_base,
+                                metadata=metadata)
       query_doc.save()
 
       for i in range(0, len(text_chunks)):

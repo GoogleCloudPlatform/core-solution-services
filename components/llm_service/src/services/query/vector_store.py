@@ -123,7 +123,7 @@ class VectorStore(ABC):
     """
     Parse filter expressions in the Vertex Search format:
       https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata#filter-expression-syntax
-    
+
     Returns:
       A pyparsing ParseResults object
     """
@@ -373,9 +373,11 @@ class MatchingEngineVectorStore(VectorStore):
     Args:
       q_engine: QueryEngine model
       query_embedding: single embedding array for query
+      query_filter: (optional) filter expression
     Returns:
       list of indexes that are matched of length NUM_MATCH_RESULTS
     """
+    # TODO: implement query filters for matching engine
     index_endpoint = aiplatform.MatchingEngineIndexEndpoint(q_engine.endpoint)
 
     match_indexes_list = index_endpoint.find_neighbors(
@@ -440,8 +442,21 @@ class LangChainVectorStore(VectorStore):
   def similarity_search(self, q_engine: QueryEngine,
                        query_embedding: List[float],
                        query_filter: Optional[str] = None) -> List[int]:
-    parsed_filter = self.parse_filter(query_filter)
-    langchain_filter = self.translate_filter(parsed_filter)
+    """
+    Retrieve text matches for query embeddings from a langchain
+    vector store.
+    Args:
+      q_engine: QueryEngine model
+      query_embedding: single embedding array for query
+      query_filter: (optional) filter expression
+    Returns:
+      list of indexes that are matched of length NUM_MATCH_RESULTS
+    """
+    langchain_filter = None
+    if query_filter:
+      parsed_filter = self.parse_filter(query_filter)
+      langchain_filter = self.translate_filter(parsed_filter)
+
     results = self.lc_vector_store.similarity_search_with_score_by_vector(
         embedding=query_embedding,
         k=NUM_MATCH_RESULTS,
@@ -454,9 +469,12 @@ class LangChainVectorStore(VectorStore):
     """
     Parse a filter for a langchain vector store.
     For now assume this is a string specifying a json dict
-    {"key":""}
+    {"key":{"$op": "value"}}
     """
-    filter_dict = json.loads(filter_str)
+    if filter_str is not None:
+      filter_dict = json.loads(filter_str)
+    else:
+      filter_dict = None
     return filter_dict
 
   def process_results(self, results: List[Any]) -> List[int]:
@@ -507,7 +525,7 @@ class LangChainVectorStore(VectorStore):
       clauses = [self.translate_filter(expr) for expr in parsed_filter[0::2]]
       return {operator.upper(): clauses}
 
-    return {}
+    return None
 
 
 class LLMServicePGVector(LangchainPGVector):

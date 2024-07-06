@@ -187,7 +187,7 @@ class FakeDataSource(DataSource):
       chunk_list = QUERY_DOCUMENT_CHUNK_EXAMPLE_2["text"]
     else:
       chunk_list = None
-    return chunk_list
+    return chunk_list, chunk_list
 
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.llm_chat")
