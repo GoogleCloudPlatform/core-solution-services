@@ -86,7 +86,7 @@ async def query_generate(
             user_id: str,
             prompt: str,
             q_engine: QueryEngine,
-            user_data: dict,
+            user_data: Optional[dict] = None,
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
             rank_sentences=False,
@@ -104,6 +104,7 @@ async def query_generate(
     user_id: user id of user making query
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
+    user_data (optional): dict of user data from auth token
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
     rank_sentences: (optional): rank sentences in retrieved chunks
@@ -132,7 +133,7 @@ async def query_generate(
     query_filter = {}
 
   if authz_filter:
-    query_filter["authz"] = authz_filter
+    query_filter.update(authz_filter)
 
   if not query_filter:
     query_filter = None

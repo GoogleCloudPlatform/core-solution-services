@@ -163,23 +163,36 @@ def user_verification(token: str) -> json:
 
   return response
 
-def create_authz_filter(user_data):
-  # get firebase user
-  Logger.info(f"user_data: {user_data}")
-  user = get_user(user_data["user_id"])
-  Logger.info(f"user: {user}")
+def create_authz_filter(user_data: dict):
+  """
+  Create authorization filter based on roles in user data.
+  
+  Args:
+    user_data: dict of user data from auth token
+  
+  Returns:
+    dict containing authorization filter
+  """
+  authz_filter = None
 
-  # get roles
-  roles = None
-  if user.custom_claims and "roles" in user.custom_claims:
-    roles = user.custom_claims["roles"]
-    Logger.info(f"roles: {roles} from user.custom_claims")
+  if user_data:
+    # get firebase user
+    Logger.info(f"user_data: {user_data}")
+    user = get_user(user_data["user_id"])
+    Logger.info(f"user: {user}")
 
-  Logger.info(f"firebase ID token for {user_data['user_id']} has roles {roles}")
-  # TODO: change this later to accomodate more than one
-  if roles:
-    authz_filter = { "contains": roles[0] }
-  else:
-    authz_filter = None
+    # get roles
+    roles = None
+    if user.custom_claims and "roles" in user.custom_claims:
+      roles = user.custom_claims["roles"]
+      Logger.info(f"roles: {roles} from user.custom_claims")
+
+    Logger.info(
+        f"firebase ID token for {user_data['user_id']} has roles {roles}")
+    # TODO: change this later to accomodate more than one
+    if roles:
+      authz_filter = {"authz": {"contains": roles[0]}}
+    else:
+      authz_filter = None
 
   return authz_filter
