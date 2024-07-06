@@ -21,7 +21,7 @@ import tempfile
 from urllib.parse import unquote
 from copy import copy
 from base64 import b64encode
-from typing import List
+from typing import List, Tuple
 from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.utils.gcs_adapter import get_blob_from_gcs_path
@@ -163,7 +163,7 @@ class DataSource:
     return manifest_spec
 
   def chunk_document(self, doc_name: str, doc_url: str,
-                     doc_filepath: str):
+                     doc_filepath: str) -> Tuple[list[str], list[str]]:
     """
     Process doc into chunks for embeddings
 
@@ -172,7 +172,9 @@ class DataSource:
        doc_url: remote url of document
        doc_filepath: local file path of document
     Returns:
-       list of text chunks or None if the document could not be processed
+       tuple of 
+          list of text chunks or None if the document could not be processed
+          list of embedding chunks or None
     """
 
     embed_chunks = None
@@ -213,6 +215,8 @@ class DataSource:
       if all(element == "" for element in text_chunks):
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
         self.docs_not_processed.append(doc_url)
+      else:
+        Logger.info(f"generated {len(text_chunks)} text chunks for {doc_name}")
 
     return text_chunks, embed_chunks
 
