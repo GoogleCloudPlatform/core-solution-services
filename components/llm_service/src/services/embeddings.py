@@ -40,7 +40,10 @@ from langchain.schema.embeddings import Embeddings
 # https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
 # if region is us-central1 items per request is 250, in other regions it is 5
 if REGION == "us-central1":
-  ITEMS_PER_REQUEST = 250
+  # Limit to 50, even though the max is 250. There is an undocumented
+  # token limit across all chunks of 20000, and with 250 chunks we often
+  # exceeded the 20K limit.
+  ITEMS_PER_REQUEST = 50
 else:
   ITEMS_PER_REQUEST = 5
 
