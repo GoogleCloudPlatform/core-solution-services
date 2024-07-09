@@ -180,7 +180,7 @@ class DataSource:
     return text_chunks
 
   def chunk_document_multi(self, doc_name: str, doc_url: str,
-                     doc_filepath: str) -> List[str]:
+                     doc_filepath: str) -> List[object]:
     """
     Process a pdf document into multimodal chunks (b64 and text) for embeddings
 
