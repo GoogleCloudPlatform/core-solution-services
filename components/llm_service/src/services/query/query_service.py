@@ -855,7 +855,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       Logger.info(f"processing [{doc_name}]")
 
       if is_multimodal:
-        Logger.info(f"From process_documents: index_doc_url={index_doc_url} #SC240702")
+        Logger.info(f"From process_documents, about to call chunk_document_multi for {doc_name=} #SC240702")
         doc_chunks = data_source.chunk_document_multi(doc_name,
                                                       index_doc_url,
                                                       doc_filepath)
@@ -872,7 +872,12 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       Logger.info(f"doc chunks extracted for [{doc_name}]")
 
       # generate embedding data and store in vector store
-      new_index_base = \
+      if is_multimodal: #SC240709
+        Logger.info(f"From process documents, about to call index_document_multi for {doc_name=} #SC240702")
+        new_index_base = \
+          await qe_vector_store.index_document_multi(doc_name, doc_chunks, index_base)
+      else:
+        new_index_base = \
           await qe_vector_store.index_document(doc_name, doc_chunks, index_base)
 
       Logger.info(f"doc successfully indexed [{doc_name}]")
