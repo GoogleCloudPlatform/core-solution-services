@@ -17,6 +17,7 @@ Query Vector Store
 # pylint: disable=broad-exception-caught,ungrouped-imports
 
 from abc import ABC, abstractmethod
+from base64 import b64decode
 import json
 import gc
 import os
@@ -25,7 +26,7 @@ import shutil
 import tempfile
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Optional
 from google.cloud import aiplatform, storage
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
@@ -337,15 +338,66 @@ class LangChainVectorStore(VectorStore):
           f"vector store {self.q_engine.vector_store} not found in config")
     return lc_vectorstore
 
-  async def index_document(self, doc_name: str, text_chunks: List[str],
+  async def index_document_multi(self,
+                                 doc_name: str,
+                                 doc_chunks: List[object],
+                                 index_base: int) -> \
+                                  int: #SC240709
+    Logger.info(f"  Just entered index_document_multi for {doc_name=} #SC240709")
+
+    # generate list of chunk IDs starting from index base
+    ids = list(range(index_base, index_base + len(doc_chunks)))
+
+    # Convert multimodal chunks to embeddings
+    # Note that multimodal embedding model can only embed one chunk
+    # at a time. As opposed to the text-only embedding model, which
+    # can embed an array of multiple chunks at the same time.
+    text_chunks = []
+    chunk_embeddings = []
+    i = 1 #SC240709
+    # Loop over chunks
+    for doc in doc_chunks:
+        # Get text embedding and image embedding from a single chunk
+        # and put in dict
+        Logger.info(f"    About to call get_multi_embeddings for chunk {i=} of {doc_name=} #SC240709")
+        chunk_embedding = await embeddings.get_multi_embeddings(
+          doc.text_chunks,
+          b64decode(doc.image_64),
+          self.embedding_type, 
+        )
+        # Append this chunk's text to the text_chunks array
+        text_chunks.append(doc.text_chunks)
+        # Append this chunk's image embedding to the chunk_embeddings array
+        chunk_embeddings.append(chunk_embedding["image_embeddings"])
+
+        i+=1 #SC240709
+
+    # check for success
+    if len(chunk_embeddings) == 0:
+      raise RuntimeError(f"failed to generate embeddings for {doc_name}")
+
+    # add image embeddings to vector store
+    self.lc_vector_store.add_embeddings(texts=text_chunks,
+                                        embeddings=chunk_embeddings,
+                                        ids=ids)
+    # return new index base
+    new_index_base = index_base + len(text_chunks)
+    self.index_length = new_index_base
+    Logger.info(f"  About to return from index_document_multi for {doc_name=} #SC240709")
+
+    return new_index_base
+
+  async def index_document(self,
+                           doc_name: str,
+                           text_chunks: List[str],
                            index_base: int) -> int:
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(text_chunks)))
 
     # Convert chunks to embeddings
     is_successful, chunk_embeddings = await embeddings.get_embeddings(
-        text_chunks,
-        self.embedding_type
+      text_chunks,
+      self.embedding_type
     )
 
     # check for success
