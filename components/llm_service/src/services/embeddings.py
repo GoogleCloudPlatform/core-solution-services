@@ -47,8 +47,9 @@ else:
 Logger = Logger.get_logger(__file__)
 
 async def get_embeddings(
-    text_chunks: List[str], embedding_type: str = None) -> (
-    Tuple)[List[bool], np.ndarray]:
+    text_chunks: List[str],
+    embedding_type: str = None) -> \
+      (Tuple)[List[bool], np.ndarray]:
   """
   Get embeddings for a list of text strings.
 
@@ -71,27 +72,32 @@ async def get_embeddings(
   return is_successful, embeddings
 
 async def get_multi_embeddings(
-    user_text: List[str], user_file_bytes: str,
-    embedding_type: str = None) -> (dict):
+    user_text: List[str],
+    user_file_bytes: str,
+    embedding_type: str = None) -> \
+      (dict):
   """
   Get multimodal embeddings for a string and image or video file
 
   Args:
     user_text: text context to generate embeddings for
-    embedding_type: embedding model id
     user_file_bytes: the bytes of the file provided by the user
+    embedding_type: embedding model id
   Returns:
     dictionary of embedding vectors for both text and image
   """
+  Logger.info(f"      Just entered get_multi_embeddings #SC240709")
+  
   if embedding_type is None or embedding_type == "":
     embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
 
-  Logger.info(f"generating multimodal embeddings with {embedding_type}")
-
+  #Logger.info(f"generating multimodal embeddings with {embedding_type}") #SC240709
+  Logger.info(f"      About to call generate_multi_embeddings with {embedding_type=} #SC240709")
   embeddings = await generate_multi_embeddings(
       user_text, embedding_type,
       user_file_bytes)
 
+  Logger.info(f"      About to return from get_multi_embeddings #SC240709")
   return embeddings
 
 async def _generate_embeddings_batched(embedding_type,
@@ -104,6 +110,7 @@ async def _generate_embeddings_batched(embedding_type,
   loop = asyncio.get_running_loop()
   with ThreadPoolExecutor() as pool:
     futures = []
+    Logger.info(f"{embedding_type=} #SC240709")
     for batch in batches:
       futures.append(
         loop.run_in_executor(
@@ -135,8 +142,9 @@ def _generate_batches(text_chunks: List[str],
   for i in range(0, len(text_chunks), batch_size):
     yield text_chunks[i: i + batch_size]
 
-def generate_embeddings(batch: List[str], embedding_type: str) -> \
-    List[Optional[List[float]]]:
+def generate_embeddings(batch: List[str],
+                        embedding_type: str) -> \
+                          List[Optional[List[float]]]:
   """
   Generate embeddings for a list of strings
   Args:
@@ -158,8 +166,10 @@ def generate_embeddings(batch: List[str], embedding_type: str) -> \
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
   return embeddings
 
-async def generate_multi_embeddings(user_text: str, embedding_type: str,
-          user_file_bytes: bytes) -> (dict):
+async def generate_multi_embeddings(user_text: str,
+                                    embedding_type: str,
+                                    user_file_bytes: bytes) -> \
+                                      (dict):
   """
   Generate embeddings for a list of strings
   Args:
@@ -170,13 +180,16 @@ async def generate_multi_embeddings(user_text: str, embedding_type: str,
     dictionary of embedding vectors for both text and image
   """
 
-  Logger.info(f"generating embeddings for embedding type {embedding_type}")
+  #Logger.info(f"generating embeddings for embedding type {embedding_type}") #SC240709
+  Logger.info(f"        Just entered generate_multi_embeddings #SC240709")
 
   if embedding_type in get_provider_embedding_types(PROVIDER_VERTEX):
+    Logger.info(f"          About to call get_vertex_multi_embeddings with {embedding_type=} #SC240709")
     embeddings = await get_vertex_multi_embeddings(embedding_type, user_text,
                                                    user_file_bytes)
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
+  Logger.info(f"        About to return from generate_multi_embeddings #SC240709")
   return embeddings
 
 def get_vertex_embeddings(embedding_type: str,
@@ -229,14 +242,17 @@ async def get_vertex_multi_embeddings(embedding_type: str,
   Returns:
     dictionary of embedding vectors for both text and image
   """
+  Logger.info(f"            Just entered get_vertex_multi_embeddings #SC240709")
   google_llm = get_model_config().get_provider_value(
       PROVIDER_VERTEX, KEY_MODEL_NAME, embedding_type)
+  Logger.info(f"              From get_vertex_multi_embeddings: {google_llm=} #SC240709")
   if google_llm is None:
     raise RuntimeError(
         f"Vertex model name not found for embedding type {embedding_type}")
 
   def _async_vertex_multi_embeddings():
     try:
+      Logger.info(f"                  Just entered try of _async_vertex_multi_embedding #SC240709")
       user_file_image = Image(image_bytes=user_file_bytes)
       vertex_model = MultiModalEmbeddingModel.from_pretrained(
         google_llm)
@@ -249,13 +265,16 @@ async def get_vertex_multi_embeddings(embedding_type: str,
       return_value["text_embeddings"] = embeddings.text_embedding
       return_value["image_embeddings"] = embeddings.image_embedding
 
+      Logger.info(f"                  About to return from try of _async_vertex_multi_embedding #Sc240709")
       return return_value
     except Exception as e:
       Logger.error(f"error generating Vertex embeddings {str(e)}")
       raise e
 
+  Logger.info(f"              About to call _async_vertex_multi_embeddings #SC240709")
   return_value = await asyncio.to_thread(_async_vertex_multi_embeddings)
 
+  Logger.info(f"            About to return from get_vertex_multi_embeddings #SC240709")
   return return_value
 
 def get_langchain_embeddings(embedding_type: str,
