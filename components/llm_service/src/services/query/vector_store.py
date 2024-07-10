@@ -361,8 +361,8 @@ class LangChainVectorStore(VectorStore):
         # and put in dict
         Logger.info(f"    About to call get_multi_embeddings for chunk {i=} of {doc_name=} #SC240709")
         chunk_embedding = await embeddings.get_multi_embeddings(
-          doc.text_chunks,
-          b64decode(doc.image_64),
+          doc["text_chunks"],
+          b64decode(doc["image_b64"]),
           self.embedding_type, 
         )
         # Append this chunk's text to the text_chunks array
