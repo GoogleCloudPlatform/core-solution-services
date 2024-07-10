@@ -366,7 +366,7 @@ class LangChainVectorStore(VectorStore):
           self.embedding_type, 
         )
         # Append this chunk's text to the text_chunks array
-        text_chunks.append(doc.text_chunks)
+        text_chunks.append(doc["text_chunks"])
         # Append this chunk's image embedding to the chunk_embeddings array
         chunk_embeddings.append(chunk_embedding["image_embeddings"])
 
