@@ -259,10 +259,14 @@ async def get_vertex_multi_embeddings(embedding_type: str,
       Logger.info(f"                    user_text is of type {type(user_text)} and user_file_image is of type {type(user_file_image)} #SC240709")
       Logger.info(f"                    {user_text=} #SC240709")
       Logger.info(f"                    {user_file_image=} #SC240709")
+      #embeddings = vertex_model.get_embeddings(
+      #  image=user_file_image,
+      #  contextual_text=user_text
+      #) #SC240709
       embeddings = vertex_model.get_embeddings(
         image=user_file_image,
-        contextual_text=user_text
-      )
+        contextual_text=""
+      ) #SC240709
 
       return_value = {}
       return_value["text_embeddings"] = embeddings.text_embedding
