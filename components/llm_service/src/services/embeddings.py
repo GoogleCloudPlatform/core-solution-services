@@ -40,7 +40,8 @@ from langchain.schema.embeddings import Embeddings
 # https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
 # if region is us-central1 items per request is 250, in other regions it is 5
 if REGION == "us-central1":
-  ITEMS_PER_REQUEST = 250
+  #ITEMS_PER_REQUEST = 250 #SC240711
+  ITEMS_PER_REQUEST = 50 #SC240711
 else:
   ITEMS_PER_REQUEST = 5
 
