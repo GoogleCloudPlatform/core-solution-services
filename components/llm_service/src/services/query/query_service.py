@@ -367,7 +367,7 @@ def make_query_reference(q_engine: QueryEngine,
   Logger.info(f"          Straight out of doc_chunk: {modality=} #SC240712")
   if modality is None: #SC240712
     modality = "text" #SC240712
-  Logger.inf0(f"          After check for NoneType: {modality=} #SC240712")
+  Logger.info(f"          After check for NoneType: {modality=} #SC240712")
   modality = doc_chunk.modality.casefold()
   Logger.info(f"          After casefold(): {modality=} #SC240712")
   
