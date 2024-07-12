@@ -312,6 +312,7 @@ async def query_search(q_engine: QueryEngine,
   query_references = []
 
   # Assemble document chunk models from vector store indexes
+  i = 1 #SC240712
   for match in match_indexes_list:
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
     if doc_chunk is None:
@@ -323,6 +324,7 @@ async def query_search(q_engine: QueryEngine,
       raise ResourceNotFoundException(
         f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
 
+    Logger.info(f"        About to call make_query_reference out of match #{i=} from {q_engine.name=} #SC240712")
     query_reference = make_query_reference(
       q_engine=q_engine,
       query_doc=query_doc,
@@ -332,6 +334,7 @@ async def query_search(q_engine: QueryEngine,
     )
     query_reference.save()
     query_references.append(query_reference)
+    i+=1 #SC240712
 
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
@@ -361,9 +364,12 @@ def make_query_reference(q_engine: QueryEngine,
 
   # Get modality of document chunk, make lowercase
   modality = doc_chunk.modality #SC240712
+  Logger.info(f"          Straight out of doc_chunk: {modality=} #SC240712")
   if modality is None: #SC240712
     modality = "text" #SC240712
+  Logger.inf0(f"          After check for NoneType: {modality=} #SC240712")
   modality = doc_chunk.modality.casefold()
+  Logger.info(f"          After casefold(): {modality=} #SC240712")
   
   # Clean up text chunk
   if modality=="text":
