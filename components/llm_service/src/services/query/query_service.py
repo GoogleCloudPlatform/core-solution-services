@@ -365,10 +365,10 @@ def make_query_reference(q_engine: QueryEngine,
   # Get modality of document chunk, make lowercase
   modality = doc_chunk.modality #SC240712
   Logger.info(f"          Straight out of doc_chunk: {modality=} #SC240712")
-  if modality is None: #SC240712
+  if modality is None: # Check for backwards compatibility with text-only GENIE #SC240712
     modality = "text" #SC240712
   Logger.info(f"          After check for NoneType: {modality=} #SC240712")
-  modality = doc_chunk.modality.casefold()
+  modality = modality.casefold()
   Logger.info(f"          After casefold(): {modality=} #SC240712")
   
   # Clean up text chunk
