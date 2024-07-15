@@ -243,46 +243,31 @@ async def get_vertex_multi_embeddings(embedding_type: str,
   Returns:
     dictionary of embedding vectors for both text and image
   """
-  Logger.info(f"            Just entered get_vertex_multi_embeddings #SC240709")
-  google_llm = get_model_config().get_provider_value(
-      PROVIDER_VERTEX, KEY_MODEL_NAME, embedding_type)
-  Logger.info(f"              From get_vertex_multi_embeddings: {google_llm=} #SC240709")
+  google_llm = get_model_config().get_provider_value(PROVIDER_VERTEX,
+                                                     KEY_MODEL_NAME,
+                                                     embedding_type)
   if google_llm is None:
     raise RuntimeError(
         f"Vertex model name not found for embedding type {embedding_type}")
 
   def _async_vertex_multi_embeddings():
     try:
-      Logger.info(f"                  Just entered try of _async_vertex_multi_embedding #SC240709")
       user_file_image = Image(image_bytes=user_file_bytes)
-      vertex_model = MultiModalEmbeddingModel.from_pretrained(
-        google_llm)
-      Logger.info(f"                    user_text is of type {type(user_text)} and user_file_image is of type {type(user_file_image)} #SC240709")
-      Logger.info(f"                    {user_text=} #SC240709")
-      Logger.info(f"                    {user_file_image=} #SC240709")
-      #embeddings = vertex_model.get_embeddings(
-      #  image=user_file_image,
-      #  contextual_text=user_text
-      #) #SC240709
-      embeddings = vertex_model.get_embeddings(
-        image=user_file_image,
-        contextual_text=""
-      ) #SC240709
+      vertex_model = MultiModalEmbeddingModel.from_pretrained(google_llm)
+      embeddings = vertex_model.get_embeddings(image=user_file_image,
+                                               contextual_text="")
 
       return_value = {}
       return_value["text_embeddings"] = embeddings.text_embedding
       return_value["image_embeddings"] = embeddings.image_embedding
 
-      Logger.info(f"                  About to return from try of _async_vertex_multi_embedding #Sc240709")
       return return_value
     except Exception as e:
       Logger.error(f"error generating Vertex embeddings {str(e)}")
       raise e
 
-  Logger.info(f"              About to call _async_vertex_multi_embeddings #SC240709")
   return_value = await asyncio.to_thread(_async_vertex_multi_embeddings)
 
-  Logger.info(f"            About to return from get_vertex_multi_embeddings #SC240709")
   return return_value
 
 def get_langchain_embeddings(embedding_type: str,
