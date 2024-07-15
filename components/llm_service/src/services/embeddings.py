@@ -181,16 +181,14 @@ async def generate_multi_embeddings(user_text: str,
     dictionary of embedding vectors for both text and image
   """
 
-  #Logger.info(f"generating embeddings for embedding type {embedding_type}") #SC240709
-  Logger.info(f"        Just entered generate_multi_embeddings #SC240709")
+  Logger.info(f"generating embeddings for embedding type {embedding_type}")
 
   if embedding_type in get_provider_embedding_types(PROVIDER_VERTEX):
-    Logger.info(f"          About to call get_vertex_multi_embeddings with {embedding_type=} #SC240709")
-    embeddings = await get_vertex_multi_embeddings(embedding_type, user_text,
+    embeddings = await get_vertex_multi_embeddings(embedding_type,
+                                                   user_text,
                                                    user_file_bytes)
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
-  Logger.info(f"        About to return from generate_multi_embeddings #SC240709")
   return embeddings
 
 def get_vertex_embeddings(embedding_type: str,
