@@ -170,7 +170,7 @@ def generate_embeddings(batch: List[str],
 async def generate_multi_embeddings(user_text: str,
                                     embedding_type: str,
                                     user_file_bytes: bytes) -> \
-                                      (dict):
+                                      dict:
   """
   Generate embeddings for a list of strings
   Args:
