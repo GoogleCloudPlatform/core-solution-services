@@ -25,9 +25,6 @@ if [ $(gcloud secrets list | grep -c "${POSTGRES_USER_PASSWD}") == 0 ]; then
 fi
 
 export INSTANCE_ID=${PROJECT_ID}-db
-export CLUSTER_ID=${PROJECT_ID}-db
-export CPU_COUNT=2
-export NODE_COUNT=1
 export REGION="us-central1"
 export PASSWORD="$(gcloud secrets versions access latest --secret=${POSTGRES_USER_PASSWD})"
 export NETWORK="default-vpc"
@@ -37,7 +34,7 @@ if [ $(gcloud compute networks list | grep -c ${NETWORK}) == 0 ]; then
     exit 1;
 fi
 
-gcloud services enable alloydb.googleapis.com
+gcloud services enable sqladmin.googleapis.com
 gcloud services enable servicenetworking.googleapis.com
 
 # Reserve an IP block for VPC-peering
@@ -54,24 +51,23 @@ gcloud services vpc-peerings connect \
     --network=${NETWORK}
 gcloud compute networks peerings list
 
-# Create AlloyDB cluster
-gcloud alloydb clusters create ${CLUSTER_ID} \
-    --region=${REGION} \
-    --password=${PASSWORD} \
-    --project=${PROJECT_ID} \
-    --network=${NETWORK}
-gcloud alloydb clusters list
+# Create PostgreSQL Instance
+gcloud sql instances create ${INSTANCE_ID} \
+    --database-version=POSTGRES_15 \
+    --region=us-central1 \
+    --tier=db-perf-optimized-N-2 \
+    --edition=ENTERPRISE_PLUS \
+    --enable-data-cache \
+    --storage-size=250 \
+    --network=${NETWORK} \
+    --enable-google-private-path \
+    --availability-type=REGIONAL \
+    --no-assign-ip
+gcloud sql users set-password postgres --instance=vectordb --password=${PASSWORD}
 
-# Create AlloyDB instance
-gcloud alloydb instances create ${INSTANCE_ID} \
-    --instance-type=PRIMARY \
-    --cpu-count=${CPU_COUNT} \
-    --read-pool-node-count=${NODE_COUNT} \
-    --region=${REGION} \
-    --cluster=${CLUSTER_ID}
-gcloud alloydb instances list
+gcloud sql instances list
 
 # Get the IP address for database host
-export PG_HOST=$(gcloud alloydb instances describe ${INSTANCE_ID} \
-    --cluster ${CLUSTER_ID} --region ${REGION} --format="value(ipAddress)")
-echo "AlloyDB Host IP address is ${PG_HOST}"
+export PG_HOST=$(gcloud sql instances describe ${INSTANCE_ID} \
+    --format="value(ipAddresses.ipAddress)")
+echo "Cloud SQL Host IP address is ${PG_HOST}"
