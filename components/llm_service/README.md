@@ -95,27 +95,12 @@ echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-pas
 
 Create a postgreSQL instance:
 ```
-export INSTANCE_ID=${PROJECT_ID}-db
+./utils/cloudsql_db.sh
+```
 
-gcloud services enable sqladmin.googleapis.com
-
-gcloud sql instances create ${INSTANCE_ID} \
-  --database-version=POSTGRES_15 \
-  --region=us-central1 \
-  --tier=db-perf-optimized-N-2 \
-  --edition=ENTERPRISE_PLUS \
-  --enable-data-cache \
-  --storage-size=250 \
-  --network default-vpc \
-  --enable-google-private-path \
-  --availability-type=REGIONAL \
-  --no-assign-ip
-
-gcloud sql users set-password postgres \
-  --instance=vectordb \
-  --password=$(gcloud secrets versions access latest --secret="postgres-user-passwd")
-
-export PG_HOST=$(gcloud sql instances list --format="value(PRIVATE_ADDRESS)")
+Set the IP address for database host from the output of the above script:
+```shell
+export PG_HOST=<cloudsql-ip-address>
 ```
 
 ### AlloyDB as a vector database
