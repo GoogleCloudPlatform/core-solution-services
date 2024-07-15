@@ -136,7 +136,8 @@ async def _generate_embeddings_batched(embedding_type,
 
 # Generator function to yield batches of text_chunks
 def _generate_batches(text_chunks: List[str],
-                      batch_size: int) -> Generator[List[str], None, None]:
+                      batch_size: int) -> \
+                        Generator[List[str], None, None]:
   """
   Generate batches of text_chunks
   """
