@@ -5,7 +5,7 @@
 | `python`            | `>= 3.9`         | [Mac](https://www.python.org/ftp/python/3.9.18/python-3.9.18-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
 | `gcloud` CLI        | `Latest`         | https://cloud.google.com/sdk/docs/install                                                                                                                                                           |
 | `terraform`         | `>= v1.3.7`      | https://developer.hashicorp.com/terraform/downloads                                                                                                                                                 |
-| `solutions-builder` | `>= v1.17.19`    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
+| `solutions-builder` | `== v1.18.1`    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
 | `skaffold`          | `>= v2.4.0`      | https://skaffold.dev/docs/install/                                                                                                                                                                  |
 | `kustomize`         | `>= v5.0.0`      | https://kubectl.docs.kubernetes.io/installation/kustomize/                                                                                                                                          |
 
@@ -70,10 +70,11 @@ source .venv/bin/activate
 ```
 
 ### Install Solutions Builder package
+Make sure to not install the default sb 2.x.x version, as its not backwards compatible.
 ```
-pip install -U solutions-builder
+pip install -U "solutions-builder==1.18.1"
 
-# Verify Solution Builder CLI tool with version >= v1.17.19
+# Verify Solution Builder CLI tool with version == v1.18.1
 sb version
 ```
 
