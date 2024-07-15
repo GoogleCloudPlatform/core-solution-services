@@ -72,11 +72,10 @@ async def get_embeddings(
 
   return is_successful, embeddings
 
-async def get_multi_embeddings(
-    user_text: List[str],
-    user_file_bytes: str,
-    embedding_type: str = None) -> \
-      (dict):
+async def get_multi_embeddings(user_text: List[str],
+                               user_file_bytes: str,
+                               embedding_type: str = None) -> \
+                                dict:
   """
   Get multimodal embeddings for a string and image or video file
 
@@ -87,18 +86,14 @@ async def get_multi_embeddings(
   Returns:
     dictionary of embedding vectors for both text and image
   """
-  Logger.info(f"      Just entered get_multi_embeddings #SC240709")
-  
   if embedding_type is None or embedding_type == "":
     embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
 
-  #Logger.info(f"generating multimodal embeddings with {embedding_type}") #SC240709
-  Logger.info(f"      About to call generate_multi_embeddings with {embedding_type=} #SC240709")
-  embeddings = await generate_multi_embeddings(
-      user_text, embedding_type,
-      user_file_bytes)
+  Logger.info(f"generating multimodal embeddings with {embedding_type}")
+  embeddings = await generate_multi_embeddings(user_text,
+                                               embedding_type,
+                                               user_file_bytes)
 
-  Logger.info(f"      About to return from get_multi_embeddings #SC240709")
   return embeddings
 
 async def _generate_embeddings_batched(embedding_type,
@@ -111,7 +106,6 @@ async def _generate_embeddings_batched(embedding_type,
   loop = asyncio.get_running_loop()
   with ThreadPoolExecutor() as pool:
     futures = []
-    Logger.info(f"{embedding_type=} #SC240709")
     for batch in batches:
       futures.append(
         loop.run_in_executor(
