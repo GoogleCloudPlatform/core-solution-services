@@ -312,7 +312,6 @@ async def query_search(q_engine: QueryEngine,
   query_references = []
 
   # Assemble document chunk models from vector store indexes
-  i = 1 #SC240712
   for match in match_indexes_list:
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
     if doc_chunk is None:
@@ -324,17 +323,13 @@ async def query_search(q_engine: QueryEngine,
       raise ResourceNotFoundException(
         f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
 
-    Logger.info(f"        About to call make_query_reference out of match #{i=} from {q_engine.name=} #SC240712")
-    query_reference = make_query_reference(
-      q_engine=q_engine,
-      query_doc=query_doc,
-      doc_chunk=doc_chunk,
-      query_embeddings=query_embeddings,
-      rank_sentences=rank_sentences
-    )
+    query_reference = make_query_reference(q_engine=q_engine,
+                                           query_doc=query_doc,
+                                           doc_chunk=doc_chunk,
+                                           query_embeddings=query_embeddings,
+                                           rank_sentences=rank_sentences)
     query_reference.save()
     query_references.append(query_reference)
-    i+=1 #SC240712
 
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
@@ -346,8 +341,8 @@ def make_query_reference(q_engine: QueryEngine,
                            query_doc: QueryDocument,
                            doc_chunk: QueryDocumentChunk,
                            query_embeddings: List[Optional[List[float]]],
-                           rank_sentences: bool = False,
-) -> QueryReference:
+                           rank_sentences: bool = False,) -> \
+                            QueryReference:
   """
   Make a single QueryReference object, with appropriate fields
   for modality
@@ -363,13 +358,10 @@ def make_query_reference(q_engine: QueryEngine,
   """
 
   # Get modality of document chunk, make lowercase
-  modality = doc_chunk.modality #SC240712
-  Logger.info(f"          Straight out of doc_chunk: {modality=} #SC240712")
-  if modality is None: # Check for backwards compatibility with text-only GENIE #SC240712
-    modality = "text" #SC240712
-  Logger.info(f"          After check for NoneType: {modality=} #SC240712")
+  modality = doc_chunk.modality
+  if modality is None:
+    modality = "text"
   modality = modality.casefold()
-  Logger.info(f"          After casefold(): {modality=} #SC240712")
   
   # Clean up text chunk
   if modality=="text":
@@ -417,8 +409,7 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["query_engine"]=q_engine.name
   query_reference_dict["document_id"]=query_doc.id
   query_reference_dict["document_url"]=query_doc.doc_url
-  #query_reference_dict["modality"]=doc_chunk.modality #SC240712
-  query_reference_dict["modality"]=modality #SC240712
+  query_reference_dict["modality"]=modality
   query_reference_dict["chunk_id"]=doc_chunk.id
   # For text chunk only
   if modality=="text":
@@ -865,7 +856,6 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       Logger.info(f"processing [{doc_name}]")
 
       if is_multimodal:
-        Logger.info(f"From process_documents, about to call chunk_document_multi for {doc_name=} #SC240702")
         doc_chunks = data_source.chunk_document_multi(doc_name,
                                                       index_doc_url,
                                                       doc_filepath)
@@ -882,8 +872,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       Logger.info(f"doc chunks extracted for [{doc_name}]")
 
       # generate embedding data and store in vector store
-      if is_multimodal: #SC240709
-        Logger.info(f"From process documents, about to call index_document_multi for {doc_name=} #SC240702")
+      if is_multimodal:
         new_index_base = \
           await qe_vector_store.index_document_multi(doc_name, doc_chunks, index_base)
       else:
