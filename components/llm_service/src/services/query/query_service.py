@@ -362,7 +362,7 @@ def make_query_reference(q_engine: QueryEngine,
   if modality is None:
     modality = "text"
   modality = modality.casefold()
-  
+
   # Clean up text chunk
   if modality=="text":
 
@@ -874,10 +874,14 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       # generate embedding data and store in vector store
       if is_multimodal:
         new_index_base = \
-          await qe_vector_store.index_document_multi(doc_name, doc_chunks, index_base)
+          await qe_vector_store.index_document_multi(doc_name,
+                                                     doc_chunks,
+                                                     index_base)
       else:
         new_index_base = \
-          await qe_vector_store.index_document(doc_name, doc_chunks, index_base)
+          await qe_vector_store.index_document(doc_name,
+                                               doc_chunks,
+                                               index_base)
 
       Logger.info(f"doc successfully indexed [{doc_name}]")
 

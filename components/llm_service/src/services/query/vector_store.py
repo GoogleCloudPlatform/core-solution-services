@@ -26,7 +26,7 @@ import shutil
 import tempfile
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple, Any, Optional
+from typing import List, Tuple, Any
 from google.cloud import aiplatform, storage
 from common.models import QueryEngine
 from common.utils.logging_handler import Logger
@@ -356,16 +356,16 @@ class LangChainVectorStore(VectorStore):
 
     # Loop over chunks
     for doc in doc_chunks:
-        # Get text embedding and image embedding from a single chunk
-        # and put in dict
-        chunk_embedding = \
-          await embeddings.get_multi_embeddings(doc["text_chunks"],
-                                                b64decode(doc["image_b64"]),
-                                                self.embedding_type)
-        # Append this chunk's text to the text_chunks array
-        text_chunks.append(doc["text_chunks"])
-        # Append this chunk's image embedding to the chunk_embeddings array
-        chunk_embeddings.append(chunk_embedding["image_embeddings"])
+      # Get text embedding and image embedding from a single chunk
+      # and put in dict
+      chunk_embedding = \
+        await embeddings.get_multi_embeddings(doc["text_chunks"],
+                                              b64decode(doc["image_b64"]),
+                                              self.embedding_type)
+      # Append this chunk's text to the text_chunks array
+      text_chunks.append(doc["text_chunks"])
+      # Append this chunk's image embedding to the chunk_embeddings array
+      chunk_embeddings.append(chunk_embedding["image_embeddings"])
 
     # check for success
     if len(chunk_embeddings) == 0:

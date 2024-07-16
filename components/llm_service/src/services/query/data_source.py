@@ -205,15 +205,21 @@ class DataSource:
       if doc_extension != "pdf":
         raise ValueError(f"File {doc_name} must be a PDF")
     except Exception as e:
-        Logger.error(f"error reading doc {doc_name}: {e}")
-  
+      Logger.error(f"error reading doc {doc_name}: {e}")
+
     doc_chunks = []
     try:
       # Convert PDF to an array of PNGs for each page
       if doc_url.startswith("https://storage.googleapis.com/"):
-        bucket_name = unquote(doc_url.split("https://storage.googleapis.com/")[1].split("/")[0])
+        bucket_name = \
+          unquote(
+            doc_url.split("https://storage.googleapis.com/")[1].split("/")[0]
+            )
       elif doc_url.startswith("gs://"):
-        bucket_name = unquote(doc_url.split("gs://")[1].split("/")[0])
+        bucket_name = \
+          unquote(
+            doc_url.split("gs://")[1].split("/")[0]
+            )
       else:
         raise ValueError(f"Invalid Doc URL: {doc_url}")
 

@@ -224,7 +224,9 @@ def get_vertex_embeddings(embedding_type: str,
     return [None for _ in range(len(sentence_list))]
 
 async def get_vertex_multi_embeddings(embedding_type: str,
-    user_text: str, user_file_bytes: bytes) -> (dict):
+                                      user_text: str,
+                                      user_file_bytes: bytes) -> \
+                                        dict:
   """
   Generate a image embedding from a Vertex model
   Args:
