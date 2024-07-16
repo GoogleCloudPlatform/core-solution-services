@@ -58,7 +58,7 @@ popd
 python -m pip install --upgrade pip
 python -m pip install --upgrade pyopenssl
 python -m pip install google-cloud-firestore google-cloud-bigquery firebase-admin
-python -m pip install solutions-builder --ignore-installed PyYAML
+python -m pip install solutions-builder==1.18.1 --ignore-installed PyYAML
 
 # Install dependencies for running user-tool
 python -m pip install fireo==2.1.0 regex fastapi google-cloud-secret-manager
