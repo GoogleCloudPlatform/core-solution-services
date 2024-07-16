@@ -685,6 +685,26 @@ class ModelConfig():
     ]
     return embedding_types
 
+  def get_non_multi_embedding_types(self) -> dict:
+    """ Get all supported and enabled non-multimodal embedding types, as a list of model
+        identifiers.
+    """
+    embedding_types = [
+      m for m,config in self.llm_embedding_models.items()
+      if (KEY_IS_MULTI not in config or not config[KEY_IS_MULTI]) and self.is_model_enabled(m)
+    ]
+    return embedding_types
+
+  def get_multi_embedding_types(self) -> dict:
+    """ Get all supported and enabled multimodal embedding types, as a list of model
+        identifiers.
+    """
+    embedding_types = [
+      m for m,config in self.llm_embedding_models.items()
+      if (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and self.is_model_enabled(m)
+    ]
+    return embedding_types
+
   def download_model_file(self, model_id: str, model_config: dict):
     """
     Download model file for model.
