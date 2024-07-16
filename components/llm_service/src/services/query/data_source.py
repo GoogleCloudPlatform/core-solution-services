@@ -205,8 +205,8 @@ class DataSource:
       if doc_extension != "pdf":
         raise ValueError(f"File {doc_name} must be a PDF")
     except Exception as e:
-            Logger.error(f"error reading doc {doc_name}: {e}")
-                                          
+        Logger.error(f"error reading doc {doc_name}: {e}")
+  
     doc_chunks = []
     try:
       # Convert PDF to an array of PNGs for each page
