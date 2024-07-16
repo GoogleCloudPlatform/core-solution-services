@@ -342,8 +342,7 @@ class LangChainVectorStore(VectorStore):
                                  doc_name: str,
                                  doc_chunks: List[object],
                                  index_base: int) -> \
-                                  int: #SC240709
-    Logger.info(f"  Just entered index_document_multi for {doc_name=} #SC240709")
+                                  int:
 
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(doc_chunks)))
@@ -354,23 +353,19 @@ class LangChainVectorStore(VectorStore):
     # can embed an array of multiple chunks at the same time.
     text_chunks = []
     chunk_embeddings = []
-    i = 1 #SC240709
+
     # Loop over chunks
     for doc in doc_chunks:
         # Get text embedding and image embedding from a single chunk
         # and put in dict
-        Logger.info(f"    About to call get_multi_embeddings for chunk {i=} of {doc_name=} #SC240709")
-        chunk_embedding = await embeddings.get_multi_embeddings(
-          doc["text_chunks"],
-          b64decode(doc["image_b64"]),
-          self.embedding_type, 
-        )
+        chunk_embedding = \
+          await embeddings.get_multi_embeddings(doc["text_chunks"],
+                                                b64decode(doc["image_b64"]),
+                                                self.embedding_type)
         # Append this chunk's text to the text_chunks array
         text_chunks.append(doc["text_chunks"])
         # Append this chunk's image embedding to the chunk_embeddings array
         chunk_embeddings.append(chunk_embedding["image_embeddings"])
-
-        i+=1 #SC240709
 
     # check for success
     if len(chunk_embeddings) == 0:
@@ -383,22 +378,21 @@ class LangChainVectorStore(VectorStore):
     # return new index base
     new_index_base = index_base + len(text_chunks)
     self.index_length = new_index_base
-    Logger.info(f"  About to return from index_document_multi for {doc_name=} #SC240709")
 
     return new_index_base
 
   async def index_document(self,
                            doc_name: str,
                            text_chunks: List[str],
-                           index_base: int) -> int:
+                           index_base: int) -> \
+                            int:
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(text_chunks)))
 
     # Convert chunks to embeddings
-    is_successful, chunk_embeddings = await embeddings.get_embeddings(
-      text_chunks,
-      self.embedding_type
-    )
+    is_successful, chunk_embeddings = \
+      await embeddings.get_embeddings(text_chunks,
+                                      self.embedding_type)
 
     # check for success
     if len(chunk_embeddings) == 0 or not all(is_successful):
