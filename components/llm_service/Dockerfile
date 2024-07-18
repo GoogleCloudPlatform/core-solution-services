@@ -2,6 +2,7 @@ ARG COMMON_ML_IMAGE
 FROM ${COMMON_ML_IMAGE}
 
 WORKDIR /opt
+RUN apt-get install -y poppler-utils
 COPY requirements.txt service_requirements.txt
 
 # add endline in case not there

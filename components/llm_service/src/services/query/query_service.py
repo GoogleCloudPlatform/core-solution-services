@@ -323,13 +323,11 @@ async def query_search(q_engine: QueryEngine,
       raise ResourceNotFoundException(
         f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
 
-    query_reference = make_query_reference(
-      q_engine=q_engine,
-      query_doc=query_doc,
-      doc_chunk=doc_chunk,
-      query_embeddings=query_embeddings,
-      rank_sentences=rank_sentences
-    )
+    query_reference = make_query_reference(q_engine=q_engine,
+                                           query_doc=query_doc,
+                                           doc_chunk=doc_chunk,
+                                           query_embeddings=query_embeddings,
+                                           rank_sentences=rank_sentences)
     query_reference.save()
     query_references.append(query_reference)
 
@@ -343,8 +341,8 @@ def make_query_reference(q_engine: QueryEngine,
                            query_doc: QueryDocument,
                            doc_chunk: QueryDocumentChunk,
                            query_embeddings: List[Optional[List[float]]],
-                           rank_sentences: bool = False,
-) -> QueryReference:
+                           rank_sentences: bool = False,) -> \
+                            QueryReference:
   """
   Make a single QueryReference object, with appropriate fields
   for modality
@@ -360,7 +358,10 @@ def make_query_reference(q_engine: QueryEngine,
   """
 
   # Get modality of document chunk, make lowercase
-  modality = doc_chunk.modality.casefold()
+  modality = doc_chunk.modality
+  if modality is None:
+    modality = "text"
+  modality = modality.casefold()
 
   # Clean up text chunk
   if modality=="text":
@@ -408,7 +409,7 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["query_engine"]=q_engine.name
   query_reference_dict["document_id"]=query_doc.id
   query_reference_dict["document_url"]=query_doc.doc_url
-  query_reference_dict["modality"]=doc_chunk.modality
+  query_reference_dict["modality"]=modality
   query_reference_dict["chunk_id"]=doc_chunk.id
   # For text chunk only
   if modality=="text":
@@ -871,8 +872,16 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       Logger.info(f"doc chunks extracted for [{doc_name}]")
 
       # generate embedding data and store in vector store
-      new_index_base = \
-          await qe_vector_store.index_document(doc_name, doc_chunks, index_base)
+      if is_multimodal:
+        new_index_base = \
+          await qe_vector_store.index_document_multi(doc_name,
+                                                     doc_chunks,
+                                                     index_base)
+      else:
+        new_index_base = \
+          await qe_vector_store.index_document(doc_name,
+                                               doc_chunks,
+                                               index_base)
 
       Logger.info(f"doc successfully indexed [{doc_name}]")
 
