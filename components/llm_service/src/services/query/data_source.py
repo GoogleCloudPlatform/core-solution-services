@@ -14,6 +14,7 @@
 """
 Query Data Sources
 """
+import traceback
 import os
 import re
 import tempfile
@@ -178,8 +179,11 @@ class DataSource:
 
     return text_chunks
 
-  def chunk_document_multi(self, doc_name: str, doc_url: str,
-                     doc_filepath: str) -> List[str]:
+  def chunk_document_multi(self,
+                           doc_name: str,
+                           doc_url: str,
+                           doc_filepath: str) -> \
+                            List[object]:
     """
     Process a pdf document into multimodal chunks (b64 and text) for embeddings
 
@@ -206,8 +210,18 @@ class DataSource:
     doc_chunks = []
     try:
       # Convert PDF to an array of PNGs for each page
-      bucket_name = unquote(doc_url.split("/b/")[1].split("/")[0])
-      object_name = unquote(doc_url.split("/o/")[1].split("/")[0])
+      if doc_url.startswith("https://storage.googleapis.com/"):
+        bucket_name = \
+          unquote(
+            doc_url.split("https://storage.googleapis.com/")[1].split("/")[0]
+            )
+      elif doc_url.startswith("gs://"):
+        bucket_name = \
+          unquote(
+            doc_url.split("gs://")[1].split("/")[0]
+            )
+      else:
+        raise ValueError(f"Invalid Doc URL: {doc_url}")
 
       with tempfile.TemporaryDirectory() as path:
         png_array = convert_from_path(doc_filepath, output_folder=path)
@@ -230,9 +244,9 @@ class DataSource:
           png_b64 = b64encode(png_bytes).decode("utf-8")
 
           # Upload to Google Cloud Bucket and return gs URL
-          page_png_name = ".png".join(f"{i}_{object_name}".rsplit(".pdf", 1))
           png_url = gcs_helper.upload_to_gcs(self.storage_client,
-                        bucket_name, page_png_name, png_b64, "image/png")
+                                             bucket_name,
+                                             png_doc_filepath)
 
           # Clean up temp files
           os.remove(pdf_doc["filepath"])
@@ -247,6 +261,7 @@ class DataSource:
           doc_chunks.append(chunk_obj)
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
+      Logger.error(traceback.print_exc())
 
     # Return array of page data
     return doc_chunks

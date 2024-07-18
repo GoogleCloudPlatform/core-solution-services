@@ -56,8 +56,7 @@ with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
                           VERTEX_LLM_TYPE_BISON_CHAT,
-                          VERTEX_LLM_TYPE_GEMINI_PRO,
-                          VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+                          VERTEX_LLM_TYPE_GEMINI_1_5_FLASH,
                           PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
                           PROVIDER_TRUSS, PROVIDER_VLLM,
                           PROVIDER_MODEL_GARDEN,
@@ -163,7 +162,7 @@ async def test_llm_generate_multi(clean_firestore):
   "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
   return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate_multi(FAKE_PROMPT, fake_file_bytes,
-                            FAKE_FILE_TYPE, VERTEX_LLM_TYPE_GEMINI_PRO_VISION)
+                            FAKE_FILE_TYPE, VERTEX_LLM_TYPE_GEMINI_1_5_FLASH)
 
   fake_file.close()
   assert response == FAKE_GENERATE_RESPONSE
