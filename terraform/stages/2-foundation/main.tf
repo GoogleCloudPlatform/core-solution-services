@@ -43,6 +43,7 @@ locals {
   ]
 
   roles_for_default_sa = [
+    "roles/artifactregistry.admin",
     "roles/compute.admin",
     "roles/compute.serviceAgent",
     "roles/eventarc.admin",

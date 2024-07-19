@@ -200,7 +200,7 @@ CORS_ALLOW_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173,
 
 Deploy microservice to GKE cluster as usual.
 ```
-sb deploy -n default -m llm_service
+skaffold run -p default-deploy -n default -m llm_service
 ```
 
 ### Deploy with custom agent_config.json stored in a GCS bucket path.
@@ -262,7 +262,7 @@ sudo bash -c "echo 'export ONEDRIVE_TENANT_ID=${ONEDRIVE_TENANT_ID}' >> /etc/pro
 
 To run a livereload service in the remote cluster and print logs in the local terminal:
 ```
-sb deploy --component=llm_service --dev
+skaffold dev -p default-deploy --component=llm_service
 ```
 - This will deploy the LLM service to the remote main cluster, and set up port forwarding with live reload from local source code.
 - You can monitor all API requests and responses in the terminal output.

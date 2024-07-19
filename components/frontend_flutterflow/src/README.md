@@ -10,7 +10,7 @@ Run the following to build and deploy the web app instance to a GKE cluster with
 livereload and port forwarding.
 
 ```bash
-sb deploy -m frontend_flutterflow -n $NAMESPACE --dev
+skaffold dev -p default-deploy -m frontend_flutterflow -n $NAMESPACE
 ```
 
 ### Run Flutter web app locally (for local development)
@@ -57,5 +57,5 @@ sb deploy -m frontend_flutterflow -n $NAMESPACE --dev
 To build and deploy the Flutter web app to a GKE cluster:
 
 ```bash
-sb deploy -m frontend_flutterflow -n $NAMESPACE
+skaffold run -p default-deploy -m frontend_flutterflow -n $NAMESPACE
 ```
