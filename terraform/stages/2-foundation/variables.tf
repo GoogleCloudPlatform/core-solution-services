@@ -118,3 +118,9 @@ variable "firebase_api_secret_id" {
   type    = string
   default = "firebase-api-key"
 }
+
+variable "artifact_registry_region" {
+  type        = string
+  description = "Artifact Registry region"
+  default     = "us"
+}

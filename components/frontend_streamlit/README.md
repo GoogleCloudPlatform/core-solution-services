@@ -61,7 +61,7 @@ Once a new Chrome instance is up, copy and paste the Streamlit localhost and por
 Build and deploy microservices with local port-forwording:
 
 ```
-sb deploy -m authentication,llm_service,jobs_service -n $NAMESPACE --dev
+skaffold dev -p default-deploy -m authentication,llm_service,jobs_service -n $NAMESPACE
 ```
 
 Once deployed, it will show the corresponding services and ports like below:
@@ -89,10 +89,8 @@ PYTHONPATH=components/common/src streamlit run components/frontend_streamlit/src
 ### Deploy and run with livereload at remote GKE cluster
 
 Deploy the microservice with livereload.
-- This will run `skaffold dev` behind the scene.
-
 ```
-sb deploy -n $NAMESPACE -m frontend_streamlit --dev
+skaffold dev -p default-deploy -n $NAMESPACE -m frontend_streamlit
 ```
 
 Once deployed successfully, you will see the output like below:
@@ -108,8 +106,6 @@ At this point, the frontend app is ready and accessible at http://127.0.0.1:8080
 ### Deploy to remote GKE cluster
 
 Deploy the microservice.
-- This will run `skaffold run` behind the scene.
-
 ```
-sb deploy -n $NAMESPACE -m frontend_streamlit
+skaffold run -p default-deploy -n $NAMESPACE -m frontend_streamlit
 ```
