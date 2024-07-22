@@ -219,6 +219,8 @@ class DataSource:
       else:
         Logger.info(f"generated {len(text_chunks)} text chunks for {doc_name}")
 
+    Logger.info("f{text_chunks=} #SC240722")
+    Logger.info("f{embed_chunks=} #SC240722")
     return text_chunks, embed_chunks
 
   def chunk_document_multi(self,
