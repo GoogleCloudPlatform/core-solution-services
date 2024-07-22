@@ -30,6 +30,7 @@ from config import (COHERE_LLM_TYPE,
                     VERTEX_LLM_TYPE_BISON_CHAT,
                     VERTEX_LLM_TYPE_GEMINI_PRO,
                     VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+                    VERTEX_LLM_TYPE_GEMINI_1_5_FLASH,
                     PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
                     PROVIDER_TRUSS, PROVIDER_VLLM,
                     PROVIDER_MODEL_GARDEN,
@@ -176,6 +177,13 @@ TEST_VERTEX_CONFIG = {
     KEY_IS_MULTI: True,
     KEY_ENABLED: True,
     KEY_MODEL_NAME: "gemini-pro-vision"
+  },
+  VERTEX_LLM_TYPE_GEMINI_1_5_FLASH: {
+    KEY_PROVIDER: PROVIDER_VERTEX,
+    KEY_IS_CHAT: True,
+    KEY_IS_MULTI: True,
+    KEY_ENABLED: True,
+    KEY_MODEL_NAME: "gemini-1.5-flash-001"
   }
 }
 

@@ -39,19 +39,19 @@ from langchain.schema.embeddings import Embeddings
 # per Vertex docs
 # https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
 # if region is us-central1 items per request is 250, in other regions it is 5
+# Limit to 50, even though the max is 250. There is an undocumented
+# token limit across all chunks of 20000, and with 250 chunks we often
+# exceeded the 20K limit.
 if REGION == "us-central1":
-  # Limit to 50, even though the max is 250. There is an undocumented
-  # token limit across all chunks of 20000, and with 250 chunks we often
-  # exceeded the 20K limit.
   ITEMS_PER_REQUEST = 50
 else:
   ITEMS_PER_REQUEST = 5
 
 Logger = Logger.get_logger(__file__)
 
-async def get_embeddings(
-    text_chunks: List[str], embedding_type: str = None) -> (
-    Tuple)[List[bool], np.ndarray]:
+async def get_embeddings(text_chunks: List[str],
+                         embedding_type: str = None) -> \
+                          (Tuple)[List[bool], np.ndarray]:
   """
   Get embeddings for a list of text strings.
 
@@ -73,16 +73,17 @@ async def get_embeddings(
 
   return is_successful, embeddings
 
-async def get_multi_embeddings(
-    user_text: List[str], user_file_bytes: str,
-    embedding_type: str = None) -> (dict):
+async def get_multi_embeddings(user_text: List[str],
+                               user_file_bytes: str,
+                               embedding_type: str = None) -> \
+                                dict:
   """
   Get multimodal embeddings for a string and image or video file
 
   Args:
     user_text: text context to generate embeddings for
-    embedding_type: embedding model id
     user_file_bytes: the bytes of the file provided by the user
+    embedding_type: embedding model id
   Returns:
     dictionary of embedding vectors for both text and image
   """
@@ -90,10 +91,9 @@ async def get_multi_embeddings(
     embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
 
   Logger.info(f"generating multimodal embeddings with {embedding_type}")
-
-  embeddings = await generate_multi_embeddings(
-      user_text, embedding_type,
-      user_file_bytes)
+  embeddings = await generate_multi_embeddings(user_text,
+                                               embedding_type,
+                                               user_file_bytes)
 
   return embeddings
 
@@ -131,15 +131,17 @@ async def _generate_embeddings_batched(embedding_type,
 
 # Generator function to yield batches of text_chunks
 def _generate_batches(text_chunks: List[str],
-                      batch_size: int) -> Generator[List[str], None, None]:
+                      batch_size: int) -> \
+                        Generator[List[str], None, None]:
   """
   Generate batches of text_chunks
   """
   for i in range(0, len(text_chunks), batch_size):
     yield text_chunks[i: i + batch_size]
 
-def generate_embeddings(batch: List[str], embedding_type: str) -> \
-    List[Optional[List[float]]]:
+def generate_embeddings(batch: List[str],
+                        embedding_type: str) -> \
+                          List[Optional[List[float]]]:
   """
   Generate embeddings for a list of strings
   Args:
@@ -161,8 +163,10 @@ def generate_embeddings(batch: List[str], embedding_type: str) -> \
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
   return embeddings
 
-async def generate_multi_embeddings(user_text: str, embedding_type: str,
-          user_file_bytes: bytes) -> (dict):
+async def generate_multi_embeddings(user_text: str,
+                                    embedding_type: str,
+                                    user_file_bytes: bytes) -> \
+                                      dict:
   """
   Generate embeddings for a list of strings
   Args:
@@ -176,7 +180,8 @@ async def generate_multi_embeddings(user_text: str, embedding_type: str,
   Logger.info(f"generating embeddings for embedding type {embedding_type}")
 
   if embedding_type in get_provider_embedding_types(PROVIDER_VERTEX):
-    embeddings = await get_vertex_multi_embeddings(embedding_type, user_text,
+    embeddings = await get_vertex_multi_embeddings(embedding_type,
+                                                   user_text,
                                                    user_file_bytes)
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
@@ -222,7 +227,9 @@ def get_vertex_embeddings(embedding_type: str,
     return [None for _ in range(len(sentence_list))]
 
 async def get_vertex_multi_embeddings(embedding_type: str,
-    user_text: str, user_file_bytes: bytes) -> (dict):
+                                      user_text: str,
+                                      user_file_bytes: bytes) -> \
+                                        dict:
   """
   Generate a image embedding from a Vertex model
   Args:
@@ -232,21 +239,22 @@ async def get_vertex_multi_embeddings(embedding_type: str,
   Returns:
     dictionary of embedding vectors for both text and image
   """
-  google_llm = get_model_config().get_provider_value(
-      PROVIDER_VERTEX, KEY_MODEL_NAME, embedding_type)
+  google_llm = get_model_config().get_provider_value(PROVIDER_VERTEX,
+                                                     KEY_MODEL_NAME,
+                                                     embedding_type)
   if google_llm is None:
     raise RuntimeError(
         f"Vertex model name not found for embedding type {embedding_type}")
 
   def _async_vertex_multi_embeddings():
     try:
+      Logger.info(f"Generating Vertex embeddings for 1 multimodal chunk"
+                  f" embedding model {google_llm}"
+                  f" extracted text: {user_text}")
       user_file_image = Image(image_bytes=user_file_bytes)
-      vertex_model = MultiModalEmbeddingModel.from_pretrained(
-        google_llm)
-      embeddings = vertex_model.get_embeddings(
-        image=user_file_image,
-        contextual_text=user_text
-      )
+      vertex_model = MultiModalEmbeddingModel.from_pretrained(google_llm)
+      embeddings = vertex_model.get_embeddings(image=user_file_image,
+                                               contextual_text="")
 
       return_value = {}
       return_value["text_embeddings"] = embeddings.text_embedding
