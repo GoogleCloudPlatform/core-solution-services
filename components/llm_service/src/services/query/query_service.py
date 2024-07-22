@@ -746,7 +746,7 @@ async def query_engine_build(doc_url: str,
   manifest_url = None
   if "manifest_url" in params:
     manifest_url = params["manifest_url"]
-  
+
   # create model
   if llm_type is None:
     if is_multimodal:
@@ -938,7 +938,8 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           new_index_base = \
             await qe_vector_store.index_document(doc_name,
                                                  doc_chunks,
-                                                 index_base)
+                                                 index_base,
+                                                 metadata_list)
           Logger.info(
             f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"
             )
@@ -947,7 +948,6 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         Logger.error(f"error indexing doc [{index_doc_url}]: {str(e)}")
         data_source.docs_not_processed.append(index_doc_url)
         continue
-    
 
       # cleanup temp local file
       os.remove(doc_filepath)
