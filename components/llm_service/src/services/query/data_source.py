@@ -177,7 +177,7 @@ class DataSource:
           list of text chunks or None if the document could not be processed
           list of embedding chunks or None
     """
-    
+
     embed_chunks = None
     text_chunks = None
 
