@@ -177,7 +177,7 @@ class DataSource:
           list of text chunks or None if the document could not be processed
           list of embedding chunks or None
     """
-
+    
     embed_chunks = None
     text_chunks = None
 
@@ -219,8 +219,6 @@ class DataSource:
       else:
         Logger.info(f"generated {len(text_chunks)} text chunks for {doc_name}")
 
-    Logger.info("f{text_chunks=} #SC240722")
-    Logger.info("f{embed_chunks=} #SC240722")
     return text_chunks, embed_chunks
 
   def chunk_document_multi(self,

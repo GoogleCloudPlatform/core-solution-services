@@ -902,7 +902,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       index_doc_url = data_source_file.src_url
       doc_filepath = data_source_file.local_path
 
-      Logger.info(f"processing [{doc_name}]")
+      Logger.info(f"processing [{doc_name}] with {is_multimodal=}")
 
       if is_multimodal:
         doc_chunks = data_source.chunk_document_multi(doc_name,
@@ -925,7 +925,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         metadata = metadata_manifest.get(doc_name, None)
         metadata_list = []
         if metadata is not None:
-          metadata_list = [deepcopy(metadata) for chunk in doc_chunks] #SC240722
+          metadata_list = [deepcopy(metadata) for chunk in doc_chunks]
         if is_multimodal:
           new_index_base = \
             await qe_vector_store.index_document_multi(doc_name,
@@ -935,10 +935,6 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
             f"Successfully indexed {len(doc_chunks)} chunks for [{doc_name}]"
             )
         else:
-          #metadata = metadata_manifest.get(doc_name, None)
-          #metadata_list = []
-          #if metadata is not None:
-          #  metadata_list = [deepcopy(metadata) for chunk in doc_chunks] #SC240722
           new_index_base = \
             await qe_vector_store.index_document(doc_name,
                                                  doc_chunks,
@@ -973,8 +969,6 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         if is_multimodal:
           # doc_chunks[i] is an image, so
           # String holds url where image is saved
-          Logger.info(f"doc_chunks[{i=}] = {doc_chunks[i]} #SC240722")
-          Logger.info(f"Type of doc_chunks[{i=}] = {type(doc_chunks[i])} #SC240722")
           doc_chunk=doc_chunks[i]["image_url"]
         else:
           # doc_chunks[i] is text, so
