@@ -39,7 +39,8 @@ VALID_FILE_EXTENSIONS = [".pdf", ".html", ".csv", ".json"]
 
 async def query_vertex_search(q_engine: QueryEngine,
                               search_query: str,
-                              num_results: int) -> List[QueryReference]:
+                              num_results: int,
+                              query_filter: dict) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents from a vertex search engine.
@@ -47,13 +48,16 @@ async def query_vertex_search(q_engine: QueryEngine,
   Args:
     q_engine: QueryEngine to search
     search_query (str):  user query
-
+    query_filter (dict): filter for query
   Returns:
     list of QueryReference models
 
   """
   # vertex search datastore id is stored in q_engine.index_id
   data_store_id = q_engine.index_id
+
+  # TODO: implement query filters for vertex
+  Logger.info(f"query filter: {query_filter}")
 
   # get search results from vertex
   search_results = await perform_vertex_search(data_store_id,

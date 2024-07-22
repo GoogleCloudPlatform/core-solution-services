@@ -5,7 +5,7 @@
 | `python`            | `>= 3.9`         | [Mac](https://www.python.org/ftp/python/3.9.18/python-3.9.18-macos11.pkg) • [Windows](https://www.python.org/downloads/release/python-3918/) • [Linux](https://docs.python.org/3.9/using/unix.html) |
 | `gcloud` CLI        | `Latest`         | https://cloud.google.com/sdk/docs/install                                                                                                                                                           |
 | `terraform`         | `>= v1.3.7`      | https://developer.hashicorp.com/terraform/downloads                                                                                                                                                 |
-| `solutions-builder` | `>= v1.17.19`    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
+| `solutions-builder` | `== v1.18.1`    | https://pypi.org/project/solutions-builder/                                                                                                                                                         |
 | `skaffold`          | `>= v2.4.0`      | https://skaffold.dev/docs/install/                                                                                                                                                                  |
 | `kustomize`         | `>= v5.0.0`      | https://kubectl.docs.kubernetes.io/installation/kustomize/                                                                                                                                          |
 
@@ -38,9 +38,11 @@ Make sure that policies are not enforced (`enforce: false` or `NOT_FOUND`). You 
 - https://console.cloud.google.com/iam-admin/orgpolicies/compute-requireShieldedVm?project=$PROJECT_ID
 - https://console.cloud.google.com/iam-admin/orgpolicies/requireOsLogin?project=$PROJECT_ID
 ```
-gcloud resource-manager org-policies disable-enforce constraints/compute.requireOsLogin --project="${PROJECT_ID}"
-gcloud resource-manager org-policies delete constraints/compute.vmExternalIpAccess --project="${PROJECT_ID}"
-gcloud resource-manager org-policies delete constraints/iam.allowedPolicyMemberDomains --project="${PROJECT_ID}"
+export ORGANIZATION_ID="$(gcloud projects get-ancestors $PROJECT_ID | grep organization | cut -f1 -d' ')"
+gcloud resource-manager org-policies delete constraints/compute.requireShieldedVm --organization=$ORGANIZATION_ID
+gcloud resource-manager org-policies delete constraints/compute.requireOsLogin --organization=$ORGANIZATION_ID
+gcloud resource-manager org-policies delete constraints/compute.vmExternalIpAccess --organization=$ORGANIZATION_ID
+gcloud resource-manager org-policies delete constraints/iam.allowedPolicyMemberDomains --organization=$ORGANIZATION_ID
 ```
 
 ### Clone repo
@@ -55,7 +57,7 @@ cd core-solution-services
 Checkout the release tag for the desired release.
 
 ```
-git checkout v0.3.0
+git checkout v0.3.1
 ```
 
 ### Verify your Python version and create a virtual env
@@ -70,10 +72,11 @@ source .venv/bin/activate
 ```
 
 ### Install Solutions Builder package
+Make sure to not install the default sb 2.x.x version, as its not backwards compatible.
 ```
-pip install -U solutions-builder
+pip install -U "solutions-builder==1.18.1"
 
-# Verify Solution Builder CLI tool with version >= v1.17.19
+# Verify Solution Builder CLI tool with version == v1.18.1
 sb version
 ```
 
@@ -83,6 +86,7 @@ export PROJECT_ID=<your-project-id>
 gcloud config set project ${PROJECT_ID}
 gcloud auth login
 gcloud auth application-default login
+gcloud auth configure-docker us-docker.pkg.dev
 ```
 
 ### Update Project ID
@@ -110,17 +114,18 @@ echo Jump host zone is ${JUMP_HOST_ZONE}
 gcloud compute ssh jump-host --zone=${JUMP_HOST_ZONE} --tunnel-through-iap --project=${PROJECT_ID}
 ```
 
-Authenticate to GCP in the jumphost:
-```
-gcloud auth login
-gcloud auth application-default login
-```
-
 Check the status of the jump host setup:
 ```
 ls -la /tmp/jumphost_ready
 ```
 - If the file `jumphost_ready` exists, it means the jumphost is ready to deploy the rest of the resources.  If not, please wait for a few minutes.
+
+Authenticate to GCP in the jumphost:
+```
+gcloud auth login
+gcloud auth application-default login
+gcloud auth configure-docker us-docker.pkg.dev
+```
 
 #### Configure repository in Jumphost
 Check out the code:
@@ -132,7 +137,7 @@ Checkout the release tag for the desired release.
 
 ```
 cd core-solution-services
-git checkout v0.3.0
+git checkout v0.3.1
 ```
 
 Configure the repository:
@@ -162,6 +167,7 @@ sb vars set domain_name ${DOMAIN_NAME}
 sudo bash -c "cat << EOF >> /etc/profile.d/genie_env.sh
 export DOMAIN_NAME=$DOMAIN_NAME
 export API_BASE_URL=https://${DOMAIN_NAME}
+export SKAFFOLD_DEFAULT_REPO=us-docker.pkg.dev/${PROJECT_ID}/default
 EOF"
 ```
 
@@ -220,7 +226,7 @@ kubectl get nodes
 ## Deploy Backend Microservices
 
 
-> Note that when you deply the ingress below you may need to wait some time (in some cases, hours) before the https cert is active.
+> Note that when you deploy the ingress below you may need to wait some time (in some cases, hours) before the https cert is active.
 
 You must set these environment variables prior to deployment.  The jump host includes a script to automatically set these variables on login: `/etc/profile.d/genie_env.sh`.
 ```
@@ -230,6 +236,7 @@ export PG_HOST=<the IP of your deployed Alloydb instance>
 export DOMAIN_NAME=<your domain>
 export API_BASE_URL=https://${DOMAIN_NAME}
 export APP_BASE_PATH="/streamlit"
+export SKAFFOLD_DEFAULT_REPO=us-docker.pkg.dev/${PROJECT_ID}/default
 ```
 
 ### Option 1: Deploy GENIE microservices to the GKE cluster
@@ -237,7 +244,8 @@ export APP_BASE_PATH="/streamlit"
 If you are installing GENIE you can deploy a subset of the microservices used by GENIE.  Depending on your use case for GENIE you may not need the tools service (only needed if you are using agents that use tools).
 
 ```
-sb deploy -m authentication,redis,llm_service,jobs_service,frontend_streamlit,tools_service -n $NAMESPACE
+skaffold config set default-repo "${SKAFFOLD_DEFAULT_REPO}"
+skaffold run -p default-deploy -m authentication,redis,llm_service,jobs_service,frontend_streamlit,tools_service -n $NAMESPACE
 ```
 - This will run `skaffold` commands to deploy those microservices to the GKE cluster.
 
@@ -253,7 +261,7 @@ kubectl get pods
 
 ```bash
 cd ingress
-skaffold run -p genie-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
+skaffold run -p genie-deploy -n $NAMESPACE --default-repo="${SKAFFOLD_DEFAULT_REPO}"
 ```
 
 
@@ -262,7 +270,7 @@ If you wish to deploy all microservices in Core Solution Services use the follow
 
 ```bash
 NAMESPACE=default
-sb deploy -n $NAMESPACE
+skaffold run -p default-deploy -n $NAMESPACE
 ```
 - This will run `skaffold` commands to deploy all microservices to the GKE cluster.
 
@@ -278,7 +286,7 @@ kubectl get pods
 
 ```bash
 cd ingress
-skaffold run -p default-deploy -n $NAMESPACE --default-repo="gcr.io/$PROJECT_ID"
+skaffold run -p default-deploy -n $NAMESPACE --default-repo="${SKAFFOLD_DEFAULT_REPO}"
 ```
 
 ### After deployment
@@ -311,7 +319,7 @@ BASE_IP_ADDRESS=$(gcloud compute addresses list --global --format="value(address
 
 ## Frontend applications
 
-When running `sb deploy` like above, it automatically deploys Streamlit-based and FlutterFlow-based frontend apps
+When running `skaffold run` like above, it automatically deploys Streamlit-based and FlutterFlow-based frontend apps
 altogether with all services deployment.
 - Once deployed, you can verify the FlutterFlow frontend app at `https://$YOUR_DNS_DOMAIN` in a web browser.
 - Once deployed, you can verify the Streamlit frontend app at `https://$YOUR_DNS_DOMAIN/streamlit` in a web browser.

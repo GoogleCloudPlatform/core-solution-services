@@ -14,9 +14,11 @@
 """
 Query Engine Service
 """
+from copy import deepcopy
 import tempfile
 import traceback
 import os
+import json
 from numpy.linalg import norm
 import numpy as np
 import pandas as pd
@@ -32,6 +34,7 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QE_TYPE_LLM_SERVICE,
                                      QE_TYPE_INTEGRATED_SEARCH,
                                      QUERY_AI_RESPONSE)
+from common.utils.auth_service import create_authz_filter
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
 from common.utils.http_exceptions import InternalServerError
@@ -78,13 +81,16 @@ MIN_QUERY_REFERENCES = 2
 # total number of references to return from integrated search
 NUM_INTEGRATED_QUERY_REFERENCES = 6
 
+
 async def query_generate(
             user_id: str,
             prompt: str,
             q_engine: QueryEngine,
+            user_data: Optional[dict] = None,
             llm_type: Optional[str] = None,
             user_query: Optional[UserQuery] = None,
-            rank_sentences=False) -> \
+            rank_sentences=False,
+            query_filter: Optional[dict]=None) -> \
                 Tuple[QueryResult, List[QueryReference]]:
   """
   Execute a query over a query engine and generate a response.
@@ -98,9 +104,11 @@ async def query_generate(
     user_id: user id of user making query
     prompt: the text prompt to pass to the query engine
     q_engine: the name of the query engine to use
+    user_data (optional): dict of user data from auth token
     llm_type (optional): chat model to use for query
     user_query (optional): an existing user query for context
     rank_sentences: (optional): rank sentences in retrieved chunks
+    query_filter: (optional): dict of key value pairs for filtering results
 
   Returns:
     QueryResult object,
@@ -115,6 +123,22 @@ async def query_generate(
               f"prompt=[{prompt}], q_engine=[{q_engine.name}], "
               f"user_query=[{user_query}]")
 
+  # process query filter and RBAC roles for user
+  authz_filter = create_authz_filter(user_data)
+  Logger.info(f"query_generate authz_filter = {authz_filter}")
+
+  if query_filter is not None:
+    query_filter = json.loads(query_filter)
+  else:
+    query_filter = {}
+
+  if authz_filter:
+    query_filter.update(authz_filter)
+
+  if not query_filter:
+    query_filter = None
+  Logger.info(f"query_generate query filter = {query_filter}")
+
   # determine question generation model
   if llm_type is None:
     if q_engine.llm_type is not None:
@@ -123,8 +147,11 @@ async def query_generate(
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   # perform retrieval
-  query_references = await retrieve_references(prompt, q_engine, user_id,
-                                               rank_sentences)
+  query_references = await retrieve_references(prompt,
+                                               q_engine,
+                                               user_id,
+                                               rank_sentences,
+                                               query_filter)
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -249,7 +276,8 @@ async def summarize_history(chat_history: str,
 async def retrieve_references(prompt: str,
                               q_engine: QueryEngine,
                               user_id: str,
-                              rank_sentences=False)-> List[QueryReference]:
+                              rank_sentences: bool = False,
+                              query_filter: dict = None)-> List[QueryReference]:
   """
   Execute a query over a query engine and retrieve reference documents.
 
@@ -263,26 +291,31 @@ async def retrieve_references(prompt: str,
   """
   # perform retrieval for prompt
   query_references = []
+
   if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
     query_references = \
-         await query_vertex_search(q_engine, prompt, NUM_MATCH_RESULTS)
+         await query_vertex_search(q_engine, prompt,
+                                   NUM_MATCH_RESULTS, query_filter)
   elif q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
     child_engines = QueryEngine.find_children(q_engine)
     for child_engine in child_engines:
       # make a recursive call to retrieve references for child engine
       child_query_references = await retrieve_references(prompt,
                                                          child_engine,
-                                                         user_id)
+                                                         user_id,
+                                                         query_filter)
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
     # default if type is not set to llm service query
-    query_references = await query_search(q_engine, prompt, rank_sentences)
+    query_references = await query_search(q_engine, prompt,
+                                          rank_sentences, query_filter)
   return query_references
 
 async def query_search(q_engine: QueryEngine,
                        query_prompt: str,
-                       rank_sentences=False) -> List[QueryReference]:
+                       rank_sentences: bool = False,
+                       query_filter: dict = None) -> List[QueryReference]:
   """
   For a query prompt, retrieve text chunks with doc references
   from matching documents.
@@ -306,7 +339,8 @@ async def query_search(q_engine: QueryEngine,
   # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
-                                                         query_embedding)
+                                                         query_embedding,
+                                                         query_filter)
   query_references = []
 
   # Assemble document chunk models from vector store indexes
@@ -569,7 +603,8 @@ def update_user_query(prompt: str,
                       user_id: str,
                       q_engine: QueryEngine,
                       query_references: List[QueryReference],
-                      user_query: UserQuery = None) -> \
+                      user_query: UserQuery = None,
+                      query_filter=None) -> \
                       Tuple[UserQuery, dict]:
   """ Save user query history """
   query_reference_dicts = [
@@ -585,6 +620,12 @@ def update_user_query(prompt: str,
   user_query.update_history(prompt=prompt,
                             response=response,
                             references=query_reference_dicts)
+
+  if query_filter:
+    user_query.update_history(custom_entry={
+      "query_filter": query_filter,
+    })
+
   return user_query, query_reference_dicts
 
 async def batch_build_query_engine(request_body: Dict,
@@ -708,6 +749,10 @@ async def query_engine_build(doc_url: str,
       for qe_name in associated_qe_names
     ]
 
+  manifest_url = None
+  if "manifest_url" in params:
+    manifest_url = params["manifest_url"]
+
   # create query engine model
   q_engine = QueryEngine(name=query_engine,
                          created_by=user_id,
@@ -718,6 +763,7 @@ async def query_engine_build(doc_url: str,
                          vector_store=vector_store_type,
                          is_public=is_public,
                          doc_url=doc_url,
+                         manifest_url=manifest_url,
                          agents=associated_agents,
                          params=params)
 
@@ -811,6 +857,9 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
   # get datasource class for doc_url
   data_source = datasource_from_url(doc_url, q_engine, storage_client)
 
+  # initialize metadata
+  metadata_manifest = data_source.init_metadata(q_engine)
+
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
     data_source_files = data_source.download_documents(doc_url, temp_dir)
@@ -825,9 +874,10 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       Logger.info(f"processing [{doc_name}]")
 
-      text_chunks = data_source.chunk_document(doc_name,
-                                               index_doc_url,
-                                               doc_filepath)
+      text_chunks, embed_chunks = data_source.chunk_document(
+        doc_name,
+        index_doc_url,
+        doc_filepath)
 
       if text_chunks is None or len(text_chunks) == 0:
         # unable to process this doc; skip
@@ -838,16 +888,23 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       # generate embedding data and store in vector store
       try:
+        metadata = metadata_manifest.get(doc_name, None)
+        metadata_list = []
+        if metadata is not None:
+          metadata_list = [deepcopy(metadata) for chunk in text_chunks]
         new_index_base = \
             await qe_vector_store.index_document(doc_name,
-                                                 text_chunks, index_base)
+                                                 embed_chunks, index_base,
+                                                 metadata_list)
       except Exception as e:
         # unable to process this doc; skip
         Logger.error(f"error indexing doc [{index_doc_url}]: {str(e)}")
         data_source.docs_not_processed.append(index_doc_url)
         continue
 
-      Logger.info(f"doc successfully indexed [{doc_name}]")
+      Logger.info(
+        f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"
+      )
 
       # cleanup temp local file
       os.remove(doc_filepath)
@@ -858,7 +915,8 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                 doc_url=index_doc_url,
                                 index_file=data_source_file.doc_id,
                                 index_start=index_base,
-                                index_end=new_index_base)
+                                index_end=new_index_base,
+                                metadata=metadata)
       query_doc.save()
 
       for i in range(0, len(text_chunks)):

@@ -95,27 +95,12 @@ echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-pas
 
 Create a postgreSQL instance:
 ```
-export INSTANCE_ID=${PROJECT_ID}-db
+./utils/cloudsql_db.sh
+```
 
-gcloud services enable sqladmin.googleapis.com
-
-gcloud sql instances create ${INSTANCE_ID} \
-  --database-version=POSTGRES_15 \
-  --region=us-central1 \
-  --tier=db-perf-optimized-N-2 \
-  --edition=ENTERPRISE_PLUS \
-  --enable-data-cache \
-  --storage-size=250 \
-  --network default-vpc \
-  --enable-google-private-path \
-  --availability-type=REGIONAL \
-  --no-assign-ip
-
-gcloud sql users set-password postgres \
-  --instance=vectordb \
-  --password=$(gcloud secrets versions access latest --secret="postgres-user-passwd")
-
-export PG_HOST=$(gcloud sql instances list --format="value(PRIVATE_ADDRESS)")
+Set the IP address for database host from the output of the above script:
+```shell
+export PG_HOST=<cloudsql-ip-address>
 ```
 
 ### AlloyDB as a vector database
@@ -215,7 +200,7 @@ CORS_ALLOW_ORIGINS=http://localhost,http://localhost:8080,http://localhost:5173,
 
 Deploy microservice to GKE cluster as usual.
 ```
-sb deploy -n default -m llm_service
+skaffold run -p default-deploy -n default -m llm_service
 ```
 
 ### Deploy with custom agent_config.json stored in a GCS bucket path.
@@ -277,7 +262,7 @@ sudo bash -c "echo 'export ONEDRIVE_TENANT_ID=${ONEDRIVE_TENANT_ID}' >> /etc/pro
 
 To run a livereload service in the remote cluster and print logs in the local terminal:
 ```
-sb deploy --component=llm_service --dev
+skaffold dev -p default-deploy --component=llm_service
 ```
 - This will deploy the LLM service to the remote main cluster, and set up port forwarding with live reload from local source code.
 - You can monitor all API requests and responses in the terminal output.

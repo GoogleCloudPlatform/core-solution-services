@@ -43,6 +43,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryEngineModel,
                                 LLMGetQueryEnginesResponse,
                                 LLMQueryEngineURLResponse,
+                                LLMQueryEngineResponse,
                                 LLMQueryResponse,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import (query_generate,
@@ -67,6 +68,7 @@ def get_engine_list():
     "id": qe.id,
     "name": qe.name,
     "query_engine_type": qe.query_engine_type,
+    "doc_url": qe.doc_url,
     "description": qe.description,
     "llm_type": qe.llm_type,
     "embedding_type": qe.embedding_type,
@@ -134,6 +136,45 @@ def get_urls_for_query_engine(query_engine_id: str):
       "message": "Successfully retrieved document URLs "
                  f"for query engine {query_engine_id}",
       "data": url_list
+    }
+  except ResourceNotFoundException as e:
+    raise ResourceNotFound(str(e)) from e
+  except Exception as e:
+    Logger.error(e)
+    Logger.error(traceback.print_exc())
+    raise InternalServerError(str(e)) from e
+
+@router.get(
+  "/engine/{query_engine_id}",
+  name="Get details for query engine",
+  response_model=LLMQueryEngineResponse)
+def get_query_engine(query_engine_id: str):
+  """
+  Get details for a Query Engine
+  Args:
+    query_engine_id (str):
+  Returns:
+      LLMQueryEngineResponse
+  """
+  try:
+    Logger.info(f"Get details for a Query Engine={query_engine_id}")
+
+    # get engine model
+    q_engine = QueryEngine.find_by_id(query_engine_id)
+    if q_engine is None:
+      raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
+
+    # get query docs
+    query_docs = QueryDocument.find_by_query_engine_id(query_engine_id)
+    url_list = list(map(lambda query_doc: query_doc.doc_url, query_docs))
+
+    response_data = q_engine.get_fields(reformat_datetime=True)
+    response_data["url_list"] = url_list
+    return {
+      "success": True,
+      "message": "Successfully retrieved details "
+                 f"for query engine {query_engine_id}",
+      "data": response_data
     }
   except ResourceNotFoundException as e:
     raise ResourceNotFound(str(e)) from e
@@ -406,7 +447,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
       gen_config (LLMQueryEngineModel)
       user_data (dict)
   Returns:
-      LLMQueryEngineResponse
+      BatchJobModel
   """
 
   genconfig_dict = {**gen_config.dict()}
@@ -514,6 +555,10 @@ async def query(query_engine_id: str,
   rank_sentences = genconfig_dict.get("rank_sentences", False)
   Logger.info(f"rank_sentences = {rank_sentences}")
 
+  query_filter = genconfig_dict.get("query_filter")
+  Logger.info(f"query_filter = {query_filter}")
+
+  # get the User GENIE stores
   user = User.find_by_email(user_data.get("email"))
 
   run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
@@ -537,7 +582,8 @@ async def query(query_engine_id: str,
         "llm_type": llm_type,
         "user_id": user.id,
         "user_query_id": user_query.id,
-        "rank_sentences": rank_sentences
+        "rank_sentences": rank_sentences,
+        "query_filter": query_filter
       }
       env_vars = {
         "DATABASE_PREFIX": DATABASE_PREFIX,
@@ -565,8 +611,15 @@ async def query(query_engine_id: str,
 
   # perform normal synchronous query
   try:
-    query_result, query_references = await query_generate(
-          user.id, prompt, q_engine, llm_type, user_query, rank_sentences)
+    query_result, query_references = await query_generate(user.id,
+                                                          prompt,
+                                                          q_engine,
+                                                          user_data,
+                                                          llm_type,
+                                                          user_query,
+                                                          rank_sentences,
+                                                          query_filter)
+
     Logger.info(f"Query response="
                 f"[{query_result.response}]")
 
@@ -576,7 +629,8 @@ async def query(query_engine_id: str,
                           query_result.response,
                           user.id,
                           q_engine,
-                          query_references, None)
+                          query_references, None,
+                          query_filter)
 
     return {
         "success": True,
@@ -597,7 +651,10 @@ async def query(query_engine_id: str,
     "/{user_query_id}",
     name="Continue chat with a prior user query",
     response_model=LLMQueryResponse)
-async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
+async def query_continue(
+  user_query_id: str,
+  gen_config: LLMQueryModel,
+  user_data: dict = Depends(validate_token)):
   """
   Continue a prior user query.  Perform a new search and
   add those references along with prior query/chat history as context.
@@ -629,6 +686,9 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
 
   rank_sentences = genconfig_dict.get("rank_sentences", False)
   Logger.info(f"rank_sentences = {rank_sentences}")
+
+  query_filter = genconfig_dict.get("query_filter")
+  Logger.info(f"query_filter = {query_filter}")
 
   q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
 
@@ -677,15 +737,18 @@ async def query_continue(user_query_id: str, gen_config: LLMQueryModel):
     query_result, query_references = await query_generate(user_query.user_id,
                                                           prompt,
                                                           q_engine,
+                                                          user_data,
                                                           llm_type,
-                                                          user_query)
+                                                          user_query,
+                                                          rank_sentences,
+                                                          query_filter)
     # save user query history
     _, query_reference_dicts = \
         update_user_query(prompt,
                           query_result.response,
                           user_query.user_id,
                           q_engine,
-                          query_references, None)
+                          query_references)
 
     Logger.info(f"Generated query response="
                 f"[{query_result.response}], "

@@ -16,13 +16,23 @@
 
 #pylint: disable=wrong-import-position
 
+import asyncio
 import logging
 import sys
-sys.path.append("components/llm_service/src")
-sys.path.append("components/common/src")
+sys.path.append("../components/llm_service/src")
+sys.path.append("../components/common/src")
 from services.query.query_service import query_engine_build
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
+
+async def main(doc_url, query_engine, user_id):
+  print(f"*** building query index for {doc_url}," \
+        f" query_engine {query_engine}, for user id {user_id}")
+
+  q_engine, docs_processed, docs_not_processed = \
+      await query_engine_build(doc_url, query_engine, user_id)
+  print(f"*** docs_processed {docs_processed}")
+  print(f"*** docs__not_processed {docs_not_processed}")
 
 if __name__ == "__main__":
   args = sys.argv[1:]
@@ -31,9 +41,5 @@ if __name__ == "__main__":
   query_engine = args[1]
   user_id = args[2]
 
-  print(f"*** building query index for {doc_url}," \
-        f" query_engine {query_engine}, for user id {user_id}")
-
-  params = {}
-  await query_engine_build(doc_url, query_engine, user_id)
-  
+  asyncio.get_event_loop().run_until_complete(
+        main(doc_url, query_engine, user_id))
