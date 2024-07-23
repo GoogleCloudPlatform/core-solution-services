@@ -138,7 +138,8 @@ def query_engine_page():
         ["Created at", created_at],
         ["Errors", job.get("errors", {}).get("error_message", "")]
       ]
-      input_data = json.loads(job["input_data"])
+      #input_data = json.loads(job["input_data"]) #SC240723
+      input_data = job["input_data"] #SC240723
       data = [[key, value] for key, value in input_data.items()]
       query_engine = input_data["query_engine"].strip()
       status = job["status"]
