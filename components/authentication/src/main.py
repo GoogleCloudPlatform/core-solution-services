@@ -17,19 +17,20 @@ import config
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from routes import (refresh_token, validate_token, password, sign_in, sign_up)
+from common.config import CORS_ALLOW_ORIGINS
 from common.utils.http_exceptions import add_exception_handlers
 
-app = FastAPI()
 
-"""
-For Local Development
-import sys
-sys.path.append("../../../common/src")
-import os
-os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
-os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
-"""
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ALLOW_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Basic API config
 service_title = "Authentication"

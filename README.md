@@ -18,12 +18,13 @@ Highlighted features:
 - Support for Vertex model APIs and Vertex Model Garden.
 - Easy plug in and use of LLM models available in the market, leveraging [Langchain](https://www.langchain.com/) as a model interface layer.
 - Configurable agents based on Langchain.
-- A built-in frontend app (using [Streamlit](https://streamlit.io/)) to showcase end-to-end user journeys.
-- Cross-platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows and seamless digital experience on Android, iOS, web, and desktop platforms.
+- A frontend app using React that supports chat and RAG, using Vertex Search or the GENIE native RAG pipeline.
+- A frontend app using [Streamlit](https://streamlit.io/) for developer prototyping.
+- Cross-platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows on Android, iOS, web, and desktop platforms.
 
 ## Releases
 
-Consult the [CHANGELOG](./CHANGELOG.md) for release information.  The current stable release of Core Solution Services is `v0.2.0`
+Consult the [CHANGELOG](./CHANGELOG.md) for release information.  The current stable release of Core Solution Services is `v0.3.1`
 
 ## Quickstart (for GENIE)
 

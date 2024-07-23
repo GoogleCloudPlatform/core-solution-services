@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      LLM_MULTI_GENERATE_EXAMPLE,
                                      QUERY_EXAMPLE,
+                                     QUERY_ENGINE_EXAMPLE,
                                      QUERY_ENGINE_BUILD_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
                                      LLM_EMBEDDINGS_EXAMPLE,
@@ -159,6 +160,7 @@ class LLMQueryModel(BaseModel):
   llm_type: Optional[str]
   run_as_batch_job: Optional[str]
   rank_sentences: Optional[str]
+  query_filter: Optional[str]
 
   class Config():
     orm_mode = True
@@ -188,16 +190,16 @@ class LLMQueryEngineModel(BaseModel):
 class LLMQueryEngineResponse(BaseModel):
   """LLM Generate Response model"""
   success: Optional[bool] = True
-  message: Optional[str] = "Successfully generated text"
-  data: Optional[str] = ""
+  message: Optional[str] = "Successfully retrieved query engine"
+  data: Optional[dict] = {}
 
   class Config():
     orm_mode = True
     schema_extra = {
         "example": {
             "success": True,
-            "message": "Successfully generated text",
-            "data": None
+            "message": "Successfully retrieved query engine",
+            "data": QUERY_ENGINE_EXAMPLE
         }
     }
 

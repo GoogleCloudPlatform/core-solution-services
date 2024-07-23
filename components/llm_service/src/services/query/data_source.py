@@ -14,6 +14,7 @@
 """
 Query Data Sources
 """
+import json
 import traceback
 import os
 import re
@@ -21,11 +22,12 @@ import tempfile
 from urllib.parse import unquote
 from copy import copy
 from base64 import b64encode
-from typing import List
+from typing import List, Tuple
 from pathlib import Path
 from common.utils.logging_handler import Logger
+from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.models import QueryEngine
-from config import PROJECT_ID
+from config import PROJECT_ID, get_default_manifest
 from pypdf import PdfReader, PdfWriter, PageObject
 from pdf2image import convert_from_path
 from langchain_community.document_loaders import CSVLoader
@@ -126,8 +128,43 @@ class DataSource:
 
     return doc_filepaths
 
+  def init_metadata(self, q_engine: QueryEngine) -> dict:
+    """ 
+    Load metadata from manifest, if it is defined in the query engine
+    
+    Manifest spec looks like:
+      {"doc1_url": {
+          "title": "blah",
+          "attr": "value"
+        }
+       "doc2_url": {
+          ...
+        }
+      }
+    Args:
+        q_engine: query engine
+    Returns:
+      A dict representation of the manifest. If there is no manifest available
+      returns empty dict.
+    """
+    manifest_url = q_engine.manifest_url
+    manifest_spec = {}
+    if manifest_url:
+      if not manifest_url.startswith("gs://"):
+        raise RuntimeError("unsupported manifest URL {manifest_url}")
+      # download manifest from gs:// bucket
+      blob = get_blob_from_gcs_path(manifest_url)
+      manifest_spec = json.loads(blob.download_as_string())
+      Logger.info(f"loaded document manifest from {manifest_url}")
+    else:
+      default_manifest = get_default_manifest()
+      if default_manifest:
+        manifest_spec = default_manifest
+        Logger.info("using default manifest")
+    return manifest_spec
+
   def chunk_document(self, doc_name: str, doc_url: str,
-                     doc_filepath: str) -> List[str]:
+                     doc_filepath: str) -> Tuple[list[str], list[str]]:
     """
     Process doc into chunks for embeddings
 
@@ -136,9 +173,12 @@ class DataSource:
        doc_url: remote url of document
        doc_filepath: local file path of document
     Returns:
-       list of text chunks or None if the document could not be processed
+       tuple of 
+          list of text chunks or None if the document could not be processed
+          list of embedding chunks or None
     """
 
+    embed_chunks = None
     text_chunks = None
 
     Logger.info(f"generating index data for {doc_name}")
@@ -165,19 +205,21 @@ class DataSource:
       doc = Document(text=doc_text)
       # a node = a chunk of a page
       chunks = self.doc_parser.get_nodes_from_documents([doc])
+      # remove any empty chunks
+      chunks = [c for c in chunks if c.metadata["text"].strip() != ""]
       # this is a sentence parser with overlap --
       # each text chunk will include the specified
       # number of sentences before and after the current sentence
+      embed_chunks = [c.metadata["text"] for c in chunks]
       text_chunks = [c.metadata["window_text"] for c in chunks]
 
       if all(element == "" for element in text_chunks):
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
         self.docs_not_processed.append(doc_url)
+      else:
+        Logger.info(f"generated {len(text_chunks)} text chunks for {doc_name}")
 
-      # clean up text_chunks with empty items.
-      text_chunks = [x for x in text_chunks if x.strip() != ""]
-
-    return text_chunks
+    return text_chunks, embed_chunks
 
   def chunk_document_multi(self,
                            doc_name: str,

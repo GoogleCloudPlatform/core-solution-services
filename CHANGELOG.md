@@ -1,5 +1,20 @@
 # Releases
 
+## v0.3.1
+
+New features:
+
+### GENIE ("GenAI for Enterprise" platform on GCP)
+- Deploy using artifact registry
+- Add Query Engine Admin in React Frontend to create new Query Engines, view build jobs
+- Support basic query filters for GENIE (non-Vertex Search) Query Engines
+- Support basic RBAC on documents in GENIE query engines
+- Add script to install postgres with Cloud SQL
+
+### Fixes
+- Update to build and deploy process to fix Container registry deprecation which was causing deploys to fail in new projects.
+- Fix embedding generation bug causing documents to fail to be indexed
+
 ## v0.3.0
 
 New features:

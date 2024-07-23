@@ -73,5 +73,5 @@ gcloud alloydb instances list
 
 # Get the IP address for database host
 export PG_HOST=$(gcloud alloydb instances describe ${INSTANCE_ID} \
- --cluster ${CLUSTER_ID} --region ${REGION} --format="value(ipAddress)")
+    --cluster ${CLUSTER_ID} --region ${REGION} --format="value(ipAddress)")
 echo "AlloyDB Host IP address is ${PG_HOST}"

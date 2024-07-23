@@ -15,7 +15,6 @@
   Streamlit app Query Engine Build Page
 """
 # pylint: disable=invalid-name,logging-not-lazy,consider-using-f-string,logging-fstring-interpolation
-import json
 import moment
 import streamlit as st
 from api import (build_query_engine, update_query_engine,
@@ -138,7 +137,7 @@ def query_engine_page():
         ["Created at", created_at],
         ["Errors", job.get("errors", {}).get("error_message", "")]
       ]
-      input_data = json.loads(job["input_data"])
+      input_data = job["input_data"]
       data = [[key, value] for key, value in input_data.items()]
       query_engine = input_data["query_engine"].strip()
       status = job["status"]

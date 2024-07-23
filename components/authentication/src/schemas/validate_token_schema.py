@@ -46,6 +46,7 @@ class ResponseModel(BaseModel):
   firebase: FirebaseModel
   uid: str
   access_api_docs: Optional[bool]
+  user_id: Optional[str]
   user_type: str
 
 

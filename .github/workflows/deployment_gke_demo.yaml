@@ -6,7 +6,7 @@ on:
 
 env:
   PROJECT_ID: ${{ vars.PROJECT_ID }}
-  SKAFFOLD_DEFAULT_REPO: gcr.io/${{ vars.PROJECT_ID }}
+  SKAFFOLD_DEFAULT_REPO: us-docker.pkg.dev/${{ vars.PROJECT_ID }}/default
   SKAFFOLD_NAMESPACE: ${{ vars.GKE_NAMESPACE }}
   DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
   API_BASE_URL: https://${{ vars.DOMAIN_NAME }}
@@ -15,7 +15,8 @@ env:
   ONEDRIVE_CLIENT_ID: ${{ vars.ONEDRIVE_CLIENT_ID }}
   ONEDRIVE_TENANT_ID: ${{ vars.ONEDRIVE_TENANT_ID }}
   AUTH_AUTO_CREATE_USERS: ${{ vars.AUTH_AUTO_CREATE_USERS }}
-  AUTH_EMAIL_DOMAINS_WHITELIST: ${{ vars.AUTH_EMAIL_DOMAINS_WHITELIST }}  
+  AUTH_EMAIL_DOMAINS_WHITELIST: ${{ vars.AUTH_EMAIL_DOMAINS_WHITELIST }}
+  AUTH_RBAC_DEFAULT_ROLE_SET: ${{ vars.AUTH_RBAC_DEFAULT_ROLE_SET}}
   GKE_CLUSTER: main-cluster
   GKE_REGION: us-central1
   KUSTOMIZE_VERSION: 5.0.0
@@ -23,6 +24,8 @@ env:
   SKAFFOLD_CACHE_GCS: gs://artifacts.${{ vars.PROJECT_ID }}.appspot.com/skaffold/cache
   SKAFFOLD_BUILD_CONCURRENCY: 0
   PG_HOST: ${{ vars.PG_HOST }}
+  AUTH_AUTO_CREATE_USERS: ${{ vars.AUTH_AUTO_CREATE_USERS }}
+  AUTH_EMAIL_DOMAINS_WHITELIST: ${{ vars.AUTH_EMAIL_DOMAINS_WHITELIST }}
 
 jobs:
   deploy_backends:
@@ -65,7 +68,7 @@ jobs:
 
       - name: Install Solutions Builder
         run: |
-          pip install -U solutions-builder
+          pip install -U solutions-builder==1.18.1
 
       - name: Update the project id in config files
         run: |
@@ -94,7 +97,7 @@ jobs:
           export AGENT_CONFIG_PATH=${AGENT_CONFIG_PATH}
           export ONEDRIVE_CLIENT_ID=${ONEDRIVE_CLIENT_ID}
           export ONEDRIVE_TENANT_ID=${ONEDRIVE_TENANT_ID}
-          sb deploy -n ${SKAFFOLD_NAMESPACE} --yes
+          skaffold run -p default-deploy -n ${SKAFFOLD_NAMESPACE} --yes
 
       - name: Upload Skaffold cache
         if: always()
