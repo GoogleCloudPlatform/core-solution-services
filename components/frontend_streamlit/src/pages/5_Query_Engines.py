@@ -15,7 +15,6 @@
   Streamlit app Query Engine Build Page
 """
 # pylint: disable=invalid-name,logging-not-lazy,consider-using-f-string,logging-fstring-interpolation
-import json
 import moment
 import streamlit as st
 from api import (build_query_engine, update_query_engine,
