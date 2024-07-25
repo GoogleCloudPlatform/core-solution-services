@@ -98,7 +98,7 @@ QUERY_ENGINE_BUILD_EXAMPLE = {
   "name": "query-engine-build-or-update-test",
   "query_engine_type": "qe_llm_service",
   "doc_url": "gs-for-cloud-storage-bucket",
-  "embedding_type": "VertexAI-Chat",
+  "embedding_type": "VertexAI-Embedding-Vision",
   "vector_store": "langchain_pgvector",
   "description": "sample description",
   "params": {
