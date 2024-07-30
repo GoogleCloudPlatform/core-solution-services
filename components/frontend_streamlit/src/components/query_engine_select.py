@@ -37,5 +37,5 @@ def query_engine_select():
           tuple(query_engines.keys()))
       query_engine_id = query_engines[qe_name]["id"]
       st.session_state.query_engine_id = query_engine_id
-      query_engine_is_multi = query_engines[qe_name]['params']['is_multimodal']
+      query_engine_is_multi = query_engines[qe_name]["params"]["is_multimodal"]
       st.session_state.query_engine_is_multi = query_engine_is_multi
