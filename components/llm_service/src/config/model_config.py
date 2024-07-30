@@ -655,15 +655,15 @@ class ModelConfig():
     ]
     return llm_types
 
-  def get_chat_llm_types(self) -> dict:
-    """ Get all supported and enabled chat LLM types, as a list of model
+  def get_non_multi_llm_types(self) -> dict:
+    """ Get all supported and enabled multimodal LLM types, as a list of model
         identifiers.
     """
-    chat_llm_types = [
+    non_multi_llm_types = [
       m for m,config in self.llm_models.items()
-      if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and self.is_model_enabled(m)
+      if (KEY_IS_MULTI not in config or not config[KEY_IS_MULTI]) and self.is_model_enabled(m)
     ]
-    return chat_llm_types
+    return non_multi_llm_types
 
   def get_multi_llm_types(self) -> dict:
     """ Get all supported and enabled multimodal LLM types, as a list of model
@@ -674,6 +674,40 @@ class ModelConfig():
       if (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and self.is_model_enabled(m)
     ]
     return multi_llm_types
+
+  def get_chat_llm_types(self) -> dict:
+    """ Get all supported and enabled chat LLM types, as a list of model
+        identifiers.
+    """
+    chat_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and self.is_model_enabled(m)
+    ]
+    return chat_llm_types
+  
+  def get_non_multi_chat_llm_types(self) -> dict:
+    """ Get all supported and enabled chat LLM types, as a list of model
+        identifiers.
+    """
+    chat_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and
+      (KEY_IS_MULTI not in config or not config[KEY_IS_MULTI]) and
+      self.is_model_enabled(m)
+    ]
+    return chat_llm_types
+  
+  def get_multi_chat_llm_types(self) -> dict:
+    """ Get all supported and enabled chat LLM types, as a list of model
+        identifiers.
+    """
+    chat_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and
+      (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and
+      self.is_model_enabled(m)
+    ]
+    return chat_llm_types
 
   def get_embedding_types(self) -> dict:
     """ Get all supported and enabled embedding types, as a list of model
