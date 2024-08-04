@@ -82,6 +82,34 @@ MIN_QUERY_REFERENCES = 2
 NUM_INTEGRATED_QUERY_REFERENCES = 6
 
 
+async def query_upload_generate(user_id: str,
+                                prompt: str,
+                                file_url: str,
+                                user_data: Optional[dict] = None,
+                                llm_type: Optional[str] = None) -> \
+                                    Tuple[QueryResult, List[QueryReference]]:
+  """
+  Execute a query over a document.  Creates a query engine based on the doc,
+  and a user query to save the query result.
+
+  Args:
+    user_id: user id of user making query
+    prompt: the text prompt to pass to the query engine
+    file_url: url of the file to run query against
+    user_data (optional): dict of user data from auth token
+    llm_type (optional): chat model to use for query
+
+  Returns:
+    UserQuery object,
+    QueryResult object,
+    list of QueryReference objects (see query_search)
+
+  Raises:
+    ResourceNotFoundException if the named query engine doesn't exist
+  """
+  return (None, None, [])
+
+
 async def query_generate(
             user_id: str,
             prompt: str,
