@@ -1,4 +1,5 @@
 # Deploying Gemma 2B
+Reference: https://cloud.google.com/kubernetes-engine/docs/tutorials/serve-gemma-gpu-vllm
 
 ## Pre-Requisites
 Kubernetes cluster with L4 GPUs nodepool
