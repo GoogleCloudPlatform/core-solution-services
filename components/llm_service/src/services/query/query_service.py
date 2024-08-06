@@ -392,6 +392,7 @@ def make_query_reference(q_engine: QueryEngine,
   """
 
   # Get modality of document chunk, make lowercase
+  # If modality is None, set it equal to default value "text"
   modality = doc_chunk.modality
   if modality is None:
     modality = "text"
