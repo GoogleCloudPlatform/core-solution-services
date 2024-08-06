@@ -425,14 +425,17 @@ def make_query_reference(q_engine: QueryEngine,
 
   # Clean up image chunk
   elif modality=="image":
+    # TODO: Placeholder to fill with actual logic
     pass
 
   # Clean up video chunk
   elif modality=="video":
+    # TODO: Placeholder to fill with actual logic
     pass
 
   # Clean up audio chunk
   elif modality=="audio":
+    # TODO: Placeholder to fill with actual logic
     pass
 
   # Create dict to hold all fields of query_reference,
