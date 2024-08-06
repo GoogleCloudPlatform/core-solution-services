@@ -303,7 +303,8 @@ class DataSource:
           doc_chunks.append(chunk_obj)
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
-      Logger.error(traceback.print_exc())
+      #Logger.error(traceback.print_exc()) #SC240806
+      Logger.error(traceback.format_exc())  #SC240806
 
     # Return array of page data
     return doc_chunks
