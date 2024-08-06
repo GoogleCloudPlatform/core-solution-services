@@ -375,7 +375,7 @@ def make_query_reference(q_engine: QueryEngine,
                            query_doc: QueryDocument,
                            doc_chunk: QueryDocumentChunk,
                            query_embeddings: List[Optional[List[float]]],
-                           rank_sentences: bool = False,) -> \
+                           rank_sentences: bool = False) -> \
                             QueryReference:
   """
   Make a single QueryReference object, with appropriate fields
