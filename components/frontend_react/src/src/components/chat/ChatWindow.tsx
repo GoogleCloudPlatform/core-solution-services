@@ -44,7 +44,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob }
     } else if (message.AIOutput) {
       return (
         <div key={index++}>
-          <div className={`flex items-center gap-6 mx-2 pb-7}`}>
+          <div className="flex items-center gap-6 mx-2 pb-7">
             <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start"/>
             <div>
               <Markdown children={message.AIOutput} rehypePlugins={[rehypeRaw]} />
