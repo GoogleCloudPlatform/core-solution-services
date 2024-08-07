@@ -241,11 +241,11 @@ export SKAFFOLD_DEFAULT_REPO=us-docker.pkg.dev/${PROJECT_ID}/default
 
 ### Option 1: Deploy GENIE microservices to the GKE cluster
 
-If you are installing GENIE you can deploy a subset of the microservices used by GENIE.  Depending on your use case for GENIE you may not need the tools service (only needed if you are using agents that use tools).
+If you are installing GENIE you can deploy a subset of the microservices used by a default install of GENIE.
 
 ```
 skaffold config set default-repo "${SKAFFOLD_DEFAULT_REPO}"
-skaffold run -p default-deploy -m authentication,redis,llm_service,jobs_service,frontend_streamlit,tools_service -n $NAMESPACE
+skaffold run -p default-deploy -m authentication,redis,llm_service,jobs_service,frontend_streamlit -n $NAMESPACE
 ```
 - This will run `skaffold` commands to deploy those microservices to the GKE cluster.
 
