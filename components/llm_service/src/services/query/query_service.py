@@ -1041,14 +1041,20 @@ def make_query_document_chunk(query_engine_id: str,
 
   # Clean up image chunk
   elif modality=="image":
+    #TODO: If needed, insert logic to filter, tile, or otherwise
+    #pre-process image
     pass
 
   # Clean up video chunk
   elif modality=="video":
+    #TODO: If needed, insert logic to filter, transcribe, or otherwise
+    #pre-process video
     pass
 
   # Clean up audio chunk
   elif modality=="audio":
+    #TODO: If needed, insert logic to filter, transcribe, or otherwise
+    #pre-process audio.
     pass
 
   # Create dict to hold all fields of query_document_chunk,
@@ -1068,11 +1074,15 @@ def make_query_document_chunk(query_engine_id: str,
     query_document_chunk_dict["sentences"]=sentences
   # For image chunk only
   elif modality=="image":
-    # doc_chunk is a string holding url that image is saved to
+    # doc_chunk is a string holding url of the file that the image is saved to
     query_document_chunk_dict["page"]=page
     query_document_chunk_dict["chunk_url"]=doc_chunk
   # For video and audio chunks only
   elif modality in {"video", "audio"}:
+    #TODO: Insert logic to set values of the following keys:
+    #  "chunk_url": Holds url to the file that the video/audio is saved to
+    #  "timestamp_start": Holds timestamp of beginning of video/audio chunk
+    #  "timestamp_stop": Holds timestamp of ending of video/audio chunk
     pass
 
   # Create query_document_chunk out of dict
