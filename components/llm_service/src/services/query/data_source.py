@@ -287,7 +287,8 @@ class DataSource:
                                               doc_url, pdf_doc["filepath"])
 
             # Take PNG version of page and convert to b64
-            png_doc_filepath = ".png".join(pdf_doc["filepath"].rsplit(".pdf", 1))
+            png_doc_filepath = \
+              ".png".join(pdf_doc["filepath"].rsplit(".pdf", 1))
             png_array[i].save(png_doc_filepath, format="png")
             with open(png_doc_filepath, "rb") as f:
               png_bytes = f.read()
