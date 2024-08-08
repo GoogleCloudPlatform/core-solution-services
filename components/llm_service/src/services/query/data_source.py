@@ -270,7 +270,7 @@ class DataSource:
         raise ValueError(f"Invalid Doc URL: {doc_url}")
 
       # If doc is a PDF, convert it to an array of PNGs for each page
-      if doc_extension == "pdf": #SC240806
+      if doc_extension == "pdf":
 
         with tempfile.TemporaryDirectory() as path:
           png_array = convert_from_path(doc_filepath, output_folder=path)
@@ -316,8 +316,7 @@ class DataSource:
 
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
-      #Logger.error(traceback.print_exc()) #SC240806
-      Logger.error(traceback.format_exc())  #SC240806
+      Logger.error(traceback.format_exc())
 
     # Return array of page data
     return doc_chunks
