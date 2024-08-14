@@ -63,7 +63,7 @@ gcloud sql instances create ${INSTANCE_ID} \
     --enable-google-private-path \
     --availability-type=REGIONAL \
     --no-assign-ip
-gcloud sql users set-password postgres --instance=vectordb --password=${PASSWORD}
+gcloud sql users set-password postgres --instance=${INSTANCE_ID} --password=${PASSWORD}
 
 gcloud sql instances list
 
