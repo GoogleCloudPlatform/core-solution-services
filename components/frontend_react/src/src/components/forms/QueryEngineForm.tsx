@@ -113,9 +113,9 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
             <Link href="#">
               <button
                 className="btn btn-outline btn-sm"
-                onClick={() => window.history.go(-1)}
+                onClick={() => {formik.resetForm()}}
               >
-                Back
+                Clear
               </button>
             </Link>
             <button

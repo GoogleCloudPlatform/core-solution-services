@@ -103,7 +103,7 @@ const FileUploadField: React.FC<IFileUploadFieldProps> = ({
         <DocumentUpload
           label={variable.fileLabel || "files"}
           type={variable.name}
-          multiple={true}
+          multiple={variable.multiple || false}
           accept={variable.accept}
           handleFiles={handleFiles}
         />

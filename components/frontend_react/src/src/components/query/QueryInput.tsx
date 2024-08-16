@@ -33,15 +33,17 @@ const QUERY_UPLOAD_FORM_DATA: IFormVariable[] = [
     placeholder: "http(s)://, gs://, bq://<table>, shpt://",
     description: "",
     default: "",
-    required: true,
+    required: false,
     group: "queryengine",
     order: 1,
   },
   {
     name: "file_upload",
-    display: "Files",
+    display: "File",
     type: "file(upload)",
-    placeholder: "Upload files to query",
+    placeholder: "Upload file to query",
+    fileLabel: "Select local file",
+    multiple: false,
     description: "",
     default: "",
     required: false,
@@ -91,7 +93,8 @@ const QueryInput: React.FC<QueryInputProps> = ({ onSubmit, onUploadSubmit, onUpl
           <div className="i-material-symbols-send-outline-rounded h-8 w-8 shrink-0" />
         </button>
       </form>
-      {isUploadOpen && <div className="w-full justify-center rounded-lg border-2 border-primary border-opacity-50 p-4 md:flex">
+      {isUploadOpen && 
+      <div className="w-full justify-center rounded-lg border-2 border-primary border-opacity-50 p-4 md:flex">
          <QueryEngineForm
           key="upload"
           onSubmit={onUploadSubmit}
