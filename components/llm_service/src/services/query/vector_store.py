@@ -432,23 +432,17 @@ class LangChainVectorStore(VectorStore):
 
     # Loop over chunks
     for doc in doc_chunks:
-      Logger.info(f"\t#SC240817: Just started new loop:")
       my_contextual_text = doc["text_chunks"]
       my_contextual_text = [string.strip() for string in my_contextual_text]
       my_contextual_text = " ".join(my_contextual_text)
       my_contextual_text = my_contextual_text[0:1023]
-      #my_contextual_text = " ".join(doc["text_chunks"]).strip()[0:1023] #SC240817
-      Logger.info(f"\t#SC240817: {my_contextual_text=}")
       my_image = b64decode(doc["image_b64"])
       # Get text embedding and image embedding from a single chunk
       # and put in dict
       chunk_embedding = \
         await embeddings.get_multi_embeddings(my_contextual_text,
                                               my_image,
-                                              self.embedding_type) #SC240817
-        #await embeddings.get_multi_embeddings(doc["text_chunks"],
-        #                                      b64decode(doc["image_b64"]),
-        #                                      self.embedding_type) #SC240817
+                                              self.embedding_type)
       # Append this chunk's text to the text_chunks array
       text_chunks.append(doc["text_chunks"])
       # Append this chunk's image embedding to the chunk_embeddings array
@@ -463,10 +457,7 @@ class LangChainVectorStore(VectorStore):
                                         embeddings=chunk_embeddings,
                                         ids=ids)
     # return new index base
-    Logger.info(f"\t#SC240817: {index_base=}")
-    Logger.info(f"\t#SC240817: len(text_chunks)={len(text_chunks)}")
     new_index_base = index_base + len(text_chunks)
-    Logger.info(f"\t#SC240817: {new_index_base=}")
     self.index_length = new_index_base
 
     return new_index_base
