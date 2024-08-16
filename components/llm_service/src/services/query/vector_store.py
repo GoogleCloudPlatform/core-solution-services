@@ -433,7 +433,11 @@ class LangChainVectorStore(VectorStore):
     # Loop over chunks
     for doc in doc_chunks:
       Logger.info(f"\t#SC240817: Just started new loop:")
-      my_contextual_text = " ".join(doc["text_chunks"])[0:1023]
+      my_contextual_text = doc["text_chunks"]
+      my_contextual_text = [string.strip() for string in my_contextual_text]
+      my_contextual_text = " ".join(my_contextual_text)
+      my_contextual_text = my_contextual_text[0:1023]
+      #my_contextual_text = " ".join(doc["text_chunks"]).strip()[0:1023] #SC240817
       Logger.info(f"\t#SC240817: {my_contextual_text=}")
       my_image = b64decode(doc["image_b64"])
       # Get text embedding and image embedding from a single chunk
