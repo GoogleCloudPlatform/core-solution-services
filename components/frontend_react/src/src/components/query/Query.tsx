@@ -43,6 +43,19 @@ const GenAIQuery: React.FC<GenAIQueryProps> = ({
 
   const { selectedModel, selectedEngine } = useConfig()
 
+  const handleFiles = (_files: FileList, _uploadVariable: string) => {
+    //handle file upload
+  }
+
+  const onUploadSubmit = (userInput: string) => {
+  }
+
+  const onUploadSuccess = (userInput: string) => {
+  }
+
+  const onUploadFailure = (userInput: string) => {
+  }
+
   const {
     isLoading,
     data: query,
@@ -174,7 +187,10 @@ const GenAIQuery: React.FC<GenAIQueryProps> = ({
   return (
     <div className="bg-primary/20 flex flex-grow gap-4 rounded-lg p-3">
       <div className="bg-base-100 flex w-full rounded-lg chat-p justify-center py-6">
-        <QueryWindow onSubmit={onSubmit} messages={messages} activeJob={activeJob} />
+        <QueryWindow onSubmit={onSubmit} messages={messages} activeJob={activeJob} token={userToken}
+                     onUploadSubmit={onUploadSubmit} onUploadSuccess={onUploadSuccess}
+                     onUploadFailure={onUploadFailure} handleFiles={handleFiles}
+        />
       </div>
     </div>
   )

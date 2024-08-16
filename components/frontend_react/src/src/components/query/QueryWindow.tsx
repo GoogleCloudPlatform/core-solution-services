@@ -26,9 +26,14 @@ interface QueryWindowProps {
   onSubmit: (message: string) => void
   messages: QueryContents[]
   activeJob: boolean
+  token: str
+  onUploadSubmit: Function
+  onUploadSuccess: Function
+  onUploadFailure: Function 
+  handleFiles: Function
 }
 
-const QueryWindow: React.FC<QueryWindowProps> = ({ onSubmit, messages, activeJob }) => {
+const QueryWindow: React.FC<QueryWindowProps> = ({ onSubmit, messages, activeJob, token, onUploadSubmit, onUploadSuccess, onUploadFailure, handleFiles }) => {
   let index = 0
   const renderQuery = (message: QueryContents) => {
     if (message.HumanQuestion) {
@@ -96,7 +101,10 @@ const QueryWindow: React.FC<QueryWindowProps> = ({ onSubmit, messages, activeJob
         )}
         <div ref={endOfMessagesRef} />
       </div>
-      <QueryInput onSubmit={onSubmit} activeJob={activeJob} />
+      <QueryInput onSubmit={onSubmit} activeJob={activeJob} token={token}
+                  onUploadSubmit={onUploadSubmit} onUploadSuccess={onUploadSuccess}
+                  onUploadFailure={onUploadFailure} handleFiles={handleFiles}
+      />
     </div>
   )
 }

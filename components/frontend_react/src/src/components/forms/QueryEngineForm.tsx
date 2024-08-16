@@ -25,15 +25,17 @@ interface QueryEngineFormProps {
   onSubmit: Function
   onSuccess: Function
   onFailure: Function
+  handleFiles: Function
   token: string
   currentVarsData: IFormVariable[]
 }
 
 const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
+  queryEngine,
   onSubmit,
   onSuccess,
   onFailure,
-  queryEngine,
+  handleFiles,
   token,
   currentVarsData,
 }) => {
@@ -41,10 +43,6 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   const [qEngineInitialFormat, setQueryEngineInitialFormat] = useState({})
 
   const defaultValues = initialFormikValues(currentVarsData)
-
-  const handleFiles = (_files: FileList, _uploadVariable: string) => {
-    //handle file upload if required in future
-  }
 
   const handleSubmit = async (values: Record<string, any>) => {
     
