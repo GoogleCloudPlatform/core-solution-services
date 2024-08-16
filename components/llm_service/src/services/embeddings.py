@@ -254,7 +254,7 @@ async def get_vertex_multi_embeddings(embedding_type: str,
       user_file_image = Image(image_bytes=user_file_bytes)
       vertex_model = MultiModalEmbeddingModel.from_pretrained(google_llm)
       embeddings = vertex_model.get_embeddings(image=user_file_image,
-                                               contextual_text="")
+                                               contextual_text=user_text)
 
       return_value = {}
       return_value["text_embeddings"] = embeddings.text_embedding
