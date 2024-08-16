@@ -945,7 +945,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                  index_base,
                                                  metadata_list)
           Logger.info(
-            f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"
+            f"Successfully indexed {len(doc_chunks)} chunks for [{doc_name}]"
             )
       except Exception as e:
         # unable to process this doc; skip
