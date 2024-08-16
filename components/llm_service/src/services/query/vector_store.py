@@ -435,6 +435,8 @@ class LangChainVectorStore(VectorStore):
       my_contextual_text = doc["text_chunks"]
       my_contextual_text = [string.strip() for string in my_contextual_text]
       my_contextual_text = " ".join(my_contextual_text)
+      #TODO: Consider all characters in my_contextual_text,
+      #not just the first 1024
       my_contextual_text = my_contextual_text[0:1023]
       my_image = b64decode(doc["image_b64"])
       # Get text embedding and image embedding from a single chunk
