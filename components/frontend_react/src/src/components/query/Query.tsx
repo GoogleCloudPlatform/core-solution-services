@@ -44,16 +44,19 @@ const GenAIQuery: React.FC<GenAIQueryProps> = ({
   const { selectedModel, selectedEngine } = useConfig()
 
   const handleFiles = (_files: FileList, _uploadVariable: string) => {
-    //handle file upload
+    console.log("handleFiles")
   }
 
   const onUploadSubmit = (userInput: string) => {
+    console.log("onUploadSubmit")
   }
 
   const onUploadSuccess = (userInput: string) => {
+    console.log("onUploadSuccess")
   }
 
   const onUploadFailure = (userInput: string) => {
+    console.log("onUploadFailure")
   }
 
   const {
