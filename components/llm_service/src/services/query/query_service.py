@@ -119,7 +119,6 @@ async def query_generate(
   Raises:
     ResourceNotFoundException if the named query engine doesn't exist
   """
-  Logger.info("\t#SC240819: Just started query_generate")
   Logger.info(f"Executing query: "
               f"llm_type=[{llm_type}], "
               f"user_id=[{user_id}], "
@@ -148,40 +147,27 @@ async def query_generate(
       llm_type = q_engine.llm_type
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
-
-  Logger.info(f"\t#SC240819: query_generate {llm_type=}")
+  Logger.info(f"query_generate {llm_type=}")
 
   # perform retrieval
-  Logger.info("\t#SC240819: About to start retrieve_references")
   query_references = await retrieve_references(prompt,
                                                q_engine,
                                                user_id,
                                                rank_sentences,
                                                query_filter)
-  Logger.info("\t#SC240819: Just finished retrieve_references")
-  Logger.info(f"\t#SC240819: {len(query_references)} query references found")
-  #SC240819: Should happen automatically with mm?
-  #SC240819: No it does not. Tries to call the mm embedding model in batch mode
-  #SC240819: which is not possible. Must fix!
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
-  Logger.info("\t#SC240819: About to start code around rerank_references")
   if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
       len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
-  Logger.info("\t#SC240819: Just finished code around rerank_references")
-  #SC240819: Should happen automatically with mm?
 
   # Update user query with ranked references. We do this before generating
   # the answer so the frontend can display the retrieved results as soon as
   # they are available.
-  Logger.info("\t#SC240819: About to start code around update_user_query")
   if user_query:
     update_user_query(
         prompt, None, user_id, q_engine, query_references, user_query)
-  Logger.info("\t#SC240819: Just finished code around update_user_query")
-  #SC240819: May need to fix for mm
 
   # generate question prompt
   question_prompt, query_references = \
@@ -306,7 +292,6 @@ async def retrieve_references(prompt: str,
   Returns:
     list of QueryReference objects
   """
-  Logger.info("\t#SC240819: Just entered retrieve_references")
   # perform retrieval for prompt
   query_references = []
 
@@ -326,12 +311,9 @@ async def retrieve_references(prompt: str,
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
       not q_engine.query_engine_type:
     # default if type is not set to llm service query
-    Logger.info("\t#SC240819: About to start query_search")
     query_references = await query_search(q_engine, prompt,
                                           rank_sentences, query_filter)
-    Logger.info("\t#SC240819: Just finished query_search")
 
-  Logger.info("\t#SC240819: About to finish retrieved_references")
   return query_references
 
 async def query_search(q_engine: QueryEngine,
@@ -351,24 +333,17 @@ async def query_search(q_engine: QueryEngine,
     list of QueryReference models
 
   """
-  Logger.info("\t#SC240819: Just started query_search")
-
   # Get is_multimodal flag from q_engine
   params = q_engine.params #q_engine should always have a field called params
-  Logger.info(f"\t#SC240819: {params=}")
   is_multimodal = False
   if "is_multimodal" in params and isinstance(params["is_multimodal"], str):
     is_multimodal = params["is_multimodal"].lower()
     is_multimodal = is_multimodal == "true"
-  Logger.info(f"\t#SC240819: {is_multimodal=}")
 
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
   if is_multimodal:
-    Logger.info(f"\t#SC240819: query_text = {query_prompt}")
-    Logger.info("\t#SC240819: query_image = None")
-    Logger.info("\t#SC240819: About to start get_multi_embeddings")
     # TODO: Once multimodal embedding model can operate in batch mode
     # and get_multi_embeddings is edited to send multiple chunks to
     # the model in batch mode, then edit this code so that we input a
@@ -383,10 +358,7 @@ async def query_search(q_engine: QueryEngine,
                                             None,
                                             q_engine.embedding_type)
     query_embedding = query_embeddings["text_embeddings"]
-    Logger.info("\t#SC240819: Just finished get_multi_embeddings")
   else:
-    Logger.info(f"\t#SC240819: query_text = {query_prompt}")
-    Logger.info("\t#SC240819: About to start get_embeddings")
     # The text-only embedding model operates in batch mode
     # and get_embeddings sends multiple chunks to
     # the model in batch mode, and so we input a
@@ -398,17 +370,13 @@ async def query_search(q_engine: QueryEngine,
         await embeddings.get_embeddings([query_prompt],
                                         q_engine.embedding_type)
     query_embedding = query_embeddings[0]
-    Logger.info("\t#SC240819: Just finished get_embeddings")
 
   # retrieve indexes of relevant document chunks from vector store
-  Logger.info("\t#SC240819: About to do similarity search")
   qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
                                                          query_embedding,
                                                          query_filter)
-  Logger.info("\t#SC240819: Just finished similarity search")
 
-  Logger.info("\t#SC240819: About to start code to make query references")
   query_references = []
   # Assemble document chunk models from vector store indexes
   for match in match_indexes_list:
@@ -429,11 +397,9 @@ async def query_search(q_engine: QueryEngine,
                                            rank_sentences=rank_sentences)
     query_reference.save()
     query_references.append(query_reference)
-  Logger.info("\t#SC240819: Just finished code to make query references")
   Logger.info(f"Retrieved {len(query_references)} references:")
   Logger.info(f"{query_references=}")
 
-  Logger.info("\t#SC240819: About to finish query_search")
   return query_references
 
 
