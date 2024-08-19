@@ -28,6 +28,13 @@ interface RunChatParams {
   llmType: string
 }
 
+interface UploadQueryParams {
+  queryId: string
+  userInput: string
+  llmType: string
+  uploadFile: File
+}
+
 interface ResumeQueryParams {
   queryId: string
   userInput: string
@@ -160,6 +167,23 @@ export const createQueryEngine =
         "associated_engines": queryEngine.child_engines,
         "manifest_url": queryEngine.manifest_url,
       }
+    }
+    return axios.post(url, data, { headers }).then(path(["data", "data"]))
+  }
+
+export const uploadQueryFile =
+  (token: string) => async ({
+      queryId,
+      userInput,
+      llmType,
+      uploadFile,
+    }: UploadQueryParams): Promise<QueryEngine | undefined> => {
+    const url = `${endpoint}/query/engine/upload/${queryId}`
+    const headers = { Authorization: `Bearer ${token}` }
+    const data = {
+      prompt: userInput,
+      llm_type: llmType,
+      uploadFile: uploadFile,
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
