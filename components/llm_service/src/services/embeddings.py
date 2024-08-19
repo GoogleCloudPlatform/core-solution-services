@@ -87,14 +87,18 @@ async def get_multi_embeddings(user_text: str,
   Returns:
     dictionary of embedding vectors for both text and image
   """
+  Logger.info(f"\t#SC240819: Just started get_multi_embeddings")
   if embedding_type is None or embedding_type == "":
     embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
 
   Logger.info(f"generating multimodal embeddings with {embedding_type}")
+  Logger.info("\t#SC240819: About to enter generate_multi_embeddings")
   embeddings = await generate_multi_embeddings(user_text,
                                                embedding_type,
                                                user_file_bytes)
+  Logger.info("\t#SC240819: Just finished generate_multi_embeddings")
 
+  Logger.info(f"\t#SC240819: About to finish get_multi_embeddings")
   return embeddings
 
 async def _generate_embeddings_batched(embedding_type,
@@ -176,15 +180,18 @@ async def generate_multi_embeddings(user_text: str,
   Returns:
     dictionary of embedding vectors for both text and image
   """
-
+  Logger.info("\t#SC240819: Just started generate_multi_embeddings")
   Logger.info(f"generating embeddings for embedding type {embedding_type}")
 
   if embedding_type in get_provider_embedding_types(PROVIDER_VERTEX):
+    Logger.info("\t#SC240819: About to enter get_vertex_multi_embeddings")
     embeddings = await get_vertex_multi_embeddings(embedding_type,
                                                    user_text,
                                                    user_file_bytes)
+    Logger.info("\t#SC240819: Just finished get_vertex_multi_embeddings")
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
+  Logger.info("\t#SC240819: About to finish generate_multi_embeddings")
   return embeddings
 
 def get_vertex_embeddings(embedding_type: str,
@@ -239,6 +246,7 @@ async def get_vertex_multi_embeddings(embedding_type: str,
   Returns:
     dictionary of embedding vectors for both text and image
   """
+  Logger.info("\t#SC240819: Just started get_vertex_multi_embeddings")
   google_llm = get_model_config().get_provider_value(PROVIDER_VERTEX,
                                                      KEY_MODEL_NAME,
                                                      embedding_type)
@@ -247,26 +255,34 @@ async def get_vertex_multi_embeddings(embedding_type: str,
         f"Vertex model name not found for embedding type {embedding_type}")
 
   def _async_vertex_multi_embeddings():
+    Logger.info("\t#SC240819: Just started _async_vertex_multi_embeddings")
     try:
+      Logger.info("\t#SC240819: Just started try of _async_vertex_multi_embeddings")
       Logger.info(f"Generating Vertex embeddings for 1 multimodal chunk"
                   f" embedding model {google_llm}"
                   f" extracted text: {user_text}")
       user_file_image = Image(image_bytes=user_file_bytes)
       vertex_model = MultiModalEmbeddingModel.from_pretrained(google_llm)
+      Logger.info("\t#SC240819: About to start vertex_model.get_embeddings")
       embeddings = vertex_model.get_embeddings(image=user_file_image,
                                                contextual_text=user_text)
+      Logger.info("\t#SC240819: Just finished vertex_model.get_embeddings")
 
       return_value = {}
       return_value["text_embeddings"] = embeddings.text_embedding
       return_value["image_embeddings"] = embeddings.image_embedding
 
+      Logger.info("\t#SC240819: About to finish try of _async_vertex_multi_embeddings")
       return return_value
     except Exception as e:
+      Logger.info("\t#SC240819: Just started except of _async_vertex_multi_embeddings")
       Logger.error(f"error generating Vertex embeddings {str(e)}")
       raise e
+      Logger.info("\t#SC240819: About to finish except of _async_vertex_multi_embeddings")
 
   return_value = await asyncio.to_thread(_async_vertex_multi_embeddings)
 
+  Logger.info("\t#SC240819: About to finish get_vertex_multi_embeddings and therefore _async_vertx_multi_embeddings too")
   return return_value
 
 def get_langchain_embeddings(embedding_type: str,
