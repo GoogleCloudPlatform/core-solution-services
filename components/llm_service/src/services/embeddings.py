@@ -92,7 +92,7 @@ async def get_multi_embeddings(user_text: str,
     embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
 
   Logger.info(f"generating multimodal embeddings with {embedding_type}")
-  Logger.info("\t#SC240819: About to enter generate_multi_embeddings")
+  Logger.info("\t#SC240819: About to start generate_multi_embeddings")
   embeddings = await generate_multi_embeddings(user_text,
                                                embedding_type,
                                                user_file_bytes)
