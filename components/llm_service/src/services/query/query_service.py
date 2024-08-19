@@ -382,6 +382,7 @@ async def query_search(q_engine: QueryEngine,
       await embeddings.get_multi_embeddings(query_prompt,
                                             None,
                                             q_engine.embedding_type)
+    query_embedding = query_embeddings["text_embeddings"]
     Logger.info("\t#SC240819: Just finished get_multi_embeddings")
   else:
     Logger.info(f"\t#SC240819: query_text = {query_prompt}")
