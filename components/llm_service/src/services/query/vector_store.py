@@ -433,11 +433,17 @@ class LangChainVectorStore(VectorStore):
     # Loop over chunks
     for doc in doc_chunks:
       # Get text embedding and image embedding from a single chunk
-      # and put in dict
+      # and raise error if they don't exist
       doc_text_chunks = doc["text_chunks"]
+      doc_image_b64 = doc["image_b64"]
+      if (doc_text_chunks is None or doc_image_b64 is None):
+        raise RuntimeError(
+          f"incorrectly formatted chunk given for embedding in {doc_name}")
+
+      # Get chunk embeddings
       chunk_embedding = \
         await embeddings.get_multi_embeddings(doc_text_chunks,
-                                              b64decode(doc["image_b64"]),
+                                              b64decode(doc_image_b64),
                                               self.embedding_type)
 
       # Check to make sure that image embedding exist
