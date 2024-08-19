@@ -352,14 +352,50 @@ async def query_search(q_engine: QueryEngine,
 
   """
   Logger.info("\t#SC240819: Just started query_search")
+
+  # Get is_multimodal flag from q_engine
+  params = q_engine.params #q_engine should always have a field called params
+  Logger.info(f"\t#SC240819: {params=}")
+  is_multimodal = False
+  if "is_multimodal" in params and isinstance(params["is_multimodal"], str):
+    is_multimodal = params["is_multimodal"].lower()
+    is_multimodal = is_multimodal == "true"
+  Logger.info(f"\t#SC240819: {is_multimodal=}")
+
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
-  Logger.info("\t#SC240819: About to start get_embeddings")
-  _, query_embeddings = \
-      await embeddings.get_embeddings([query_prompt], q_engine.embedding_type)
-  Logger.info("\t#SC240819: Just finished get_embeddings")
-  query_embedding = query_embeddings[0]
+  if is_multimodal:
+    Logger.info(f"\t#SC240819: query_text = {query_prompt}")
+    Logger.info(f"\t#SC240819: query_image = None")
+    Logger.info("\t#SC240819: About to start get_multi_embeddings")
+    # TODO: Once multimodal embedding model can operate in batch mode
+    # and get_multi_embeddings is edited to send multiple chunks to 
+    # the model in batch mode, then edit this code so that we input a
+    # LIST of text strings and a LIST of images to get_multi_embeddings
+    # instead of a single text string and a single image. Then we 
+    # extract a single embedding vector from the output instead
+    # of a LIST of embedding vectors.
+    query_embeddings = \
+      await embeddings.get_multi_embeddings(query_prompt,
+                                            None,
+                                            q_engine.embedding_type)
+    Logger.info("\t#SC240819: Just finished get_multi_embeddings")
+  else:
+    Logger.info(f"\t#SC240819: query_text = {query_prompt}")
+    Logger.info("\t#SC240819: About to start get_embeddings")
+    # The text-only embedding model operates in batch mode
+    # and get_embeddings sends multiple chunks to
+    # the model in batch mode, and so we input a
+    # LIST of text strings to get_embeddings
+    # instead of a single text string.  Then we
+    # extract a single embedding vector from the output instead
+    # of a LIST of embedding vectors.
+    _, query_embeddings = \
+        await embeddings.get_embeddings([query_prompt],
+                                        q_engine.embedding_type)
+    query_embedding = query_embeddings[0]
+    Logger.info("\t#SC240819: Just finished get_embeddings")
 
   # retrieve indexes of relevant document chunks from vector store
   Logger.info("\t#SC240819: About to do similarity search")
