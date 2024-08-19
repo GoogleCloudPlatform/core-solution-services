@@ -434,14 +434,22 @@ class LangChainVectorStore(VectorStore):
     for doc in doc_chunks:
       # Get text embedding and image embedding from a single chunk
       # and put in dict
+      doc_text_chunks = doc["text_chunks"]
       chunk_embedding = \
-        await embeddings.get_multi_embeddings(doc["text_chunks"],
+        await embeddings.get_multi_embeddings(doc_text_chunks,
                                               b64decode(doc["image_b64"]),
                                               self.embedding_type)
-      # Append this chunk's text to the text_chunks array
-      text_chunks.append(doc["text_chunks"])
-      # Append this chunk's image embedding to the chunk_embeddings array
-      chunk_embeddings.append(chunk_embedding["image_embeddings"])
+
+      # Check to make sure that image embedding exist
+      chunk_image_embedding = chunk_embedding["image_embeddings"]
+      if isinstance(chunk_image_embedding[0], float):
+        # Append this chunk's text to the text_chunks array
+        text_chunks.append(doc_text_chunks)
+        # Append this chunk's image embedding to the chunk_embeddings array
+        chunk_embeddings.append(chunk_image_embedding)
+      else:
+        raise RuntimeError(
+          f"failed to generate chunk embedding for {doc_name}")
 
     # check for success
     if len(chunk_embeddings) == 0:
