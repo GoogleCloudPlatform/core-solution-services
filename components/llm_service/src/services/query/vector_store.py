@@ -419,6 +419,11 @@ class LangChainVectorStore(VectorStore):
                                  doc_chunks: List[object],
                                  index_base: int) -> \
                                   int:
+    Logger.info("\t#SC240819: Just started index_document_multi")
+    Logger.info(f"\t#SC240819: {doc_name=}")
+    Logger.info(f"\t#SC240819: Number of chunks={len(doc_chunks)}")
+    if len(doc_chunks)>0:
+      Logger.info(f"\t#SC240819: Keys of 0th chunk={doc_chunks[0].keys()}")
 
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(doc_chunks)))
@@ -430,8 +435,10 @@ class LangChainVectorStore(VectorStore):
     text_chunks = []
     chunk_embeddings = []
 
+    Logger.info("\t#SC240819: About to loop over doc_chunks")
     # Loop over chunks
     for doc in doc_chunks:
+      Logger.info("\t#SC240819: Just started a new loop")
       my_contextual_text = doc["text_chunks"]
       my_contextual_text = [string.strip() for string in my_contextual_text]
       my_contextual_text = " ".join(my_contextual_text)
@@ -439,12 +446,14 @@ class LangChainVectorStore(VectorStore):
       #not just the first 1024
       my_contextual_text = my_contextual_text[0:1023]
       my_image = b64decode(doc["image_b64"])
+      Logger.info("\t#SC240819: About to start get_multi_embeddings")
       # Get text embedding and image embedding from a single chunk
       # and put in dict
       chunk_embedding = \
         await embeddings.get_multi_embeddings(my_contextual_text,
                                               my_image,
                                               self.embedding_type)
+      Logger.info("\t#SC240819: Just finished get_multi_embeddings")
       # Append this chunk's text to the text_chunks array
       text_chunks.append(doc["text_chunks"])
       # Append this chunk's image embedding to the chunk_embeddings array
@@ -459,9 +468,13 @@ class LangChainVectorStore(VectorStore):
                                         embeddings=chunk_embeddings,
                                         ids=ids)
     # return new index base
+    Logger.info(f"\t#SC240819: {index_base=}")
+    Logger.info(f"\t#SC240819: {len(text_chunks)=}")
     new_index_base = index_base + len(text_chunks)
+    Logger.info(f"\t#SC240819: {new_index_base=}")
     self.index_length = new_index_base
 
+    Logger.info("\t#SC240819: About to finish index_document_multi")
     return new_index_base
 
   async def index_document(self,
@@ -488,7 +501,10 @@ class LangChainVectorStore(VectorStore):
                                         ids=ids,
                                         metadatas=metadata)
     # return new index base
+    Logger.info(f"\t#SC240819: {index_base=}")
+    Logger.info(f"\t#SC240819: {len(text_chunks)=}")
     new_index_base = index_base + len(text_chunks)
+    Logger.info(f"\t#SC240819: {new_index_base=}")
     self.index_length = new_index_base
     return new_index_base
 
