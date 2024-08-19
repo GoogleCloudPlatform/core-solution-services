@@ -419,6 +419,7 @@ class LangChainVectorStore(VectorStore):
                                  doc_chunks: List[object],
                                  index_base: int) -> \
                                   int:
+
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(doc_chunks)))
 

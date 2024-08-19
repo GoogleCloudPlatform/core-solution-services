@@ -184,7 +184,7 @@ async def generate_multi_embeddings(user_text: str,
                                                    user_file_bytes)
   else:
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
-  
+
   return embeddings
 
 def get_vertex_embeddings(embedding_type: str,
