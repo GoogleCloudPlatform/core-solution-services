@@ -87,7 +87,7 @@ async def get_multi_embeddings(user_text: str,
   Returns:
     dictionary of embedding vectors for both text and image
   """
-  Logger.info(f"\t#SC240819: Just started get_multi_embeddings")
+  Logger.info("\t#SC240819: Just started get_multi_embeddings")
   if embedding_type is None or embedding_type == "":
     embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
 
@@ -98,7 +98,7 @@ async def get_multi_embeddings(user_text: str,
                                                user_file_bytes)
   Logger.info("\t#SC240819: Just finished generate_multi_embeddings")
 
-  Logger.info(f"\t#SC240819: About to finish get_multi_embeddings")
+  Logger.info("\t#SC240819: About to finish get_multi_embeddings")
   return embeddings
 
 async def _generate_embeddings_batched(embedding_type,
@@ -280,11 +280,10 @@ async def get_vertex_multi_embeddings(embedding_type: str,
       Logger.info("\t#SC240819: Just started except of _async_vertex_multi_embeddings")
       Logger.error(f"error generating Vertex embeddings {str(e)}")
       raise e
-      Logger.info("\t#SC240819: About to finish except of _async_vertex_multi_embeddings")
 
   return_value = await asyncio.to_thread(_async_vertex_multi_embeddings)
 
-  Logger.info("\t#SC240819: About to finish get_vertex_multi_embeddings and therefore _async_vertx_multi_embeddings too")
+  Logger.info("\t#SC240819: About to finish get_vertex_multi_embeddings/_async_vertx_multi_embeddings")
   return return_value
 
 def get_langchain_embeddings(embedding_type: str,
