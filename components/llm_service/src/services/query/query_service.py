@@ -397,8 +397,9 @@ async def query_search(q_engine: QueryEngine,
                                            rank_sentences=rank_sentences)
     query_reference.save()
     query_references.append(query_reference)
+
   Logger.info(f"Retrieved {len(query_references)} "
-               f"{query_references=}")
+               f"references={query_references}")
 
   return query_references
 
