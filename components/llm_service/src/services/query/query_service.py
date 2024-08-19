@@ -373,9 +373,11 @@ async def query_search(q_engine: QueryEngine,
     # and get_multi_embeddings is edited to send multiple chunks to 
     # the model in batch mode, then edit this code so that we input a
     # LIST of text strings and a LIST of images to get_multi_embeddings
-    # instead of a single text string and a single image. Then we 
+    # instead of a single text string and a single image. Then also 
     # extract a single embedding vector from the output instead
     # of a LIST of embedding vectors.
+    # TODO: Once we allow multimodal queries, input an image or video
+    # into get_multi_embeddings, instead of None.
     query_embeddings = \
       await embeddings.get_multi_embeddings(query_prompt,
                                             None,
