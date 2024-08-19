@@ -432,25 +432,25 @@ class LangChainVectorStore(VectorStore):
 
     # Loop over chunks
     for doc in doc_chunks:
-      # Get text embedding and image embedding from a single chunk
-      # and raise error if they don't exist
-      doc_text_chunks = doc["text_chunks"]
-      doc_image_b64 = doc["image_b64"]
-      if (doc_text_chunks is None or doc_image_b64 is None):
-        raise RuntimeError(
-          f"incorrectly formatted chunk given for embedding in {doc_name}")
+      my_contextual_text = doc["text_chunks"]
+      my_contextual_text = [string.strip() for string in my_contextual_text]
+      my_contextual_text = " ".join(my_contextual_text)
+      #TODO: Consider all characters in my_contextual_text,
+      #not just the first 1024
+      my_contextual_text = my_contextual_text[0:1023]
+      my_image = b64decode(doc["image_b64"])
 
       # Get chunk embeddings
       chunk_embedding = \
-        await embeddings.get_multi_embeddings(doc_text_chunks,
-                                              b64decode(doc_image_b64),
+        await embeddings.get_multi_embeddings(my_contextual_text,
+                                              my_image,
                                               self.embedding_type)
 
       # Check to make sure that image embedding exist
       chunk_image_embedding = chunk_embedding["image_embeddings"]
       if isinstance(chunk_image_embedding[0], float):
         # Append this chunk's text to the text_chunks array
-        text_chunks.append(doc_text_chunks)
+        text_chunks.append(doc["text_chunks"])
         # Append this chunk's image embedding to the chunk_embeddings array
         chunk_embeddings.append(chunk_image_embedding)
       else:

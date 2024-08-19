@@ -275,7 +275,11 @@ class DataSource:
         for i in range(num_pages):
           # Create a pdf file for the page and chunk into text chunks
           pdf_doc = self.create_pdf_page(reader.pages[i], doc_filepath, i)
-          text_chunks = self.chunk_document(pdf_doc["filename"],
+          #chunk_document returns 2 outputs, text_chunks and embed_chunks.
+          #Each element of text_chunks has the same info as its corresponding
+          #element in embed_chunks, but is padded with adjacent sentences
+          #before and after. Use the 2nd output here (embed_chunks).
+          _, embed_chunks = self.chunk_document(pdf_doc["filename"],
                                             doc_url, pdf_doc["filepath"])
 
           # Take PNG version of page and convert to b64
@@ -298,7 +302,7 @@ class DataSource:
           chunk_obj = {
             "image_b64": png_b64,
             "image_url": png_url,
-            "text_chunks": text_chunks
+            "text_chunks": embed_chunks
           }
           doc_chunks.append(chunk_obj)
     except Exception as e:
