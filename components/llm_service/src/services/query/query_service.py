@@ -909,9 +909,13 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                       index_doc_url,
                                                       doc_filepath)
       else:
-        doc_chunks, embed_chunks = data_source.chunk_document(doc_name,
-                                                              index_doc_url,
-                                                              doc_filepath)
+        #chunk_document returns 2 outputs, text_chunks and embed_chunks.
+        #Each element of text_chunks has the same info as its corresponding
+        #element in embed_chunks, but is padded with adjacent sentences
+        #before and after. Use the 2nd output here (embed_chunks).
+        _, doc_chunks = data_source.chunk_document(doc_name,
+                                                   index_doc_url,
+                                                   doc_filepath)
 
       if doc_chunks is None or len(doc_chunks) == 0:
         # unable to process this doc; skip
@@ -941,7 +945,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                  index_base,
                                                  metadata_list)
           Logger.info(
-            f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"
+            f"Successfully indexed {len(doc_chunks)} chunks for [{doc_name}]"
             )
       except Exception as e:
         # unable to process this doc; skip

@@ -432,11 +432,18 @@ class LangChainVectorStore(VectorStore):
 
     # Loop over chunks
     for doc in doc_chunks:
+      my_contextual_text = doc["text_chunks"]
+      my_contextual_text = [string.strip() for string in my_contextual_text]
+      my_contextual_text = " ".join(my_contextual_text)
+      #TODO: Consider all characters in my_contextual_text,
+      #not just the first 1024
+      my_contextual_text = my_contextual_text[0:1023]
+      my_image = b64decode(doc["image_b64"])
       # Get text embedding and image embedding from a single chunk
       # and put in dict
       chunk_embedding = \
-        await embeddings.get_multi_embeddings(doc["text_chunks"],
-                                              b64decode(doc["image_b64"]),
+        await embeddings.get_multi_embeddings(my_contextual_text,
+                                              my_image,
                                               self.embedding_type)
       # Append this chunk's text to the text_chunks array
       text_chunks.append(doc["text_chunks"])
