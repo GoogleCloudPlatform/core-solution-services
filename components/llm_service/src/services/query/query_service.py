@@ -367,13 +367,13 @@ async def query_search(q_engine: QueryEngine,
   # generate embeddings for prompt
   if is_multimodal:
     Logger.info(f"\t#SC240819: query_text = {query_prompt}")
-    Logger.info(f"\t#SC240819: query_image = None")
+    Logger.info("\t#SC240819: query_image = None")
     Logger.info("\t#SC240819: About to start get_multi_embeddings")
     # TODO: Once multimodal embedding model can operate in batch mode
-    # and get_multi_embeddings is edited to send multiple chunks to 
+    # and get_multi_embeddings is edited to send multiple chunks to
     # the model in batch mode, then edit this code so that we input a
     # LIST of text strings and a LIST of images to get_multi_embeddings
-    # instead of a single text string and a single image. Then also 
+    # instead of a single text string and a single image. Then also
     # extract a single embedding vector from the output instead
     # of a LIST of embedding vectors.
     # TODO: Once we allow multimodal queries, input an image or video
@@ -430,9 +430,9 @@ async def query_search(q_engine: QueryEngine,
     query_reference.save()
     query_references.append(query_reference)
   Logger.info("\t#SC240819: Just finished code to make query references")
-  Logger.info(f"Retrieved {len(query_references)} "
-               f"references={query_references}")
-  
+  Logger.info(f"Retrieved {len(query_references)} references:")
+  Logger.info(f"{query_references=}")
+
   Logger.info("\t#SC240819: About to finish query_search")
   return query_references
 
