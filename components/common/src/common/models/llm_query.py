@@ -195,6 +195,9 @@ class QueryReference(BaseModel):
   It points to a specific chunk of text in one of the indexed documents.
 
   """
+  # TODO: Save text, clean_text, and sentences fields whenever text can be
+  # extracted from a document chunk, even if the document chunk is processed
+  # in multimodal mode
   id = IDField()  # All modalities
   query_engine_id = TextField(required=True)  # All modalities
   query_engine = TextField(required=True)  # All modalities
@@ -355,6 +358,9 @@ class QueryDocumentChunk(BaseModel):
   """
   QueryDocumentChunk ORM class.
   """
+  # TODO: Save text, clean_text, and sentences fields whenever text can be
+  # extracted from a document chunk, even if the document chunk is processed
+  # in multimodal mode
   id = IDField()  # All modalities
   query_engine_id = TextField(required=True)  # All modalities
   query_document_id = TextField(required=True)  # All modalities
