@@ -685,7 +685,7 @@ class ModelConfig():
     ]
     return embedding_types
 
-  def get_non_multi_embedding_types(self) -> dict:
+  def get_text_embedding_types(self) -> dict:
     """ Get all supported and enabled non-multimodal embedding types, as a list of model
         identifiers.
     """
