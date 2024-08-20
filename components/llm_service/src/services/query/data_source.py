@@ -246,12 +246,16 @@ class DataSource:
       doc_extension = doc_extension.lower()
       if doc_extension != "pdf":
         raise ValueError(f"File {doc_name} must be a PDF")
+      # TODO: Insert elif statements to check for additional types of
+      # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
+      # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
     except Exception as e:
       Logger.error(f"error reading doc {doc_name}: {e}")
 
     doc_chunks = []
     try:
-      # Convert PDF to an array of PNGs for each page
+
+      # Get bucket name
       if doc_url.startswith("https://storage.googleapis.com/"):
         bucket_name = \
           unquote(
@@ -265,49 +269,59 @@ class DataSource:
       else:
         raise ValueError(f"Invalid Doc URL: {doc_url}")
 
-      with tempfile.TemporaryDirectory() as path:
-        png_array = convert_from_path(doc_filepath, output_folder=path)
-      # Open PDF and iterate over pages
-      with open(doc_filepath, "rb") as f:
-        reader = PdfReader(f)
-        num_pages = len(reader.pages)
-        Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
-        for i in range(num_pages):
-          # Create a pdf file for the page and chunk into text chunks
-          pdf_doc = self.create_pdf_page(reader.pages[i], doc_filepath, i)
-          #chunk_document returns 2 outputs, text_chunks and embed_chunks.
-          #Each element of text_chunks has the same info as its corresponding
-          #element in embed_chunks, but is padded with adjacent sentences
-          #before and after. Use the 2nd output here (embed_chunks).
-          _, embed_chunks = self.chunk_document(pdf_doc["filename"],
-                                            doc_url, pdf_doc["filepath"])
+      # If doc is a PDF, convert it to an array of PNGs for each page
+      if doc_extension == "pdf":
 
-          # Take PNG version of page and convert to b64
-          png_doc_filepath = ".png".join(pdf_doc["filepath"].rsplit(".pdf", 1))
-          png_array[i].save(png_doc_filepath, format="png")
-          with open(png_doc_filepath, "rb") as f:
-            png_bytes = f.read()
-          png_b64 = b64encode(png_bytes).decode("utf-8")
+        with tempfile.TemporaryDirectory() as path:
+          png_array = convert_from_path(doc_filepath, output_folder=path)
 
-          # Upload to Google Cloud Bucket and return gs URL
-          png_url = gcs_helper.upload_to_gcs(self.storage_client,
-                                             bucket_name,
-                                             png_doc_filepath)
+        # Open PDF and iterate over pages
+        with open(doc_filepath, "rb") as f:
+          reader = PdfReader(f)
+          num_pages = len(reader.pages)
+          Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
+          for i in range(num_pages):
+            # Create a pdf file for the page and chunk into text chunks
+            pdf_doc = self.create_pdf_page(reader.pages[i], doc_filepath, i)
+            #chunk_document returns 2 outputs, text_chunks and embed_chunks.
+            #Each element of text_chunks has the same info as its corresponding
+            #element in embed_chunks, but is padded with adjacent sentences
+            #before and after. Use the 2nd output here (embed_chunks).
+            _, embed_chunks = self.chunk_document(pdf_doc["filename"],
+                                                  doc_url, pdf_doc["filepath"])
 
-          # Clean up temp files
-          os.remove(pdf_doc["filepath"])
-          os.remove(png_doc_filepath)
+            # Take PNG version of page and convert to b64
+            png_doc_filepath = \
+              ".png".join(pdf_doc["filepath"].rsplit(".pdf", 1))
+            png_array[i].save(png_doc_filepath, format="png")
+            with open(png_doc_filepath, "rb") as f:
+              png_bytes = f.read()
+            png_b64 = b64encode(png_bytes).decode("utf-8")
 
-          # Push chunk object into chunk array
-          chunk_obj = {
-            "image_b64": png_b64,
-            "image_url": png_url,
-            "text_chunks": embed_chunks
-          }
-          doc_chunks.append(chunk_obj)
+            # Upload to Google Cloud Bucket and return gs URL
+            png_url = gcs_helper.upload_to_gcs(self.storage_client,
+                                               bucket_name,
+                                               png_doc_filepath)
+
+            # Clean up temp files
+            os.remove(pdf_doc["filepath"])
+            os.remove(png_doc_filepath)
+
+            # Push chunk object into chunk array
+            chunk_obj = {
+              "image_b64": png_b64,
+              "image_url": png_url,
+              "text_chunks": embed_chunks
+            }
+            doc_chunks.append(chunk_obj)
+
+      # TODO: Insert elif statements to chunk additional types of
+      # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
+      # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
+
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
-      Logger.error(traceback.print_exc())
+      Logger.error(traceback.format_exc())
 
     # Return array of page data
     return doc_chunks
