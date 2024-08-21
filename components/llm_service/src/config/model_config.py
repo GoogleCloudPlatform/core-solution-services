@@ -656,7 +656,7 @@ class ModelConfig():
     return llm_types
 
   def get_text_llm_types(self) -> dict:
-    """ Get all supported and enabled multimodal LLM types, as a list of model
+    """ Get all supported and enabled text-only LLM types, as a list of model
         identifiers.
     """
     text_llm_types = [
@@ -686,7 +686,7 @@ class ModelConfig():
     return chat_llm_types
 
   def get_text_chat_llm_types(self) -> dict:
-    """ Get all supported and enabled chat LLM types, as a list of model
+    """ Get all supported and enabled text-only chat LLM types, as a list of model
         identifiers.
     """
     text_chat_llm_types = [
@@ -698,7 +698,7 @@ class ModelConfig():
     return text_chat_llm_types
 
   def get_multi_chat_llm_types(self) -> dict:
-    """ Get all supported and enabled chat LLM types, as a list of model
+    """ Get all supported and enabled multimodal chat LLM types, as a list of model
         identifiers.
     """
     multi_chat_llm_types = [
@@ -720,7 +720,7 @@ class ModelConfig():
     return embedding_types
 
   def get_text_embedding_types(self) -> dict:
-    """ Get all supported and enabled non-multimodal embedding types, as a list of model
+    """ Get all supported and enabled text-only embedding types, as a list of model
         identifiers.
     """
     text_embedding_types = [
