@@ -147,6 +147,7 @@ async def query_generate(
       llm_type = q_engine.llm_type
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
+  Logger.info(f"query_generate {llm_type=}")
 
   # perform retrieval
   query_references = await retrieve_references(prompt,
@@ -312,6 +313,7 @@ async def retrieve_references(prompt: str,
     # default if type is not set to llm service query
     query_references = await query_search(q_engine, prompt,
                                           rank_sentences, query_filter)
+
   return query_references
 
 async def query_search(q_engine: QueryEngine,
@@ -331,20 +333,51 @@ async def query_search(q_engine: QueryEngine,
     list of QueryReference models
 
   """
+  # Get is_multimodal flag from q_engine
+  params = q_engine.params #q_engine should always have a field called params
+  is_multimodal = False
+  if "is_multimodal" in params and isinstance(params["is_multimodal"], str):
+    is_multimodal = params["is_multimodal"].lower()
+    is_multimodal = is_multimodal == "true"
+
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
-  _, query_embeddings = \
-      await embeddings.get_embeddings([query_prompt], q_engine.embedding_type)
-  query_embedding = query_embeddings[0]
+  if is_multimodal:
+    # TODO: Once multimodal embedding model can operate in batch mode
+    # and get_multi_embeddings is edited to send multiple chunks to
+    # the model in batch mode, then edit this code so that we input a
+    # LIST of text strings and a LIST of images to get_multi_embeddings
+    # instead of a single text string and a single image. Then also
+    # extract a single embedding vector from the output instead
+    # of a LIST of embedding vectors.
+    # TODO: Once we allow multimodal queries, input an image or video
+    # into get_multi_embeddings, instead of None.
+    query_embeddings = \
+      await embeddings.get_multi_embeddings(query_prompt,
+                                            None,
+                                            q_engine.embedding_type)
+    query_embedding = query_embeddings["text_embeddings"]
+  else:
+    # The text-only embedding model operates in batch mode
+    # and get_embeddings sends multiple chunks to
+    # the model in batch mode, and so we input a
+    # LIST of text strings to get_embeddings
+    # instead of a single text string.  Then we
+    # extract a single embedding vector from the output instead
+    # of a LIST of embedding vectors.
+    _, query_embeddings = \
+        await embeddings.get_embeddings([query_prompt],
+                                        q_engine.embedding_type)
+    query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
                                                          query_embedding,
                                                          query_filter)
-  query_references = []
 
+  query_references = []
   # Assemble document chunk models from vector store indexes
   for match in match_indexes_list:
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
@@ -367,6 +400,7 @@ async def query_search(q_engine: QueryEngine,
 
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
+
   return query_references
 
 
@@ -390,7 +424,6 @@ def make_query_reference(q_engine: QueryEngine,
   Returns:
     query_reference: The QueryReference object corresponding to doc_chunk
   """
-
   # Get modality of document chunk, make lowercase
   # If modality is None, set it equal to default value "text"
   modality = doc_chunk.modality
@@ -1030,7 +1063,6 @@ def make_query_document_chunk(query_engine_id: str,
   Returns:
     query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
   """
-
   # Set modality
   if is_multimodal:
     modality="image"  # Fix later to not assume all multimodal docs are images

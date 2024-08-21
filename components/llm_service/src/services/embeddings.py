@@ -251,7 +251,9 @@ async def get_vertex_multi_embeddings(embedding_type: str,
       Logger.info(f"Generating Vertex embeddings for 1 multimodal chunk"
                   f" embedding model {google_llm}"
                   f" extracted text: {user_text}")
-      user_file_image = Image(image_bytes=user_file_bytes)
+      user_file_image = None
+      if user_file_bytes:
+        user_file_image = Image(image_bytes=user_file_bytes)
       vertex_model = MultiModalEmbeddingModel.from_pretrained(google_llm)
       embeddings = vertex_model.get_embeddings(image=user_file_image,
                                                contextual_text=user_text)
