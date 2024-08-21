@@ -435,7 +435,7 @@ class LangChainVectorStore(VectorStore):
       # Get text embedding and image embedding from a single chunk
       # and put in dict
       chunk_embedding = \
-        await embeddings.get_multi_embeddings(doc["text_chunks"],
+        await embeddings.get_multimodal_embeddings(doc["text_chunks"],
                                               b64decode(doc["image_b64"]),
                                               self.embedding_type)
       # Append this chunk's text to the text_chunks array

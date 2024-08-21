@@ -33,7 +33,7 @@ from schemas.llm_schema import (LLMGenerateModel,
                                 LLMEmbeddingsModel,
                                 LLMMultiEmbeddingsModel)
 from services.llm_generate import llm_generate, llm_generate_multi
-from services.embeddings import get_embeddings, get_multi_embeddings
+from services.embeddings import get_embeddings, get_multimodal_embeddings
 from utils.file_helper import validate_multi_vision_file_type
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
@@ -58,7 +58,7 @@ def get_llm_list(is_multi: bool = None):
   """
   try:
     if is_multi is True:
-      llm_types = get_model_config().get_multi_llm_types()
+      llm_types = get_model_config().get_multimodal_llm_types()
     elif is_multi is False:
       llm_types = get_model_config().get_text_llm_types()
     elif is_multi is None:
@@ -93,7 +93,7 @@ def get_embedding_types(is_multi: bool = None):
   """
   try:
     if is_multi is True:
-      embedding_types = get_model_config().get_multi_embedding_types()
+      embedding_types = get_model_config().get_multimodal_embedding_types()
     elif is_multi is False:
       embedding_types = get_model_config().get_text_embedding_types()
     elif is_multi is None:
@@ -185,7 +185,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
   try:
     user_file_bytes = b64decode(user_file_b64)
     embeddings = \
-        await get_multi_embeddings(text, user_file_bytes, embedding_type)
+        await get_multimodal_embeddings(text, user_file_bytes, embedding_type)
 
     return {
         "success": True,
