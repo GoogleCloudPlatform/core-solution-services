@@ -375,7 +375,7 @@ def make_query_reference(q_engine: QueryEngine,
                            query_doc: QueryDocument,
                            doc_chunk: QueryDocumentChunk,
                            query_embeddings: List[Optional[List[float]]],
-                           rank_sentences: bool = False,) -> \
+                           rank_sentences: bool = False) -> \
                             QueryReference:
   """
   Make a single QueryReference object, with appropriate fields
@@ -392,6 +392,7 @@ def make_query_reference(q_engine: QueryEngine,
   """
 
   # Get modality of document chunk, make lowercase
+  # If modality is None, set it equal to default value "text"
   modality = doc_chunk.modality
   if modality is None:
     modality = "text"
@@ -425,14 +426,17 @@ def make_query_reference(q_engine: QueryEngine,
 
   # Clean up image chunk
   elif modality=="image":
+    # TODO: Placeholder to fill with actual logic
     pass
 
   # Clean up video chunk
   elif modality=="video":
+    # TODO: Placeholder to fill with actual logic
     pass
 
   # Clean up audio chunk
   elif modality=="audio":
+    # TODO: Placeholder to fill with actual logic
     pass
 
   # Create dict to hold all fields of query_reference,
@@ -909,9 +913,13 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                       index_doc_url,
                                                       doc_filepath)
       else:
-        doc_chunks, embed_chunks = data_source.chunk_document(doc_name,
-                                                              index_doc_url,
-                                                              doc_filepath)
+        #chunk_document returns 2 outputs, text_chunks and embed_chunks.
+        #Each element of text_chunks has the same info as its corresponding
+        #element in embed_chunks, but is padded with adjacent sentences
+        #before and after. Use the 2nd output here (embed_chunks).
+        _, doc_chunks = data_source.chunk_document(doc_name,
+                                                   index_doc_url,
+                                                   doc_filepath)
 
       if doc_chunks is None or len(doc_chunks) == 0:
         # unable to process this doc; skip
@@ -941,7 +949,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                  index_base,
                                                  metadata_list)
           Logger.info(
-            f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"
+            f"Successfully indexed {len(doc_chunks)} chunks for [{doc_name}]"
             )
       except Exception as e:
         # unable to process this doc; skip
@@ -1037,14 +1045,20 @@ def make_query_document_chunk(query_engine_id: str,
 
   # Clean up image chunk
   elif modality=="image":
+    #TODO: If needed, insert logic to filter, tile, or otherwise
+    #pre-process image
     pass
 
   # Clean up video chunk
   elif modality=="video":
+    #TODO: If needed, insert logic to filter, transcribe, or otherwise
+    #pre-process video
     pass
 
   # Clean up audio chunk
   elif modality=="audio":
+    #TODO: If needed, insert logic to filter, transcribe, or otherwise
+    #pre-process audio.
     pass
 
   # Create dict to hold all fields of query_document_chunk,
@@ -1064,11 +1078,15 @@ def make_query_document_chunk(query_engine_id: str,
     query_document_chunk_dict["sentences"]=sentences
   # For image chunk only
   elif modality=="image":
-    # doc_chunk is a string holding url that image is saved to
+    # doc_chunk is a string holding url of the file that the image is saved to
     query_document_chunk_dict["page"]=page
     query_document_chunk_dict["chunk_url"]=doc_chunk
   # For video and audio chunks only
   elif modality in {"video", "audio"}:
+    #TODO: Insert logic to set values of the following keys:
+    #  "chunk_url": Holds url to the file that the video/audio is saved to
+    #  "timestamp_start": Holds timestamp of beginning of video/audio chunk
+    #  "timestamp_stop": Holds timestamp of ending of video/audio chunk
     pass
 
   # Create query_document_chunk out of dict

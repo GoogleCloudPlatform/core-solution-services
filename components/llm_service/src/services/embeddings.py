@@ -39,7 +39,7 @@ from langchain.schema.embeddings import Embeddings
 # per Vertex docs
 # https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
 # if region is us-central1 items per request is 250, in other regions it is 5
-# Limit to 50, even though the max is 250. There is an undocumented
+# Limiting to 50, even though the max is 250. There is an undocumented
 # token limit across all chunks of 20000, and with 250 chunks we often
 # exceeded the 20K limit.
 if REGION == "us-central1":
@@ -254,7 +254,7 @@ async def get_vertex_multi_embeddings(embedding_type: str,
       user_file_image = Image(image_bytes=user_file_bytes)
       vertex_model = MultiModalEmbeddingModel.from_pretrained(google_llm)
       embeddings = vertex_model.get_embeddings(image=user_file_image,
-                                               contextual_text="")
+                                               contextual_text=user_text)
 
       return_value = {}
       return_value["text_embeddings"] = embeddings.text_embedding

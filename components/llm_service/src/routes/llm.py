@@ -86,7 +86,9 @@ def get_embedding_types(is_multi: bool = None):
 
   Args:
     is_multi: `bool`
-      Optional: Is embedding type multimodal <br/>
+      Optional: If True, only multimodal embedding types are returned.
+        If False, only non-multimodal (text) embedding types are returned.
+        If None, all embedding types are returned.
 
   Returns:
       LLMGetEmbeddingTypesResponse

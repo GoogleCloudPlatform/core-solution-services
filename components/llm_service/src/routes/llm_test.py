@@ -123,6 +123,23 @@ def test_embedding_types(client_with_emulator):
   assert resp.status_code == 200, "Status 200"
   assert json_response.get("data") == get_model_config().get_embedding_types()
 
+def test_embedding_types_multi(client_with_emulator):
+  url = f"{api_url}/embedding_types"
+  params = {"is_multi": True}
+  resp = client_with_emulator.get(url, params = params)
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  assert json_response.get("data") == \
+    get_model_config().get_multi_embedding_types()
+
+def test_embedding_types_text(client_with_emulator):
+  url = f"{api_url}/embedding_types"
+  params = {"is_multi": False}
+  resp = client_with_emulator.get(url, params = params)
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  assert json_response.get("data") == \
+    get_model_config().get_text_embedding_types()
 
 def test_generate_embeddings(client_with_emulator):
   url = f"{api_url}/embedding"
