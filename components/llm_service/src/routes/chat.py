@@ -48,7 +48,9 @@ def get_chat_llm_list(is_multi: bool = None):
 
   Args:
     is_multi: `bool`
-      Optional: Is llm model multimodal <br/>
+      Optional: If True, only multimodal embedding types are returned.
+        If False, only non-multimodal embedding types are returned.
+        If None, all embedding types are returned.
 
   Returns:
       LLMGetTypesResponse
