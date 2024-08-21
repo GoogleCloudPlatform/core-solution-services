@@ -424,10 +424,6 @@ def make_query_reference(q_engine: QueryEngine,
   Returns:
     query_reference: The QueryReference object corresponding to doc_chunk
   """
-  # TODO: Save text, clean_text, and sentences fields whenever text can be
-  # extracted from a document chunk, even if the document chunk is processed
-  # in multimodal mode
-
   # Get modality of document chunk, make lowercase
   modality = doc_chunk.modality
   if modality is None:
@@ -1063,11 +1059,6 @@ def make_query_document_chunk(query_engine_id: str,
   Returns:
     query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
   """
-
-  # TODO: Save text, clean_text, and sentences fields whenever text can be
-  # extracted from a document chunk, even if the document chunk is processed
-  # in multimodal mode
-
   # Set modality
   if is_multimodal:
     modality="image"  # Fix later to not assume all multimodal docs are images
