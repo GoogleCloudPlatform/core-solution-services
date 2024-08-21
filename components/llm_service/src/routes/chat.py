@@ -57,7 +57,7 @@ def get_chat_llm_list(is_multi: bool = None):
     if is_multi is True:
       llm_types = get_model_config().get_multi_chat_llm_types()
     elif is_multi is False:
-      llm_types = get_model_config().get_non_multi_chat_llm_types()
+      llm_types = get_model_config().get_text_chat_llm_types()
     elif is_multi is None:
       llm_types = get_model_config().get_chat_llm_types()
     else:

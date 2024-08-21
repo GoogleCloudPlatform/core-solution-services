@@ -60,7 +60,7 @@ def get_llm_list(is_multi: bool = None):
     if is_multi is True:
       llm_types = get_model_config().get_multi_llm_types()
     elif is_multi is False:
-      llm_types = get_model_config().get_non_multi_llm_types()
+      llm_types = get_model_config().get_text_llm_types()
     elif is_multi is None:
       llm_types = get_model_config().get_llm_types()
     else:
@@ -95,7 +95,7 @@ def get_embedding_types(is_multi: bool = None):
     if is_multi is True:
       embedding_types = get_model_config().get_multi_embedding_types()
     elif is_multi is False:
-      embedding_types = get_model_config().get_non_multi_embedding_types()
+      embedding_types = get_model_config().get_text_embedding_types()
     elif is_multi is None:
       embedding_types = get_model_config().get_embedding_types()
     else:
