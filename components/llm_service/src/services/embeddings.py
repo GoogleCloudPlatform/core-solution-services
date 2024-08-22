@@ -73,8 +73,8 @@ async def get_embeddings(text_chunks: List[str],
 
   return is_successful, embeddings
 
-async def get_multi_embeddings(user_text: str,
-                               user_file_bytes: bytes,
+async def get_multimodal_embeddings(user_text: List[str],
+                               user_file_bytes: str,
                                embedding_type: str = None) -> \
                                 dict:
   """

@@ -130,7 +130,7 @@ def test_embedding_types_multi(client_with_emulator):
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
   assert json_response.get("data") == \
-    get_model_config().get_multi_embedding_types()
+    get_model_config().get_multimodal_embedding_types()
 
 def test_embedding_types_text(client_with_emulator):
   url = f"{api_url}/embedding_types"
@@ -157,7 +157,7 @@ def test_generate_embeddings(client_with_emulator):
 def test_generate_embeddings_multi(client_with_emulator):
   url = f"{api_url}/embedding/multi"
 
-  with mock.patch("routes.llm.get_multi_embeddings",
+  with mock.patch("routes.llm.get_multimodal_embeddings",
                   return_value=FAKE_EMBEDDINGS_MULTI):
     resp = client_with_emulator.post(url, json=FAKE_GENERATE_EMBEDDINGS_MULTI)
 
