@@ -130,7 +130,7 @@ def test_embedding_types_multi(client_with_emulator):
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
   assert json_response.get("data") == \
-    get_model_config().get_multi_embedding_types()
+    get_model_config().get_multimodal_embedding_types()
 
 def test_embedding_types_text(client_with_emulator):
   url = f"{api_url}/embedding_types"
