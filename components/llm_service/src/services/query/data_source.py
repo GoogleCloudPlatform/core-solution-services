@@ -75,7 +75,7 @@ class DataSource:
     )
 
   @classmethod
-  def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
+  def downloads_bucket_name(cls, q_engine_name: str) -> str:
     """
     Generate a unique downloads bucket name, that obeys the rules of
     GCS bucket names.
@@ -86,7 +86,7 @@ class DataSource:
     Returns:
         bucket name (str)
     """
-    qe_name = q_engine.name.replace(" ", "-")
+    qe_name = q_engine_name.replace(" ", "-")
     qe_name = qe_name.replace("_", "-").lower()
     bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
     if not re.fullmatch("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucket_name):

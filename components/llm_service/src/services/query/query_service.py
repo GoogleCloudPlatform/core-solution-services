@@ -57,6 +57,7 @@ from services.query.vertex_search import (build_vertex_search,
 from utils.errors import (NoDocumentsIndexedException,
                           ContextWindowExceededException)
 from utils import text_helper
+from utils.file_helper import validate_multi_file_type
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
                     DEFAULT_WEB_DEPTH_LIMIT)
@@ -84,14 +85,18 @@ NUM_INTEGRATED_QUERY_REFERENCES = 6
 
 async def query_upload_generate(user_id: str,
                                 prompt: str,
-                                file_content: List[str],
-                                file_url: str,
-                                llm_type: Optional[str] = None,
+                                llm_type: str,
+                                file_name: Optional[str] = None,
+                                file_content: Optional[bytes] = None,
+                                file_url: Optional[str] = None,
                                 user_query: Optional[UserQuery] = None) -> \
-                                    Tuple[QueryResult, List[QueryReference]]:
+                          Tuple[UserQuery, QueryResult, List[QueryReference]]:
   """
   Execute a query over a document.  Can be used to continue an existing
-  query.  
+  query.
+  
+  One of (file_name, file_content) or file_url must be passed.
+  file_url if passed must be http(s)://
                                     
   If no existing query, creates a query engine based on the doc
   and a user query to save the query result.
@@ -111,9 +116,6 @@ async def query_upload_generate(user_id: str,
     UserQuery object,
     QueryResult object,
     list of QueryReference objects (see query_search)
-
-  Raises:
-    ResourceNotFoundException if the named query engine doesn't exist
   """
   Logger.info(f"Executing query upload: "
               f"llm_type=[{llm_type}], "
@@ -121,12 +123,35 @@ async def query_upload_generate(user_id: str,
               f"prompt=[{prompt}],"
               f"user_query=[{user_query}]")
 
+  query_engine_name = f"{PROJECT_ID}_{user_id}" # TODO
+
+  # validate file args and determine mime type
+  mime_type = None
+  if file_name is not None or file_content is not None:
+    if file_name is None or file_content is None:
+      raise InternalServerError("must supply file content with file name")
+    is_file_valid, mime_type = validate_multi_file_type(file_name, file_content)
+    if not is_file_valid:
+      raise InternalServerError("invalid file content")
+
+  if file_url is not None:
+    # download web page
+    # TODO: support depth > 0 for web download
+    storage_client = storage.Client(project=PROJECT_ID)
+    bucket_name = WebDataSource.downloads_bucket_name(query_engine_name)
+    web_data_source = WebDataSource(storage_client,
+                                    bucket_name=bucket_name,
+                                    depth_limit=0)
+    with tempfile.TemporaryDirectory() as temp_dir:
+      data_source_files = web_data_source.download_documents(file_url, temp_dir)
+    mime_type = "text/html"
+    file_url = data_source_files[0].gcs_url
+
   # generate text response
   question_response = await llm_generate_multi(prompt, llm_type, mime_type,
                                                file_content, file_url)
 
   # create query engine to store results
-  query_engine_name = f"{PROJECT_ID}_{user_id}" # TODO
   query_engine_type = QE_TYPE_LLM_SERVICE
   query_description = f"query upload for {user_id}"
   doc_url = file_url
@@ -147,7 +172,7 @@ async def query_upload_generate(user_id: str,
                             doc_url=doc_url)
   query_doc.save()
 
-  # create query references
+  # create query references and query result
   query_reference = QueryReference(
     query_engine_id=q_engine.id,
     query_engine=q_engine.name,
@@ -991,13 +1016,13 @@ def datasource_from_url(doc_url: str,
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
     # Create bucket name using query_engine name
-    bucket_name = WebDataSource.downloads_bucket_name(q_engine)
+    bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
     return WebDataSource(storage_client,
                          bucket_name=bucket_name,
                          depth_limit=depth_limit)
   elif doc_url.startswith("shpt://"):
     # Create bucket name using query_engine name
-    bucket_name = SharePointDataSource.downloads_bucket_name(q_engine)
+    bucket_name = SharePointDataSource.downloads_bucket_name(q_engine.name)
     return SharePointDataSource(storage_client,
                                 bucket_name=bucket_name)
   else:

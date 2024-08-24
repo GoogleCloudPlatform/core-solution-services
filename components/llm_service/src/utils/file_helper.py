@@ -20,9 +20,9 @@ File processing helper functions.
 import os.path
 from base64 import b64decode
 
-def validate_multi_vision_file_type(file_name, file_b64):
+def validate_multi_file_type(file_name, file_b64=None):
   # Validate the file type and ensure that it is either a text or image
-  # and is compatible with multimodal LLMs. Returns the file extension if valid
+  # and is compatible with multimodal LLMs. Returns the mime type if valid.
 
   vertex_mime_types = {
     ".png": "image/png",
@@ -37,31 +37,31 @@ def validate_multi_vision_file_type(file_name, file_b64):
     ".wmv": "video/wmv"
   }
   file_extension = os.path.splitext(file_name)[1]
-  file_extension = vertex_mime_types.get(file_extension)
-  if not file_extension:
+  mime_type = vertex_mime_types.get(file_extension)
+  if not mime_type:
     return False
 
   # Make sure that the user file b64 is a valid image or video
-  image_signatures = {
-      b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A": "png",
-      b"\xFF\xD8\xFF": "jpg",
-      b"\xFF\xD8": "jpeg",
-      b"\x47\x49\x46\x38": "gif",
-      b"\x00\x00\x00 ftyp": "mp4",
-      b"\x00\x00\x00\x14": "mov",
-      b"RIFF": "avi",
-      b"\x00\x00\x01\xba!\x00\x01\x00": "mpeg",
-      b"\x00\x00\x01\xB3": "mpg",
-      b"0&\xb2u\x8ef\xcf\x11": "wmv"
-  }
-  file_header = b64decode(file_b64)[:8]  # Get the first 8 bytes
-  user_file_type = None
-  for sig, file_format in image_signatures.items():
-    if file_header.startswith(sig):
-      user_file_type = file_format
-      break
+  if file_b64:
+    image_signatures = {
+        b"\x89\x50\x4E\x47\x0D\x0A\x1A\x0A": "png",
+        b"\xFF\xD8\xFF": "jpg",
+        b"\xFF\xD8": "jpeg",
+        b"\x47\x49\x46\x38": "gif",
+        b"\x00\x00\x00 ftyp": "mp4",
+        b"\x00\x00\x00\x14": "mov",
+        b"RIFF": "avi",
+        b"\x00\x00\x01\xba!\x00\x01\x00": "mpeg",
+        b"\x00\x00\x01\xB3": "mpg",
+        b"0&\xb2u\x8ef\xcf\x11": "wmv"
+    }
+    file_header = b64decode(file_b64)[:8]  # Get the first 8 bytes
+    user_file_type = None
+    for sig, file_format in image_signatures.items():
+      if file_header.startswith(sig):
+        user_file_type = file_format
+        break
+    if not user_file_type:
+      return False
 
-  if not user_file_type:
-    return False
-
-  return [True, file_extension]
+  return (True, mime_type)

@@ -20,11 +20,8 @@ from fastapi import APIRouter, Depends, UploadFile
 from google.cloud import storage
 from common.models import (QueryEngine, User, UserQuery)
 from common.utils.auth_service import validate_token
-from common.utils.errors import (ResourceNotFoundException,
-                                 ValidationError,
-                                 PayloadTooLargeError)
-from common.utils.http_exceptions import (InternalServerError, BadRequest,
-                                          ResourceNotFound)
+from common.utils.errors import ValidationError, PayloadTooLargeError
+from common.utils.http_exceptions import InternalServerError, BadRequest
 from common.utils.logging_handler import Logger
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, get_model_config_value,
                     DEFAULT_MULTI_LLM_TYPE, KEY_IS_MULTI)
@@ -79,7 +76,8 @@ async def query_file_upload(gen_config: QueryUploadGenerateModel,
   genconfig_dict = {**gen_config.dict()}
   prompt = gen_config["prompt"]
   llm_type = genconfig_dict.get("llm_type", None)
-  query_file = genconfig_dict.get("query_file", None)
+  query_file_name = genconfig_dict.get("query_file_name", None)
+  query_file = genconfig_dict.get("query_file_content", None)
   query_file_url = genconfig_dict.get("query_file_url", None)
 
   Logger.info(f"Upload file and run query with {genconfig_dict}")
@@ -101,11 +99,12 @@ async def query_file_upload(gen_config: QueryUploadGenerateModel,
 
     # run query
     user_query, query_result, query_references = \
-        query_upload_generate(user.user_id,
+        query_upload_generate(user.id,
                               prompt,
+                              llm_type,
+                              query_file_name,
                               query_file_contents,
-                              query_file_url,
-                              llm_type)
+                              query_file_url)
     q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
 
     # save user query history
@@ -158,7 +157,8 @@ async def query_file_upload_continue(user_query_id: str,
   genconfig_dict = {**gen_config.dict()}
   prompt = gen_config["prompt"]
   llm_type = genconfig_dict.get("llm_type", None)
-  query_file = genconfig_dict.get("query_file", None)
+  query_file_name = genconfig_dict.get("query_file_name", None)
+  query_file = genconfig_dict.get("query_file_content", None)
   query_file_url = genconfig_dict.get("query_file_url", None)
 
   Logger.info(f"Upload file and continue query with {genconfig_dict}")
@@ -186,11 +186,12 @@ async def query_file_upload_continue(user_query_id: str,
 
     # run query
     user_query, query_result, query_references = \
-        query_upload_generate(user.user_id,
+        query_upload_generate(user.id,
                               prompt,
+                              llm_type,
+                              query_file_name,
                               query_file_contents,
-                              query_file_url,
-                              llm_type)
+                              query_file_url)
     # save user query history
     user_query, query_reference_dicts = \
         update_user_query(prompt,
