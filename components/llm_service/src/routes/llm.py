@@ -244,8 +244,8 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    result = await llm_generate_multi(prompt, user_file_bytes,
-                                    user_file_extension, llm_type)
+    result = await llm_generate_multi(prompt, user_file_extension, llm_type,
+                                      user_file_bytes)
 
     return {
         "success": True,
