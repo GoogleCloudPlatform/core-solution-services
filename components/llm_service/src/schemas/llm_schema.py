@@ -14,6 +14,7 @@
 """
 Pydantic Model for LLM API's
 """
+from fastapi import UploadFile
 from typing import List, Optional
 from pydantic import BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
@@ -92,6 +93,7 @@ class QueryUploadGenerateModel(BaseModel):
   """Query Upload Generate request model"""
   prompt: str
   llm_type: Optional[str] = None
+  query_file: Optional[UploadFile] = None
 
   class Config():
     orm_mode = True
