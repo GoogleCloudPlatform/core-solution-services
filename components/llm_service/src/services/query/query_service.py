@@ -88,8 +88,7 @@ async def query_upload_generate(user_id: str,
                                 llm_type: str,
                                 file_name: Optional[str] = None,
                                 file_content: Optional[bytes] = None,
-                                file_url: Optional[str] = None,
-                                user_query: Optional[UserQuery] = None) -> \
+                                file_url: Optional[str] = None) -> \
                           Tuple[UserQuery, QueryResult, List[QueryReference]]:
   """
   Execute a query over a document.  Can be used to continue an existing
@@ -110,7 +109,6 @@ async def query_upload_generate(user_id: str,
     file_content: content of file to query
     file_url: url of the file to run query against
     llm_type (optional): chat model to use for query
-    user_query (optional): existing user query
 
   Returns:
     UserQuery object,
@@ -120,8 +118,7 @@ async def query_upload_generate(user_id: str,
   Logger.info(f"Executing query upload: "
               f"llm_type=[{llm_type}], "
               f"user_id=[{user_id}], "
-              f"prompt=[{prompt}],"
-              f"user_query=[{user_query}]")
+              f"prompt=[{prompt}]")
 
   query_engine_name = f"{PROJECT_ID}_{user_id}" # TODO
 
@@ -190,7 +187,7 @@ async def query_upload_generate(user_id: str,
                              response=question_response)
   query_result.save()
 
-  return (user_query, query_result, query_references)
+  return (query_result, query_references)
 
 
 async def query_generate(

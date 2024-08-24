@@ -20,7 +20,8 @@ from fastapi import APIRouter, Depends, UploadFile
 from google.cloud import storage
 from common.models import (QueryEngine, User, UserQuery)
 from common.utils.auth_service import validate_token
-from common.utils.errors import ValidationError, PayloadTooLargeError
+from common.utils.errors import (ValidationError, PayloadTooLargeError,
+                                 ResourceNotFoundException)
 from common.utils.http_exceptions import InternalServerError, BadRequest
 from common.utils.logging_handler import Logger
 from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, get_model_config_value,
@@ -98,14 +99,14 @@ async def query_file_upload(gen_config: QueryUploadGenerateModel,
     query_file_contents = query_file.file if query_file else None
 
     # run query
-    user_query, query_result, query_references = \
+    query_result, query_references = \
         query_upload_generate(user.id,
                               prompt,
                               llm_type,
                               query_file_name,
                               query_file_contents,
                               query_file_url)
-    q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
+    q_engine = QueryEngine.find_by_id(query_result.query_engine_id)
 
     # save user query history
     user_query, query_reference_dicts = \
@@ -169,6 +170,8 @@ async def query_file_upload_continue(user_query_id: str,
 
     # get existing user query and query engine
     user_query = UserQuery.find_by_id(user_query_id)
+    if user_query is None:
+      raise ResourceNotFoundException(f"User query {user_query_id} not found")
     q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
 
     # get existing bucket
@@ -185,7 +188,7 @@ async def query_file_upload_continue(user_query_id: str,
         upload_file_to_gcs(bucket, query_file.filename, query_file.file)
 
     # run query
-    user_query, query_result, query_references = \
+    query_result, query_references = \
         query_upload_generate(user.id,
                               prompt,
                               llm_type,
@@ -198,7 +201,8 @@ async def query_file_upload_continue(user_query_id: str,
                           query_result.response,
                           user.id,
                           q_engine,
-                          query_references, None,
+                          query_references,
+                          user_query,
                           None)
 
     response = {
