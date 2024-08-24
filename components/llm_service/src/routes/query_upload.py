@@ -105,7 +105,6 @@ async def query_file_upload(gen_config: QueryUploadGenerateModel,
                               prompt,
                               query_file_contents,
                               query_file_url,
-                              user_data,
                               llm_type)
     q_engine = QueryEngine.find_by_id(user_query.query_engine_id)
 
@@ -191,7 +190,6 @@ async def query_file_upload_continue(user_query_id: str,
                               prompt,
                               query_file_contents,
                               query_file_url,
-                              user_data,
                               llm_type)
     # save user query history
     user_query, query_reference_dicts = \

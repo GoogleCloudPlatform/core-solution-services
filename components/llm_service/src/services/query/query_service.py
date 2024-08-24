@@ -40,7 +40,7 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import InternalServerError
 from services import embeddings
 from services.llm_generate import (get_context_prompt,
-                                   llm_chat,
+                                   llm_chat, llm_generate_multi,
                                    check_context_length)
 from services.query.query_prompts import (get_question_prompt,
                                           get_summarize_prompt)
@@ -86,7 +86,6 @@ async def query_upload_generate(user_id: str,
                                 prompt: str,
                                 file_content: List[str],
                                 file_url: str,
-                                user_data: Optional[dict] = None,
                                 llm_type: Optional[str] = None,
                                 user_query: Optional[UserQuery] = None) -> \
                                     Tuple[QueryResult, List[QueryReference]]:
@@ -105,7 +104,6 @@ async def query_upload_generate(user_id: str,
     prompt: the text prompt to pass to the query engine
     file_content: content of file to query
     file_url: url of the file to run query against
-    user_data (optional): dict of user data from auth token
     llm_type (optional): chat model to use for query
     user_query (optional): existing user query
 
@@ -123,8 +121,51 @@ async def query_upload_generate(user_id: str,
               f"prompt=[{prompt}],"
               f"user_query=[{user_query}]")
 
+  # generate text response
+  question_response = await llm_generate_multi(prompt, llm_type, mime_type,
+                                               file_content, file_url)
 
-  return (None, None, [])
+  # create query engine to store results
+  query_engine_name = f"{PROJECT_ID}_{user_id}" # TODO
+  query_engine_type = QE_TYPE_LLM_SERVICE
+  query_description = f"query upload for {user_id}"
+  doc_url = file_url
+  q_engine = QueryEngine(name=query_engine_name,
+                         created_by=user_id,
+                         query_engine_type=query_engine_type,
+                         llm_type=llm_type,
+                         description=query_description,
+                         embedding_type=None,
+                         vector_store=None,
+                         is_public=False,
+                         doc_url=doc_url)
+  q_engine.save()
+
+  # create query document
+  query_doc = QueryDocument(query_engine_id=q_engine.id,
+                            query_engine=q_engine.name,
+                            doc_url=doc_url)
+  query_doc.save()
+
+  # create query references
+  query_reference = QueryReference(
+    query_engine_id=q_engine.id,
+    query_engine=q_engine.name,
+    document_id=query_doc.id,
+    document_url=query_doc.doc_url)
+
+  query_reference.save()
+  query_references = [query_reference]
+  query_ref_ids = [query_reference.id]
+
+  query_result = QueryResult(query_engine_id=q_engine.id,
+                             query_engine=q_engine.name,
+                             query_refs=query_ref_ids,
+                             prompt=prompt,
+                             response=question_response)
+  query_result.save()
+
+  return (user_query, query_result, query_references)
 
 
 async def query_generate(
