@@ -81,7 +81,7 @@ class DataSource:
     GCS bucket names.
 
     Args:
-        q_engine: the QueryEngine to generate the bucket name for.
+        q_engine_name: name of QueryEngine to generate the bucket name for.
 
     Returns:
         bucket name (str)
