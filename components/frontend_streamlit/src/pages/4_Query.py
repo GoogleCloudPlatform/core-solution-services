@@ -88,19 +88,25 @@ def chat_content():
       if "References" in item:
         with st.chat_message("ai"):
           for reference in item["References"]:
-            document_url = reference["document_url"]
-            document_text = reference["document_text"]
             modality = reference["modality"]
-            if document_url:
-              _, document_type = splitext(document_url)
-            st.text_area(
-              f"Reference: {document_url}",
-              document_text,
-              key=f"ref_{query_index}")
-            if (modality == "multimodal") and (document_type == ".pdf"
-                or document_type == ".png" or document_type == ".jpg"
-                or document_type == ".jpeg"):
-              st.image(document_url)
+            chunk_url = reference["chunk_url"]
+            if chunk_url:
+              _, chunk_type = splitext(chunk_url)
+
+            if modality == "text":
+              document_url = reference["document_url"]
+              document_text = reference["document_text"]
+              st.text_area(
+                f"Reference: {document_url}",
+                document_text,
+                key=f"ref_{query_index}")
+            elif (modality == "multimodal") and (chunk_type == ".pdf"
+                or chunk_type == ".png" or chunk_type == ".jpg"
+                or chunk_type == ".jpeg"):
+              st.image(chunk_url)
+            else:
+              logging.error("Reference modality unknown")
+              st.write("Reference modality unkown")
             query_index = query_index + 1
           st.divider()
 
