@@ -101,10 +101,10 @@ export const createChat =
       llm_type: llmType,
     }
     if (uploadFile !== null) {
-      data.uploadFile = uploadFile
+      data.upload_file = uploadFile
     }
     if (fileUrl !== null) {
-      data.fileUrl = fileUrl
+      data.file_url = fileUrl
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
