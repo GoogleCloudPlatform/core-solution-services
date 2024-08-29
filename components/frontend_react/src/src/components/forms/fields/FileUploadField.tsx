@@ -32,7 +32,6 @@ interface IFileUploadFieldProps {
   variable: IFormVariable
   formikProps: FormikContextType<any>
   handleFilesUpload: Function
-  token: string
 }
 
 type IfileFormat = {
@@ -45,8 +44,6 @@ const FileUploadField: React.FC<IFileUploadFieldProps> = ({
   variable,
   formikProps,
   handleFilesUpload,
-  demo,
-  token,
 }) => {
   const [modal, setModal] = useState(false)
   const [fileData, setFileData] = useState<IfileFormat | null>(null)
@@ -115,32 +112,6 @@ const FileUploadField: React.FC<IFileUploadFieldProps> = ({
 
         <FieldErrorMessage variableName={variable.name} />
 
-        <div className="flex max-w-2xl flex-wrap gap-2">
-          {fileNameContains.map((value: IfileFormat) => {
-            return (
-              <div
-                key={value.fileName}
-                className="badge badge-info mt-2 h-auto w-auto gap-1 px-2 py-1 md:px-4 md:py-1"
-              >
-                <span
-                  className="cursor-pointer text-xs hover:text-primary-content"
-                  onClick={() => {
-                    const file = value.fileName ?? ""
-                      downloadFile(value.fileURL, file, token)
-                  }}
-                >
-                  {value.fileName}
-                </span>
-                <XMarkIcon
-                  className="h-6 w-6 cursor-pointer"
-                  onClick={() => {
-                    promptFileDelete(value), modalClose(true)
-                  }}
-                />
-              </div>
-            )
-          })}
-        </div>
         <div className="text-faint text-sm">{variable.description}</div>
         {modal ? renderModal() : null}
       </div>

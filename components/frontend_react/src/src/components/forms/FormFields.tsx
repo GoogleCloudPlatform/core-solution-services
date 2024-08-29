@@ -33,14 +33,12 @@ import MultiSelectField from "@/components/forms/fields/MultiSelectField"
 interface FormFieldsProps {
   variableList: IFormVariable[]
   formikProps: any
-  token: string
   handleFiles: Function
 }
 
 const FormFields: React.FC<FormFieldsProps> = ({
   variableList,
   formikProps,
-  token,
   handleFiles,
 }) => {
   const sortedList = sortBy(variableList, "order")
@@ -76,7 +74,6 @@ const FormFields: React.FC<FormFieldsProps> = ({
           <FileUploadField
             variable={variable}
             formikProps={formikProps}
-            token={token}
             handleFilesUpload={handleFiles}
           />
         )

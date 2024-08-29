@@ -26,7 +26,6 @@ interface QueryEngineFormProps {
   onSuccess: Function
   onFailure: Function
   handleFiles: Function
-  token: string
   currentVarsData: IFormVariable[]
 }
 
@@ -36,7 +35,6 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   onSuccess,
   onFailure,
   handleFiles,
-  token,
   currentVarsData,
 }) => {
   const [submitting, setSubmitting] = useState(false)
@@ -101,7 +99,6 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
             <FormFields
               variableList={currentVarsData}
               formikProps={formik}
-              token={token}
               handleFiles={handleFiles}
             />
           ) : (

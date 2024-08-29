@@ -55,7 +55,6 @@ const ChatUploadForm: React.FunctionComponent<ChatUploadFormProps> = ({
             <FormFields
               variableList={currentVarsData}
               formikProps={formik}
-              token={token}
               handleFiles={handleFiles}
             />
           ) : (

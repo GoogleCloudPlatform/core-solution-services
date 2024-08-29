@@ -102,7 +102,6 @@ const QueryInput: React.FC<QueryInputProps> = ({ onSubmit, onUploadSubmit, onUpl
           onFailure={onUploadFailure}
           handleFiles={handleFiles}
           queryEngine={null}
-          token={token || ""}
           currentVarsData={QUERY_UPLOAD_FORM_DATA}
           />
       </div>}
