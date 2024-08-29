@@ -30,14 +30,14 @@ import FileUploadField from "@/components/forms/fields/FileUploadField"
 import DateField from "@/components/forms//fields/DateField"
 import MultiSelectField from "@/components/forms/fields/MultiSelectField"
 
-interface QueryEngineFormFieldsProps {
+interface FormFieldsProps {
   variableList: IFormVariable[]
   formikProps: any
   token: string
   handleFiles: Function
 }
 
-const QueryEngineFormFields: React.FC<QueryEngineFormFieldsProps> = ({
+const FormFields: React.FC<FormFieldsProps> = ({
   variableList,
   formikProps,
   token,
@@ -133,4 +133,4 @@ const QueryEngineFormFields: React.FC<QueryEngineFormFieldsProps> = ({
   )
 }
 
-export default QueryEngineFormFields
+export default FormFields

@@ -14,7 +14,7 @@
 
 import { useState, useEffect } from "react"
 import { Form, useFormik, FormikProvider } from "formik"
-import QueryEngineFormFields from "@/components/forms/QueryEngineFormFields"
+import FormFields from "@/components/forms/FormFields"
 import { Link } from "react-router-dom"
 import { IFormValidationData, IFormVariable } from "@/utils/types"
 import { IQueryEngine } from "@/utils/models"
@@ -98,7 +98,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
       <FormikProvider value={formik}>
         <Form spellCheck="true">
           {currentVarsData ? (
-            <QueryEngineFormFields
+            <FormFields
               variableList={currentVarsData}
               formikProps={formik}
               token={token}
