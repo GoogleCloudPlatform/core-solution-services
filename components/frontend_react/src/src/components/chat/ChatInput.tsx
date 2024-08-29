@@ -17,7 +17,8 @@ import ChatUploadForm from "@/components/forms/ChatUploadForm"
 
 interface ChatInputProps {
   onSubmit: (message: string) => void
-  activeJob: boolean
+  activeJob: boolean,
+  handleFiles: Function
 }
 
 const CHAT_UPLOAD_FORM_DATA: IFormVariable[] = [
@@ -47,7 +48,7 @@ const CHAT_UPLOAD_FORM_DATA: IFormVariable[] = [
   },
 ]
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles }) => {
   const [isUploadOpen, setIsUploadOpen] = useState(false)
 
   const handleUploadClick = () => {

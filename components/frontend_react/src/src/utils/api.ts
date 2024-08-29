@@ -91,12 +91,20 @@ export const createChat =
   (token: string) => async ({
     userInput,
     llmType,
+    uploadFile,
+    fileUrl,
   }: RunChatParams): Promise<Chat | undefined> => {
     const url = `${endpoint}/chat`
     const headers = { Authorization: `Bearer ${token}` }
-    const data = {
+    let data = {
       prompt: userInput,
       llm_type: llmType,
+    }
+    if (uploadFile !== null) {
+      data.uploadFile = uploadFile
+    }
+    if (fileUrl !== null) {
+      data.fileUrl = fileUrl
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }

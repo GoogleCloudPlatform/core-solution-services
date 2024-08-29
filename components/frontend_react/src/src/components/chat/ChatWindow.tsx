@@ -25,9 +25,10 @@ interface ChatWindowProps {
   onSubmit: (message: string) => void
   messages: ChatContents[]
   activeJob: boolean
+  handleFiles: Function
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, handleFiles }) => {
   let index = 0
   const renderChat = (message: ChatContents) => {
     if (message.HumanInput) {
@@ -80,7 +81,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob }
         )}
         <div ref={endOfMessagesRef} />
       </div>
-      <ChatInput onSubmit={onSubmit} activeJob={activeJob} />
+      <ChatInput onSubmit={onSubmit} activeJob={activeJob} handleFiles={handleFiles}/>
     </div>
   )
 }
