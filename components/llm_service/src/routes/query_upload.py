@@ -14,7 +14,7 @@
 
 # pylint: disable = broad-except
 
-""" Query endpoints """
+""" Query Upload endpoints """
 import traceback
 from fastapi import APIRouter, Depends
 from google.cloud import storage

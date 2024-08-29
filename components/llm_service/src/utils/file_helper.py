@@ -60,7 +60,10 @@ def validate_multi_file_type(file_name, file_b64=None):
     ".avi": "video/avi",
     ".mpeg": "video/mpeg",
     ".mpg": "video/mpg",
-    ".wmv": "video/wmv"
+    ".wmv": "video/wmv",
+    ".html": "text/html",
+    ".htm": "text/html",
+    ".pdf": "application/pdf"
   }
   file_extension = os.path.splitext(file_name)[1]
   mime_type = vertex_mime_types.get(file_extension)

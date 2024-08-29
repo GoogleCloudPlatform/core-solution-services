@@ -159,21 +159,47 @@ async def llm_generate_multi(prompt: str, llm_type: str, user_file_type: str,
 
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
-                   user_query: Optional[UserQuery] = None) -> str:
+                   user_query: Optional[UserQuery] = None,
+                   chat_file_bytes: bytes = None,
+                   chat_file_url: str = None,
+                   chat_file_type: str = None) -> str:
   """
-  Send a prompt to a chat model and return response.
+  Send a prompt to a chat model and return string response.
+  Supports including a file in the chat context, either by URL or
+  directly from file content.
+
   Args:
     prompt: the text prompt to pass to the LLM
     llm_type: the type of LLM to use
     user_chat (optional): a user chat to use for context
     user_query (optional): a user query to use for context
+    chat_file_bytes (bytes): bytes of file to include in chat context
+    chat_file_url (str): url of file to include in chat context
+    chat_file_type (str): mime type of file to include in chat context
   Returns:
     the text response: str
   """
   Logger.info(f"Generating chat with llm_type=[{llm_type}],"
-              f" prompt=[{prompt}].")
+              f" prompt=[{prompt}]"
+              f" user_chat=[{user_chat}]"
+              f" user_query=[{user_query}]"
+              f" chat_file_bytes=[{chat_file_bytes}]"
+              f" chat_file_url=[{chat_file_url}]"
+              f" chat_file_type=[{chat_file_type}]")
+
   if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
+
+  # validate chat file params
+  is_multi = False
+  if chat_file_bytes is not None or chat_file_url is not None:
+    if chat_file_bytes is not None and chat_file_url is not None:
+      raise InternalServerError("Must set one of chat_file_bytes/chat_file_url")
+    if llm_type not in get_provider_models(PROVIDER_VERTEX):
+      raise InternalServerError("Chat files only supported for Vertex")
+    if chat_file_type is None:
+      raise InternalServerError("Mime type must be passed for chat file")
+    is_multi = True
 
   try:
     response = None
@@ -211,9 +237,10 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
-      is_multi = False
       response = await google_llm_predict(prompt, is_chat, is_multi,
-                                          google_llm, user_chat)
+                                          google_llm, user_chat,
+                                          chat_file_bytes,
+                                          chat_file_url, chat_file_type)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
     return response
@@ -471,9 +498,10 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
     is_chat: true if the model is a chat model
     is_multi: true if the model is a multimodal model
     google_llm: name of the vertex llm model
+    user_chat: chat history
     user_file_bytes: the bytes of the file provided by the user
     user_file_url: url of the file provided by the user
-    user_chat: chat history
+    user_file_type: mime type of the file provided by the user
   Returns:
     the text response.
   """

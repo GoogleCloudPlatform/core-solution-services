@@ -14,9 +14,9 @@
 
 # pylint: disable = broad-except
 
-""" LLM endpoints """
+""" Chat endpoints """
+import os
 import traceback
-
 from fastapi import APIRouter, Depends
 
 from common.models import User, UserChat
@@ -28,14 +28,41 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from common.utils.logging_handler import Logger
 from config import ERROR_RESPONSES, DEFAULT_CHAT_LLM_TYPE, get_model_config
 from schemas.llm_schema import (ChatUpdateModel,
-                                LLMGenerateModel,
+                                LLMChatModel,
                                 LLMUserChatResponse,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse)
 from services.llm_generate import llm_chat
+from utils.file_helper import process_upload_file, validate_multi_file_type
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
+
+async def process_chat_file(chat_file, chat_file_url, bucket=None):
+  chat_file_type = None
+  is_valid = False
+  if chat_file is not None:
+    if chat_file_url is not None:
+      raise ValidationError("cannot set both upload_file and file_url")
+    chat_file_url = await process_upload_file(chat_file, bucket)
+    is_valid, chat_file_type = validate_multi_file_type(chat_file.filename,
+                                                        chat_file.file)
+    if not is_valid:
+      raise ValidationError(
+          f"unsupported file type upload file {chat_file.filename}")
+  elif chat_file_url:
+    if not (chat_file_url.startswith("gs://")
+            or chat_file_url.startswith("http://")
+            or chat_file_url.startswith("https://")
+            or chat_file_url.startswith("shpt://")):
+      return BadRequest(
+          "chat_file_url must start with gs://, http:// or https://, shpt://")
+    chat_file_name = os.path.basename(chat_file_url)
+    is_valid, chat_file_type = validate_multi_file_type(chat_file_name)
+    if not is_valid:
+      raise ValidationError(
+          f"unsupported file type file url {chat_file_url}")
+  return chat_file_url, chat_file_type
 
 @router.get(
     "/chat_types",
@@ -227,7 +254,7 @@ def delete_chat(chat_id: str, hard_delete=False):
     "",
     name="Create new chat",
     response_model=LLMUserChatResponse)
-async def create_user_chat(gen_config: LLMGenerateModel,
+async def create_user_chat(gen_config: LLMChatModel,
                            user_data: dict = Depends(validate_token)):
   """
   Create new chat for authentcated user
@@ -250,11 +277,25 @@ async def create_user_chat(gen_config: LLMGenerateModel,
 
   llm_type = genconfig_dict.get("llm_type")
 
+  chat_file = genconfig_dict.get("upload_file", None)
+  chat_file_url = genconfig_dict.get("file_url", None)
+  chat_file_type = None
+  chat_file_bytes = None
+  if chat_file is not None or chat_file_url is not None:
+    chat_file_url, chat_file_type = \
+        await process_chat_file(chat_file, chat_file_url)
+  if chat_file is not None:
+    chat_file_bytes = chat_file.file
+
   try:
     user = User.find_by_email(user_data.get("email"))
 
     # generate text from prompt
-    response = await llm_chat(prompt, llm_type)
+    response = await llm_chat(prompt,
+                              llm_type,
+                              chat_file_bytes,
+                              chat_file_url,
+                              chat_file_type)
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
@@ -281,7 +322,7 @@ async def create_user_chat(gen_config: LLMGenerateModel,
     "/{chat_id}/generate",
     name="Generate new chat response",
     response_model=LLMUserChatResponse)
-async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
+async def user_chat_generate(chat_id: str, gen_config: LLMChatModel):
   """
   Continue chat based on context of user chat
 

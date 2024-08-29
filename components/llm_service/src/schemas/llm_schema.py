@@ -94,6 +94,7 @@ class QueryUploadGenerateModel(BaseModel):
   prompt: str
   llm_type: Optional[str] = None
   query_file: Optional[UploadFile] = None
+  query_file_url: Optional[str] = None
 
   class Config():
     orm_mode = True
@@ -177,6 +178,19 @@ class LLMMultiEmbeddingsModel(BaseModel):
     orm_mode = True
     schema_extra = {
         "example": LLM_MULTI_EMBEDDINGS_EXAMPLE
+    }
+
+class LLMChatModel(BaseModel):
+  """Chat request model"""
+  prompt: str
+  llm_type: Optional[str] = None
+  upload_file: Optional[UploadFile]
+  file_url: Optional[str] = None
+
+  class Config():
+    orm_mode = True
+    schema_extra = {
+        "example": LLM_GENERATE_EXAMPLE
     }
 
 class LLMQueryModel(BaseModel):
