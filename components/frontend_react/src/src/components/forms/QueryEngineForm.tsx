@@ -101,7 +101,6 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
             <QueryEngineFormFields
               variableList={currentVarsData}
               formikProps={formik}
-              queryEngine={queryEngine}
               token={token}
               handleFiles={handleFiles}
             />
