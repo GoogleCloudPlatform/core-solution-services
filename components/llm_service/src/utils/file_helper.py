@@ -19,6 +19,32 @@ File processing helper functions.
 
 import os.path
 from base64 import b64decode
+from fastapi import UploadFile
+from config import PAYLOAD_FILE_SIZE
+from common.utils.errors import PayloadTooLargeError
+from utils.gcs_helper import create_bucket_for_file, upload_file_to_gcs
+
+async def process_upload_file(upload_file: UploadFile, bucket=None) -> str:
+  """
+  Read the content for an upload file.
+  Also upload the file to a GCS bucket.
+  """
+  # read upload file
+  if len(await upload_file.read()) > PAYLOAD_FILE_SIZE:
+    raise PayloadTooLargeError(
+      f"File size is too large: {upload_file.filename}"
+    )
+  await upload_file.seek(0)
+
+  # create bucket for file
+  if bucket is None:
+    bucket = create_bucket_for_file(upload_file.filename)
+
+  # upload file to bucket
+  upload_file_url = \
+      upload_file_to_gcs(bucket, upload_file.filename, upload_file.file)
+
+  return upload_file_url
 
 def validate_multi_file_type(file_name, file_b64=None):
   # Validate the file type and ensure that it is either a text or image

@@ -16,45 +16,42 @@
 
 """ Query endpoints """
 import traceback
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends
 from google.cloud import storage
 from common.models import (QueryEngine, User, UserQuery)
 from common.utils.auth_service import validate_token
-from common.utils.errors import (ValidationError, PayloadTooLargeError,
-                                 ResourceNotFoundException)
+from common.utils.errors import ValidationError, ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError, BadRequest
 from common.utils.logging_handler import Logger
-from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES, get_model_config_value,
+from config import (ERROR_RESPONSES, get_model_config_value,
                     DEFAULT_MULTI_LLM_TYPE, KEY_IS_MULTI)
 from schemas.llm_schema import QueryUploadGenerateModel, QueryUploadResponse
 from services.query.query_service import query_upload_generate, update_user_query
-from utils.gcs_helper import create_bucket_for_file, upload_file_to_gcs
+from utils.gcs_helper import upload_file_to_gcs
+from utils.file_helper import process_upload_file
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
-async def process_query_file(query_file: UploadFile,
-                             query_file_url: str) -> UploadFile:
-  if query_file:
-    # read upload file
-    if len(await query_file.read()) > PAYLOAD_FILE_SIZE:
-      raise PayloadTooLargeError(
-        f"File size is too large: {query_file.filename}"
-      )
-    await query_file.seek(0)
-
-    # create bucket for file
-    bucket = create_bucket_for_file(query_file.filename)
-
-    # upload file to bucket
-    query_file_url = \
-        upload_file_to_gcs(bucket, query_file.filename, query_file.file)
-    return query_file
+async def validate_query_file(query_file, query_file_url, bucket=None):
+  query_file_name = None
+  query_file_contents = None
+  if query_file is not None:
+    if query_file_url is not None:
+      raise ValidationError("cannot set both query_file and query_file_url")
+    query_file_url = await process_upload_file(query_file, bucket)
+    query_file_name = query_file.filename
+    query_file_contents = query_file.file
   elif query_file_url:
-    return None
+    if not (query_file_url.startswith("gs://")
+            or query_file_url.startswith("http://")
+            or query_file_url.startswith("https://")
+            or query_file_url.startswith("shpt://")):
+      return BadRequest(
+          "query_file_url must start with gs://, http:// or https://, shpt://")
   else:
     raise ValidationError("must include query_file or query_file_url")
-
+  return query_file_url, query_file_name, query_file_contents
 
 @router.post(
     "/upload/generate",
@@ -67,7 +64,6 @@ async def query_file_upload(gen_config: QueryUploadGenerateModel,
   Can be used to upload files for building or querying.
 
   Args:
-      query_file: UploadFile
       gen_config (QueryUploadGenerateModel): dict
       user_data (dict)
   Returns:
@@ -77,8 +73,7 @@ async def query_file_upload(gen_config: QueryUploadGenerateModel,
   genconfig_dict = {**gen_config.dict()}
   prompt = gen_config["prompt"]
   llm_type = genconfig_dict.get("llm_type", None)
-  query_file_name = genconfig_dict.get("query_file_name", None)
-  query_file = genconfig_dict.get("query_file_content", None)
+  query_file = genconfig_dict.get("query_file", None)
   query_file_url = genconfig_dict.get("query_file_url", None)
 
   Logger.info(f"Upload file and run query with {genconfig_dict}")
@@ -95,8 +90,9 @@ async def query_file_upload(gen_config: QueryUploadGenerateModel,
         raise ValidationError(f"llm_type [{llm_type}] is not multimodal")
 
     user = User.find_by_email(user_data.get("email"))
-    query_file = await process_query_file(query_file, query_file_url)
-    query_file_contents = query_file.file if query_file else None
+
+    query_file_url, query_file_name, query_file_contents = \
+        await validate_query_file(query_file, query_file_url)
 
     # run query
     query_result, query_references = \
@@ -158,15 +154,12 @@ async def query_file_upload_continue(user_query_id: str,
   genconfig_dict = {**gen_config.dict()}
   prompt = gen_config["prompt"]
   llm_type = genconfig_dict.get("llm_type", None)
-  query_file_name = genconfig_dict.get("query_file_name", None)
-  query_file = genconfig_dict.get("query_file_content", None)
+  query_file = genconfig_dict.get("query_file", None)
   query_file_url = genconfig_dict.get("query_file_url", None)
 
   Logger.info(f"Upload file and continue query with {genconfig_dict}")
   try:
     user = User.find_by_email(user_data.get("email"))
-    query_file = process_query_file(query_file, query_file_url)
-    query_file_contents = query_file.file if query_file else None
 
     # get existing user query and query engine
     user_query = UserQuery.find_by_id(user_query_id)
@@ -182,6 +175,9 @@ async def query_file_upload_continue(user_query_id: str,
     bucket_name = data_url[5:]
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
+
+    query_file_url, query_file_name, query_file_contents = \
+        await validate_query_file(query_file, query_file_url, bucket=bucket)
 
     # upload file to bucket
     query_file_url = \
