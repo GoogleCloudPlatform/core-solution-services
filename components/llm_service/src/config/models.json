@@ -77,6 +77,13 @@
       "provider": "Vertex",
       "model_name": "chat-bison@002"
     },
+    "VertexAI-Gemini-Flash": {
+      "is_chat": true,
+      "is_multi": true,
+      "provider": "Vertex",
+      "model_name": "gemini-1.5-flash",
+      "context_length": 1000000
+    },
     "VertexAI-Gemini-Pro": {
       "is_chat": true,
       "is_multi": true,
