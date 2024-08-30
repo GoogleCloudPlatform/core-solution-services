@@ -26,6 +26,8 @@ interface RunQueryParams {
 interface RunChatParams {
   userInput: string
   llmType: string
+  uploadFile: File
+  fileUrl: string
 }
 
 interface UploadQueryParams {
@@ -102,6 +104,7 @@ export const createChat =
     }
     if (uploadFile !== null) {
       data.upload_file = uploadFile
+      headers['Content-Type'] = 'multipart/form-data'
     }
     if (fileUrl !== null) {
       data.file_url = fileUrl

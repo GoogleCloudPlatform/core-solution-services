@@ -48,10 +48,10 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     console.log("handleFiles")
     if (_uploadVariable == "file_upload") {
       setUploadFile(_files[0])
-      console.log("setUploadFile")
+      console.log("_files", _files)
     } else if (_uploadVariable == "doc_url") {
       setFileUrl(_files[0])
-      console.log("setFileUrl")
+      console.log("setFileUrl", _files[0])
     }  
   }
 
