@@ -94,7 +94,6 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles 
          <ChatUploadForm
           key="upload"
           handleFiles={handleFiles}
-          token={token || ""}
           currentVarsData={CHAT_UPLOAD_FORM_DATA}
           />
       </div>}
