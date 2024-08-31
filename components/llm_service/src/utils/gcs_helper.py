@@ -118,7 +118,7 @@ def create_bucket_for_file(filename: str) -> storage.Bucket:
       break  # Bucket created successfully, exit the loop
     except google.cloud.exceptions.Conflict:
       suffix += 1
-      bucket_name = f"{base_name[:63 - len(str(suffix)) - 1]}-{suffix}"
+      bucket_name = f"{bucket_name[:63 - len(str(suffix)) - 1]}-{suffix}"
 
   Logger.info(f"Bucket {bucket.name} created")
   return bucket
