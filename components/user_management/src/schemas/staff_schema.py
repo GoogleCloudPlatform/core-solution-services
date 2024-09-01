@@ -49,7 +49,8 @@ class BasicStaffModel(BaseModel):
   email: Annotated[str, StringConstraints(
       min_length=7,
       max_length=128,
-      pattern=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b")]
+      pattern=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"
+      )]
   preferred_name: Optional[str] = ""
   bio: Optional[str] = ""
   pronoun: Optional[PRONOUNS] = None
@@ -110,7 +111,8 @@ class UpdateStaffModel(BaseModel):
   last_name: Optional[str] = None
   preferred_name: Optional[Annotated[str, StringConstraints(
       max_length=60,
-      pattern=r"[a-zA-Z0-9`!#&*%_[\]{}\\;:'\,.\?\s-]+$")]] = None
+      pattern=r"[a-zA-Z0-9`!#&*%_\[\]{}\\;:'\,.\?\s-]+$"
+      )]] = None
   bio: Optional[str] = ""
   pronoun: Optional[PRONOUNS] = None
   phone_number: Optional[str] = ""
@@ -121,7 +123,8 @@ class UpdateStaffModel(BaseModel):
   email : Optional[Annotated[str, StringConstraints(
       min_length=7,
       max_length=128,
-      pattern=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b")]] = None
+      pattern=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"
+      )]] = None
 
   # pylint: disable=no-self-argument
   @field_validator("first_name")
