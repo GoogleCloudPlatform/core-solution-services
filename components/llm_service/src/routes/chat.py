@@ -45,9 +45,8 @@ async def process_chat_file(chat_file, chat_file_url, bucket=None):
     if chat_file_url is not None:
       raise ValidationError("cannot set both upload_file and file_url")
     chat_file_url = await process_upload_file(chat_file, bucket)
-    is_valid, chat_file_type = validate_multi_file_type(chat_file.filename,
-                                                        chat_file.file)
-    if not is_valid:
+    chat_file_type = validate_multi_file_type(chat_file.filename)
+    if chat_file_type is None:
       raise ValidationError(
           f"unsupported file type upload file {chat_file.filename}")
   elif chat_file_url:
@@ -57,11 +56,17 @@ async def process_chat_file(chat_file, chat_file_url, bucket=None):
             or chat_file_url.startswith("shpt://")):
       return BadRequest(
           "chat_file_url must start with gs://, http:// or https://, shpt://")
+    # check file type from extension if present
     chat_file_name = os.path.basename(chat_file_url)
-    is_valid, chat_file_type = validate_multi_file_type(chat_file_name)
-    if not is_valid:
-      raise ValidationError(
-          f"unsupported file type file url {chat_file_url}")
+    file_extension = os.path.splitext(chat_file_name)[1]
+    if file_extension:
+      chat_file_type = validate_multi_file_type(chat_file_name)
+      if not is_valid:
+        raise ValidationError(
+            f"unsupported file type file url {chat_file_url}")
+    else:
+      # assume html if no extension
+      chat_file_type = "text/html"
   return chat_file_url, chat_file_type
 
 @router.get(

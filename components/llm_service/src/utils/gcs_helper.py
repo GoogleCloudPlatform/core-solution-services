@@ -16,6 +16,7 @@
 """
 Google Storage helper functions.
 """
+import io
 import re
 from pathlib import Path
 from typing import List
@@ -86,12 +87,12 @@ def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
   return gcs_url
 
 def upload_file_to_gcs(bucket: storage.Bucket,
-                       file_name: str, file_bytes: str) -> str:
+                       file_name: str, file_obj: io.BytesIO) -> str:
   """ Upload file to GCS bucket. Returns URL to file. """
   bucket_name = bucket.name
   Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
   blob = bucket.blob(file_name)
-  blob.upload_from_string(file_bytes)
+  blob.upload_from_file(file_obj)
   gcs_url = f"gs://{bucket_name}/{file_name}"
   Logger.info(f"Uploaded {file_name} to {gcs_url}")
   return gcs_url

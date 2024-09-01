@@ -18,23 +18,33 @@ File processing helper functions.
 # pylint: disable=broad-exception-caught
 
 import os.path
+from typing import Union
 from base64 import b64decode
 from fastapi import UploadFile
 from config import PAYLOAD_FILE_SIZE
 from common.utils.errors import PayloadTooLargeError
+from common.utils.logging_handler import Logger
 from utils.gcs_helper import create_bucket_for_file, upload_file_to_gcs
+
+Logger = Logger.get_logger(__file__)
 
 async def process_upload_file(upload_file: UploadFile, bucket=None) -> str:
   """
   Read the content for an upload file.
   Also upload the file to a GCS bucket.
+
+  Args:
+      upload_file: FastAPI upload file
+      bucket (optional): existing bucket for file upload
+
+  Returns:
+      URL of uploaded file
   """
-  # read upload file
-  if len(await upload_file.read()) > PAYLOAD_FILE_SIZE:
+  # check upload file size
+  if upload_file.size > PAYLOAD_FILE_SIZE:
     raise PayloadTooLargeError(
       f"File size is too large: {upload_file.filename}"
     )
-  await upload_file.seek(0)
 
   # create bucket for file
   if bucket is None:
@@ -44,12 +54,27 @@ async def process_upload_file(upload_file: UploadFile, bucket=None) -> str:
   upload_file_url = \
       upload_file_to_gcs(bucket, upload_file.filename, upload_file.file)
 
+  # rewind file after upload
+  await upload_file.seek(0)
+
   return upload_file_url
 
-def validate_multi_file_type(file_name, file_b64=None):
-  # Validate the file type and ensure that it is either a text or image
-  # and is compatible with multimodal LLMs. Returns the mime type if valid.
+def validate_multi_file_type(file_name, file_b64=None) -> Union[str, None]:
+  """
+  Determine the mime type based on file extension.  Validate that the file
+  is supported as a multimodal file type for Vertex.
 
+  For byte files, validate the file header to ensure that it is
+  a type supported by Vertex multimodal LLMs.
+
+  Args:
+      file_name: name of file
+      file_b64 (optional): b64 encoded file content
+
+  Returns:
+      mime type of file or None if unsupported mime type or mime type
+        cannot be determined
+  """
   vertex_mime_types = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
@@ -68,7 +93,7 @@ def validate_multi_file_type(file_name, file_b64=None):
   file_extension = os.path.splitext(file_name)[1]
   mime_type = vertex_mime_types.get(file_extension)
   if not mime_type:
-    return False
+    return None
 
   # Make sure that the user file b64 is a valid image or video
   if file_b64:
@@ -91,6 +116,6 @@ def validate_multi_file_type(file_name, file_b64=None):
         user_file_type = file_format
         break
     if not user_file_type:
-      return False
+      return None
 
-  return (True, mime_type)
+  return mime_type

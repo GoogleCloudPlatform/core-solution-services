@@ -87,7 +87,7 @@ async def query_upload_generate(user_id: str,
                                 prompt: str,
                                 llm_type: str,
                                 file_name: Optional[str] = None,
-                                file_content: Optional[bytes] = None,
+                                file_content: Optional[str] = None,
                                 file_url: Optional[str] = None) -> \
                           Tuple[UserQuery, QueryResult, List[QueryReference]]:
   """
@@ -124,11 +124,11 @@ async def query_upload_generate(user_id: str,
 
   # validate file args and determine mime type
   mime_type = None
-  if file_name is not None or file_content is not None:
-    if file_name is None or file_content is None:
-      raise InternalServerError("must supply file content with file name")
-    is_file_valid, mime_type = validate_multi_file_type(file_name, file_content)
-    if not is_file_valid:
+  if file_content is not None:
+    if file_name is None:
+      raise InternalServerError("must supply file name with file content")
+    mime_type = validate_multi_file_type(file_name, file_content)
+    if mime_type is None:
       raise InternalServerError("invalid file content")
 
   if file_url is not None:
