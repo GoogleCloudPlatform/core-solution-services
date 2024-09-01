@@ -289,8 +289,9 @@ async def create_user_chat(gen_config: LLMChatModel,
   if chat_file is not None or chat_file_url is not None:
     chat_file_url, chat_file_type = \
         await process_chat_file(chat_file, chat_file_url)
-  if chat_file is not None:
-    chat_file_bytes = chat_file.file
+  if chat_file_url is None and chat_file is not None:
+    await chat_file.seek(0)
+    chat_file_bytes = await chat_file.file.read()
 
   try:
     user = User.find_by_email(user_data.get("email"))
@@ -298,9 +299,9 @@ async def create_user_chat(gen_config: LLMChatModel,
     # generate text from prompt
     response = await llm_chat(prompt,
                               llm_type,
-                              chat_file_bytes,
-                              chat_file_url,
-                              chat_file_type)
+                              chat_file_type=chat_file_type,
+                              chat_file_bytes=chat_file_bytes,
+                              chat_file_url=chat_file_url)
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,

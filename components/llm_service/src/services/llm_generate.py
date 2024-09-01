@@ -160,9 +160,9 @@ async def llm_generate_multi(prompt: str, llm_type: str, user_file_type: str,
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
-                   chat_file_bytes: bytes = None,
+                   chat_file_type: str = None,
                    chat_file_url: str = None,
-                   chat_file_type: str = None) -> str:
+                   chat_file_bytes: bytes = None) -> str:
   """
   Send a prompt to a chat model and return string response.
   Supports including a file in the chat context, either by URL or
