@@ -15,7 +15,7 @@
 """
 Pydantic Models for GenerateToken API's
 """
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from typing import Optional
 from schemas.schema_examples import (BASIC_GENERATE_TOKEN_RESPONSE_EXAMPLE)
 
@@ -32,24 +32,18 @@ class ResponseModel(BaseModel):
 
 class GenerateTokenResponseModel(BaseModel):
   """Generate Token Response Pydantic Model"""
-  success: Optional[bool]
-  message: Optional[str]
+  success: Optional[bool] = None
+  message: Optional[str] = None
   data: ResponseModel
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Token validated successfully",
-            "data": BASIC_GENERATE_TOKEN_RESPONSE_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Token validated successfully",
+          "data": BASIC_GENERATE_TOKEN_RESPONSE_EXAMPLE
+      }
+  })
 
 
 class GenerateTokenRequestModel(BaseModel):
   refresh_token: str
-
-  class Config:
-    orm_mode = True
-    schema_extra = {"example": {"refresh_token": "Afhfhh...........frtyhgjh"}}
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": {"refresh_token": "Afhfhh...........frtyhgjh"}})

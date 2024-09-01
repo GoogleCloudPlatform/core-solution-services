@@ -16,7 +16,7 @@
 Pydantic Model for Password related API's
 """
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (
     SEND_PASSWORD_RESET_EMAIL_EXAMPLE,
     IDP_SEND_PASSWORD_RESET_EMAIL_RESPONSE_EXAMPLE,
@@ -29,10 +29,7 @@ from schemas.schema_examples import (
 class SendPasswordResetEmailModel(BaseModel):
   """Send Password Reset Email Pydantic Model"""
   email: str
-
-  class Config:
-    orm_mode = True
-    schema_extra = {"example": SEND_PASSWORD_RESET_EMAIL_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": SEND_PASSWORD_RESET_EMAIL_EXAMPLE})
 
 
 class IDPSendPasswordResetEmailResponseModel(BaseModel):
@@ -46,20 +43,14 @@ class SendPasswordResetEmailResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
   data: IDPSendPasswordResetEmailResponseModel
-
-  class Config:
-    orm_mode = True
-    schema_extra = {"example": IDP_SEND_PASSWORD_RESET_EMAIL_RESPONSE_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": IDP_SEND_PASSWORD_RESET_EMAIL_RESPONSE_EXAMPLE})
 
 
 class ResetPasswordModel(BaseModel):
   """Reset Password Pydantic Model"""
   oobCode: str
   newPassword: str
-
-  class Config:
-    orm_mode = True
-    schema_extra = {"example": RESET_PASSWORD_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": RESET_PASSWORD_EXAMPLE})
 
 
 class IDPResetPasswordResponseModel(BaseModel):
@@ -74,19 +65,13 @@ class ResetPasswordResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
   data: IDPResetPasswordResponseModel
-
-  class Config:
-    orm_mode = True
-    schema_extra = {"example": RESET_PASSWORD_RESPONSE_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": RESET_PASSWORD_RESPONSE_EXAMPLE})
 
 
 class ChangePasswordModel(BaseModel):
   """Reset Password Pydantic Model"""
   password: str
-
-  class Config:
-    orm_mode = True
-    schema_extra = {"example": CHANGE_PASSWORD_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": CHANGE_PASSWORD_EXAMPLE})
 
 
 class IDPChangePasswordResponseModel(BaseModel):
@@ -103,7 +88,4 @@ class ChangePasswordResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
   data: IDPChangePasswordResponseModel
-
-  class Config:
-    orm_mode = True
-    schema_extra = {"example": CHANGE_PASSWORD_RESPONSE_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": CHANGE_PASSWORD_RESPONSE_EXAMPLE})

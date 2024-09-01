@@ -16,7 +16,7 @@
 Pydantic Model for Module API's
 """
 from typing import List, Optional
-from pydantic import BaseModel, Extra
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (BASIC_MODULE_MODEL_EXAMPLE,
                                      FULL_MODULE_MODEL_EXAMPLE)
 
@@ -38,40 +38,29 @@ class FullModuleDataModel(BasicModuleModel):
 
 class ModuleModel(BasicModuleModel):
   """Module Input Pydantic Model"""
-
-  class Config():
-    orm_mode = True
-    extra = Extra.forbid
-    schema_extra = {"example": BASIC_MODULE_MODEL_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_MODULE_MODEL_EXAMPLE})
 
 
 class UpdateModuleModel(BaseModel):
   """Update Module Pydantic Request Model"""
-  name: Optional[str]
-  description: Optional[str]
-  actions: Optional[list]
-
-  class Config():
-    orm_mode = True
-    extra = Extra.forbid
-    schema_extra = {"example": BASIC_MODULE_MODEL_EXAMPLE}
+  name: Optional[str] = None
+  description: Optional[str] = None
+  actions: Optional[list] = None
+  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_MODULE_MODEL_EXAMPLE})
 
 
 class GetModuleResponseModel(BaseModel):
   """Module Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully fetched the module"
-  data: Optional[FullModuleDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully fetched the module",
-            "data": FULL_MODULE_MODEL_EXAMPLE
-        }
-    }
+  data: Optional[FullModuleDataModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully fetched the module",
+          "data": FULL_MODULE_MODEL_EXAMPLE
+      }
+  })
 
 
 class PostModuleResponseModel(BaseModel):
@@ -79,82 +68,67 @@ class PostModuleResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created the module"
   data: FullModuleDataModel
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully created the module",
-            "data": FULL_MODULE_MODEL_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully created the module",
+          "data": FULL_MODULE_MODEL_EXAMPLE
+      }
+  })
 
 
 class UpdateModuleResponseModel(BaseModel):
   """Module Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully updated the module"
-  data: Optional[FullModuleDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully updated the module",
-            "data": FULL_MODULE_MODEL_EXAMPLE
-        }
-    }
+  data: Optional[FullModuleDataModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully updated the module",
+          "data": FULL_MODULE_MODEL_EXAMPLE
+      }
+  })
 
 
 class DeleteModule(BaseModel):
   """Delete Module Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully deleted the module"
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully deleted the module"
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully deleted the module"
+      }
+  })
 
 
 class AllModuleResponseModel(BaseModel):
   """Module Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
-  data: Optional[List[FullModuleDataModel]]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Data fetched successfully",
-            "data": [FULL_MODULE_MODEL_EXAMPLE]
-        }
-    }
+  data: Optional[List[FullModuleDataModel]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Data fetched successfully",
+          "data": [FULL_MODULE_MODEL_EXAMPLE]
+      }
+  })
 
 
 class ModuleImportJsonResponse(BaseModel):
   """Module Import Json Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created the modules"
-  data: Optional[List[str]]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully created the modules",
-            "data": [
-                "44qxEpc35pVMb6AkZGbi", "00MPqUhCbyPe1BcevQDr",
-                "lQRzcrRuDpJ9IoW8bCHu"
-            ]
-        }
-    }
+  data: Optional[List[str]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully created the modules",
+          "data": [
+              "44qxEpc35pVMb6AkZGbi", "00MPqUhCbyPe1BcevQDr",
+              "lQRzcrRuDpJ9IoW8bCHu"
+          ]
+      }
+  })

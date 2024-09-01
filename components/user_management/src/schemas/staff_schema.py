@@ -19,8 +19,8 @@ import json
 import re
 import regex
 from typing import List, Optional
-from typing_extensions import Literal
-from pydantic import BaseModel, constr, Extra, validator
+from typing_extensions import Annotated, Literal
+from pydantic import field_validator, StringConstraints, ConfigDict, BaseModel
 from schemas.schema_examples import (BASIC_STAFF_EXAMPLE, FULL_STAFF_EXAMPLE,
                                      PROFILE_FIELDS)
 
@@ -46,41 +46,41 @@ class BasicStaffModel(BaseModel):
   """Staff Skeleton Pydantic Model"""
   first_name: str
   last_name: str
-  email: constr(
+  email: Annotated[str, StringConstraints(
       min_length=7,
       max_length=128,
-      regex=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b")
+      pattern=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b")]
   preferred_name: Optional[str] = ""
   bio: Optional[str] = ""
-  pronoun: Optional[PRONOUNS]
+  pronoun: Optional[PRONOUNS] = None
   phone_number: Optional[str] = ""
   shared_inboxes: Optional[str] = ""
-  timezone: Optional[TIMEZONES]
+  timezone: Optional[TIMEZONES] = None
   office_hours: Optional[List[AvailabilityModel]] = []
   photo_url: Optional[str] = ""
 
   # pylint: disable=no-self-argument
-  @validator("preferred_name")
+  @field_validator("preferred_name")
+  @classmethod
   def validate_preferred_name(cls, v):
     assert v == "" or re.match(r"[a-zA-Z0-9`!#&*%_[\]{}\\;:'\,.\?\s-]+$", v),\
       "Invalid format for preferred_name"
     return v
-  @validator("first_name")
+  @field_validator("first_name")
+  @classmethod
   def first_name_regex(cls,value):
     result = regex.fullmatch(r"[\D\p{L}\p{N}]+$", value)
     if len(value)<=60 and result:
       return value
     raise ValueError("Invalid first name format")
-  @validator("last_name")
+  @field_validator("last_name")
+  @classmethod
   def last_name_regex(cls,value):
     result = regex.fullmatch(r"[\D\p{L}\p{N}\s]+$", value)
     if len(value)<=60 and result:
       return value
     raise ValueError("Invalid last name format")
-
-  class Config():
-    orm_mode = True
-    schema_extra = {"example": BASIC_STAFF_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": BASIC_STAFF_EXAMPLE})
 
 
 class FullStaffModel(BasicStaffModel):
@@ -95,69 +95,64 @@ class StaffSearchResponseModel(BaseModel):
   success: bool = True
   message: str = "Successfully fetched the Staffs"
   data: List[FullStaffModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully fetched the Staffs",
-            "data": [FULL_STAFF_EXAMPLE]
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully fetched the Staffs",
+          "data": [FULL_STAFF_EXAMPLE]
+      }
+  })
 
 
 class UpdateStaffModel(BaseModel):
   """Update Staff Pydantic Model"""
   first_name: Optional[str] = None
   last_name: Optional[str] = None
-  preferred_name: Optional[constr(
+  preferred_name: Optional[Annotated[str, StringConstraints(
       max_length=60,
-      regex=r"[a-zA-Z0-9`!#&*%_[\]{}\\;:'\,.\?\s-]+$")] = None
+      pattern=r"[a-zA-Z0-9`!#&*%_[\]{}\\;:'\,.\?\s-]+$")]] = None
   bio: Optional[str] = ""
-  pronoun: Optional[PRONOUNS]
+  pronoun: Optional[PRONOUNS] = None
   phone_number: Optional[str] = ""
   shared_inboxes: Optional[str] = ""
-  timezone: Optional[TIMEZONES]
+  timezone: Optional[TIMEZONES] = None
   office_hours: Optional[List[AvailabilityModel]] = []
-  photo_url: Optional[str]
-  email : Optional[constr(
+  photo_url: Optional[str] = None
+  email : Optional[Annotated[str, StringConstraints(
       min_length=7,
       max_length=128,
-      regex=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b")]
+      pattern=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b")]] = None
 
   # pylint: disable=no-self-argument
-  @validator("first_name")
+  @field_validator("first_name")
+  @classmethod
   def first_name_regex(cls,value):
     result = regex.fullmatch(r"[\D\p{L}\p{N}]+$", value)
     if len(value)<=60 and result:
       return value
     raise ValueError("Invalid first name format")
-  @validator("last_name")
+  @field_validator("last_name")
+  @classmethod
   def last_name_regex(cls,value):
     result = regex.fullmatch(r"[\D\p{L}\p{N}\s]+$", value)
     if len(value)<=60 and result:
       return value
     raise ValueError("Invalid last name format")
-  class Config:
-    extra = Extra.forbid
+  model_config = ConfigDict(extra="forbid")
 
 
 class GetStaffResponseModel(BaseModel):
   """Get Staff Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully fetched the Staff"
-  data: Optional[FullStaffModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully fetched the Staff",
-            "data": FULL_STAFF_EXAMPLE
-        }
-    }
+  data: Optional[FullStaffModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully fetched the Staff",
+          "data": FULL_STAFF_EXAMPLE
+      }
+  })
 
 
 class PostStaffResponseModel(BaseModel):
@@ -165,106 +160,88 @@ class PostStaffResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created the Staff"
   data: FullStaffModel
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully created the Staff",
-            "data": FULL_STAFF_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully created the Staff",
+          "data": FULL_STAFF_EXAMPLE
+      }
+  })
 
 
 class UpdateStaffResponseModel(BaseModel):
   """Update Staff Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully updated the Staff"
-  data: Optional[FullStaffModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully updated the Staff",
-            "data": FULL_STAFF_EXAMPLE
-        }
-    }
+  data: Optional[FullStaffModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully updated the Staff",
+          "data": FULL_STAFF_EXAMPLE
+      }
+  })
 
 
 class DeleteStaffReponseModel(BaseModel):
   """Delete Staff Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully deleted the Staff"
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully deleted the Staff"
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully deleted the Staff"
+      }
+  })
 
 
 class AllStaffResponseModel(BaseModel):
   """Get All Staff Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
-  data: Optional[List[FullStaffModel]]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Data fetched successfully",
-            "data": [FULL_STAFF_EXAMPLE]
-        }
-    }
+  data: Optional[List[FullStaffModel]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Data fetched successfully",
+          "data": [FULL_STAFF_EXAMPLE]
+      }
+  })
 
 
 class StaffImportJsonResponse(BaseModel):
   """Staff Import Json Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created the Staffs"
-  data: Optional[List[str]]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully created the Staffs",
-            "data": [
-                "44qxEpc35pVMb6AkZGbi", "00MPqUhCbyPe1BcevQDr",
-                "lQRzcrRuDpJ9IoW8bCHu"
-            ]
-        }
-    }
+  data: Optional[List[str]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully created the Staffs",
+          "data": [
+              "44qxEpc35pVMb6AkZGbi", "00MPqUhCbyPe1BcevQDr",
+              "lQRzcrRuDpJ9IoW8bCHu"
+          ]
+      }
+  })
 
 
 class ProfileFieldsModel(BaseModel):
-  pronouns: Optional[list]
-  workdays: Optional[list]
-  timezones: Optional[list]
+  pronouns: Optional[list] = None
+  workdays: Optional[list] = None
+  timezones: Optional[list] = None
 
 
 class ProfileFieldsResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully fetched the possible options for"\
                             " pronouns, workdays, timezones"
-  data: Optional[ProfileFieldsModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "success": True,
-        "message": "Successfully fetched the possible options for"
-                    " pronouns, workdays, timezones",
-        "data": PROFILE_FIELDS
-      }
+  data: Optional[ProfileFieldsModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "success": True,
+      "message": "Successfully fetched the possible options for"
+                  " pronouns, workdays, timezones",
+      "data": PROFILE_FIELDS
     }
+  })

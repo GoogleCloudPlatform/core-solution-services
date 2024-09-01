@@ -15,7 +15,7 @@
 Pydantic Model for LLM API's
 """
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      LLM_MULTI_GENERATE_EXAMPLE,
                                      QUERY_EXAMPLE,
@@ -45,48 +45,39 @@ class LLMGetTypesResponse(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved llm types"
   data: Optional[list[str]] = []
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved llm types",
-            "data": []
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved llm types",
+          "data": []
+      }
+  })
 
 class LLMGetVectorStoreTypesResponse(BaseModel):
   """LLM Get vector store types model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved vector store types"
   data: Optional[list[str]] = []
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved vector store types",
-            "data": []
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved vector store types",
+          "data": []
+      }
+  })
 
 class LLMGetEmbeddingTypesResponse(BaseModel):
   """LLM Get embedding types model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved embedding types"
   data: Optional[list[str]] = []
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved embedding types",
-            "data": []
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved embedding types",
+          "data": []
+      }
+  })
 
 
 class LLMGetQueryEnginesResponse(BaseModel):
@@ -94,51 +85,39 @@ class LLMGetQueryEnginesResponse(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved query engine types"
   data: Optional[list[dict]] = []
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved query engine types",
-            "data": []
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved query engine types",
+          "data": []
+      }
+  })
 
 class LLMGenerateModel(BaseModel):
   """LLM Generate request model"""
   prompt: str
   llm_type: Optional[str] = None
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": LLM_GENERATE_EXAMPLE
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": LLM_GENERATE_EXAMPLE
+  })
 
 class LLMMultiGenerateModel(BaseModel):
   """LLM Multi Generate request model"""
   prompt: str
   user_file_b64: str
   user_file_name: str
-  llm_type: Optional[str]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": LLM_MULTI_GENERATE_EXAMPLE
-    }
+  llm_type: Optional[str] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": LLM_MULTI_GENERATE_EXAMPLE
+  })
 
 class LLMEmbeddingsModel(BaseModel):
   """LLM Embeddings request model"""
   text: str
   embedding_type: Optional[str] = None
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": LLM_EMBEDDINGS_EXAMPLE
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": LLM_EMBEDDINGS_EXAMPLE
+  })
 
 class LLMMultiEmbeddingsModel(BaseModel):
   """LLM Multimodal Embeddings request model"""
@@ -146,26 +125,20 @@ class LLMMultiEmbeddingsModel(BaseModel):
   user_file_b64: str
   user_file_name: str
   embedding_type: Optional[str] = None
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": LLM_MULTI_EMBEDDINGS_EXAMPLE
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": LLM_MULTI_EMBEDDINGS_EXAMPLE
+  })
 
 class LLMQueryModel(BaseModel):
   """LLM Query model"""
   prompt: str
-  llm_type: Optional[str]
-  run_as_batch_job: Optional[str]
-  rank_sentences: Optional[str]
-  query_filter: Optional[str]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": QUERY_EXAMPLE
-    }
+  llm_type: Optional[str] = None
+  run_as_batch_job: Optional[str] = None
+  rank_sentences: Optional[str] = None
+  query_filter: Optional[str] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": QUERY_EXAMPLE
+  })
 
 
 class LLMQueryEngineModel(BaseModel):
@@ -173,17 +146,14 @@ class LLMQueryEngineModel(BaseModel):
   doc_url: str
   query_engine: str
   description: str
-  query_engine_type: Optional[str]
-  llm_type: Optional[str]
-  embedding_type: Optional[str]
-  vector_store: Optional[str]
-  params: Optional[dict]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": QUERY_ENGINE_EXAMPLE
-    }
+  query_engine_type: Optional[str] = None
+  llm_type: Optional[str] = None
+  embedding_type: Optional[str] = None
+  vector_store: Optional[str] = None
+  params: Optional[dict] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": QUERY_ENGINE_EXAMPLE
+  })
 
 
 class LLMQueryEngineResponse(BaseModel):
@@ -191,48 +161,39 @@ class LLMQueryEngineResponse(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved query engine"
   data: Optional[dict] = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved query engine",
-            "data": QUERY_ENGINE_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved query engine",
+          "data": QUERY_ENGINE_EXAMPLE
+      }
+  })
 
 class LLMQueryResponse(BaseModel):
   """LLM Query Response model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully performed query"
   data: Optional[dict] = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully performed query",
-            "data": QUERY_RESULT_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully performed query",
+          "data": QUERY_RESULT_EXAMPLE
+      }
+  })
 
 class LLMUserQueryResponse(BaseModel):
   """LLM Retrieve User Query Response model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved query"
   data: Optional[dict] = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved query",
-            "data": None
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved query",
+          "data": None
+      }
+  })
 
 
 class LLMQueryEngineURLResponse(BaseModel):
@@ -240,16 +201,13 @@ class LLMQueryEngineURLResponse(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved URLs"
   data: List[str] = []
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "success": True,
-        "message": "Successfully retrieved URLs",
-        "data": None
-      }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "success": True,
+      "message": "Successfully retrieved URLs",
+      "data": None
     }
+  })
 
 
 class LLMUserAllQueriesResponse(BaseModel):
@@ -257,16 +215,13 @@ class LLMUserAllQueriesResponse(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved queries"
   data: List[dict] = []
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved queries",
-            "data": None
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved queries",
+          "data": None
+      }
+  })
 
 
 class LLMGenerateResponse(BaseModel):
@@ -274,77 +229,62 @@ class LLMGenerateResponse(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully generated text"
   content: Optional[str] = ""
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully generated text",
-            "content": None
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully generated text",
+          "content": None
+      }
+  })
 
 class LLMEmbeddingsResponse(BaseModel):
   """LLM Embeddings Response model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully generated embeddings"
   data: Optional[List[float]] = []
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully generated embeddings",
-            "data": None
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully generated embeddings",
+          "data": None
+      }
+  })
 
 class LLMMultiEmbeddingsResponse(BaseModel):
   """LLM Multimodal Embeddings Response model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully generated multimodal embeddings"
   data: Optional[dict] = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully generated multimodal embeddings",
-            "data": None
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully generated multimodal embeddings",
+          "data": None
+      }
+  })
 
 class LLMUserChatResponse(BaseModel):
   """LLM User Create Chat Response model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created chat"
   data: Optional[dict] = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully created chat",
-            "data": None
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully created chat",
+          "data": None
+      }
+  })
 
 class LLMUserAllChatsResponse(BaseModel):
   """LLM Get User All Chats Response model"""
   data: List[dict] = []
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved user chats"
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved chats",
-            "data": None
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved chats",
+          "data": None
+      }
+  })

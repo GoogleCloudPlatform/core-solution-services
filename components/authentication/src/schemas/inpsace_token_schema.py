@@ -15,7 +15,7 @@
 """
 Pydantic Models for Inspace Token API's
 """
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import INSPACE_TOKEN_EXAMPLE
 
 
@@ -29,13 +29,10 @@ class InspaceTokenModel(BaseModel):
   success: bool = True
   message: str = "Successfully fetched the inspace token"
   data: dict
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "success": True,
-        "message": "Successfully fetched the inspace token",
-        "data": INSPACE_TOKEN_EXAMPLE
-      }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "success": True,
+      "message": "Successfully fetched the inspace token",
+      "data": INSPACE_TOKEN_EXAMPLE
     }
+  })

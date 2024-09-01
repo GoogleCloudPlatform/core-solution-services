@@ -14,7 +14,7 @@
 """
 Pydantic Model for LLM Agent API's
 """
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (AGENT_RUN_EXAMPLE,
                                      AGENT_RUN_RESPONSE_EXAMPLE,
                                      AGENT_PLAN_EXAMPLE,
@@ -27,16 +27,13 @@ class LLMAgentGetAllResponse(BaseModel):
   success: bool = True
   message: str = "Successfully retrieved agents"
   data: dict = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved agents",
-            "data": {}
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved agents",
+          "data": {}
+      }
+  })
 
 
 class LLMAgentGetTypeResponse(BaseModel):
@@ -44,16 +41,13 @@ class LLMAgentGetTypeResponse(BaseModel):
   success: bool = True
   message: str = "Successfully retrieved agents"
   data: dict = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved agents",
-            "data": {}
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved agents",
+          "data": {}
+      }
+  })
 
 
 class LLMAgentRunModel(BaseModel):
@@ -64,12 +58,9 @@ class LLMAgentRunModel(BaseModel):
   db_result_limit: int = 10
   run_as_batch_job: bool = False
   dataset: str = None
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": AGENT_RUN_EXAMPLE
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": AGENT_RUN_EXAMPLE
+  })
 
 
 class LLMAgentRunResponse(BaseModel):
@@ -77,23 +68,17 @@ class LLMAgentRunResponse(BaseModel):
   success: str
   message: str
   data: dict = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": AGENT_RUN_RESPONSE_EXAMPLE
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": AGENT_RUN_RESPONSE_EXAMPLE
+  })
 
 
 class LLMAgentPlanModel(BaseModel):
   """LLM Agent plan model"""
   prompt: str
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": AGENT_PLAN_EXAMPLE
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": AGENT_PLAN_EXAMPLE
+  })
 
 
 class LLMAgentPlanResponse(BaseModel):
@@ -101,12 +86,9 @@ class LLMAgentPlanResponse(BaseModel):
   success: str
   message: str
   data: dict = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": AGENT_PLAN_RESPONSE_EXAMPLE
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": AGENT_PLAN_RESPONSE_EXAMPLE
+  })
 
 
 class LLMAgentPlanRunResponse(BaseModel):
@@ -114,12 +96,9 @@ class LLMAgentPlanRunResponse(BaseModel):
   success: str
   message: str = ""
   data: dict = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": AGENT_PLAN_RESPONSE_EXAMPLE
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": AGENT_PLAN_RESPONSE_EXAMPLE
+  })
 
 
 class LLMUserPlanResponse(BaseModel):
@@ -127,9 +106,6 @@ class LLMUserPlanResponse(BaseModel):
   success: str
   message: str
   data: dict = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": USER_PLAN_RESPONSE_EXAMPLE
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": USER_PLAN_RESPONSE_EXAMPLE
+  })

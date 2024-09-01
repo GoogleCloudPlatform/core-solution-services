@@ -15,32 +15,29 @@
 Pydantic Models for Batch Job API's
 """
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 # pylint: disable = line-too-long
 class BatchJobData(BaseModel):
-  name: Optional[str]
-  status: Optional[str]
-  type: Optional[str]
+  name: Optional[str] = None
+  status: Optional[str] = None
+  type: Optional[str] = None
 
 class BatchJobModel(BaseModel):
   """Batch Job Response Pydantic Model"""
   success: bool
   message: str
-  data: Optional[BatchJobData]
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully initiated the job with type 'emsi_ingestion'."
-                       " Please use the job name to track the job status",
-            "data": {
-                "name": "abcd-ajdf-sdfk-sdff",
-                "type": "query_engine_build",
-                "status": "active"
-            }
-        }
-    }
+  data: Optional[BatchJobData] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully initiated the job with type 'emsi_ingestion'."
+                     " Please use the job name to track the job status",
+          "data": {
+              "name": "abcd-ajdf-sdfk-sdff",
+              "type": "query_engine_build",
+              "status": "active"
+          }
+      }
+  })

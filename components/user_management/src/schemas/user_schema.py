@@ -17,8 +17,8 @@ Pydantic Model for User API's
 """
 import regex
 from typing import List, Optional
-from typing_extensions import Literal
-from pydantic import BaseModel, constr, Extra, validator
+from typing_extensions import Annotated, Literal
+from pydantic import field_validator, StringConstraints, ConfigDict, BaseModel
 from common.models.user import USER_TYPES
 from schemas.schema_examples import (BASIC_USER_MODEL_EXAMPLE,
                                      FULL_USER_MODEL_EXAMPLE,
@@ -28,11 +28,11 @@ class BasicUserModel(BaseModel):
   """User Skeleton Pydantic Model"""
   first_name: str
   last_name: str
-  email: constr(
+  email: Annotated[str, StringConstraints(
       min_length=7,
       max_length=128,
-      regex=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
-  user_type: Optional[Literal[tuple(USER_TYPES)]]
+      pattern=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")]
+  user_type: Optional[Literal[tuple(USER_TYPES)]] = None
   user_groups: Optional[list] = []
   status: Optional[Literal["active", "inactive"]] = "active"
   is_registered: Optional[bool] = True
@@ -42,14 +42,16 @@ class BasicUserModel(BaseModel):
   photo_url: Optional[str] = ""
 
   # pylint: disable=no-self-argument
-  @validator("first_name")
+  @field_validator("first_name")
+  @classmethod
   def name_regex(cls,value):
     result = regex.fullmatch(r"[\D\p{L}\p{N}\s]+$", value)
     if len(value)<=60 and result:
       return value
     raise ValueError("Invalid first format")
 
-  @validator("last_name")
+  @field_validator("last_name")
+  @classmethod
   def last_name_regex(cls,value):
     result = regex.fullmatch(r"[\D\p{L}\p{N}\s]+$", value)
     if len(value)<=60 and result:
@@ -68,18 +70,14 @@ class FullUserDataModel(BasicUserModel):
   created_time: str
   last_modified_time: str
   user_type_ref: str
-  inspace_user: Optional[InspaceUserModel]
+  inspace_user: Optional[InspaceUserModel] = None
   # FIXME: remove optional after all docs get this field
   is_deleted: Optional[bool] = False
 
 
 class UserModel(BasicUserModel):
   """User Input Pydantic Model"""
-
-  class Config():
-    orm_mode = True
-    extra = Extra.forbid
-    schema_extra = {"example": BASIC_USER_MODEL_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_USER_MODEL_EXAMPLE})
 
 
 class UserSearchResponseModel(BaseModel):
@@ -87,74 +85,63 @@ class UserSearchResponseModel(BaseModel):
   success: bool = True
   message: str = "Successfully fetched the users"
   data: List[FullUserDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully fetched the users",
-            "data": [FULL_USER_MODEL_EXAMPLE]
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully fetched the users",
+          "data": [FULL_USER_MODEL_EXAMPLE]
+      }
+  })
 
 
 class UpdateUserModel(BaseModel):
   """Update User Pydantic Request Model"""
   first_name: Optional[str] = None
   last_name: Optional[str] = None
-  user_groups: Optional[list]
-  access_api_docs: Optional[bool]
-  gaia_id: Optional[str]
-  photo_url: Optional[str]
-  email: Optional[constr(
+  user_groups: Optional[list] = None
+  access_api_docs: Optional[bool] = None
+  gaia_id: Optional[str] = None
+  photo_url: Optional[str] = None
+  email: Optional[Annotated[str, StringConstraints(
       min_length=7,
       max_length=128,
-      regex=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")]
+      pattern=r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")]] = None
   # pylint: disable=no-self-argument
-  @validator("first_name")
+  @field_validator("first_name")
+  @classmethod
   def first_name_regex(cls,value):
     result = regex.fullmatch(r"[\D\p{L}\p{N}]+$", value)
     if len(value)<=60 and result:
       return value
     raise ValueError("Invalid first name format")
-  @validator("last_name")
+  @field_validator("last_name")
+  @classmethod
   def last_name_regex(cls,value):
     result = regex.fullmatch(r"[\D\p{L}\p{N}\s]+$", value)
     if len(value)<=60 and result:
       return value
     raise ValueError("Invalid last name format")
-
-  class Config():
-    orm_mode = True
-    extra = Extra.forbid
-    schema_extra = {"example": UPDATE_USER_MODEL_EXAMPLE}
+  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": UPDATE_USER_MODEL_EXAMPLE})
 
 
 class UpdateStatusModel(BaseModel):
   """Update User Status Pydantic Request Model"""
-  status: Optional[Literal["active", "inactive"]]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {"example": {"status": "active"}}
+  status: Optional[Literal["active", "inactive"]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": {"status": "active"}})
 
 
 class GetUserResponseModel(BaseModel):
   """User Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully fetched the user"
-  data: Optional[FullUserDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully fetched the user",
-            "data": FULL_USER_MODEL_EXAMPLE
-        }
-    }
+  data: Optional[FullUserDataModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully fetched the user",
+          "data": FULL_USER_MODEL_EXAMPLE
+      }
+  })
 
 
 class PostUserResponseModel(BaseModel):
@@ -162,16 +149,13 @@ class PostUserResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created the user"
   data: FullUserDataModel
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully created the user",
-            "data": FULL_USER_MODEL_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully created the user",
+          "data": FULL_USER_MODEL_EXAMPLE
+      }
+  })
 
 
 class BulkImportUserResponseModel(BaseModel):
@@ -185,17 +169,14 @@ class UpdateUserResponseModel(BaseModel):
   """User Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully updated the user"
-  data: Optional[FullUserDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully updated the user",
-            "data": FULL_USER_MODEL_EXAMPLE
-        }
-    }
+  data: Optional[FullUserDataModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully updated the user",
+          "data": FULL_USER_MODEL_EXAMPLE
+      }
+  })
 
 
 class DeleteUser(BaseModel):
@@ -203,59 +184,50 @@ class DeleteUser(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = ("Successfully deleted the user and associated"
   " agent, learner/faculty")
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message":
-      "Successfully deleted the user and associated agent, learner/faculty"
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message":
+    "Successfully deleted the user and associated agent, learner/faculty"
+      }
+  })
 
 class TotalCountResponseModel(BaseModel):
-  records: Optional[List[FullUserDataModel]]
+  records: Optional[List[FullUserDataModel]] = None
   total_count: int
 
 class AllUserResponseModel(BaseModel):
   """User Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
-  data: Optional[TotalCountResponseModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Data fetched successfully",
-            "data": {
-                      "records":[FULL_USER_MODEL_EXAMPLE],
-                      "total_count": 50
-                    }
-        }
-    }
+  data: Optional[TotalCountResponseModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Data fetched successfully",
+          "data": {
+                    "records":[FULL_USER_MODEL_EXAMPLE],
+                    "total_count": 50
+                  }
+      }
+  })
 
 
 class UserImportJsonResponse(BaseModel):
   """User Import Json Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created the users"
-  data: Optional[List[str]]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully created the users",
-            "data": [
-                "44qxEpc35pVMb6AkZGbi", "00MPqUhCbyPe1BcevQDr",
-                "lQRzcrRuDpJ9IoW8bCHu"
-            ]
-        }
-    }
+  data: Optional[List[str]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully created the users",
+          "data": [
+              "44qxEpc35pVMb6AkZGbi", "00MPqUhCbyPe1BcevQDr",
+              "lQRzcrRuDpJ9IoW8bCHu"
+          ]
+      }
+  })
 
 
 class ApplicationDetails(BaseModel):
@@ -279,14 +251,11 @@ class GetApplicationsOfUser(BaseModel):
   success: Optional[bool] = True
   message: Optional[
       str] = "Successfully fetched applications assigned to the user"
-  data: Optional[UserApplication]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully fetched applications assigned to the user",
-            "data": GET_APPLICATIONS_OF_USER
-        }
-    }
+  data: Optional[UserApplication] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully fetched applications assigned to the user",
+          "data": GET_APPLICATIONS_OF_USER
+      }
+  })

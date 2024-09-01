@@ -16,7 +16,7 @@
 Pydantic Model for Sign In API's
 """
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (
     SIGN_IN_WITH_CREDENTIALS_API_INPUT_EXAMPLE,
     SIGN_IN_WITH_CREDENTIALS_API_RESPONSE_EXAMPLE,
@@ -28,11 +28,7 @@ class SignInWithCredentialsModel(BaseModel):
   """Sign In with Credentials Input Pydantic Model"""
   email: str
   password: str
-
-  class Config:
-    orm_mode = True
-    schema_extra = {"example": SIGN_IN_WITH_CREDENTIALS_API_INPUT_EXAMPLE}
-    extra = "forbid"
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": SIGN_IN_WITH_CREDENTIALS_API_INPUT_EXAMPLE}, extra="forbid")
 
 
 class IDPSignInWithCredentialsResponseModel(BaseModel):
@@ -54,16 +50,13 @@ class SignInWithCredentialsResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully signed in"
   data: IDPSignInWithCredentialsResponseModel
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully signed in",
-            "data": SIGN_IN_WITH_CREDENTIALS_API_RESPONSE_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully signed in",
+          "data": SIGN_IN_WITH_CREDENTIALS_API_RESPONSE_EXAMPLE
+      }
+  })
 
 
 class IDPSignInWithTokenResponse(BaseModel):
@@ -93,13 +86,10 @@ class SignInWithTokenResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully signed in"
   data: IDPSignInWithTokenResponse
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully signed in",
-            "data": SIGN_IN_WITH_TOKEN_RESPONSE_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully signed in",
+          "data": SIGN_IN_WITH_TOKEN_RESPONSE_EXAMPLE
+      }
+  })
