@@ -46,4 +46,9 @@ class GenerateTokenResponseModel(BaseModel):
 
 class GenerateTokenRequestModel(BaseModel):
   refresh_token: str
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": {"refresh_token": "Afhfhh...........frtyhgjh"}})
+  model_config = ConfigDict(
+      from_attributes=True,
+      json_schema_extra={
+        "example": {"refresh_token": "Afhfhh...........frtyhgjh"}
+      }
+  )
