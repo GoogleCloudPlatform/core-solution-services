@@ -65,7 +65,7 @@ class LLMAgentRunModel(BaseModel):
 
 class LLMAgentRunResponse(BaseModel):
   """LLM Agent run response model"""
-  success: str
+  success: bool
   message: str
   data: dict = {}
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
@@ -83,7 +83,7 @@ class LLMAgentPlanModel(BaseModel):
 
 class LLMAgentPlanResponse(BaseModel):
   """LLM Agent plan response model"""
-  success: str
+  success: bool
   message: str
   data: dict = {}
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
@@ -93,7 +93,7 @@ class LLMAgentPlanResponse(BaseModel):
 
 class LLMAgentPlanRunResponse(BaseModel):
   """LLM Agent plan response model"""
-  success: str
+  success: bool
   message: str = ""
   data: dict = {}
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
@@ -103,9 +103,13 @@ class LLMAgentPlanRunResponse(BaseModel):
 
 class LLMUserPlanResponse(BaseModel):
   """LLM User plan response model"""
-  success: str
+  success: bool
   message: str
   data: dict = {}
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": USER_PLAN_RESPONSE_EXAMPLE
+      "example": {
+        "success": "True",
+        "message": "Successfully retrieved user plan abcd1234",
+        "data": USER_PLAN_RESPONSE_EXAMPLE
+      }
   })
