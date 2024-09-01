@@ -20,4 +20,5 @@ packaging==23.2
 pytz==2023.3
 redis==4.5.4
 regex==2023.6.3
-uvicorn
+httpx==0.27.2
+uvicorn==0.30.6
