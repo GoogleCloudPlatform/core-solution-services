@@ -42,14 +42,22 @@ class FullSessionDataModel(BasicSessionModel):
 
 class PostSessionModel(BasicSessionModel):
   """Session Pydantic Model"""
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": POST_SESSION_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": POST_SESSION_EXAMPLE}
+  )
 
 
 class UpdateSessionModel(BaseModel):
   """Update Session Pydantic Model"""
   session_data: Optional[dict] = {}
   is_expired: Optional[bool] = None
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": UPDATE_SESSION_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": UPDATE_SESSION_EXAMPLE}
+  )
 
 
 class GetSessionResponseModel(BaseModel):

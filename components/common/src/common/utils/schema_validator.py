@@ -18,9 +18,14 @@ from pydantic import ConfigDict, BaseModel
 class BaseConfigModel(BaseModel):
   """Base class for pydantic schema models where str validation required"""
   # TODO[pydantic]: The following keys were removed: `error_msg_templates`.
-  # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-  model_config = ConfigDict(str_strip_whitespace=True, str_min_length=1, error_msg_templates={
+  # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config
+  # for more information.
+  model_config = ConfigDict(
+      str_strip_whitespace=True,
+      str_min_length=1,
+      error_msg_templates={
           "value_error.any_str.min_length":
           "String length must be at least {limit_value}",
           "validation_failed": "String is empty or has only spaces"
-      })
+      }
+  )

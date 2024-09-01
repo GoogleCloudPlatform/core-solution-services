@@ -29,7 +29,10 @@ from schemas.schema_examples import (
 class SendPasswordResetEmailModel(BaseModel):
   """Send Password Reset Email Pydantic Model"""
   email: str
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": SEND_PASSWORD_RESET_EMAIL_EXAMPLE})
+  model_config = \
+      ConfigDict(
+          from_attributes=True,
+          json_schema_extra={"example": SEND_PASSWORD_RESET_EMAIL_EXAMPLE})
 
 
 class IDPSendPasswordResetEmailResponseModel(BaseModel):
@@ -43,14 +46,21 @@ class SendPasswordResetEmailResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
   data: IDPSendPasswordResetEmailResponseModel
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": IDP_SEND_PASSWORD_RESET_EMAIL_RESPONSE_EXAMPLE})
+  model_config = \
+      ConfigDict(
+          from_attributes=True,
+          json_schema_extra=\
+              {"example": IDP_SEND_PASSWORD_RESET_EMAIL_RESPONSE_EXAMPLE})
 
 
 class ResetPasswordModel(BaseModel):
   """Reset Password Pydantic Model"""
   oobCode: str
   newPassword: str
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": RESET_PASSWORD_EXAMPLE})
+  model_config = \
+      ConfigDict(
+          from_attributes=True,
+          json_schema_extra={"example": RESET_PASSWORD_EXAMPLE})
 
 
 class IDPResetPasswordResponseModel(BaseModel):
@@ -65,13 +75,19 @@ class ResetPasswordResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
   data: IDPResetPasswordResponseModel
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": RESET_PASSWORD_RESPONSE_EXAMPLE})
+  model_config = \
+      ConfigDict(
+          from_attributes=True,
+          json_schema_extra={"example": RESET_PASSWORD_RESPONSE_EXAMPLE})
 
 
 class ChangePasswordModel(BaseModel):
   """Reset Password Pydantic Model"""
   password: str
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": CHANGE_PASSWORD_EXAMPLE})
+  model_config = \
+      ConfigDict(
+          from_attributes=True,
+          json_schema_extra={"example": CHANGE_PASSWORD_EXAMPLE})
 
 
 class IDPChangePasswordResponseModel(BaseModel):
@@ -88,4 +104,7 @@ class ChangePasswordResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
   data: IDPChangePasswordResponseModel
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": CHANGE_PASSWORD_RESPONSE_EXAMPLE})
+  model_config = \
+      ConfigDict(
+          from_attributes=True,
+          json_schema_extra={"example": CHANGE_PASSWORD_RESPONSE_EXAMPLE})

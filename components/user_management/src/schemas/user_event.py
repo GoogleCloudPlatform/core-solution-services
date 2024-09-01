@@ -96,24 +96,28 @@ class UpdateUserEventModel(BaseModel):
   course_id: Optional[str] = None
   flow_type: Optional[str] = None
   hint: Optional[str] = None
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={
+  model_config = ConfigDict(
+    from_attributes=True,
+    extra="forbid",
+    json_schema_extra={
       "example": {
-      "session_ref": "fjdsalfjaslf",
-      "raw_response" : {"first_attempt": "microanalytic theory"},
-      "feedback": {
-        "first_attempt": {
-          "feedback_text": "can be improved",
-          "evaluation_score":0.4,
-          "evaluation_flag":"incorrect"
-          }
-      },
-      "learning_item_id": "dfkjasfals",
-      "activity_type": "choose_the_fact",
-      "user_id": "dfkajkfjalk",
-      "course_id": "fjkadsfalsdfa",
-      "flow_type": "Let AITutor Guide Me"
+        "session_ref": "fjdsalfjaslf",
+        "raw_response" : {"first_attempt": "microanalytic theory"},
+        "feedback": {
+          "first_attempt": {
+            "feedback_text": "can be improved",
+            "evaluation_score":0.4,
+            "evaluation_flag":"incorrect"
+            }
+        },
+        "learning_item_id": "dfkjasfals",
+        "activity_type": "choose_the_fact",
+        "user_id": "dfkajkfjalk",
+        "course_id": "fjkadsfalsdfa",
+        "flow_type": "Let AITutor Guide Me"
       }
-  })
+    }
+  )
 
 
 class GetUserEvent(UserEventModelResponse):

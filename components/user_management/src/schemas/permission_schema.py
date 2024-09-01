@@ -73,16 +73,27 @@ class PermissionModel(BaseModel):
   application_id: str
   module_id: str
   action_id: str
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": POST_PERMISSION_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": POST_PERMISSION_MODEL_EXAMPLE}
+  )
 
 
 class UpdatePermissionModel(BaseModel):
   """Update Permission Pydantic Request Model"""
   name: Optional[str] = None
   description: Optional[str] = None
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": {
-    "name": "assessment_authoring.summative_assessment.edit",
-    "description": "edit permission"}})
+  model_config = ConfigDict(
+    from_attributes=True,
+    extra="forbid",
+    json_schema_extra={
+      "example": {
+        "name": "assessment_authoring.summative_assessment.edit",
+        "description": "edit permission"
+      }
+    }
+  )
 
 
 class GetPermissionResponseModel(BaseModel):

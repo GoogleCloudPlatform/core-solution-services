@@ -28,7 +28,13 @@ class SignInWithCredentialsModel(BaseModel):
   """Sign In with Credentials Input Pydantic Model"""
   email: str
   password: str
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": SIGN_IN_WITH_CREDENTIALS_API_INPUT_EXAMPLE}, extra="forbid")
+  model_config = ConfigDict(
+      from_attributes=True,
+      json_schema_extra={
+        "example": SIGN_IN_WITH_CREDENTIALS_API_INPUT_EXAMPLE
+      },
+      extra="forbid"
+  )
 
 
 class IDPSignInWithCredentialsResponseModel(BaseModel):

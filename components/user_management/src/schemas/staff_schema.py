@@ -81,7 +81,10 @@ class BasicStaffModel(BaseModel):
     if len(value)<=60 and result:
       return value
     raise ValueError("Invalid last name format")
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": BASIC_STAFF_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      json_schema_extra={"example": BASIC_STAFF_EXAMPLE}
+  )
 
 
 class FullStaffModel(BasicStaffModel):

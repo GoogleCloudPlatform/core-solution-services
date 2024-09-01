@@ -48,32 +48,50 @@ class FullUserGroupDataModel(BasicUserGroupModel):
 
 class PostUserGroupModel(BasicUserGroupModel):
   """UserGroup Input Pydantic Model"""
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": POST_USERGROUP_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": POST_USERGROUP_MODEL_EXAMPLE}
+  )
 
 
 class ImmutableUserGroupModel(BasicUserGroupModel):
   """Immutable UserGroup Input Pydantic Model"""
   name: ALLOWED_IMMUTABLE_GROUPS
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": POST_USERGROUP_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": POST_USERGROUP_MODEL_EXAMPLE}
+  )
 
 
 class UpdateUserGroupModel(BaseModel):
   """Update UserGroup Pydantic Request Model"""
   name: Optional[str] = None
   description: Optional[str] = None
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": UPDATE_GROUP_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": UPDATE_GROUP_MODEL_EXAMPLE}
+  )
 
 
 class AddUserFromUserGroupModel(BaseModel):
   """Update UserGroup Pydantic Request Model"""
   user_ids: List[str]
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": BASIC_GROUP_USERS_EDIT_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      json_schema_extra={"example": BASIC_GROUP_USERS_EDIT_EXAMPLE}
+  )
 
 
 class RemoveUserFromUserGroupModel(BaseModel):
   """Update UserGroup Pydantic Request Model"""
   user_id: str
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": {"user_id": "44qxEpc35pVMb6AkZGbi"}})
+  model_config = ConfigDict(
+      from_attributes=True,
+      json_schema_extra={"example": {"user_id": "44qxEpc35pVMb6AkZGbi"}}
+  )
 
 
 class GetUserGroupResponseModel(BaseModel):
@@ -213,12 +231,16 @@ class UpdateGroupApplications(BaseModel):
   """Update applications of Group Request Pydantic Model"""
   applications: List[str]
   action_id: str
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={
-      "example": {
-          "applications": ["4GATUsfrj4vvdfghjkui"],
-          "action_id": "fht67frfghjhnb678"
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={
+        "example": {
+            "applications": ["4GATUsfrj4vvdfghjkui"],
+            "action_id": "fht67frfghjhnb678"
+          }
       }
-  })
+  )
 
 
 class CreateGroupRequestModel(BaseModel):
@@ -228,7 +250,13 @@ class CreateGroupRequestModel(BaseModel):
   users: Optional[list] = None
   permissions: Optional[list] = None
   roles: Optional[list] = None
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": {**UPDATE_GROUP_MODEL_EXAMPLE, "users": []}})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={
+        "example": {**UPDATE_GROUP_MODEL_EXAMPLE, "users": []}
+      }
+  )
 
 
 class UpdateApplicationsOfGroupResponseModel(BaseModel):
@@ -265,7 +293,11 @@ class UpdatePermissionsOfGroupResponseModel(BaseModel):
 class UpdateUserGroupPermissions(BaseModel):
   """Update permissions of UserGroup Request Pydantic Model"""
   permission_ids: List[str]
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": {"permission_ids": ["fht67frfghjhnb678"]}})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": {"permission_ids": ["fht67frfghjhnb678"]}}
+  )
 
 
 class GetUsersBasedOnGroupIdResponseModel(BaseModel):

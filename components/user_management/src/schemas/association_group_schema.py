@@ -37,7 +37,11 @@ class BasicAssociationGroupModel(BaseModel):
 class ImmutableAssociationGroupModel(BasicAssociationGroupModel):
   """Immutable Association Group Pydantic Model"""
   name: ALLOWED_IMMUTABLE_ASSOCIATION_GROUPS
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_ASSOCIATION_GROUP_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_ASSOCIATION_GROUP_EXAMPLE}
+  )
 
 
 class FullAssociationGroupDataModel(BasicAssociationGroupModel):
@@ -81,7 +85,10 @@ class GetAllAssociationGroupResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully fetched the association group"
   data: Optional[List[FullAssociationGroupDataModel]] = None
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": ASSOCIATION_GROUP_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      json_schema_extra={"example": ASSOCIATION_GROUP_EXAMPLE}
+  )
 
 class AutoUpdateAllAssociationGroups(BaseModel):
   """Node Skeleton Pydantic Model"""

@@ -41,7 +41,11 @@ class FullActionDataModel(BasicActionModel):
 
 class ActionModel(BasicActionModel):
   """Action Input Pydantic Model"""
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_ACTION_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_ACTION_MODEL_EXAMPLE}
+  )
 
 
 class UpdateActionModel(BaseModel):
@@ -49,7 +53,11 @@ class UpdateActionModel(BaseModel):
   name: Optional[str] = None
   description: Optional[str] = None
   action_type: Optional[ALLOWED_ACTION_TYPES] = None
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_ACTION_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_ACTION_MODEL_EXAMPLE}
+  )
 
 
 class GetActionResponseModel(BaseModel):

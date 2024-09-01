@@ -38,7 +38,11 @@ class FullModuleDataModel(BasicModuleModel):
 
 class ModuleModel(BasicModuleModel):
   """Module Input Pydantic Model"""
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_MODULE_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_MODULE_MODEL_EXAMPLE}
+  )
 
 
 class UpdateModuleModel(BaseModel):
@@ -46,7 +50,11 @@ class UpdateModuleModel(BaseModel):
   name: Optional[str] = None
   description: Optional[str] = None
   actions: Optional[list] = None
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_MODULE_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_MODULE_MODEL_EXAMPLE}
+  )
 
 
 class GetModuleResponseModel(BaseModel):

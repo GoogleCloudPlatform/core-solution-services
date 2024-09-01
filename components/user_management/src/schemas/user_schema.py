@@ -77,7 +77,11 @@ class FullUserDataModel(BasicUserModel):
 
 class UserModel(BasicUserModel):
   """User Input Pydantic Model"""
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_USER_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_USER_MODEL_EXAMPLE}
+  )
 
 
 class UserSearchResponseModel(BaseModel):
@@ -121,13 +125,20 @@ class UpdateUserModel(BaseModel):
     if len(value)<=60 and result:
       return value
     raise ValueError("Invalid last name format")
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": UPDATE_USER_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": UPDATE_USER_MODEL_EXAMPLE}
+  )
 
 
 class UpdateStatusModel(BaseModel):
   """Update User Status Pydantic Request Model"""
   status: Optional[Literal["active", "inactive"]] = None
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": {"status": "active"}})
+  model_config = ConfigDict(
+      from_attributes=True,
+      json_schema_extra={"example": {"status": "active"}}
+  )
 
 
 class GetUserResponseModel(BaseModel):

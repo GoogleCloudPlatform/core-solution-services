@@ -27,7 +27,10 @@ class BasicApplicationModel(BaseConfigModel):
   name: StrictStr
   description: StrictStr
   modules: list
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={"example": BASIC_APPLICATION_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      json_schema_extra={"example": BASIC_APPLICATION_MODEL_EXAMPLE}
+  )
 
 
 class FullApplicationDataModel(BasicApplicationModel):
@@ -39,7 +42,11 @@ class FullApplicationDataModel(BasicApplicationModel):
 
 class ApplicationModel(BasicApplicationModel):
   """Module Input Pydantic Model"""
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_APPLICATION_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_APPLICATION_MODEL_EXAMPLE}
+  )
 
 
 class PostApplicationResponseModel(BaseModel):
@@ -115,4 +122,8 @@ class UpdateApplicationModel(BaseModel):
   name: Optional[StrictStr] = None
   description: Optional[StrictStr] = None
   modules: Optional[list] = None
-  model_config = ConfigDict(from_attributes=True, extra="forbid", json_schema_extra={"example": BASIC_APPLICATION_MODEL_EXAMPLE})
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_APPLICATION_MODEL_EXAMPLE}
+  )
