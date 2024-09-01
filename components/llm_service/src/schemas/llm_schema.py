@@ -19,6 +19,7 @@ from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      LLM_MULTI_GENERATE_EXAMPLE,
                                      QUERY_EXAMPLE,
+                                     QUERY_RETRIEVE_EXAMPLE,
                                      QUERY_ENGINE_EXAMPLE,
                                      QUERY_RESULT_EXAMPLE,
                                      LLM_EMBEDDINGS_EXAMPLE,
@@ -178,7 +179,7 @@ class LLMQueryResponse(BaseModel):
       "example": {
           "success": True,
           "message": "Successfully performed query",
-          "data": QUERY_RESULT_EXAMPLE
+          "data": QUERY_RETRIEVE_EXAMPLE
       }
   })
 

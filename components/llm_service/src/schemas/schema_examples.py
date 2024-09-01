@@ -187,6 +187,12 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
   "sentences": ["query_document_chunk_example_3"]
 }
 
+QUERY_RETRIEVE_EXAMPLE = {
+  "user_query_id": USER_QUERY_EXAMPLE["id"],
+  "query_result": QUERY_RESULT_EXAMPLE,
+  "query_references": [QUERY_REFERENCE_EXAMPLE_1, QUERY_REFERENCE_EXAMPLE_2]
+}
+
 CHAT_EXAMPLE = {
   "id": "asd98798as7dhjgkjsdfh",
   "user_id": "fake-user-id",
