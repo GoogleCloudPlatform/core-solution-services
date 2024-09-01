@@ -15,7 +15,7 @@
 Pydantic Model for Jobs Service API's
 """
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import BATCHJOB_EXAMPLE
 
 job_type = BATCHJOB_EXAMPLE["type"]
@@ -25,16 +25,13 @@ class JobGetStatusResponse(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved batch job"
   data: Optional[dict] = {}
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully retrieved batch job",
-            "data": BATCHJOB_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully retrieved batch job",
+          "data": BATCHJOB_EXAMPLE
+      }
+  })
 
 
 class AllJobsGetStatusResponse(BaseModel):
@@ -42,30 +39,24 @@ class AllJobsGetStatusResponse(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully fetched all the batch jobs"
   data: Optional[List[dict]] = []
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message":
-      f"Successfully fetched all the batch jobs of type {job_type}",
-            "data": [BATCHJOB_EXAMPLE]
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message":
+    f"Successfully fetched all the batch jobs of type {job_type}",
+          "data": [BATCHJOB_EXAMPLE]
+      }
+  })
 
 class JobDeleteResponse(BaseModel):
   """Job Delete Response model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully deleted job"
   data: Optional[str] = ""
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully deleted batch job",
-            "data": None
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully deleted batch job",
+          "data": None
+      }
+  })
