@@ -60,7 +60,7 @@ def add_exception_handlers(_app: FastAPI):
       content={
         "success": False,
         "message": "Validation Failed",
-        "data": exc.errors()
+        "data": str(exc.errors())
       })
 
 

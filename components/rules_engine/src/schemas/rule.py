@@ -14,7 +14,7 @@
 
 """Pydantic Model for Rule API's"""
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class RuleSchema(BaseModel):
@@ -27,14 +27,11 @@ class RuleSchema(BaseModel):
   type: str
   fields: dict
   status: str
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "id": "1234",
-        "title": "Rule Title",
-        "description": "Rule Description",
-        "status": "New"
-      }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "id": "1234",
+      "title": "Rule Title",
+      "description": "Rule Description",
+      "status": "New"
     }
+  })
