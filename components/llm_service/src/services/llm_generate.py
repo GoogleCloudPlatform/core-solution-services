@@ -14,16 +14,13 @@
 """
 LLM Generation Service
 """
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,line-too-long
 import time
 from typing import Optional
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-from vertexai.preview.generative_models import GenerativeModel, Part
 from vertexai.preview.generative_models import (
-    HarmCategory,
-    HarmBlockThreshold)
-from google.cloud.aiplatform_v1beta1.types.content import SafetySetting
+    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
 from common.utils.errors import ResourceNotFoundException
@@ -505,10 +502,12 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
   Returns:
     the text response.
   """
-  Logger.info(f"Generating text with a Google multimodal LLM given a"
-              f" file and a prompt, is_chat=[{is_chat}],"
+  Logger.info(f"Generating text with a Google multimodal LLM:"
+              f" prompt=[{prompt}], is_chat=[{is_chat}],"
               f" is_multi=[{is_multi}], google_llm=[{google_llm}],"
-              f" user_file_bytes=[bytes], prompt=[{prompt}].")
+              f" user_file_bytes=[{user_file_bytes}],"
+              f" user_file_url=[{user_file_url}],"
+              f" user_file_type=[{user_file_type}].")
 
   # TODO: Consider images in chat
   prompt_list = []
@@ -539,25 +538,14 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
     if is_chat:
       # gemini uses new "GenerativeModel" class and requires different params
       if "gemini" in google_llm:
+        # TODO: fix safety settings
+        safety_settings = {
+             HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+             HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        }
         chat_model = GenerativeModel(google_llm)
-        safety_settings = [
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_HARASSMENT,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-        ]
         if is_multi:
           if user_file_bytes is not None:
             user_file_part = Part.from_data(user_file_bytes,
@@ -569,9 +557,10 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
             raise RuntimeError(
                 "one of user_file_bytes or user_file_url must be set")
           context_list = [user_file_part, context_prompt]
-
+          Logger.info(f"context list {context_list}")
+          generation_config = GenerationConfig(**parameters)
           response = await chat_model.generate_content_async(context_list,
-              generation_config=parameters, safety_settings=safety_settings)
+              generation_config=generation_config)
         else:
           chat = chat_model.start_chat()
           response = await chat.send_message_async(context_prompt,
