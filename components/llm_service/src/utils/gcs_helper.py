@@ -100,14 +100,14 @@ def upload_file_to_gcs(bucket: storage.Bucket,
 def create_bucket_for_file(filename: str) -> storage.Bucket:
   storage_client = storage.Client()
 
-  # base name is projectid_filename without extension
+  # base name is projectid_filename
   base_name = PROJECT_ID + "_" + Path(filename).name
 
   # Convert to lowercase, replace invalid characters with hyphens,
   # and ensure length is within limits
   bucket_name = re.sub(r"[^a-z0-9\-]", "-", base_name.lower())[:63]
 
-  # Add a unique suffix if needed to ensure uniqueness
+  # Add a suffix if needed to ensure uniqueness
   suffix = 0
   bucket = None
   while True:
@@ -119,7 +119,11 @@ def create_bucket_for_file(filename: str) -> storage.Bucket:
       break  # Bucket created successfully, exit the loop
     except google.cloud.exceptions.Conflict:
       suffix += 1
-      bucket_name = f"{bucket_name[:63 - len(str(suffix)) - 1]}-{suffix}"
+      if suffix == 1:
+        bucket_name = f"{bucket_name}-{suffix}"
+      else:
+        bucket_name = \
+            f"{bucket_name[:len(bucket_name)-len(str(suffix-1))-1]}-{suffix}"
 
   Logger.info(f"Bucket {bucket.name} created")
   return bucket

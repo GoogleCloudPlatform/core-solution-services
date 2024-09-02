@@ -51,6 +51,7 @@ async def process_upload_file(upload_file: UploadFile, bucket=None) -> str:
     bucket = create_bucket_for_file(upload_file.filename)
 
   # upload file to bucket
+  await upload_file.seek(0)
   upload_file_url = \
       upload_file_to_gcs(bucket, upload_file.filename, upload_file.file)
 
