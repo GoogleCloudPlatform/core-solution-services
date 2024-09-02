@@ -86,26 +86,20 @@ class QueryUploadGenerateModel(BaseModel):
   llm_type: Optional[str] = None
   query_file: Optional[UploadFile] = None
   query_file_url: Optional[str] = None
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
         "example": LLM_GENERATE_EXAMPLE
-    }
+  })
 
 class QueryUploadResponse(BaseModel):
   """Query upload response model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully uploaded file"
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully uploaded file",
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully uploaded file",
+      }
+  })
 
 class LLMGetQueryEnginesResponse(BaseModel):
   """LLM Get types model"""
@@ -162,12 +156,9 @@ class LLMChatModel(BaseModel):
   llm_type: Optional[str] = None
   upload_file: Optional[UploadFile]
   file_url: Optional[str] = None
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
         "example": LLM_GENERATE_EXAMPLE
-    }
+  })
 
 class LLMQueryModel(BaseModel):
   """LLM Query model"""
