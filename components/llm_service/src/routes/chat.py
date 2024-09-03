@@ -17,8 +17,8 @@
 """ Chat endpoints """
 import os
 import traceback
-from fastapi import APIRouter, Depends
-
+from typing import Union, Annotated
+from fastapi import APIRouter, Depends, Form, UploadFile
 from common.models import User, UserChat
 from common.utils.auth_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
@@ -259,31 +259,33 @@ def delete_chat(chat_id: str, hard_delete=False):
     "",
     name="Create new chat",
     response_model=LLMUserChatResponse)
-async def create_user_chat(gen_config: LLMChatModel,
+async def create_user_chat(prompt: Annotated[str, Form()],
+                           llm_type: Annotated[str, Form()] = None,
+                           chat_file: Union[UploadFile, None] = None,
+                           chat_file_url: Annotated[str, Form()] = None,
                            user_data: dict = Depends(validate_token)):
   """
   Create new chat for authentcated user
 
   Args:
-      gen_config: Input config dictionary,
-        including prompt(str) and llm_type(str) type for model
+      prompt(str): prompt to initiate chat
+      llm_type(str): llm model id
+      chat_file(UploadFile): file upload for chat context
+      chat_file_url(str): file url for chat context
 
   Returns:
       LLMUserChatResponse
   """
-  genconfig_dict = {**gen_config.dict()}
-  Logger.info("Creating new chat using "
-              f"genconfig_dict={genconfig_dict}")
-  response = []
+  llm_type = "VertexAI-Gemini-Flash"
 
-  prompt = genconfig_dict.get("prompt")
+  Logger.info("Creating new chat using"
+              f" prompt={prompt} llm_type={llm_type}"
+              f" chat_file={chat_file} chat_file_url={chat_file_url}")
+
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
 
-  llm_type = genconfig_dict.get("llm_type")
-
-  chat_file = genconfig_dict.get("upload_file", None)
-  chat_file_url = genconfig_dict.get("file_url", None)
+  # process chat file
   chat_file_type = None
   chat_file_bytes = None
   if chat_file is not None or chat_file_url is not None:

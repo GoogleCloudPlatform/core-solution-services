@@ -97,14 +97,16 @@ export const createChat =
     fileUrl,
   }: RunChatParams): Promise<Chat | undefined> => {
     const url = `${endpoint}/chat`
-    const headers = { Authorization: `Bearer ${token}` }
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data'
+    }
     let data = {
       prompt: userInput,
-      llm_type: llmType,
+      llm_type: llmType
     }
     if (uploadFile !== null) {
       data.upload_file = uploadFile
-      headers['Content-Type'] = 'multipart/form-data'
     }
     if (fileUrl !== null) {
       data.file_url = fileUrl
