@@ -90,6 +90,7 @@ def chat_content():
           for reference in item["References"]:
             modality = reference["modality"]
             chunk_url = reference["chunk_url"]
+            chunk_type = ""
             if chunk_url:
               _, chunk_type = splitext(chunk_url)
 
