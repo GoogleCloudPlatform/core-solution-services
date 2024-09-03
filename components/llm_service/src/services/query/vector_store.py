@@ -456,7 +456,7 @@ class LangChainVectorStore(VectorStore):
       chunk_image_embedding = chunk_embedding["image_embeddings"]
       if isinstance(chunk_image_embedding[0], float):
         # Append this chunk's text to the text_chunks array
-        text_chunks.append(doc["text_chunks"])
+        text_chunks.append(my_contextual_text)
         # Append this chunk's image embedding to the chunk_embeddings array
         chunk_embeddings.append(chunk_image_embedding)
       else:
