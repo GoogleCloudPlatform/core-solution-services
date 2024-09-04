@@ -93,6 +93,8 @@ def chat_content():
             chunk_type = ""
             if chunk_url:
               _, chunk_type = splitext(chunk_url)
+              chunk_url = chunk_url.replace("gs://",
+                  "https://storage.googleapis.com/", 1)
 
             if modality == "text":
               document_url = reference["document_url"]
@@ -101,7 +103,7 @@ def chat_content():
                 f"Reference: {document_url}",
                 document_text,
                 key=f"ref_{query_index}")
-            elif (modality == "multimodal") and (chunk_type == ".pdf"
+            elif (modality == "image") and (chunk_type == ".pdf"
                 or chunk_type == ".png" or chunk_type == ".jpg"
                 or chunk_type == ".jpeg"):
               st.image(chunk_url)
