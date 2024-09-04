@@ -105,7 +105,8 @@ def chat_content():
                 key=f"ref_{query_index}")
             elif (modality == "image") and (chunk_type == ".pdf"
                 or chunk_type == ".png" or chunk_type == ".jpg"
-                or chunk_type == ".jpeg"):
+                or chunk_type == ".jpeg" or chunk_type == ".gif"
+                or chunk_type == ".bmp"):
               st.image(chunk_url)
             else:
               logging.error("Reference modality unknown")
