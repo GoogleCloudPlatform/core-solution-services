@@ -33,7 +33,7 @@ from schemas.llm_schema import (LLMGenerateModel,
                                 LLMEmbeddingsModel,
                                 LLMMultiEmbeddingsModel)
 from services.llm_generate import llm_generate, llm_generate_multi
-from services.embeddings import get_embeddings, get_multi_embeddings
+from services.embeddings import get_embeddings, get_multimodal_embeddings
 from utils.file_helper import validate_multi_vision_file_type
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
@@ -44,18 +44,32 @@ Logger = Logger.get_logger(__file__)
     "",
     name="Get all LLM types",
     response_model=LLMGetTypesResponse)
-def get_llm_list():
+def get_llm_list(is_multi: bool = None):
   """
-  Get available LLMs
+  Get available LLMs, optionally filter by
+  multimodal capabilities
+
+  Args:
+    is_multi: `bool`
+      Optional: Is llm model multimodal <br/>
 
   Returns:
       LLMGetTypesResponse
   """
   try:
+    if is_multi is True:
+      llm_types = get_model_config().get_multimodal_llm_types()
+    elif is_multi is False:
+      llm_types = get_model_config().get_text_llm_types()
+    elif is_multi is None:
+      llm_types = get_model_config().get_llm_types()
+    else:
+      return BadRequest("Invalid request parameter value: is_multi")
+
     return {
       "success": True,
       "message": "Successfully retrieved llm types",
-      "data": get_model_config().get_llm_types()
+      "data": llm_types
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -81,13 +95,13 @@ def get_embedding_types(is_multi: bool = None):
   """
   try:
     if is_multi is True:
-      embedding_types = get_model_config().get_multi_embedding_types()
+      embedding_types = get_model_config().get_multimodal_embedding_types()
     elif is_multi is False:
       embedding_types = get_model_config().get_text_embedding_types()
     elif is_multi is None:
       embedding_types = get_model_config().get_embedding_types()
     else:
-      return BadRequest("Missing or invalid payload parameters")
+      return BadRequest("Invalid request parameter value: is_multi")
 
     return {
       "success": True,
@@ -173,7 +187,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
   try:
     user_file_bytes = b64decode(user_file_b64)
     embeddings = \
-        await get_multi_embeddings(text, user_file_bytes, embedding_type)
+        await get_multimodal_embeddings(text, user_file_bytes, embedding_type)
 
     return {
         "success": True,

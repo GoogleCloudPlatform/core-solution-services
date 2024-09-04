@@ -448,7 +448,7 @@ class LangChainVectorStore(VectorStore):
 
       # Get chunk embeddings
       chunk_embedding = \
-        await embeddings.get_multi_embeddings(my_contextual_text,
+        await embeddings.get_multimodal_embeddings(my_contextual_text,
                                               my_image,
                                               self.embedding_type)
 
