@@ -113,17 +113,6 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     order: 2,
   },
   {
-    name: "file_upload",
-    display: "Files",
-    type: "file(upload)",
-    placeholder: "Upload files to bucket",
-    description: "",
-    default: "",
-    required: false,
-    group: "queryengine",
-    order: 2,
-  },
-  {
     name: "manifest_url",
     display: "Manifest URL",
     type: "string",

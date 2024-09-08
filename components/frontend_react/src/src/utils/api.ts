@@ -184,23 +184,6 @@ export const createQueryEngine =
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
 
-export const uploadQueryFile =
-  (token: string) => async ({
-      queryId,
-      userInput,
-      llmType,
-      uploadFile,
-    }: UploadQueryParams): Promise<QueryEngine | undefined> => {
-    const url = `${endpoint}/query/engine/upload/${queryId}`
-    const headers = { Authorization: `Bearer ${token}` }
-    const data = {
-      prompt: userInput,
-      llm_type: llmType,
-      uploadFile: uploadFile,
-    }
-    return axios.post(url, data, { headers }).then(path(["data", "data"]))
-  }
-
 export const updateQueryEngine =
   (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngine | undefined> => {
     const url = `${endpoint}/query/engine/${queryEngine.id}`
