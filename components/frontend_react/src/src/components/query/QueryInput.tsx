@@ -17,48 +17,13 @@ import QueryEngineForm from "@/components/forms/QueryEngineForm"
 
 interface QueryInputProps {
   onSubmit: (message: string) => void
-  onUploadSubmit: Function
-  onUploadSuccess: Function
-  onUploadFailure: Function
-  handleFiles: Function
   token: string
   activeJob: boolean
 }
 
-const QUERY_UPLOAD_FORM_DATA: IFormVariable[] = [
-  {
-    name: "doc_url",
-    display: "Document URL to query",
-    type: "string",
-    placeholder: "http(s)://, gs://, bq://<table>, shpt://",
-    description: "",
-    default: "",
-    required: false,
-    group: "queryengine",
-    order: 1,
-  },
-  {
-    name: "file_upload",
-    display: "File",
-    type: "file(upload)",
-    placeholder: "Upload file to query",
-    fileLabel: "Select local file",
-    multiple: false,
-    description: "",
-    default: "",
-    required: false,
-    group: "queryengine",
-    order: 2,
-  },
-]
-
-const QueryInput: React.FC<QueryInputProps> = ({ onSubmit, onUploadSubmit, onUploadSuccess, onUploadFailure, handleFiles, token, activeJob }) => {
+const QueryInput: React.FC<QueryInputProps> = ({ onSubmit, token, activeJob }) => {
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   
-  const handleUploadClick = () => {
-    setIsUploadOpen((prev) => !prev)
-  }
-
   return (
     <div>    
       <form
@@ -77,12 +42,6 @@ const QueryInput: React.FC<QueryInputProps> = ({ onSubmit, onUploadSubmit, onUpl
           placeholder="Enter a prompt here"
           autoComplete="off"
         />
-        <div
-          onClick={handleUploadClick}
-          className={"flex rounded-lg items-center text-start text-sm p-2.5 group bg-base-100 hover:bg-base-200 transition cursor-pointer"}
-        >
-          <div className="i-heroicons-plus-circle h-8 w-8 shrink-0 hover:text-info transition" />
-        </div>
         <button
           type="submit"
           disabled={activeJob}
@@ -93,18 +52,6 @@ const QueryInput: React.FC<QueryInputProps> = ({ onSubmit, onUploadSubmit, onUpl
           <div className="i-material-symbols-send-outline-rounded h-8 w-8 shrink-0" />
         </button>
       </form>
-      {isUploadOpen && 
-      <div className="w-full justify-center rounded-lg border-2 border-primary border-opacity-50 p-4 md:flex">
-         <QueryEngineForm
-          key="upload"
-          onSubmit={onUploadSubmit}
-          onSuccess={onUploadSuccess}
-          onFailure={onUploadFailure}
-          handleFiles={handleFiles}
-          queryEngine={null}
-          currentVarsData={QUERY_UPLOAD_FORM_DATA}
-          />
-      </div>}
     </div>
   )
 }

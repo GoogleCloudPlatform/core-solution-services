@@ -14,7 +14,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import QueryWindow from "@/components/query/QueryWindow"
-import { fetchQuery, createQuery, resumeQuery, uploadQueryFile } from "@/utils/api"
+import { fetchQuery, createQuery, resumeQuery } from "@/utils/api"
 import { Query, QueryContents } from "@/utils/types"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
@@ -40,14 +40,8 @@ const GenAIQuery: React.FC<GenAIQueryProps> = ({
   const [newQueryId, setNewQueryId] = useState<string | null>(null)
   const [resumeQueryId, setResumeQueryId] = useState<string | null>(null)
   const initialQueryRef = useRef(initialQueryId)
-  const [uploadFiles, setUploadFiles] = useState<FileList | null>(null)
 
   const { selectedModel, selectedEngine } = useConfig()
-
-  const handleFiles = (_files: FileList, _uploadVariable: string) => {
-    console.log("handleFiles")
-    setUploadFiles(_files)
-  }
 
   const {
     isLoading,
@@ -116,50 +110,11 @@ const GenAIQuery: React.FC<GenAIQueryProps> = ({
     mutationFn: resumeQuery(userToken),
   })
 
-  const uploadQuery = useMutation({
-    mutationFn: uploadQueryFile(userToken),
-  })
-
   const navigate = useNavigate()
 
   const updateUrlParam = (queryId: string | null) => {
     navigate(`?query_id=${queryId}`, { replace: true })
   }
-
-  const onUploadSubmit = (userInput: string) => {
-    console.log("onUploadSubmit")
-    uploadQuery.mutate(
-      {
-        queryId: initialQueryId,
-        userInput,
-        llmType: selectedModel,
-        uploadFile: uploadFiles[0]
-      },
-      {
-        onSuccess: (resp?: QueryEngine) => {
-          const currQueryId = resp?.id.toString() ?? null
-
-          if (currQueryId) {
-            setResumeQueryId(currQueryId)
-            refetch()
-          }
-        },
-        onError: () => {
-          setActiveJob(false)
-          setMessages((prev) => [...prev, errMsg])
-        }
-      }
-    )
-  }
-
-  const onUploadSuccess = (userInput: string) => {
-    console.log("onUploadSuccess")
-  }
-
-  const onUploadFailure = (userInput: string) => {
-    console.log("onUploadFailure")
-  }
-
 
   const onSubmit = (userInput: string) => {
     setActiveJob(true)
@@ -219,10 +174,7 @@ const GenAIQuery: React.FC<GenAIQueryProps> = ({
   return (
     <div className="bg-primary/20 flex flex-grow gap-4 rounded-lg p-3">
       <div className="bg-base-100 flex w-full rounded-lg chat-p justify-center py-6">
-        <QueryWindow onSubmit={onSubmit} messages={messages} activeJob={activeJob} token={userToken}
-                     onUploadSubmit={onUploadSubmit} onUploadSuccess={onUploadSuccess}
-                     onUploadFailure={onUploadFailure} handleFiles={handleFiles}
-        />
+        <QueryWindow onSubmit={onSubmit} messages={messages} activeJob={activeJob} token={userToken} />
       </div>
     </div>
   )
