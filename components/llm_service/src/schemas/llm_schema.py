@@ -133,7 +133,7 @@ class LLMChatModel(BaseModel):
   """Chat request model"""
   prompt: str
   llm_type: Optional[str] = None
-  upload_file: Optional[UploadFile]
+  upload_file: Optional[UploadFile] = None
   file_url: Optional[str] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
         "example": LLM_GENERATE_EXAMPLE

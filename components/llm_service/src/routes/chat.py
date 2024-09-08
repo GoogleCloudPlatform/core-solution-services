@@ -28,7 +28,7 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest,
 from common.utils.logging_handler import Logger
 from config import ERROR_RESPONSES, DEFAULT_CHAT_LLM_TYPE, get_model_config
 from schemas.llm_schema import (ChatUpdateModel,
-                                LLMChatModel,
+                                LLMGenerateModel,
                                 LLMUserChatResponse,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse)
@@ -228,13 +228,14 @@ def delete_chat(chat_id: str, hard_delete=False):
     "",
     name="Create new chat",
     response_model=LLMUserChatResponse)
-async def create_user_chat(prompt: Annotated[str, Form()],
-                           llm_type: Annotated[str, Form()] = None,
-                           chat_file: Union[UploadFile, None] = None,
-                           chat_file_url: Annotated[str, Form()] = None,
-                           user_data: dict = Depends(validate_token)):
+async def create_user_chat(
+     prompt: Annotated[str, Form()],
+     llm_type: Union[Annotated[str, Form()], None] = None,
+     chat_file: Union[UploadFile, None] = None,
+     chat_file_url: Union[Annotated[str, Form()], None] = None,
+     user_data: dict = Depends(validate_token)):
   """
-  Create new chat for authentcated user.  
+  Create new chat for authenticated user.  
                            
   Takes input payload as a multipart form.
 
@@ -312,7 +313,7 @@ async def create_user_chat(prompt: Annotated[str, Form()],
     "/{chat_id}/generate",
     name="Generate new chat response",
     response_model=LLMUserChatResponse)
-async def user_chat_generate(chat_id: str, gen_config: LLMChatModel):
+async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   """
   Continue chat based on context of user chat
 
