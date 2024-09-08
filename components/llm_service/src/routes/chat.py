@@ -19,7 +19,7 @@ import traceback
 from typing import Union, Annotated
 from fastapi import APIRouter, Depends, Form, UploadFile
 from common.models import User, UserChat
-from common.models.UserChat import CHAT_FILE, CHAT_FILE_URL
+from common.models.llm import CHAT_FILE, CHAT_FILE_URL
 from common.utils.auth_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
