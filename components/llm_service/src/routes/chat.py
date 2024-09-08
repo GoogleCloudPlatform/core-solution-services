@@ -233,7 +233,9 @@ async def create_user_chat(prompt: Annotated[str, Form()],
                            chat_file_url: Annotated[str, Form()] = None,
                            user_data: dict = Depends(validate_token)):
   """
-  Create new chat for authentcated user
+  Create new chat for authentcated user.  
+                           
+  Takes input payload as a multipart form.
 
   Args:
       prompt(str): prompt to initiate chat
@@ -253,15 +255,19 @@ async def create_user_chat(prompt: Annotated[str, Form()],
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
 
-  # process chat file
+  # process chat file: upload to GCS and determine mime type
   chat_file_type = None
   chat_file_bytes = None
+  chat_file_urls = None
   if chat_file is not None or chat_file_url is not None:
-    chat_file_url, chat_file_type = \
+    chat_file_urls, chat_file_type = \
         await process_chat_file(chat_file, chat_file_url)
-  if chat_file_url is None and chat_file is not None:
+
+  # only read chat file bytes if for some reason we can't
+  # upload the file to GCS
+  if not chat_file_url and chat_file is not None:
     await chat_file.seek(0)
-    chat_file_bytes = await chat_file.file.read()
+    chat_file_bytes = await chat_file.read()
 
   try:
     user = User.find_by_email(user_data.get("email"))
@@ -271,7 +277,7 @@ async def create_user_chat(prompt: Annotated[str, Form()],
                               llm_type,
                               chat_file_type=chat_file_type,
                               chat_file_bytes=chat_file_bytes,
-                              chat_file_url=chat_file_url)
+                              chat_file_urls=chat_file_urls)
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
