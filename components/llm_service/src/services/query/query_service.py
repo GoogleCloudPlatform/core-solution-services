@@ -40,7 +40,7 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import InternalServerError
 from services import embeddings
 from services.llm_generate import (get_context_prompt,
-                                   llm_chat, llm_generate_multi,
+                                   llm_chat,
                                    check_context_length)
 from services.query.query_prompts import (get_question_prompt,
                                           get_summarize_prompt)
@@ -57,7 +57,6 @@ from services.query.vertex_search import (build_vertex_search,
 from utils.errors import (NoDocumentsIndexedException,
                           ContextWindowExceededException)
 from utils import text_helper
-from utils.file_helper import validate_multi_file_type
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
                     DEFAULT_WEB_DEPTH_LIMIT)

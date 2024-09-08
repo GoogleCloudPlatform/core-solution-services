@@ -19,9 +19,9 @@ import { useQueryParams } from "@/utils/routing"
 import { userStore } from "@/store"
 import QueryEngineEdit from "@/routes/QueryEngineEdit"
 import QueryEngineJobs from "@/routes/QueryEngineJobs"
-import QueryEngineSimple from "@/routes/QueryEngineSimple"
+//import QueryEngineSimple from "@/routes/QueryEngineSimple"
 
-// TODO: implement query file uploads
+// TODO: implement query engine from uploads
 //
 //enum TAB {
 //  QUERY_ENGINE_SIMPLE = "Query Engine Simple",
