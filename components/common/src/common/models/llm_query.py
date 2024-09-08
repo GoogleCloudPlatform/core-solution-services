@@ -114,7 +114,7 @@ class QueryEngine(BaseModel):
   query_engine_type = TextField(required=True)
   description = TextField(required=True, default="")
   llm_type = TextField(required=False)
-  embedding_type = TextField(required=False)
+  embedding_type = TextField(required=True)
   vector_store = TextField(required=False)
   created_by = TextField(required=True)
   is_public = BooleanField(default=False)
