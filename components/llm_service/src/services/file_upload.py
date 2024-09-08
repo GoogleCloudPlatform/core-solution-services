@@ -21,7 +21,7 @@ from common.utils.logging_handler import Logger
 from common.utils.errors import ValidationError, UnsupportedError
 from config import PROJECT_ID
 from google.cloud import storage
-from services.query.web_data_source import WebDataSource
+from services.query.web_datasource import WebDataSource
 from utils.file_helper import process_upload_file, validate_multi_file_type
 from utils.gcs_helper import create_bucket_for_file
 

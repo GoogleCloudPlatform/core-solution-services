@@ -49,7 +49,7 @@ class ValidationError(Exception):
 
 
 class UnsupportedError(Exception):
-  """Error class to be raised when there a feature is not supported"""
+  """Error class to be raised when a feature is not supported"""
 
   def __init__(self, message="Unsupported Operation", data=None):
     self.message = message
