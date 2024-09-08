@@ -26,10 +26,9 @@ interface QueryWindowProps {
   onSubmit: (message: string) => void
   messages: QueryContents[]
   activeJob: boolean
-  token: str
 }
 
-const QueryWindow: React.FC<QueryWindowProps> = ({ onSubmit, messages, activeJob, token }) => {
+const QueryWindow: React.FC<QueryWindowProps> = ({ onSubmit, messages, activeJob }) => {
   let index = 0
   const renderQuery = (message: QueryContents) => {
     if (message.HumanQuestion) {
@@ -97,7 +96,7 @@ const QueryWindow: React.FC<QueryWindowProps> = ({ onSubmit, messages, activeJob
         )}
         <div ref={endOfMessagesRef} />
       </div>
-      <QueryInput onSubmit={onSubmit} activeJob={activeJob} token={token} />
+      <QueryInput onSubmit={onSubmit} activeJob={activeJob} />
     </div>
   )
 }

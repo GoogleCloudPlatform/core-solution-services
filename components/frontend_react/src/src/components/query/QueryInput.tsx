@@ -13,15 +13,13 @@
 // limitations under the License.
 
 import { useState } from "react"
-import QueryEngineForm from "@/components/forms/QueryEngineForm"
 
 interface QueryInputProps {
   onSubmit: (message: string) => void
-  token: string
   activeJob: boolean
 }
 
-const QueryInput: React.FC<QueryInputProps> = ({ onSubmit, token, activeJob }) => {
+const QueryInput: React.FC<QueryInputProps> = ({ onSubmit, activeJob }) => {
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   
   return (
