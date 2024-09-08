@@ -19,6 +19,7 @@ import traceback
 from typing import Union, Annotated
 from fastapi import APIRouter, Depends, Form, UploadFile
 from common.models import User, UserChat
+from common.models.UserChat import CHAT_FILE, CHAT_FILE_URL
 from common.utils.auth_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
@@ -282,8 +283,15 @@ async def create_user_chat(prompt: Annotated[str, Form()],
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
                          prompt=prompt)
-    history = UserChat.get_history_entry(prompt, response)
-    user_chat.history = history
+    user_chat.history = UserChat.get_history_entry(prompt, response)
+    if chat_file:
+      user_chat.update_history(custom_entry={
+        f"{CHAT_FILE}": chat_file.filename
+      })
+    elif chat_file_url:
+      user_chat.update_history(custom_entry={
+        f"{CHAT_FILE_URL}": chat_file_url
+      })
     user_chat.save()
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
