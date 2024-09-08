@@ -15,7 +15,6 @@
 # pylint: disable = broad-except
 
 """ Chat endpoints """
-import os
 import traceback
 from typing import Union, Annotated
 from fastapi import APIRouter, Depends, Form, UploadFile
@@ -33,41 +32,10 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse)
 from services.llm_generate import llm_chat
-from utils.file_helper import process_upload_file, validate_multi_file_type
+from services.file_upload import process_chat_file
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
-
-async def process_chat_file(chat_file, chat_file_url, bucket=None):
-  chat_file_type = None
-  is_valid = False
-  if chat_file is not None:
-    if chat_file_url is not None:
-      raise ValidationError("cannot set both upload_file and file_url")
-    chat_file_url = await process_upload_file(chat_file, bucket)
-    chat_file_type = validate_multi_file_type(chat_file.filename)
-    if chat_file_type is None:
-      raise ValidationError(
-          f"unsupported file type upload file {chat_file.filename}")
-  elif chat_file_url:
-    if not (chat_file_url.startswith("gs://")
-            or chat_file_url.startswith("http://")
-            or chat_file_url.startswith("https://")
-            or chat_file_url.startswith("shpt://")):
-      return BadRequest(
-          "chat_file_url must start with gs://, http:// or https://, shpt://")
-    # check file type from extension if present
-    chat_file_name = os.path.basename(chat_file_url)
-    file_extension = os.path.splitext(chat_file_name)[1]
-    if file_extension:
-      chat_file_type = validate_multi_file_type(chat_file_name)
-      if not is_valid:
-        raise ValidationError(
-            f"unsupported file type file url {chat_file_url}")
-    else:
-      # assume html if no extension
-      chat_file_type = "text/html"
-  return chat_file_url, chat_file_type
 
 @router.get(
     "/chat_types",
