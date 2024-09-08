@@ -58,14 +58,14 @@
     "VertexAI-Chat": {
       "is_chat": true,
       "provider": "Vertex",
-      "model_name": "gemini-pro",
+      "model_name": "gemini-1.5-pro",
       "model_params": {
         "temperature": 0.2,
-        "max_output_tokens": 2048,
+        "max_output_tokens": 8192,
         "top_p": 0.95,
         "top_k": 40
       },
-      "context_length": 128000
+      "context_length": 2000000
     },
     "VertexAI-Chat-Palm2": {
       "is_chat": true,
