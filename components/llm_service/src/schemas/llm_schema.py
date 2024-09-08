@@ -80,27 +80,6 @@ class LLMGetEmbeddingTypesResponse(BaseModel):
       }
   })
 
-class QueryUploadGenerateModel(BaseModel):
-  """Query Upload Generate request model"""
-  prompt: str
-  llm_type: Optional[str] = None
-  query_file: Optional[UploadFile] = None
-  query_file_url: Optional[str] = None
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={
-        "example": LLM_GENERATE_EXAMPLE
-  })
-
-class QueryUploadResponse(BaseModel):
-  """Query upload response model"""
-  success: Optional[bool] = True
-  message: Optional[str] = "Successfully uploaded file"
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": {
-          "success": True,
-          "message": "Successfully uploaded file",
-      }
-  })
-
 class LLMGetQueryEnginesResponse(BaseModel):
   """LLM Get types model"""
   success: Optional[bool] = True
