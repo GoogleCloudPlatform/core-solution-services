@@ -30,13 +30,6 @@ interface RunChatParams {
   fileUrl: string
 }
 
-interface UploadQueryParams {
-  queryId: string
-  userInput: string
-  llmType: string
-  uploadFile: File
-}
-
 interface ResumeQueryParams {
   queryId: string
   userInput: string
