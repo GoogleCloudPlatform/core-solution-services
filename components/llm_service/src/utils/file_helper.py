@@ -30,7 +30,6 @@ from common.utils.logging_handler import Logger
 from utils.gcs_helper import create_bucket_for_file, upload_file_to_gcs
 from google.cloud import storage
 from services.query.web_datasource import WebDataSource
-from utils.gcs_helper import create_bucket_for_file
 
 Logger = Logger.get_logger(__file__)
 
