@@ -266,7 +266,7 @@ pip install -r requirements.txt
 
 ### 4.3. <a name='SetupKubernetesNamespace'></a>Set up Kubernetes Namespace (optional)
 
-You only need to set up a separate namespace if you are developing on the same cluster with multiple developers.  Setting up a namespace allows you to deploy your own copy of the CSS services, running in your "namespace" on the Kubernetes cluster, that don't confilt with other developers who have their own own copy of the services in their own namespaces.
+You only need to set up a separate namespace if you are developing on the same cluster with multiple developers.  Setting up a namespace allows you to deploy your own copy of the CSS services, running in your "namespace" on the Kubernetes cluster, that don't conflict with other developers who have their own own copy of the services in their own namespaces.
 
 If you are in a small team (2-3 developers) you may also not need to set up your own namespaces.  You can use the "default" namespace, as long as you don't have multiple developers testing deployments of a set of services that implement a new feature simultaneously.
 
