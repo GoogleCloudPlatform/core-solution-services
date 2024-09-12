@@ -138,7 +138,7 @@ export const fetchAllEngines =
 export const fetchEngine =
   (token: string, engineId: string | null) => (): Promise<QueryEngine | undefined | null> => {
     if (!engineId) return Promise.resolve(null)
-    const url = `${endpoint}/query/engine/${queryId}`
+    const url = `${endpoint}/query/engine/${engineId}`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
@@ -178,8 +178,7 @@ export const deleteQueryEngine =
   (token: string) => async (queryEngine: QueryEngine): Promise<boolean | undefined> => {
     const url = `${endpoint}/query/engine/${queryEngine.id}`
     const headers = { Authorization: `Bearer ${token}` }
-    const data = {}
-    return axios.delete(url, data, { headers }).then(path(["data", "success"]))
+    return axios.delete(url, { headers }).then(path(["data", "success"]))
   }
 
 export const createQuery =
