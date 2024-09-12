@@ -159,7 +159,8 @@ def test_generate_embeddings_multimodal(client_with_emulator):
 
   with mock.patch("routes.llm.get_multimodal_embeddings",
                   return_value=FAKE_EMBEDDINGS_MULTIMODAL):
-    resp = client_with_emulator.post(url, json=FAKE_GENERATE_EMBEDDINGS_MULTIMODAL)
+    resp = client_with_emulator.post(url,
+                                     json=FAKE_GENERATE_EMBEDDINGS_MULTIMODAL)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"

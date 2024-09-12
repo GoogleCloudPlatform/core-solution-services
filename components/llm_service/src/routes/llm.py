@@ -138,7 +138,8 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
     "/embedding/multi",
     name="Generate multimodal embeddings from LLM",
     response_model=LLMMultimodalEmbeddingsResponse)
-async def generate_embeddings_multimodal(embeddings_config: LLMMultimodalEmbeddingsModel):
+async def generate_embeddings_multimodal(
+  embeddings_config: LLMMultimodalEmbeddingsModel):
   """
   Generate multimodal embeddings with an LLM
 
