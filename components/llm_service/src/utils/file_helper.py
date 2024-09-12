@@ -49,7 +49,6 @@ async def process_chat_file(chat_file,
   """
   chat_file_type = None
   chat_file_urls = None
-  is_valid = False
   if chat_file is not None:
     bucket = create_bucket_for_file(chat_file.filename)
     if chat_file_url is not None:
@@ -73,7 +72,7 @@ async def process_chat_file(chat_file,
       file_extension = os.path.splitext(chat_file_name)[1]
       if file_extension:
         chat_file_type = validate_multi_file_type(chat_file_name)
-        if not is_valid:
+        if chat_file_type is None:
           raise ValidationError(
               f"unsupported file type file url {chat_file_url}")
     else:
