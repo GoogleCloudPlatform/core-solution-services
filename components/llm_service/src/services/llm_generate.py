@@ -39,7 +39,7 @@ from config import (get_model_config, get_provider_models,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
-                    DEFAULT_LLM_TYPE, DEFAULT_MULTI_LLM_TYPE)
+                    DEFAULT_LLM_TYPE, DEFAULT_MULTIMODAL_LLM_TYPE)
 from services.langchain_service import langchain_llm_generate
 from utils.errors import ContextWindowExceededException
 
@@ -109,7 +109,7 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-async def llm_generate_multi(prompt: str, user_file_bytes: bytes,
+async def llm_generate_multimodal(prompt: str, user_file_bytes: bytes,
                              user_file_type: str, llm_type: str) -> str:
   """
   Generate text with an LLM given a file and a prompt.
@@ -124,14 +124,14 @@ async def llm_generate_multi(prompt: str, user_file_bytes: bytes,
               f" user_file_bytes=bytes, llm_type={llm_type}")
   # default to Gemini multi-modal LLM
   if llm_type is None:
-    llm_type = DEFAULT_MULTI_LLM_TYPE
+    llm_type = DEFAULT_MULTIMODAL_LLM_TYPE
 
   try:
     start_time = time.time()
 
     # for Google models, prioritize native client over langchain
     chat_llm_types = get_model_config().get_chat_llm_types()
-    multi_llm_types = get_model_config().get_multi_llm_types()
+    multimodal_llm_types = get_model_config().get_multimodal_llm_types()
     if llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
@@ -139,7 +139,7 @@ async def llm_generate_multi(prompt: str, user_file_bytes: bytes,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
-      is_multi = llm_type in multi_llm_types
+      is_multi = llm_type in multimodal_llm_types
       if not is_multi:
         raise RuntimeError(
             f"Vertex model {llm_type} needs to be multi-modal")

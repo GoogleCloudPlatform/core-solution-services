@@ -24,17 +24,17 @@ from common.utils.http_exceptions import (InternalServerError, BadRequest)
 from config import (PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, get_model_config)
 from schemas.llm_schema import (LLMGenerateModel,
-                                LLMMultiGenerateModel,
+                                LLMMultimodalGenerateModel,
                                 LLMGetTypesResponse,
                                 LLMGetEmbeddingTypesResponse,
                                 LLMGenerateResponse,
                                 LLMEmbeddingsResponse,
-                                LLMMultiEmbeddingsResponse,
+                                LLMMultimodalEmbeddingsResponse,
                                 LLMEmbeddingsModel,
-                                LLMMultiEmbeddingsModel)
-from services.llm_generate import llm_generate, llm_generate_multi
-from services.embeddings import get_embeddings, get_multi_embeddings
-from utils.file_helper import validate_multi_vision_file_type
+                                LLMMultimodalEmbeddingsModel)
+from services.llm_generate import llm_generate, llm_generate_multimodal
+from services.embeddings import get_embeddings, get_multimodal_embeddings
+from utils.file_helper import validate_multimodal_vision_file_type
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
 
@@ -81,7 +81,7 @@ def get_embedding_types(is_multi: bool = None):
   """
   try:
     if is_multi is True:
-      embedding_types = get_model_config().get_multi_embedding_types()
+      embedding_types = get_model_config().get_multimodal_embedding_types()
     elif is_multi is False:
       embedding_types = get_model_config().get_text_embedding_types()
     elif is_multi is None:
@@ -137,8 +137,8 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
 @router.post(
     "/embedding/multi",
     name="Generate multimodal embeddings from LLM",
-    response_model=LLMMultiEmbeddingsResponse)
-async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
+    response_model=LLMMultimodalEmbeddingsResponse)
+async def generate_embeddings_multimodal(embeddings_config: LLMMultimodalEmbeddingsModel):
   """
   Generate multimodal embeddings with an LLM
 
@@ -147,7 +147,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
         user_file_name(str), text(str), and embedding_type(str) type for model
 
   Returns:
-      LLMMultiEmbeddingsResponse
+      LLMMultimodalEmbeddingsResponse
   """
   embeddings_config_dict = {**embeddings_config.dict()}
   text = embeddings_config_dict.get("text")
@@ -165,7 +165,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
       f"Text must be less than {PAYLOAD_FILE_SIZE}")
 
 
-  is_file_valid, user_file_extension = validate_multi_vision_file_type(
+  is_file_valid, user_file_extension = validate_multimodal_vision_file_type(
                                         user_file_name, user_file_b64)
   if not is_file_valid or user_file_extension.startswith("video"):
     return BadRequest("File type must be a supported image.")
@@ -173,7 +173,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
   try:
     user_file_bytes = b64decode(user_file_b64)
     embeddings = \
-        await get_multi_embeddings(text, user_file_bytes, embedding_type)
+        await get_multimodal_embeddings(text, user_file_bytes, embedding_type)
 
     return {
         "success": True,
@@ -225,7 +225,7 @@ async def generate(gen_config: LLMGenerateModel):
     "/generate/multi",
     name="Generate text with a multimodal LLM",
     response_model=LLMGenerateResponse)
-async def generate_multi(gen_config: LLMMultiGenerateModel):
+async def generate_multimodal(gen_config: LLMMultimodalGenerateModel):
   """
   Generate text with a multimodal LLM
 
@@ -235,7 +235,7 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
         prompt(str), and llm_type(str) type for model
 
   Returns:
-      LLMMultiGenerateResponse
+      LLMMultimodalGenerateResponse
   """
   genconfig_dict = {**gen_config.dict()}
   user_file_b64 = genconfig_dict.get("user_file_b64")
@@ -253,14 +253,14 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   # Make sure that the user file is a valid image or video
-  is_file_valid, user_file_extension = validate_multi_vision_file_type(
+  is_file_valid, user_file_extension = validate_multimodal_vision_file_type(
                                         user_file_name, user_file_b64)
   if not is_file_valid or not user_file_extension:
     return BadRequest("File type must be a supported image or video.")
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    result = await llm_generate_multi(prompt, user_file_bytes,
+    result = await llm_generate_multimodal(prompt, user_file_bytes,
                                     user_file_extension, llm_type)
 
     return {

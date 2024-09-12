@@ -414,7 +414,7 @@ class LangChainVectorStore(VectorStore):
           f"vector store {self.q_engine.vector_store} not found in config")
     return lc_vectorstore
 
-  async def index_document_multi(self,
+  async def index_document_multimodal(self,
                                  doc_name: str,
                                  doc_chunks: List[object],
                                  index_base: int) -> \
@@ -448,7 +448,7 @@ class LangChainVectorStore(VectorStore):
 
       # Get chunk embeddings
       chunk_embedding = \
-        await embeddings.get_multi_embeddings(my_contextual_text,
+        await embeddings.get_multimodal_embeddings(my_contextual_text,
                                               my_image,
                                               self.embedding_type)
 

@@ -20,7 +20,7 @@ LLM_GENERATE_EXAMPLE = {
   "prompt": "",
 }
 
-LLM_MULTI_GENERATE_EXAMPLE = {
+LLM_MULTIMODAL_GENERATE_EXAMPLE = {
   "llm_type": "",
   "user_file_b64": "",
   "user_file_name": "",
@@ -32,7 +32,7 @@ LLM_EMBEDDINGS_EXAMPLE = {
   "text": "",
 }
 
-LLM_MULTI_EMBEDDINGS_EXAMPLE = {
+LLM_MULTIMODAL_EMBEDDINGS_EXAMPLE = {
   "embedding_type": "",
   "user_file_b64": "",
   "user_file_name": "",

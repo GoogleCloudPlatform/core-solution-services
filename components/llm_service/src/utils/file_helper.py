@@ -20,7 +20,7 @@ File processing helper functions.
 import os.path
 from base64 import b64decode
 
-def validate_multi_vision_file_type(file_name, file_b64):
+def validate_multimodal_vision_file_type(file_name, file_b64):
   # Validate the file type and ensure that it is either a text or image
   # and is compatible with multimodal LLMs. Returns the file extension if valid
 

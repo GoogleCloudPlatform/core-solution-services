@@ -30,7 +30,7 @@ from config import (get_model_config, get_provider_embedding_types,
                     KEY_MODEL_TOKEN_LIMIT,
                     PROVIDER_VERTEX, PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
-                    DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
+                    DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL,
                     REGION)
 from langchain.schema.embeddings import Embeddings
 
@@ -73,7 +73,7 @@ async def get_embeddings(text_chunks: List[str],
 
   return is_successful, embeddings
 
-async def get_multi_embeddings(user_text: str,
+async def get_multimodal_embeddings(user_text: str,
                                user_file_bytes: bytes,
                                embedding_type: str = None) -> \
                                 dict:
@@ -88,10 +88,10 @@ async def get_multi_embeddings(user_text: str,
     dictionary of embedding vectors for both text and image
   """
   if embedding_type is None or embedding_type == "":
-    embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
+    embedding_type = DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL
 
   Logger.info(f"generating multimodal embeddings with {embedding_type}")
-  embeddings = await generate_multi_embeddings(user_text,
+  embeddings = await generate_multimodal_embeddings(user_text,
                                                embedding_type,
                                                user_file_bytes)
 
@@ -163,7 +163,7 @@ def generate_embeddings(batch: List[str],
     raise InternalServerError(f"Unsupported embedding type {embedding_type}")
   return embeddings
 
-async def generate_multi_embeddings(user_text: str,
+async def generate_multimodal_embeddings(user_text: str,
                                     embedding_type: str,
                                     user_file_bytes: bytes) -> \
                                       dict:
@@ -180,7 +180,7 @@ async def generate_multi_embeddings(user_text: str,
   Logger.info(f"generating embeddings for embedding type {embedding_type}")
 
   if embedding_type in get_provider_embedding_types(PROVIDER_VERTEX):
-    embeddings = await get_vertex_multi_embeddings(embedding_type,
+    embeddings = await get_vertex_multimodal_embeddings(embedding_type,
                                                    user_text,
                                                    user_file_bytes)
   else:
@@ -226,7 +226,7 @@ def get_vertex_embeddings(embedding_type: str,
     Logger.error(f"error generating Vertex embeddings {str(e)}")
     return [None for _ in range(len(sentence_list))]
 
-async def get_vertex_multi_embeddings(embedding_type: str,
+async def get_vertex_multimodal_embeddings(embedding_type: str,
                                       user_text: str,
                                       user_file_bytes: bytes) -> \
                                         dict:
@@ -246,7 +246,7 @@ async def get_vertex_multi_embeddings(embedding_type: str,
     raise RuntimeError(
         f"Vertex model name not found for embedding type {embedding_type}")
 
-  def _async_vertex_multi_embeddings():
+  def _async_vertex_multimodal_embeddings():
     try:
       Logger.info(f"Generating Vertex embeddings for 1 multimodal chunk"
                   f" embedding model {google_llm}"
@@ -265,7 +265,7 @@ async def get_vertex_multi_embeddings(embedding_type: str,
       Logger.error(f"error generating Vertex embeddings {str(e)}")
       raise e
 
-  return_value = await asyncio.to_thread(_async_vertex_multi_embeddings)
+  return_value = await asyncio.to_thread(_async_vertex_multimodal_embeddings)
 
   return return_value
 
