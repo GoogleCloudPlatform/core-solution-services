@@ -230,9 +230,9 @@ def delete_chat(chat_id: str, hard_delete=False):
     response_model=LLMUserChatResponse)
 async def create_user_chat(
      prompt: Annotated[str, Form()],
-     llm_type: Union[Annotated[str, Form()], None] = None,
+     llm_type: Annotated[str, Form()] = None,
+     chat_file_url: Annotated[str, Form()] = None,
      chat_file: Union[UploadFile, None] = None,
-     chat_file_url: Union[Annotated[str, Form()], None] = None,
      user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.  
@@ -248,8 +248,6 @@ async def create_user_chat(
   Returns:
       LLMUserChatResponse
   """
-  llm_type = "VertexAI-Gemini-Flash"
-
   Logger.info("Creating new chat using"
               f" prompt={prompt} llm_type={llm_type}"
               f" chat_file={chat_file} chat_file_url={chat_file_url}")
@@ -267,7 +265,7 @@ async def create_user_chat(
 
   # only read chat file bytes if for some reason we can't
   # upload the file to GCS
-  if not chat_file_url and chat_file is not None:
+  if not chat_file_urls and chat_file is not None:
     await chat_file.seek(0)
     chat_file_bytes = await chat_file.read()
 
