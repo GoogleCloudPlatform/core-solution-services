@@ -62,7 +62,10 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles 
         onSubmit={(e) => {
           e.preventDefault()
           const input = document.getElementById("chat-input") as HTMLInputElement
-          onSubmit(input.value)
+          const doc_url = document.getElementById("doc_url") as HTMLInputElement
+          if (input?.value !== null && input?.value !== "") {
+            onSubmit(input.value, doc_url?.value)
+          }
           input.value = ""
         }}
       >

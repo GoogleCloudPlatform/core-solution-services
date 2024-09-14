@@ -128,7 +128,9 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     navigate(`?chat_id=${chatId}`, { replace: true })
   }
 
-  const onSubmit = (userInput: string) => {
+  const onSubmit = (userInput: string, doc_url: string) => {
+    console.log("doc_url", doc_url)
+    setFileUrl(doc_url)
     setActiveJob(true)
 
     // Display user prompt in chat immediately
@@ -163,7 +165,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           userInput,
           llmType: selectedModel,
           uploadFile: uploadFile,
-          fileUrl: fileUrl
+          fileUrl: doc_url
         },
         {
           onSuccess: (resp?: Chat) => {
