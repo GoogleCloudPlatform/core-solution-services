@@ -177,11 +177,12 @@ async def llm_chat(prompt: str, llm_type: str,
   Returns:
     the text response: str
   """
+  chat_file_bytes_log = chat_file_bytes[10:] if chat_file_bytes else None
   Logger.info(f"Generating chat with llm_type=[{llm_type}],"
               f" prompt=[{prompt}]"
               f" user_chat=[{user_chat}]"
               f" user_query=[{user_query}]"
-              f" chat_file_bytes=[{chat_file_bytes}]"
+              f" chat_file_bytes=[{chat_file_bytes_log}]"
               f" chat_file_urls=[{chat_file_urls}]"
               f" chat_file_type=[{chat_file_type}]")
 
@@ -504,10 +505,11 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
   Returns:
     the text response.
   """
+  user_file_bytes_log = user_file_bytes[10:] if user_file_bytes else None
   Logger.info(f"Generating text with a Google multimodal LLM:"
               f" prompt=[{prompt}], is_chat=[{is_chat}],"
               f" is_multi=[{is_multi}], google_llm=[{google_llm}],"
-              f" user_file_bytes=[{user_file_bytes}],"
+              f" user_file_bytes=[{user_file_bytes_log}],"
               f" user_file_urls=[{user_file_urls}],"
               f" user_file_type=[{user_file_type}].")
 
