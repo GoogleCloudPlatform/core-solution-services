@@ -22,7 +22,7 @@ import { difference } from "ramda"
 import { Translate } from "@google-cloud/translate/build/src/v2"
 // const { Translate } = require("@google-cloud/translate").v2
 
-import { targetLanguages } from "@/utils/lang"
+import { supportedLangs as targetLanguages } from "@/utils/lang"
 // const targetLanguages = ["es", "fr", "de"]
 // require("../public/locales/targetLangs.json") as string[]
 

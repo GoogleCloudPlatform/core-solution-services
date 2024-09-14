@@ -16,15 +16,15 @@
 # pylint: disable = line-too-long
 
 LLM_GENERATE_EXAMPLE = {
-  "llm_type": "",
-  "prompt": "",
+  "prompt": "what is the meaning of life?",
+  "llm_type": "VertexAI-Chat",
 }
 
 LLM_MULTI_GENERATE_EXAMPLE = {
-  "llm_type": "",
+  "prompt": "what is this image about?",
+  "llm_type": "gemini-1.5-flash",
   "user_file_b64": "",
   "user_file_name": "",
-  "prompt": ""
 }
 
 LLM_EMBEDDINGS_EXAMPLE = {
@@ -197,6 +197,12 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
   "text": "<p>query_document_chunk_example_3</p>",
   "clean_text": "query_document_chunk_example_3",
   "sentences": ["query_document_chunk_example_3"]
+}
+
+QUERY_RETRIEVE_EXAMPLE = {
+  "user_query_id": USER_QUERY_EXAMPLE["id"],
+  "query_result": QUERY_RESULT_EXAMPLE,
+  "query_references": [QUERY_REFERENCE_EXAMPLE_1, QUERY_REFERENCE_EXAMPLE_2]
 }
 
 CHAT_EXAMPLE = {

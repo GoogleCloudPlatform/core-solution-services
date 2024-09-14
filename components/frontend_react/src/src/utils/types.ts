@@ -227,7 +227,6 @@ export type QueryEngineBuildJob = {
   type: string
   status: string
   input_data: QueryEngineBuild
-  created_time: string
   result_data: any
   message: string
   generated_item_id: any

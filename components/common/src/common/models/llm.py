@@ -21,7 +21,8 @@ from common.models import BaseModel
 # constants used as tags for chat history
 CHAT_HUMAN = "HumanInput"
 CHAT_AI = "AIOutput"
-
+CHAT_FILE = "UploadedFile"
+CHAT_FILE_URL = "FileURL"
 
 class UserChat(BaseModel):
   """

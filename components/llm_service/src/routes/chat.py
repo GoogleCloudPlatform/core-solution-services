@@ -14,12 +14,12 @@
 
 # pylint: disable = broad-except
 
-""" LLM endpoints """
+""" Chat endpoints """
 import traceback
-
-from fastapi import APIRouter, Depends
-
+from typing import Union, Annotated
+from fastapi import APIRouter, Depends, Form, UploadFile
 from common.models import User, UserChat
+from common.models.llm import CHAT_FILE, CHAT_FILE_URL
 from common.utils.auth_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
@@ -33,6 +33,7 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse)
 from services.llm_generate import llm_chat
+from utils.file_helper import process_chat_file
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
@@ -227,40 +228,69 @@ def delete_chat(chat_id: str, hard_delete=False):
     "",
     name="Create new chat",
     response_model=LLMUserChatResponse)
-async def create_user_chat(gen_config: LLMGenerateModel,
-                           user_data: dict = Depends(validate_token)):
+async def create_user_chat(
+     prompt: Annotated[str, Form()],
+     llm_type: Annotated[str, Form()] = None,
+     chat_file_url: Annotated[str, Form()] = None,
+     chat_file: Union[UploadFile, None] = None,
+     user_data: dict = Depends(validate_token)):
   """
-  Create new chat for authentcated user
+  Create new chat for authenticated user.  
+                           
+  Takes input payload as a multipart form.
 
   Args:
-      gen_config: Input config dictionary,
-        including prompt(str) and llm_type(str) type for model
+      prompt(str): prompt to initiate chat
+      llm_type(str): llm model id
+      chat_file(UploadFile): file upload for chat context
+      chat_file_url(str): file url for chat context
 
   Returns:
       LLMUserChatResponse
   """
-  genconfig_dict = {**gen_config.dict()}
-  Logger.info("Creating new chat using "
-              f"genconfig_dict={genconfig_dict}")
-  response = []
+  Logger.info("Creating new chat using"
+              f" prompt={prompt} llm_type={llm_type}"
+              f" chat_file={chat_file} chat_file_url={chat_file_url}")
 
-  prompt = genconfig_dict.get("prompt")
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
 
-  llm_type = genconfig_dict.get("llm_type")
+  # process chat file: upload to GCS and determine mime type
+  chat_file_type = None
+  chat_file_bytes = None
+  chat_file_urls = None
+  if chat_file is not None or chat_file_url is not None:
+    chat_file_urls, chat_file_type = \
+        await process_chat_file(chat_file, chat_file_url)
+
+  # only read chat file bytes if for some reason we can't
+  # upload the file to GCS
+  if not chat_file_urls and chat_file is not None:
+    await chat_file.seek(0)
+    chat_file_bytes = await chat_file.read()
 
   try:
     user = User.find_by_email(user_data.get("email"))
 
     # generate text from prompt
-    response = await llm_chat(prompt, llm_type)
+    response = await llm_chat(prompt,
+                              llm_type,
+                              chat_file_type=chat_file_type,
+                              chat_file_bytes=chat_file_bytes,
+                              chat_file_urls=chat_file_urls)
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
                          prompt=prompt)
-    history = UserChat.get_history_entry(prompt, response)
-    user_chat.history = history
+    user_chat.history = UserChat.get_history_entry(prompt, response)
+    if chat_file:
+      user_chat.update_history(custom_entry={
+        f"{CHAT_FILE}": chat_file.filename
+      })
+    elif chat_file_url:
+      user_chat.update_history(custom_entry={
+        f"{CHAT_FILE_URL}": chat_file_url
+      })
     user_chat.save()
 
     chat_data = user_chat.get_fields(reformat_datetime=True)

@@ -18,6 +18,7 @@ interface QueryInputProps {
 }
 
 const QueryInput: React.FC<QueryInputProps> = ({ onSubmit, activeJob }) => {
+  
   return (
     <form
       className="flex items-center gap-4"
