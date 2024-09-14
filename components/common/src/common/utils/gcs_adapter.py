@@ -160,7 +160,7 @@ class GcsCrudService:
       folder_list = [x.strip("/") for x in prefix_list]
       return sorted(folder_list)
 
-  def get_files_from_folder(self,prefix, delimiter = "/"):
+  def get_files_from_folder(self, prefix, delimiter = "/"):
     """
     Method to list all the files in a folder
     """
