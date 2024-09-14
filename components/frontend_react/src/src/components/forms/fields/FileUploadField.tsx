@@ -76,7 +76,7 @@ const FileUploadField: React.FC<IFileUploadFieldProps> = ({
     }
   }
   const handleFiles = ({ files }: { files: FileList; type: string }) => {
-    handleFilesUpload(files, variable.name)
+    handleFilesUpload(files, variable)
   }
 
   const promptFileDelete = (fileData: IfileFormat) => {

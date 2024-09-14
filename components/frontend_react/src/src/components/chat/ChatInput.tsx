@@ -67,6 +67,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles 
             onSubmit(input.value, doc_url?.value)
           }
           input.value = ""
+          doc_url.value = ""
         }}
       >
         <input
