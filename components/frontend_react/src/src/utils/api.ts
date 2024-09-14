@@ -96,13 +96,9 @@ export const createChat =
     }
     let data = {
       prompt: userInput,
-      llm_type: llmType
-    }
-    if (uploadFile !== null) {
-      data.upload_file = uploadFile
-    }
-    if (fileUrl !== null) {
-      data.file_url = fileUrl
+      llm_type: llmType,
+      chat_file: uploadFile,
+      chat_file_url: fileUrl
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
