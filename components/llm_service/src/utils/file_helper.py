@@ -53,7 +53,7 @@ async def process_chat_file(chat_file,
     bucket = create_bucket_for_file(chat_file.filename)
     if chat_file_url is not None:
       raise ValidationError("cannot set both upload_file and file_url")
-    chat_file_url = await process_upload_file(chat_file, bucket)
+    chat_file_urls = list(await process_upload_file(chat_file, bucket))
     chat_file_type = validate_multi_file_type(chat_file.filename)
     if chat_file_type is None:
       raise ValidationError(
