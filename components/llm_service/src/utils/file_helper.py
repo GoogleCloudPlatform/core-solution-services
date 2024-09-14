@@ -90,7 +90,8 @@ async def process_chat_file(chat_file,
       with tempfile.TemporaryDirectory() as temp_dir:
         data_source_files = \
             web_data_source.download_documents(chat_file_url, temp_dir)
-        chat_file_urls = [f.gcs_url for f in data_source_files]
+        chat_file_urls = [f.gcs_path for f in data_source_files]
+        Logger.info(f"downloaded {chat_file_urls} from {chat_file_url}")
     elif chat_file_url.startswith("shpt://"):
       raise UnsupportedError("shpt:// not supported for chat upload")
     elif chat_file_url.startswith("gs://"):
