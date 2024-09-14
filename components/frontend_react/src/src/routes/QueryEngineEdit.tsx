@@ -19,7 +19,6 @@ import Loading from "@/navigation/Loading"
 import { QUERY_ENGINE_FORM_DATA } from "@/utils/data"
 import { QueryEngine, QueryEngineBuildJob } from "@/utils/types"
 import { TrashIcon } from "@heroicons/react/24/outline"
-import axios from "axios"
 import React, { useEffect, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { ALERT_TYPE } from "@/utils/types"
@@ -203,8 +202,8 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               onSubmit={onSubmit}
               onSuccess={onSuccess}
               onFailure={onFailure}
+              handleFiles={null}
               queryEngine={queryEngine}
-              token={token || ""}
               currentVarsData={QUERY_ENGINE_FORM_DATA}
             />
           </div>

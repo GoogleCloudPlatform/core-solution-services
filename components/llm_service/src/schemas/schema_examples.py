@@ -16,15 +16,15 @@
 # pylint: disable = line-too-long
 
 LLM_GENERATE_EXAMPLE = {
-  "llm_type": "",
-  "prompt": "",
+  "prompt": "what is the meaning of life?",
+  "llm_type": "VertexAI-Chat",
 }
 
 LLM_MULTI_GENERATE_EXAMPLE = {
-  "llm_type": "",
+  "prompt": "what is this image about?",
+  "llm_type": "gemini-1.5-flash",
   "user_file_b64": "",
   "user_file_name": "",
-  "prompt": ""
 }
 
 LLM_EMBEDDINGS_EXAMPLE = {

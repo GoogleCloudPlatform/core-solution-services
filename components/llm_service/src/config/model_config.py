@@ -116,6 +116,7 @@ VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
 VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 VERTEX_LLM_TYPE_GEMINI_PRO = "VertexAI-Gemini-Pro"
 VERTEX_LLM_TYPE_GEMINI_PRO_VISION = "VertexAI-Gemini-Pro-Vision"
+VERTEX_LLM_TYPE_GEMINI_FLASH = "VertexAI-Gemini-Flash"
 VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN = "VertexAI-Chat-Gemini-Pro-Langchain"
 HUGGINGFACE_EMBEDDING = "HuggingFaceEmbeddings"
 
@@ -134,6 +135,7 @@ MODEL_TYPES = [
   VERTEX_LLM_TYPE_BISON_V1_CHAT,
   VERTEX_LLM_TYPE_GEMINI_PRO,
   VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+  VERTEX_LLM_TYPE_GEMINI_FLASH,
   VERTEX_LLM_TYPE_GECKO_EMBEDDING,
   VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
   VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
@@ -558,8 +560,8 @@ class ModelConfig():
         except Exception as e:
           # Failing to retrieve the key should be a non-fatal error -
           # it should normally just result in the model being disabled.
-          # Here we will just log an error.
-          Logger.error(
+          # Here we will just log a warning.
+          Logger.warning(
               f"Unable to get api key secret {api_key_name} "
               f"for {vendor_id}: {str(e)}")
 
@@ -591,10 +593,10 @@ class ModelConfig():
     if self.is_model_enabled(model_id):
       # if vendor config exists retrieve api key
       vendor_id, vendor_config = self.get_model_vendor_config(model_id)
-      if vendor_config is not None:
+      if vendor_config is not None and self.is_vendor_enabled(vendor_id):
         _, api_key = self.get_vendor_api_key(vendor_id)
         if api_key is None:
-          # log error if vendor is configured for model but api key not found
+          # log error if vendor is enabled for model but api key not found
           Logger.error(f"Unable to get api key for {model_id} ")
 
     model_config[KEY_API_KEY] = api_key

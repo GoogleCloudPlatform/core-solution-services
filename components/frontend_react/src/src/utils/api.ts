@@ -26,6 +26,8 @@ interface RunQueryParams {
 interface RunChatParams {
   userInput: string
   llmType: string
+  uploadFile: File
+  fileUrl: string
 }
 
 interface ResumeQueryParams {
@@ -84,12 +86,19 @@ export const createChat =
   (token: string) => async ({
     userInput,
     llmType,
+    uploadFile,
+    fileUrl,
   }: RunChatParams): Promise<Chat | undefined> => {
     const url = `${endpoint}/chat`
-    const headers = { Authorization: `Bearer ${token}` }
-    const data = {
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data'
+    }
+    let data = {
       prompt: userInput,
       llm_type: llmType,
+      chat_file: uploadFile,
+      chat_file_url: fileUrl
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }

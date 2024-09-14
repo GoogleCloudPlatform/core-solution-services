@@ -147,7 +147,7 @@ TEST_OPENAI_CONFIG = {
 TEST_VERTEX_CONFIG = {
   KEY_MODEL_PARAMS: {
     "temperature": 0.2,
-    "max_tokens": 900,
+    "max_output_tokens": 900,
     "top_p": 1.0,
     "top_k": 10
   },

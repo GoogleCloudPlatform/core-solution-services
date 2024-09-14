@@ -14,6 +14,7 @@
 """
 Pydantic Model for LLM API's
 """
+from fastapi import UploadFile
 from typing import List, Optional
 from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
@@ -79,7 +80,6 @@ class LLMGetEmbeddingTypesResponse(BaseModel):
       }
   })
 
-
 class LLMGetQueryEnginesResponse(BaseModel):
   """LLM Get types model"""
   success: Optional[bool] = True
@@ -127,6 +127,16 @@ class LLMMultiEmbeddingsModel(BaseModel):
   embedding_type: Optional[str] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": LLM_MULTI_EMBEDDINGS_EXAMPLE
+  })
+
+class LLMChatModel(BaseModel):
+  """Chat request model"""
+  prompt: str
+  llm_type: Optional[str] = None
+  upload_file: Optional[UploadFile] = None
+  file_url: Optional[str] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+        "example": LLM_GENERATE_EXAMPLE
   })
 
 class LLMQueryModel(BaseModel):

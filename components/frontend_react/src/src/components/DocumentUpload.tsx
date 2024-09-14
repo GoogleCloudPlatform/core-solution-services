@@ -21,7 +21,7 @@ import {
 } from "@heroicons/react/24/outline"
 import { useState } from "react"
 
-const defaultAccept = "image/*,.pdf,.docx,.doc,.ppt,.xls,.xlsx"
+const defaultAccept = "image/*,.pdf,.docx,.doc,.ppt,.xls,.xlsx,.mp3,.mp4"
 
 const DocumentUpload = ({
   type,

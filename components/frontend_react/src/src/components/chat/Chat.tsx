@@ -15,7 +15,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import ChatWindow from "@/components/chat/ChatWindow"
 import { fetchChat, createChat, resumeChat } from "@/utils/api"
-import { Chat, ChatContents } from "@/utils/types"
+import { Chat, ChatContents, IFormVariable } from "@/utils/types"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { useConfig } from "@/contexts/configContext"
@@ -40,8 +40,22 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
   const [newChatId, setNewChatId] = useState<string | null>(null)
   const [resumeChatId, setResumeChatId] = useState<string | null>(null)
   const initialChatRef = useRef(initialChatId)
-
   const { selectedModel, selectedEngine } = useConfig()
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [fileUrl, setFileUrl] = useState<string | null>(null)
+
+  const handleFiles = (_files: FileList, _uploadVariable: IFormVariable) => {
+    console.log("handleFiles")
+    if (_uploadVariable.name == "file_upload") {
+      setUploadFile(_files[0])
+      _uploadVariable.value = null
+      console.log("_files", _files)
+    } else if (_uploadVariable.name == "doc_url") {
+      setFileUrl(_files[0])
+      _uploadVariable.value = ""
+      console.log("setFileUrl", _files[0])
+    }  
+  }
 
   const {
     isLoading,
@@ -116,7 +130,9 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     navigate(`?chat_id=${chatId}`, { replace: true })
   }
 
-  const onSubmit = (userInput: string) => {
+  const onSubmit = (userInput: string, doc_url: string) => {
+    console.log("doc_url", doc_url)
+    setFileUrl(doc_url)
     setActiveJob(true)
 
     // Display user prompt in chat immediately
@@ -150,6 +166,8 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
         {
           userInput,
           llmType: selectedModel,
+          uploadFile: uploadFile,
+          fileUrl: doc_url
         },
         {
           onSuccess: (resp?: Chat) => {
@@ -158,6 +176,8 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
             if (updatedChatId) {
               setNewChatId(updatedChatId)
             }
+            setFileUrl(null)
+            setUploadFile(null)
           },
           onError: () => {
             setActiveJob(false)
@@ -173,7 +193,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
   return (
     <div className="bg-primary/20 flex flex-grow gap-4 rounded-lg p-3">
       <div className="bg-base-100 flex w-full rounded-lg chat-p justify-center py-6">
-        <ChatWindow onSubmit={onSubmit} messages={messages} activeJob={activeJob} />
+        <ChatWindow onSubmit={onSubmit} messages={messages} activeJob={activeJob} handleFiles={handleFiles} />
       </div>
     </div>
   )

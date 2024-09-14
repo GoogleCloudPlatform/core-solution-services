@@ -905,13 +905,13 @@ def datasource_from_url(doc_url: str,
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
     # Create bucket name using query_engine name
-    bucket_name = WebDataSource.downloads_bucket_name(q_engine)
+    bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
     return WebDataSource(storage_client,
                          bucket_name=bucket_name,
                          depth_limit=depth_limit)
   elif doc_url.startswith("shpt://"):
     # Create bucket name using query_engine name
-    bucket_name = SharePointDataSource.downloads_bucket_name(q_engine)
+    bucket_name = SharePointDataSource.downloads_bucket_name(q_engine.name)
     return SharePointDataSource(storage_client,
                                 bucket_name=bucket_name)
   else:

@@ -14,7 +14,6 @@
 
 import sortBy from "lodash/sortBy"
 
-import { QueryEngine } from "@/utils/types"
 import { groupByOrderVariables } from "@/utils/forms"
 import { classNames } from "@/utils/dom"
 
@@ -31,19 +30,15 @@ import FileUploadField from "@/components/forms/fields/FileUploadField"
 import DateField from "@/components/forms//fields/DateField"
 import MultiSelectField from "@/components/forms/fields/MultiSelectField"
 
-interface QueryEngineFormFieldsProps {
+interface FormFieldsProps {
   variableList: IFormVariable[]
   formikProps: any
-  queryEngine: QueryEngine | null
-  token: string
   handleFiles: Function
 }
 
-const QueryEngineFormFields: React.FC<QueryEngineFormFieldsProps> = ({
+const FormFields: React.FC<FormFieldsProps> = ({
   variableList,
   formikProps,
-  queryEngine,
-  token,
   handleFiles,
 }) => {
   const sortedList = sortBy(variableList, "order")
@@ -79,8 +74,6 @@ const QueryEngineFormFields: React.FC<QueryEngineFormFieldsProps> = ({
           <FileUploadField
             variable={variable}
             formikProps={formikProps}
-            queryEngine={queryEngine}
-            token={token}
             handleFilesUpload={handleFiles}
           />
         )
@@ -137,4 +130,4 @@ const QueryEngineFormFields: React.FC<QueryEngineFormFieldsProps> = ({
   )
 }
 
-export default QueryEngineFormFields
+export default FormFields
