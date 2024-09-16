@@ -20,6 +20,7 @@ from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      LLM_MULTI_GENERATE_EXAMPLE,
                                      QUERY_EXAMPLE,
+                                     QUERY_ENGINE_BUILD_EXAMPLE,
                                      QUERY_RETRIEVE_EXAMPLE,
                                      QUERY_ENGINE_EXAMPLE,
                                      LLM_EMBEDDINGS_EXAMPLE,
@@ -162,7 +163,7 @@ class LLMQueryEngineModel(BaseModel):
   vector_store: Optional[str] = None
   params: Optional[dict] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": QUERY_ENGINE_EXAMPLE
+      "example": QUERY_ENGINE_BUILD_EXAMPLE
   })
 
 
