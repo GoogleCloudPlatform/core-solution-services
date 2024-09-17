@@ -202,20 +202,20 @@ class FakeDataSource(DataSource):
                             doc_filepath: str) -> List[str]:
     if doc_url == QUERY_DOCUMENT_EXAMPLE_1["doc_url"]:
       chunk_list = [{
-        "image_b64": "fake_val",
+        "image": "fake_val",
         "image_url": "fake_url",
-        "text_chunks": ""
+        "text": ""
       }] # List of one dict
     elif doc_url == QUERY_DOCUMENT_EXAMPLE_2["doc_url"]:
       chunk_list = [{
-        "image_b64": "fake_val",
+        "image": "fake_val",
         "image_url": "fake_url",
-        "text_chunks": ""
+        "text": ""
       }] # List of one dict
     else:
       chunk_list = None
     return chunk_list
-    #SC240916: Change keys "text_chunks"-->"text", "image_b64"-->"image"
+    #SC240916: Change keys "text_chunks"-->"text", "image_b64"-->"image" DONE
 
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.llm_chat")
