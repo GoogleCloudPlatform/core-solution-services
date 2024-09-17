@@ -1084,30 +1084,6 @@ def make_query_document_chunk(query_engine_id: str,
   #  modality="text"
   #SC240916: Delete, since modality should be an input argument DONE
 
-  # Clean up text chunk
-  if modality=="text":
-    # doc_chunk is a string holding the text itself
-    clean_text = data_source.clean_text(doc_chunk["text"])
-    sentences = data_source.text_to_sentence_list(doc_chunk["text"])
-
-  # Clean up image chunk
-  elif modality=="image":
-    #TODO: If needed, insert logic to filter, tile, or otherwise
-    #pre-process image
-    pass
-
-  # Clean up video chunk
-  elif modality=="video":
-    #TODO: If needed, insert logic to filter, transcribe, or otherwise
-    #pre-process video
-    pass
-
-  # Clean up audio chunk
-  elif modality=="audio":
-    #TODO: If needed, insert logic to filter, transcribe, or otherwise
-    #pre-process audio.
-    pass
-
   # Create dict to hold all fields of query_document_chunk,
   # depending on its modality
   query_document_chunk_dict = {}
@@ -1122,8 +1098,8 @@ def make_query_document_chunk(query_engine_id: str,
       query_document_chunk_dict["page"]=page
     #SC240916: Only set page if is_multimodal is true DONE
     query_document_chunk_dict["text"]=doc_chunk["text"]
-    query_document_chunk_dict["clean_text"]=clean_text
-    query_document_chunk_dict["sentences"]=sentences
+    query_document_chunk_dict["clean_text"]=data_source.clean_text(doc_chunk["text"])
+    query_document_chunk_dict["sentences"]=data_source.text_to_sentence_list(doc_chunk["text"])
   # For image chunk only
   elif modality=="image":
     query_document_chunk_dict["page"]=page
