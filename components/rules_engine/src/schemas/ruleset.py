@@ -14,32 +14,26 @@
 
 """Pydantic Model for RuleSet API's"""
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 class RulesetFieldsSchema(BaseModel):
   """Ruleset Fields Pydantic Model"""
 
   # This is the reference API spec for Rule data model.
   fields: dict = {}
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "fields": {
-          "field-1": "str",
-          "field-2": "int",
-        }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "fields": {
+        "field-1": "str",
+        "field-2": "int",
       }
     }
+  })
 
 class RulesetRulesImportSchema(BaseModel):
   rules_data: dict = {}
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "rules_data": {}
-      }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "rules_data": {}
     }
+  })

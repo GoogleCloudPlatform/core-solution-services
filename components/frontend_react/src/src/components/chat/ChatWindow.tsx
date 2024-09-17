@@ -25,9 +25,10 @@ interface ChatWindowProps {
   onSubmit: (message: string) => void
   messages: ChatContents[]
   activeJob: boolean
+  handleFiles: Function
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, handleFiles }) => {
   let index = 0
   const renderChat = (message: ChatContents) => {
     if (message.HumanInput) {
@@ -44,7 +45,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob }
     } else if (message.AIOutput) {
       return (
         <div key={index++}>
-          <div className={`flex items-center gap-6 mx-2 pb-7}`}>
+          <div className="flex items-center gap-6 mx-2 pb-7">
             <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start"/>
             <div>
               <Markdown children={message.AIOutput} rehypePlugins={[rehypeRaw]} />
@@ -80,7 +81,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob }
         )}
         <div ref={endOfMessagesRef} />
       </div>
-      <ChatInput onSubmit={onSubmit} activeJob={activeJob} />
+      <ChatInput onSubmit={onSubmit} activeJob={activeJob} handleFiles={handleFiles}/>
     </div>
   )
 }

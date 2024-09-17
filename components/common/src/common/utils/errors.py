@@ -48,6 +48,15 @@ class ValidationError(Exception):
     super().__init__(self.message)
 
 
+class UnsupportedError(Exception):
+  """Error class to be raised when a feature is not supported"""
+
+  def __init__(self, message="Unsupported Operation", data=None):
+    self.message = message
+    self.data = data
+    super().__init__(self.message)
+
+
 class PreconditionFailedError(Exception):
   """Error class to be raised when there is a validation failed"""
 
@@ -112,6 +121,7 @@ class PayloadTooLargeError(Exception):
   def __init__(self, message="Payload too large"):
     self.message = message
     super().__init__(self.message)
+
 
 class InternalServerError(Exception):
   """Error class to be raised when internal server failure occurs"""
