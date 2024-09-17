@@ -424,7 +424,7 @@ class LangChainVectorStore(VectorStore):
 
     # generate list of chunk IDs starting from index base
     #ids = list(range(index_base, index_base + len(doc_chunks))) #SC240916
-    num_embeddings = 0 
+    num_embeddings = 0
     #SC240916: Instead of creating ids here, create num_vectors (int) and initialize to zero DONE
 
     # Convert multimodal chunks to embeddings
@@ -460,7 +460,7 @@ class LangChainVectorStore(VectorStore):
       #if not(any(possible_modalities_sorted_list_bool)): #SC240916
         #raise RuntimeError(
         #  f"failed to retreieve text string or image base64 bytes for {doc_name}")
-      if not(any(modalities_sorted_exist)):
+      if not any(modalities_sorted_exist):
         raise RuntimeError(
           f"failed to retrieve any modality for {doc_name}")
 

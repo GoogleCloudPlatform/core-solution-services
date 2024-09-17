@@ -1043,8 +1043,8 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
               linked_ids.append(query_doc_chunk.id)
 
           # Set linked_ids field of all ORM objects made for ith chunk
-          for id in linked_ids:
-            query_doc_chunk = QueryDocumentChunk.find_by_idfield(q_engine.id, id)
+          for idfield in linked_ids:
+            query_doc_chunk = QueryDocumentChunk.find_by_idfield(q_engine.id, idfield)
             query_doc_chunk.linked_ids = linked_ids
 
         else:
@@ -1139,7 +1139,7 @@ def make_query_document_chunk(query_engine_id: str,
   """
   #SC240916: Input arg doc_chunks is a full dict, not just a string DONE
   #SC240916: New second-to-last input arg modality is a string DONE
-  
+
   # Set modality
   #if is_multimodal:
   #  modality="image"  # Fix later to not assume all multimodal docs are images
