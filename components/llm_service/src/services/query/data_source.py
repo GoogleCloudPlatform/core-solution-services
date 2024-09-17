@@ -316,9 +316,9 @@ class DataSource:
             #SC240916: TO DO: Edit keys so that "text_chunks"-->"text", "image_b64"-->"image"
             # Push chunk object into chunk array
             chunk_obj = {
-              "image_b64": png_b64,
+              "image": png_b64,
               "image_url": png_url,
-              "text_chunks": contextual_text
+              "text": contextual_text
             }
             doc_chunks.append(chunk_obj)
 
