@@ -511,6 +511,7 @@ class LangChainVectorStore(VectorStore):
       #SC240916: Once ANY embedding vector from ANY chunk is appended to chunk_embeddings, increment num_vectors (int) DONE
 
     ids = list(range(index_base, index_base + num_embeddings))
+    Logger.info(f"#SC240916: Embedding indexes = {ids}")
     #SC24916: Out of loop, once all chunks have been processed, create the variable ids (list of ints) based on num_vectors not len(doc_chunks) DONE
 
     # check for success
