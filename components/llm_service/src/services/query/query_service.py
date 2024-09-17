@@ -1003,39 +1003,102 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                 metadata=metadata)
       query_doc.save()
 
+
+      modalities = {"text", "image"}
+
       for i in range(0, len(doc_chunks)):
+
+        if is_multimodal:
+          # Use multimodal pipeline
+
+          # Initialize counter for ORM objects to be  made from this chunk
+          j = 0
+          # Initialise list of ORM object ids to be made from this chunk
+          linked_ids = []
+          # Sort keys of ith chunk in alphabetical order
+          # Possible key values are: "text", "image", "video", "audio"
+          sorted_keys = sorted(list(doc_chunks[i].keys()))
+
+          # Create a QueryDocumentChunk ORM object for each modality
+          # of ith chunk, in alphabetical order
+          for key in sorted_keys:
+            if key in modalities:
+              # doc_chunk is dict representing ith chunk
+              doc_chunk = doc_chunks[i]
+              # Make ORM object for current modality of ith chunk
+              query_doc_chunk = make_query_document_chunk(
+                query_engine_id=q_engine.id,
+                query_document_id=query_doc.id,
+                index=i+index_base+j,
+                doc_chunk=doc_chunk,
+                page=i,
+                data_source=data_source,
+                modality=key,
+                is_multimodal=is_multimodal)
+              # Save ORM object in Firestore
+              query_doc_chunk.save()
+              # Increment counter of ORM objects made for ith chunk
+              j+=1
+              # Build up list of ORM object ids made for ith chunk
+              linked_ids.append(query_doc_chunk.id)
+
+          # Set linked_ids field of all ORM objects made for ith chunk
+          for id in linked_ids:
+            query_doc_chunk = QueryDocumentChunk.find_by_id(q_engine.id, id)
+            query_doc_chunk.linked_ids = linked_ids
+
+        else:
+          # Use text-only pipeline
+
+          # doc_chunk is a dict representing the ith chunk
+          # with key "text"
+          doc_chunk = {}
+          doc_chunk["text"] = doc_chunks[i]
+          # Make ORM object for text modality of ith chunk
+          query_doc_chunk = make_query_document_chunk(
+            query_engine_id=q_engine.id,
+            query_document_id=query_doc.id,
+            index=i+index_base,
+            doc_chunk=doc_chunk,
+            page=None,
+            data_source=data_source,
+            modality="text",
+            is_multimodal=is_multimodal)
+          # Save ORM object in Firestore
+          query_doc_chunk.save()
 
         # Get string representing doc_chunks[i]
         # Will use string to make QueryDocumentChunk object
-        if is_multimodal:
+        # if is_multimodal: #SC240916
           # doc_chunks[i] is an image, so
           # String holds url where image is saved
-          doc_chunk=doc_chunks[i]["image_url"]
-          #SC240916: Initialize j=0 and linked_ids=[]
-          #SC240916: Convert chunks keys to list and sort in alpha order
-          #SC240916: Inside turn for doc in outer loop, do inner loop over all keys:
-          #SC240916:   Inside each turn of inner loop, check if key is in possible_modalities if so, call make_query_document_chunk with chunk's full dict (instead of just a string) and current modality (as well as is_multimodal) and correct index (+j)
-          #SC240916:   Also at end of each turn of inner loop, increment j and append to linked_ids
-          #SC240916: Still inside turn for doc in outer loop, do second inner loop over the linked_ids:
-          #SC240916:   Get object with the current id
-          #SC240916:   Set linked_ids field of that object to be linked_ids variable
-        else:
+          # doc_chunk=doc_chunks[i]["image_url"] #SC240916
+          #SC240916: Initialize j=0 and linked_ids=[] DONE
+          #SC240916: Convert chunks keys to list and sort in alpha order DONE
+          #SC240916: Inside turn for doc in outer loop, do inner loop over all keys: DONE
+          #SC240916:   Inside each turn of inner loop, check if key is in possible_modalities if so, call make_query_document_chunk with chunk's full dict (instead of just a string) and current modality (as well as is_multimodal) and correct index (+j) DONE
+          #SC240916:   Also at end of each turn of inner loop, increment j and append to linked_ids DONE
+          #SC240916: Still inside turn for doc in outer loop, do second inner loop over the linked_ids: DONE
+          #SC240916:   Get object with the current id DONE
+          #SC240916:   Set linked_ids field of that object to be linked_ids variable DONE
+        # else: #SC240916
           # doc_chunks[i] is text, so
           # String holds text itself
-          doc_chunk=doc_chunks[i]
-          #SC240916: Make doc_chunk a dict with a key "text" that holds doc_chunks[i]
+          # doc_chunk=doc_chunks[i] #SC240916
+          #SC240916: Make doc_chunk a dict with a key "text" that holds doc_chunks[i] DONE
 
         # Make QueryDocumentChunk object for doc_chunk
-        query_doc_chunk = make_query_document_chunk(
-          query_engine_id=q_engine.id,
-          query_document_id=query_doc.id,
-          index=i+index_base,
-          doc_chunk=doc_chunk,
-          page=i,
-          data_source=data_source,
-          is_multimodal=is_multimodal,
-        )
-        query_doc_chunk.save()
+        #query_doc_chunk = make_query_document_chunk(
+        #  query_engine_id=q_engine.id,
+        #  query_document_id=query_doc.id,
+        #  index=i+index_base,
+        #  doc_chunk=doc_chunk,
+        #  page=i,
+        #  data_source=data_source,
+        #  is_multimodal=is_multimodal,
+        #)
+        #query_doc_chunk.save()
+        #SC240915
 
       Logger.info(f"doc chunk models created for [{doc_name}]")
 
