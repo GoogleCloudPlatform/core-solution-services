@@ -395,7 +395,7 @@ class QueryDocumentChunk(BaseModel):
     return q_chunk
   
   @classmethod
-  def find_by_id(cls, query_engine_id, id):
+  def find_by_idfield(cls, query_engine_id, id):
     """
     Fetch a document chunk for a query engine by id
 

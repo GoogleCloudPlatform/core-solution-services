@@ -1044,7 +1044,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
           # Set linked_ids field of all ORM objects made for ith chunk
           for id in linked_ids:
-            query_doc_chunk = QueryDocumentChunk.find_by_id(q_engine.id, id)
+            query_doc_chunk = QueryDocumentChunk.find_by_idfield(q_engine.id, id)
             query_doc_chunk.linked_ids = linked_ids
 
         else:
