@@ -479,9 +479,10 @@ class LangChainVectorStore(VectorStore):
       #                                        my_image,
       #                                        self.embedding_type)
       chunk_embedding = \
-        await embeddings.get_multimodal_embeddings(doc["text"],
-                                                   b64decode(doc["image"]),
-                                                   self.embedding_type) #SC240916
+        await embeddings.get_multimodal_embeddings(
+          user_text=doc["text"],
+          user_file_bytes=b64decode(doc["image"]),
+          embedding_type=self.embedding_type) #SC240916
       #SC240916: Send correct variables to embedding model, my_contextual_text-->doc["text"], my_image-->b64decode(doc["image"]), but just ignore doc_video for now
 
       # Check to make sure that image embedding exist
