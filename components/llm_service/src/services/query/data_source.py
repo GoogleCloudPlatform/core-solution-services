@@ -289,7 +289,12 @@ class DataSource:
             #before and after. Use the 2nd output here (embed_chunks).
             _, embed_chunks = self.chunk_document(pdf_doc["filename"],
                                                   doc_url, pdf_doc["filepath"])
-            #SC240916: Process embed_chunks to be a single long string of entire page, truncated to first 1024 chars for now
+            contextual_text = [string.strip() for string in embed_chunks]
+            contextual_text = " ".join(contextual_text)
+            #TODO: Consider all characters in my_contextual_text,
+            #not just the first 1024
+            contextual_text = contextual_text[0:1023]
+            #SC240916: Process embed_chunks to be a single long string of entire page, truncated to first 1024 chars for now DONE
 
             # Take PNG version of page and convert to b64
             png_doc_filepath = \
@@ -313,7 +318,7 @@ class DataSource:
             chunk_obj = {
               "image_b64": png_b64,
               "image_url": png_url,
-              "text_chunks": embed_chunks
+              "text_chunks": contextual_text
             }
             doc_chunks.append(chunk_obj)
 
