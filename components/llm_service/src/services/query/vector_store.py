@@ -495,7 +495,10 @@ class LangChainVectorStore(VectorStore):
       #else: #SC240916
         #raise RuntimeError( #SC240916
           #f"failed to generate chunk embedding for {doc_name}") #SC240916
+      Logger.info(f"#SC240916: {modalities_sorted=}")
       for modality in modalities_sorted:
+        Logger.info(f"#SC240916: {modality=}")
+        Logger.info(f"#SC240916: {chunk_embedding[modality][0:19]=}")
         if modality in chunk_embedding.keys() and isinstance(chunk_embedding[modality][0], float):
           chunk_texts.append(doc["text"])
           chunk_embeddings.append(chunk_embedding[modality])
