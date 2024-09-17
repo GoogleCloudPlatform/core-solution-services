@@ -1048,9 +1048,10 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 def make_query_document_chunk(query_engine_id: str,
                               query_document_id: str,
                               index: int,
-                              doc_chunk: str,
+                              doc_chunk: dict,
                               page: int,
                               data_source: DataSource,
+                              modality: str,
                               is_multimodal: bool) -> \
                                 QueryDocumentChunk:
   """
@@ -1061,32 +1062,33 @@ def make_query_document_chunk(query_engine_id: str,
     query_engine_id: The ID of the query engine
     query_document_id: The ID of the document that the doc_chunk came from
     index: The index assigned to the doc_chunk 
-    doc_chunk: String representing the doc_chunk
-      If doc_chunk is text, then string holds the text itself
-      If doc_chunk is an image, then string holds the url
-        of the cloud bucket where the image is saved
+    doc_chunk: A dict representing the doc_chunk, with fields:
+      "text": The text extracted from doc_chunk
+      "image": The image bytes extracted from doc_chunk
     page: The page of the document that the doc_chunk came from
     data_source: The data source class of the document
+    modality: The modality of the corresponding embedding vector 
+      extracted from the doc_chunk
     is_multimodal: True if multimodal processing, False if text-only
   
   Returns:
     query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
   """
-  #SC240916: Input arg doc_chunks is a full dict, not just a string
-  #SC240916: New second-to-last input arg modality is a string
+  #SC240916: Input arg doc_chunks is a full dict, not just a string DONE
+  #SC240916: New second-to-last input arg modality is a string DONE
   
   # Set modality
-  if is_multimodal:
-    modality="image"  # Fix later to not assume all multimodal docs are images
-  else:
-    modality="text"
-  #SC240916: Delete, since modality should be an input argument
+  #if is_multimodal:
+  #  modality="image"  # Fix later to not assume all multimodal docs are images
+  #else:
+  #  modality="text"
+  #SC240916: Delete, since modality should be an input argument DONE
 
   # Clean up text chunk
   if modality=="text":
     # doc_chunk is a string holding the text itself
-    clean_text = data_source.clean_text(doc_chunk)
-    sentences = data_source.text_to_sentence_list(doc_chunk)
+    clean_text = data_source.clean_text(doc_chunk["text"])
+    sentences = data_source.text_to_sentence_list(doc_chunk["text"])
 
   # Clean up image chunk
   elif modality=="image":
@@ -1116,17 +1118,15 @@ def make_query_document_chunk(query_engine_id: str,
   query_document_chunk_dict["modality"]=modality
   # For text chunk only
   if modality=="text":
-    # doc_chunk is a string holding text itself
     query_document_chunk_dict["page"]=page
     #SC240916: Only set page if is_multimodal is true
-    query_document_chunk_dict["text"]=doc_chunk
+    query_document_chunk_dict["text"]=doc_chunk["text"]
     query_document_chunk_dict["clean_text"]=clean_text
     query_document_chunk_dict["sentences"]=sentences
   # For image chunk only
   elif modality=="image":
-    # doc_chunk is a string holding url of the file that the image is saved to
     query_document_chunk_dict["page"]=page
-    query_document_chunk_dict["chunk_url"]=doc_chunk
+    query_document_chunk_dict["chunk_url"]=doc_chunk["image_url"]
   # For video and audio chunks only
   elif modality in {"video", "audio"}:
     #TODO: Insert logic to set values of the following keys:
