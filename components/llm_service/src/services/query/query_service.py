@@ -1118,8 +1118,9 @@ def make_query_document_chunk(query_engine_id: str,
   query_document_chunk_dict["modality"]=modality
   # For text chunk only
   if modality=="text":
-    query_document_chunk_dict["page"]=page
-    #SC240916: Only set page if is_multimodal is true
+    if is_multimodal:
+      query_document_chunk_dict["page"]=page
+    #SC240916: Only set page if is_multimodal is true DONE
     query_document_chunk_dict["text"]=doc_chunk["text"]
     query_document_chunk_dict["clean_text"]=clean_text
     query_document_chunk_dict["sentences"]=sentences
