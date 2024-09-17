@@ -423,35 +423,46 @@ class LangChainVectorStore(VectorStore):
                                   int:
 
     # generate list of chunk IDs starting from index base
-    ids = list(range(index_base, index_base + len(doc_chunks)))
-    #SC240916: Instead of creating ids here, create num_vectors (int) and initialize to zero
+    #ids = list(range(index_base, index_base + len(doc_chunks))) #SC240916
+    num_embeddings = 0 
+    #SC240916: Instead of creating ids here, create num_vectors (int) and initialize to zero DONE
 
     # Convert multimodal chunks to embeddings
     # Note that multimodal embedding model can only embed one chunk
     # at a time. As opposed to the text-only embedding model, which
     # can embed an array of multiple chunks at the same time.
-    text_chunks = []
+    # text_chunks = [] #SC240916
+    chunk_texts = [] #SC240916
     chunk_embeddings = []
 
     # Loop over chunks
     for doc in doc_chunks:
       # Raise error is doc object is formatted incorrectly
-      #doc_text_chunks = doc["text_chunks"]
-      #doc_image_base64 = doc["image_b64"]
-      possible_modalities_list = ["text", "image"]
-      possible_modalities_list_bool = []
-      for modality in possible_modalities_list:
-        if modality in doc.keys():
-          possible_modalities_list_bool.append(True)
-        else:
-          possible_modalities_list_bool.append(False)
+      #doc_text_chunks = doc["text_chunks"] #SC240916
+      #doc_image_base64 = doc["image_b64"] #SC240916
+      #possible_modalities_sorted_list = sorted(["text", "image"]) #SC240916
+      #possible_modalities_sorted_list_bool = [] #SC240916
+      #for modality in possible_modalities_sorted_list: #SC240916
+      #  if modality in doc.keys(): #SC240916
+      #    possible_modalities_sorted_list_bool.append(True) #SC240916
+      #  else: #SC240916
+      #    possible_modalities_sorted_list_bool.append(False) #SC240916
+      #    doc[modality] = None #SC240916
+      modalities = ["text", "image"]
+      modalities_sorted = sorted(modalities)
+      modalities_sorted_exist = [modality in doc.keys() for modality in modalities_sorted]
+      for modality, exist in zip(modalities_sorted, modalities_sorted_exist):
+        if not exist:
           doc[modality] = None
       #SC240916: Use new keys "text_chunks"-->"text" and "image_b64"-->image, do automaticaly via "possible_modalities" DONE
       #SC2240916: For now, set doc_video to be None DONE
       #if (doc_text_chunks is None or doc_image_base64 is None): #SC240916
-      if not(any(possible_modalities_list_bool)): #SC240916
+      #if not(any(possible_modalities_sorted_list_bool)): #SC240916
+        #raise RuntimeError(
+        #  f"failed to retreieve text string or image base64 bytes for {doc_name}")
+      if not(any(modalities_sorted_exist)):
         raise RuntimeError(
-          f"failed to retreive text string or image base64 bytes for {doc_name}")
+          f"failed to retrieve any modality for {doc_name}")
 
       #my_contextual_text = [string.strip() for string in doc_text_chunks] #SC240916
       #my_contextual_text = " ".join(my_contextual_text) #SC240916
@@ -474,23 +485,32 @@ class LangChainVectorStore(VectorStore):
       #SC240916: Send correct variables to embedding model, my_contextual_text-->doc["text"], my_image-->b64decode(doc["image"]), but just ignore doc_video for now
 
       # Check to make sure that image embedding exist
-      chunk_image_embedding = chunk_embedding["image_embeddings"]
-      if isinstance(chunk_image_embedding[0], float):
+      #chunk_image_embedding = chunk_embedding["image_embeddings"] #SC240916
+      #if isinstance(chunk_image_embedding[0], float): #SC240916
         # Append this chunk's text to the text_chunks array
-        text_chunks.append(doc["text_chunks"])
+        # text_chunks.append(doc["text_chunks"]) #SC240916
         # Append this chunk's image embedding to the chunk_embeddings array
-        chunk_embeddings.append(chunk_image_embedding)
-      else:
-        raise RuntimeError(
-          f"failed to generate chunk embedding for {doc_name}")
-      #SC240916: Check that both text and image embeddings exist
-      #SC240916: If so, append them to chunk_embeddings in auto order using possible_modalities
-      #SC240916: When doing above, remember to refer to doc["text"]
-      #SC240916: Assume that chunk_embedding has keys "text" and "image"
+        # chunk_embeddings.append(chunk_image_embedding) #SC240916
+      #else: #SC240916
+        #raise RuntimeError( #SC240916
+          #f"failed to generate chunk embedding for {doc_name}") #SC240916
+      for modality in modalities_sorted:
+        if modality in chunk_embedding.keys() and isinstance(chunk_embedding[modality][0], float):
+          chunk_texts.append(doc["text"])
+          chunk_embeddings.append(chunk_embedding[modality])
+          num_embeddings += 1
+        else:
+          raise RuntimeError(
+            f"failed to generate {modality} chunk embedding for {doc_name}")
+      #SC240916: Check that both text and image embeddings exist DONE
+      #SC240916: If so, append them to chunk_embeddings in auto order using possible_modalities DONE
+      #SC240916: When doing above, remember to refer to doc["text"] DONE
+      #SC240916: Assume that chunk_embedding has keys "text" and "image" DONE
 
-      #SC240916: Once ANY embedding vector from ANY chunk is appended to chunk_embeddings, increment num_vectors (int)
+      #SC240916: Once ANY embedding vector from ANY chunk is appended to chunk_embeddings, increment num_vectors (int) DONE
 
-    #SC24916: Out of loop, once all chunks have been processed, create the variable ids (list of ints) based on num_vectors not len(doc_chunks)
+    ids = list(range(index_base, index_base + num_embeddings))
+    #SC24916: Out of loop, once all chunks have been processed, create the variable ids (list of ints) based on num_vectors not len(doc_chunks) DONE
 
     # check for success
     if len(chunk_embeddings) == 0:
