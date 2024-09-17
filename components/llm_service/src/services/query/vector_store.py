@@ -436,28 +436,41 @@ class LangChainVectorStore(VectorStore):
     # Loop over chunks
     for doc in doc_chunks:
       # Raise error is doc object is formatted incorrectly
-      doc_text_chunks = doc["text_chunks"]
-      doc_image_base64 = doc["image_b64"]
-      #SC240916: Use new keys "text_chunks"-->"text" and "image_b64"-->image, do automaticaly via "possible_modalities"
-      #SC2240916: For now, set doc_video to be None
-      if (doc_text_chunks is None or doc_image_base64 is None):
+      #doc_text_chunks = doc["text_chunks"]
+      #doc_image_base64 = doc["image_b64"]
+      possible_modalities_list = ["text", "image"]
+      possible_modalities_list_bool = []
+      for modality in possible_modalities_list:
+        if modality in doc.keys():
+          possible_modalities_list_bool.append(True)
+        else:
+          possible_modalities_list_bool.append(False)
+          doc[modality] = None
+      #SC240916: Use new keys "text_chunks"-->"text" and "image_b64"-->image, do automaticaly via "possible_modalities" DONE
+      #SC2240916: For now, set doc_video to be None DONE
+      #if (doc_text_chunks is None or doc_image_base64 is None): #SC240916
+      if not(any(possible_modalities_list_bool)): #SC240916
         raise RuntimeError(
-          f"failed to retreive text chunks or image base64 for {doc_name}")
+          f"failed to retreive text string or image base64 bytes for {doc_name}")
 
-      my_contextual_text = [string.strip() for string in doc_text_chunks]
-      my_contextual_text = " ".join(my_contextual_text)
+      #my_contextual_text = [string.strip() for string in doc_text_chunks] #SC240916
+      #my_contextual_text = " ".join(my_contextual_text) #SC240916
       #TODO: Consider all characters in my_contextual_text,
       #not just the first 1024
-      my_contextual_text = my_contextual_text[0:1023]
+      #my_contextual_text = my_contextual_text[0:1023] #SC240916
       #SC240916: No need to create my_contextual_text anymore, since doc["text"] will already be processed
-      my_image = b64decode(doc_image_base64)
+      #my_image = b64decode(doc_image_base64) #SC240916
       #SC240916: No need to convert bytes here, just do it below when calling embedding model
 
       # Get chunk embeddings
+      #chunk_embedding = \
+      #  await embeddings.get_multimodal_embeddings(my_contextual_text,
+      #                                        my_image,
+      #                                        self.embedding_type)
       chunk_embedding = \
-        await embeddings.get_multimodal_embeddings(my_contextual_text,
-                                              my_image,
-                                              self.embedding_type)
+        await embeddings.get_multimodal_embeddings(doc["text"],
+                                                   b64decode(doc["image"]),
+                                                   self.embedding_type) #SC240916
       #SC240916: Send correct variables to embedding model, my_contextual_text-->doc["text"], my_image-->b64decode(doc["image"]), but just ignore doc_video for now
 
       # Check to make sure that image embedding exist
