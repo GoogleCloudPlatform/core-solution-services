@@ -524,7 +524,8 @@ class LangChainVectorStore(VectorStore):
                                         embeddings=chunk_embeddings,
                                         ids=ids)
     # return new index base
-    new_index_base = index_base + len(text_chunks)
+    #new_index_base = index_base + len(text_chunks) #SC240916
+    new_index_base = index_base + num_embeddings
     self.index_length = new_index_base
 
     return new_index_base
