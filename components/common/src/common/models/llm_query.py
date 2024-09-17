@@ -367,7 +367,8 @@ class QueryDocumentChunk(BaseModel):
   sentences = ListField(required=False)  # Text only (optional)
   timestamp_start = NumberField(required=False)  # Video or audio only
   timestamp_stop = NumberField(required=False)  # Video or audio only
-  #SC240916: Add field for linked_ids (ListField, required=False)
+  linked_ids = ListField(required=False)  # All modalities
+  #SC240916: Add field for linked_ids (ListField, required=False) DONE
 
   class Meta:
     ignore_none_field = False
