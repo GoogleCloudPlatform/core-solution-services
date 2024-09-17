@@ -94,6 +94,8 @@ class VectorStore(ABC):
       new_index_base: updated query engine index base
     """
 
+  #SC240916: Add abstract method for index_document_multi
+
   @abstractmethod
   def deploy(self):
     """ Deploy vector store index for this query engine """
@@ -422,6 +424,7 @@ class LangChainVectorStore(VectorStore):
 
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(doc_chunks)))
+    #SC240916: Instead of creating ids here, create num_vectors (int) and initialize to zero
 
     # Convert multimodal chunks to embeddings
     # Note that multimodal embedding model can only embed one chunk
@@ -435,6 +438,8 @@ class LangChainVectorStore(VectorStore):
       # Raise error is doc object is formatted incorrectly
       doc_text_chunks = doc["text_chunks"]
       doc_image_base64 = doc["image_b64"]
+      #SC240916: Use new keys "text_chunks"-->"text" and "image_b64"-->image, do automaticaly via "possible_modalities"
+      #SC2240916: For now, set doc_video to be None
       if (doc_text_chunks is None or doc_image_base64 is None):
         raise RuntimeError(
           f"failed to retreive text chunks or image base64 for {doc_name}")
@@ -444,13 +449,16 @@ class LangChainVectorStore(VectorStore):
       #TODO: Consider all characters in my_contextual_text,
       #not just the first 1024
       my_contextual_text = my_contextual_text[0:1023]
+      #SC240916: No need to create my_contextual_text anymore, since doc["text"] will already be processed
       my_image = b64decode(doc_image_base64)
+      #SC240916: No need to convert bytes here, just do it below when calling embedding model
 
       # Get chunk embeddings
       chunk_embedding = \
         await embeddings.get_multimodal_embeddings(my_contextual_text,
                                               my_image,
                                               self.embedding_type)
+      #SC240916: Send correct variables to embedding model, my_contextual_text-->doc["text"], my_image-->b64decode(doc["image"]), but just ignore doc_video for now
 
       # Check to make sure that image embedding exist
       chunk_image_embedding = chunk_embedding["image_embeddings"]
@@ -462,6 +470,14 @@ class LangChainVectorStore(VectorStore):
       else:
         raise RuntimeError(
           f"failed to generate chunk embedding for {doc_name}")
+      #SC240916: Check that both text and image embeddings exist
+      #SC240916: If so, append them to chunk_embeddings in auto order using possible_modalities
+      #SC240916: When doing above, remember to refer to doc["text"]
+      #SC240916: Assume that chunk_embedding has keys "text" and "image"
+
+      #SC240916: Once ANY embedding vector from ANY chunk is appended to chunk_embeddings, increment num_vectors (int)
+
+    #SC24916: Out of loop, once all chunks have been processed, create the variable ids (list of ints) based on num_vectors not len(doc_chunks)
 
     # check for success
     if len(chunk_embeddings) == 0:

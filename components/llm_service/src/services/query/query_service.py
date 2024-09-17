@@ -1011,10 +1011,19 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           # doc_chunks[i] is an image, so
           # String holds url where image is saved
           doc_chunk=doc_chunks[i]["image_url"]
+          #SC240916: Initialize j=0 and linked_ids=[]
+          #SC240916: Convert chunks keys to list and sort in alpha order
+          #SC240916: Inside turn for doc in outer loop, do inner loop over all keys:
+          #SC240916:   Inside each turn of inner loop, check if key is in possible_modalities if so, call make_query_document_chunk with chunk's full dict (instead of just a string) and current modality (as well as is_multimodal) and correct index (+j)
+          #SC240916:   Also at end of each turn of inner loop, increment j and append to linked_ids
+          #SC240916: Still inside turn for doc in outer loop, do second inner loop over the linked_ids:
+          #SC240916:   Get object with the current id
+          #SC240916:   Set linked_ids field of that object to be linked_ids variable
         else:
           # doc_chunks[i] is text, so
           # String holds text itself
           doc_chunk=doc_chunks[i]
+          #SC240916: Make doc_chunk a dict with a key "text" that holds doc_chunks[i]
 
         # Make QueryDocumentChunk object for doc_chunk
         query_doc_chunk = make_query_document_chunk(
@@ -1063,11 +1072,15 @@ def make_query_document_chunk(query_engine_id: str,
   Returns:
     query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
   """
+  #SC240916: Input arg doc_chunks is a full dict, not just a string
+  #SC240916: New second-to-last input arg modality is a string
+  
   # Set modality
   if is_multimodal:
     modality="image"  # Fix later to not assume all multimodal docs are images
   else:
     modality="text"
+  #SC240916: Delete, since modality should be an input argument
 
   # Clean up text chunk
   if modality=="text":
@@ -1105,6 +1118,7 @@ def make_query_document_chunk(query_engine_id: str,
   if modality=="text":
     # doc_chunk is a string holding text itself
     query_document_chunk_dict["page"]=page
+    #SC240916: Only set page if is_multimodal is true
     query_document_chunk_dict["text"]=doc_chunk
     query_document_chunk_dict["clean_text"]=clean_text
     query_document_chunk_dict["sentences"]=sentences

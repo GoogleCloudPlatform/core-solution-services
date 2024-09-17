@@ -259,6 +259,7 @@ async def get_vertex_multi_embeddings(embedding_type: str,
                                                contextual_text=user_text)
 
       return_value = {}
+      #SC240916: Change keys "text_embeddings"-->"text" and "image_embeddings"-->"image"
       return_value["text_embeddings"] = embeddings.text_embedding
       return_value["image_embeddings"] = embeddings.image_embedding
 

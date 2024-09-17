@@ -289,6 +289,7 @@ class DataSource:
             #before and after. Use the 2nd output here (embed_chunks).
             _, embed_chunks = self.chunk_document(pdf_doc["filename"],
                                                   doc_url, pdf_doc["filepath"])
+            #SC240916: Process embed_chunks to be a single long string of entire page, truncated to first 1024 chars for now
 
             # Take PNG version of page and convert to b64
             png_doc_filepath = \
@@ -307,6 +308,7 @@ class DataSource:
             os.remove(pdf_doc["filepath"])
             os.remove(png_doc_filepath)
 
+            #SC240916: TO DO: Edit keys so that "text_chunks"-->"text", "image_b64"-->"image"
             # Push chunk object into chunk array
             chunk_obj = {
               "image_b64": png_b64,

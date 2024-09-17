@@ -367,6 +367,7 @@ class QueryDocumentChunk(BaseModel):
   sentences = ListField(required=False)  # Text only (optional)
   timestamp_start = NumberField(required=False)  # Video or audio only
   timestamp_stop = NumberField(required=False)  # Video or audio only
+  #SC240916: Add field for linked_ids (ListField, required=False)
 
   class Meta:
     ignore_none_field = False
@@ -391,3 +392,5 @@ class QueryDocumentChunk(BaseModel):
             "deleted_at_timestamp", "==",
             None).get()
     return q_chunk
+  
+  #SC240916: Write a new class method find_by_id to do the same as above but with the id field not the index field
