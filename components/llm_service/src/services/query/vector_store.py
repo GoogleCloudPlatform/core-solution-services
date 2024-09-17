@@ -517,7 +517,10 @@ class LangChainVectorStore(VectorStore):
       raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
     # add image embeddings to vector store
-    self.lc_vector_store.add_embeddings(texts=text_chunks,
+    #self.lc_vector_store.add_embeddings(texts=text_chunks,
+    #                                    embeddings=chunk_embeddings,
+    #                                    ids=ids) #SC2420916
+    self.lc_vector_store.add_embeddings(texts=chunk_texts,
                                         embeddings=chunk_embeddings,
                                         ids=ids)
     # return new index base
