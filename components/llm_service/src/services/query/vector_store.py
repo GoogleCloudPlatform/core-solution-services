@@ -540,6 +540,7 @@ class LangChainVectorStore(VectorStore):
                             int:
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(text_chunks)))
+    Logger.info(f"#SC240916: Embedding indexes = {ids}")
 
     # Convert chunks to embeddings
     is_successful, chunk_embeddings = \

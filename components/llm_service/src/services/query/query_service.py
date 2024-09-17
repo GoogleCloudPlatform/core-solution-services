@@ -1038,7 +1038,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                 is_multimodal=is_multimodal)
               # Save ORM object in Firestore
               query_doc_chunk.save()
-              Logger.info(f"#SC240916: {query_doc_chunk=}")
+              Logger.info(f"#SC240916: {query_doc_chunk.index=}, {query_doc_chunk.id=}, {query_doc_chunk.linked_ids=}")
               # Increment counter of ORM objects made for ith chunk
               j+=1
               # Build up list of ORM object indexes and ids made for ith chunk
@@ -1069,7 +1069,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
             is_multimodal=is_multimodal)
           # Save ORM object in Firestore
           query_doc_chunk.save()
-          Logger.info(f"#SC240916: {query_doc_chunk=}")
+          Logger.info(f"#SC240916: {query_doc_chunk.index=}, {query_doc_chunk.id=}, {query_doc_chunk.linked_ids=}")
 
         # Get string representing doc_chunks[i]
         # Will use string to make QueryDocumentChunk object
