@@ -1070,7 +1070,10 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           # Save ORM object in Firestore
           query_doc_chunk.save()
 
-      Logger.info(f"doc chunk models created for [{doc_name}]")
+      if is_multimodal:
+        Logger.info(f"{j+1} doc chunk models created for [{doc_name}]")
+      else:
+        Logger.info(f"{i+1} doc chunk models created for [{doc_name}]")
 
       index_base = new_index_base
       docs_processed.append(query_doc)

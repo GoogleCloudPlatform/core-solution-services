@@ -464,6 +464,7 @@ class LangChainVectorStore(VectorStore):
     # now that all embeddings are created for all modalities of all chunks,
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + num_embeddings))
+    Logger.info(f"Indexed {len(ids)} embeddings for [{doc_name}]")
  
     # check for success
     if len(chunk_embeddings) == 0:
@@ -487,6 +488,7 @@ class LangChainVectorStore(VectorStore):
                             int:
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(text_chunks)))
+    Logger.info(f"Indexed {len(ids)} embeddings for [{doc_name}]")
 
     # Convert chunks to embeddings
     is_successful, chunk_embeddings = \
