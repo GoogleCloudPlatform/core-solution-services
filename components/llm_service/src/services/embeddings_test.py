@@ -42,8 +42,10 @@ FAKE_VERTEX_MULTI_EMBEDDINGS = \
                                 text_embedding=[0.0], image_embedding=[0.1])
 
 FAKE_MULTI_EMBEDDINGS = {
-  "text_embeddings": [0.0],
-  "image_embeddings": [0.1]
+  #"text_embeddings": [0.0], #SC240917
+  #"image_embeddings": [0.1] #SC240917
+  "text": [0.0],
+  "image": [0.1]
 }
 
 FAKE_MULTI_IMAGE_BYTES = \
