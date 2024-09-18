@@ -358,7 +358,7 @@ async def query_search(q_engine: QueryEngine,
       await embeddings.get_multimodal_embeddings(query_prompt,
                                             None,
                                             q_engine.embedding_type)
-    query_embedding = query_embeddings["text_embeddings"]
+    query_embedding = query_embeddings["text"]
   else:
     # The text-only embedding model operates in batch mode
     # and get_embeddings sends multiple chunks to
