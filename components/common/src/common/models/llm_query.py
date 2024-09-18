@@ -368,8 +368,7 @@ class QueryDocumentChunk(BaseModel):
   timestamp_start = NumberField(required=False)  # Video or audio only
   timestamp_stop = NumberField(required=False)  # Video or audio only
   linked_ids = ListField(required=False)  # All modalities
-  #SC240916: Add field for linked_ids (ListField, required=False) DONE
-
+  
   class Meta:
     ignore_none_field = False
     collection_name = BaseModel.DATABASE_PREFIX + "query_document_chunks"
@@ -393,24 +392,3 @@ class QueryDocumentChunk(BaseModel):
             "deleted_at_timestamp", "==",
             None).get()
     return q_chunk
-  
-  #@classmethod
-  #def find_by_idfield(cls, query_engine_id, id):
-  #  """
-  #  Fetch a document chunk for a query engine by id
-
-  #  Args:
-  #      query_engine_id (str): Query engine id
-  #      id (str): QueryDocumentChunk id
-
-  #  Returns:
-  #      QueryDocumentChunk: query document chunk object
-
-  #  """
-  #  q_chunk = cls.collection.filter(
-  #      "query_engine_id", "==", query_engine_id).filter(
-  #          "id", "==", id).filter(
-  #          "deleted_at_timestamp", "==",
-  #          None).get()
-  #  return q_chunk
-  #SC240916: Write a new class method find_by_id to do the same as above but with the id field not the index field DONE

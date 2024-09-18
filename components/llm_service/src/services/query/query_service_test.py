@@ -215,7 +215,6 @@ class FakeDataSource(DataSource):
     else:
       chunk_list = None
     return chunk_list
-    #SC240916: Change keys "text_chunks"-->"text", "image_b64"-->"image" DONE
 
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.llm_chat")

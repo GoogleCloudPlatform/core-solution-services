@@ -1004,9 +1004,6 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                 metadata=metadata)
       query_doc.save()
 
-
-      #modalities = {"text", "image"} #SC240917
-
       # Initialize counter of all ORM objects to be made from all chunks
       j = 0
       # Iterate over all chunks
@@ -1015,12 +1012,12 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         if is_multimodal:
           # Use multimodal pipeline
 
-          # Initialise list of ORM object indexes and ids to be made from this chunk
+          # Initialize list of ORM object indexes and ids to be made from this chunk
           linked_indexes = []
           linked_ids = []
           # Sort keys of ith chunk in alphabetical order
-          # Keys of interest are: "text", "image", "video", "audio"
-          # which hold info related to specific modalities that
+          # Keys of interest are in MODALITY_SET
+          # These keys hold info related to specific modalities that
           # need to be stored in ORM objects
           sorted_keys = sorted(list(doc_chunks[i].keys()))
 
@@ -1042,7 +1039,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                 is_multimodal=is_multimodal)
               # Save ORM object in Firestore
               query_doc_chunk.save()
-              # Build up list of ORM object indexes and ids made for ith chunk
+              # Build up lists of ORM object indexes and ids made for ith chunk
               linked_indexes.append(query_doc_chunk.index)
               linked_ids.append(query_doc_chunk.id)
               # Increment counter of all ORM objects made for all chunks
@@ -1052,7 +1049,6 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           for index in linked_indexes:
             query_doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, index)
             query_doc_chunk.linked_ids = linked_ids
-            Logger.info(f"#SC240916: {query_doc_chunk.index=}, {query_doc_chunk.id=}, {query_doc_chunk.linked_ids=}, {query_doc_chunk.modality=}")
 
         else:
           # Use text-only pipeline
@@ -1073,40 +1069,6 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
             is_multimodal=is_multimodal)
           # Save ORM object in Firestore
           query_doc_chunk.save()
-          Logger.info(f"#SC240916: {query_doc_chunk.index=}, {query_doc_chunk.id=}, {query_doc_chunk.linked_ids=}")
-
-        # Get string representing doc_chunks[i]
-        # Will use string to make QueryDocumentChunk object
-        # if is_multimodal: #SC240916
-          # doc_chunks[i] is an image, so
-          # String holds url where image is saved
-          # doc_chunk=doc_chunks[i]["image_url"] #SC240916
-          #SC240916: Initialize j=0 and linked_ids=[] DONE
-          #SC240916: Convert chunks keys to list and sort in alpha order DONE
-          #SC240916: Inside turn for doc in outer loop, do inner loop over all keys: DONE
-          #SC240916:   Inside each turn of inner loop, check if key is in possible_modalities if so, call make_query_document_chunk with chunk's full dict (instead of just a string) and current modality (as well as is_multimodal) and correct index (+j) DONE
-          #SC240916:   Also at end of each turn of inner loop, increment j and append to linked_ids DONE
-          #SC240916: Still inside turn for doc in outer loop, do second inner loop over the linked_ids: DONE
-          #SC240916:   Get object with the current id DONE
-          #SC240916:   Set linked_ids field of that object to be linked_ids variable DONE
-        # else: #SC240916
-          # doc_chunks[i] is text, so
-          # String holds text itself
-          # doc_chunk=doc_chunks[i] #SC240916
-          #SC240916: Make doc_chunk a dict with a key "text" that holds doc_chunks[i] DONE
-
-        # Make QueryDocumentChunk object for doc_chunk
-        #query_doc_chunk = make_query_document_chunk(
-        #  query_engine_id=q_engine.id,
-        #  query_document_id=query_doc.id,
-        #  index=i+index_base,
-        #  doc_chunk=doc_chunk,
-        #  page=i,
-        #  data_source=data_source,
-        #  is_multimodal=is_multimodal,
-        #)
-        #query_doc_chunk.save()
-        #SC240915
 
       Logger.info(f"doc chunk models created for [{doc_name}]")
 
@@ -1145,16 +1107,7 @@ def make_query_document_chunk(query_engine_id: str,
   Returns:
     query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
   """
-  #SC240916: Input arg doc_chunks is a full dict, not just a string DONE
-  #SC240916: New second-to-last input arg modality is a string DONE
-
-  # Set modality
-  #if is_multimodal:
-  #  modality="image"  # Fix later to not assume all multimodal docs are images
-  #else:
-  #  modality="text"
-  #SC240916: Delete, since modality should be an input argument DONE
-
+  
   # Create dict to hold all fields of query_document_chunk,
   # depending on its modality
   query_document_chunk_dict = {}
@@ -1165,9 +1118,7 @@ def make_query_document_chunk(query_engine_id: str,
   query_document_chunk_dict["modality"]=modality
   # For text chunk only
   if modality=="text":
-    if is_multimodal:
-      query_document_chunk_dict["page"]=page
-    #SC240916: Only set page if is_multimodal is true DONE
+    query_document_chunk_dict["page"]=page
     query_document_chunk_dict["text"]=doc_chunk["text"]
     query_document_chunk_dict["clean_text"]=data_source.clean_text(doc_chunk["text"])
     query_document_chunk_dict["sentences"]=data_source.text_to_sentence_list(doc_chunk["text"])

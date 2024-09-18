@@ -294,7 +294,6 @@ class DataSource:
             #TODO: Consider all characters in my_contextual_text,
             #not just the first 1024
             contextual_text = contextual_text[0:1023]
-            #SC240916: Process embed_chunks to be a single long string of entire page, truncated to first 1024 chars for now DONE
 
             # Take PNG version of page and convert to b64
             png_doc_filepath = \
@@ -313,7 +312,6 @@ class DataSource:
             os.remove(pdf_doc["filepath"])
             os.remove(png_doc_filepath)
 
-            #SC240916: TO DO: Edit keys so that "text_chunks"-->"text", "image_b64"-->"image"
             # Push chunk object into chunk array
             chunk_obj = {
               "image": png_b64,
