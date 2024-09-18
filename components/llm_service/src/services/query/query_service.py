@@ -61,7 +61,8 @@ from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_MULTI_LLM_TYPE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
                     DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
-                    DEFAULT_WEB_DEPTH_LIMIT)
+                    DEFAULT_WEB_DEPTH_LIMIT,
+                    MODALITY_SET)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
@@ -1004,7 +1005,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       query_doc.save()
 
 
-      modalities = {"text", "image"}
+      #modalities = {"text", "image"} #SC240917
 
       # Initialize counter of all ORM objects to be made from all chunks
       j = 0
@@ -1018,13 +1019,15 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           linked_indexes = []
           linked_ids = []
           # Sort keys of ith chunk in alphabetical order
-          # Possible key values are: "text", "image", "video", "audio"
+          # Keys of interest are: "text", "image", "video", "audio"
+          # which hold info related to specific modalities that
+          # need to be stored in ORM objects
           sorted_keys = sorted(list(doc_chunks[i].keys()))
 
           # Create a QueryDocumentChunk ORM object for each modality
           # of ith chunk, in alphabetical order
           for key in sorted_keys:
-            if key in modalities:
+            if key in MODALITY_SET:
               # doc_chunk is dict representing ith chunk
               doc_chunk = doc_chunks[i]
               # Make ORM object for current modality of ith chunk

@@ -36,7 +36,7 @@ from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
 from services import embeddings
-from config import PROJECT_ID, REGION
+from config import PROJECT_ID, REGION, MODALITY_SET
 from config.vector_store_config import (PG_HOST, PG_PORT,
                                         PG_DBNAME, PG_USER, PG_PASSWD,
                                         DEFAULT_VECTOR_STORE,
@@ -448,10 +448,10 @@ class LangChainVectorStore(VectorStore):
       #  else: #SC240916
       #    possible_modalities_sorted_list_bool.append(False) #SC240916
       #    doc[modality] = None #SC240916
-      modalities = ["text", "image"]
-      modalities_sorted = sorted(modalities)
-      modalities_sorted_exist = [modality in doc.keys() for modality in modalities_sorted]
-      for modality, exist in zip(modalities_sorted, modalities_sorted_exist):
+      #modalities = ["text", "image"] #SC240917
+      modality_list_sorted = sorted(MODALITY_SET)
+      modality_list_sorted_exist = [modality in doc.keys() for modality in modality_list_sorted]
+      for modality, exist in zip(modality_list_sorted, modality_list_sorted_exist):
         if not exist:
           doc[modality] = None
       #SC240916: Use new keys "text_chunks"-->"text" and "image_b64"-->image, do automaticaly via "possible_modalities" DONE
@@ -460,7 +460,7 @@ class LangChainVectorStore(VectorStore):
       #if not(any(possible_modalities_sorted_list_bool)): #SC240916
         #raise RuntimeError(
         #  f"failed to retreieve text string or image base64 bytes for {doc_name}")
-      if not any(modalities_sorted_exist):
+      if not any(modality_list_sorted_exist):
         raise RuntimeError(
           f"failed to retrieve any modality for {doc_name}")
 
@@ -496,8 +496,8 @@ class LangChainVectorStore(VectorStore):
       #else: #SC240916
         #raise RuntimeError( #SC240916
           #f"failed to generate chunk embedding for {doc_name}") #SC240916
-      Logger.info(f"#SC240916: {modalities_sorted=}")
-      for modality in modalities_sorted:
+      Logger.info(f"#SC240916: {modality_list_sorted=}")
+      for modality in modality_list_sorted:
         Logger.info(f"#SC240916: {modality=}")
         Logger.info(f"#SC240916: {chunk_embedding[modality][0:19]=}")
         if modality in chunk_embedding.keys() and isinstance(chunk_embedding[modality][0], float):
