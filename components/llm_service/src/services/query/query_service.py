@@ -1006,13 +1006,14 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
       modalities = {"text", "image"}
 
+      # Initialize counter of all ORM objects to be made from all chunks
+      index = index_base
+      # Iterate over all chunks
       for i in range(0, len(doc_chunks)):
 
         if is_multimodal:
           # Use multimodal pipeline
 
-          # Initialize counter for ORM objects to be  made from this chunk
-          j = 0
           # Initialise list of ORM object indexes and ids to be made from this chunk
           linked_indexes = []
           linked_ids = []
@@ -1030,7 +1031,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
               query_doc_chunk = make_query_document_chunk(
                 query_engine_id=q_engine.id,
                 query_document_id=query_doc.id,
-                index=i+index_base+j,
+                index=index,
                 doc_chunk=doc_chunk,
                 page=i,
                 data_source=data_source,
@@ -1038,12 +1039,12 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                 is_multimodal=is_multimodal)
               # Save ORM object in Firestore
               query_doc_chunk.save()
-              Logger.info(f"#SC240916: {query_doc_chunk.index=}, {query_doc_chunk.id=}, {query_doc_chunk.linked_ids=}")
-              # Increment counter of ORM objects made for ith chunk
-              j+=1
+             # Increment counter of all ORM objects made for all chunks
+              index+=1
               # Build up list of ORM object indexes and ids made for ith chunk
               linked_indexes.append(query_doc_chunk.index)
               linked_ids.append(query_doc_chunk.id)
+              Logger.info(f"#SC240916: {query_doc_chunk.modality=}, {query_doc_chunk.index=}, {query_doc_chunk.id=}, {query_doc_chunk.linked_ids=}")
 
           # Set linked_ids field of all ORM objects made for ith chunk
           for index in linked_indexes:
