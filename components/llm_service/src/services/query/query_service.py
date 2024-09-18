@@ -412,8 +412,6 @@ def make_query_reference(q_engine: QueryEngine,
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
       if not sentences or len(sentences) == 0:
-        # for backwards compatibility with legacy engines break chunks
-        # into sentences here
         sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
       # Only update clean_text when sentences is not empty.
