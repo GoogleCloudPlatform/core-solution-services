@@ -37,6 +37,8 @@ from config.model_config import (ModelConfig, VENDOR_OPENAI,
                                 VERTEX_LLM_TYPE_BISON_CHAT, TRUSS_LLM_LLAMA2_CHAT,
                                 VERTEX_LLM_TYPE_GECKO_EMBEDDING,
                                 VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
+                                VERTEX_LLM_TYPE_GEMINI_PRO,
+                                VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                                 VERTEX_LLM_TYPE_GEMINI_FLASH)
 
 Logger = Logger.get_logger(__file__)
