@@ -56,6 +56,7 @@ with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
                           VERTEX_LLM_TYPE_BISON_CHAT,
+                          VERTEX_LLM_TYPE_GEMINI_PRO,
                           VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                           VERTEX_LLM_TYPE_GEMINI_FLASH,
                           PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
