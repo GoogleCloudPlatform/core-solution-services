@@ -857,7 +857,7 @@ async def build_doc_index(doc_url: str, q_engine: QueryEngine,
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # deploy vector store (e.g. create endpoint for database)
+    # deploy vector store (e.g. create endpoint for matching engine)
     # db vector stores typically don't require this step.
     qe_vector_store.deploy()
 
