@@ -483,6 +483,7 @@ class LangChainVectorStore(VectorStore):
           user_text=doc["text"],
           user_file_bytes=b64decode(doc["image"]),
           embedding_type=self.embedding_type) #SC240916
+      Logger.info(f"#SC240916: {chunk_embedding.keys()=}")
       #SC240916: Send correct variables to embedding model, my_contextual_text-->doc["text"], my_image-->b64decode(doc["image"]), but just ignore doc_video for now
 
       # Check to make sure that image embedding exist
