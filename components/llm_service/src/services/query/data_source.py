@@ -270,9 +270,10 @@ class DataSource:
       bucket_folder = "/".join(bucket_parts[1:-1]) \
         if len(bucket_parts) > 2 else None
 
-      # Determine bucket folder for all chunk docs created
-      # Add time in ms and randint to ensure that that folders are unique
-      chunk_bucket_folder = bucket_parts[-1].split(".")[0]+"_"+\
+      # Determine bucket folder to store all chunk docs created
+      # Add time-in-ms_randint to ensure that that folders are unique
+      chunk_ext_i = bucket_parts[-1].rfind(".")
+      chunk_bucket_folder = bucket_parts[-1][:chunk_ext_i]+"_"+\
         str(round(time() * 1000))+"_"+str(randint(1000,9999))
       if bucket_folder:
         chunk_bucket_folder = f"{bucket_folder}/{chunk_bucket_folder}"
