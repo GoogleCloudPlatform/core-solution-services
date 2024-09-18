@@ -125,7 +125,7 @@ def test_embedding_types(client_with_emulator):
 
 def test_embedding_types_multimodal(client_with_emulator):
   url = f"{api_url}/embedding_types"
-  params = {"is_multi": True}
+  params = {"is_multimodal": True}
   resp = client_with_emulator.get(url, params = params)
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
@@ -134,7 +134,7 @@ def test_embedding_types_multimodal(client_with_emulator):
 
 def test_embedding_types_text(client_with_emulator):
   url = f"{api_url}/embedding_types"
-  params = {"is_multi": False}
+  params = {"is_multimodal": False}
   resp = client_with_emulator.get(url, params = params)
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
@@ -155,7 +155,7 @@ def test_generate_embeddings(client_with_emulator):
 
 
 def test_generate_embeddings_multimodal(client_with_emulator):
-  url = f"{api_url}/embedding/multi"
+  url = f"{api_url}/embedding/multimodal"
 
   with mock.patch("routes.llm.get_multimodal_embeddings",
                   return_value=FAKE_EMBEDDINGS_MULTIMODAL):
@@ -181,7 +181,7 @@ def test_llm_generate(client_with_emulator):
     "returned generated text"
 
 def test_llm_generate_multimodal(client_with_emulator):
-  url = f"{api_url}/generate/multi"
+  url = f"{api_url}/generate/multimodal"
 
   with mock.patch("routes.llm.llm_generate_multimodal",
                   return_value=FAKE_GENERATE_RESPONSE):

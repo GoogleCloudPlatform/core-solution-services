@@ -65,13 +65,13 @@ def get_llm_list():
     "/embedding_types",
     name="Get supported embedding types",
     response_model=LLMGetEmbeddingTypesResponse)
-def get_embedding_types(is_multi: bool = None):
+def get_embedding_types(is_multimodal: bool = None):
   """
   Get supported embedding types, optionally filter by
   multimodal capabilities
 
   Args:
-    is_multi: `bool`
+    is_multimodal: `bool`
       Optional: If True, only multimodal embedding types are returned.
         If False, only non-multimodal (text) embedding types are returned.
         If None, all embedding types are returned.
@@ -80,11 +80,11 @@ def get_embedding_types(is_multi: bool = None):
       LLMGetEmbeddingTypesResponse
   """
   try:
-    if is_multi is True:
+    if is_multimodal is True:
       embedding_types = get_model_config().get_multimodal_embedding_types()
-    elif is_multi is False:
+    elif is_multimodal is False:
       embedding_types = get_model_config().get_text_embedding_types()
-    elif is_multi is None:
+    elif is_multimodal is None:
       embedding_types = get_model_config().get_embedding_types()
     else:
       return BadRequest("Missing or invalid payload parameters")
@@ -135,7 +135,7 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
     raise InternalServerError(str(e)) from e
 
 @router.post(
-    "/embedding/multi",
+    "/embedding/multimodal",
     name="Generate multimodal embeddings from LLM",
     response_model=LLMMultimodalEmbeddingsResponse)
 async def generate_embeddings_multimodal(
@@ -223,7 +223,7 @@ async def generate(gen_config: LLMGenerateModel):
     raise InternalServerError(str(e)) from e
 
 @router.post(
-    "/generate/multi",
+    "/generate/multimodal",
     name="Generate text with a multimodal LLM",
     response_model=LLMGenerateResponse)
 async def generate_multimodal(gen_config: LLMMultimodalGenerateModel):

@@ -451,7 +451,7 @@ def get_all_query_engines(auth_token=None) -> List[dict]:
   return qe_list
 
 
-def get_embedding_types(auth_token=None, is_multi=None):
+def get_embedding_types(auth_token=None, is_multimodal=None):
   """
   Retrieve all supported embedding types. Optionally filter by multimodal
   """
@@ -459,8 +459,8 @@ def get_embedding_types(auth_token=None, is_multi=None):
     auth_token = get_auth_token()
 
   api_url = f"{LLM_SERVICE_API_URL}/llm/embedding_types"
-  if is_multi is not None:
-    api_url += f"?is_multi={str(is_multi)}"
+  if is_multimodal is not None:
+    api_url += f"?is_multimodal={str(is_multimodal)}"
   logging.info("api_url=%s", api_url)
   resp = api_request("GET", api_url, auth_token=auth_token)
   resp_dict = get_response_json(resp)
