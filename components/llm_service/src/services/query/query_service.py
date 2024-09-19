@@ -1071,7 +1071,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           query_doc_chunk.save()
 
       if is_multimodal:
-        Logger.info(f"{j+1} doc chunk models created for [{doc_name}]")
+        Logger.info(f"{j} doc chunk models created for [{doc_name}]")
       else:
         Logger.info(f"{i+1} doc chunk models created for [{doc_name}]")
 
