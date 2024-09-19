@@ -1013,7 +1013,8 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         if is_multimodal:
           # Use multimodal pipeline
 
-          # Initialize list of ORM object indexes and ids to be made from this chunk
+          # Initialize list of ORM object indexes and ids to be made
+          # from this chunk
           linked_indexes = []
           linked_ids = []
           # Sort keys of ith chunk in alphabetical order
@@ -1036,8 +1037,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                 doc_chunk=doc_chunk,
                 page=i,
                 data_source=data_source,
-                modality=key,
-                is_multimodal=is_multimodal)
+                modality=key)
               # Save ORM object in Firestore
               query_doc_chunk.save()
               # Build up lists of ORM object indexes and ids made for ith chunk
@@ -1048,7 +1048,8 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
           # Set linked_ids field of all ORM objects just made for ith chunk
           for index in linked_indexes:
-            query_doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, index)
+            query_doc_chunk = \
+              QueryDocumentChunk.find_by_index(q_engine.id, index)
             query_doc_chunk.linked_ids = linked_ids
 
         else:
@@ -1066,8 +1067,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
             doc_chunk=doc_chunk,
             page=None,
             data_source=data_source,
-            modality="text",
-            is_multimodal=is_multimodal)
+            modality="text")
           # Save ORM object in Firestore
           query_doc_chunk.save()
 
@@ -1088,8 +1088,7 @@ def make_query_document_chunk(query_engine_id: str,
                               doc_chunk: dict,
                               page: int,
                               data_source: DataSource,
-                              modality: str,
-                              is_multimodal: bool) -> \
+                              modality: str) -> \
                                 QueryDocumentChunk:
   """
   Make a single QueryDocumentChunk object, with appropriate fields
@@ -1106,7 +1105,6 @@ def make_query_document_chunk(query_engine_id: str,
     data_source: The data source class of the document
     modality: The modality of the corresponding embedding vector 
       extracted from the doc_chunk
-    is_multimodal: True if multimodal processing, False if text-only
   
   Returns:
     query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
@@ -1123,8 +1121,10 @@ def make_query_document_chunk(query_engine_id: str,
   if modality=="text":
     query_document_chunk_dict["page"]=page
     query_document_chunk_dict["text"]=doc_chunk["text"]
-    query_document_chunk_dict["clean_text"]=data_source.clean_text(doc_chunk["text"])
-    query_document_chunk_dict["sentences"]=data_source.text_to_sentence_list(doc_chunk["text"])
+    query_document_chunk_dict["clean_text"]=\
+      data_source.clean_text(doc_chunk["text"])
+    query_document_chunk_dict["sentences"]=\
+      data_source.text_to_sentence_list(doc_chunk["text"])
   # For image chunk only
   elif modality=="image":
     query_document_chunk_dict["page"]=page

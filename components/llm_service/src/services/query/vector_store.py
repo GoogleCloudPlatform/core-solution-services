@@ -423,7 +423,7 @@ class LangChainVectorStore(VectorStore):
     # Initialize counter for all embeddings of all modalities
     # created from all chunks of document
     num_embeddings = 0
-    
+
     # Convert multimodal chunks to embeddings
     # Note that multimodal embedding model can only embed one chunk
     # at a time. As opposed to the text-only embedding model, which
@@ -435,11 +435,13 @@ class LangChainVectorStore(VectorStore):
     for doc in doc_chunks:
       # Raise error is doc object is formatted incorrectly
       modality_list_sorted = sorted(MODALITY_SET)
-      modality_list_sorted_exist = [modality in doc.keys() for modality in modality_list_sorted]
+      modality_list_sorted_exist = \
+        [modality in doc.keys() for modality in modality_list_sorted]
       if not any(modality_list_sorted_exist):
         raise RuntimeError(
           f"failed to retrieve any modality for {doc_name}")
-      for modality, exist in zip(modality_list_sorted, modality_list_sorted_exist):
+      for modality, exist in \
+        zip(modality_list_sorted, modality_list_sorted_exist):
         if not exist:
           doc[modality] = None
 
@@ -454,7 +456,8 @@ class LangChainVectorStore(VectorStore):
 
       # Check to make sure that embeddings for available modalities exist
       for modality in modality_list_sorted:
-        if modality in chunk_embedding.keys() and isinstance(chunk_embedding[modality][0], float):
+        if modality in chunk_embedding.keys() and \
+          isinstance(chunk_embedding[modality][0], float):
           chunk_texts.append(doc["text"])
           chunk_embeddings.append(chunk_embedding[modality])
           # Increment counter
@@ -467,7 +470,7 @@ class LangChainVectorStore(VectorStore):
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + num_embeddings))
     Logger.info(f"Indexed {len(ids)} embeddings for [{doc_name}]")
- 
+
     # check for success
     if len(chunk_embeddings) == 0:
       raise RuntimeError(f"failed to generate embeddings for {doc_name}")
