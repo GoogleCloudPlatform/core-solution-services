@@ -44,6 +44,8 @@ FAKE_VERTEX_MULTI_EMBEDDINGS = \
 FAKE_MULTI_EMBEDDINGS = {
   "text": [0.0],
   "image": [0.1]
+  # TODO: Also set value of "video" key
+  # and potentially "audio" key
 }
 
 FAKE_MULTI_IMAGE_BYTES = \

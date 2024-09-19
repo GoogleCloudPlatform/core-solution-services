@@ -449,6 +449,8 @@ class LangChainVectorStore(VectorStore):
           user_text=doc["text"],
           user_file_bytes=b64decode(doc["image"]),
           embedding_type=self.embedding_type)
+      # TODO: Also embed doc["video"] (video chunk) and
+      # potentially doc["audio"] (audio chunk)
 
       # Check to make sure that embeddings for available modalities exist
       for modality in modality_list_sorted:

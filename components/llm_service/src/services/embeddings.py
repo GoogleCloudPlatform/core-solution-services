@@ -78,7 +78,8 @@ async def get_multimodal_embeddings(user_text: List[str],
                                embedding_type: str = None) -> \
                                 dict:
   """
-  Get multimodal embeddings for a string and image or video file
+  Get multimodal embeddings for a string and image or video
+  or potentially audio file
 
   Args:
     user_text: text context to generate embeddings for
@@ -261,6 +262,9 @@ async def get_vertex_multi_embeddings(embedding_type: str,
       return_value = {}
       return_value["text"] = embeddings.text_embedding
       return_value["image"] = embeddings.image_embedding
+      # TODO: also return vector part of video_embedding
+      # in return_value["video"] and potentially audio_embedding
+      # in return_value["audio"]
 
       return return_value
     except Exception as e:

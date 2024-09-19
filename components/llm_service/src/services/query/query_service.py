@@ -353,7 +353,8 @@ async def query_search(q_engine: QueryEngine,
     # extract a single embedding vector from the output instead
     # of a LIST of embedding vectors.
     # TODO: Once we allow multimodal queries, input an image or video
-    # into get_multimodal_embeddings, instead of None.
+    # potentially audio into get_multimodal_embeddings, instead of None,
+    # and set "image" or "video" or potentially "audio" keys of query_embedding
     query_embeddings = \
       await embeddings.get_multimodal_embeddings(query_prompt,
                                             None,
@@ -1110,7 +1111,6 @@ def make_query_document_chunk(query_engine_id: str,
   Returns:
     query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
   """
-  
   # Create dict to hold all fields of query_document_chunk,
   # depending on its modality
   query_document_chunk_dict = {}
@@ -1128,11 +1128,13 @@ def make_query_document_chunk(query_engine_id: str,
   # For image chunk only
   elif modality=="image":
     query_document_chunk_dict["page"]=page
-    query_document_chunk_dict["chunk_url"]=doc_chunk["image_url"]
+    if "image_url" in doc_chunk:
+      query_document_chunk_dict["chunk_url"]=doc_chunk["image_url"]
   # For video and audio chunks only
   elif modality in {"video", "audio"}:
     #TODO: Insert logic to set values of the following keys:
-    #  "chunk_url": Holds url to the file that the video/audio is saved to
+    #  "chunk_url": Holds url to the file that the video/audio is saved to,
+    #    if the video/audio chunk is saved to a separate file
     #  "timestamp_start": Holds timestamp of beginning of video/audio chunk
     #  "timestamp_stop": Holds timestamp of ending of video/audio chunk
     pass

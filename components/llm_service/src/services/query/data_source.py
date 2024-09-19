@@ -323,6 +323,9 @@ class DataSource:
       # TODO: Insert elif statements to chunk additional types of
       # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
+      # - For images, set "image" and "text" fields of chunk_obj
+      # - For video and audio, set "timestamp_start" and "timestamp_stop"
+      # fields of chunk_obj
 
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
