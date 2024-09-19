@@ -29,6 +29,7 @@ from common.utils.config import get_environ_flag
 from common.utils.gcs_adapter import download_file_from_gcs
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
+from common.utils.auth_service import get_roles_from_custom_claims
 import langchain_community.chat_models as langchain_chat
 import langchain_community.llms as langchain_llm
 import langchain_community.embeddings as langchain_embedding
@@ -58,6 +59,7 @@ KEY_MODEL_PATH = "model_path"
 KEY_MODEL_ENDPOINT = "model_endpoint"
 KEY_VENDOR = "vendor"
 KEY_DIMENSION = "dimension"
+KEY_ROLE_ACCESS = "roles"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -78,7 +80,8 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_PATH,
   KEY_MODEL_ENDPOINT,
   KEY_VENDOR,
-  KEY_DIMENSION
+  KEY_DIMENSION,
+  KEY_ROLE_ACCESS
 ]
 
 # model providers
@@ -395,6 +398,46 @@ class ModelConfig():
     model_enabled = model_key_enabled and model_flag_setting
 
     return model_enabled
+
+  def is_model_enabled_for_user(self, model_id: str, user_data: dict) -> bool:
+    """
+    Get model enabled setting for a user.  We check if the model itself is
+    enabled and if the RBAC roles of user allow access to that model.
+    """
+
+    # check is_model_enabled and if not return false
+    if not self.is_model_enabled(model_id):
+      return False
+
+    # if no custom claims, then enabled by default
+    roles_claims = get_roles_from_custom_claims(user_data)
+    if roles_claims is None or not roles_claims["roles"]:
+      return True
+
+    # check if user has access through model roles
+    model_config = self.get_model_config(model_id)
+    model_allow_roles = model_config.get(KEY_ROLE_ACCESS, [])
+    for role in model_allow_roles:
+      if role in roles_claims["roles"]:
+        return True
+
+    # check if user has access through proivder roles
+    _, provider_config = self.get_model_provider_config(model_id)
+    if provider_config is not None:
+      provider_allow_roles = provider_config.get(KEY_ROLE_ACCESS, [])
+      for role in provider_allow_roles:
+        if role in roles_claims["roles"]:
+          return True
+
+    # check if user has access through vendor roles
+    _, vendor_config = self.get_model_vendor_config(model_id)
+    if vendor_config is not None:
+      vendor_allow_roles = vendor_config.get(KEY_ROLE_ACCESS, [])
+      for role in vendor_allow_roles:
+        if role in roles_claims["roles"]:
+          return True
+
+    return False
 
   def get_model_config(self, model_id: str) -> dict:
     """
