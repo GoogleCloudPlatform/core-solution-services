@@ -59,7 +59,7 @@ KEY_MODEL_PATH = "model_path"
 KEY_MODEL_ENDPOINT = "model_endpoint"
 KEY_VENDOR = "vendor"
 KEY_DIMENSION = "dimension"
-KEY_ROLE_ACCESS = "roles"
+KEY_ROLE_ACCESS = "role_access"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -405,37 +405,36 @@ class ModelConfig():
     enabled and if the RBAC roles of user allow access to that model.
     """
 
-    # check is_model_enabled and if not return false
     if not self.is_model_enabled(model_id):
       return False
 
-    # if no custom claims, then enabled by default
     roles_claims = get_roles_from_custom_claims(user_data)
     if roles_claims is None or not roles_claims["roles"]:
-      return True
+      user_role_claims = []
+    else:
+      user_role_claims = roles_claims["roles"]
 
-    # check if user has access through model roles
     model_config = self.get_model_config(model_id)
     model_allow_roles = model_config.get(KEY_ROLE_ACCESS, [])
-    for role in model_allow_roles:
-      if role in roles_claims["roles"]:
-        return True
 
-    # check if user has access through proivder roles
     _, provider_config = self.get_model_provider_config(model_id)
     if provider_config is not None:
       provider_allow_roles = provider_config.get(KEY_ROLE_ACCESS, [])
-      for role in provider_allow_roles:
-        if role in roles_claims["roles"]:
-          return True
+    else:
+      provider_allow_roles = []
 
-    # check if user has access through vendor roles
     _, vendor_config = self.get_model_vendor_config(model_id)
     if vendor_config is not None:
       vendor_allow_roles = vendor_config.get(KEY_ROLE_ACCESS, [])
-      for role in vendor_allow_roles:
-        if role in roles_claims["roles"]:
-          return True
+    else:
+      vendor_allow_roles = []
+
+    if not model_allow_roles and not provider_allow_roles and not vendor_allow_roles:
+      return True
+
+    for user_rule in user_role_claims:
+      if user_rule in model_allow_roles or user_rule in provider_allow_roles or user_rule in vendor_allow_roles:
+        return True
 
     return False
 
