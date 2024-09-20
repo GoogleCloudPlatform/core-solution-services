@@ -17,12 +17,12 @@ Model select component
 """
 
 import streamlit as st
-from api import get_all_chat_llm_types
+from api import get_chat_llm_types
 import logging
 
 
 def chat_model_select():
-  chat_llm_types = get_all_chat_llm_types(
+  chat_llm_types = get_chat_llm_types(
     auth_token=st.session_state.auth_token)
 
   chat_llm_types = ["default"] + chat_llm_types

@@ -36,7 +36,7 @@ from common.models import QueryEngine
 from common.utils.logging_handler import Logger
 from common.utils.http_exceptions import InternalServerError
 from services import embeddings
-from config import PROJECT_ID, REGION
+from config import PROJECT_ID, REGION, MODALITY_SET
 from config.vector_store_config import (PG_HOST, PG_PORT,
                                         PG_DBNAME, PG_USER, PG_PASSWD,
                                         DEFAULT_VECTOR_STORE,
@@ -420,59 +420,67 @@ class LangChainVectorStore(VectorStore):
                                  index_base: int) -> \
                                   int:
 
-    # generate list of chunk IDs starting from index base
-    ids = list(range(index_base, index_base + len(doc_chunks)))
+    # Initialize counter for all embeddings of all modalities
+    # created from all chunks of document
+    num_embeddings = 0
 
     # Convert multimodal chunks to embeddings
     # Note that multimodal embedding model can only embed one chunk
     # at a time. As opposed to the text-only embedding model, which
     # can embed an array of multiple chunks at the same time.
-    text_chunks = []
+    chunk_texts = []
     chunk_embeddings = []
 
     # Loop over chunks
     for doc in doc_chunks:
       # Raise error is doc object is formatted incorrectly
-      doc_text_chunks = doc["text_chunks"]
-      doc_image_base64 = doc["image_b64"]
-      if (doc_text_chunks is None or doc_image_base64 is None):
+      modality_list_sorted = sorted(MODALITY_SET)
+      modality_list_sorted_exist = \
+        [modality in doc.keys() for modality in modality_list_sorted]
+      if not any(modality_list_sorted_exist):
         raise RuntimeError(
-          f"failed to retreive text chunks or image base64 for {doc_name}")
-
-      my_contextual_text = [string.strip() for string in doc_text_chunks]
-      my_contextual_text = " ".join(my_contextual_text)
-      #TODO: Consider all characters in my_contextual_text,
-      #not just the first 1024
-      my_contextual_text = my_contextual_text[0:1023]
-      my_image = b64decode(doc_image_base64)
+          f"failed to retrieve any modality for {doc_name}")
+      for modality, exist in \
+        zip(modality_list_sorted, modality_list_sorted_exist):
+        if not exist:
+          doc[modality] = None
 
       # Get chunk embeddings
       chunk_embedding = \
-        await embeddings.get_multi_embeddings(my_contextual_text,
-                                              my_image,
-                                              self.embedding_type)
+        await embeddings.get_multimodal_embeddings(
+          user_text=doc["text"],
+          user_file_bytes=b64decode(doc["image"]),
+          embedding_type=self.embedding_type)
+      # TODO: Also embed doc["video"] (video chunk) and
+      # potentially doc["audio"] (audio chunk)
 
-      # Check to make sure that image embedding exist
-      chunk_image_embedding = chunk_embedding["image_embeddings"]
-      if isinstance(chunk_image_embedding[0], float):
-        # Append this chunk's text to the text_chunks array
-        text_chunks.append(my_contextual_text)
-        # Append this chunk's image embedding to the chunk_embeddings array
-        chunk_embeddings.append(chunk_image_embedding)
-      else:
-        raise RuntimeError(
-          f"failed to generate chunk embedding for {doc_name}")
+      # Check to make sure that embeddings for available modalities exist
+      for modality in modality_list_sorted:
+        if modality in chunk_embedding.keys() and \
+          isinstance(chunk_embedding[modality][0], float):
+          chunk_texts.append(doc["text"])
+          chunk_embeddings.append(chunk_embedding[modality])
+          # Increment counter
+          num_embeddings += 1
+        else:
+          raise RuntimeError(
+            f"failed to generate {modality} chunk embedding for {doc_name}")
+
+    # now that all embeddings are created for all modalities of all chunks,
+    # generate list of chunk IDs starting from index base
+    ids = list(range(index_base, index_base + num_embeddings))
+    Logger.info(f"Indexed {len(ids)} embeddings for [{doc_name}]")
 
     # check for success
     if len(chunk_embeddings) == 0:
       raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
     # add image embeddings to vector store
-    self.lc_vector_store.add_embeddings(texts=text_chunks,
+    self.lc_vector_store.add_embeddings(texts=chunk_texts,
                                         embeddings=chunk_embeddings,
                                         ids=ids)
     # return new index base
-    new_index_base = index_base + len(text_chunks)
+    new_index_base = index_base + num_embeddings
     self.index_length = new_index_base
 
     return new_index_base
@@ -485,6 +493,7 @@ class LangChainVectorStore(VectorStore):
                             int:
     # generate list of chunk IDs starting from index base
     ids = list(range(index_base, index_base + len(text_chunks)))
+    Logger.info(f"Indexed {len(ids)} embeddings for [{doc_name}]")
 
     # Convert chunks to embeddings
     is_successful, chunk_embeddings = \

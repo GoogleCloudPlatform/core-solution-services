@@ -41,18 +41,34 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     "/chat_types",
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
-def get_chat_llm_list():
+def get_chat_llm_list(is_multi: bool = None):
   """
-  Get available Chat LLMs
+  Get available Chat LLMs, optionally filter by
+  multimodal capabilities
+
+  Args:
+    is_multi: `bool`
+      Optional: If True, only multimodal embedding types are returned.
+        If False, only non-multimodal embedding types are returned.
+        If None, all embedding types are returned.
 
   Returns:
       LLMGetTypesResponse
   """
   try:
+    if is_multi is True:
+      llm_types = get_model_config().get_multimodal_chat_llm_types()
+    elif is_multi is False:
+      llm_types = get_model_config().get_text_chat_llm_types()
+    elif is_multi is None:
+      llm_types = get_model_config().get_chat_llm_types()
+    else:
+      return BadRequest("Invalid request parameter value: is_multi")
+
     return {
       "success": True,
       "message": "Successfully retrieved chat llm types",
-      "data": get_model_config().get_chat_llm_types()
+      "data": llm_types
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e

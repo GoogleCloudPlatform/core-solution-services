@@ -25,7 +25,7 @@ from common.utils.logging_handler import Logger
 from common.utils.config import set_env_var
 from vertexai.preview.language_models import TextEmbedding
 from vertexai.preview.vision_models import MultiModalEmbeddingResponse
-from services.embeddings import get_embeddings, get_multi_embeddings
+from services.embeddings import get_embeddings, get_multimodal_embeddings
 with set_env_var("PG_HOST", ""):
   from config import (get_model_config, DEFAULT_QUERY_EMBEDDING_MODEL,
                       DEFAULT_QUERY_MULTI_EMBEDDING_MODEL)
@@ -42,8 +42,10 @@ FAKE_VERTEX_MULTI_EMBEDDINGS = \
                                 text_embedding=[0.0], image_embedding=[0.1])
 
 FAKE_MULTI_EMBEDDINGS = {
-  "text_embeddings": [0.0],
-  "image_embeddings": [0.1]
+  "text": [0.0],
+  "image": [0.1]
+  # TODO: Also set value of "video" key
+  # and potentially "audio" key
 }
 
 FAKE_MULTI_IMAGE_BYTES = \
@@ -77,6 +79,6 @@ async def test_get_embeddings_multi(mock_get_vertex_embeddings):
   mock_get_vertex_embeddings.return_value = FAKE_VERTEX_MULTI_EMBEDDINGS
   embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
   text_chunks = []
-  embeddings = await get_multi_embeddings(
+  embeddings = await get_multimodal_embeddings(
       text_chunks, FAKE_MULTI_IMAGE_BYTES, embedding_type)
   assert embeddings == FAKE_MULTI_EMBEDDINGS
