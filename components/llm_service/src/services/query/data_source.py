@@ -19,6 +19,8 @@ import traceback
 import os
 import re
 import tempfile
+from time import time
+from random import randint
 from urllib.parse import unquote
 from copy import copy
 from base64 import b64encode
@@ -255,19 +257,26 @@ class DataSource:
     doc_chunks = []
     try:
 
-      # Get bucket name
+      # Get bucket name & the doc file path within bucket
       if doc_url.startswith("https://storage.googleapis.com/"):
-        bucket_name = \
-          unquote(
-            doc_url.split("https://storage.googleapis.com/")[1].split("/")[0]
-            )
+        bucket_parts = unquote(\
+          doc_url.split("https://storage.googleapis.com/")[1]).split("/")
       elif doc_url.startswith("gs://"):
-        bucket_name = \
-          unquote(
-            doc_url.split("gs://")[1].split("/")[0]
-            )
+        bucket_parts = unquote(doc_url.split("gs://")[1]).split("/")
       else:
         raise ValueError(f"Invalid Doc URL: {doc_url}")
+
+      bucket_name = bucket_parts[0]
+      bucket_folder = "/".join(bucket_parts[1:-1]) \
+        if len(bucket_parts) > 2 else None
+
+      # Determine bucket folder to store all chunk docs created
+      # Add time-in-ms_randint to ensure that that folders are unique
+      chunk_ext_i = bucket_parts[-1].rfind(".")
+      chunk_bucket_folder = bucket_parts[-1][:chunk_ext_i]+"_"+\
+        str(round(time() * 1000))+"_"+str(randint(1000,9999))
+      if bucket_folder:
+        chunk_bucket_folder = f"{bucket_folder}/{chunk_bucket_folder}"
 
       # If doc is a PDF, convert it to an array of PNGs for each page
       if doc_extension == "pdf":
@@ -301,7 +310,8 @@ class DataSource:
             # Upload to Google Cloud Bucket and return gs URL
             png_url = gcs_helper.upload_to_gcs(self.storage_client,
                                                bucket_name,
-                                               png_doc_filepath)
+                                               png_doc_filepath,
+                                               chunk_bucket_folder)
 
             # Clean up temp files
             os.remove(pdf_doc["filepath"])
