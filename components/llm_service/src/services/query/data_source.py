@@ -298,6 +298,11 @@ class DataSource:
             #before and after. Use the 2nd output here (embed_chunks).
             _, embed_chunks = self.chunk_document(pdf_doc["filename"],
                                                   doc_url, pdf_doc["filepath"])
+            contextual_text = [string.strip() for string in embed_chunks]
+            contextual_text = " ".join(contextual_text)
+            #TODO: Consider all characters in my_contextual_text,
+            #not just the first 1024
+            contextual_text = contextual_text[0:1023]
 
             # Take PNG version of page and convert to b64
             png_doc_filepath = \
@@ -319,15 +324,18 @@ class DataSource:
 
             # Push chunk object into chunk array
             chunk_obj = {
-              "image_b64": png_b64,
+              "image": png_b64,
               "image_url": png_url,
-              "text_chunks": embed_chunks
+              "text": contextual_text
             }
             doc_chunks.append(chunk_obj)
 
       # TODO: Insert elif statements to chunk additional types of
       # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
+      # - For images, set "image" and "text" fields of chunk_obj
+      # - For video and audio, set "timestamp_start" and "timestamp_stop"
+      # fields of chunk_obj
 
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
