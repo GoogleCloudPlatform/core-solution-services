@@ -225,7 +225,7 @@ def get_roles_from_custom_claims(user_data: dict):
         f"firebase ID token for {user_data['user_id']} has roles: {roles}")
 
     if roles:
-      role_claims_dict = {"roles": [role for role in roles]}
+      role_claims_dict = {"roles": list(roles)}
     else:
       role_claims_dict = None
 

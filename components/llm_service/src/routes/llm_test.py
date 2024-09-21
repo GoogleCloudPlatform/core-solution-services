@@ -110,7 +110,9 @@ def client_with_emulator(clean_firestore, scope="module"):
 
 def test_get_llm_list(client_with_emulator):
   url = f"{api_url}"
-  resp = client_with_emulator.get(url)
+  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                  return_value=True):
+    resp = client_with_emulator.get(url)
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
   assert json_response.get("data") == get_model_config().get_llm_types()
