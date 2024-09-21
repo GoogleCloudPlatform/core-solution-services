@@ -59,7 +59,7 @@ KEY_MODEL_PATH = "model_path"
 KEY_MODEL_ENDPOINT = "model_endpoint"
 KEY_VENDOR = "vendor"
 KEY_DIMENSION = "dimension"
-KEY_ROLE_ACCESS = "role_access"
+KEY_ROLE_ACCESS = "roles"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,

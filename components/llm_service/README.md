@@ -1,5 +1,68 @@
 # Large Language Module Service
 
+## Enforce Role-Based Access Control (RBAC) to models (optional)
+
+### Update the models.json
+Restrictions to providers,  vendors and models can be placed by adding a `"roles":["role1","role2"]` key-value pair to each provider, vendor and/or model dictionary.
+
+Listing roles indicate a provider/vendor/model is restricted for use by only the roles listed.
+
+Thus, if the "roles" attribute is not provided in a provider/vendor/model dictionary, then the default for that provider/vendor/model is to be accessible by all users. 
+```
+"providers": {
+    "Vertex": {
+      "enabled": true,
+      "env_flag": "ENABLE_GOOGLE_LLM",
+      "model_params": {
+        "temperature": 0.2,
+        "max_output_tokens": 1024,
+        "top_p": 0.95,
+        "top_k": 40
+      },
+      "roles": [
+        "student"
+      ]
+    },
+    "ModelGarden": {
+      "enabled": true,
+      "env_flag": "ENABLE_GOOGLE_MODEL_GARDEN",
+      "model_params": {
+        "temperature": 0.2,
+        "max_tokens": 900,
+        "top_p": 1.0,
+        "top_k": 10
+      }
+    }
+  },
+  "vendors": {
+    "OpenAI": {
+      "enabled": false,
+      "api_key": "openai-api-key",
+      "env_flag": "ENABLE_OPENAI_LLM",
+      "roles": [
+        "student",
+        "faculty",
+        "staff"
+      ]
+    },
+  }
+  ...
+  "models": {
+    "VertexAI-Text": {
+      "is_chat": false,
+      "provider": "Vertex",
+      "model_name": "text-bison@002",
+      "roles": [
+        "student",
+        "staff"
+      ]
+    },
+  }
+  ...
+```
+*Authentication Logic*: Each provider/vendor/model configuration is compared to each user's custom claims from its authorization token to determine access. 
+
+
 ## Setup
 
 ### Setting up LLM model vendors (optional)
