@@ -467,7 +467,7 @@ def get_embedding_types(auth_token=None, is_multimodal=None):
   return resp_dict["data"]
 
 
-def get_all_chat_llm_types(auth_token=None):
+def get_chat_llm_types(auth_token=None):
   """
   Retrieve all supported chat model types
   """
@@ -476,7 +476,9 @@ def get_all_chat_llm_types(auth_token=None):
 
   api_url = f"{LLM_SERVICE_API_URL}/chat/chat_types"
   logging.info("api_url=%s", api_url)
-  resp = get_method(api_url, token=auth_token)
+  query_params = {"is_multi": st.session_state.query_engine_is_multi}
+  logging.info("query_params=%s", query_params)
+  resp = get_method(api_url, token=auth_token, query_params=query_params)
   logging.info(resp)
 
   json_response = resp.json()

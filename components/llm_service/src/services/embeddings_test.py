@@ -42,8 +42,10 @@ FAKE_VERTEX_MULTIMODAL_EMBEDDINGS = \
                                 text_embedding=[0.0], image_embedding=[0.1])
 
 FAKE_MULTIMODAL_EMBEDDINGS = {
-  "text_embeddings": [0.0],
-  "image_embeddings": [0.1]
+  "text": [0.0],
+  "image": [0.1]
+  # TODO: Also set value of "video" key
+  # and potentially "audio" key
 }
 
 FAKE_MULTIMODAL_IMAGE_BYTES = \

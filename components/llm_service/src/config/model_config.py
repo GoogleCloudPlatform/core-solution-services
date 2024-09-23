@@ -655,6 +655,26 @@ class ModelConfig():
     ]
     return llm_types
 
+  def get_text_llm_types(self) -> dict:
+    """ Get all supported and enabled text-only LLM types, as a list of model
+        identifiers.
+    """
+    text_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_MULTI not in config or not config[KEY_IS_MULTI]) and self.is_model_enabled(m)
+    ]
+    return text_llm_types
+
+  def get_multimodal_llm_types(self) -> dict:
+    """ Get all supported and enabled multimodal LLM types, as a list of model
+        identifiers.
+    """
+    multi_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and self.is_model_enabled(m)
+    ]
+    return multi_llm_types
+
   def get_chat_llm_types(self) -> dict:
     """ Get all supported and enabled chat LLM types, as a list of model
         identifiers.
@@ -665,15 +685,29 @@ class ModelConfig():
     ]
     return chat_llm_types
 
-  def get_multimodal_llm_types(self) -> dict:
-    """ Get all supported and enabled multimodal LLM types, as a list of model
+  def get_text_chat_llm_types(self) -> dict:
+    """ Get all supported and enabled text-only chat LLM types, as a list of model
         identifiers.
     """
-    multimodal_llm_types = [
+    text_chat_llm_types = [
       m for m,config in self.llm_models.items()
-      if (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and self.is_model_enabled(m)
+      if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and
+      (KEY_IS_MULTI not in config or not config[KEY_IS_MULTI]) and
+      self.is_model_enabled(m)
     ]
-    return multimodal_llm_types
+    return text_chat_llm_types
+
+  def get_multimodal_chat_llm_types(self) -> dict:
+    """ Get all supported and enabled multimodal chat LLM types, as a list of model
+        identifiers.
+    """
+    multimodal_chat_llm_types = [
+      m for m,config in self.llm_models.items()
+      if (KEY_IS_CHAT in config and config[KEY_IS_CHAT]) and
+      (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and
+      self.is_model_enabled(m)
+    ]
+    return multimodal_chat_llm_types
 
   def get_embedding_types(self) -> dict:
     """ Get all supported and enabled embedding types, as a list of model
@@ -686,24 +720,24 @@ class ModelConfig():
     return embedding_types
 
   def get_text_embedding_types(self) -> dict:
-    """ Get all supported and enabled non-multimodal embedding types, as a list of model
+    """ Get all supported and enabled text-only embedding types, as a list of model
         identifiers.
     """
-    embedding_types = [
+    text_embedding_types = [
       m for m,config in self.llm_embedding_models.items()
       if (KEY_IS_MULTI not in config or not config[KEY_IS_MULTI]) and self.is_model_enabled(m)
     ]
-    return embedding_types
+    return text_embedding_types
 
   def get_multimodal_embedding_types(self) -> dict:
     """ Get all supported and enabled multimodal embedding types, as a list of model
         identifiers.
     """
-    embedding_types = [
+    multi_embedding_types = [
       m for m,config in self.llm_embedding_models.items()
       if (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and self.is_model_enabled(m)
     ]
-    return embedding_types
+    return multi_embedding_types
 
   def download_model_file(self, model_id: str, model_config: dict):
     """

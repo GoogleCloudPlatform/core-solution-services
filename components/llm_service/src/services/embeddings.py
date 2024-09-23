@@ -73,12 +73,13 @@ async def get_embeddings(text_chunks: List[str],
 
   return is_successful, embeddings
 
-async def get_multimodal_embeddings(user_text: str,
-                               user_file_bytes: bytes,
+async def get_multimodal_embeddings(user_text: List[str],
+                               user_file_bytes: str,
                                embedding_type: str = None) -> \
                                 dict:
   """
-  Get multimodal embeddings for a string and image or video file
+  Get multimodal embeddings for a string and image or video
+  or potentially audio file
 
   Args:
     user_text: text context to generate embeddings for
@@ -251,14 +252,19 @@ async def get_vertex_multimodal_embeddings(embedding_type: str,
       Logger.info(f"Generating Vertex embeddings for 1 multimodal chunk"
                   f" embedding model {google_llm}"
                   f" extracted text: {user_text}")
-      user_file_image = Image(image_bytes=user_file_bytes)
+      user_file_image = None
+      if user_file_bytes:
+        user_file_image = Image(image_bytes=user_file_bytes)
       vertex_model = MultiModalEmbeddingModel.from_pretrained(google_llm)
       embeddings = vertex_model.get_embeddings(image=user_file_image,
                                                contextual_text=user_text)
 
       return_value = {}
-      return_value["text_embeddings"] = embeddings.text_embedding
-      return_value["image_embeddings"] = embeddings.image_embedding
+      return_value["text"] = embeddings.text_embedding
+      return_value["image"] = embeddings.image_embedding
+      # TODO: also return vector part of video_embedding
+      # in return_value["video"] and potentially audio_embedding
+      # in return_value["audio"]
 
       return return_value
     except Exception as e:

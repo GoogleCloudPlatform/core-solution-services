@@ -44,18 +44,32 @@ Logger = Logger.get_logger(__file__)
     "",
     name="Get all LLM types",
     response_model=LLMGetTypesResponse)
-def get_llm_list():
+def get_llm_list(is_multi: bool = None):
   """
-  Get available LLMs
+  Get available LLMs, optionally filter by
+  multimodal capabilities
+
+  Args:
+    is_multi: `bool`
+      Optional: Is llm model multimodal <br/>
 
   Returns:
       LLMGetTypesResponse
   """
   try:
+    if is_multi is True:
+      llm_types = get_model_config().get_multimodal_llm_types()
+    elif is_multi is False:
+      llm_types = get_model_config().get_text_llm_types()
+    elif is_multi is None:
+      llm_types = get_model_config().get_llm_types()
+    else:
+      return BadRequest("Invalid request parameter value: is_multi")
+
     return {
       "success": True,
       "message": "Successfully retrieved llm types",
-      "data": get_model_config().get_llm_types()
+      "data": llm_types
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -87,7 +101,7 @@ def get_embedding_types(is_multimodal: bool = None):
     elif is_multimodal is None:
       embedding_types = get_model_config().get_embedding_types()
     else:
-      return BadRequest("Missing or invalid payload parameters")
+      return BadRequest("Invalid request parameter value: is_multi")
 
     return {
       "success": True,

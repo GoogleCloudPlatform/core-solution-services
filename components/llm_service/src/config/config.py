@@ -240,3 +240,7 @@ except Exception as e:
 
 auth_client = UserCredentials(LLM_BACKEND_ROBOT_USERNAME,
                               LLM_BACKEND_ROBOT_PASSWORD)
+
+# Modalities supported by RAG pipeline
+# TODO: Add "video" and potentially "audio" to the set
+MODALITY_SET = {"text", "image"}

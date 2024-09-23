@@ -71,11 +71,14 @@ def set_bucket_viewer_iam(
   bucket.set_iam_policy(policy)
 
 def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
-                  file_path: str) -> str:
+                  file_path: str, bucket_folder: str = None) -> str:
   """ Upload file to GCS bucket. Returns URL to file. """
-  Logger.info(f"Uploading {file_path} to GCS bucket {bucket_name}")
+  Logger.info(f"""Uploading {file_path} to GCS bucket {bucket_name} \
+              in folder {str(bucket_folder)}""")
   bucket = storage_client.bucket(bucket_name)
   file_name = Path(file_path).name
+  if bucket_folder:
+    file_name = f"{bucket_folder}/{file_name}"
   blob = bucket.blob(file_name)
   blob.upload_from_filename(file_path)
   gcs_url = f"gs://{bucket_name}/{file_name}"

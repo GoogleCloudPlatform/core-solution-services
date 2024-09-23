@@ -70,6 +70,7 @@ from config.config import (
 
     # query engine and other defaults
     DEFAULT_WEB_DEPTH_LIMIT,
+    MODALITY_SET,
     )
 
 from config.model_config import (

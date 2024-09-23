@@ -131,7 +131,7 @@ async def llm_generate_multimodal(prompt: str, user_file_bytes: bytes,
 
     # for Google models, prioritize native client over langchain
     chat_llm_types = get_model_config().get_chat_llm_types()
-    multimodal_llm_types = get_model_config().get_multimodal_llm_types()
+    multi_llm_types = get_model_config().get_multimodal_llm_types()
     if llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
