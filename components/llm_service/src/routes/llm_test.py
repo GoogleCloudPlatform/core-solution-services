@@ -123,7 +123,8 @@ def test_get_llm_list(client_with_emulator):
   all_llm_list = get_model_config().get_llm_types()
   assert resp.status_code == 200, "Status 200"
   assert len(json_response.get("data")) == len(all_llm_list) - 1
-  assert json_response.get("data") == [m for m in all_llm_list if m != removed_model]
+  assert json_response.get("data") == [m for m in all_llm_list \
+                                       if m != removed_model]
   assert removed_model not in json_response.get("data")
   assert removed_model in all_llm_list
 
