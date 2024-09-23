@@ -229,7 +229,7 @@ class DataSource:
                            doc_filepath: str) -> \
                             List[object]:
     """
-    Process a file into multimodal chunks (b64 and text) for embeddings
+    Process a pdf document into multimodal chunks (b64 and text) for embeddings
 
     Args:
        doc_name: file name of document
@@ -242,14 +242,14 @@ class DataSource:
     """
     Logger.info(f"generating index data for {doc_name}")
 
-    # Confirm that this is valid file type
-    allowed_image_types = ["png", "jpeg", "jpg", "bmp", "gif"]
+    # Confirm that this is a PDF
     try:
       doc_extension = doc_name.split(".")[-1]
       doc_extension = doc_extension.lower()
-      if doc_extension != "pdf" and doc_extension not in allowed_image_types:
-        raise ValueError(f"{doc_name} must be a PDF, PNG, JPG, BMP, or GIF")
+      if doc_extension != "pdf":
+        raise ValueError(f"File {doc_name} must be a PDF")
       # TODO: Insert elif statements to check for additional types of
+      # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
     except Exception as e:
       Logger.error(f"error reading doc {doc_name}: {e}")
@@ -329,29 +329,9 @@ class DataSource:
               "text": contextual_text
             }
             doc_chunks.append(chunk_obj)
-      elif doc_extension in allowed_image_types:
-        # TODO: Convert image file into something text readable (pdf, html, ext)
-        # So that we can extract text chunks
-
-        #chunk_document returns 2 outputs, text_chunks and embed_chunks.
-        #Each element of text_chunks has the same info as its corresponding
-        #element in embed_chunks, but is padded with adjacent sentences
-        #before and after. Use the 2nd output here (embed_chunks).
-        _, embed_chunks = self.chunk_document(doc_name, doc_url, doc_filepath)
-
-        # Take file and convert it to b64
-        with open(doc_filepath, "rb") as f:
-          image_bytes = f.read()
-        image_b64 = b64encode(image_bytes).decode("utf-8")
-        # Push chunk object into chunk array
-        chunk_obj = {
-          "image_b64": image_b64,
-          "image_url": doc_url,
-          "text_chunks": embed_chunks
-        }
-        doc_chunks.append(chunk_obj)
 
       # TODO: Insert elif statements to chunk additional types of
+      # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
       # - For images, set "image" and "text" fields of chunk_obj
       # - For video and audio, set "timestamp_start" and "timestamp_stop"
