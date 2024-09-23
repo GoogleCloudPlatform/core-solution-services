@@ -17,7 +17,7 @@ API interface for streamlit UX
 # pylint: disable=unused-import,unused-argument
 import requests
 import json
-from typing import List
+from typing import List, Optional
 import streamlit as st
 
 import logging
@@ -621,7 +621,7 @@ def get_job(job_type, job_id, auth_token=None) -> UserChat:
   return output
 
 
-def login_user(user_email, user_password) -> str or None:
+def login_user(user_email, user_password) -> Optional[str]:
   req_body = {
     "email": user_email,
     "password": user_password
