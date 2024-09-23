@@ -109,13 +109,23 @@ def client_with_emulator(clean_firestore, scope="module"):
 
 
 def test_get_llm_list(client_with_emulator):
+  removed_model = "VertexAI-Gemini-Pro"
+  def mock_is_model_enabled_for_user(model_id, user_data):
+    if model_id == removed_model:
+      return False
+    return True
+
   url = f"{api_url}"
   with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
-                  return_value=True):
+                  side_effect=mock_is_model_enabled_for_user):
     resp = client_with_emulator.get(url)
   json_response = resp.json()
+  all_llm_list = get_model_config().get_llm_types()
   assert resp.status_code == 200, "Status 200"
-  assert json_response.get("data") == get_model_config().get_llm_types()
+  assert len(json_response.get("data")) == len(all_llm_list) - 1
+  assert json_response.get("data") == [m for m in all_llm_list if m != removed_model]
+  assert removed_model not in json_response.get("data")
+  assert removed_model in all_llm_list
 
 
 def test_embedding_types(client_with_emulator):
