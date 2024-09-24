@@ -44,6 +44,7 @@ from common.models.llm_query import (QUERY_HUMAN,
 from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.utils.logging_handler import Logger
 from common.utils.config import set_env_var
+from common.utils.errors import UnauthorizedUserError
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
 with set_env_var("PG_HOST", ""):
@@ -235,6 +236,24 @@ async def test_query_generate(mock_query_search, mock_llm_chat,
   assert len(query_references) == 2
   assert query_references[0] == create_query_reference
   assert query_references[1] == create_query_reference_2
+
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.llm_chat")
+@mock.patch("services.query.query_service.query_search")
+async def test_query_generate_auth_error(mock_query_search, mock_llm_chat,
+                        restore_config, create_engine, create_user,
+                        create_query_result, create_query_reference,
+                        create_query_reference_2):
+  prompt = QUERY_EXAMPLE["prompt"]
+  mock_query_search.return_value = [create_query_reference,
+                                    create_query_reference_2]
+  mock_llm_chat.return_value = FAKE_GENERATE_RESPONSE
+  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                  return_value=False):
+    with pytest.raises(Exception) as excinfo:
+      _, _ = await query_generate(create_user.id, prompt, create_engine)
+  assert excinfo.type == UnauthorizedUserError
+  assert str(excinfo.value) == "User does not have access to model"
 
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.llm_chat")

@@ -36,7 +36,8 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QUERY_AI_RESPONSE)
 from common.utils.auth_service import create_authz_filter
 from common.utils.errors import (ResourceNotFoundException,
-                                 ValidationError)
+                                 ValidationError,
+                                 UnauthorizedUserError)
 from common.utils.http_exceptions import InternalServerError
 from services import embeddings
 from services.llm_generate import (get_context_prompt,
@@ -61,7 +62,7 @@ from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_MULTI_LLM_TYPE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
                     DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
-                    DEFAULT_WEB_DEPTH_LIMIT)
+                    DEFAULT_WEB_DEPTH_LIMIT, get_model_config)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
@@ -147,6 +148,10 @@ async def query_generate(
       llm_type = q_engine.llm_type
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
+
+  # check if user has access to model
+  if not get_model_config().is_model_enabled_for_user(llm_type, user_data):
+    raise UnauthorizedUserError("User does not have access to model")
 
   # perform retrieval
   query_references = await retrieve_references(prompt,

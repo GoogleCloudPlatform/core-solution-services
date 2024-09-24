@@ -42,7 +42,7 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     "/chat_types",
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
-def get_chat_llm_list():
+def get_chat_llm_list(user_data: dict = Depends(validate_token)):
   """
   Get available Chat LLMs
 
@@ -50,10 +50,13 @@ def get_chat_llm_list():
       LLMGetTypesResponse
   """
   try:
+    all_llm_types = get_model_config().get_chat_llm_types()
+    user_enabled_llms = [llm for llm in all_llm_types if \
+                get_model_config().is_model_enabled_for_user(llm, user_data)]
     return {
       "success": True,
       "message": "Successfully retrieved chat llm types",
-      "data": get_model_config().get_chat_llm_types()
+      "data": user_enabled_llms
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
