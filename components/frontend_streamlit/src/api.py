@@ -361,7 +361,7 @@ def run_chat(prompt: str, chat_id: str = None,
 def build_query_engine(name: str, engine_type: str, doc_url: str,
                        depth_limit: int, embedding_type: str,
                        vector_store: str, description: str, agents: str,
-                       child_engines: str,
+                       child_engines: str, is_multimodal: str,
                        auth_token=None):
   """
   Start a query engine build job
@@ -383,6 +383,7 @@ def build_query_engine(name: str, engine_type: str, doc_url: str,
       "depth_limit": depth_limit,
       "agents": agents,
       "associated_engines": child_engines,
+      "is_multimodal": is_multimodal,
     }
   }
   logging.info("Sending request_body=%s to %s", request_body, api_url)
@@ -450,14 +451,16 @@ def get_all_query_engines(auth_token=None) -> List[dict]:
   return qe_list
 
 
-def get_all_embedding_types(auth_token=None):
+def get_embedding_types(auth_token=None, is_multi=None):
   """
-  Retrieve all supported embedding types
+  Retrieve all supported embedding types. Optionally filter by multimodal
   """
   if not auth_token:
     auth_token = get_auth_token()
 
   api_url = f"{LLM_SERVICE_API_URL}/llm/embedding_types"
+  if is_multi is not None:
+    api_url += f"?is_multi={str(is_multi)}"
   logging.info("api_url=%s", api_url)
   resp = api_request("GET", api_url, auth_token=auth_token)
   resp_dict = get_response_json(resp)

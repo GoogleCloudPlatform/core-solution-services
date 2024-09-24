@@ -15,12 +15,11 @@
   Streamlit app Query Engine Build Page
 """
 # pylint: disable=invalid-name,logging-not-lazy,consider-using-f-string,logging-fstring-interpolation
-import json
 import moment
 import streamlit as st
 from api import (build_query_engine, update_query_engine,
                  delete_query_engine,
-                 get_all_embedding_types,
+                 get_embedding_types,
                  get_all_vector_stores, get_all_query_engines,
                  get_all_docs_of_query_engine,
                  get_all_jobs)
@@ -45,12 +44,13 @@ def reload():
 
 def submit_build(engine_name:str, engine_type:str, doc_url:str,
                  depth_limit: int, embedding_type:str, vector_store:str,
-                 description:str, agents:str, child_engines:str):
+                 description:str, agents:str, child_engines:str,
+                 is_multimodal:str):
   try:
     output = build_query_engine(
       engine_name, engine_type, doc_url,
       depth_limit, embedding_type, vector_store, description, agents,
-      child_engines)
+      child_engines, is_multimodal)
 
     if output.get("success") is True:
       logging.info(f"job output {output}")
@@ -72,8 +72,6 @@ def submit_update(query_engine_id:str, name:str, description:str):
 
 
 def query_engine_page():
-  # Get all embedding types as a list
-  embedding_types = get_all_embedding_types()
   # Get all vector stores as a list
   vector_store_list = get_all_vector_stores()
 
@@ -139,7 +137,7 @@ def query_engine_page():
         ["Created at", created_at],
         ["Errors", job.get("errors", {}).get("error_message", "")]
       ]
-      input_data = json.loads(job["input_data"])
+      input_data = job["input_data"]
       data = [[key, value] for key, value in input_data.items()]
       query_engine = input_data["query_engine"].strip()
       status = job["status"]
@@ -172,7 +170,8 @@ def query_engine_page():
               input_data["vector_store"],
               input_data["description"],
               input_data["agents"],
-              input_data["child_engines"])
+              input_data["child_engines"],
+              input_data["is_multimodal"])
             st.toast(
                 "Job re-submitted with query engine: {job['query_engine']}")
 
@@ -190,22 +189,30 @@ def query_engine_page():
     depth_limit = st.selectbox(
         "Web depth limit:",
         [0,1,2,3])
-    embedding_type = st.selectbox(
-        "Embedding:",
-        embedding_types)
+    placeholder_is_multimodal = st.empty()
+    placeholder_embedding_type = st.empty()
     vector_store = st.selectbox(
         "Vector Store:",
         vector_store_list)
     description = st.text_area("Description")
     agents = st.text_area("Agents")
     child_engines = st.text_area("Child Engines")
-
     submit = st.form_submit_button("Build")
+
+  with placeholder_is_multimodal:
+    is_multimodal = st.toggle("Multimodal Engine?", False)
+
+  with placeholder_embedding_type:
+    embedding_types = get_embedding_types(None, is_multimodal)
+    embedding_type = st.selectbox(
+        "Embedding:",
+        embedding_types)
+
   if submit:
     submit_build(
       engine_name, engine_type,
       doc_url, depth_limit, embedding_type, vector_store, description, agents,
-      child_engines
+      child_engines, str(is_multimodal)
     )
 
 

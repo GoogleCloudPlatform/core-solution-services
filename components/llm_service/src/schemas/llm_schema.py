@@ -166,7 +166,6 @@ class LLMQueryEngineModel(BaseModel):
       "example": QUERY_ENGINE_BUILD_EXAMPLE
   })
 
-
 class LLMQueryEngineResponse(BaseModel):
   """LLM Generate Response model"""
   success: Optional[bool] = True

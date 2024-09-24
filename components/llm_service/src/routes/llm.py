@@ -69,18 +69,34 @@ def get_llm_list(user_data: dict = Depends(validate_token)):
     "/embedding_types",
     name="Get supported embedding types",
     response_model=LLMGetEmbeddingTypesResponse)
-def get_embedding_types():
+def get_embedding_types(is_multi: bool = None):
   """
-  Get supported embedding types
+  Get supported embedding types, optionally filter by
+  multimodal capabilities
+
+  Args:
+    is_multi: `bool`
+      Optional: If True, only multimodal embedding types are returned.
+        If False, only non-multimodal (text) embedding types are returned.
+        If None, all embedding types are returned.
 
   Returns:
       LLMGetEmbeddingTypesResponse
   """
   try:
+    if is_multi is True:
+      embedding_types = get_model_config().get_multi_embedding_types()
+    elif is_multi is False:
+      embedding_types = get_model_config().get_text_embedding_types()
+    elif is_multi is None:
+      embedding_types = get_model_config().get_embedding_types()
+    else:
+      return BadRequest("Missing or invalid payload parameters")
+
     return {
       "success": True,
       "message": "Successfully retrieved embedding types",
-      "data": get_model_config().get_embedding_types()
+      "data": embedding_types
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e

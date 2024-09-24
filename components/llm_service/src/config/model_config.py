@@ -119,6 +119,7 @@ VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
 VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 VERTEX_LLM_TYPE_GEMINI_PRO = "VertexAI-Gemini-Pro"
 VERTEX_LLM_TYPE_GEMINI_PRO_VISION = "VertexAI-Gemini-Pro-Vision"
+VERTEX_LLM_TYPE_GEMINI_1_5_PRO = "VertexAI-Gemini-1.5-Pro"
 VERTEX_LLM_TYPE_GEMINI_FLASH = "VertexAI-Gemini-Flash"
 VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN = "VertexAI-Chat-Gemini-Pro-Langchain"
 HUGGINGFACE_EMBEDDING = "HuggingFaceEmbeddings"
@@ -138,6 +139,7 @@ MODEL_TYPES = [
   VERTEX_LLM_TYPE_BISON_V1_CHAT,
   VERTEX_LLM_TYPE_GEMINI_PRO,
   VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+  VERTEX_LLM_TYPE_GEMINI_1_5_PRO,
   VERTEX_LLM_TYPE_GEMINI_FLASH,
   VERTEX_LLM_TYPE_GECKO_EMBEDDING,
   VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
@@ -722,6 +724,26 @@ class ModelConfig():
     embedding_types = [
       m for m,config in self.llm_embedding_models.items()
       if self.is_model_enabled(m)
+    ]
+    return embedding_types
+
+  def get_text_embedding_types(self) -> dict:
+    """ Get all supported and enabled non-multimodal embedding types, as a list of model
+        identifiers.
+    """
+    embedding_types = [
+      m for m,config in self.llm_embedding_models.items()
+      if (KEY_IS_MULTI not in config or not config[KEY_IS_MULTI]) and self.is_model_enabled(m)
+    ]
+    return embedding_types
+
+  def get_multi_embedding_types(self) -> dict:
+    """ Get all supported and enabled multimodal embedding types, as a list of model
+        identifiers.
+    """
+    embedding_types = [
+      m for m,config in self.llm_embedding_models.items()
+      if (KEY_IS_MULTI in config and config[KEY_IS_MULTI]) and self.is_model_enabled(m)
     ]
     return embedding_types
 

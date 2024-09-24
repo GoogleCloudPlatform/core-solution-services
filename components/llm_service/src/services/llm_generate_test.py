@@ -58,6 +58,7 @@ with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
                           VERTEX_LLM_TYPE_BISON_CHAT,
                           VERTEX_LLM_TYPE_GEMINI_PRO,
                           VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+                          VERTEX_LLM_TYPE_GEMINI_FLASH,
                           PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
                           PROVIDER_TRUSS, PROVIDER_VLLM,
                           PROVIDER_MODEL_GARDEN,

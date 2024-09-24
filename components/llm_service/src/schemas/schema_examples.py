@@ -98,11 +98,12 @@ QUERY_ENGINE_BUILD_EXAMPLE = {
   "name": "query-engine-build-or-update-test",
   "query_engine": "qe_llm_service",
   "doc_url": "gs-for-cloud-storage-bucket",
-  "embedding_type": "VertexAI-Embedding",
+  "embedding_type": "VertexAI-Embedding-Vision",
   "vector_store": "langchain_pgvector",
   "description": "sample description",
   "params": {
       "depth_limit": "0",
+      "is_multimodal": "True",
       }
   }
 
@@ -124,6 +125,7 @@ QUERY_REFERENCE_EXAMPLE_1 = {
   "query_engine": "query-engine-test",
   "document_id": "asd98798as7dhjgkjsdfh1",
   "document_url": "https://example.com/content",
+  "modality": "text",
   "chunk_id": "abcdxxzzyy5678",
   "document_text": "test doc content"
 }
@@ -134,6 +136,7 @@ QUERY_REFERENCE_EXAMPLE_2 = {
   "query_engine": "query-engine-test",
   "document_id": "asd98798as7dhjgkjsdfh1",
   "document_url": "https://example.com/content",
+  "modality": "text",
   "chunk_id": "abcdxxzzyy5678",
   "document_text": "test doc content 2"
 }
@@ -174,6 +177,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_1 = {
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 0,
+  "modality": "text",
   "text": "<p>query_document_chunk_example_1</p>",
   "clean_text": "query_document_chunk_example_1",
   "sentences": ["query_document_chunk_example_1"]
@@ -184,6 +188,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_2 = {
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 1,
+  "modality": "text",
   "text": "<p>query_document_chunk_example_2</p>",
   "clean_text": "query_document_chunk_example_2",
   "sentences": ["query_document_chunk_example_2"]
@@ -194,6 +199,7 @@ QUERY_DOCUMENT_CHUNK_EXAMPLE_3 = {
   "query_engine_id": "asd98798as7dhjgkjsdfh",
   "query_document_id": "asd98798as7dhjgkjsdfh1",
   "index": 2,
+  "modality": "text",
   "text": "<p>query_document_chunk_example_3</p>",
   "clean_text": "query_document_chunk_example_3",
   "sentences": ["query_document_chunk_example_3"]
