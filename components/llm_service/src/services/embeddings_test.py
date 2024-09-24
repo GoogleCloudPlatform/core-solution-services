@@ -28,7 +28,7 @@ from vertexai.preview.vision_models import MultiModalEmbeddingResponse
 from services.embeddings import get_embeddings, get_multimodal_embeddings
 with set_env_var("PG_HOST", ""):
   from config import (get_model_config, DEFAULT_QUERY_EMBEDDING_MODEL,
-                      DEFAULT_QUERY_MULTI_EMBEDDING_MODEL)
+                      DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL)
 
 Logger = Logger.get_logger(__file__)
 
@@ -37,18 +37,18 @@ FAKE_VERTEX_TEXT_EMBEDDINGS = \
 FAKE_TEXT_EMBEDDINGS = \
     np.array([embedding.values for embedding in FAKE_VERTEX_TEXT_EMBEDDINGS])
 
-FAKE_VERTEX_MULTI_EMBEDDINGS = \
+FAKE_VERTEX_MULTIMODAL_EMBEDDINGS = \
     MultiModalEmbeddingResponse(_prediction_response=None,
                                 text_embedding=[0.0], image_embedding=[0.1])
 
-FAKE_MULTI_EMBEDDINGS = {
+FAKE_MULTIMODAL_EMBEDDINGS = {
   "text": [0.0],
   "image": [0.1]
   # TODO: Also set value of "video" key
   # and potentially "audio" key
 }
 
-FAKE_MULTI_IMAGE_BYTES = \
+FAKE_MULTIMODAL_IMAGE_BYTES = \
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs\
    4c6QAAAA1JREFUGFdjYGBg+A8AAQQBAHAgZQsAAAAASUVORK5CYII="
 
@@ -75,10 +75,10 @@ async def test_get_embeddings_empty(mock_get_vertex_embeddings):
 @pytest.mark.asyncio
 @mock.patch(
     "services.embeddings.MultiModalEmbeddingModel.get_embeddings")
-async def test_get_embeddings_multi(mock_get_vertex_embeddings):
-  mock_get_vertex_embeddings.return_value = FAKE_VERTEX_MULTI_EMBEDDINGS
-  embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
+async def test_get_embeddings_multimodal(mock_get_vertex_embeddings):
+  mock_get_vertex_embeddings.return_value = FAKE_VERTEX_MULTIMODAL_EMBEDDINGS
+  embedding_type = DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL
   text_chunks = []
   embeddings = await get_multimodal_embeddings(
-      text_chunks, FAKE_MULTI_IMAGE_BYTES, embedding_type)
-  assert embeddings == FAKE_MULTI_EMBEDDINGS
+      text_chunks, FAKE_MULTIMODAL_IMAGE_BYTES, embedding_type)
+  assert embeddings == FAKE_MULTIMODAL_EMBEDDINGS

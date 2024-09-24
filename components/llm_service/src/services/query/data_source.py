@@ -223,7 +223,7 @@ class DataSource:
 
     return text_chunks, embed_chunks
 
-  def chunk_document_multi(self,
+  def chunk_document_multimodal(self,
                            doc_name: str,
                            doc_url: str,
                            doc_filepath: str) -> \

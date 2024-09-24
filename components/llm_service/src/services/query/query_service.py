@@ -58,9 +58,9 @@ from utils.errors import (NoDocumentsIndexedException,
                           ContextWindowExceededException)
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
-                    DEFAULT_MULTI_LLM_TYPE,
+                    DEFAULT_MULTIMODAL_LLM_TYPE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
-                    DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
+                    DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL,
                     DEFAULT_WEB_DEPTH_LIMIT,
                     MODALITY_SET)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
@@ -789,13 +789,13 @@ async def query_engine_build(doc_url: str,
   # create model
   if llm_type is None:
     if is_multimodal:
-      llm_type = DEFAULT_MULTI_LLM_TYPE
+      llm_type = DEFAULT_MULTIMODAL_LLM_TYPE
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   if embedding_type is None:
     if is_multimodal:
-      embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
+      embedding_type = DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL
     else:
       embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
@@ -944,7 +944,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       Logger.info(f"processing [{doc_name}] with {is_multimodal=}")
 
       if is_multimodal:
-        doc_chunks = data_source.chunk_document_multi(doc_name,
+        doc_chunks = data_source.chunk_document_multimodal(doc_name,
                                                       index_doc_url,
                                                       doc_filepath)
       else:
@@ -971,7 +971,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           metadata_list = [deepcopy(metadata) for chunk in doc_chunks]
         if is_multimodal:
           new_index_base = \
-            await qe_vector_store.index_document_multi(doc_name,
+            await qe_vector_store.index_document_multimodal(doc_name,
                                                        doc_chunks,
                                                        index_base)
           Logger.info(
