@@ -16,11 +16,12 @@
 
 """ LLM endpoints """
 from base64 import b64decode
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from common.utils.logging_handler import Logger
 from common.utils.errors import (PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
+from common.utils.auth_service import validate_token
 from config import (PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, get_model_config)
 from schemas.llm_schema import (LLMGenerateModel,
@@ -44,7 +45,7 @@ Logger = Logger.get_logger(__file__)
     "",
     name="Get all LLM types",
     response_model=LLMGetTypesResponse)
-def get_llm_list():
+def get_llm_list(user_data: dict = Depends(validate_token)):
   """
   Get available LLMs
 
@@ -52,10 +53,13 @@ def get_llm_list():
       LLMGetTypesResponse
   """
   try:
+    all_llm_types = get_model_config().get_llm_types()
+    user_enabled_llms = [llm for llm in all_llm_types if \
+                get_model_config().is_model_enabled_for_user(llm, user_data)]
     return {
       "success": True,
       "message": "Successfully retrieved llm types",
-      "data": get_model_config().get_llm_types()
+      "data": user_enabled_llms
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
