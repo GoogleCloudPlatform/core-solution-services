@@ -95,8 +95,8 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
-      is_multi = False
-      response = await google_llm_predict(prompt, is_chat, is_multi, google_llm)
+      is_multimodal = False
+      response = await google_llm_predict(prompt, is_chat, is_multimodal, google_llm)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type)
     else:
@@ -122,7 +122,7 @@ async def llm_generate_multimodal(prompt: str, user_file_bytes: bytes,
   """
   Logger.info(f"Generating text with an LLM given a prompt={prompt},"
               f" user_file_bytes=bytes, llm_type={llm_type}")
-  # default to Gemini multi-modal LLM
+  # default to Gemini multimodal LLM
   if llm_type is None:
     llm_type = DEFAULT_MULTIMODAL_LLM_TYPE
 
@@ -139,11 +139,11 @@ async def llm_generate_multimodal(prompt: str, user_file_bytes: bytes,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
-      is_multi = llm_type in multimodal_llm_types
-      if not is_multi:
+      is_multimodal = llm_type in multimodal_llm_types
+      if not is_multimodal:
         raise RuntimeError(
-            f"Vertex model {llm_type} needs to be multi-modal")
-      response = await google_llm_predict(prompt, is_chat, is_multi,
+            f"Vertex model {llm_type} needs to be multimodal")
+      response = await google_llm_predict(prompt, is_chat, is_multimodal,
                             google_llm, None, user_file_bytes, user_file_type)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
@@ -209,8 +209,8 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
-      is_multi = False
-      response = await google_llm_predict(prompt, is_chat, is_multi,
+      is_multimodal = False
+      response = await google_llm_predict(prompt, is_chat, is_multimodal,
                                           google_llm, user_chat)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
@@ -457,7 +457,7 @@ async def model_garden_predict(prompt: str,
 
   return predictions_text
 
-async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
+async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 google_llm: str, user_chat=None,
                 user_file_bytes: bytes=None, user_file_type: str=None) -> str:
   """
@@ -465,7 +465,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
   Args:
     prompt: the text prompt to pass to the LLM
     is_chat: true if the model is a chat model
-    is_multi: true if the model is a multimodal model
+    is_multimodal: true if the model is a multimodal model
     google_llm: name of the vertex llm model
     user_file_bytes: the bytes of the file provided by the user
     user_chat: chat history
@@ -474,7 +474,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
   """
   Logger.info(f"Generating text with a Google multimodal LLM given a"
               f" file and a prompt, is_chat=[{is_chat}],"
-              f" is_multi=[{is_multi}], google_llm=[{google_llm}],"
+              f" is_multimodal=[{is_multimodal}], google_llm=[{google_llm}],"
               f" user_file_bytes=[bytes], prompt=[{prompt}].")
 
   # TODO: Consider images in chat
@@ -525,7 +525,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
                  threshold=HarmBlockThreshold.BLOCK_NONE,
              ),
         ]
-        if is_multi:
+        if is_multimodal:
           user_file_image = Part.from_data(user_file_bytes,
                                            mime_type=user_file_type)
           context_list = [user_file_image, context_prompt]

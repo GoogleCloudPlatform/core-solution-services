@@ -476,7 +476,7 @@ def get_chat_llm_types(auth_token=None):
 
   api_url = f"{LLM_SERVICE_API_URL}/chat/chat_types"
   logging.info("api_url=%s", api_url)
-  query_params = {"is_multi": st.session_state.query_engine_is_multi}
+  query_params = {"is_multimodal": st.session_state.query_engine_is_multimodal}
   logging.info("query_params=%s", query_params)
   resp = get_method(api_url, token=auth_token, query_params=query_params)
   logging.info(resp)

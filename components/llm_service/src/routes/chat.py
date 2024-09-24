@@ -15,6 +15,7 @@
 # pylint: disable = broad-except
 
 """ LLM endpoints """
+from typing import Optional
 import traceback
 
 from fastapi import APIRouter, Depends
@@ -41,13 +42,13 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     "/chat_types",
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
-def get_chat_llm_list(is_multi: bool = None):
+def get_chat_llm_list(is_multimodal: Optional[bool] = None):
   """
   Get available Chat LLMs, optionally filter by
   multimodal capabilities
 
   Args:
-    is_multi: `bool`
+    is_multimodal: `bool`
       Optional: If True, only multimodal embedding types are returned.
         If False, only non-multimodal embedding types are returned.
         If None, all embedding types are returned.
@@ -56,14 +57,14 @@ def get_chat_llm_list(is_multi: bool = None):
       LLMGetTypesResponse
   """
   try:
-    if is_multi is True:
+    if is_multimodal is True:
       llm_types = get_model_config().get_multimodal_chat_llm_types()
-    elif is_multi is False:
+    elif is_multimodal is False:
       llm_types = get_model_config().get_text_chat_llm_types()
-    elif is_multi is None:
+    elif is_multimodal is None:
       llm_types = get_model_config().get_chat_llm_types()
     else:
-      return BadRequest("Invalid request parameter value: is_multi")
+      return BadRequest("Invalid request parameter value: is_multimodal")
 
     return {
       "success": True,

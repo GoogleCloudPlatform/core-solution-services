@@ -15,6 +15,7 @@
 # pylint: disable = broad-except
 
 """ LLM endpoints """
+from typing import Optional
 from base64 import b64decode
 from fastapi import APIRouter
 
@@ -44,27 +45,27 @@ Logger = Logger.get_logger(__file__)
     "",
     name="Get all LLM types",
     response_model=LLMGetTypesResponse)
-def get_llm_list(is_multi: bool = None):
+def get_llm_list(is_multimodal: Optional[bool] = None):
   """
   Get available LLMs, optionally filter by
   multimodal capabilities
 
   Args:
-    is_multi: `bool`
+    is_multimodal: `bool`
       Optional: Is llm model multimodal <br/>
 
   Returns:
       LLMGetTypesResponse
   """
   try:
-    if is_multi is True:
+    if is_multimodal is True:
       llm_types = get_model_config().get_multimodal_llm_types()
-    elif is_multi is False:
+    elif is_multimodal is False:
       llm_types = get_model_config().get_text_llm_types()
-    elif is_multi is None:
+    elif is_multimodal is None:
       llm_types = get_model_config().get_llm_types()
     else:
-      return BadRequest("Invalid request parameter value: is_multi")
+      return BadRequest("Invalid request parameter value: is_multimodal")
 
     return {
       "success": True,
@@ -79,7 +80,7 @@ def get_llm_list(is_multi: bool = None):
     "/embedding_types",
     name="Get supported embedding types",
     response_model=LLMGetEmbeddingTypesResponse)
-def get_embedding_types(is_multimodal: bool = None):
+def get_embedding_types(is_multimodal: Optional[bool] = None):
   """
   Get supported embedding types, optionally filter by
   multimodal capabilities
@@ -101,7 +102,7 @@ def get_embedding_types(is_multimodal: bool = None):
     elif is_multimodal is None:
       embedding_types = get_model_config().get_embedding_types()
     else:
-      return BadRequest("Invalid request parameter value: is_multi")
+      return BadRequest("Invalid request parameter value: is_multimodal")
 
     return {
       "success": True,
