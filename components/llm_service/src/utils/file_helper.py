@@ -54,7 +54,7 @@ async def process_chat_file(chat_file,
     if chat_file_url is not None:
       raise ValidationError("cannot set both upload_file and file_url")
     chat_file_urls = [await process_upload_file(chat_file, bucket)]
-    chat_file_type = validate_multi_file_type(chat_file.filename)
+    chat_file_type = validate_multimodal_file_type(chat_file.filename)
     if chat_file_type is None:
       raise ValidationError(
           f"unsupported file type upload file {chat_file.filename}")
@@ -71,7 +71,7 @@ async def process_chat_file(chat_file,
     if chat_file_name:
       file_extension = os.path.splitext(chat_file_name)[1]
       if file_extension:
-        chat_file_type = validate_multi_file_type(chat_file_name)
+        chat_file_type = validate_multimodal_file_type(chat_file_name)
         if chat_file_type is None:
           raise ValidationError(
               f"unsupported file type file url {chat_file_url}")

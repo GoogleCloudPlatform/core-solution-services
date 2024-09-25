@@ -199,7 +199,7 @@ async def llm_chat(prompt: str, llm_type: str,
       raise InternalServerError("Chat files only supported for Vertex")
     if chat_file_type is None:
       raise InternalServerError("Mime type must be passed for chat file")
-    is_multi = True
+    is_multimodal = True
 
   try:
     response = None

@@ -15,9 +15,8 @@
 # pylint: disable = broad-except
 
 """ Chat endpoints """
-from typing import Optional
 import traceback
-from typing import Union, Annotated
+from typing import Union, Annotated, Optional
 from fastapi import APIRouter, Depends, Form, UploadFile
 from common.models import User, UserChat
 from common.models.llm import CHAT_FILE, CHAT_FILE_URL
