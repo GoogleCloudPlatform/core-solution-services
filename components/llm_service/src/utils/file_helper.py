@@ -142,7 +142,7 @@ async def process_upload_file(upload_file: UploadFile, bucket=None) -> str:
 
   return upload_file_url
 
-def validate_multi_file_type(file_name, file_b64=None) -> Union[str, None]:
+def validate_multimodal_file_type(file_name, file_b64=None) -> Union[str, None]:
   """
   Determine the mime type based on file extension.  Validate that the file
   is supported as a multimodal file type for Vertex.

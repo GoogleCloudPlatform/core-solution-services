@@ -36,7 +36,7 @@ from config import (get_model_config, get_provider_models,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
-                    DEFAULT_LLM_TYPE, DEFAULT_MULTI_LLM_TYPE)
+                    DEFAULT_LLM_TYPE, DEFAULT_MULTIMODAL_LLM_TYPE)
 from services.langchain_service import langchain_llm_generate
 from utils.errors import ContextWindowExceededException
 
@@ -92,8 +92,8 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
-      is_multi = False
-      response = await google_llm_predict(prompt, is_chat, is_multi, google_llm)
+      is_multimodal = False
+      response = await google_llm_predict(prompt, is_chat, is_multimodal, google_llm)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type)
     else:
@@ -106,7 +106,7 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-async def llm_generate_multi(prompt: str, llm_type: str, user_file_type: str,
+async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_type: str,
                              user_file_bytes: bytes = None,
                              user_file_urls: List[str] = None) -> str:
   """
@@ -121,16 +121,16 @@ async def llm_generate_multi(prompt: str, llm_type: str, user_file_type: str,
   """
   Logger.info(f"Generating text with an LLM given a prompt={prompt},"
               f" user_file_bytes=bytes, llm_type={llm_type}")
-  # default to Gemini multi-modal LLM
+  # default to Gemini multimodal LLM
   if llm_type is None:
-    llm_type = DEFAULT_MULTI_LLM_TYPE
+    llm_type = DEFAULT_MULTIMODAL_LLM_TYPE
 
   try:
     start_time = time.time()
 
     # for Google models, prioritize native client over langchain
     chat_llm_types = get_model_config().get_chat_llm_types()
-    multi_llm_types = get_model_config().get_multi_llm_types()
+    multimodal_llm_types = get_model_config().get_multimodal_llm_types()
     if llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
@@ -138,11 +138,11 @@ async def llm_generate_multi(prompt: str, llm_type: str, user_file_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
-      is_multi = llm_type in multi_llm_types
-      if not is_multi:
+      is_multimodal = llm_type in multimodal_llm_types
+      if not is_multimodal:
         raise RuntimeError(
-            f"Vertex model {llm_type} needs to be multi-modal")
-      response = await google_llm_predict(prompt, is_chat, is_multi,
+            f"Vertex model {llm_type} needs to be multimodal")
+      response = await google_llm_predict(prompt, is_chat, is_multimodal,
                             google_llm, None, user_file_bytes,
                             user_file_urls, user_file_type)
     else:
@@ -190,7 +190,7 @@ async def llm_chat(prompt: str, llm_type: str,
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
   # validate chat file params
-  is_multi = False
+  is_multimodal = False
   if chat_file_bytes is not None or chat_file_urls:
     if chat_file_bytes is not None and chat_file_urls:
       raise InternalServerError(
@@ -237,7 +237,7 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
-      response = await google_llm_predict(prompt, is_chat, is_multi,
+      response = await google_llm_predict(prompt, is_chat, is_multimodal,
                                           google_llm, user_chat,
                                           chat_file_bytes,
                                           chat_file_urls, chat_file_type)
@@ -486,7 +486,7 @@ async def model_garden_predict(prompt: str,
 
   return predictions_text
 
-async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
+async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 google_llm: str, user_chat=None,
                 user_file_bytes: bytes=None,
                 user_file_urls: List[str]=None,
@@ -496,7 +496,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
   Args:
     prompt: the text prompt to pass to the LLM
     is_chat: true if the model is a chat model
-    is_multi: true if the model is a multimodal model
+    is_multimodal: true if the model is a multimodal model
     google_llm: name of the vertex llm model
     user_chat: chat history
     user_file_bytes: the bytes of the file provided by the user
@@ -505,10 +505,11 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
   Returns:
     the text response.
   """
+
   user_file_bytes_log = user_file_bytes[:10] if user_file_bytes else None
   Logger.info(f"Generating text with a Google multimodal LLM:"
               f" prompt=[{prompt}], is_chat=[{is_chat}],"
-              f" is_multi=[{is_multi}], google_llm=[{google_llm}],"
+              f" is_multimodal=[{is_multimodal}], google_llm=[{google_llm}],"
               f" user_file_bytes=[{user_file_bytes_log}],"
               f" user_file_urls=[{user_file_urls}],"
               f" user_file_type=[{user_file_type}].")
@@ -550,7 +551,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
              HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
         }
         chat_model = GenerativeModel(google_llm)
-        if is_multi:
+        if is_multimodal:
           user_file_parts = []
           if user_file_bytes is not None:
             user_file_parts = [Part.from_data(user_file_bytes,
@@ -562,7 +563,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
             ]
           else:
             raise RuntimeError(
-                "if is_multi one of user_file_bytes or user_file_urls must be set")
+                "if is_multimodal one of user_file_bytes or user_file_urls must be set")
           context_list = [*user_file_parts, context_prompt]
           Logger.info(f"context list {context_list}")
           generation_config = GenerationConfig(**parameters)

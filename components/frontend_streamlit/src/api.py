@@ -17,7 +17,7 @@ API interface for streamlit UX
 # pylint: disable=unused-import,unused-argument
 import requests
 import json
-from typing import List
+from typing import List, Optional
 import streamlit as st
 
 import logging
@@ -451,7 +451,7 @@ def get_all_query_engines(auth_token=None) -> List[dict]:
   return qe_list
 
 
-def get_embedding_types(auth_token=None, is_multi=None):
+def get_embedding_types(auth_token=None, is_multimodal=None):
   """
   Retrieve all supported embedding types. Optionally filter by multimodal
   """
@@ -459,15 +459,15 @@ def get_embedding_types(auth_token=None, is_multi=None):
     auth_token = get_auth_token()
 
   api_url = f"{LLM_SERVICE_API_URL}/llm/embedding_types"
-  if is_multi is not None:
-    api_url += f"?is_multi={str(is_multi)}"
+  if is_multimodal is not None:
+    api_url += f"?is_multimodal={str(is_multimodal)}"
   logging.info("api_url=%s", api_url)
   resp = api_request("GET", api_url, auth_token=auth_token)
   resp_dict = get_response_json(resp)
   return resp_dict["data"]
 
 
-def get_all_chat_llm_types(auth_token=None):
+def get_chat_llm_types(auth_token=None):
   """
   Retrieve all supported chat model types
   """
@@ -476,7 +476,9 @@ def get_all_chat_llm_types(auth_token=None):
 
   api_url = f"{LLM_SERVICE_API_URL}/chat/chat_types"
   logging.info("api_url=%s", api_url)
-  resp = get_method(api_url, token=auth_token)
+  query_params = {"is_multimodal": st.session_state.query_engine_is_multimodal}
+  logging.info("query_params=%s", query_params)
+  resp = get_method(api_url, token=auth_token, query_params=query_params)
   logging.info(resp)
 
   json_response = resp.json()
@@ -619,7 +621,7 @@ def get_job(job_type, job_id, auth_token=None) -> UserChat:
   return output
 
 
-def login_user(user_email, user_password) -> str or None:
+def login_user(user_email, user_password) -> Optional[str]:
   req_body = {
     "email": user_email,
     "password": user_password

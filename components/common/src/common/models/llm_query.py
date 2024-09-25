@@ -217,16 +217,22 @@ class QueryReference(BaseModel):
       document_text_num_chars = len(self.document_text)
       document_text_snippet = self.document_text[:min(100,
                                                       document_text_num_chars)]
+      chunk_url = None
+      page = None
     else:
       document_text_num_tokens = None
       document_text_num_chars = None
       document_text_snippet = None
+      chunk_url = self.chunk_url
+      page = self.page
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
       f"document_url={self.document_url}, "
       f"chunk_id={self.chunk_id}, "
+      f"chunk_url={chunk_url}, "
       f"modality={self.modality}, "
+      f"page={page}, "
       f"chunk_num_tokens={document_text_num_tokens}, "
       f"chunk_num_chars={document_text_num_chars}, "
       f"chunk_text={document_text_snippet})"
@@ -361,7 +367,8 @@ class QueryDocumentChunk(BaseModel):
   sentences = ListField(required=False)  # Text only (optional)
   timestamp_start = NumberField(required=False)  # Video or audio only
   timestamp_stop = NumberField(required=False)  # Video or audio only
-
+  linked_ids = ListField(required=False)  # All modalities
+  
   class Meta:
     ignore_none_field = False
     collection_name = BaseModel.DATABASE_PREFIX + "query_document_chunks"
