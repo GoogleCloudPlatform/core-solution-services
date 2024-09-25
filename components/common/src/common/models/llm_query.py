@@ -368,7 +368,7 @@ class QueryDocumentChunk(BaseModel):
   timestamp_start = NumberField(required=False)  # Video or audio only
   timestamp_stop = NumberField(required=False)  # Video or audio only
   linked_ids = ListField(required=False)  # All modalities
-  
+
   class Meta:
     ignore_none_field = False
     collection_name = BaseModel.DATABASE_PREFIX + "query_document_chunks"
