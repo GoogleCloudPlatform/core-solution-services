@@ -93,7 +93,8 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
       is_multimodal = False
-      response = await google_llm_predict(prompt, is_chat, is_multimodal, google_llm)
+      response = await google_llm_predict(
+        prompt, is_chat, is_multimodal, google_llm)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type)
     else:

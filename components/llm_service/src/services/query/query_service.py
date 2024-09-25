@@ -155,10 +155,6 @@ async def query_generate(
   if not get_model_config().is_model_enabled_for_user(llm_type, user_data):
     raise UnauthorizedUserError("User does not have access to model")
 
-  # check if user has access to model
-  if not get_model_config().is_model_enabled_for_user(llm_type, user_data):
-    raise UnauthorizedUserError("User does not have access to model")
-
   # perform retrieval
   query_references = await retrieve_references(prompt,
                                                q_engine,
