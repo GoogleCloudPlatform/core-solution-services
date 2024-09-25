@@ -229,7 +229,7 @@ class DataSource:
                            doc_filepath: str) -> \
                             List[object]:
     """
-    Process a pdf document into multimodal chunks (b64 and text) for embeddings
+    Process a file document into multimodal chunks (b64 and text) for embeddings
 
     Args:
        doc_name: file name of document
@@ -242,14 +242,14 @@ class DataSource:
     """
     Logger.info(f"generating index data for {doc_name}")
 
-    # Confirm that this is a PDF
+    # Confirm that this is a valid file type
+    allowed_image_types = ["png", "jpeg", "jpg", "bmp", "gif"]
     try:
       doc_extension = doc_name.split(".")[-1]
       doc_extension = doc_extension.lower()
-      if doc_extension != "pdf":
-        raise ValueError(f"File {doc_name} must be a PDF")
+      if doc_extension != "pdf" and doc_extension not in allowed_image_types:
+        raise ValueError(f"{doc_name} must be a PDF, PNG, JPG, BMP, or GIF")
       # TODO: Insert elif statements to check for additional types of
-      # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
     except Exception as e:
       Logger.error(f"error reading doc {doc_name}: {e}")
@@ -279,6 +279,7 @@ class DataSource:
         chunk_bucket_folder = f"{bucket_folder}/{chunk_bucket_folder}"
 
       # If doc is a PDF, convert it to an array of PNGs for each page
+      allowed_image_types = ["png", "jpg", "jpeg", "bmp", "gif"]
       if doc_extension == "pdf":
 
         with tempfile.TemporaryDirectory() as path:
@@ -290,27 +291,16 @@ class DataSource:
           num_pages = len(reader.pages)
           Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
           for i in range(num_pages):
-            # Create a pdf file for the page and chunk into text chunks
+            # Create a pdf file for the page and chunk into contextual_text
             pdf_doc = self.create_pdf_page(reader.pages[i], doc_filepath, i)
-            #chunk_document returns 2 outputs, text_chunks and embed_chunks.
-            #Each element of text_chunks has the same info as its corresponding
-            #element in embed_chunks, but is padded with adjacent sentences
-            #before and after. Use the 2nd output here (embed_chunks).
-            _, embed_chunks = self.chunk_document(pdf_doc["filename"],
-                                                  doc_url, pdf_doc["filepath"])
-            contextual_text = [string.strip() for string in embed_chunks]
-            contextual_text = " ".join(contextual_text)
-            #TODO: Consider all characters in my_contextual_text,
-            #not just the first 1024
-            contextual_text = contextual_text[0:1023]
+            contextual_text = self.extract_contextual_text(pdf_doc["filename"],
+                                                  pdf_doc["filepath"], doc_url)
 
             # Take PNG version of page and convert to b64
             png_doc_filepath = \
               ".png".join(pdf_doc["filepath"].rsplit(".pdf", 1))
             png_array[i].save(png_doc_filepath, format="png")
-            with open(png_doc_filepath, "rb") as f:
-              png_bytes = f.read()
-            png_b64 = b64encode(png_bytes).decode("utf-8")
+            png_b64 = self.extract_b64(png_doc_filepath)
 
             # Upload to Google Cloud Bucket and return gs URL
             png_url = gcs_helper.upload_to_gcs(self.storage_client,
@@ -329,9 +319,26 @@ class DataSource:
               "text": contextual_text
             }
             doc_chunks.append(chunk_obj)
+      elif doc_extension in allowed_image_types:
+        # TODO: Convert image file into something text readable (pdf, html, ext)
+        # So that we can extract text chunks
+
+        # Get text associated with the document
+        contextual_text = self.extract_contextual_text(doc_name,
+                                          doc_filepath, doc_url)
+
+        # Get b64 for the document
+        image_b64 = self.extract_b64(doc_filepath)
+
+        # Push chunk object into chunk array
+        chunk_obj = {
+          "image": image_b64,
+          "image_url": doc_url,
+          "text": contextual_text
+        }
+        doc_chunks.append(chunk_obj)
 
       # TODO: Insert elif statements to chunk additional types of
-      # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
       # - For images, set "image" and "text" fields of chunk_obj
       # - For video and audio, set "timestamp_start" and "timestamp_stop"
@@ -343,6 +350,52 @@ class DataSource:
 
     # Return array of page data
     return doc_chunks
+
+  def extract_contextual_text(self, doc_name: str, doc_filepath: str, \
+        doc_url: str) -> str:
+    """
+    Extract the contextual text for a multimodal document
+
+    Args:
+
+      doc_name: The name of the doc we are reading the data from
+      doc_filepath: string filepath of the doc we are reading the data from
+      doc_url: The url of the doc we are reading the data from
+    Returns:
+      str containing the contextual_text of a multimodal doc
+    """
+    #chunk_document returns 2 outputs, text_chunks and contextual_text.
+    #Each element of text_chunks has the same info as its corresponding
+    #element in contextual_text, but is padded with adjacent sentences
+    #before and after. Use the 2nd output here (contextual_text).
+    _, contextual_text = self.chunk_document(doc_name,
+                                          doc_url, doc_filepath)
+
+    # Format text if not None
+    if contextual_text is not None:
+      contextual_text = [string.strip() for string in contextual_text]
+      contextual_text = " ".join(contextual_text)
+
+      #TODO: Consider all characters in my_contextual_text,
+      #not just the first 1024
+      contextual_text = contextual_text[0:1023]
+
+    return contextual_text
+
+  def extract_b64(self, doc_filepath: str) -> str:
+    """
+    Extract the b64 a multimodal document
+
+    Args:
+      doc_filepath: string filepath of the doc we are reading the data from
+    Returns:
+      str containing b64 of the doc
+    """
+    # Take the doc and convert it to b64
+    with open(doc_filepath, "rb") as f:
+      doc_bytes = f.read()
+    doc_b64 = b64encode(doc_bytes).decode("utf-8")
+    return doc_b64
 
   @classmethod
   def text_to_sentence_list(cls, text: str) -> List[str]:
