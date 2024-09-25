@@ -887,6 +887,7 @@ async def build_doc_index(doc_url: str, q_engine: QueryEngine,
       list of uris of docs not processed
   """
   storage_client = storage.Client(project=PROJECT_ID)
+  Logger.info(f"#SC240925: In build_doc_index: First creation of {storage_client=} for {doc_url=}")
 
   # initialize the vector store index
   qe_vector_store.init_index()
@@ -931,7 +932,11 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         list of doc urls of docs not processed
   """
   # get datasource class for doc_url
+  Logger.info(f"#SC240925: In process_documents: {doc_url=}")
+  Logger.info(f"#SC240925: In process_documents: {q_engine=}")
+  Logger.info(f"#SC240925: In process_documents: {storage_client=}")
   data_source = datasource_from_url(doc_url, q_engine, storage_client)
+  Logger.info(f"#SC240925: In process_documents {data_source=}")
 
   # initialize metadata
   metadata_manifest = data_source.init_metadata(q_engine)
@@ -939,6 +944,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
   docs_processed = []
   with tempfile.TemporaryDirectory() as temp_dir:
     data_source_files = data_source.download_documents(doc_url, temp_dir)
+    Logger.info(f"#SC240925: In process_documents: {data_source_files=}")
 
     # counter for unique index ids
     index_base = 0
@@ -1182,8 +1188,10 @@ def datasource_from_url(doc_url: str,
   If not raise an InternalServerError exception.
   """
   if doc_url.startswith("gs://"):
+    Logger.info(f"#SC240925: In datasource_from_url: {doc_url=} starts with gs!")
     return DataSource(storage_client)
   elif doc_url.startswith("http://") or doc_url.startswith("https://"):
+    Logger.info(f"#SC240925: In datasource_from_url: {doc_url=} starts with http/https!")
     params = q_engine.params or {}
     if "depth_limit" in params:
       depth_limit = params["depth_limit"]
@@ -1196,6 +1204,7 @@ def datasource_from_url(doc_url: str,
                          bucket_name=bucket_name,
                          depth_limit=depth_limit)
   elif doc_url.startswith("shpt://"):
+    Logger.info(f"#SC240925: In datasource_from_url: {doc_url=} starts with shpt!")
     # Create bucket name using query_engine name
     bucket_name = SharePointDataSource.downloads_bucket_name(q_engine.name)
     return SharePointDataSource(storage_client,

@@ -113,12 +113,17 @@ class DataSource:
     Logger.info(f"downloading {doc_url} from bucket {bucket_name}")
 
     for blob in self.storage_client.list_blobs(bucket_name):
+      Logger.info(f"#SC240925: In download_documents: {blob=}")
       # Download the file to the tmp folder flattening all directories
       file_name = Path(blob.name).name
       file_path = os.path.join(temp_dir, file_name)
       blob.download_to_filename(file_path)
       gcs_path = blob.path.replace("/b/","")
       gcs_url = f"gs://{gcs_path}"
+      Logger.info(f"#SC240925: In download_documents: {file_name=}")
+      Logger.info(f"#SC240925: In download_documents: {file_path=}")
+      Logger.info(f"#SC240925: In download_documents: {gcs_path=}")
+      Logger.info(f"#SC240925: In download_documents: {gcs_url=}")
       doc_filepaths.append(DataSourceFile(doc_name=blob.name,
                                           src_url=blob.public_url,
                                           local_path=file_path,
@@ -127,6 +132,8 @@ class DataSource:
     if len(doc_filepaths) == 0:
       raise NoDocumentsIndexedException(
           f"No documents can be indexed at url {doc_url}")
+
+    Logger.info(f"#SC240925: In download_documents: {doc_filepaths=}")
 
     return doc_filepaths
 
