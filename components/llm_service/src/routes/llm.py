@@ -16,11 +16,12 @@
 
 """ LLM endpoints """
 from base64 import b64decode
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from common.utils.logging_handler import Logger
 from common.utils.errors import (PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
+from common.utils.auth_service import validate_token
 from config import (PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, get_model_config)
 from schemas.llm_schema import (LLMGenerateModel,
@@ -34,7 +35,7 @@ from schemas.llm_schema import (LLMGenerateModel,
                                 LLMMultiEmbeddingsModel)
 from services.llm_generate import llm_generate, llm_generate_multi
 from services.embeddings import get_embeddings, get_multi_embeddings
-from utils.file_helper import validate_multi_vision_file_type
+from utils.file_helper import validate_multi_file_type
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
 
@@ -44,7 +45,7 @@ Logger = Logger.get_logger(__file__)
     "",
     name="Get all LLM types",
     response_model=LLMGetTypesResponse)
-def get_llm_list():
+def get_llm_list(user_data: dict = Depends(validate_token)):
   """
   Get available LLMs
 
@@ -52,10 +53,13 @@ def get_llm_list():
       LLMGetTypesResponse
   """
   try:
+    all_llm_types = get_model_config().get_llm_types()
+    user_enabled_llms = [llm for llm in all_llm_types if \
+                get_model_config().is_model_enabled_for_user(llm, user_data)]
     return {
       "success": True,
       "message": "Successfully retrieved llm types",
-      "data": get_model_config().get_llm_types()
+      "data": user_enabled_llms
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -165,9 +169,9 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
       f"Text must be less than {PAYLOAD_FILE_SIZE}")
 
 
-  is_file_valid, user_file_extension = validate_multi_vision_file_type(
-                                        user_file_name, user_file_b64)
-  if not is_file_valid or user_file_extension.startswith("video"):
+  file_mime_type = validate_multi_file_type(user_file_name,
+                                            file_b64=user_file_b64)
+  if file_mime_type and file_mime_type.startswith("video"):
     return BadRequest("File type must be a supported image.")
 
   try:
@@ -253,15 +257,15 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   # Make sure that the user file is a valid image or video
-  is_file_valid, user_file_extension = validate_multi_vision_file_type(
-                                        user_file_name, user_file_b64)
-  if not is_file_valid or not user_file_extension:
+  file_mime_type = validate_multi_file_type(user_file_name,
+                                            file_b64=user_file_b64)
+  if file_mime_type is None:
     return BadRequest("File type must be a supported image or video.")
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    result = await llm_generate_multi(prompt, user_file_bytes,
-                                    user_file_extension, llm_type)
+    result = await llm_generate_multi(prompt, file_mime_type, llm_type,
+                                      user_file_bytes)
 
     return {
         "success": True,

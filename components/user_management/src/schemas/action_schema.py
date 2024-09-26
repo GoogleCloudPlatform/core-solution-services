@@ -17,7 +17,7 @@ Pydantic Model for Action API's
 """
 from typing import List, Optional
 from typing_extensions import Literal
-from pydantic import BaseModel, Extra
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (BASIC_ACTION_MODEL_EXAMPLE,
                                      FULL_ACTION_MODEL_EXAMPLE)
 
@@ -41,40 +41,37 @@ class FullActionDataModel(BasicActionModel):
 
 class ActionModel(BasicActionModel):
   """Action Input Pydantic Model"""
-
-  class Config():
-    orm_mode = True
-    extra = Extra.forbid
-    schema_extra = {"example": BASIC_ACTION_MODEL_EXAMPLE}
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_ACTION_MODEL_EXAMPLE}
+  )
 
 
 class UpdateActionModel(BaseModel):
   """Update Action Pydantic Request Model"""
-  name: Optional[str]
-  description: Optional[str]
-  action_type: Optional[ALLOWED_ACTION_TYPES]
-
-  class Config():
-    orm_mode = True
-    extra = Extra.forbid
-    schema_extra = {"example": BASIC_ACTION_MODEL_EXAMPLE}
+  name: Optional[str] = None
+  description: Optional[str] = None
+  action_type: Optional[ALLOWED_ACTION_TYPES] = None
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": BASIC_ACTION_MODEL_EXAMPLE}
+  )
 
 
 class GetActionResponseModel(BaseModel):
   """Action Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully fetched the action"
-  data: Optional[FullActionDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully fetched the action",
-            "data": FULL_ACTION_MODEL_EXAMPLE
-        }
-    }
+  data: Optional[FullActionDataModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully fetched the action",
+          "data": FULL_ACTION_MODEL_EXAMPLE
+      }
+  })
 
 
 class PostActionResponseModel(BaseModel):
@@ -82,82 +79,67 @@ class PostActionResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created the action"
   data: FullActionDataModel
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully created the action",
-            "data": FULL_ACTION_MODEL_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully created the action",
+          "data": FULL_ACTION_MODEL_EXAMPLE
+      }
+  })
 
 
 class UpdateActionResponseModel(BaseModel):
   """Action Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully updated the action"
-  data: Optional[FullActionDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully updated the action",
-            "data": FULL_ACTION_MODEL_EXAMPLE
-        }
-    }
+  data: Optional[FullActionDataModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully updated the action",
+          "data": FULL_ACTION_MODEL_EXAMPLE
+      }
+  })
 
 
 class DeleteAction(BaseModel):
   """Delete Action Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully deleted the action"
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully deleted the action"
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully deleted the action"
+      }
+  })
 
 
 class AllActionResponseModel(BaseModel):
   """Action Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Data fetched successfully"
-  data: Optional[List[FullActionDataModel]]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Data fetched successfully",
-            "data": [FULL_ACTION_MODEL_EXAMPLE]
-        }
-    }
+  data: Optional[List[FullActionDataModel]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Data fetched successfully",
+          "data": [FULL_ACTION_MODEL_EXAMPLE]
+      }
+  })
 
 
 class ActionImportJsonResponse(BaseModel):
   """Action Import Json Response Pydantic Model"""
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created the actions"
-  data: Optional[List[str]]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully created the actions",
-            "data": [
-                "44qxEpc35pVMb6AkZGbi", "00MPqUhCbyPe1BcevQDr",
-                "lQRzcrRuDpJ9IoW8bCHu"
-            ]
-        }
-    }
+  data: Optional[List[str]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully created the actions",
+          "data": [
+              "44qxEpc35pVMb6AkZGbi", "00MPqUhCbyPe1BcevQDr",
+              "lQRzcrRuDpJ9IoW8bCHu"
+          ]
+      }
+  })

@@ -1,5 +1,18 @@
 # Releases
 
+## v0.3.2
+
+New features:
+
+### GENIE ("GenAI for Enterprise" platform on GCP)
+- Remove tools_service from default ingress and install instructions
+- Updated install guide to emphasize that React UX is recommended over Flutterflow and Streamlit
+- Add instructions for deploying Gemma 2B LLM service to GENIE
+
+### Fixes
+- Corrected README for React frontend to instruct to build app after setting config
+
+
 ## v0.3.1
 
 New features:

@@ -632,12 +632,14 @@ async def query(query_engine_id: str,
                           query_references, None,
                           query_filter)
 
+    query_result_dict = query_result.get_fields(reformat_datetime=True)
+
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
             "user_query_id": user_query.id,
-            "query_result": query_result,
+            "query_result": query_result_dict,
             "query_references": query_reference_dicts
         }
     }
@@ -755,12 +757,14 @@ async def query_continue(
                 f"query_result={query_result} "
                 f"query_references={[repr(qe) for qe in query_references]}")
 
+    query_result_dict = query_result.get_fields(reformat_datetime=True)
+
     return {
         "success": True,
         "message": "Successfully generated text",
         "data": {
             "user_query_id": user_query.id,
-            "query_result": query_result,
+            "query_result": query_result_dict,
             "query_references": query_reference_dicts
         }
     }

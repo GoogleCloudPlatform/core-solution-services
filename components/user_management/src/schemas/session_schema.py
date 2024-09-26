@@ -18,7 +18,7 @@ Pydantic Model for Learner Profile API's
 
 from typing import Optional, List
 from typing_extensions import Literal
-from pydantic import BaseModel, Extra
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (POST_SESSION_EXAMPLE, FULL_SESSION_EXAMPLE,
                                      UPDATE_SESSION_EXAMPLE)
 
@@ -42,83 +42,71 @@ class FullSessionDataModel(BasicSessionModel):
 
 class PostSessionModel(BasicSessionModel):
   """Session Pydantic Model"""
-
-  class Config():
-    orm_mode = True
-    extra = Extra.forbid
-    schema_extra = {"example": POST_SESSION_EXAMPLE}
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": POST_SESSION_EXAMPLE}
+  )
 
 
 class UpdateSessionModel(BaseModel):
   """Update Session Pydantic Model"""
   session_data: Optional[dict] = {}
-  is_expired: Optional[bool]
-
-  class Config():
-    orm_mode = True
-    extra = Extra.forbid
-    schema_extra = {"example": UPDATE_SESSION_EXAMPLE}
+  is_expired: Optional[bool] = None
+  model_config = ConfigDict(
+      from_attributes=True,
+      extra="forbid",
+      json_schema_extra={"example": UPDATE_SESSION_EXAMPLE}
+  )
 
 
 class GetSessionResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully fetched the session"
-  data: Optional[FullSessionDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "success": True,
-        "message": "Successfully fetched the session",
-        "data": FULL_SESSION_EXAMPLE
-      }
+  data: Optional[FullSessionDataModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "success": True,
+      "message": "Successfully fetched the session",
+      "data": FULL_SESSION_EXAMPLE
     }
+  })
 
 
 class GetAllSessionResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully fetched the session"
-  data: Optional[List[FullSessionDataModel]]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "success": True,
-        "message": "Successfully fetched the session",
-        "data": [FULL_SESSION_EXAMPLE]
-      }
+  data: Optional[List[FullSessionDataModel]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "success": True,
+      "message": "Successfully fetched the session",
+      "data": [FULL_SESSION_EXAMPLE]
     }
+  })
 
 
 class PostSessionResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully created the session"
-  data: Optional[FullSessionDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "success": True,
-        "message": "Successfully created the session",
-        "data": FULL_SESSION_EXAMPLE
-      }
+  data: Optional[FullSessionDataModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "success": True,
+      "message": "Successfully created the session",
+      "data": FULL_SESSION_EXAMPLE
     }
+  })
 
 
 class UpdateSessionResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully updated the session"
-  data: Optional[FullSessionDataModel]
-
-  class Config():
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "success": True,
-        "message": "Successfully updated the session",
-        "data": FULL_SESSION_EXAMPLE
-      }
+  data: Optional[FullSessionDataModel] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "success": True,
+      "message": "Successfully updated the session",
+      "data": FULL_SESSION_EXAMPLE
     }
+  })

@@ -114,8 +114,8 @@ const QueryEngineDetail: React.FC<IQueryEngineProps> = ({ token }) => {
               onSubmit={onSubmit}
               onSuccess={onSuccess}
               onFailure={onFailure}
+              handleFiles={null}
               queryEngine={queryEngine}
-              token={token || ""}
               currentVarsData={QUERY_ENGINE_FORM_DATA}
             />
           </div>
