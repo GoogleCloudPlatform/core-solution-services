@@ -16,10 +16,14 @@
 """
 Google Storage helper functions.
 """
+import io
+import re
 from pathlib import Path
 from typing import List
 from common.utils.logging_handler import Logger
 from google.cloud import storage
+import google.cloud.exceptions
+from config import PROJECT_ID
 
 Logger = Logger.get_logger(__file__)
 
@@ -84,3 +88,45 @@ def upload_to_gcs(storage_client: storage.Client, bucket_name: str,
   gcs_url = f"gs://{bucket_name}/{file_name}"
   Logger.info(f"Uploaded {file_path} to {gcs_url}")
   return gcs_url
+
+def upload_file_to_gcs(bucket: storage.Bucket,
+                       file_name: str, file_obj: io.BytesIO) -> str:
+  """ Upload file to GCS bucket. Returns URL to file. """
+  bucket_name = bucket.name
+  Logger.info(f"Uploading {file_name} to GCS bucket {bucket_name}")
+  blob = bucket.blob(file_name)
+  blob.upload_from_file(file_obj)
+  gcs_url = f"gs://{bucket_name}/{file_name}"
+  Logger.info(f"Uploaded {file_name} to {gcs_url}")
+  return gcs_url
+
+def create_bucket_for_file(filename: str) -> storage.Bucket:
+  storage_client = storage.Client()
+
+  # base name is projectid_filename
+  base_name = PROJECT_ID + "_" + Path(filename).name
+
+  # Convert to lowercase, replace invalid characters with hyphens,
+  # and ensure length is within limits
+  bucket_name = re.sub(r"[^a-z0-9\-]", "-", base_name.lower())[:63]
+
+  # Add a suffix if needed to ensure uniqueness
+  suffix = 0
+  bucket = None
+  while True:
+    try:
+      bucket = storage_client.bucket(bucket_name)
+      bucket.location = "US"
+      bucket.storage_class = "STANDARD"
+      bucket.create()
+      break  # Bucket created successfully, exit the loop
+    except google.cloud.exceptions.Conflict:
+      suffix += 1
+      if suffix == 1:
+        bucket_name = f"{bucket_name}-{suffix}"
+      else:
+        bucket_name = \
+            f"{bucket_name[:len(bucket_name)-len(str(suffix-1))-1]}-{suffix}"
+
+  Logger.info(f"Bucket {bucket.name} created")
+  return bucket

@@ -15,7 +15,7 @@
 """
 Pydantic Models for ValidateToken API's
 """
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from typing import List, Optional
 from schemas.schema_examples import BASIC_VALIDATE_TOKEN_RESPONSE_EXAMPLE
 
@@ -32,8 +32,8 @@ class FirebaseModel(BaseModel):
 
 class ResponseModel(BaseModel):
   """data Pydantic Model"""
-  name: Optional[str]
-  picture: Optional[str]
+  name: Optional[str] = None
+  picture: Optional[str] = None
   iss: str
   aud: str
   auth_time: int
@@ -45,8 +45,8 @@ class ResponseModel(BaseModel):
   email_verified: bool
   firebase: FirebaseModel
   uid: str
-  access_api_docs: Optional[bool]
-  user_id: Optional[str]
+  access_api_docs: Optional[bool] = None
+  user_id: Optional[str] = None
   user_type: str
 
 
@@ -55,13 +55,10 @@ class ValidateTokenResponseModel(BaseModel):
   message: str = "Token validated successfully"
   success: bool = True
   data: ResponseModel
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Token validated successfully",
-            "data": BASIC_VALIDATE_TOKEN_RESPONSE_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Token validated successfully",
+          "data": BASIC_VALIDATE_TOKEN_RESPONSE_EXAMPLE
+      }
+  })

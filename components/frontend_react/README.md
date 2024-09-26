@@ -31,14 +31,7 @@ Execute all commands below from the `components/frontend_react/src` directory.  
 npm install
 ```
 
-## Build for production
-You should build the app on first deploy, and every time you make updates to the app.
-
-```bash
-npm run build
-```
-
-## Deploy with firebase
+## Configure firebase
 
 - Edit `.firebaserc` to set your project id
 - Create your app in firebase:
@@ -51,7 +44,7 @@ firebase apps:create web <your-app-name>
 firebase apps:sdkconfig WEB <your-firebase-app-id>
 ```
 
-### Edit deployment config file
+### Edit deployment config files
 - Using the output of the `firebase apps:sdkconfig` command edit the config.production.env file to set all the variable values present there.
 - Copy the file to `.env.production` and `.env.development`:
 ```bash
@@ -59,7 +52,15 @@ cp config.production.env .env.production
 cp config.production.env .env.development
 ```
 
-### Run firebase deploy
+## Build for production
+You should build the app on first deploy, and every time you make updates to the app.
+
+```bash
+npm run build
+```
+
+
+## Deploy with firebase
 Deploy the app to firebase hosting with the following command:
 
 ```bash

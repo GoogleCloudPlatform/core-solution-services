@@ -14,16 +14,13 @@
 """
 LLM Generation Service
 """
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,line-too-long
 import time
-from typing import Optional
+from typing import Optional, List
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-from vertexai.preview.generative_models import GenerativeModel, Part
 from vertexai.preview.generative_models import (
-    HarmCategory,
-    HarmBlockThreshold)
-from google.cloud.aiplatform_v1beta1.types.content import SafetySetting
+    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
 from common.utils.errors import ResourceNotFoundException
@@ -110,13 +107,15 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-async def llm_generate_multimodal(prompt: str, user_file_bytes: bytes,
-                             user_file_type: str, llm_type: str) -> str:
+async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_type: str,
+                             user_file_bytes: bytes = None,
+                             user_file_urls: List[str] = None) -> str:
   """
   Generate text with an LLM given a file and a prompt.
   Args:
     prompt: the text prompt to pass to the LLM
-    user_file_bytes: the bytes of the file provided by the user
+    user_file_bytes: bytes of the file provided by the user
+    user_file_urls: list of URLs to include in context
     llm_type: the type of LLM to use (default to gemini)
   Returns:
     the text response: str
@@ -145,7 +144,8 @@ async def llm_generate_multimodal(prompt: str, user_file_bytes: bytes,
         raise RuntimeError(
             f"Vertex model {llm_type} needs to be multimodal")
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
-                            google_llm, None, user_file_bytes, user_file_type)
+                            google_llm, None, user_file_bytes,
+                            user_file_urls, user_file_type)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -158,21 +158,49 @@ async def llm_generate_multimodal(prompt: str, user_file_bytes: bytes,
 
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
-                   user_query: Optional[UserQuery] = None) -> str:
+                   user_query: Optional[UserQuery] = None,
+                   chat_file_type: str = None,
+                   chat_file_urls: List[str] = None,
+                   chat_file_bytes: bytes = None) -> str:
   """
-  Send a prompt to a chat model and return response.
+  Send a prompt to a chat model and return string response.
+  Supports including a file in the chat context, either by URL or
+  directly from file content.
+
   Args:
     prompt: the text prompt to pass to the LLM
     llm_type: the type of LLM to use
     user_chat (optional): a user chat to use for context
     user_query (optional): a user query to use for context
+    chat_file_bytes (bytes): bytes of file to include in chat context
+    chat_file_urls (List[str]): urls of files to include in chat context
+    chat_file_type (str): mime type of file to include in chat context
   Returns:
     the text response: str
   """
+  chat_file_bytes_log = chat_file_bytes[:10] if chat_file_bytes else None
   Logger.info(f"Generating chat with llm_type=[{llm_type}],"
-              f" prompt=[{prompt}].")
+              f" prompt=[{prompt}]"
+              f" user_chat=[{user_chat}]"
+              f" user_query=[{user_query}]"
+              f" chat_file_bytes=[{chat_file_bytes_log}]"
+              f" chat_file_urls=[{chat_file_urls}]"
+              f" chat_file_type=[{chat_file_type}]")
+
   if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
+
+  # validate chat file params
+  is_multimodal = False
+  if chat_file_bytes is not None or chat_file_urls:
+    if chat_file_bytes is not None and chat_file_urls:
+      raise InternalServerError(
+          "Must set only one of chat_file_bytes/chat_file_urls")
+    if llm_type not in get_provider_models(PROVIDER_VERTEX):
+      raise InternalServerError("Chat files only supported for Vertex")
+    if chat_file_type is None:
+      raise InternalServerError("Mime type must be passed for chat file")
+    is_multimodal = True
 
   try:
     response = None
@@ -210,9 +238,10 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
-      is_multimodal = False
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
-                                          google_llm, user_chat)
+                                          google_llm, user_chat,
+                                          chat_file_bytes,
+                                          chat_file_urls, chat_file_type)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
     return response
@@ -460,7 +489,9 @@ async def model_garden_predict(prompt: str,
 
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 google_llm: str, user_chat=None,
-                user_file_bytes: bytes=None, user_file_type: str=None) -> str:
+                user_file_bytes: bytes=None,
+                user_file_urls: List[str]=None,
+                user_file_type: str=None) -> str:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
@@ -468,15 +499,21 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
     is_chat: true if the model is a chat model
     is_multimodal: true if the model is a multimodal model
     google_llm: name of the vertex llm model
-    user_file_bytes: the bytes of the file provided by the user
     user_chat: chat history
+    user_file_bytes: the bytes of the file provided by the user
+    user_file_urls: list of urls of files provided by the user
+    user_file_type: mime type of the file provided by the user
   Returns:
     the text response.
   """
-  Logger.info(f"Generating text with a Google multimodal LLM given a"
-              f" file and a prompt, is_chat=[{is_chat}],"
+
+  user_file_bytes_log = user_file_bytes[:10] if user_file_bytes else None
+  Logger.info(f"Generating text with a Google multimodal LLM:"
+              f" prompt=[{prompt}], is_chat=[{is_chat}],"
               f" is_multimodal=[{is_multimodal}], google_llm=[{google_llm}],"
-              f" user_file_bytes=[bytes], prompt=[{prompt}].")
+              f" user_file_bytes=[{user_file_bytes_log}],"
+              f" user_file_urls=[{user_file_urls}],"
+              f" user_file_type=[{user_file_type}].")
 
   # TODO: Consider images in chat
   prompt_list = []
@@ -507,32 +544,32 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
     if is_chat:
       # gemini uses new "GenerativeModel" class and requires different params
       if "gemini" in google_llm:
+        # TODO: fix safety settings
+        safety_settings = {
+             HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+             HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        }
         chat_model = GenerativeModel(google_llm)
-        safety_settings = [
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-             SafetySetting(
-                 category=HarmCategory.HARM_CATEGORY_HARASSMENT,
-                 threshold=HarmBlockThreshold.BLOCK_NONE,
-             ),
-        ]
         if is_multimodal:
-          user_file_image = Part.from_data(user_file_bytes,
-                                           mime_type=user_file_type)
-          context_list = [user_file_image, context_prompt]
-
+          user_file_parts = []
+          if user_file_bytes is not None:
+            user_file_parts = [Part.from_data(user_file_bytes,
+                                              mime_type=user_file_type)]
+          elif user_file_urls is not None:
+            user_file_parts = [
+              Part.from_uri(user_file_url, mime_type=user_file_type)
+              for user_file_url in user_file_urls
+            ]
+          else:
+            raise RuntimeError(
+                "if is_multimodal one of user_file_bytes or user_file_urls must be set")
+          context_list = [*user_file_parts, context_prompt]
+          Logger.info(f"context list {context_list}")
+          generation_config = GenerationConfig(**parameters)
           response = await chat_model.generate_content_async(context_list,
-              generation_config=parameters, safety_settings=safety_settings)
+              generation_config=generation_config)
         else:
           chat = chat_model.start_chat()
           response = await chat.send_message_async(context_prompt,

@@ -16,7 +16,7 @@
 Pydantic Model for Sign Up API's
 """
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (
     SIGN_UP_WITH_CREDENTIALS_API_INPUT_EXAMPLE,
     SIGN_UP_WITH_CREDENTIALS_API_RESPONSE_EXAMPLE)
@@ -27,11 +27,13 @@ class SignUpWithCredentialsModel(BaseModel):
   """Sign Up with Credentials Input Pydantic Model"""
   email: str
   password: str
-
-  class Config:
-    orm_mode = True
-    schema_extra = {"example": SIGN_UP_WITH_CREDENTIALS_API_INPUT_EXAMPLE}
-    extra = "forbid"
+  model_config = ConfigDict(
+      from_attributes=True,
+      json_schema_extra={
+        "example": SIGN_UP_WITH_CREDENTIALS_API_INPUT_EXAMPLE
+      },
+      extra="forbid"
+  )
 
 
 class IDPSignUpWithCredentialsResponseModel(BaseModel):
@@ -51,13 +53,10 @@ class SignUpWithCredentialsResponseModel(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully signed up"
   data: IDPSignUpWithCredentialsResponseModel
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-        "example": {
-            "success": True,
-            "message": "Successfully signed up",
-            "data": SIGN_UP_WITH_CREDENTIALS_API_RESPONSE_EXAMPLE
-        }
-    }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "success": True,
+          "message": "Successfully signed up",
+          "data": SIGN_UP_WITH_CREDENTIALS_API_RESPONSE_EXAMPLE
+      }
+  })

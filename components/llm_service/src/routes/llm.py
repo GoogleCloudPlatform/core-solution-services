@@ -17,11 +17,12 @@
 """ LLM endpoints """
 from typing import Optional
 from base64 import b64decode
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from common.utils.logging_handler import Logger
 from common.utils.errors import (PayloadTooLargeError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest)
+from common.utils.auth_service import validate_token
 from config import (PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, get_model_config)
 from schemas.llm_schema import (LLMGenerateModel,
@@ -35,7 +36,7 @@ from schemas.llm_schema import (LLMGenerateModel,
                                 LLMMultimodalEmbeddingsModel)
 from services.llm_generate import llm_generate, llm_generate_multimodal
 from services.embeddings import get_embeddings, get_multimodal_embeddings
-from utils.file_helper import validate_multimodal_vision_file_type
+from utils.file_helper import validate_multimodal_file_type
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
 
@@ -45,7 +46,8 @@ Logger = Logger.get_logger(__file__)
     "",
     name="Get all LLM types",
     response_model=LLMGetTypesResponse)
-def get_llm_list(is_multimodal: Optional[bool] = None):
+def get_llm_list(user_data: dict = Depends(validate_token),
+                 is_multimodal: Optional[bool] = None):
   """
   Get available LLMs, optionally filter by
   multimodal capabilities
@@ -66,11 +68,12 @@ def get_llm_list(is_multimodal: Optional[bool] = None):
       llm_types = get_model_config().get_llm_types()
     else:
       return BadRequest("Invalid request parameter value: is_multimodal")
-
+    user_enabled_llms = [llm for llm in llm_types if \
+                get_model_config().is_model_enabled_for_user(llm, user_data)]
     return {
       "success": True,
       "message": "Successfully retrieved llm types",
-      "data": llm_types
+      "data": user_enabled_llms
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -181,9 +184,9 @@ async def generate_embeddings_multimodal(
       f"Text must be less than {PAYLOAD_FILE_SIZE}")
 
 
-  is_file_valid, user_file_extension = validate_multimodal_vision_file_type(
-                                        user_file_name, user_file_b64)
-  if not is_file_valid or user_file_extension.startswith("video"):
+  file_mime_type = validate_multimodal_file_type(user_file_name,
+                                            file_b64=user_file_b64)
+  if file_mime_type and file_mime_type.startswith("video"):
     return BadRequest("File type must be a supported image.")
 
   try:
@@ -269,15 +272,15 @@ async def generate_multimodal(gen_config: LLMMultimodalGenerateModel):
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   # Make sure that the user file is a valid image or video
-  is_file_valid, user_file_extension = validate_multimodal_vision_file_type(
-                                        user_file_name, user_file_b64)
-  if not is_file_valid or not user_file_extension:
+  file_mime_type = validate_multimodal_file_type(user_file_name,
+                                            file_b64=user_file_b64)
+  if file_mime_type is None:
     return BadRequest("File type must be a supported image or video.")
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    result = await llm_generate_multimodal(prompt, user_file_bytes,
-                                    user_file_extension, llm_type)
+    result = await llm_generate_multimodal(prompt, file_mime_type, llm_type,
+                                      user_file_bytes)
 
     return {
         "success": True,

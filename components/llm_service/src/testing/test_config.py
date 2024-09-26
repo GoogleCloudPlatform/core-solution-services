@@ -30,7 +30,7 @@ from config import (COHERE_LLM_TYPE,
                     VERTEX_LLM_TYPE_BISON_CHAT,
                     VERTEX_LLM_TYPE_GEMINI_PRO,
                     VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
-                    VERTEX_LLM_TYPE_GEMINI_1_5_FLASH,
+                    VERTEX_LLM_TYPE_GEMINI_FLASH,
                     PROVIDER_LANGCHAIN, PROVIDER_VERTEX,
                     PROVIDER_TRUSS, PROVIDER_VLLM,
                     PROVIDER_MODEL_GARDEN,
@@ -148,7 +148,7 @@ TEST_OPENAI_CONFIG = {
 TEST_VERTEX_CONFIG = {
   KEY_MODEL_PARAMS: {
     "temperature": 0.2,
-    "max_tokens": 900,
+    "max_output_tokens": 900,
     "top_p": 1.0,
     "top_k": 10
   },
@@ -178,7 +178,7 @@ TEST_VERTEX_CONFIG = {
     KEY_ENABLED: True,
     KEY_MODEL_NAME: "gemini-pro-vision"
   },
-  VERTEX_LLM_TYPE_GEMINI_1_5_FLASH: {
+  VERTEX_LLM_TYPE_GEMINI_FLASH: {
     KEY_PROVIDER: PROVIDER_VERTEX,
     KEY_IS_CHAT: True,
     KEY_IS_MULTI: True,

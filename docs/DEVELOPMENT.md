@@ -264,7 +264,11 @@ pip install -r requirements.txt
   kubectx
   ```
 
-### 4.3. <a name='SetupKubernetesNamespace'></a>Set up Kubernetes Namespace
+### 4.3. <a name='SetupKubernetesNamespace'></a>Set up Kubernetes Namespace (optional)
+
+You only need to set up a separate namespace if you are developing on the same cluster with multiple developers.  Setting up a namespace allows you to deploy your own copy of the CSS services, running in your "namespace" on the Kubernetes cluster, that don't conflict with other developers who have their own own copy of the services in their own namespaces.
+
+If you are in a small team (2-3 developers) you may also not need to set up your own namespaces.  You can use the "default" namespace, as long as you don't have multiple developers testing deployments of a set of services that implement a new feature simultaneously.
 
 * Run the following to create a Kubernetes namespace for your development
   ```
@@ -286,39 +290,26 @@ pip install -r requirements.txt
   - It will also bind the GKE service account with the regular GCP service account named "gke-sa".
   - You can verify it on the GCP Console > Service Accounts > "gke-sa" service account > Permissions.
 
-###  4.4. <a name='BuildanddeployallmicroservicesUsingSolutionsBuilderCLI'></a>Build and deploy all microservices (Using Solutions Builder CLI)
 
-> Solutions Builder CLI runs `skaffold` commands behind the scene. It will print out the actual command before running it.
+###  4.4. <a name='BuildanddeployallmicroservicesUsingskaffold'></a>Build and deploy all microservices
 
-To build and deploy:
-```
-export SKAFFOLD_NAMESPACE=$YOUR_GITHUB_USERNAME
+For development the `skaffold dev` command is very useful as it will deploy a set of services with local ports (defined in the skaffold config for each service), as well as tailing the logs locally, and performing a live reload when any file is changed.  This allows you to rapidly test changes to the microservices.
 
-# In the solution folder:
-sb deploy
-
-# Or, to build and deploy with live-reload:
-sb deploy --dev
-```
-
-Press `Enter` in the prompt:
-```
-This will build and deploy all services using the command below:
-- gcloud container clusters get-credentials main-cluster --region us-central1 --project my-project-id
-- skaffold run -p default-deploy --default-repo="gcr.io/my-project-id"
-
-This may take a few minutes. Continue? [Y/n]:
-```
-
-###  4.5. <a name='OptionalBuildanddeployallmicroservicesUsingskaffolddirectly'></a>[Optional] Build and deploy all microservices (Using skaffold directly)
-
-* Run with skaffold:
+* Set the default repo for containers built by skaffold
   ```
-  skaffold run -p gke --default-repo=gcr.io/$PROJECT_ID
-
-  # Or run with hot reload and live logs:
-  skaffold dev -p gke --default-repo=gcr.io/$PROJECT_ID
+  export SKAFFOLD_DEFAULT_REPO=us-docker.pkg.dev/${PROJECT_ID}/default
   ```
+
+* Run with hot reload and live logs:
+  ```
+  skaffold dev -p gke
+  ```
+
+* Or just deploy to the default namespace with skaffold:
+  ```
+  skaffold run -p gke
+  ```
+
 
 ##  5. <a name='AdvancedSkaffoldcommands'></a>Advanced Skaffold commands
 
@@ -327,18 +318,13 @@ This may take a few minutes. Continue? [Y/n]:
 skaffold dev -m <service1>,<service2>
 ```
 
-####  5.2. <a name='BuildandrunmicroserviceswithacustomSourceRepositorypath'></a>Build and run microservices with a custom Source Repository path
-```
-skaffold dev --default-repo=gcr.io/$PROJECT_ID
-```
-
-####  5.3. <a name='BuildandrunmicroserviceswithadifferentSkaffoldprofile'></a>Build and run microservices with a different Skaffold profile
+####  5.2. <a name='BuildandrunmicroserviceswithadifferentSkaffoldprofile'></a>Build and run microservices with a different Skaffold profile
 ```
 # Using HPA (Horizontal Pod Autoscaler) profile
 skaffold dev -p gke,gke-hpa
 ```
 
-####  5.4. <a name='Skaffoldprofiles'></a>Skaffold profiles
+####  5.3. <a name='Skaffoldprofiles'></a>Skaffold profiles
 By default, the Skaffold YAML contains the following pre-defined profiles ready to use.
 - **gke** - This is the default profile for local development, which will be activated automatically with the `kubectl` context set to the default cluster of this GCP project.
   - The corresponding kustomize YAML is in the `./components/<component_name>/kustomize/base` folder.

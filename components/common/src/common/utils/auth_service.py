@@ -196,3 +196,37 @@ def create_authz_filter(user_data: dict):
       authz_filter = None
 
   return authz_filter
+
+def get_roles_from_custom_claims(user_data: dict):
+  """
+  Get roles from custom claims for authorization filter.
+  
+  Args:
+    user_data: dict of user data from auth token
+  
+  Returns:
+    dict containing roles and performs as a authorization filter
+  """
+  role_claims_dict = None
+
+  if user_data:
+    # get firebase user
+    Logger.info(f"user_data: {user_data}")
+    user = get_user(user_data["user_id"])
+    Logger.info(f"user: {user}")
+
+    # get roles
+    roles = None
+    if user.custom_claims and "roles" in user.custom_claims:
+      roles = user.custom_claims["roles"]
+      Logger.info(f"roles: {roles} from user.custom_claims")
+
+    Logger.info(
+        f"firebase ID token for {user_data['user_id']} has roles: {roles}")
+
+    if roles:
+      role_claims_dict = {"roles": list(roles)}
+    else:
+      role_claims_dict = None
+
+  return role_claims_dict

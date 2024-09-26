@@ -17,66 +17,24 @@ import { Form, useFormik, FormikProvider } from "formik"
 import FormFields from "@/components/forms/FormFields"
 import { Link } from "react-router-dom"
 import { IFormValidationData, IFormVariable } from "@/utils/types"
-import { IQueryEngine } from "@/utils/models"
 import { formValidationSchema, initialFormikValues } from "@/utils/forms"
 
-interface QueryEngineFormProps {
-  queryEngine: IQueryEngine | null
-  onSubmit: Function
-  onSuccess: Function
-  onFailure: Function
+interface ChatUploadFormProps {
   handleFiles: Function
+  token: string
   currentVarsData: IFormVariable[]
 }
 
-const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
-  queryEngine,
-  onSubmit,
-  onSuccess,
-  onFailure,
+const ChatUploadForm: React.FunctionComponent<ChatUploadFormProps> = ({
   handleFiles,
+  token,
   currentVarsData,
 }) => {
-  const [submitting, setSubmitting] = useState(false)
-  const [qEngineInitialFormat, setQueryEngineInitialFormat] = useState({})
+  const [initialFormat, setInitialFormat] = useState({})
 
   const defaultValues = initialFormikValues(currentVarsData)
 
-  const handleSubmit = async (values: Record<string, any>) => {
-    
-    const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
-            deleted_by, id, last_modified_by, last_modified_time, ...restValues } = values
-
-    const payloadData: QueryEngine | Record<string, any> = Object.assign(
-      {},
-      restValues,
-    )
-
-    try {
-      setSubmitting(true)
-      const result = await onSubmit(payloadData)
-      await onSuccess(result)
-    } catch (error) {
-      await onFailure(error)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  useEffect(() => {
-    if (queryEngine && queryEngine !== null) {
-      const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
-              deleted_by, id, last_modified_by, last_modified_time, ...restQEValues } = queryEngine
-
-      const qEngineInitialFormatting = Object.assign(
-        {},
-        restQEValues,
-      )
-      setQueryEngineInitialFormat(qEngineInitialFormatting)
-    }
-  }, [queryEngine])
-
-  const initialValues = Object.assign({}, defaultValues, qEngineInitialFormat)
+  const initialValues = Object.assign({}, defaultValues, initialFormat)
 
   const formValidationData: IFormValidationData =
     formValidationSchema(currentVarsData)
@@ -86,9 +44,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
     enableReinitialize: true,
     validateOnMount: true,
     validationSchema: formValidationData,
-    onSubmit: async (values) => {
-      await handleSubmit(values)
-    },
+    onSubmit: null
   })
 
   return (
@@ -114,15 +70,6 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
                 Clear
               </button>
             </Link>
-            <button
-              className="btn btn-primary btn-sm"
-              type="submit"
-              disabled={Boolean(
-                submitting || Object.keys(formik.errors).length,
-              )}
-            >
-              {queryEngine?.id ? "Update" : "Submit"}
-            </button>
           </div>
         </Form>
       </FormikProvider>
@@ -130,4 +77,4 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   )
 }
 
-export default QueryEngineForm
+export default ChatUploadForm

@@ -14,7 +14,7 @@
 
 """Pydantic Model for Email's related API's"""
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 class EmailSchema(BaseModel):
   """Email Pydantic Model"""
@@ -22,16 +22,13 @@ class EmailSchema(BaseModel):
   recipient: str
   subject: str
   message: str
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "recipient": "test@example.com",
-        "subject": "Hello",
-        "message": "From the world."
-      }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "recipient": "test@example.com",
+      "subject": "Hello",
+      "message": "From the world."
     }
+  })
 
 
 class EmailComposeSchema(BaseModel):
@@ -40,24 +37,21 @@ class EmailComposeSchema(BaseModel):
   prompt: str
   email_template: str
   variables: dict
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "prompt":
-          "Create an email to this applicant that is missing income "
-          "verification asking them to email a pay stub from their "
-          "employers",
-        "email_template":
-          "You are working for {state} agency. Create only the email "
-          "message body for recipient: {recipient} \n\n "
-          "Use text delimited by triple backticks to create the email body "
-          "text:'''{email_body}'''"
-          "",
-        "variables": {
-          "state": "NY",
-          "recipient": "test@example.com"
-        }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "prompt":
+        "Create an email to this applicant that is missing income "
+        "verification asking them to email a pay stub from their "
+        "employers",
+      "email_template":
+        "You are working for {state} agency. Create only the email "
+        "message body for recipient: {recipient} \n\n "
+        "Use text delimited by triple backticks to create the email body "
+        "text:'''{email_body}'''"
+        "",
+      "variables": {
+        "state": "NY",
+        "recipient": "test@example.com"
       }
     }
+  })

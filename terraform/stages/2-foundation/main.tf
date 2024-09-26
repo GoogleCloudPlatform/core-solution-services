@@ -133,3 +133,18 @@ module "deployment_service_account" {
     "roles/viewer",
   ]
 }
+
+# create Vertex AI Service Agent
+resource "google_project_service_identity" "vertex-ai-service-agent" {
+  depends_on   = [time_sleep.wait_60_seconds]
+  provider     = google-beta
+  project      = var.project_id
+  service      = "aiplatform.googleapis.com"
+}
+
+resource "google_project_iam_member" "vertex-ai-service-agent-iam" {
+  depends_on   = [google_project_service_identity.vertex-ai-service-agent]
+  project      = var.project_id
+  role         = "roles/aiplatform.serviceAgent"
+  member       = "serviceAccount:service-${var.project_number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
+}

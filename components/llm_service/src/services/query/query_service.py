@@ -36,7 +36,8 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QUERY_AI_RESPONSE)
 from common.utils.auth_service import create_authz_filter
 from common.utils.errors import (ResourceNotFoundException,
-                                 ValidationError)
+                                 ValidationError,
+                                 UnauthorizedUserError)
 from common.utils.http_exceptions import InternalServerError
 from services import embeddings
 from services.llm_generate import (get_context_prompt,
@@ -61,7 +62,7 @@ from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_MULTIMODAL_LLM_TYPE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
                     DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL,
-                    DEFAULT_WEB_DEPTH_LIMIT,
+                    DEFAULT_WEB_DEPTH_LIMIT, get_model_config,
                     MODALITY_SET)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
@@ -149,6 +150,10 @@ async def query_generate(
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
   Logger.info(f"query_generate {llm_type=}")
+
+  # check if user has access to model
+  if not get_model_config().is_model_enabled_for_user(llm_type, user_data):
+    raise UnauthorizedUserError("User does not have access to model")
 
   # perform retrieval
   query_references = await retrieve_references(prompt,
@@ -447,8 +452,6 @@ def make_query_reference(q_engine: QueryEngine,
       # sentences from the top-ranked document chunk.
       sentences = doc_chunk.sentences
       if not sentences or len(sentences) == 0:
-        # for backwards compatibility with legacy engines break chunks
-        # into sentences here
         sentences = text_helper.text_to_sentence_list(doc_chunk.text)
 
       # Only update clean_text when sentences is not empty.
@@ -894,7 +897,7 @@ async def build_doc_index(doc_url: str, q_engine: QueryEngine,
       raise NoDocumentsIndexedException(
           f"Failed to process any documents at url {doc_url}")
 
-    # deploy vector store (e.g. create endpoint for database)
+    # deploy vector store (e.g. create endpoint for matching engine)
     # db vector stores typically don't require this step.
     qe_vector_store.deploy()
 
@@ -1184,13 +1187,13 @@ def datasource_from_url(doc_url: str,
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
     # Create bucket name using query_engine name
-    bucket_name = WebDataSource.downloads_bucket_name(q_engine)
+    bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
     return WebDataSource(storage_client,
                          bucket_name=bucket_name,
                          depth_limit=depth_limit)
   elif doc_url.startswith("shpt://"):
     # Create bucket name using query_engine name
-    bucket_name = SharePointDataSource.downloads_bucket_name(q_engine)
+    bucket_name = SharePointDataSource.downloads_bucket_name(q_engine.name)
     return SharePointDataSource(storage_client,
                                 bucket_name=bucket_name)
   else:
