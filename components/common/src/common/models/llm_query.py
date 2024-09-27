@@ -132,26 +132,6 @@ class QueryEngine(BaseModel):
     collection_name = BaseModel.DATABASE_PREFIX + "query_engines"
 
   @classmethod
-  def get_all_public(cls,
-                     skip=0,
-                     order_by="-created_time",
-                     limit=1000):
-    """
-    Fetch all public query engines
-
-    Args:
-
-    Returns:
-        List[QueryEngine]: List of public query engines
-
-    """
-    objects = cls.collection.filter(
-        "is_public", "==", "true").filter(
-            "deleted_at_timestamp", "==",
-            None).order(order_by).offset(skip).fetch(limit)
-    return list(objects)
-
-  @classmethod
   def find_by_name(cls, name):
     """
     Fetch a specific query engine by name
