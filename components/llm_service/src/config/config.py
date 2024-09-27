@@ -27,7 +27,6 @@ from common.utils.token_handler import UserCredentials
 from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
-from google.cloud import secretmanager
 from config.model_config import (ModelConfig, VENDOR_OPENAI,
                                 PROVIDER_VERTEX, VENDOR_COHERE,
                                 PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
@@ -42,7 +41,6 @@ from config.model_config import (ModelConfig, VENDOR_OPENAI,
                                 VERTEX_LLM_TYPE_GEMINI_FLASH)
 
 Logger = Logger.get_logger(__file__)
-secrets = secretmanager.SecretManagerServiceClient()
 
 PORT = os.environ["PORT"] if os.environ.get("PORT") is not None else 80
 PROJECT_ID = os.environ.get("PROJECT_ID")

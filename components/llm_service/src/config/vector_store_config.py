@@ -18,9 +18,7 @@ Vector Store Config
 
 from common.config import PG_HOST, PG_USER, PG_PORT, PG_PASSWD 
 from common.utils.logging_handler import Logger
-from common.utils.secrets import get_secret
 from common.utils.config import get_env_setting
-from google.cloud import secretmanager
 
 Logger = Logger.get_logger(__file__)
 

@@ -14,8 +14,13 @@
 """
 Config module to setup common environment
 """
+# pylint: disable=broad-exception-caught
 import os
 from common.utils.config import get_env_setting
+from common.utils.logging_handler import Logger
+from common.utils.secrets import get_secret
+
+Logger = Logger.get_logger(__file__)
 
 PROJECT_ID = os.environ.get("PROJECT_ID",
                             os.environ.get("GOOGLE_CLOUD_PROJECT"))
@@ -70,7 +75,6 @@ Logger.info(f"PG_HOST = [{PG_HOST}]")
 Logger.info(f"PG_DBNAME = [{PG_DBNAME}]")
 
 # load secrets
-secrets = secretmanager.SecretManagerServiceClient()
 try:
   PG_PASSWD = get_secret("postgres-user-passwd")
 except Exception as e:
