@@ -16,6 +16,7 @@ Vector Store Config
 """
 # pylint: disable=broad-exception-caught
 
+from common.config import PG_HOST, PG_USER, PG_PORT, PG_PASSWD 
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from common.utils.config import get_env_setting
@@ -34,26 +35,10 @@ VECTOR_STORES = [
   VECTOR_STORE_LANGCHAIN_PGVECTOR
 ]
 
-# postgres
-# TODO: create secrets for this
-PG_HOST = get_env_setting("PG_HOST", None)
-PG_DBNAME = get_env_setting("PG_DBNAME", PG_VECTOR_DEFAULT_DBNAME)
-PG_PORT = "5432"
-PG_USER = "postgres"
-PG_PASSWD = None
-Logger.info(f"PG_HOST = [{PG_HOST}]")
-Logger.info(f"PG_DBNAME = [{PG_DBNAME}]")
-
-# load secrets
-secrets = secretmanager.SecretManagerServiceClient()
-try:
-  PG_PASSWD = get_secret("postgres-user-passwd")
-except Exception as e:
-  Logger.warning("Can't access postgres user password secret")
-  PG_PASSWD = None
-
 # test postgres connection
 if PG_PASSWD and PG_HOST:
+  PG_VECTOR_DBNAME = get_env_setting("PG_DBNAME", PG_VECTOR_DEFAULT_DBNAME)
+  
   import sqlalchemy
   from langchain.vectorstores.pgvector import PGVector as LangchainPGVector
   try:
@@ -61,7 +46,7 @@ if PG_PASSWD and PG_HOST:
         driver="psycopg2",
         host=PG_HOST,
         port=PG_PORT,
-        database=PG_DBNAME,
+        database=PG_VECTOR_DBNAME,
         user=PG_USER,
         password=PG_PASSWD
     )

@@ -15,6 +15,7 @@
 Config module to setup common environment
 """
 import os
+from common.utils.config import get_env_setting
 
 PROJECT_ID = os.environ.get("PROJECT_ID",
                             os.environ.get("GOOGLE_CLOUD_PROJECT"))
@@ -57,3 +58,21 @@ SERVICES = {
 }
 
 CORS_ALLOW_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "").split(",")
+
+# postgres
+# TODO: create secrets for this
+PG_DBNAME = "genie_db"
+PG_HOST = get_env_setting("PG_HOST", None)
+PG_PORT = "5432"
+PG_USER = "postgres"
+PG_PASSWD = None
+Logger.info(f"PG_HOST = [{PG_HOST}]")
+Logger.info(f"PG_DBNAME = [{PG_DBNAME}]")
+
+# load secrets
+secrets = secretmanager.SecretManagerServiceClient()
+try:
+  PG_PASSWD = get_secret("postgres-user-passwd")
+except Exception as e:
+  Logger.warning("Can't access postgres user password secret")
+  PG_PASSWD = None
