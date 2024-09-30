@@ -19,6 +19,8 @@ from fireo.fields import (TextField, ListField, IDField,
                           BooleanField, NumberField, MapField)
 from common.models import BaseModel
 
+# pylint: disable = access-member-before-definition
+
 # constants used as tags for query history
 QUERY_HUMAN = "HumanQuestion"
 QUERY_AI_RESPONSE = "AIResponse"
@@ -29,7 +31,46 @@ QE_TYPE_VERTEX_SEARCH = "qe_vertex_search"
 QE_TYPE_LLM_SERVICE = "qe_llm_service"
 QE_TYPE_INTEGRATED_SEARCH = "qe_integrated_search"
 
-class UserQuery(BaseModel):
+class UserQueryUtil():
+  """ Utility class for UserQuery """
+
+  def update_history(self, prompt: str=None,
+                     response: str=None,
+                     references: List[dict]=None,
+                     custom_entry=None):
+    """ Update history with query and response """
+    if not self.history:
+      self.history = []
+
+    if prompt:
+      self.history.append({QUERY_HUMAN: prompt})
+
+    if response:
+      self.history.append({QUERY_AI_RESPONSE: response})
+
+    if references:
+      self.history.append({QUERY_AI_REFERENCES: references})
+
+    if custom_entry:
+      self.history.append(custom_entry)
+
+    self.save(merge=True)
+
+  @classmethod
+  def is_human(cls, entry: dict) -> bool:
+    return QUERY_HUMAN in entry.keys()
+
+  @classmethod
+  def is_ai(cls, entry: dict) -> bool:
+    return QUERY_AI_RESPONSE in entry.keys()
+
+  @classmethod
+  def entry_content(cls, entry: dict) -> str:
+    return list(entry.values())[0]
+
+
+
+class UserQuery(BaseModel, UserQueryUtil):
   """
   UserQuery ORM class
   """
@@ -69,40 +110,6 @@ class UserQuery(BaseModel):
             "deleted_at_timestamp", "==",
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
-
-  def update_history(self, prompt: str=None,
-                     response: str=None,
-                     references: List[dict]=None,
-                     custom_entry=None):
-    """ Update history with query and response """
-    if not self.history:
-      self.history = []
-
-    if prompt:
-      self.history.append({QUERY_HUMAN: prompt})
-
-    if response:
-      self.history.append({QUERY_AI_RESPONSE: response})
-
-    if references:
-      self.history.append({QUERY_AI_REFERENCES: references})
-
-    if custom_entry:
-      self.history.append(custom_entry)
-
-    self.save(merge=True)
-
-  @classmethod
-  def is_human(cls, entry: dict) -> bool:
-    return QUERY_HUMAN in entry.keys()
-
-  @classmethod
-  def is_ai(cls, entry: dict) -> bool:
-    return QUERY_AI_RESPONSE in entry.keys()
-
-  @classmethod
-  def entry_content(cls, entry: dict) -> str:
-    return list(entry.values())[0]
 
 
 class QueryEngine(BaseModel):
@@ -169,29 +176,8 @@ class QueryEngine(BaseModel):
     return f"deployed_{self.index_name}"
 
 
-class QueryReference(BaseModel):
-  """
-  QueryReference ORM class. This class represents a single query reference.
-  It points to a specific chunk of text in one of the indexed documents.
-
-  """
-  id = IDField()  # All modalities
-  query_engine_id = TextField(required=True)  # All modalities
-  query_engine = TextField(required=True)  # All modalities
-  document_id = TextField(required=True)  # All modalities
-  document_url = TextField(required=True)  # All modalities
-  modality = TextField(required=True)  # All modalities: text image video audio
-  chunk_id = TextField(required=True)  # All modalities
-  chunk_url = TextField(
-    required=False, default=None)  # Image or video or audio only
-  page = NumberField(required=False, default=None)  # Text or image only
-  document_text = TextField(required=False, default=None)  # Text only
-  timestamp_start = NumberField(
-    required=False, default=None)  # Video or audio only
-  timestamp_stop = NumberField(
-    required=False, default=None)  # Video or audio only
-  linked_ids = ListField(
-    IDField(), required=False, default=None)  # All modalities
+class QueryReferenceUtil():
+  """ Utility class for QueryReference """
 
   def __repr__(self) -> str:
     """
@@ -222,6 +208,28 @@ class QueryReference(BaseModel):
       f"linked_ids={self.linked_ids})"
     )
 
+class QueryReference(BaseModel, QueryReferenceUtil):
+  """
+  QueryReference ORM class. This class represents a single query reference.
+  It points to a specific chunk of text in one of the indexed documents.
+
+  """
+  id = IDField()  # All modalities
+  query_engine_id = TextField(required=True)  # All modalities
+  query_engine = TextField(required=True)  # All modalities
+  document_id = TextField(required=True)  # All modalities
+  document_url = TextField(required=True)  # All modalities
+  modality = TextField(required=True)  # All modalities: text image video audio
+  chunk_id = TextField(required=False)  # All modalities
+  chunk_url = TextField(
+      required=False, default=None)  # Image or video or audio only
+  page = NumberField(required=False, default=None)  # Text or image only
+  document_text = TextField(required=False, default=None)  # Text only
+  timestamp_start = NumberField(
+      required=False, default=None)  # Video or audio only
+  timestamp_stop = NumberField(
+      required=False, default=None)  # Video or audio only
+
   class Meta:
     ignore_none_field = False
     collection_name = BaseModel.DATABASE_PREFIX + "query_references"
@@ -242,14 +250,6 @@ class QueryResult(BaseModel):
   class Meta:
     ignore_none_field = False
     collection_name = BaseModel.DATABASE_PREFIX + "query_results"
-
-  def load_references(self) -> List[QueryReference]:
-    references = []
-    for ref in self.get("query_refs"):
-      obj = QueryReference.find_by_id(ref)
-      if obj is not None:
-        references.append(obj)
-    return references
 
 
 class QueryDocument(BaseModel):
