@@ -15,15 +15,28 @@
 Flatten import namespace for models
 """
 
-from .base_model import *
-from .node_item import *
-from .user import *
-from .user_event import *
-from .learning_record import *
-from .llm import *
-from .llm_query import *
-from .agent import *
-from .custom_fields import *
-from .batch_job import *
-from .session import *
-from .staff import *
+from common.config import ORM_MODE, SQL_ORM, FIRESTORE_ORM
+
+if ORM_MODE == SQL_ORM:
+
+  from .base_model_sql import *
+  from .user_sql import *
+  from .llm_sql import *
+  from .llm_query_sql import *
+  from .batch_job_sql import *
+  from .session_sql import *
+
+else: # ORM_MODE == FIRESTORE_ORM
+
+  from .base_model import *
+  from .node_item import *
+  from .user import *
+  from .user_event import *
+  from .learning_record import *
+  from .llm import *
+  from .llm_query import *
+  from .agent import *
+  from .custom_fields import *
+  from .batch_job import *
+  from .session import *
+  from .staff import *

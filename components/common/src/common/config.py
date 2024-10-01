@@ -80,3 +80,9 @@ try:
 except Exception as e:
   Logger.warning("Can't access postgres user password secret")
   PG_PASSWD = None
+
+# ORM config.  See common.models.__init__.py
+SQL_ORM = "sql_orm"
+FIRESTORE_ORM = "firestore_orm"
+ORM_MODE = get_env_setting("ORM_MODE", FIRESTORE_ORM)
+Logger.info(f"ORM_MODE = [{ORM_MODE}]")
