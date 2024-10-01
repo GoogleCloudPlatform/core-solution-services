@@ -150,7 +150,7 @@ class SQLBaseModel(Model):
     Returns:
         list: list of objects
     """
-    objs = cls.select().order_by(cls.created_time.desc()))
+    objs = cls.select().order_by(cls.created_time.desc())
 
   def get_fields(self, reformat_datetime=False, remove_meta=False):
     """
