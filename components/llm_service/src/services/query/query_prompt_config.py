@@ -17,6 +17,8 @@ Query prompt templates
 
 from langchain.prompts import PromptTemplate
 
+#SC240930: May need to fix for multimodal - how does new chat route do it?
+#SC240930: No, leave as-is.  Prompt will stay text only.  Will built up list of image_urls later, to pass into llM_chat along with the question prompt.
 prompt_template = """
 You are a helpful and truthful AI Assistant.
 Use the following pieces of context and the chat history to answer the question at the end.
@@ -32,12 +34,24 @@ Chat History:
 Question: {question}
 Helpful Answer:"""
 
+#SC240930: May need to fix for multimodal - how does new chat route do it?
+#SC240930: INPUT: prompt is always a string
+#SC240930: INPUT: chat_history is always a string
+#SC240930: INPUT: text_context is always a string
+#SC240930: NEW INPUT: Need to provide a list of chunk_urls, for those QueryReferences that are images
+#SC240930: No, leave as-is.  Prompt will stay text only.  Will built up list of image_urls later, to pass into llM_chat along with the question prompt.
+
+#SC240930: OUTPUT: What is QUESTION_PROMPT? It's an instance of class PromptTemplate, which inherits
+#SC240930: from StringPromptTemplate, which inherits from BasePromptTemplate, which is part of
+#SC240930: langchain_core.prompts
 QUESTION_PROMPT = PromptTemplate(
     template=prompt_template, input_variables=[
         "context", "chat_history", "question"
     ]
 )
 
+#SC240930: May need to fix for multimodal - how does new chat route do it?
+#SC240930: Don't bother.  Multimodal moat around Gemini.
 llama2_prompt_template = """
 [INST]<<SYS>>You are a helpful and truthful AI search assistant for NASA.
 Only respond to the final Human input at the end.
@@ -51,6 +65,8 @@ just say that you don't know, don't try to make up an answer.<</SYS>>
 
 Human input: {question}[/INST]"""
 
+#SC240930: May need to fix for multimodal - how does new chat route do it?
+#SC240930: Don't bother.  Multimodal moat around Gemini.
 LLAMA2_QUESTION_PROMPT = PromptTemplate(
     template=llama2_prompt_template, input_variables=[
         "context", "chat_history", "question"

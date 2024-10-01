@@ -18,6 +18,7 @@ from typing import List
 from fireo.fields import (TextField, ListField, IDField,
                           BooleanField, NumberField, MapField)
 from common.models import BaseModel
+#from common.utils.logging_handler import Logger #SC240930
 
 # constants used as tags for query history
 QUERY_HUMAN = "HumanQuestion"
@@ -75,22 +76,29 @@ class UserQuery(BaseModel):
                      references: List[dict]=None,
                      custom_entry=None):
     """ Update history with query and response """
+    #Logger.info(f"#SC240930: Just entered update_history")
     if not self.history:
       self.history = []
 
     if prompt:
       self.history.append({QUERY_HUMAN: prompt})
+      #Logger.info(f"#SC240930: Just updated history with {QUERY_HUMAN=} : {prompt=}")
 
     if response:
       self.history.append({QUERY_AI_RESPONSE: response})
+      #Logger.info(f"#SC240930: Just updated history with {QUERY_AI_RESPONSE=} : {response=}")
 
     if references:
       self.history.append({QUERY_AI_REFERENCES: references})
+      #SC240930: references are a list of the dict version of QueryReference objects
+      #Logger.info(f"#SC240930: Just updated history with {QUERY_AI_REFERENCES=} : {references=}")
 
     if custom_entry:
       self.history.append(custom_entry)
+      #Logger.info(f"#SC240930: Just updated history with {custom_entry}")
 
     self.save(merge=True)
+    #Logger.info(f"#SC240930: About to exit update_history")
 
   @classmethod
   def is_human(cls, entry: dict) -> bool:
@@ -99,6 +107,11 @@ class UserQuery(BaseModel):
   @classmethod
   def is_ai(cls, entry: dict) -> bool:
     return QUERY_AI_RESPONSE in entry.keys()
+
+  #SC240930: So right now, there is no QUERY_AI_REFERENCES... any of which could refer
+  #SC240930: to a doc chunk of any modality.  So query references are ignored in
+  #SC240930: user query history?
+  #SC240930: ADD TODO ABOUT EXPANDING is_ai TO INCLUDE QUERY_AI_REFERENCES
 
   @classmethod
   def entry_content(cls, entry: dict) -> str:

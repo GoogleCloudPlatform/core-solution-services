@@ -156,6 +156,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_type: st
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
+#SC240930: MAKE INPUT ARGS OPTIONAL: chat_file_type, chat_file_urls, chat_file_bytes
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
@@ -178,6 +179,7 @@ async def llm_chat(prompt: str, llm_type: str,
   Returns:
     the text response: str
   """
+  Logger.info(f"#SC240930: Just entered llm_chat")
   chat_file_bytes_log = chat_file_bytes[:10] if chat_file_bytes else None
   Logger.info(f"Generating chat with llm_type=[{llm_type}],"
               f" prompt=[{prompt}]"
@@ -206,16 +208,29 @@ async def llm_chat(prompt: str, llm_type: str,
     response = None
 
     # add chat history to prompt if necessary
+    Logger.info(f"#SC240930: In llm_chat: {user_chat=}")
+    Logger.info(f"#SC240930: In llm_chat: {user_query=}")
     if user_chat is not None or user_query is not None:
+      #SC240930: context_prompt is a text string, since history does not include previous query_references
+      Logger.info(f"#SC240930: About to enter get_context_prompt")
       context_prompt = get_context_prompt(
           user_chat=user_chat, user_query=user_query)
+      Logger.info(f"#SC240930: Just exited get_context_prompt")
+      Logger.info(f"#SC240930: In llm_chat: {context_prompt=}")
+      Logger.info(f"#SC240930: In llm_chat: {prompt=}")
+      #SC240930: context_prompt and prompt are always both text strings
+      #SC240930: INCLUDE COMMENT TO SAY SO - IGNORING IMAGES OF user_chat.history AND user_query.history
       prompt = context_prompt + "\n" + prompt
+      Logger.info(f"#SC240930: In llm_chat: Updated {prompt=}")
 
     # check whether the context length exceeds the limit for the model
+    Logger.info(f"#SC240930: About to enter check_context_length")
     check_context_length(prompt, llm_type)
+    Logger.info(f"#SC240930: Just exited check_context_length")
 
     # call the appropriate provider to generate the chat response
     if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
+      #SC240930: If llm_type==PROVIDER_LLM_SERVICE, then is_chat=True as input to llm_service_predict
       is_chat = True
       response = await llm_service_predict(
           prompt, is_chat, llm_type, user_chat)
@@ -237,19 +252,25 @@ async def llm_chat(prompt: str, llm_type: str,
       if google_llm is None:
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
+      #SC240930: If llm_type==PROVIDER_VERTEX, then is_chat=True as input to llm_service_predict
       is_chat = True
+      Logger.info(f"#SC240930: About to enter google_llm_predict")
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                                           google_llm, user_chat,
                                           chat_file_bytes,
                                           chat_file_urls, chat_file_type)
+      Logger.info(f"#SC240930: Just existed google_llm_predict")
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
+    Logger.info(f"#SC240930: About to exit llm_chat with NO exception")
     return response
   except Exception as e:
     import traceback
     Logger.error(traceback.print_exc())
+    Logger.info(f"#SC240930: About to exit llm_chat WITH exception")
     raise InternalServerError(str(e)) from e
 
+#SC240930: get_context_prompt always returns a string, because does not save query_references of user_query.history
 def get_context_prompt(user_chat=None,
                        user_query=None) -> str:
   """
@@ -261,6 +282,7 @@ def get_context_prompt(user_chat=None,
   Returns:
     string context prompt
   """
+  Logger.info("f#SC240930: Just entered get_context_prompt")
   context_prompt = ""
   prompt_list = []
   if user_chat is not None:
@@ -271,7 +293,11 @@ def get_context_prompt(user_chat=None,
         prompt_list.append(f"Human input: {content}")
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
+      #SC240930: INCLUDE COMMENT THAT prompt_list IGNORES ANY IMAGES IN user_chat.history
 
+  #SC240930: user_query is an ORM object, with a ListField called history,
+  #SC240930: which holds a list of dicts, any one of which could be the dict
+  #SC240930: version of a QueryReference object
   if user_query is not None:
     history = user_query.history
     for entry in history:
@@ -280,9 +306,20 @@ def get_context_prompt(user_chat=None,
         prompt_list.append(f"Human input: {content}")
       elif UserQuery.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
+      #SC240930: So prompt_list will only contain human input and AI responses?
+      #SC240930: It will never contain AI references?  That means that it will
+      #SC240930: always be text, right?  And so we can always do the following
+      #SC240930: join, right?
+      #SC240930: INCLUDE COMMENT THAT prompt_list IGNORES ANY QUERYREFERENCES (TEXT OR IMAGES) IN user_query.history
 
+
+  Logger.info(f"#SC240930: In get_context_prompt: {prompt_list=}")
+  Logger.info(f"#SC240930: In get_context_prompt: about to do the join on prompt_list, for which all elements should be strings")
   context_prompt = "\n\n".join(prompt_list)
+  Logger.info(f"#SC240930: In get_context_prompt: just finished the join on prompt_list, for which all elements should be strings")
+  Logger.info(f"#SC240930: In get_context_prompt: {context_prompt=}")
 
+  Logger.info("f#SC240930: About to exit get_context_prompt")
   return context_prompt
 
 def check_context_length(prompt, llm_type):
@@ -294,6 +331,9 @@ def check_context_length(prompt, llm_type):
   """
   # check if prompt exceeds context window length for model
   # assume a constant relationship between tokens and chars
+  #SC240930: MUST CALCULATE token_length DIFFERENTLY FOR MULTIMODAL PROMPTS
+  #SC240930: How many tokens does an image take up, in a prompt?
+  #SC240930: Subtract numTokensPerImage*numImages from max_context_length
   token_length = len(prompt) / CHARS_PER_TOKEN
   max_context_length = get_model_config_value(llm_type,
                                               KEY_MODEL_CONTEXT_LENGTH,
@@ -487,6 +527,7 @@ async def model_garden_predict(prompt: str,
 
   return predictions_text
 
+#SC240930: Make user_file_bytes, user_file_urls, and user_file_type all Optional?
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 google_llm: str, user_chat=None,
                 user_file_bytes: bytes=None,
@@ -506,7 +547,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   Returns:
     the text response.
   """
-
+  Logger.info(f"#SC240930: Just entered google_llm_predict")
   user_file_bytes_log = user_file_bytes[:10] if user_file_bytes else None
   Logger.info(f"Generating text with a Google multimodal LLM:"
               f" prompt=[{prompt}], is_chat=[{is_chat}],"
@@ -518,6 +559,9 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   # TODO: Consider images in chat
   prompt_list = []
   if user_chat is not None:
+    #SC240930: user_chat is an ORM object, with a ListField called history,
+    #SC240930: which holds a list of dicts, any one of which could be the dict
+    #SC240930: holding image information
     history = user_chat.history
     for entry in history:
       content = UserChat.entry_content(entry)
@@ -525,6 +569,10 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         prompt_list.append(f"Human input: {content}")
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
+      #SC240930: So prompt_list will only contain human TEXT input and AI responses?
+      #SC240930: It will never contain human IMAGE input?  That means that it will
+      #SC240930: always be text, right?  And so we can always do the following
+      #SC240930: join, right?
   prompt_list.append(prompt)
   context_prompt = "\n\n".join(prompt_list)
 
@@ -584,8 +632,10 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
           context_prompt,
           **parameters,
       )
+    Logger.info(f"#SC240930: About to exit google_llm_predict, with NO exception")
 
   except Exception as e:
+    Logger.info(f"#SC240930: About to exit google_llm_predict, WITH exception")
     raise InternalServerError(str(e)) from e
 
   Logger.info(f"Received response from the Model [{response.text}]")
