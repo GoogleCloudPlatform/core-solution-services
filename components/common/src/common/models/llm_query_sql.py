@@ -31,11 +31,11 @@ class UserQuery(SQLBaseModel, UserQueryUtil):
   UserQuery SQL ORM class
   """
   id = UUIDField()
-  user_id = TextField(required=True)
-  title = TextField(required=False)
-  query_engine_id = TextField(required=True)
-  prompt = TextField(required=True)
-  response = TextField(required=False)
+  user_id = TextField()
+  title = TextField(null=True)
+  query_engine_id = TextField()
+  prompt = TextField()
+  response = TextField(null=True)
   history = ArrayField(default=[])
 
   @classmethod
@@ -66,21 +66,21 @@ class QueryEngine(SQLBaseModel):
   QueryEngine ORM class
   """
   id = UUIDField()
-  name = TextField(required=True)
-  query_engine_type = TextField(required=True)
-  description = TextField(required=True, default="")
-  llm_type = TextField(required=False)
-  embedding_type = TextField(required=True)
-  vector_store = TextField(required=False)
-  created_by = TextField(required=True)
+  name = TextField()
+  query_engine_type = TextField()
+  description = TextField(default="")
+  llm_type = TextField(null=True)
+  embedding_type = TextField()
+  vector_store = TextField(null=True)
+  created_by = TextField()
   is_public = BooleanField(default=False)
-  index_id = TextField(required=False)
-  index_name = TextField(required=False)
-  endpoint = TextField(required=False)
-  doc_url = TextField(required=False)
-  agents = ArrayField(required=False)
-  parent_engine_id = TextField(required=False)
-  manifest_url = TextField(required=False)
+  index_id = TextField(null=True)
+  index_name = TextField(null=True)
+  endpoint = TextField(null=True)
+  doc_url = TextField(null=True)
+  agents = ArrayField(null=True)
+  parent_engine_id = TextField(null=True)
+  manifest_url = TextField(null=True)
   params = JSONField(default={})
 
 
@@ -118,17 +118,17 @@ class QueryReference(SQLBaseModel, QueryReferenceUtil):
 
   """
   id = UUIDField()  # All modalities
-  query_engine_id = TextField(required=True)  # All modalities
-  query_engine = TextField(required=True)  # All modalities
-  document_id = TextField(required=True)  # All modalities
-  document_url = TextField(required=True)  # All modalities
-  modality = TextField(required=True)  # All modalities: text image video audio
-  chunk_id = TextField(required=False)  # All modalities
-  chunk_url = TextField(required=False)  # Image or video or audio only
-  page = IntegerField(required=False)  # Text or image only
-  document_text = TextField(required=False)  # Text only
-  timestamp_start = IntegerField(required=False)  # Video or audio only
-  timestamp_stop = IntegerField(required=False)  # Video or audio only
+  query_engine_id = TextField()  # All modalities
+  query_engine = TextField()  # All modalities
+  document_id = TextField()  # All modalities
+  document_url = TextField()  # All modalities
+  modality = TextField()  # All modalities: text image video audio
+  chunk_id = TextField(null=True)  # All modalities
+  chunk_url = TextField(null=True)  # Image or video or audio only
+  page = IntegerField(null=True)  # Text or image only
+  document_text = TextField(null=True)  # Text only
+  timestamp_start = IntegerField(null=True)  # Video or audio only
+  timestamp_stop = IntegerField(null=True)  # Video or audio only
 
 
 class QueryResult(SQLBaseModel):
@@ -138,10 +138,10 @@ class QueryResult(SQLBaseModel):
   list of query reference ids.
   """
   id = UUIDField()
-  query_engine_id = TextField(required=True)
-  query_engine = TextField(required=True)
+  query_engine_id = TextField()
+  query_engine = TextField()
   query_refs = ArrayField(default=[])
-  response = TextField(required=True)
+  response = TextField()
 
 
 class QueryDocument(SQLBaseModel):
@@ -149,13 +149,13 @@ class QueryDocument(SQLBaseModel):
   QueryDocument ORM class.
   """
   id = UUIDField()
-  query_engine_id = TextField(required=True)
-  query_engine = TextField(required=True)
-  doc_url = TextField(required=True)
-  index_file = TextField(required=False)
-  index_start = IntegerField(required=False)
-  index_end = IntegerField(required=False)
-  metadata = JSONField(required=False)
+  query_engine_id = TextField()
+  query_engine = TextField()
+  doc_url = TextField()
+  index_file = TextField(null=True)
+  index_start = IntegerField(null=True)
+  index_end = IntegerField(null=True)
+  metadata = JSONField(null=True)
 
 
   @classmethod
@@ -215,17 +215,17 @@ class QueryDocumentChunk(SQLBaseModel):
   QueryDocumentChunk ORM class.
   """
   id = UUIDField()  # All modalities
-  query_engine_id = TextField(required=True)  # All modalities
-  query_document_id = TextField(required=True)  # All modalities
-  index = IntegerField(required=True)  # All modalities
-  modality = TextField(required=True)  # All modalities: text image video audio
-  page = IntegerField(required=False)  # Text or image only
-  chunk_url = TextField(required=False)  # Image or video or audio only
-  text = TextField(required=False)  # Text only
-  clean_text = TextField(required=False)  # Text only (optional)
-  sentences = ArrayField(required=False)  # Text only (optional)
-  timestamp_start = IntegerField(required=False)  # Video or audio only
-  timestamp_stop = IntegerField(required=False)  # Video or audio only
+  query_engine_id = TextField()  # All modalities
+  query_document_id = TextField()  # All modalities
+  index = IntegerField()  # All modalities
+  modality = TextField()  # All modalities: text image video audio
+  page = IntegerField(null=True)  # Text or image only
+  chunk_url = TextField(null=True)  # Image or video or audio only
+  text = TextField(null=True)  # Text only
+  clean_text = TextField(null=True)  # Text only (optional)
+  sentences = ArrayField(null=True)  # Text only (optional)
+  timestamp_start = IntegerField(null=True)  # Video or audio only
+  timestamp_stop = IntegerField(null=True)  # Video or audio only
 
 
   @classmethod

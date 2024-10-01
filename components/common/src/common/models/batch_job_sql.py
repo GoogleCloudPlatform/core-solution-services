@@ -28,18 +28,18 @@ from common.models.base_model_sql import SQLBaseModel
 class BatchJobModel(SQLBaseModel):
   """Model class for batch job"""
   id = UUIDField()
-  name = TextField(required=True, default="")
-  input_data = TextField()
-  type = TextField(required=True)
-  status = TextField(required=True)
-  message = TextField(required=True, default="")
-  generated_item_id = TextField()
-  output_gcs_path = TextField()
+  name = TextField(default="")
+  input_data = TextField(null=True)
+  type = TextField()
+  status = TextField()
+  message = TextField(default="")
+  generated_item_id = TextField(null=True)
+  output_gcs_path = TextField(null=True)
   errors = ArrayField(default=[])
   job_logs = ArrayField(default=[])
   metadata = ArrayField(default=[])
   result_data = ArrayField(default=[])
-  uuid = TextField()
+  uuid = TextField(null=True)
 
   @classmethod
   def find_by_name(cls, name):

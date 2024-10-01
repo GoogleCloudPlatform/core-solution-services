@@ -27,11 +27,11 @@ class UserChat(SQLBaseModel, UserChatUtil):
   UserChat ORM class
   """
   id = UUIDField()
-  user_id = TextField(required=True)
-  prompt = TextField(required=False, default="")
-  title = TextField(required=False, default="")
-  llm_type = TextField(required=False)
-  agent_name = TextField(required=False)
+  user_id = TextField()
+  prompt = TextField(default="")
+  title = TextField(default="")
+  llm_type = TextField(null=True)
+  agent_name = TextField(null=True)
   history = ArrayField(default=[])
 
   @classmethod

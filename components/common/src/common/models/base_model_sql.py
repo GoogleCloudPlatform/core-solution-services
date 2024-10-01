@@ -59,9 +59,14 @@ class SQLBaseModel(Model):
             doc_id (string): the document id
         Returns:
             [any]: an instance of object returned by the database, type is
-            the subclassed Model
+            the subclassed Model,
+            None if object not found
         """
-    pass
+    try:
+      obj = cls.select().where(cls.id == doc_id).get()
+    except peewee.DoesNotExist:
+      obj = None
+    return obj
 
   def save(self,
            input_datetime=None,
@@ -80,7 +85,13 @@ class SQLBaseModel(Model):
     Returns:
       _type_: _description_
     """
-    pass
+    if input_datetime:
+      date_timestamp = input_datetime
+    else:
+      date_timestamp = datetime.datetime.utcnow()
+    self.created_time = date_timestamp
+    self.last_modified_time = date_timestamp
+    return super().save()
 
   def update(self,
              input_datetime=None,
@@ -96,7 +107,7 @@ class SQLBaseModel(Model):
     Returns:
       _type_: _description_
     """
-    pass
+    return super().save()
 
   @classmethod
   def delete_by_id(cls, doc_id):
@@ -109,7 +120,7 @@ class SQLBaseModel(Model):
         Returns:
             None
         """
-    pass
+    cls.delete().where(cls.id == doc_id)
 
   @classmethod
   def soft_delete_by_id(cls, object_id, by_user=None):
@@ -120,7 +131,12 @@ class SQLBaseModel(Model):
       Raises:
           ResourceNotFoundException: If the object does not exist
       """
-    pass
+    obj = cls.find_by_id(object_id)
+    if obj is None:
+      raise ResourceNotFoundException(
+          f"{cls.__name__} with id {object_id} is not found")
+    obj.update({obj.deleted_at_timestamp: datetime.datetime.utcnow(),
+                obj.deleted_by: by_user})
 
   @classmethod
   def fetch_all(cls, skip=0, limit=1000, order_by="-created_time"):
@@ -134,12 +150,16 @@ class SQLBaseModel(Model):
     Returns:
         list: list of objects
     """
-    pass
+    objs = cls.select().order_by(cls.created_time.desc()))
 
   def get_fields(self, reformat_datetime=False, remove_meta=False):
     """
     """
-    pass
+    field_names = cls._meta.sorted_field_names
+    field_dict = {
+      field: cls.getattr(field)
+      for field in field_names
+    }
 
   def validate(self) -> Tuple[bool, List[str]]:
     """
