@@ -107,20 +107,16 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-#async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_type: str,
-#                             user_file_bytes: bytes = None,
-#                             user_file_urls: List[str] = None) -> str: #SC241001
 async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_types: List[str],
                              user_file_bytes: bytes = None,
-                             user_file_urls: List[str] = None) -> str: #SC241001
-#SC241001: CHANGE INPUT ARG so that user_file_bytes is a LIST of mime types, one for each user_file_urls
+                             user_file_urls: List[str] = None) -> str:
   """
   Generate text with an LLM given a file and a prompt.
   Args:
     prompt: the text prompt to pass to the LLM
     user_file_bytes: bytes of the file provided by the user
     user_file_urls: list of URLs to include in context
-    user_file_types: list of mime times for files to include in context #SC241001
+    user_file_types: list of mime times for files to include in context
     llm_type: the type of LLM to use (default to gemini)
   Returns:
     the text response: str
@@ -148,12 +144,9 @@ async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_types: L
       if not is_multimodal:
         raise RuntimeError(
             f"Vertex model {llm_type} needs to be multimodal")
-      #response = await google_llm_predict(prompt, is_chat, is_multimodal,
-      #                      google_llm, None, user_file_bytes,
-      #                      user_file_urls, user_file_type) #SC241001
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                             google_llm, None, user_file_bytes,
-                            user_file_urls, user_file_types) #SC241001
+                            user_file_urls, user_file_types)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -165,19 +158,12 @@ async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_types: L
     raise InternalServerError(str(e)) from e
 
 #SC240930: MAKE INPUT ARGS OPTIONAL: chat_file_type, chat_file_urls, chat_file_bytes
-#SC241001: MAKE INPUT ARG chat_file_types A LIST, one for each of chat_file_url
-#async def llm_chat(prompt: str, llm_type: str,
-#                   user_chat: Optional[UserChat] = None,
-#                   user_query: Optional[UserQuery] = None,
-#                   chat_file_type: str = None,
-#                   chat_file_urls: List[str] = None,
-#                   chat_file_bytes: bytes = None) -> str: #SC241001
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
                    chat_file_types: List[str] = None,
                    chat_file_urls: List[str] = None,
-                   chat_file_bytes: bytes = None) -> str: #SC241001
+                   chat_file_bytes: bytes = None) -> str:
   """
   Send a prompt to a chat model and return string response.
   Supports including a file in the chat context, either by URL or
@@ -197,20 +183,13 @@ async def llm_chat(prompt: str, llm_type: str,
   """
   Logger.info(f"#SC240930: Just entered llm_chat")
   chat_file_bytes_log = chat_file_bytes[:10] if chat_file_bytes else None
-  #Logger.info(f"Generating chat with llm_type=[{llm_type}],"
-  #            f" prompt=[{prompt}]"
-  #            f" user_chat=[{user_chat}]"
-  #            f" user_query=[{user_query}]"
-  #            f" chat_file_bytes=[{chat_file_bytes_log}]"
-  #            f" chat_file_urls=[{chat_file_urls}]"
-  #            f" chat_file_type=[{chat_file_type}]") #SC241001
   Logger.info(f"Generating chat with llm_type=[{llm_type}],"
               f" prompt=[{prompt}]"
               f" user_chat=[{user_chat}]"
               f" user_query=[{user_query}]"
               f" chat_file_bytes=[{chat_file_bytes_log}]"
               f" chat_file_urls=[{chat_file_urls}]"
-              f" chat_file_type=[{chat_file_types}]") #SC241001
+              f" chat_file_type=[{chat_file_types}]")
 
   if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
@@ -223,8 +202,7 @@ async def llm_chat(prompt: str, llm_type: str,
           "Must set only one of chat_file_bytes/chat_file_urls")
     if llm_type not in get_provider_models(PROVIDER_VERTEX):
       raise InternalServerError("Chat files only supported for Vertex")
-    #if chat_file_type is None: #SC241001
-    if chat_file_types is None: #SC241001
+    if chat_file_types is None:
       raise InternalServerError("Mime type must be passed for chat file")
     is_multimodal = True
 
@@ -235,15 +213,14 @@ async def llm_chat(prompt: str, llm_type: str,
     Logger.info(f"#SC240930: In llm_chat: {user_chat=}")
     Logger.info(f"#SC240930: In llm_chat: {user_query=}")
     if user_chat is not None or user_query is not None:
-      #SC240930: context_prompt is a text string, since history does not include previous query_references
       Logger.info(f"#SC240930: About to enter get_context_prompt")
       context_prompt = get_context_prompt(
           user_chat=user_chat, user_query=user_query)
+      # context_prompt includes only text (no images/video) from
+      # user_chat.history and user_query.history
       Logger.info(f"#SC240930: Just exited get_context_prompt")
       Logger.info(f"#SC240930: In llm_chat: {context_prompt=}")
       Logger.info(f"#SC240930: In llm_chat: {prompt=}")
-      #SC240930: context_prompt and prompt are always both text strings
-      #SC240930: INCLUDE COMMENT TO SAY SO - IGNORING IMAGES OF user_chat.history AND user_query.history
       prompt = context_prompt + "\n" + prompt
       Logger.info(f"#SC240930: In llm_chat: Updated {prompt=}")
 
@@ -254,7 +231,6 @@ async def llm_chat(prompt: str, llm_type: str,
 
     # call the appropriate provider to generate the chat response
     if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
-      #SC240930: If llm_type==PROVIDER_LLM_SERVICE, then is_chat=True as input to llm_service_predict
       is_chat = True
       response = await llm_service_predict(
           prompt, is_chat, llm_type, user_chat)
@@ -276,17 +252,12 @@ async def llm_chat(prompt: str, llm_type: str,
       if google_llm is None:
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
-      #SC240930: If llm_type==PROVIDER_VERTEX, then is_chat=True as input to llm_service_predict
       is_chat = True
       Logger.info(f"#SC240930: About to enter google_llm_predict")
-      #response = await google_llm_predict(prompt, is_chat, is_multimodal,
-      #                                    google_llm, user_chat,
-      #                                    chat_file_bytes,
-      #                                    chat_file_urls, chat_file_type) #SC241001
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                                           google_llm, user_chat,
                                           chat_file_bytes,
-                                          chat_file_urls, chat_file_types) #SC241001
+                                          chat_file_urls, chat_file_types)
       Logger.info(f"#SC240930: Just existed google_llm_predict")
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
@@ -298,7 +269,6 @@ async def llm_chat(prompt: str, llm_type: str,
     Logger.info(f"#SC240930: About to exit llm_chat WITH exception")
     raise InternalServerError(str(e)) from e
 
-#SC240930: get_context_prompt always returns a string, because does not save query_references of user_query.history
 def get_context_prompt(user_chat=None,
                        user_query=None) -> str:
   """
@@ -310,7 +280,6 @@ def get_context_prompt(user_chat=None,
   Returns:
     string context prompt
   """
-  Logger.info("f#SC240930: Just entered get_context_prompt")
   context_prompt = ""
   prompt_list = []
   if user_chat is not None:
@@ -321,11 +290,8 @@ def get_context_prompt(user_chat=None,
         prompt_list.append(f"Human input: {content}")
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
-      #SC240930: INCLUDE COMMENT THAT prompt_list IGNORES ANY IMAGES IN user_chat.history
+      # prompt_list includes only text from user_chat.history
 
-  #SC240930: user_query is an ORM object, with a ListField called history,
-  #SC240930: which holds a list of dicts, any one of which could be the dict
-  #SC240930: version of a QueryReference object
   if user_query is not None:
     history = user_query.history
     for entry in history:
@@ -334,12 +300,7 @@ def get_context_prompt(user_chat=None,
         prompt_list.append(f"Human input: {content}")
       elif UserQuery.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
-      #SC240930: So prompt_list will only contain human input and AI responses?
-      #SC240930: It will never contain AI references?  That means that it will
-      #SC240930: always be text, right?  And so we can always do the following
-      #SC240930: join, right?
-      #SC240930: INCLUDE COMMENT THAT prompt_list IGNORES ANY QUERYREFERENCES (TEXT OR IMAGES) IN user_query.history
-
+      # prompt_list includes only text from user_query.history
 
   Logger.info(f"#SC240930: In get_context_prompt: {prompt_list=}")
   Logger.info(f"#SC240930: In get_context_prompt: about to do the join on prompt_list, for which all elements should be strings")
@@ -359,9 +320,8 @@ def check_context_length(prompt, llm_type):
   """
   # check if prompt exceeds context window length for model
   # assume a constant relationship between tokens and chars
-  #SC240930: MUST CALCULATE token_length DIFFERENTLY FOR MULTIMODAL PROMPTS
-  #SC240930: How many tokens does an image take up, in a prompt?
-  #SC240930: Subtract numTokensPerImage*numImages from max_context_length
+  # TODO: Recalculate max_context_length for text prompt,
+  # subtracting out tokens used by non-text context (image, video, etc)
   token_length = len(prompt) / CHARS_PER_TOKEN
   max_context_length = get_model_config_value(llm_type,
                                               KEY_MODEL_CONTEXT_LENGTH,
@@ -555,17 +515,12 @@ async def model_garden_predict(prompt: str,
 
   return predictions_text
 
-#SC240930: Make user_file_bytes, user_file_urls, and user_file_type all Optional?
-#async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
-#                google_llm: str, user_chat=None,
-#                user_file_bytes: bytes=None,
-#                user_file_urls: List[str]=None,
-#                user_file_type: str=None) -> str: #SC241001
+#SC240930: Make user_file_bytes, user_file_urls, and user_file_types all Optional?
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 google_llm: str, user_chat=None,
                 user_file_bytes: bytes=None,
                 user_file_urls: List[str]=None,
-                user_file_types: List[str]=None) -> str: #SC241001
+                user_file_types: List[str]=None) -> str:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
@@ -576,8 +531,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
     user_chat: chat history
     user_file_bytes: the bytes of the file provided by the user
     user_file_urls: list of urls of files provided by the user
-    #user_file_type: mime type of the file provided by the user #SC241001
-    user_file_types: list of mime types of the files provided by the user #SC241001
+    user_file_types: list of mime types of the files provided by the user
   Returns:
     the text response.
   """
@@ -593,9 +547,6 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   # TODO: Consider images in chat
   prompt_list = []
   if user_chat is not None:
-    #SC240930: user_chat is an ORM object, with a ListField called history,
-    #SC240930: which holds a list of dicts, any one of which could be the dict
-    #SC240930: holding image information
     history = user_chat.history
     for entry in history:
       content = UserChat.entry_content(entry)
@@ -603,10 +554,8 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         prompt_list.append(f"Human input: {content}")
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
-      #SC240930: So prompt_list will only contain human TEXT input and AI responses?
-      #SC240930: It will never contain human IMAGE input?  That means that it will
-      #SC240930: always be text, right?  And so we can always do the following
-      #SC240930: join, right?
+      # prompt_list includes only text (no images/video)
+      # from user_chat.history
   prompt_list.append(prompt)
   context_prompt = "\n\n".join(prompt_list)
 
@@ -637,22 +586,14 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         if is_multimodal:
           user_file_parts = []
           if user_file_bytes is not None:
-            #user_file_parts = [Part.from_data(user_file_bytes,
-            #                                  mime_type=user_file_type)] #SC241001
             user_file_parts = [Part.from_data(user_file_bytes,
-                                              mime_type=user_file_types[0])] #SC241001
-            #SC241001: CHANGE INPUT ARG to user_file_types, a list of mime types, one for each url in user_file_url
+                                              mime_type=user_file_types[0])]
             #SC241001: CHANGE INPUT ARG user_file_bytes to also be a list (of bytes), one for each uploaded file
           elif user_file_urls is not None:
-            #user_file_parts = [
-            #  Part.from_uri(user_file_url, mime_type=user_file_type)
-            #  for user_file_url in user_file_urls
-            #] #SC241001
             user_file_parts = [
               Part.from_uri(user_file_url, mime_type=user_file_type)
               for user_file_url, user_file_type in zip(user_file_urls, user_file_types)
-            ] #SC241001
-            #SC241001: ALLOW EACH user_file_url TO HAVE ITS OWN mime_type
+            ]
           else:
             raise RuntimeError(
                 "if is_multimodal one of user_file_bytes or user_file_urls must be set")

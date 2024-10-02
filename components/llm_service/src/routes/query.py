@@ -564,7 +564,6 @@ async def query(query_engine_id: str,
   run_as_batch_job = genconfig_dict.get("run_as_batch_job", False)
   Logger.info(f"run_as_batch_job = {run_as_batch_job}")
 
-  #SC241001: Should user_query be reset to None here, outside of the if?  What about for next query?  Need user_query state to persist for user until next query
   user_query = None
   if run_as_batch_job:
     # create user query object to hold the query state

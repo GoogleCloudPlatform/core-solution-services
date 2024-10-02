@@ -97,9 +97,8 @@ def chat_content():
               chunk_url = chunk_url.replace("gs://",
                   "https://storage.googleapis.com/", 1)
 
-            document_url = reference["document_url"] #SC241001
+            document_url = reference["document_url"]
             if modality == "text":
-              #document_url = reference["document_url"] #SC241001
               document_text = reference["document_text"]
               st.text_area(
                 f"\nReference {query_index}: {document_url}",
@@ -111,9 +110,8 @@ def chat_content():
               page = reference["page"]
               st.write(
                 f"\nReference {query_index}: {document_url}, Page {page+1}",
-                key=f"ref_{query_index}") #SC241001
+                key=f"ref_{query_index}")
               st.image(chunk_url)
-              #st.write(f"({urllib.parse.quote(chunk_url)})") #SC241002
             else:
               logging.error("Reference modality unknown")
               st.write("Reference modality unkown")

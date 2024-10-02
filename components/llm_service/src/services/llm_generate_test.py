@@ -163,14 +163,10 @@ async def test_llm_generate_multimodal(clean_firestore):
   with mock.patch(
   "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
   return_value=FAKE_GOOGLE_RESPONSE):
-    #response = await llm_generate_multimodal(FAKE_PROMPT,
-    #                                    VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
-    #                                    FAKE_FILE_TYPE,
-    #                                    fake_file_bytes) #SC241001
     response = await llm_generate_multimodal(FAKE_PROMPT,
                                         VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                                         [FAKE_FILE_TYPE],
-                                        fake_file_bytes) #SC241001
+                                        fake_file_bytes)
   fake_file.close()
   assert response == FAKE_GENERATE_RESPONSE
 

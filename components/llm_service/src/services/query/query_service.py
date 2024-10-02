@@ -57,7 +57,7 @@ from services.query.vertex_search import (build_vertex_search,
                                           delete_vertex_search)
 from utils.errors import (NoDocumentsIndexedException,
                           ContextWindowExceededException)
-from utils.file_helper import validate_multimodal_file_type #SC241001
+from utils.file_helper import validate_multimodal_file_type
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_MULTIMODAL_LLM_TYPE,
@@ -157,7 +157,6 @@ async def query_generate(
     raise UnauthorizedUserError("User does not have access to model")
 
   # perform retrieval
-  #SC240925: Returns a list of QueryReference objects
   query_references = await retrieve_references(prompt,
                                                q_engine,
                                                user_id,
@@ -168,18 +167,12 @@ async def query_generate(
   # from multiple child engines.
   if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
       len(query_references) > 1:
-    #SC240925: Still returns a list of QueryReference objects
     query_references = rerank_references(prompt, query_references)
   Logger.info(f"#SC240930: FINISHED SIMILARITY SEARCH")
 
   # Update user query with ranked references. We do this before generating
   # the answer so the frontend can display the retrieved results as soon as
   # they are available.
-  #SC240925: user_query is an instance of the UserQuery ORM class, which has
-  #SC240925: a ListField called history, which is initialized as just an empty
-  #SC240925: list, and then gets individual dicts appended to it. Any of those
-  #SC240925: dicts COULD be the dict version of a QueryReference object.
-  #SC241001: REMOVE IF? As of now, user_query is always None. update_user_query will create it, if it is None.
   if user_query:
     Logger.info(f"#SC240930: About to enter update_user_query")
     update_user_query(
@@ -187,11 +180,8 @@ async def query_generate(
     Logger.info(f"#SC240930: Just exited update_user_query")
 
   # generate question prompt
-  # generate question prompt (from user's text prompt plus text info in query_references) #SC241001
+  # (from user's text prompt plus text info in query_references)
   Logger.info(f"#SC240930: About to enter generate_question_prompt")
-  #SC240930: question_prompt is just a text string, containing text info but not image info from QueryReference objects
-  #SC240930: query_references is still a list of QueryReference objects
-  #SC240930: LEAVE ALL OF THIS AS-IS, BUT INSERT COMMENT TO EXPLAIN THIS IS ALL JUST FOR THE TEXT, NEED TO DEAL WITH IMAGE BELOW
   question_prompt, query_references = \
       await generate_question_prompt(prompt,
                                      llm_type,
@@ -199,7 +189,8 @@ async def query_generate(
                                      user_query)
   Logger.info(f"#SC240930: Just exited generate_question_prompt")
 
-  # generate list of URLs for additional context (from non-text info in query_references) #SC241001
+  # generate list of URLs for additional context
+  # (from non-text info in query_references)
   context_urls = []
   context_urls_mimetype = []
   for ref in query_references:
@@ -213,22 +204,16 @@ async def query_generate(
         # TODO: If ref is a video chunk, then update ref.chunk_url
         # according to ref.timestamp_start and ref.timestamp_stop
 
-  # send prompt to model
-  #SC240930: Avoids llm_generate and llm_generate_multimodal (because they don't consider the chat history).  Goes straight to llm_chat (because it DOES consider the chat history).
-  #SC240930: question_prompt is just a text string, containing text info but not image info from query_references
-  #SC240930: MUST BUILD UP LIST OF CHUNK_URLS FOR ALL IMAGE_BASED QUERY_REFERENCES AND PASS THAT INTO LLM_CHAT
+  # send prompt and additional context to model
   Logger.info(f"#SC240930: About to enter llm_chat")
-  #question_response = await llm_chat(question_prompt, llm_type) #SC241001
   question_response = await llm_chat(question_prompt, llm_type,
                                      chat_file_types=context_urls_mimetype,
-                                     chat_file_urls=context_urls) #SC241001
+                                     chat_file_urls=context_urls)
   Logger.info(f"#SC240930: Just exited llm_chat")
 
   Logger.info(f"#SC240930: FINISHED WITH GEMINI")
 
   # update user query with response
-  #SC240930: Should be fine as-is, because question_response is just a text string
-  #SC241001: As of now, user_query is always None, and so this code is never run.
   if user_query:
     # insert the response before the just added references
     user_query.history.insert(
@@ -237,8 +222,6 @@ async def query_generate(
     Logger.info(f"SC241001: {user_query.history=}")
 
   # save query result
-  #SC240930: Should be fine as-is, because question_response is just a text string
-  #SC240930: and everything else should be the same as before too
   query_ref_ids = [ref.id for ref in query_references]
   query_result = QueryResult(query_engine_id=q_engine.id,
                              query_engine=q_engine.name,
@@ -272,19 +255,10 @@ async def generate_question_prompt(prompt: str,
   Raises:
     ContextWindowExceededException if the model context window is exceeded
   """
-  #SC240930: is first output (question prompt) still a string? Didn't Lukman fix that?
   Logger.info(f"#SC240930: Just entered generate_question_prompt")
   # incorporate user query context in prompt if it exists
   chat_history = ""
   if user_query is not None:
-    #SC240930: user_query is an ORM object, with a ListField called history,
-    #SC240930: which holds a list of dicts, any one of which could be the dict
-    #SC240930: version of a QueryReference object
-    #SC240930: So chat_history does NOT include previous query references? Or any multimodal
-    #SC240930: part of user_query?
-    #SC240930: Correct.  chat_history is NOT the same is user_query.history.
-    #SC240930: Instead, it's the same as context_prompt in get_context_prompt
-    #SC240930: They should both be strings!
     Logger.info(f"#SC240930: About to enter get_context_prompt")
     chat_history = get_context_prompt(user_query=user_query)
     Logger.info(f"#SC240930: Just exited get_context_prompt")
@@ -293,16 +267,11 @@ async def generate_question_prompt(prompt: str,
 
   # generate default prompt
   Logger.info(f"#SC240930: About to enter get_question_prompt the 1st time")
-  #SC240930: INPUT: prompt should always be a string (in Phase 1)
-  #SC240930: INPUT: chat_history should always be a string and not hold any query references
-  #SC240930: INPUT: query_references may be multimodal
-  #SC240930: OUTPUT: question_prompt should always be a string, and include text info but no image info from query_references
   question_prompt = get_question_prompt(
     prompt, chat_history, query_references, llm_type)
   Logger.info(f"#SC240930: Just exited get_question_prompt the 1st time")
 
   # check prompt against context length of generation model
-  # #SC240930: May need to edit check_context_length for multimodal
   try:
     Logger.info(f"#SC240930: About to enter check_context_length the 1st time")
     check_context_length(question_prompt, llm_type)
@@ -313,10 +282,6 @@ async def generate_question_prompt(prompt: str,
       q_ref = query_references.pop()
       Logger.info(f"Dropped reference {q_ref.id}")
       Logger.info(f"#SC240930: About to enter get_question_prompt the 2nd time, if 1st time created too-long prompt")
-      #SC240930: INPUT: prompt should always be a string (in Phase 1)
-      #SC240930: INPUT: chat_history should always be a string and not hold any query references
-      #SC240930: INPUT: query_references may be multimodal
-      #SC240930: OUTPUT: question_prompt should always be a string, and include text info but no image info from query_references
       question_prompt = get_question_prompt(
         prompt, chat_history, query_references, llm_type
       )
@@ -327,7 +292,6 @@ async def generate_question_prompt(prompt: str,
         Logger.info(f"#SC240930: Just exited check_context_length the 2nd time, so length musta been ok")
         break
       except ContextWindowExceededException:
-        #SC240930: Guess we just give up here, and try Plan B below (summarize chat history)
         pass
     # check again
     try:
@@ -337,14 +301,8 @@ async def generate_question_prompt(prompt: str,
     except ContextWindowExceededException:
       # summarize chat history
       Logger.info(f"Summarizing chat history for {question_prompt}")
-      #SC240930: May need to edit summarize_history for multimodal, IF chat history includes query references
-      #SC240930: No, chat_history should always be a string.  So we shouldn't have to edit this.
       chat_history = await summarize_history(chat_history, llm_type)
       Logger.info(f"#SC240930: About to enter get_question_prompt the 3rd time, if 1st-2nd times created too-long prompt and we have just summarized chat history")
-      #SC240930: INPUT: prompt should always be a string (in Phase 1)
-      #SC240930: INPUT: chat_history should always be a string and not hold any query references
-      #SC240930: INPUT: query_references may be multimodal
-      #SC240930: OUTPUT: question_prompt should always be a string, and include text info but no image info from query_references
       question_prompt = get_question_prompt(
         prompt, chat_history, query_references, llm_type
       )
@@ -746,8 +704,6 @@ def update_user_query(prompt: str,
   #SC240930: Should the second output be a LIST of dicts? The dicts version of query_references,
   #SC240930: which is a LIST of QueryReference objects?
   Logger.info(f"#SC240925: Just entered update_user_query")
-  #SC240925: Turns query_references (list of QueryReference objects)
-  #SC240925: into a list of dicts
   query_reference_dicts = [
     ref.get_fields(reformat_datetime=True) for ref in query_references
   ]
@@ -759,7 +715,6 @@ def update_user_query(prompt: str,
                           prompt=prompt)
     user_query.save()
   Logger.info(f"#SC240930: About to enter update_history with prompt or response or query_reference_dicts")
-  #SC240925: Takes in the query_reference_dicts, not the query_references
   user_query.update_history(prompt=prompt,
                             response=response,
                             references=query_reference_dicts)
