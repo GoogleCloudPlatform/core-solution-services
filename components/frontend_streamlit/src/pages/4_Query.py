@@ -16,6 +16,7 @@
 """
 # pylint: disable=invalid-name
 import streamlit as st
+import urllib.parse
 from api import get_chat, run_query
 from components.chat_history import chat_history_panel
 from components.query_engine_select import query_engine_select
@@ -96,17 +97,23 @@ def chat_content():
               chunk_url = chunk_url.replace("gs://",
                   "https://storage.googleapis.com/", 1)
 
+            document_url = reference["document_url"] #SC241001
             if modality == "text":
-              document_url = reference["document_url"]
+              #document_url = reference["document_url"] #SC241001
               document_text = reference["document_text"]
               st.text_area(
-                f"Reference: {document_url}",
+                f"\nReference {query_index}: {document_url}",
                 document_text,
                 key=f"ref_{query_index}")
             elif modality == "image" and chunk_type in [".pdf",
                  ".png", ".jpg", ".jpeg", ".gif", ".bmp"]:
               # .tif/.tiff not available, all other file types are untested
+              page = reference["page"]
+              st.write(
+                f"\nReference {query_index}: {document_url}, Page {page+1}",
+                key=f"ref_{query_index}") #SC241001
               st.image(chunk_url)
+              #st.write(f"({urllib.parse.quote(chunk_url)})") #SC241002
             else:
               logging.error("Reference modality unknown")
               st.write("Reference modality unkown")
