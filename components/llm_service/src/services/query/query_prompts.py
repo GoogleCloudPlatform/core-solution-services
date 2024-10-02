@@ -42,7 +42,14 @@ def get_question_prompt(prompt: str,
   #SC240930: But if QueryReference is an image, still need to somehow build up
   #SC240930: a list of the chunk_urls, and pass it on
   #SC240930: No, don't bother with this.  Leave this as-is, working on text only.  Will build up list of image_urls elsewhere, to pass into llm_chat.
-  context_list = [ref.document_text for ref in query_context]
+  #context_list = [ref.document_text for ref in query_context] #SC241001
+  #context_list = [ref.document_text for ref in query_context if hasattr(ref, "document_text")] #SC241001
+  #SC241001: if the QueryReference object is from an image chunk then it will not have a "document_text" field
+  context_list = []
+  for ref in query_context:
+    if hasattr(ref, "modality") and ref.modality=="text":
+      if hasattr(ref, "document_text"):
+        context_list.append(ref.document_text)
   text_context = "\n\n".join(context_list)
 
   if llm_type == TRUSS_LLM_LLAMA2_CHAT:
