@@ -63,7 +63,6 @@ from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
                     DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
                     DEFAULT_WEB_DEPTH_LIMIT, get_model_config)
-
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
