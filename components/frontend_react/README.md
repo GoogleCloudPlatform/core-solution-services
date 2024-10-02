@@ -25,7 +25,7 @@ If you are installing from the jump host, install npm and the firebase CLI using
 Add Google as an identity provider.  You can do this in the [GCP console](https://console.cloud.google.com/customer-identity/providers) or in the [Firebase console](https://console.firebase.google.com/).  In firebase, navigate to Build > Authentication > Sign-in Method.
 
 ## Install dependencies
-Execute all commands below from the `components/frontend_react/src` directory.  You only need to install dependencies once, unless you update the app.
+Execute all commands below from the `components/frontend_react/webapp` directory.  You only need to install dependencies once, unless you update the app.
 
 ```bash
 npm install
