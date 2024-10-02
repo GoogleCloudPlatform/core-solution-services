@@ -291,11 +291,17 @@ async def create_user_chat(
     user = User.find_by_email(user_data.get("email"))
 
     # generate text from prompt
+    #response = await llm_chat(prompt,
+    #                          llm_type,
+    #                          chat_file_type=chat_file_type,
+    #                          chat_file_bytes=chat_file_bytes,
+    #                          chat_file_urls=chat_file_urls) #SC241001
     response = await llm_chat(prompt,
                               llm_type,
-                              chat_file_type=chat_file_type,
+                              chat_file_types=[chat_file_type],
                               chat_file_bytes=chat_file_bytes,
-                              chat_file_urls=chat_file_urls)
+                              chat_file_urls=chat_file_urls) #SC241001
+    #SC241001: PASS IN LIST FOR chat_file_types, one for each file in chat_file_urls
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
