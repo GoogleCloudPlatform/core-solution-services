@@ -157,13 +157,12 @@ async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_types: L
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-#SC240930: MAKE INPUT ARGS OPTIONAL: chat_file_type, chat_file_urls, chat_file_bytes
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
-                   chat_file_types: List[str] = None,
-                   chat_file_urls: List[str] = None,
-                   chat_file_bytes: bytes = None) -> str:
+                   chat_file_types: Optional[List[str]] = None,
+                   chat_file_urls: Optional[List[str]] = None,
+                   chat_file_bytes: Optional[bytes] = None) -> str:
   """
   Send a prompt to a chat model and return string response.
   Supports including a file in the chat context, either by URL or
@@ -495,12 +494,11 @@ async def model_garden_predict(prompt: str,
 
   return predictions_text
 
-#SC240930: Make user_file_bytes, user_file_urls, and user_file_types all Optional?
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 google_llm: str, user_chat=None,
-                user_file_bytes: bytes=None,
-                user_file_urls: List[str]=None,
-                user_file_types: List[str]=None) -> str:
+                user_file_bytes: Optional[bytes]=None,
+                user_file_urls: Optional[List[str]]=None,
+                user_file_types: Optional[List[str]]=None) -> str:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
@@ -567,7 +565,6 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
           if user_file_bytes is not None:
             user_file_parts = [Part.from_data(user_file_bytes,
                                               mime_type=user_file_types[0])]
-            #SC241001: CHANGE INPUT ARG user_file_bytes to also be a list (of bytes), one for each uploaded file
           elif user_file_urls is not None:
             user_file_parts = [
               Part.from_uri(user_file_url, mime_type=user_file_type)
