@@ -668,10 +668,8 @@ def update_user_query(prompt: str,
                       query_references: List[QueryReference],
                       user_query: UserQuery = None,
                       query_filter=None) -> \
-                      Tuple[UserQuery, dict]:
+                      Tuple[UserQuery, List[dict]]:
   """ Save user query history """
-  #SC240930: Should the second output be a LIST of dicts? The dicts version of query_references,
-  #SC240930: which is a LIST of QueryReference objects?
   query_reference_dicts = [
     ref.get_fields(reformat_datetime=True) for ref in query_references
   ]
