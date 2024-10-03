@@ -624,7 +624,6 @@ async def query(query_engine_id: str,
                 f"[{query_result.response}]")
 
     # save user query history
-    Logger.info(f"#SC241001: In query route: BEFORE UPDATE: {user_query=}")
     user_query, query_reference_dicts = \
         update_user_query(prompt,
                           query_result.response,
@@ -632,8 +631,6 @@ async def query(query_engine_id: str,
                           q_engine,
                           query_references, None,
                           query_filter)
-    Logger.info(f"#SC241001: In query route: AFTER UPDATE: {user_query=}")
-    Logger.info(f"#SC241001: In query route: AFTER UPDATE: {user_query.history=}")
 
     query_result_dict = query_result.get_fields(reformat_datetime=True)
 

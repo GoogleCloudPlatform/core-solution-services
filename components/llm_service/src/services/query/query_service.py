@@ -168,26 +168,21 @@ async def query_generate(
   if q_engine.query_engine_type == QE_TYPE_INTEGRATED_SEARCH and \
       len(query_references) > 1:
     query_references = rerank_references(prompt, query_references)
-  Logger.info(f"#SC240930: FINISHED SIMILARITY SEARCH")
 
   # Update user query with ranked references. We do this before generating
   # the answer so the frontend can display the retrieved results as soon as
   # they are available.
   if user_query:
-    Logger.info(f"#SC240930: About to enter update_user_query")
     update_user_query(
         prompt, None, user_id, q_engine, query_references, user_query)
-    Logger.info(f"#SC240930: Just exited update_user_query")
 
   # generate question prompt
   # (from user's text prompt plus text info in query_references)
-  Logger.info(f"#SC240930: About to enter generate_question_prompt")
   question_prompt, query_references = \
       await generate_question_prompt(prompt,
                                      llm_type,
                                      query_references,
                                      user_query)
-  Logger.info(f"#SC240930: Just exited generate_question_prompt")
 
   # generate list of URLs for additional context
   # (from non-text info in query_references)
@@ -205,13 +200,9 @@ async def query_generate(
         # according to ref.timestamp_start and ref.timestamp_stop
 
   # send prompt and additional context to model
-  Logger.info(f"#SC240930: About to enter llm_chat")
   question_response = await llm_chat(question_prompt, llm_type,
                                      chat_file_types=context_urls_mimetype,
                                      chat_file_urls=context_urls)
-  Logger.info(f"#SC240930: Just exited llm_chat")
-
-  Logger.info(f"#SC240930: FINISHED WITH GEMINI")
 
   # update user query with response
   if user_query:
@@ -255,64 +246,43 @@ async def generate_question_prompt(prompt: str,
   Raises:
     ContextWindowExceededException if the model context window is exceeded
   """
-  Logger.info(f"#SC240930: Just entered generate_question_prompt")
   # incorporate user query context in prompt if it exists
   chat_history = ""
   if user_query is not None:
-    Logger.info(f"#SC240930: About to enter get_context_prompt")
     chat_history = get_context_prompt(user_query=user_query)
-    Logger.info(f"#SC240930: Just exited get_context_prompt")
-    Logger.info(f"#SC240930: In generate_question_prompt: {chat_history=}")
-    Logger.info(f"#SC240930: IDENTICAL STRINGS? generate_question_prompt:chat_history VS get_context_prompt:context_prompt?")
 
   # generate default prompt
-  Logger.info(f"#SC240930: About to enter get_question_prompt the 1st time")
   question_prompt = get_question_prompt(
     prompt, chat_history, query_references, llm_type)
-  Logger.info(f"#SC240930: Just exited get_question_prompt the 1st time")
 
   # check prompt against context length of generation model
   try:
-    Logger.info(f"#SC240930: About to enter check_context_length the 1st time")
     check_context_length(question_prompt, llm_type)
-    Logger.info(f"#SC240930: Just exited check_context_length the 1st time, so length musta been ok")
   except ContextWindowExceededException:
     # first try popping reference results
     while len(query_references) > MIN_QUERY_REFERENCES:
       q_ref = query_references.pop()
       Logger.info(f"Dropped reference {q_ref.id}")
-      Logger.info(f"#SC240930: About to enter get_question_prompt the 2nd time, if 1st time created too-long prompt")
       question_prompt = get_question_prompt(
         prompt, chat_history, query_references, llm_type
       )
-      Logger.info(f"#SC240930: Just exited get_question_prompt the 2nd time, if 1st time created too-long prompt")
       try:
-        Logger.info(f"#SC240930: About to enter check_context_length the 2nd time")
         check_context_length(question_prompt, llm_type)
-        Logger.info(f"#SC240930: Just exited check_context_length the 2nd time, so length musta been ok")
         break
       except ContextWindowExceededException:
         pass
     # check again
     try:
-      Logger.info(f"#SC240930: About to enter check_context_length the 3rd time")
       check_context_length(question_prompt, llm_type)
-      Logger.info(f"#SC240930: Just exited check_context_length the 3rd time, so length musta been ok")
     except ContextWindowExceededException:
       # summarize chat history
-      Logger.info(f"Summarizing chat history for {question_prompt}")
       chat_history = await summarize_history(chat_history, llm_type)
-      Logger.info(f"#SC240930: About to enter get_question_prompt the 3rd time, if 1st-2nd times created too-long prompt and we have just summarized chat history")
       question_prompt = get_question_prompt(
         prompt, chat_history, query_references, llm_type
       )
-      Logger.info(f"#SC240930: Just exited get_question_prompt the 3rd time, if 1st-2nd times created too-long prompt and we have just summarized chat history")
       # exception will be propagated if context is too long at this point
-      Logger.info(f"#SC240930: About to enter check_context_length the 4th time")
       check_context_length(question_prompt, llm_type)
-      Logger.info(f"#SC240930: Just exited check_context_length the 4th time, so length musta been ok")
 
-  Logger.info(f"#SC240930: About to exit generate_question_prompt")
   return question_prompt, query_references
 
 async def summarize_history(chat_history: str,
@@ -703,7 +673,6 @@ def update_user_query(prompt: str,
   """ Save user query history """
   #SC240930: Should the second output be a LIST of dicts? The dicts version of query_references,
   #SC240930: which is a LIST of QueryReference objects?
-  Logger.info(f"#SC240925: Just entered update_user_query")
   query_reference_dicts = [
     ref.get_fields(reformat_datetime=True) for ref in query_references
   ]
@@ -714,20 +683,15 @@ def update_user_query(prompt: str,
                           query_engine_id=q_engine.id,
                           prompt=prompt)
     user_query.save()
-  Logger.info(f"#SC240930: About to enter update_history with prompt or response or query_reference_dicts")
   user_query.update_history(prompt=prompt,
                             response=response,
                             references=query_reference_dicts)
-  Logger.info(f"#SC240930: Just exited update_history with prompt or response or query_reference dicts")
 
   if query_filter:
-    Logger.info(f"#SC240930: About to enter update_history with query_filter")
     user_query.update_history(custom_entry={
       "query_filter": query_filter,
     })
-    Logger.info(f"#SC240930: Just exited update_history with query_filter")
 
-  Logger.info(f"#SC240925: About to exit update_user_query")
   return user_query, query_reference_dicts
 
 async def batch_build_query_engine(request_body: Dict,

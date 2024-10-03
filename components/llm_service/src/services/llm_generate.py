@@ -176,12 +176,10 @@ async def llm_chat(prompt: str, llm_type: str,
     user_query (optional): a user query to use for context
     chat_file_bytes (bytes): bytes of file to include in chat context
     chat_file_urls (List[str]): urls of files to include in chat context
-    chat_file_type (str): mime type of file to include in chat context #SC241001
     chat_file_types (List[str]): mime types of files to include in chat context
   Returns:
     the text response: str
   """
-  Logger.info(f"#SC240930: Just entered llm_chat")
   chat_file_bytes_log = chat_file_bytes[:10] if chat_file_bytes else None
   Logger.info(f"Generating chat with llm_type=[{llm_type}],"
               f" prompt=[{prompt}]"
@@ -210,24 +208,15 @@ async def llm_chat(prompt: str, llm_type: str,
     response = None
 
     # add chat history to prompt if necessary
-    Logger.info(f"#SC240930: In llm_chat: {user_chat=}")
-    Logger.info(f"#SC240930: In llm_chat: {user_query=}")
     if user_chat is not None or user_query is not None:
-      Logger.info(f"#SC240930: About to enter get_context_prompt")
       context_prompt = get_context_prompt(
           user_chat=user_chat, user_query=user_query)
       # context_prompt includes only text (no images/video) from
       # user_chat.history and user_query.history
-      Logger.info(f"#SC240930: Just exited get_context_prompt")
-      Logger.info(f"#SC240930: In llm_chat: {context_prompt=}")
-      Logger.info(f"#SC240930: In llm_chat: {prompt=}")
       prompt = context_prompt + "\n" + prompt
-      Logger.info(f"#SC240930: In llm_chat: Updated {prompt=}")
 
     # check whether the context length exceeds the limit for the model
-    Logger.info(f"#SC240930: About to enter check_context_length")
     check_context_length(prompt, llm_type)
-    Logger.info(f"#SC240930: Just exited check_context_length")
 
     # call the appropriate provider to generate the chat response
     if llm_type in get_provider_models(PROVIDER_LLM_SERVICE):
@@ -253,20 +242,16 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
-      Logger.info(f"#SC240930: About to enter google_llm_predict")
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                                           google_llm, user_chat,
                                           chat_file_bytes,
                                           chat_file_urls, chat_file_types)
-      Logger.info(f"#SC240930: Just existed google_llm_predict")
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
-    Logger.info(f"#SC240930: About to exit llm_chat with NO exception")
     return response
   except Exception as e:
     import traceback
     Logger.error(traceback.print_exc())
-    Logger.info(f"#SC240930: About to exit llm_chat WITH exception")
     raise InternalServerError(str(e)) from e
 
 def get_context_prompt(user_chat=None,
@@ -302,13 +287,8 @@ def get_context_prompt(user_chat=None,
         prompt_list.append(f"AI response: {content}")
       # prompt_list includes only text from user_query.history
 
-  Logger.info(f"#SC240930: In get_context_prompt: {prompt_list=}")
-  Logger.info(f"#SC240930: In get_context_prompt: about to do the join on prompt_list, for which all elements should be strings")
   context_prompt = "\n\n".join(prompt_list)
-  Logger.info(f"#SC240930: In get_context_prompt: just finished the join on prompt_list, for which all elements should be strings")
-  Logger.info(f"#SC240930: In get_context_prompt: {context_prompt=}")
 
-  Logger.info("f#SC240930: About to exit get_context_prompt")
   return context_prompt
 
 def check_context_length(prompt, llm_type):
@@ -535,7 +515,6 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   Returns:
     the text response.
   """
-  Logger.info(f"#SC240930: Just entered google_llm_predict")
   user_file_bytes_log = user_file_bytes[:10] if user_file_bytes else None
   Logger.info(f"Generating text with a Google multimodal LLM:"
               f" prompt=[{prompt}], is_chat=[{is_chat}],"
@@ -616,10 +595,8 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
           context_prompt,
           **parameters,
       )
-    Logger.info(f"#SC240930: About to exit google_llm_predict, with NO exception")
 
   except Exception as e:
-    Logger.info(f"#SC240930: About to exit google_llm_predict, WITH exception")
     raise InternalServerError(str(e)) from e
 
   Logger.info(f"Received response from the Model [{response.text}]")

@@ -75,28 +75,22 @@ class UserQuery(BaseModel):
                      references: List[dict]=None,
                      custom_entry=None):
     """ Update history with query and response """
-    #Logger.info(f"#SC240930: Just entered update_history")
     if not self.history:
       self.history = []
 
     if prompt:
       self.history.append({QUERY_HUMAN: prompt})
-      #Logger.info(f"#SC240930: Just updated history with {QUERY_HUMAN=} : {prompt=}")
 
     if response:
       self.history.append({QUERY_AI_RESPONSE: response})
-      #Logger.info(f"#SC240930: Just updated history with {QUERY_AI_RESPONSE=} : {response=}")
 
     if references:
       self.history.append({QUERY_AI_REFERENCES: references})
-      #Logger.info(f"#SC240930: Just updated history with {QUERY_AI_REFERENCES=} : {references=}")
 
     if custom_entry:
       self.history.append(custom_entry)
-      #Logger.info(f"#SC240930: Just updated history with {custom_entry}")
 
     self.save(merge=True)
-    #Logger.info(f"#SC240930: About to exit update_history")
 
   @classmethod
   def is_human(cls, entry: dict) -> bool:

@@ -46,7 +46,6 @@ def get_question_prompt(prompt: str,
     question = QUESTION_PROMPT.format(
       question=prompt, chat_history=chat_history, context=text_context
     )
-  Logger.info(f"#SC240930: About to exit get_question_prompt")
   return question
 
 def get_summarize_prompt(original_text: str) -> str:
