@@ -275,6 +275,7 @@ async def generate_question_prompt(prompt: str,
       check_context_length(question_prompt, llm_type)
     except ContextWindowExceededException:
       # summarize chat history
+      Logger.info(f"Summarizing chat history for {question_prompt}")
       chat_history = await summarize_history(chat_history, llm_type)
       question_prompt = get_question_prompt(
         prompt, chat_history, query_references, llm_type

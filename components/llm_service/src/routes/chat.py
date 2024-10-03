@@ -290,6 +290,7 @@ async def create_user_chat(
   try:
     user = User.find_by_email(user_data.get("email"))
 
+    # generate text from prompt
     response = await llm_chat(prompt,
                               llm_type,
                               chat_file_types=[chat_file_type],

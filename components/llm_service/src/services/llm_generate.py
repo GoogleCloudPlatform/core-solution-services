@@ -513,6 +513,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   Returns:
     the text response.
   """
+
   user_file_bytes_log = user_file_bytes[:10] if user_file_bytes else None
   Logger.info(f"Generating text with a Google multimodal LLM:"
               f" prompt=[{prompt}], is_chat=[{is_chat}],"
