@@ -210,7 +210,6 @@ async def query_generate(
     user_query.history.insert(
         len(user_query.history) - 1, {QUERY_AI_RESPONSE: question_response})
     user_query.save(merge=True)
-    Logger.info(f"SC241001: {user_query.history=}")
 
   # save query result
   query_ref_ids = [ref.id for ref in query_references]
