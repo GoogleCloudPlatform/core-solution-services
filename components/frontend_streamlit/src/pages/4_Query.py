@@ -16,7 +16,6 @@
 """
 # pylint: disable=invalid-name
 import streamlit as st
-import urllib.parse
 from api import get_chat, run_query
 from components.chat_history import chat_history_panel
 from components.query_engine_select import query_engine_select
