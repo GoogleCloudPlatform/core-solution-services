@@ -293,7 +293,7 @@ async def create_user_chat(
     # generate text from prompt
     response = await llm_chat(prompt,
                               llm_type,
-                              chat_file_type=chat_file_type,
+                              chat_file_types=[chat_file_type],
                               chat_file_bytes=chat_file_bytes,
                               chat_file_urls=chat_file_urls)
 

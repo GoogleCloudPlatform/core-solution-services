@@ -57,6 +57,7 @@ from services.query.vertex_search import (build_vertex_search,
                                           delete_vertex_search)
 from utils.errors import (NoDocumentsIndexedException,
                           ContextWindowExceededException)
+from utils.file_helper import validate_multimodal_file_type
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
                     DEFAULT_MULTIMODAL_LLM_TYPE,
@@ -176,14 +177,32 @@ async def query_generate(
         prompt, None, user_id, q_engine, query_references, user_query)
 
   # generate question prompt
+  # (from user's text prompt plus text info in query_references)
   question_prompt, query_references = \
       await generate_question_prompt(prompt,
                                      llm_type,
                                      query_references,
                                      user_query)
 
-  # send prompt to model
-  question_response = await llm_chat(question_prompt, llm_type)
+  # generate list of URLs for additional context
+  # (from non-text info in query_references)
+  context_urls = []
+  context_urls_mimetype = []
+  for ref in query_references:
+    if hasattr(ref, "modality") and ref.modality != "text":
+      if hasattr(ref, "chunk_url"):
+        ref_filename = ref.chunk_url
+        ref_mimetype = validate_multimodal_file_type(file_name=ref_filename,
+                                                     file_b64=None)
+        context_urls.append(ref_filename)
+        context_urls_mimetype.append(ref_mimetype)
+        # TODO: If ref is a video chunk, then update ref.chunk_url
+        # according to ref.timestamp_start and ref.timestamp_stop
+
+  # send prompt and additional context to model
+  question_response = await llm_chat(question_prompt, llm_type,
+                                     chat_file_types=context_urls_mimetype,
+                                     chat_file_urls=context_urls)
 
   # update user query with response
   if user_query:
@@ -650,7 +669,7 @@ def update_user_query(prompt: str,
                       query_references: List[QueryReference],
                       user_query: UserQuery = None,
                       query_filter=None) -> \
-                      Tuple[UserQuery, dict]:
+                      Tuple[UserQuery, List[dict]]:
   """ Save user query history """
   query_reference_dicts = [
     ref.get_fields(reformat_datetime=True) for ref in query_references

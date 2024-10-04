@@ -279,7 +279,7 @@ async def generate_multimodal(gen_config: LLMMultimodalGenerateModel):
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    result = await llm_generate_multimodal(prompt, file_mime_type, llm_type,
+    result = await llm_generate_multimodal(prompt, [file_mime_type], llm_type,
                                       user_file_bytes)
 
     return {

@@ -96,16 +96,20 @@ def chat_content():
               chunk_url = chunk_url.replace("gs://",
                   "https://storage.googleapis.com/", 1)
 
+            document_url = reference["document_url"]
             if modality == "text":
-              document_url = reference["document_url"]
               document_text = reference["document_text"]
               st.text_area(
-                f"Reference: {document_url}",
+                f"\nReference {query_index}: {document_url}",
                 document_text,
                 key=f"ref_{query_index}")
             elif modality == "image" and chunk_type in [".pdf",
                  ".png", ".jpg", ".jpeg", ".gif", ".bmp"]:
               # .tif/.tiff not available, all other file types are untested
+              page = reference["page"]
+              st.write(
+                f"\nReference {query_index}: {document_url}, Page {page+1}",
+                key=f"ref_{query_index}")
               st.image(chunk_url)
             else:
               logging.error("Reference modality unknown")

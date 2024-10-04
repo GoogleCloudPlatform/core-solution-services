@@ -107,7 +107,7 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_type: str,
+async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_types: List[str],
                              user_file_bytes: bytes = None,
                              user_file_urls: List[str] = None) -> str:
   """
@@ -116,6 +116,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_type: st
     prompt: the text prompt to pass to the LLM
     user_file_bytes: bytes of the file provided by the user
     user_file_urls: list of URLs to include in context
+    user_file_types: list of mime times for files to include in context
     llm_type: the type of LLM to use (default to gemini)
   Returns:
     the text response: str
@@ -145,7 +146,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_type: st
             f"Vertex model {llm_type} needs to be multimodal")
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                             google_llm, None, user_file_bytes,
-                            user_file_urls, user_file_type)
+                            user_file_urls, user_file_types)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -159,9 +160,9 @@ async def llm_generate_multimodal(prompt: str, llm_type: str, user_file_type: st
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
-                   chat_file_type: str = None,
-                   chat_file_urls: List[str] = None,
-                   chat_file_bytes: bytes = None) -> str:
+                   chat_file_types: Optional[List[str]] = None,
+                   chat_file_urls: Optional[List[str]] = None,
+                   chat_file_bytes: Optional[bytes] = None) -> str:
   """
   Send a prompt to a chat model and return string response.
   Supports including a file in the chat context, either by URL or
@@ -174,7 +175,7 @@ async def llm_chat(prompt: str, llm_type: str,
     user_query (optional): a user query to use for context
     chat_file_bytes (bytes): bytes of file to include in chat context
     chat_file_urls (List[str]): urls of files to include in chat context
-    chat_file_type (str): mime type of file to include in chat context
+    chat_file_types (List[str]): mime types of files to include in chat context
   Returns:
     the text response: str
   """
@@ -185,7 +186,7 @@ async def llm_chat(prompt: str, llm_type: str,
               f" user_query=[{user_query}]"
               f" chat_file_bytes=[{chat_file_bytes_log}]"
               f" chat_file_urls=[{chat_file_urls}]"
-              f" chat_file_type=[{chat_file_type}]")
+              f" chat_file_type=[{chat_file_types}]")
 
   if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
@@ -198,7 +199,7 @@ async def llm_chat(prompt: str, llm_type: str,
           "Must set only one of chat_file_bytes/chat_file_urls")
     if llm_type not in get_provider_models(PROVIDER_VERTEX):
       raise InternalServerError("Chat files only supported for Vertex")
-    if chat_file_type is None:
+    if chat_file_types is None:
       raise InternalServerError("Mime type must be passed for chat file")
     is_multimodal = True
 
@@ -209,6 +210,8 @@ async def llm_chat(prompt: str, llm_type: str,
     if user_chat is not None or user_query is not None:
       context_prompt = get_context_prompt(
           user_chat=user_chat, user_query=user_query)
+      # context_prompt includes only text (no images/video) from
+      # user_chat.history and user_query.history
       prompt = context_prompt + "\n" + prompt
 
     # check whether the context length exceeds the limit for the model
@@ -241,7 +244,7 @@ async def llm_chat(prompt: str, llm_type: str,
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                                           google_llm, user_chat,
                                           chat_file_bytes,
-                                          chat_file_urls, chat_file_type)
+                                          chat_file_urls, chat_file_types)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
     return response
@@ -271,6 +274,7 @@ def get_context_prompt(user_chat=None,
         prompt_list.append(f"Human input: {content}")
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
+      # prompt_list includes only text from user_chat.history
 
   if user_query is not None:
     history = user_query.history
@@ -280,6 +284,7 @@ def get_context_prompt(user_chat=None,
         prompt_list.append(f"Human input: {content}")
       elif UserQuery.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
+      # prompt_list includes only text from user_query.history
 
   context_prompt = "\n\n".join(prompt_list)
 
@@ -294,6 +299,8 @@ def check_context_length(prompt, llm_type):
   """
   # check if prompt exceeds context window length for model
   # assume a constant relationship between tokens and chars
+  # TODO: Recalculate max_context_length for text prompt,
+  # subtracting out tokens used by non-text context (image, video, etc)
   token_length = len(prompt) / CHARS_PER_TOKEN
   max_context_length = get_model_config_value(llm_type,
                                               KEY_MODEL_CONTEXT_LENGTH,
@@ -489,9 +496,9 @@ async def model_garden_predict(prompt: str,
 
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 google_llm: str, user_chat=None,
-                user_file_bytes: bytes=None,
-                user_file_urls: List[str]=None,
-                user_file_type: str=None) -> str:
+                user_file_bytes: Optional[bytes]=None,
+                user_file_urls: Optional[List[str]]=None,
+                user_file_types: Optional[List[str]]=None) -> str:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
@@ -502,7 +509,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
     user_chat: chat history
     user_file_bytes: the bytes of the file provided by the user
     user_file_urls: list of urls of files provided by the user
-    user_file_type: mime type of the file provided by the user
+    user_file_types: list of mime types of the files provided by the user
   Returns:
     the text response.
   """
@@ -513,7 +520,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
               f" is_multimodal=[{is_multimodal}], google_llm=[{google_llm}],"
               f" user_file_bytes=[{user_file_bytes_log}],"
               f" user_file_urls=[{user_file_urls}],"
-              f" user_file_type=[{user_file_type}].")
+              f" user_file_type=[{user_file_types}].")
 
   # TODO: Consider images in chat
   prompt_list = []
@@ -525,6 +532,8 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         prompt_list.append(f"Human input: {content}")
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
+      # prompt_list includes only text (no images/video)
+      # from user_chat.history
   prompt_list.append(prompt)
   context_prompt = "\n\n".join(prompt_list)
 
@@ -555,12 +564,16 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         if is_multimodal:
           user_file_parts = []
           if user_file_bytes is not None:
+            # user_file_bytes refers to a single image and so we index into
+            # user_file_types (a list) to get a single mime type
             user_file_parts = [Part.from_data(user_file_bytes,
-                                              mime_type=user_file_type)]
+                                              mime_type=user_file_types[0])]
           elif user_file_urls is not None:
+            # user_file_urls and user_file_types are same-length lists
+            # referring to one or more images
             user_file_parts = [
               Part.from_uri(user_file_url, mime_type=user_file_type)
-              for user_file_url in user_file_urls
+              for user_file_url, user_file_type in zip(user_file_urls, user_file_types)
             ]
           else:
             raise RuntimeError(
