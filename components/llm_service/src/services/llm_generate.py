@@ -564,9 +564,13 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         if is_multimodal:
           user_file_parts = []
           if user_file_bytes is not None:
+            # user_file_bytes refers to a single image and so we index into
+            # user_file_types (a list) to get a single mime type
             user_file_parts = [Part.from_data(user_file_bytes,
                                               mime_type=user_file_types[0])]
           elif user_file_urls is not None:
+            # user_file_urls and user_file_types are same-length lists
+            # referring to one or more images
             user_file_parts = [
               Part.from_uri(user_file_url, mime_type=user_file_type)
               for user_file_url, user_file_type in zip(user_file_urls, user_file_types)
