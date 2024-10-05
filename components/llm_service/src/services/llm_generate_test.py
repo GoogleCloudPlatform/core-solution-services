@@ -77,7 +77,6 @@ FAKE_VLLM_RESPONSE = {
 }
 
 FAKE_FILE_NAME = "test.png"
-FAKE_FILE_TYPE = "image/png"
 FAKE_PROMPT = "test prompt"
 
 
@@ -165,7 +164,6 @@ async def test_llm_generate_multi(clean_firestore):
   return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate_multi(FAKE_PROMPT,
                                         VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
-                                        FAKE_FILE_TYPE,
                                         fake_file_bytes)
   fake_file.close()
   assert response == FAKE_GENERATE_RESPONSE

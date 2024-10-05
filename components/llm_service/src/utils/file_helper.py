@@ -19,7 +19,7 @@ File processing helper functions.
 
 import os
 import tempfile
-from typing import Union
+from typing import List, Union
 from urllib.parse import urlparse
 from base64 import b64decode
 from fastapi import UploadFile
@@ -30,34 +30,36 @@ from common.utils.logging_handler import Logger
 from utils.gcs_helper import create_bucket_for_file, upload_file_to_gcs
 from google.cloud import storage
 from services.query.web_datasource import WebDataSource
+from services.query.data_source import DataSourceFile
 
 Logger = Logger.get_logger(__file__)
 
-async def process_chat_file(chat_file,
-                            chat_file_url,
-                            depth_limit=0):
+async def process_chat_file(chat_file: UploadFile,
+                            chat_file_url: str,
+                            depth_limit:int = 0) -> List[DataSourceFile]:
   """
   Process a chat upload file.
-  
+
   Upload the file to GCS, or in the case of a web URL, download the HTML files
   to GCS.
 
   Also determine the mime type of the content.
-  
+
   Returns:
-    list of URLs of chat files, Mime type of file
+    list of chat files as DataSourceFile's
   """
-  chat_file_type = None
-  chat_file_urls = None
   if chat_file is not None:
     bucket = create_bucket_for_file(chat_file.filename)
     if chat_file_url is not None:
       raise ValidationError("cannot set both upload_file and file_url")
-    chat_file_urls = [await process_upload_file(chat_file, bucket)]
+    chat_file_url = await process_upload_file(chat_file, bucket)
     chat_file_type = validate_multi_file_type(chat_file.filename)
     if chat_file_type is None:
       raise ValidationError(
           f"unsupported file type upload file {chat_file.filename}")
+    chat_files = [
+        DataSourceFile(gcs_url=chat_file_url, mime_type=chat_file_type)
+    ]
   elif chat_file_url:
     parsed_url = urlparse(chat_file_url)
 
@@ -75,9 +77,9 @@ async def process_chat_file(chat_file,
         if chat_file_type is None:
           raise ValidationError(
               f"unsupported file type file url {chat_file_url}")
-    else:
-      # assume html if no extension
-      chat_file_type = "text/html"
+      else:
+        # assume html if no extension
+        chat_file_type = "text/html"
 
     storage_client = storage.Client(project=PROJECT_ID)
     if parsed_url.scheme in ["http", "https"]:
@@ -88,10 +90,11 @@ async def process_chat_file(chat_file,
                                       bucket_name=bucket.name,
                                       depth_limit=depth_limit)
       with tempfile.TemporaryDirectory() as temp_dir:
-        data_source_files = \
+        chat_files = \
             web_data_source.download_documents(chat_file_url, temp_dir)
-        chat_file_urls = [f.gcs_path for f in data_source_files]
-        Logger.info(f"downloaded {chat_file_urls} from {chat_file_url}")
+      for f in chat_files:
+        f.mime_type = validate_multi_file_type(f.doc_name)
+      Logger.info(f"downloaded {chat_files} from {chat_file_url}")
     elif chat_file_url.startswith("shpt://"):
       raise UnsupportedError("shpt:// not supported for chat upload")
     elif chat_file_url.startswith("gs://"):
@@ -102,13 +105,20 @@ async def process_chat_file(chat_file,
             bucket.name,
             delimiter="/",
             include_trailing_delimiter=True)
-        chat_file_urls = [f"gs://{blob.name}" for blob in blobs]
+        chat_files = [
+            DataSourceFile(gcs_url=f"gs://{blob.name}",
+                           mime_type=validate_multi_file_type(blob.name))
+            for blob in blobs
+        ]
       else:
-        chat_file_urls = [chat_file_url]
+        chat_files = [
+            DataSourceFile(gcs_url=chat_file_url,
+                           mime_type=validate_multi_file_type(parsed_url.path))
+        ]
 
-  Logger.info(f"process_chat_upload: {chat_file_urls} type {chat_file_type}")
+  Logger.info(f"process_chat_upload: {chat_files}")
 
-  return chat_file_urls, chat_file_type
+  return chat_files
 
 async def process_upload_file(upload_file: UploadFile, bucket=None) -> str:
   """
