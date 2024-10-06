@@ -16,7 +16,7 @@
   Unit tests for LLM Service file helper utils
 """
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,ungrouped-imports,unused-import
+# pylint: disable=unused-argument,redefined-outer-name,ungrouped-imports,unused-import,line-too-long
 import numpy.testing as npt
 import numpy as np
 import pytest
@@ -72,9 +72,9 @@ class FakeWebDataSource():
     return [FAKE_DATA_SOURCE_FILES[self.idx]]
 
 class FakeStorageClient():
-  def bucket():
+  def bucket(self):
     pass
-  def list_blobs():
+  def list_blobs(self):
     pass
 
 @pytest.mark.asyncio
