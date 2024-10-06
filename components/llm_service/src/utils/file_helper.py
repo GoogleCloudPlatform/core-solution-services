@@ -58,7 +58,7 @@ async def process_chat_file(chat_file: UploadFile,
       raise ValidationError(
           f"unsupported file type upload file {chat_file.filename}")
     chat_files = [
-        DataSourceFile(gcs_url=chat_file_url, mime_type=chat_file_type)
+        DataSourceFile(gcs_path=chat_file_url, mime_type=chat_file_type)
     ]
   elif chat_file_url:
     parsed_url = urlparse(chat_file_url)
@@ -106,13 +106,13 @@ async def process_chat_file(chat_file: UploadFile,
             delimiter="/",
             include_trailing_delimiter=True)
         chat_files = [
-            DataSourceFile(gcs_url=f"gs://{blob.name}",
+            DataSourceFile(gcs_path=f"gs://{blob.name}",
                            mime_type=validate_multi_file_type(blob.name))
             for blob in blobs
         ]
       else:
         chat_files = [
-            DataSourceFile(gcs_url=chat_file_url,
+            DataSourceFile(gcs_path=chat_file_url,
                            mime_type=validate_multi_file_type(parsed_url.path))
         ]
 

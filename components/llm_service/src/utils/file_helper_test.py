@@ -31,6 +31,10 @@ with set_env_var("PG_HOST", ""):
 
 Logger = Logger.get_logger(__file__)
 
+FAKE_FILE_NAME = "test.png"
+
+FAKE_GCS_URL = "gs://fake-bucket/test.png"
+
 FAKE_DATA_SOURCE_FILES = [
   DataSourceFile(
       doc_name="fake web page",
@@ -52,18 +56,26 @@ FAKE_DATA_SOURCE_FILES = [
       doc_name="fake web page 3",
       src_url="http://x.com/a.pdf",
       local_path="/tmp/pdf",
-      gcs_path="gs://pdf",
+      gcs_path="gs://fake-bucket/test.pdf",
       doc_id="xxx125",
       mime_type="application/pdf"
   ),
 ]
 
 class FakeUploadFile():
-  def seek(self,b:int) -> int:
+  async def seek(self, b:int) -> int:
     return 0
   @property
   def size(self):
     return 1000
+  @property
+  def filename(self):
+    return FAKE_FILE_NAME
+  @property
+  def file(self):
+    return None
+  
+  
 
 class FakeWebDataSource():
   def __init__(self, idx):
@@ -87,16 +99,20 @@ async def test_process_chat_file_web(mock_storage_client,
   chat_files = await process_chat_file(None, fake_url)
   assert chat_files[0] == FAKE_DATA_SOURCE_FILES[0]
 
+
 @pytest.mark.asyncio
 @mock.patch("google.cloud.storage.Client")
 async def test_process_chat_file_gcs(mock_storage_client):
   mock_storage_client.return_value = FakeStorageClient
+  fake_url = FAKE_DATA_SOURCE_FILES[2].src_url
   assert True
 
 
 @pytest.mark.asyncio
-@mock.patch("utils.file_helper.UploadFile")
+@mock.patch("utils.file_helper.upload_file_to_gcs")
 async def test_process_chat_file_upload(mock_file_upload):
-  mock_file_upload.return_value = FakeUploadFile
-  assert True
-
+  mock_file_upload.return_value = FAKE_GCS_URL
+  fake_upload_file = FakeUploadFile()
+  chat_files = await process_chat_file(fake_upload_file, None)
+  assert len(chat_files) == 1
+  assert chat_files[0].gcs_path == FAKE_GCS_URL
