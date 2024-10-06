@@ -54,7 +54,7 @@ FAKE_DATA_SOURCE_FILES = [
   ),
   DataSourceFile(
       doc_name="fake web page 3",
-      src_url="http://x.com/a.pdf",
+      src_url="gs://fake-bucket/test.pdf",
       local_path="/tmp/pdf",
       gcs_path="gs://fake-bucket/test.pdf",
       doc_id="xxx125",
@@ -63,6 +63,7 @@ FAKE_DATA_SOURCE_FILES = [
 ]
 
 class FakeUploadFile():
+  """ mock class for upload file """
   async def seek(self, b:int) -> int:
     return 0
   @property
@@ -74,20 +75,28 @@ class FakeUploadFile():
   @property
   def file(self):
     return None
-  
-  
+
 
 class FakeWebDataSource():
+  """ mock class for web datasource """
   def __init__(self, idx):
     self.idx = idx
   def download_documents(self, url, tempdir):
     return [FAKE_DATA_SOURCE_FILES[self.idx]]
 
+class FakeBucket():
+  """ mock class for bucket """
+  @property
+  def location(self):
+    return ""
+
 class FakeStorageClient():
-  def bucket(self):
-    pass
+  """ mock class for storage client """
+  def bucket(self, name=None):
+    return FakeBucket()
   def list_blobs(self):
     pass
+
 
 @pytest.mark.asyncio
 @mock.patch("utils.file_helper.WebDataSource")
@@ -105,7 +114,9 @@ async def test_process_chat_file_web(mock_storage_client,
 async def test_process_chat_file_gcs(mock_storage_client):
   mock_storage_client.return_value = FakeStorageClient
   fake_url = FAKE_DATA_SOURCE_FILES[2].src_url
-  assert True
+  chat_files = await process_chat_file(None, fake_url)
+  assert chat_files[0].gcs_path == FAKE_DATA_SOURCE_FILES[2].gcs_path
+  assert chat_files[0].mime_type == FAKE_DATA_SOURCE_FILES[2].mime_type
 
 
 @pytest.mark.asyncio
