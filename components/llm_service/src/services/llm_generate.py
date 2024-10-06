@@ -550,7 +550,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
                                               mime_type=user_files[0].mime_type)]
           elif user_files is not None:
             user_file_parts = [
-              Part.from_uri(user_file.gcs_url, mime_type=user_file.mime_type)
+              Part.from_uri(user_file.gcs_path, mime_type=user_file.mime_type)
               for user_file in user_files
             ]
           else:

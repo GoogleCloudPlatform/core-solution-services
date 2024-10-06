@@ -147,7 +147,7 @@ async def test_llm_generate_google(clean_firestore):
 
 
 @pytest.mark.asyncio
-async def test_llm_generate_multi(clean_firestore):
+async def test_llm_generate_multi_file(clean_firestore):
   get_model_config().llm_model_providers = {
     PROVIDER_VERTEX: TEST_VERTEX_CONFIG
   }
@@ -168,6 +168,26 @@ async def test_llm_generate_multi(clean_firestore):
                                         fake_file_bytes,
                                         fake_file_data)
   fake_file.close()
+  assert response == FAKE_GENERATE_RESPONSE
+
+
+@pytest.mark.asyncio
+async def test_llm_generate_multi_url(clean_firestore):
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
+
+  fake_file_data = [DataSourceFile(mime_type="image/png",
+                                   gcs_path="gs://fake_bucket/file.png")]
+  fake_file_bytes = None
+  with mock.patch(
+  "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
+  return_value=FAKE_GOOGLE_RESPONSE):
+    response = await llm_generate_multi(FAKE_PROMPT,
+                                        VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+                                        fake_file_bytes,
+                                        fake_file_data)
   assert response == FAKE_GENERATE_RESPONSE
 
 
