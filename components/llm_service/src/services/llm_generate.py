@@ -116,7 +116,7 @@ async def llm_generate_multi(prompt: str, llm_type: str,
     prompt: the text prompt to pass to the LLM
     llm_type: the type of LLM to use (default to gemini)
     user_file_bytes: bytes of the file provided by the user
-    user_files: list of DataSourceFiles to include in context
+    user_files: list of DataSourceFile objects for file meta data
   Returns:
     the text response: str
   """
@@ -545,7 +545,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
         chat_model = GenerativeModel(google_llm)
         if is_multi:
           user_file_parts = []
-          if user_file_bytes is not None:
+          if user_file_bytes is not None and user_files is not None:
             user_file_parts = [Part.from_data(user_file_bytes,
                                               mime_type=user_files[0].mime_type)]
           elif user_files is not None:
@@ -555,7 +555,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
             ]
           else:
             raise RuntimeError(
-                "if is_multi one of user_file_bytes or user_files must be set")
+                "if is_multi user_files must be set")
           context_list = [*user_file_parts, context_prompt]
           Logger.info(f"context list {context_list}")
           generation_config = GenerationConfig(**parameters)

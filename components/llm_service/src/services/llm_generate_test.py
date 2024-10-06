@@ -37,6 +37,7 @@ from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
 from common.utils.logging_handler import Logger
 from schemas.schema_examples import (CHAT_EXAMPLE, USER_EXAMPLE)
+from services.query.data_source import DataSourceFile
 
 Logger = Logger.get_logger(__file__)
 
@@ -158,13 +159,14 @@ async def test_llm_generate_multi(clean_firestore):
   os.remove(FAKE_FILE_NAME)
   fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
   fake_file_bytes = await fake_upload_file.read()
-
+  fake_file_data = [DataSourceFile(mime_type="image/png")]
   with mock.patch(
   "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
   return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate_multi(FAKE_PROMPT,
                                         VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
-                                        fake_file_bytes)
+                                        fake_file_bytes,
+                                        fake_file_data)
   fake_file.close()
   assert response == FAKE_GENERATE_RESPONSE
 
