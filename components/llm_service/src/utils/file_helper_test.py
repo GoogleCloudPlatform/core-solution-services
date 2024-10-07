@@ -121,7 +121,9 @@ async def test_process_chat_file_gcs(mock_storage_client):
 
 @pytest.mark.asyncio
 @mock.patch("utils.file_helper.upload_file_to_gcs")
-async def test_process_chat_file_upload(mock_file_upload):
+@mock.patch("utils.file_helper.create_bucket_for_file")
+async def test_process_chat_file_upload(mock_create_bucket, mock_file_upload):
+  mock_create_bucket.return_value = FakeBucket()
   mock_file_upload.return_value = FAKE_GCS_URL
   fake_upload_file = FakeUploadFile()
   chat_files = await process_chat_file(fake_upload_file, None)
