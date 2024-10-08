@@ -1,5 +1,20 @@
 # Releases
 
+## v0.4.0
+
+New features:
+
+### GENIE ("GenAI for Enterprise" platform on GCP)
+- Multimodal RAG for images using multi-modal embeddings for search
+- Chat file upload in both backend and React app.  Upload files or specify URLs to pass to model.
+- RBAC for model access.  See README for LLM Service for docs on how to manage access to models for users.
+- Updated to recent releases of FastAPI (0.112.2) and associated libraries
+- Use L4 GPUs with Truss models
+
+### Fixes
+- Fixed download of PDFs from scraped sites
+
+
 ## v0.3.2
 
 New features:
