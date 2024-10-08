@@ -14,7 +14,6 @@
 """
 User SQL Data Model
 """
-import regex
 from peewee import (UUIDField,
                     DateTimeField,
                     TextField,
@@ -23,8 +22,9 @@ from peewee import (UUIDField,
                     TimestampField)
 from playhouse.postgres_ext import ArrayField, JSONField
 from common.models.base_model_sql import SQLBaseModel
-from common.utils.errors import ResourceNotFoundException
+from common.models.user import validate_name, check_status, check_user_type
 
+# pylint: disable=unused-import
 
 class User(SQLBaseModel):
   """User base Class"""

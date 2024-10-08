@@ -22,6 +22,8 @@ from playhouse.postgres_ext import ArrayField
 from common.models.base_model_sql import SQLBaseModel
 from common.models.llm import UserChatUtil
 
+# pylint: disable=unused-argument,unused-import
+
 class UserChat(SQLBaseModel, UserChatUtil):
   """
   UserChat ORM class

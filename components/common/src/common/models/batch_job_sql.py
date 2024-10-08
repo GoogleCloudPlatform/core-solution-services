@@ -24,6 +24,7 @@ from peewee import (UUIDField,
 from playhouse.postgres_ext import ArrayField
 from common.models.base_model_sql import SQLBaseModel
 
+# pylint: disable=unused-import
 
 class BatchJobModel(SQLBaseModel):
   """Model class for batch job"""
@@ -48,7 +49,7 @@ class BatchJobModel(SQLBaseModel):
   @classmethod
   def find_by_uuid(cls, name):
     pass
-    
+
   @classmethod
   def find_by_job_type(cls, job_type):
     pass

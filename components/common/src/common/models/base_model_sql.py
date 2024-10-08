@@ -21,6 +21,8 @@ from common.utils.errors import ResourceNotFoundException
 from peewee import Model, DoesNotExist, DateTimeField, TextField
 from playhouse.postgres_ext import PostgresqlExtDatabase
 
+# pylint: disable=unused-argument
+
 # instantiate connection to postgres db
 db = PostgresqlExtDatabase(
   PG_DBNAME, host=PG_HOST, password=PG_PASSWD, user=PG_USER
@@ -56,7 +58,8 @@ class SQLBaseModel(Model):
     class CollectionWrapper:
       @classmethod
       def filter(cls, *args, **kwargs):
-        return self.filter(*args, **kwargs)  # Delegate to the model's filter method
+        # Delegate to the model's filter method
+        return self.filter(*args, **kwargs)
 
     return CollectionWrapper
 
@@ -64,7 +67,8 @@ class SQLBaseModel(Model):
   def filter(cls, *args, **kwargs):
     """
     Filter objects in the database based on the given conditions.
-    This method provides a way to filter objects similar to Fireo's `collection.filter()`.
+    This method provides a way to filter objects similar to
+    Fireo's `collection.filter()`.
     It uses Peewee's `where()` method to apply the filter conditions.
     Args:
         *args: Positional arguments for the `where()` method.
@@ -163,9 +167,9 @@ class SQLBaseModel(Model):
       obj.deleted_at_timestamp = datetime.datetime.utcnow()
       obj.deleted_by = by_user
       obj.save()
-    except DoesNotExist:
+    except DoesNotExist as ex:
       raise ResourceNotFoundException(
-        f"{cls.__name__} with id {object_id} is not found")
+        f"{cls.__name__} with id {object_id} is not found") from ex
 
   @classmethod
   def fetch_all(cls, skip=0, limit=1000, order_by="-created_time"):
@@ -186,6 +190,8 @@ class SQLBaseModel(Model):
   @classmethod
   def get_fields(cls, reformat_datetime=False, remove_meta=False):
     """
+    Overrides default method to fix data type for datetime fields.
+    remove_meta=True will remove extra meta data fields (useful for testing)
     """
     fields = {}
     for field_name in cls._meta.sorted_field_names:

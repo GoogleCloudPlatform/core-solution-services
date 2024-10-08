@@ -25,6 +25,7 @@ from playhouse.postgres_ext import ArrayField, JSONField
 from common.models.base_model_sql import SQLBaseModel
 from common.models.llm_query import UserQueryUtil, QueryReferenceUtil
 
+# pylint: disable=unused-argument,unused-import
 
 class UserQuery(SQLBaseModel, UserQueryUtil):
   """
@@ -100,7 +101,7 @@ class QueryEngine(SQLBaseModel):
 
 
   @classmethod
-  def find_children(cls, q_engine) -> List[BaseModel]:
+  def find_children(cls, q_engine) -> List[SQLBaseModel]:
     """
     Find all child engines for an engine.
 
@@ -201,7 +202,7 @@ class QueryDocument(SQLBaseModel):
 
     Args:
         query_engine_id (str): Query Engine id
-        doc_url (str): Query document url
+        index_file (str): Query document url
 
     Returns:
         QueryDocument: query document object
