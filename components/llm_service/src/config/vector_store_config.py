@@ -16,7 +16,7 @@ Vector Store Config
 """
 # pylint: disable=broad-exception-caught
 
-from common.config import PG_HOST, PG_USER, PG_PORT, PG_PASSWD 
+from common.orm_config import PG_HOST, PG_USER, PG_PORT, PG_PASSWD
 from common.utils.logging_handler import Logger
 from common.utils.config import get_env_setting
 

@@ -16,40 +16,63 @@ SQL BaseModel to be inherited by all other objects for SQL ORM
 """
 import datetime
 from typing import List, Tuple
-from common.config import PG_HOST, PG_DBNAME, PG_USER, PG_PASSWD
+from common.orm_config import PG_HOST, PG_DBNAME, PG_USER, PG_PASSWD
 from common.utils.errors import ResourceNotFoundException
-from peewee import Model, DateTimeField, TextField
+from peewee import Model, DoesNotExist, DateTimeField, TextField
 from playhouse.postgres_ext import PostgresqlExtDatabase
 
 # instantiate connection to postgres db
-db = PostgresqlExtDatabase(PG_DBNAME,
-                           host=PG_HOST,
-                           password=PG_PASSWD,
-                           user=PG_USER)
-
-class SQLBaseUtility:
-  
-  def filter(filterExpr: str) -> SQLBaseModel:
-    pass
-
+db = PostgresqlExtDatabase(
+  PG_DBNAME, host=PG_HOST, password=PG_PASSWD, user=PG_USER
+)
 
 class SQLBaseModel(Model):
   """
   BaseModel for SQL-based data models
   """
-  created_time = DateTimeField()
-  last_modified_time = DateTimeField()
-  deleted_at_timestamp = DateTimeField(default=None)
+  created_time = DateTimeField(default=datetime.datetime.utcnow)
+  last_modified_time = DateTimeField(default=datetime.datetime.utcnow)
+  deleted_at_timestamp = DateTimeField(null=True)
   deleted_by = TextField(default="")
-  archived_at_timestamp = DateTimeField(default=None)
+  archived_at_timestamp = DateTimeField(null=True)
   archived_by = TextField(default="")
   created_by = TextField(default="")
   last_modified_by = TextField(default="")
 
-  collection = SQLBaseUtility()
-
   class Meta:
     database = db
+    legacy_table_names = False
+
+  @property
+  def collection(self):
+    """
+    Provides access to the model's collection-like interface.
+
+    This property mimics Fireo's `collection` attribute, allowing you to
+    access methods like `filter()` without changing dependent code.
+    """
+
+    # Create a simple object with a `filter` method
+    class CollectionWrapper:
+      @classmethod
+      def filter(cls, *args, **kwargs):
+        return self.filter(*args, **kwargs)  # Delegate to the model's filter method
+
+    return CollectionWrapper
+
+  @classmethod
+  def filter(cls, *args, **kwargs):
+    """
+    Filter objects in the database based on the given conditions.
+    This method provides a way to filter objects similar to Fireo's `collection.filter()`.
+    It uses Peewee's `where()` method to apply the filter conditions.
+    Args:
+        *args: Positional arguments for the `where()` method.
+        **kwargs: Keyword arguments for the `where()` method.
+    Returns:
+        A query object that can be further refined or used to fetch objects.
+    """
+    return cls.select().where(*args, **kwargs)
 
   @classmethod
   def find_by_id(cls, doc_id):
@@ -63,8 +86,8 @@ class SQLBaseModel(Model):
             None if object not found
         """
     try:
-      obj = cls.select().where(cls.id == doc_id).get()
-    except peewee.DoesNotExist:
+      obj = cls.get(cls.id == doc_id)
+    except DoesNotExist:
       obj = None
     return obj
 
@@ -107,6 +130,11 @@ class SQLBaseModel(Model):
     Returns:
       _type_: _description_
     """
+    if input_datetime:
+      date_timestamp = input_datetime
+    else:
+      date_timestamp = datetime.datetime.utcnow()
+    self.last_modified_time = date_timestamp
     return super().save()
 
   @classmethod
@@ -116,11 +144,10 @@ class SQLBaseModel(Model):
         Args:
             doc_id (string): the document id without collection_name
             (i.e. not the key)
-
         Returns:
             None
         """
-    cls.delete().where(cls.id == doc_id)
+    return cls.delete().where(cls.id == doc_id).execute()
 
   @classmethod
   def soft_delete_by_id(cls, object_id, by_user=None):
@@ -131,41 +158,67 @@ class SQLBaseModel(Model):
       Raises:
           ResourceNotFoundException: If the object does not exist
       """
-    obj = cls.find_by_id(object_id)
-    if obj is None:
+    try:
+      obj = cls.find_by_id(object_id)
+      obj.deleted_at_timestamp = datetime.datetime.utcnow()
+      obj.deleted_by = by_user
+      obj.save()
+    except DoesNotExist:
       raise ResourceNotFoundException(
-          f"{cls.__name__} with id {object_id} is not found")
-    obj.update({obj.deleted_at_timestamp: datetime.datetime.utcnow(),
-                obj.deleted_by: by_user})
+        f"{cls.__name__} with id {object_id} is not found")
 
   @classmethod
   def fetch_all(cls, skip=0, limit=1000, order_by="-created_time"):
     """ fetch all documents
-
     Args:
         skip (int, optional): _description_. Defaults to 0.
         limit (int, optional): _description_. Defaults to 1000.
         order_by (str, optional): _description_. Defaults to "-created_time".
-
     Returns:
         list: list of objects
     """
-    objs = cls.select().order_by(cls.created_time.desc())
+    order_by_field = getattr(cls, order_by[1:])
+    if order_by.startswith("-"):
+      order_by_field = order_by_field.desc()
+    objects = cls.select().order_by(order_by_field).offset(skip).limit(limit)
+    return list(objects)
 
-  def get_fields(self, reformat_datetime=False, remove_meta=False):
+  @classmethod
+  def get_fields(cls, reformat_datetime=False, remove_meta=False):
     """
     """
-    field_names = cls._meta.sorted_field_names
-    field_dict = {
-      field: cls.getattr(field)
-      for field in field_names
-    }
+    fields = {}
+    for field_name in cls._meta.sorted_field_names:
+      field_value = getattr(cls, field_name)
+      if isinstance(field_value, datetime.datetime) and reformat_datetime:
+        field_value = str(field_value)
+      fields[field_name] = field_value
+    if remove_meta:
+      fields = cls.remove_field_meta(fields)
+    return fields
 
-  def validate(self) -> Tuple[bool, List[str]]:
+  @classmethod
+  def remove_field_meta(cls, fields: dict) -> dict:
+    """Remove meta keys from the fields dictionary."""
+    del fields["created_time"]
+    del fields["created_by"]
+    del fields["archived_at_timestamp"]
+    del fields["archived_by"]
+    del fields["deleted_at_timestamp"]
+    del fields["deleted_by"]
+    del fields["last_modified_time"]
+    del fields["last_modified_by"]
+    return fields
+
+  @classmethod
+  def validate(cls) -> Tuple[bool, List[str]]:
     """
     Validate a model in this class.
 
     Returns:
       True,[] or False, list of error messages
     """
-    pass
+    errors = []
+    # Placeholder for validation logic.
+    # Add custom validation rules here for model fields.
+    return len(errors) == 0, errors
