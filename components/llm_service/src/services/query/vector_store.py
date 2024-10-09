@@ -14,7 +14,7 @@
 """
 Query Vector Store
 """
-# pylint: disable=broad-exception-caught,ungrouped-imports,invalid-name
+# pylint: disable=broad-exception-caught,ungrouped-imports,invalid-name,too-many-function-args
 
 from abc import ABC, abstractmethod
 from base64 import b64decode
@@ -38,7 +38,7 @@ from common.utils.http_exceptions import InternalServerError
 from services import embeddings
 from config import PROJECT_ID, REGION, MODALITY_SET
 from config.vector_store_config import (PG_HOST, PG_PORT,
-                                        PG_DBNAME, PG_USER, PG_PASSWD,
+                                        PG_VECTOR_DBNAME, PG_USER, PG_PASSWD,
                                         DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
@@ -644,7 +644,7 @@ class PostgresVectorStore(LangChainVectorStore):
         driver="psycopg2",
         host=PG_HOST,
         port=PG_PORT,
-        database=PG_DBNAME,
+        database=PG_VECTOR_DBNAME,
         user=PG_USER,
         password=PG_PASSWD
     )

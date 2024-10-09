@@ -26,6 +26,7 @@ Logger = Logger.get_logger(__file__)
 VECTOR_STORE_MATCHING_ENGINE = "matching_engine"
 VECTOR_STORE_LANGCHAIN_PGVECTOR = "langchain_pgvector"
 PG_VECTOR_DEFAULT_DBNAME = "pgvector"
+PG_VECTOR_DBNAME = PG_VECTOR_DEFAULT_DBNAME
 LOCAL_HOST = "127.0.0.1"
 
 VECTOR_STORES = [
@@ -36,7 +37,7 @@ VECTOR_STORES = [
 # test postgres connection
 if PG_PASSWD and PG_HOST:
   PG_VECTOR_DBNAME = get_env_setting("PG_DBNAME", PG_VECTOR_DEFAULT_DBNAME)
-  
+
   import sqlalchemy
   from langchain.vectorstores.pgvector import PGVector as LangchainPGVector
   try:

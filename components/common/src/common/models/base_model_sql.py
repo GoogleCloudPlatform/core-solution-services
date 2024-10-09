@@ -130,7 +130,7 @@ class SQLBaseModel(Model):
     else:
       return super().save(force_insert=force_insert, only=only)
 
-  # pylint: disable=arguments-renamed
+  # pylint: disable=arguments-renamed, invalid-name
   def update(self, __data=None, **kwargs):
     """overrides default method to update items with timestamp"""
     return self.save()
