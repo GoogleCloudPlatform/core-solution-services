@@ -38,6 +38,7 @@ from config import (get_model_config, get_provider_models,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
                     DEFAULT_LLM_TYPE, DEFAULT_MULTI_LLM_TYPE)
 from services.langchain_service import langchain_llm_generate
+from services.query.data_source import DataSourceFile
 from utils.errors import ContextWindowExceededException
 
 Logger = Logger.get_logger(__file__)
@@ -106,16 +107,16 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-async def llm_generate_multi(prompt: str, llm_type: str, user_file_type: str,
+async def llm_generate_multi(prompt: str, llm_type: str,
                              user_file_bytes: bytes = None,
-                             user_file_urls: List[str] = None) -> str:
+                             user_files: List[DataSourceFile] = None) -> str:
   """
   Generate text with an LLM given a file and a prompt.
   Args:
     prompt: the text prompt to pass to the LLM
-    user_file_bytes: bytes of the file provided by the user
-    user_file_urls: list of URLs to include in context
     llm_type: the type of LLM to use (default to gemini)
+    user_file_bytes: bytes of the file provided by the user
+    user_files: list of DataSourceFile objects for file meta data
   Returns:
     the text response: str
   """
@@ -144,7 +145,7 @@ async def llm_generate_multi(prompt: str, llm_type: str, user_file_type: str,
             f"Vertex model {llm_type} needs to be multi-modal")
       response = await google_llm_predict(prompt, is_chat, is_multi,
                             google_llm, None, user_file_bytes,
-                            user_file_urls, user_file_type)
+                            user_files)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -158,8 +159,7 @@ async def llm_generate_multi(prompt: str, llm_type: str, user_file_type: str,
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
-                   chat_file_type: str = None,
-                   chat_file_urls: List[str] = None,
+                   chat_files: List[DataSourceFile] = None,
                    chat_file_bytes: bytes = None) -> str:
   """
   Send a prompt to a chat model and return string response.
@@ -171,9 +171,8 @@ async def llm_chat(prompt: str, llm_type: str,
     llm_type: the type of LLM to use
     user_chat (optional): a user chat to use for context
     user_query (optional): a user query to use for context
+    chat_files (List[DataSourceFile]): files to include in chat context
     chat_file_bytes (bytes): bytes of file to include in chat context
-    chat_file_urls (List[str]): urls of files to include in chat context
-    chat_file_type (str): mime type of file to include in chat context
   Returns:
     the text response: str
   """
@@ -183,22 +182,19 @@ async def llm_chat(prompt: str, llm_type: str,
               f" user_chat=[{user_chat}]"
               f" user_query=[{user_query}]"
               f" chat_file_bytes=[{chat_file_bytes_log}]"
-              f" chat_file_urls=[{chat_file_urls}]"
-              f" chat_file_type=[{chat_file_type}]")
+              f" chat_files=[{chat_files}]")
 
   if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
   # validate chat file params
   is_multi = False
-  if chat_file_bytes is not None or chat_file_urls:
-    if chat_file_bytes is not None and chat_file_urls:
+  if chat_file_bytes is not None or chat_files:
+    if chat_file_bytes is not None and chat_files:
       raise InternalServerError(
-          "Must set only one of chat_file_bytes/chat_file_urls")
+          "Must set only one of chat_file_bytes/chat_files")
     if llm_type not in get_provider_models(PROVIDER_VERTEX):
       raise InternalServerError("Chat files only supported for Vertex")
-    if chat_file_type is None:
-      raise InternalServerError("Mime type must be passed for chat file")
     is_multi = True
 
   try:
@@ -240,7 +236,7 @@ async def llm_chat(prompt: str, llm_type: str,
       response = await google_llm_predict(prompt, is_chat, is_multi,
                                           google_llm, user_chat,
                                           chat_file_bytes,
-                                          chat_file_urls, chat_file_type)
+                                          chat_files)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
     return response
@@ -489,8 +485,7 @@ async def model_garden_predict(prompt: str,
 async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
                 google_llm: str, user_chat=None,
                 user_file_bytes: bytes=None,
-                user_file_urls: List[str]=None,
-                user_file_type: str=None) -> str:
+                user_files: List[DataSourceFile]=None) -> str:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
@@ -500,8 +495,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
     google_llm: name of the vertex llm model
     user_chat: chat history
     user_file_bytes: the bytes of the file provided by the user
-    user_file_urls: list of urls of files provided by the user
-    user_file_type: mime type of the file provided by the user
+    user_files: list of DataSourceFiles for files provided by the user
   Returns:
     the text response.
   """
@@ -510,8 +504,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
               f" prompt=[{prompt}], is_chat=[{is_chat}],"
               f" is_multi=[{is_multi}], google_llm=[{google_llm}],"
               f" user_file_bytes=[{user_file_bytes_log}],"
-              f" user_file_urls=[{user_file_urls}],"
-              f" user_file_type=[{user_file_type}].")
+              f" user_files=[{user_files}]")
 
   # TODO: Consider images in chat
   prompt_list = []
@@ -552,17 +545,17 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
         chat_model = GenerativeModel(google_llm)
         if is_multi:
           user_file_parts = []
-          if user_file_bytes is not None:
+          if user_file_bytes is not None and user_files is not None:
             user_file_parts = [Part.from_data(user_file_bytes,
-                                              mime_type=user_file_type)]
-          elif user_file_urls is not None:
+                                              mime_type=user_files[0].mime_type)]
+          elif user_files is not None:
             user_file_parts = [
-              Part.from_uri(user_file_url, mime_type=user_file_type)
-              for user_file_url in user_file_urls
+              Part.from_uri(user_file.gcs_path, mime_type=user_file.mime_type)
+              for user_file in user_files
             ]
           else:
             raise RuntimeError(
-                "if is_multi one of user_file_bytes or user_file_urls must be set")
+                "if is_multi user_files must be set")
           context_list = [*user_file_parts, context_prompt]
           Logger.info(f"context list {context_list}")
           generation_config = GenerationConfig(**parameters)

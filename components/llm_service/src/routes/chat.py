@@ -258,17 +258,15 @@ async def create_user_chat(
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
 
-  # process chat file: upload to GCS and determine mime type
-  chat_file_type = None
+  # process chat file(s): upload to GCS and determine mime type
   chat_file_bytes = None
-  chat_file_urls = None
+  chat_files = None
   if chat_file is not None or chat_file_url is not None:
-    chat_file_urls, chat_file_type = \
-        await process_chat_file(chat_file, chat_file_url)
+    chat_files = await process_chat_file(chat_file, chat_file_url)
 
   # only read chat file bytes if for some reason we can't
-  # upload the file to GCS
-  if not chat_file_urls and chat_file is not None:
+  # upload the file(s) to GCS
+  if not chat_files and chat_file is not None:
     await chat_file.seek(0)
     chat_file_bytes = await chat_file.read()
 
@@ -278,9 +276,8 @@ async def create_user_chat(
     # generate text from prompt
     response = await llm_chat(prompt,
                               llm_type,
-                              chat_file_type=chat_file_type,
-                              chat_file_bytes=chat_file_bytes,
-                              chat_file_urls=chat_file_urls)
+                              chat_files=chat_files,
+                              chat_file_bytes=chat_file_bytes)
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
