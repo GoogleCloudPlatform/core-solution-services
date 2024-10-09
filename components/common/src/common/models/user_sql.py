@@ -14,6 +14,7 @@
 """
 User SQL Data Model
 """
+# pylint: disable=unused-import
 from peewee import (UUIDField,
                     DateTimeField,
                     TextField,
@@ -24,7 +25,6 @@ from playhouse.postgres_ext import ArrayField, JSONField
 from common.models.base_model_sql import SQLBaseModel
 from common.models.user import validate_name, check_status, check_user_type
 
-# pylint: disable=unused-import
 
 class User(SQLBaseModel):
   """User base Class"""

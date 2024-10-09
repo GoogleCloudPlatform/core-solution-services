@@ -14,6 +14,7 @@
 """
 SQL Models for LLM generation and chat
 """
+# pylint: disable=unused-argument,unused-import
 from typing import List
 from peewee import (UUIDField,
                     DateTimeField,
@@ -22,7 +23,6 @@ from playhouse.postgres_ext import ArrayField
 from common.models.base_model_sql import SQLBaseModel
 from common.models.llm import UserChatUtil
 
-# pylint: disable=unused-argument,unused-import
 
 class UserChat(SQLBaseModel, UserChatUtil):
   """

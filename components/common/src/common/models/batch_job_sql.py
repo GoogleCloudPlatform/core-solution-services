@@ -15,6 +15,7 @@
 """
 SQL model for batch jobs
 """
+# pylint:disable=unused-import
 from peewee import (UUIDField,
                     DateTimeField,
                     TextField,
@@ -24,7 +25,6 @@ from peewee import (UUIDField,
 from playhouse.postgres_ext import ArrayField
 from common.models.base_model_sql import SQLBaseModel
 
-# pylint: disable=unused-import
 
 class BatchJobModel(SQLBaseModel):
   """Model class for batch job"""

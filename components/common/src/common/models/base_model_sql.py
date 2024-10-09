@@ -95,63 +95,57 @@ class SQLBaseModel(Model):
       obj = None
     return obj
 
-  def save(self,
-           input_datetime=None,
-           transaction=None,
-           batch=None,
-           merge=None,
-           no_return=False):
+  def save(self, force_insert=False, only=None, merge=None):
     """
     Overrides default method to save items with timestamp
     Args:
-      input_datetime (_type_, optional): _description_. Defaults to None.
-      transaction (_type_, optional): _description_. Defaults to None.
-      batch (_type_, optional): _description_. Defaults to None.
+      force_insert (boolean): If True, forces an INSERT statement.
+      only: A list or tuple of field instances that should be saved.
       merge (_type_, optional): _description_. Defaults to None.
-      no_return (bool, optional): _description_. Defaults to False.
     Returns:
       _type_: _description_
     """
-    if input_datetime:
-      date_timestamp = input_datetime
-    else:
-      date_timestamp = datetime.datetime.utcnow()
-    self.created_time = date_timestamp
+    date_timestamp = datetime.datetime.utcnow()
+    if not self.id:
+      self.created_time = date_timestamp
     self.last_modified_time = date_timestamp
-    return super().save()
 
-  def update(self,
-             input_datetime=None,
-             key=None,
-             transaction=None,
-             batch=None):
-    """overrides default method to update items with timestamp
-    Args:
-      input_datetime (_type_, optional): _description_. Defaults to None.
-      key (_type_, optional): _description_. Defaults to None.
-      transaction (_type_, optional): _description_. Defaults to None.
-      batch (_type_, optional): _description_. Defaults to None.
-    Returns:
-      _type_: _description_
-    """
-    if input_datetime:
-      date_timestamp = input_datetime
+    if merge:
+      # Get the fields to be used in the query
+      fields = self._meta.fields.keys()
+      if only:
+        fields = [field.name for field in only]
+      query_data = {field: getattr(self, field) for field in fields}
+      # Perform the get_or_create operation
+      instance, created = self.__class__.get_or_create(
+        **query_data, defaults=query_data
+      )
+      # If the instance was not created, it means it already existed
+      if not created:
+        for field in fields:
+          setattr(instance, field, getattr(self, field))
+        instance.save()
+      return instance
+
     else:
-      date_timestamp = datetime.datetime.utcnow()
-    self.last_modified_time = date_timestamp
-    return super().save()
+      return super().save(force_insert=force_insert, only=only)
+
+  # pylint: disable=arguments-renamed
+  def update(self, __data=None, **kwargs):
+    """overrides default method to update items with timestamp"""
+    return self.save()
 
   @classmethod
-  def delete_by_id(cls, doc_id):
+  def delete_by_id(cls, pk):
     """Deletes from the Database the object of this type by id (not key)
 
         Args:
-            doc_id (string): the document id without collection_name
+            pk (string): the document id without collection_name
             (i.e. not the key)
         Returns:
             None
         """
-    return cls.delete().where(cls.id == doc_id).execute()
+    return cls.delete().where(cls.id == pk).execute()
 
   @classmethod
   def soft_delete_by_id(cls, object_id, by_user=None):

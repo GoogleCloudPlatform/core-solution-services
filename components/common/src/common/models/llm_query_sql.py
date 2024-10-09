@@ -14,6 +14,7 @@
 """
 SQL Models for LLM Query Engines
 """
+# pylint:disable=unused-import
 from typing import List
 from peewee import (UUIDField,
                     DateTimeField,
@@ -24,8 +25,6 @@ from peewee import (UUIDField,
 from playhouse.postgres_ext import ArrayField, JSONField
 from common.models.base_model_sql import SQLBaseModel
 from common.models.llm_query import UserQueryUtil, QueryReferenceUtil
-
-# pylint: disable=unused-argument,unused-import
 
 class UserQuery(SQLBaseModel, UserQueryUtil):
   """
