@@ -29,13 +29,13 @@ from common.models.user import validate_name, check_status, check_user_type
 class User(SQLBaseModel):
   """User base Class"""
   user_id = UUIDField()
-  first_name = TextField(validator=validate_name)
-  last_name = TextField(validator=validate_name)
-  email = TextField(to_lowercase=True)
-  user_type = TextField(validator=check_user_type)
+  first_name = TextField()
+  last_name = TextField()
+  email = TextField()
+  user_type = TextField()
   user_type_ref = TextField(null=True)
   user_groups = ArrayField(null=True)
-  status = TextField(validator=check_status)
+  status = TextField()
   is_registered = BooleanField(null=True)
   failed_login_attempts_count = IntegerField(null=True)
   access_api_docs = BooleanField(default=False)
@@ -44,6 +44,21 @@ class User(SQLBaseModel):
   inspace_user = JSONField(default={})
   is_deleted = BooleanField(default=False)
 
+  def save(self, *args, **kwargs):
+    """Overrides default method to save items with timestamp and validation."""
+
+    # Validation logic
+    if not validate_name(self.first_name):
+      raise ValueError("Invalid first name format")
+    if not validate_name(self.last_name):
+      raise ValueError("Invalid last name format")
+    self.email = self.email.lower()  # Convert email to lowercase
+    if not check_user_type(self.user_type):
+      raise ValueError("Invalid user type")
+    if not check_status(self.status):
+      raise ValueError("Invalid status")
+
+    return super().save(*args, **kwargs)
   @classmethod
   def find_by_user_id(cls, user_id, is_deleted=False):
     """Find the user using user_id
