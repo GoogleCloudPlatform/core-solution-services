@@ -1124,7 +1124,7 @@ def datasource_from_url(doc_url: str,
   If not raise an InternalServerError exception.
   """
   if doc_url.startswith("gs://"):
-    return DataSource(storage_client)
+    return DataSource(storage_client, q_engine.params)
   elif doc_url.startswith("http://") or doc_url.startswith("https://"):
     params = q_engine.params or {}
     if "depth_limit" in params:
@@ -1135,12 +1135,14 @@ def datasource_from_url(doc_url: str,
     # Create bucket name using query_engine name
     bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
     return WebDataSource(storage_client,
+                         params=q_engine.params,
                          bucket_name=bucket_name,
                          depth_limit=depth_limit)
   elif doc_url.startswith("shpt://"):
     # Create bucket name using query_engine name
     bucket_name = SharePointDataSource.downloads_bucket_name(q_engine.name)
     return SharePointDataSource(storage_client,
+                                q_engine.params,
                                 bucket_name=bucket_name)
   else:
     raise InternalServerError(

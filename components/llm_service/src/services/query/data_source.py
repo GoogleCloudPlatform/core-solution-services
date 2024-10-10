@@ -34,7 +34,8 @@ from langchain_community.document_loaders import CSVLoader
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper, gcs_helper
 from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.node_parser import (SentenceSplitter,
+                                         SentenceWindowNodeParser)
 from llama_index.core import Document
 
 # pylint: disable=broad-exception-caught
@@ -45,9 +46,12 @@ Logger = Logger.get_logger(__file__)
 # sentence when creating chunks (chunks have overlapping text)
 CHUNK_SENTENCE_PADDING = 1
 
-# chunk size for doc chunks
-# TODO: make this a query engine build param
-CHUNK_SIZE = 500
+# default chunk size for doc chunks
+DEFAULT_CHUNK_SIZE = 250
+
+# datasource param keys
+CHUNKING_CLASS_PARAM = "chunking_class"
+CHUNK_SIZE_PARAM = "chuck_size"
 
 class DataSourceFile():
   """ object storing meta data about a data source file """
@@ -68,19 +72,29 @@ class DataSource:
   Super class for query data sources. Also implements GCS DataSource.
   """
 
-  def __init__(self, storage_client):
+  def __init__(self, storage_client, params=None):
     self.storage_client = storage_client
     self.docs_not_processed = []
+    self.params = params or {}
+
+    # set chunk size
+    if CHUNK_SIZE_PARAM in self.params:
+      self.chunk_size = int(self.params[CHUNK_SIZE_PARAM])
+    else:
+      self.chunk_size = DEFAULT_CHUNK_SIZE
 
     # use llama index sentence splitter for chunking
-    self.doc_parser = SentenceSplitter(chunk_size=CHUNK_SIZE)
+    if CHUNKING_CLASS_PARAM in self.params \
+        and self.params[CHUNKING_CLASS_PARAM] == "SentenceWindowNodeParser":
+      self.doc_parser = SentenceWindowNodeParser.from_defaults(
+        window_size=CHUNK_SENTENCE_PADDING,
+        include_metadata=True,
+        window_metadata_key="window_text",
+        original_text_metadata_key="text",
+      )
+    else:
+      self.doc_parser = SentenceSplitter(chunk_size=self.chunk_size)
 
-    #self.doc_parser = SentenceWindowNodeParser.from_defaults(
-    #  window_size=CHUNK_SENTENCE_PADDING,
-    #  include_metadata=True,
-    #  window_metadata_key="window_text",
-    #  original_text_metadata_key="text",
-    #)
 
   @classmethod
   def downloads_bucket_name(cls, q_engine_name: str) -> str:

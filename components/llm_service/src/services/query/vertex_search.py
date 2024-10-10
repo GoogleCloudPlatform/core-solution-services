@@ -519,7 +519,7 @@ def download_web_docs(q_engine: QueryEngine, data_url: str) -> \
   # create web datasource
   bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
   web_data_source = WebDataSource(storage_client,
-                                  bucket_name,
+                                  bucket_name=bucket_name,
                                   depth_limit=depth_limit)
 
   # download web docs to GCS
