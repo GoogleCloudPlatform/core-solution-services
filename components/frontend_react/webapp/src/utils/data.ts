@@ -162,7 +162,7 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     display: "Depth Limit",
     type: "select",
     description: "The depth to crawl for web data sources.",
-    options: [0, 1, 2, 3, 4],   
+    options: [0, 1, 2, 3, 4],    
     default: 0,
     required: false,
     group: "queryengine",

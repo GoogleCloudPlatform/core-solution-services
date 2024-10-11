@@ -43,7 +43,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   const defaultValues = initialFormikValues(currentVarsData)
 
   const handleSubmit = async (values: Record<string, any>) => {
-
+    
     const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
             deleted_by, id, last_modified_by, last_modified_time, ...restValues } = values
 

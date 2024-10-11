@@ -40,7 +40,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const params = useQueryParams()
   const id = params.get("id")
   const navigate = useNavigate()
-
+  
   const setAlert = alertStore((state) => state.setAlert)
 
   const [queryEngines, setQueryEngines] = useState<QueryEngine[]>([])
