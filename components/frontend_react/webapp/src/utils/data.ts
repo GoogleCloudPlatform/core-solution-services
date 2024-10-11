@@ -151,11 +151,7 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     display: "Embedding Type",
     type: "select",
     description: "",
-    // These are only default values and should be replaced using the
-    // results of the api /llm/embedding_types
-    options: [{ option: "Vertex", value: "VertexAI-Embedding" },
-    { option: "OpenAI", value: "OpenAI-Embedding" },
-    { option: "HuggingFace", value: "HuggingFaceEmbeddings" }],
+    options: [],
     default: "Vertex",
     required: true,
     group: "queryengine",

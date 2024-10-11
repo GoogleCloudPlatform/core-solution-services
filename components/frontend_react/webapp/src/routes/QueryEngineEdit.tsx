@@ -26,7 +26,6 @@ import { Link, useNavigate } from "react-router-dom"
 import { useQueryParams } from "@/utils/routing"
 import { userStore, alertStore } from "@/store"
 import { fetchEmbeddingTypes } from "@/utils/api"
-import { update } from "ramda"
 
 interface IQueryEngineProps {
   token: string
