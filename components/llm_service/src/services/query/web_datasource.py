@@ -25,7 +25,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import List
+from typing import List, Union
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
 from scrapy.linkextractors import LinkExtractor
@@ -42,14 +42,19 @@ from utils.html_helper import (html_trim_tags,
 
 Logger = Logger.get_logger(__file__)
 
-def save_content(filepath: str, file_name: str, content: str) -> None:
+def save_content(filepath: str, file_name: str,
+                 content: Union[str, bytes]) -> None:
   """
   Save content in a file in a local directory
   """
   Logger.info(f"Saving {file_name} to {filepath}")
   doc_filepath = os.path.join(filepath, file_name)
-  with open(doc_filepath, "w", encoding="utf-8") as f:
-    f.write(content)
+  if isinstance(content, bytes):
+    with open(doc_filepath, "wb") as f:
+      f.write(content)
+  else:
+    with open(doc_filepath, "w", encoding="utf-8") as f:
+      f.write(content)
   Logger.info(f"{len(content)} bytes written")
   return doc_filepath
 
