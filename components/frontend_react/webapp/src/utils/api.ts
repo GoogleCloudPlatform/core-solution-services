@@ -46,7 +46,7 @@ interface JobStatusResponse {
   status: "succeeded" | "failed" | "active"
 }
 
-const endpoint = envOrFail(
+export const endpoint = envOrFail(
   "VITE_PUBLIC_API_ENDPOINT",
   import.meta.env.VITE_PUBLIC_API_ENDPOINT,
 )
@@ -90,7 +90,7 @@ export const createChat =
     fileUrl,
   }: RunChatParams): Promise<Chat | undefined> => {
     const url = `${endpoint}/chat`
-    const headers = { 
+    const headers = {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data'
     }
@@ -116,6 +116,14 @@ export const resumeChat =
       llm_type: llmType,
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
+  }
+
+export const fetchEmbeddingTypes =
+  (token: string, only_multimodal: boolean) => (): Promise<string[] | undefined | null> => {
+    let url = `${endpoint}/llm/embedding_types`
+    if (only_multimodal) url += "?is_multimodal=true"
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
   }
 
 export const fetchQuery =
@@ -168,6 +176,7 @@ export const createQueryEngine =
         "agents": queryEngine.agents,
         "associated_engines": queryEngine.child_engines,
         "manifest_url": queryEngine.manifest_url,
+        "is_multimodal": queryEngine.is_multimodal ? "True" : "False",
       }
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
@@ -227,7 +236,7 @@ export const getJobStatus =
     const url = `${jobsEndpoint}/jobs/agent_run/${jobId}`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
- }
+  }
 
 export const getEngineJobStatus =
   async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
@@ -235,12 +244,12 @@ export const getEngineJobStatus =
     const url = `${jobsEndpoint}/jobs/query_engine_build/${jobId}`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
- }
+  }
 
 export const fetchAllEngineJobs =
   (token: string) => (): Promise<QueryEngineBuildJob[] | undefined> => {
     const url = `${jobsEndpoint}/jobs/query_engine_build`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
- }
+  }
 

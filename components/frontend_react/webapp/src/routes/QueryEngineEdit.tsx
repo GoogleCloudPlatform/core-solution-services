@@ -25,6 +25,8 @@ import { ALERT_TYPE } from "@/utils/types"
 import { Link, useNavigate } from "react-router-dom"
 import { useQueryParams } from "@/utils/routing"
 import { userStore, alertStore } from "@/store"
+import { fetchEmbeddingTypes } from "@/utils/api"
+import { update } from "ramda"
 
 interface IQueryEngineProps {
   token: string
@@ -39,11 +41,18 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const params = useQueryParams()
   const id = params.get("id")
   const navigate = useNavigate()
-  
+
   const setAlert = alertStore((state) => state.setAlert)
 
   const [queryEngines, setQueryEngines] = useState<QueryEngine[]>([])
   const [queryEngine, setQueryEngine] = useState<QueryEngine | null>(null)
+
+  const [createEngineIsMultimodal, setCreateEngineIsMultimodal] = useState(false)
+  const initialEmbeddingOptions = [
+    { option: "Vertex Search", value: "qe_vertex_search" },
+    { option: "GENIE Search", value: "qe_llm_service" },
+    { option: "Integrated Search", value: "qe_integrated_search" }]
+  const [createEngineEmbeddingOptions, setCreateEngineEmbeddingOptions] = useState(initialEmbeddingOptions)
 
   const { isLoading, data: engineList } = useQuery(
     ["QueryEngines"],
@@ -86,7 +95,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
             // TODO
           }
         }
-      )      
+      )
     }
     // Else, create a new queryEngine
     else {
@@ -130,14 +139,14 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               message: "Deleted successfully!",
               type: ALERT_TYPE.SUCCESS,
               durationMs: 4000,
-            })            
+            })
           }
         },
         onError: () => {
           // TODO
         }
       }
-    )          
+    )
     navigate("/queryengines/admin")
   }
 
@@ -165,6 +174,29 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   if (!isAdmin) {
     return <Loading />
   }
+
+  const updatedQueryEngineFormData = QUERY_ENGINE_FORM_DATA.map(
+    (entry) => {
+      switch (entry.name) {
+        case "is_multimodal":
+          return { ...entry, onClick: () => { setCreateEngineIsMultimodal(!createEngineIsMultimodal) } }
+        case "embedding_type":
+          return { ...entry, options: createEngineEmbeddingOptions }
+        default:
+          return entry
+      }
+    })
+
+  useEffect(() => {
+    const updateEngineEmbeddings = async () => {
+      const llmTypes = await (await fetchEmbeddingTypes(token, createEngineIsMultimodal))()
+      console.log(llmTypes)
+      if (llmTypes === null || llmTypes === undefined) console.error("Failed to retrieve embedding types")
+      else setCreateEngineEmbeddingOptions(llmTypes.map((embedding) => { return { option: embedding, value: embedding } }))
+    }
+    updateEngineEmbeddings()
+  },
+    [createEngineIsMultimodal])
 
   return (
     <div className="overflow-x-auto custom-scrollbar">
@@ -204,7 +236,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               onFailure={onFailure}
               handleFiles={null}
               queryEngine={queryEngine}
-              currentVarsData={QUERY_ENGINE_FORM_DATA}
+              currentVarsData={updatedQueryEngineFormData}
             />
           </div>
 

@@ -43,9 +43,9 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   const defaultValues = initialFormikValues(currentVarsData)
 
   const handleSubmit = async (values: Record<string, any>) => {
-    
+
     const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
-            deleted_by, id, last_modified_by, last_modified_time, ...restValues } = values
+      deleted_by, id, last_modified_by, last_modified_time, ...restValues } = values
 
     const payloadData: QueryEngine | Record<string, any> = Object.assign(
       {},
@@ -66,7 +66,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   useEffect(() => {
     if (queryEngine && queryEngine !== null) {
       const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
-              deleted_by, id, last_modified_by, last_modified_time, ...restQEValues } = queryEngine
+        deleted_by, id, last_modified_by, last_modified_time, ...restQEValues } = queryEngine
 
       const qEngineInitialFormatting = Object.assign(
         {},
@@ -109,7 +109,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
             <Link href="#">
               <button
                 className="btn btn-outline btn-sm"
-                onClick={() => {formik.resetForm()}}
+                onClick={() => { formik.resetForm() }}
               >
                 Clear
               </button>
