@@ -108,7 +108,7 @@ async def process_chat_file(chat_file: UploadFile,
         chat_files = [
             DataSourceFile(gcs_path=f"gs://{blob.name}",
                            mime_type=\
-                            validate_multi_file_type(blob.name))
+                            validate_multimodal_file_type(blob.name))
             for blob in blobs
         ]
       else:
