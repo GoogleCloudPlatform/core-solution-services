@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { ReactNode } from "react"
-import { z } from "zod"
+import { any, z } from "zod"
 
 export type INavigationItem = {
   name: string
@@ -70,6 +70,7 @@ export const FormVariable = z.object({
   fileLabel: z.string().optional(),
   multiple: z.boolean().default(false).optional(),
   accept: z.string().optional(),
+  onClick: z.function().optional(),
 })
 
 export type IFormVariable = z.infer<typeof FormVariable>
@@ -189,8 +190,9 @@ export type QueryEngine = {
   manifest_url: string | null
   params: string[] | null
   depth_limit: number | null
-  agents: string[] | null  
+  agents: string[] | null
   child_engines: string[] | null
+  is_multimodal: boolean | null
 }
 
 export type QueryEngineBuildParams = {
