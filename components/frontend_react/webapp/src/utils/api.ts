@@ -46,7 +46,7 @@ interface JobStatusResponse {
   status: "succeeded" | "failed" | "active"
 }
 
-export const endpoint = envOrFail(
+const endpoint = envOrFail(
   "VITE_PUBLIC_API_ENDPOINT",
   import.meta.env.VITE_PUBLIC_API_ENDPOINT,
 )
