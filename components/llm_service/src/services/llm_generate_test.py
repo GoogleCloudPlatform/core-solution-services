@@ -184,7 +184,7 @@ async def test_llm_generate_multi_url(clean_firestore):
   with mock.patch(
   "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
   return_value=FAKE_GOOGLE_RESPONSE):
-    response = await llm_generate_multi(FAKE_PROMPT,
+    response = await llm_generate_multimodal(FAKE_PROMPT,
                                         VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                                         fake_file_bytes,
                                         fake_file_data)

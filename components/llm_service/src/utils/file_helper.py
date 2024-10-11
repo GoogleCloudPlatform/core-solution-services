@@ -53,7 +53,7 @@ async def process_chat_file(chat_file: UploadFile,
     if chat_file_url is not None:
       raise ValidationError("cannot set both upload_file and file_url")
     chat_file_url = await process_upload_file(chat_file, bucket)
-    chat_file_type = validate_multi_file_type(chat_file.filename)
+    chat_file_type = validate_multimodal_file_type(chat_file.filename)
     if chat_file_type is None:
       raise ValidationError(
           f"unsupported file type upload file {chat_file.filename}")
@@ -93,7 +93,7 @@ async def process_chat_file(chat_file: UploadFile,
         chat_files = \
             web_data_source.download_documents(chat_file_url, temp_dir)
       for f in chat_files:
-        f.mime_type = validate_multi_file_type(f.doc_name)
+        f.mime_type = validate_multimodal_file_type(f.doc_name)
       Logger.info(f"downloaded {chat_files} from {chat_file_url}")
     elif chat_file_url.startswith("shpt://"):
       raise UnsupportedError("shpt:// not supported for chat upload")
@@ -113,7 +113,7 @@ async def process_chat_file(chat_file: UploadFile,
       else:
         chat_files = [
             DataSourceFile(gcs_path=chat_file_url,
-                           mime_type=validate_multi_file_type(parsed_url.path))
+                           mime_type=validate_multimodal_file_type(parsed_url.path))
         ]
 
   Logger.info(f"process_chat_upload: {chat_files}")
