@@ -167,7 +167,7 @@ class FakeVectorStore(VectorStore):
                            metadata: List[dict] = None) -> \
                             int:
     return 0
-  async def index_document_multi(self,
+  async def index_document_multimodal(self,
                                  doc_name: str,
                                  doc_chunks: List[object],
                                  index_base: int) -> \
@@ -199,22 +199,23 @@ class FakeDataSource(DataSource):
       chunk_list = None
     return chunk_list, chunk_list
 
-  def chunk_document_multi(self, doc_name:str, doc_url: str,
+  def chunk_document_multimodal(self, doc_name:str, doc_url: str,
                             doc_filepath: str) -> List[str]:
     if doc_url == QUERY_DOCUMENT_EXAMPLE_1["doc_url"]:
       chunk_list = [{
-        "image_b64": "fake_val",
+        "image": "fake_val",
         "image_url": "fake_url",
-        "text_chunks": ""
+        "text": ""
       }] # List of one dict
     elif doc_url == QUERY_DOCUMENT_EXAMPLE_2["doc_url"]:
       chunk_list = [{
-        "image_b64": "fake_val",
+        "image": "fake_val",
         "image_url": "fake_url",
-        "text_chunks": ""
+        "text": ""
       }] # List of one dict
     else:
       chunk_list = None
+    # TODO: Include tests for video and potentially audio chunks
     return chunk_list
 
 @pytest.mark.asyncio
@@ -379,7 +380,7 @@ async def test_query_engine_build(mock_get_vector_store,
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
-async def test_query_engine_build_multi(mock_get_vector_store,
+async def test_query_engine_build_multimodal(mock_get_vector_store,
                                         mock_build_doc_index,
                                         create_query_docs,
                                         create_user):
@@ -498,7 +499,7 @@ async def test_build_doc_index(mock_process_documents,
 # Uses same 3 example docs as other tests of this function
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.process_documents")
-async def test_build_doc_index_multi(mock_process_documents,
+async def test_build_doc_index_multimodal(mock_process_documents,
                                      create_engine,
                                      create_query_docs):
   doc_url = FAKE_GCS_PATH
@@ -563,7 +564,7 @@ async def test_process_documents(mock_get_datasource, create_engine):
 # Uses same 3 example docs as other tests of this function
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.datasource_from_url")
-async def test_process_documents_multi(mock_get_datasource, create_engine):
+async def test_process_documents_multimodal(mock_get_datasource, create_engine):
   mock_get_datasource.return_value = FakeDataSource()
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()

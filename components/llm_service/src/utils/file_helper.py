@@ -73,7 +73,7 @@ async def process_chat_file(chat_file: UploadFile,
     if chat_file_name:
       file_extension = os.path.splitext(chat_file_name)[1]
       if file_extension:
-        chat_file_type = validate_multi_file_type(chat_file_name)
+        chat_file_type = validate_multimodal_file_type(chat_file_name)
         if chat_file_type is None:
           raise ValidationError(
               f"unsupported file type file url {chat_file_url}")
@@ -152,7 +152,7 @@ async def process_upload_file(upload_file: UploadFile, bucket=None) -> str:
 
   return upload_file_url
 
-def validate_multi_file_type(file_name, file_b64=None) -> Union[str, None]:
+def validate_multimodal_file_type(file_name, file_b64=None) -> Union[str, None]:
   """
   Determine the mime type based on file extension.  Validate that the file
   is supported as a multimodal file type for Vertex.

@@ -28,7 +28,7 @@ os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
 os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 os.environ["VLLM_GEMMA_ENDPOINT"] = "fake-endpoint"
 
-from services.llm_generate import llm_generate, llm_chat, llm_generate_multi
+from services.llm_generate import llm_generate, llm_chat, llm_generate_multimodal
 from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
 from vertexai.preview.language_models import TextGenerationResponse
@@ -163,7 +163,7 @@ async def test_llm_generate_multi_file(clean_firestore):
   with mock.patch(
   "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
   return_value=FAKE_GOOGLE_RESPONSE):
-    response = await llm_generate_multi(FAKE_PROMPT,
+    response = await llm_generate_multimodal(FAKE_PROMPT,
                                         VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                                         fake_file_bytes,
                                         fake_file_data)
