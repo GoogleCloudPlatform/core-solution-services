@@ -47,11 +47,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const [queryEngine, setQueryEngine] = useState<QueryEngine | null>(null)
 
   const [createEngineIsMultimodal, setCreateEngineIsMultimodal] = useState(false)
-  const initialEmbeddingOptions = [
-    { option: "Vertex Search", value: "qe_vertex_search" },
-    { option: "GENIE Search", value: "qe_llm_service" },
-    { option: "Integrated Search", value: "qe_integrated_search" }]
-  const [createEngineEmbeddingOptions, setCreateEngineEmbeddingOptions] = useState(initialEmbeddingOptions)
+  const [createEngineEmbeddingOptions, setCreateEngineEmbeddingOptions] = useState<{ option: string; value: string; }[]>([])
 
   const { isLoading, data: engineList } = useQuery(
     ["QueryEngines"],
@@ -94,7 +90,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
             // TODO
           }
         }
-      )
+      )      
     }
     // Else, create a new queryEngine
     else {
@@ -138,14 +134,14 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               message: "Deleted successfully!",
               type: ALERT_TYPE.SUCCESS,
               durationMs: 4000,
-            })
+            })            
           }
         },
         onError: () => {
           // TODO
         }
       }
-    )
+    )          
     navigate("/queryengines/admin")
   }
 

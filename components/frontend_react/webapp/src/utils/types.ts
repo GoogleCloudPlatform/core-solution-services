@@ -235,5 +235,5 @@ export type QueryEngineBuildJob = {
   output_gcs_path: any
   errors: any
   job_logs: any
-  metadata: any
+  metadata: any  
 }
