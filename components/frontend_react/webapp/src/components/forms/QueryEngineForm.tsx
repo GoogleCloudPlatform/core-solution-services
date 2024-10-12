@@ -83,7 +83,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
     name: yup
       .string()
       .max(32, "Query Engine names must be less than or equal to 32 chars")
-      .matches(""^[a-zA-Z0-9][\w\s-]*$"". "Invalid query engine name.  May contain alphanumerics, dashes or spaces.")
+      .matches("^[a-zA-Z0-9][\w\s-]*[a-zA-Z0-9]$", "Invalid query engine name.  May contain alphanumerics, dashes or spaces.")
   }
   const formValidationData: IFormValidationData =
     formValidationSchema(currentVarsData, validationSettings)
@@ -92,6 +92,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
     initialValues: initialValues,
     enableReinitialize: true,
     validateOnMount: true,
+    validateOnChange: true,
     validationSchema: formValidationData,
     onSubmit: async (values) => {
       await handleSubmit(values)
