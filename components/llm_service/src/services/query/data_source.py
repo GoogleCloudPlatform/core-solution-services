@@ -54,12 +54,28 @@ class DataSourceFile():
                src_url:str=None,
                local_path:str=None,
                gcs_path:str=None,
-               doc_id:str=None):
+               doc_id:str=None,
+               mime_type:str=None):
     self.doc_name = doc_name
     self.src_url = src_url
     self.local_path = local_path
     self.gcs_path = gcs_path
     self.doc_id = doc_id
+    self.mime_type = mime_type
+
+  def __repr__(self) -> str:
+    """
+    Log-friendly string representation of a DataSourceFile
+    """
+    return (
+      f"DataSourceFile(doc_name={self.doc_name}, "
+      f"src_url={self.src_url}, "
+      f"local_path={self.local_path}, "
+      f"gcs_path={self.gcs_path}, "
+      f"doc_id={self.doc_id}, "
+      f"mime_type={self.mime_type})"
+    )
+
 
 class DataSource:
   """

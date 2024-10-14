@@ -49,7 +49,7 @@ from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore,
                                          NUM_MATCH_RESULTS)
-from services.query.data_source import DataSource
+from services.query.data_source import DataSource, DataSourceFile
 from services.query.web_datasource import WebDataSource
 from services.query.sharepoint_datasource import SharePointDataSource
 from services.query.vertex_search import (build_vertex_search,
@@ -186,23 +186,21 @@ async def query_generate(
 
   # generate list of URLs for additional context
   # (from non-text info in query_references)
-  context_urls = []
-  context_urls_mimetype = []
+  context_files = []
   for ref in query_references:
     if hasattr(ref, "modality") and ref.modality != "text":
       if hasattr(ref, "chunk_url"):
         ref_filename = ref.chunk_url
         ref_mimetype = validate_multimodal_file_type(file_name=ref_filename,
                                                      file_b64=None)
-        context_urls.append(ref_filename)
-        context_urls_mimetype.append(ref_mimetype)
-        # TODO: If ref is a video chunk, then update ref.chunk_url
-        # according to ref.timestamp_start and ref.timestamp_stop
+        context_files.append(DataSourceFile(gcs_path=ref_filename,
+                                            mime_type=ref_mimetype))
+        # TODO: If ref is a video chunk, then update new element of
+        # context_files according to ref.timestamp_start and ref.timestamp_stop
 
   # send prompt and additional context to model
   question_response = await llm_chat(question_prompt, llm_type,
-                                     chat_file_types=context_urls_mimetype,
-                                     chat_file_urls=context_urls)
+                                     chat_files=context_files)
 
   # update user query with response
   if user_query:

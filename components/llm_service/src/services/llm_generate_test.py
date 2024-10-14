@@ -37,6 +37,7 @@ from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
 from common.utils.logging_handler import Logger
 from schemas.schema_examples import (CHAT_EXAMPLE, USER_EXAMPLE)
+from services.query.data_source import DataSourceFile
 
 Logger = Logger.get_logger(__file__)
 
@@ -77,7 +78,6 @@ FAKE_VLLM_RESPONSE = {
 }
 
 FAKE_FILE_NAME = "test.png"
-FAKE_FILE_TYPE = "image/png"
 FAKE_PROMPT = "test prompt"
 
 
@@ -147,7 +147,7 @@ async def test_llm_generate_google(clean_firestore):
 
 
 @pytest.mark.asyncio
-async def test_llm_generate_multimodal(clean_firestore):
+async def test_llm_generate_multi_file(clean_firestore):
   get_model_config().llm_model_providers = {
     PROVIDER_VERTEX: TEST_VERTEX_CONFIG
   }
@@ -159,15 +159,35 @@ async def test_llm_generate_multimodal(clean_firestore):
   os.remove(FAKE_FILE_NAME)
   fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
   fake_file_bytes = await fake_upload_file.read()
-
+  fake_file_data = [DataSourceFile(mime_type="image/png")]
   with mock.patch(
   "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
   return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate_multimodal(FAKE_PROMPT,
                                         VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
-                                        [FAKE_FILE_TYPE],
-                                        fake_file_bytes)
+                                        fake_file_bytes,
+                                        fake_file_data)
   fake_file.close()
+  assert response == FAKE_GENERATE_RESPONSE
+
+
+@pytest.mark.asyncio
+async def test_llm_generate_multi_url(clean_firestore):
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
+
+  fake_file_data = [DataSourceFile(mime_type="image/png",
+                                   gcs_path="gs://fake_bucket/file.png")]
+  fake_file_bytes = None
+  with mock.patch(
+  "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
+  return_value=FAKE_GOOGLE_RESPONSE):
+    response = await llm_generate_multimodal(FAKE_PROMPT,
+                                        VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+                                        fake_file_bytes,
+                                        fake_file_data)
   assert response == FAKE_GENERATE_RESPONSE
 
 
