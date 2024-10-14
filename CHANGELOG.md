@@ -10,9 +10,10 @@ New features:
 - RBAC for model access.  See README for LLM Service for docs on how to manage access to models for users.
 - Updated to recent releases of FastAPI (0.112.2) and associated libraries
 - Use L4 GPUs with Truss models
-- chunk size and chunking class are now query engine build params
-- add chunk size to React Query Admin engine build form
-- switched to using llama_index.core.node_parser.SentenceSplitter for chunking by default
+- Chunk size and chunking class are now query engine build params
+- Add chunk size to React Query Admin engine build form
+- Switched to using llama_index.core.node_parser.SentenceSplitter for chunking by default
+- Updated default query generation model to Gemini Flash 1.5 - was set to Palm2
 
 ### Fixes
 - Fixed download of PDFs from scraped sites
