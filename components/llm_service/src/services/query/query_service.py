@@ -416,6 +416,11 @@ async def query_search(q_engine: QueryEngine,
       raise ResourceNotFoundException(
         f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
 
+    Logger.info(f"\n\n\n#SC241015: In query_search: About to make original QR object from doc_chunk with linked_ids = {doc_chunk.linked_ids}")
+    Logger.info(f"\n#SC241015: In query_search: About to make original QR object from doc_chunk with id = {doc_chunk.id}")
+    Logger.info(f"\n#SC241015: In query_search: About to make original QR object from doc_chunk with index = {doc_chunk.index}")
+    Logger.info(f"\n#SC241015: In query_search: About to make original QR object from doc_chunk with sentences = {doc_chunk.sentences}")
+    
     query_reference = make_query_reference(q_engine=q_engine,
                                            query_doc=query_doc,
                                            doc_chunk=doc_chunk,
@@ -424,14 +429,14 @@ async def query_search(q_engine: QueryEngine,
     query_reference.save()
     query_references.append(query_reference)
     #SC241015: Insert Logger.info statement to display query_reference from simsearch match - DONE
-    Logger.info(f"\n#SC241015: In query_search: Original Reference: {query_reference.__repr__()}")
+    Logger.info(f"\n\n\n#SC241015: In query_search: Original Reference: {query_reference.__repr__()}")
 
     #SC241015: Also create another query_reference for its friend, if linked_ids field exists - DONE
     #SC241015: Note that we do not need to check is_multimodal here, just need to check if
     #Sc241015: linked_ids field exists in doc_chunk
     # Also create a query_reference for other modalities of the same chunk
     linked_ids = getattr(query_reference, "linked_ids", None)
-    Logger.info(f"\n#SC241015: In query_search: Original References: {linked_ids=}")
+    Logger.info(f"\n\n\n#SC241015: In query_search: Original References: {linked_ids=}")
     if linked_ids:
       for id in linked_ids:
         query_doc_chunk_friend = QueryDocumentChunk.find_by_id(id)
@@ -444,7 +449,7 @@ async def query_search(q_engine: QueryEngine,
         query_references.append(query_reference_friend)
         #SC241015: Insert Logger.info statement to display query_reference from friend,
         #SC241015: if linked_ids field exists - DONE
-        Logger.info(f"\n#SC241015: In query_search: Friend Reference: {query_reference_friend.__repr__}")
+        Logger.info(f"\n\n\n#SC241015: In query_search: Friend Reference: {query_reference_friend.__repr__}")
 
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
@@ -472,6 +477,7 @@ def make_query_reference(q_engine: QueryEngine,
   Returns:
     query_reference: The QueryReference object corresponding to doc_chunk
   """
+  Logger.info(f"\n\n\n#SC241015: In make_query_reference: {doc_chunk.linked_ids=}")
   # Get modality of document chunk, make lowercase
   # If modality is None, set it equal to default value "text"
   modality = doc_chunk.modality
