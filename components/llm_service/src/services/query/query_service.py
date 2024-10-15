@@ -163,6 +163,7 @@ async def query_generate(
                                                rank_sentences,
                                                query_filter)
   #SC241015: query_references should already incorporate friends - DONE
+  Logger.info(f"\n#SC241015: In query_generate: {query_references=}")
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -423,13 +424,14 @@ async def query_search(q_engine: QueryEngine,
     query_reference.save()
     query_references.append(query_reference)
     #SC241015: Insert Logger.info statement to display query_reference from simsearch match - DONE
-    Logger.info(f"#SC241015: Original Reference: {query_reference.__repr__()}")
+    Logger.info(f"\n#SC241015: In query_search: Original Reference: {query_reference.__repr__()}")
 
     #SC241015: Also create another query_reference for its friend, if linked_ids field exists - DONE
     #SC241015: Note that we do not need to check is_multimodal here, just need to check if
     #Sc241015: linked_ids field exists in doc_chunk
     # Also create a query_reference for other modalities of the same chunk
     linked_ids = getattr(query_reference, "linked_ids", None)
+    Logger.info(f"\n#SC241015: In query_search: Original References: {linked_ids=}")
     if linked_ids:
       for id in linked_ids:
         query_doc_chunk_friend = QueryDocumentChunk.find_by_id(id)
@@ -442,7 +444,7 @@ async def query_search(q_engine: QueryEngine,
         query_references.append(query_reference_friend)
         #SC241015: Insert Logger.info statement to display query_reference from friend,
         #SC241015: if linked_ids field exists - DONE
-        Logger.info(f"#SC241015: Friend Reference: {query_reference_friend.__repr__}")
+        Logger.info(f"\n#SC241015: In query_search: Friend Reference: {query_reference_friend.__repr__}")
 
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
@@ -528,6 +530,7 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["chunk_id"]=doc_chunk.id
   #SC241015: Also save linked_ids, if it exists - DONE
   query_reference_dict["linked_ids"]=getattr(doc_chunk, "linked_ids", None)
+  Logger.info(f"\n#SC241015: In make_query_reference:  {query_reference_dict['linked_ids']=}")
   # For text chunk only
   if modality=="text":
     query_reference_dict["page"]=doc_chunk.page
@@ -1090,6 +1093,8 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
               linked_ids.append(query_doc_chunk.id)
               # Increment counter of all ORM objects made for all chunks
               j+=1
+          Logger.info(f"\n#SC241015: In process_documents: {linked_indexes=}")
+          Logger.info(f"\n#SC241015: In process_documents: {linked_ids=}")
 
           # Set linked_ids field of all ORM objects just made for ith chunk
           for index in linked_indexes:
@@ -1099,6 +1104,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
             #query_doc_chunk.linked_ids = linked_ids #SC241015
             query_doc_chunk.linked_ids = friend_ids #SC241015
             #SC241015: Only save its friend, not itself and its friend - DONE
+            Logger.info(f"\n#SC241015: In process_documents: {query_doc_chunk.linked_ids=}")
 
         else:
           # Use text-only pipeline
