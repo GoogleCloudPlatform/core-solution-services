@@ -513,7 +513,8 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["document_url"]=query_doc.doc_url
   query_reference_dict["modality"]=modality
   query_reference_dict["chunk_id"]=doc_chunk.id
-  #SC241015: Also save linked_ids, if it exists
+  #SC241015: Also save linked_ids, if it exists - DONE
+  query_reference_dict["linked_ids"]=getattr(doc_chunk, "linked_ids", None)
   # For text chunk only
   if modality=="text":
     query_reference_dict["page"]=doc_chunk.page
