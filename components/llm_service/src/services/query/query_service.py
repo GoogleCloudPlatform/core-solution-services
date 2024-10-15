@@ -1111,6 +1111,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
             friend_ids = [friend_id for friend_id in linked_ids if friend_id != query_doc_chunk.id]
             #query_doc_chunk.linked_ids = linked_ids #SC241015
             query_doc_chunk.linked_ids = friend_ids #SC241015
+            query_doc_chunk.save() #SC241015
             #SC241015: Only save its friend, not itself and its friend - DONE
             Logger.info(f"\n\n\n#SC241015: In process_documents: {query_doc_chunk.linked_ids=}")
 
