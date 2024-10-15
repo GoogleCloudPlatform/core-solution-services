@@ -1073,6 +1073,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
           # Create a QueryDocumentChunk ORM object for each modality
           # of ith chunk, in alphabetical order
+          Logger.info(f"\n\n\n#SC241015: In process_documents, about to make QueryDocumentChunks ORM objects for {i=} chunk.")
           for key in sorted_keys:
             if key in MODALITY_SET:
               # doc_chunk is dict representing ith chunk
@@ -1093,8 +1094,9 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
               linked_ids.append(query_doc_chunk.id)
               # Increment counter of all ORM objects made for all chunks
               j+=1
-          Logger.info(f"\n#SC241015: In process_documents: {linked_indexes=}")
-          Logger.info(f"\n#SC241015: In process_documents: {linked_ids=}")
+          Logger.info(f"\n\n\n#SC241015: In process_documents, just made QueryDocumentChunks ORM objects for {i=} chunk.")
+          Logger.info(f"\n\n\n#SC241015: In process_documents: {linked_indexes=}")
+          Logger.info(f"\n\n\n#SC241015: In process_documents: {linked_ids=}")
 
           # Set linked_ids field of all ORM objects just made for ith chunk
           for index in linked_indexes:
@@ -1104,7 +1106,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
             #query_doc_chunk.linked_ids = linked_ids #SC241015
             query_doc_chunk.linked_ids = friend_ids #SC241015
             #SC241015: Only save its friend, not itself and its friend - DONE
-            Logger.info(f"\n#SC241015: In process_documents: {query_doc_chunk.linked_ids=}")
+            Logger.info(f"\n\n\n#SC241015: In process_documents: {query_doc_chunk.linked_ids=}")
 
         else:
           # Use text-only pipeline
