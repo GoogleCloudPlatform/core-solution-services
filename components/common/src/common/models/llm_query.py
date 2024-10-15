@@ -207,6 +207,7 @@ class QueryReference(BaseModel):
   document_text = TextField(required=False)  # Text only
   timestamp_start = NumberField(required=False)  # Video or audio only
   timestamp_stop = NumberField(required=False)  # Video or audio only
+  #SC241015: Also set linked_ids, like in QueryDocumentChunk
 
   def __repr__(self) -> str:
     """
@@ -237,6 +238,7 @@ class QueryReference(BaseModel):
       f"chunk_num_chars={document_text_num_chars}, "
       f"chunk_text={document_text_snippet})"
     )
+    #SC241015: Also return linked_ids field, if it exists
 
   class Meta:
     ignore_none_field = False

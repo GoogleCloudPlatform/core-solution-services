@@ -162,6 +162,7 @@ async def query_generate(
                                                user_id,
                                                rank_sentences,
                                                query_filter)
+  #SC241015: query_references should already incorporate friends
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -421,6 +422,14 @@ async def query_search(q_engine: QueryEngine,
                                            rank_sentences=rank_sentences)
     query_reference.save()
     query_references.append(query_reference)
+    #SC241015: Insert Logger.info statement to display query_reference from simsearch match
+
+    #SC241015: Also create another query_reference for its friend, if linked_ids field exists
+    #SC241015: Note that we do not need to check is_multimodal here, just need to check if
+    #Sc241015: linked_ids field exists in doc_chunk
+
+    #SC241015: Insert Logger.info statement to display query_reference from friend,
+    #SC241015: if linked_ids field exists
 
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
@@ -504,6 +513,7 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["document_url"]=query_doc.doc_url
   query_reference_dict["modality"]=modality
   query_reference_dict["chunk_id"]=doc_chunk.id
+  #SC241015: Also save linked_ids, if it exists
   # For text chunk only
   if modality=="text":
     query_reference_dict["page"]=doc_chunk.page
@@ -1072,6 +1082,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
             query_doc_chunk = \
               QueryDocumentChunk.find_by_index(q_engine.id, index)
             query_doc_chunk.linked_ids = linked_ids
+            #SC241015: Only save its friend, not itself and its friend
 
         else:
           # Use text-only pipeline
