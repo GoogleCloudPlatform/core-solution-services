@@ -422,14 +422,27 @@ async def query_search(q_engine: QueryEngine,
                                            rank_sentences=rank_sentences)
     query_reference.save()
     query_references.append(query_reference)
-    #SC241015: Insert Logger.info statement to display query_reference from simsearch match
+    #SC241015: Insert Logger.info statement to display query_reference from simsearch match - DONE
+    Logger.info(f"#SC241015: Original Reference: {query_reference.__repr__()}")
 
-    #SC241015: Also create another query_reference for its friend, if linked_ids field exists
+    #SC241015: Also create another query_reference for its friend, if linked_ids field exists - DONE
     #SC241015: Note that we do not need to check is_multimodal here, just need to check if
     #Sc241015: linked_ids field exists in doc_chunk
-
-    #SC241015: Insert Logger.info statement to display query_reference from friend,
-    #SC241015: if linked_ids field exists
+    # Also create a query_reference for other modalities of the same chunk
+    linked_ids = getattr(query_reference, "linked_ids", None)
+    if linked_ids:
+      for id in linked_ids:
+        query_doc_chunk_friend = QueryDocumentChunk.find_by_id(id)
+        query_reference_friend = make_query_reference(q_engine=q_engine,
+                                                      query_doc=query_doc,
+                                                      doc_chunk=query_doc_chunk_friend,
+                                                      query_embeddings=query_embeddings,
+                                                      rank_sentences=rank_sentences)
+        query_reference_friend.save()
+        query_references.append(query_reference_friend)
+        #SC241015: Insert Logger.info statement to display query_reference from friend,
+        #SC241015: if linked_ids field exists - DONE
+        Logger.info(f"#SC241015: Friend Reference: {query_reference_friend.__repr__}")
 
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
