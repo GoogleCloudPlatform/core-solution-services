@@ -968,11 +968,12 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                       index_doc_url,
                                                       doc_filepath)
       else:
-        #chunk_document returns 2 outputs, text_chunks and embed_chunks.
-        #Each element of text_chunks has the same info as its corresponding
-        #element in embed_chunks, but is padded with adjacent sentences
-        #before and after. Use the 2nd output here (embed_chunks).
-        _, doc_chunks = data_source.chunk_document(doc_name,
+        # chunk_document returns 2 outputs, here called doc_chunks_pad and
+        # doc_chunks. Each element of doc_chunks_pad has the same text as
+        # its corresponding element in doc_chunks, but is padded with
+        # adjacent sentences before and after. Use doc_chunks for creating
+        # embedding and doc_chunks_pad for creating ORM object.
+        doc_chunks_pad, doc_chunks = data_source.chunk_document(doc_name,
                                                    index_doc_url,
                                                    doc_filepath)
 
@@ -1078,7 +1079,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           # doc_chunk is a dict representing the ith chunk
           # with key "text"
           doc_chunk = {}
-          doc_chunk["text"] = doc_chunks[i]
+          doc_chunk["text"] = doc_chunks_pad[i]
           # Make ORM object for text modality of ith chunk
           query_doc_chunk = make_query_document_chunk(
             query_engine_id=q_engine.id,
