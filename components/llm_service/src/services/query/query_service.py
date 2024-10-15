@@ -162,7 +162,7 @@ async def query_generate(
                                                user_id,
                                                rank_sentences,
                                                query_filter)
-  #SC241015: query_references should already incorporate friends
+  #SC241015: query_references should already incorporate friends - DONE
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
