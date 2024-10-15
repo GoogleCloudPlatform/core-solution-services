@@ -14,17 +14,13 @@
 """
 SQL Models for LLM Query Engines
 """
-# pylint:disable=unused-import
 from typing import List
-from peewee import (UUIDField,
-                    DateTimeField,
-                    TextField,
-                    IntegerField,
-                    BooleanField,
-                    TimestampField)
+from peewee import (UUIDField, TextField, IntegerField, BooleanField, DoesNotExist)
 from playhouse.postgres_ext import ArrayField, JSONField
+
 from common.models.base_model_sql import SQLBaseModel
-from common.models.llm_query import UserQueryUtil, QueryReferenceUtil
+from common.models.llm_query import UserQueryUtil
+
 
 class UserQuery(SQLBaseModel, UserQueryUtil):
   """
@@ -40,7 +36,7 @@ class UserQuery(SQLBaseModel, UserQueryUtil):
 
   @classmethod
   def find_by_user(cls,
-                   userid,
+                   user_id,
                    skip=0,
                    order_by="-created_time",
                    limit=1000):
@@ -48,7 +44,7 @@ class UserQuery(SQLBaseModel, UserQueryUtil):
     Fetch all queries for user
 
     Args:
-        userid (str): User id
+        user_id (str): User id
         skip (int, optional): number of chats to skip.
         order_by (str, optional): order list according to order_by field.
         limit (int, optional): limit till cohorts to be fetched.
@@ -57,8 +53,19 @@ class UserQuery(SQLBaseModel, UserQueryUtil):
         List[UserQuery]: List of queries for user.
 
     """
-    pass
-
+    order_by_field = getattr(cls, order_by[1:])
+    if order_by.startswith("-"):
+      order_by_field = order_by_field.desc()
+    return list(
+      cls.select()
+      .where(
+        (cls.user_id == user_id) &
+        (cls.deleted_at_timestamp is None)
+      )
+      .order_by(order_by_field)
+      .offset(skip)
+      .limit(limit)
+    )
 
 
 class QueryEngine(SQLBaseModel):
@@ -96,7 +103,10 @@ class QueryEngine(SQLBaseModel):
         QueryEngine: query engine object
 
     """
-    pass
+    try:
+      return cls.get(cls.name == name, cls.deleted_at_timestamp.is_null())
+    except DoesNotExist:
+      return None
 
 
   @classmethod
@@ -108,10 +118,16 @@ class QueryEngine(SQLBaseModel):
         List of QueryEngine objects that point to this engine as parent
 
     """
-    pass
+    return list(
+      cls.select()
+      .where(
+        (cls.parent_engine_id == q_engine.id)
+        & (cls.deleted_at_timestamp.is_null())  # Exclude soft-deleted
+      )
+    )
 
 
-class QueryReference(SQLBaseModel, QueryReferenceUtil):
+class QueryReference(SQLBaseModel):
   """
   QueryReference ORM class. This class represents a single query reference.
   It points to a specific chunk of text in one of the indexed documents.
@@ -177,7 +193,19 @@ class QueryDocument(SQLBaseModel):
         List[QueryDocument]: List of QueryDocuments
 
     """
-    pass
+    order_by_field = getattr(cls, order_by[1:])
+    if order_by.startswith("-"):
+      order_by_field = order_by_field.desc()
+    return list(
+      cls.select()
+      .where(
+        (cls.query_engine_id == query_engine_id) &
+        (cls.deleted_at_timestamp is None)
+      )
+      .order_by(order_by_field)
+      .offset(skip)
+      .limit(limit)
+    )
 
   @classmethod
   def find_by_url(cls, query_engine_id, doc_url):
@@ -192,7 +220,18 @@ class QueryDocument(SQLBaseModel):
         QueryDocument: query document object
 
     """
-    pass
+    try:
+      return (
+        cls.select()
+        .where(
+          (cls.query_engine_id == query_engine_id) &
+          (cls.doc_url == doc_url) &
+          (cls.deleted_at_timestamp is None)
+        )
+        .get()
+      )
+    except DoesNotExist:
+      return None
 
   @classmethod
   def find_by_index_file(cls, query_engine_id, index_file):
@@ -207,7 +246,18 @@ class QueryDocument(SQLBaseModel):
         QueryDocument: query document object
 
     """
-    pass
+    try:
+      return (
+        cls.select()
+        .where(
+          (cls.query_engine_id == query_engine_id) &
+          (cls.index_file == index_file) &
+          (cls.deleted_at_timestamp is None)
+        )
+        .get()
+      )
+    except DoesNotExist:
+      return None
 
 
 class QueryDocumentChunk(SQLBaseModel):
@@ -241,4 +291,15 @@ class QueryDocumentChunk(SQLBaseModel):
         QueryDocumentChunk: query document chunk object
 
     """
-    pass
+    try:
+      return (
+        cls.select()
+        .where(
+          (cls.query_engine_id == query_engine_id) &
+          (cls.index == index) &
+          (cls.deleted_at_timestamp.is_null())
+        )
+        .get()
+      )
+    except DoesNotExist:
+      return None

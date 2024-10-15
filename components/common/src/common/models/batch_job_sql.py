@@ -15,19 +15,14 @@
 """
 SQL model for batch jobs
 """
-# pylint:disable=unused-import
-from peewee import (UUIDField,
-                    DateTimeField,
-                    TextField,
-                    IntegerField,
-                    BooleanField,
-                    TimestampField)
+from peewee import UUIDField, TextField, DoesNotExist
 from playhouse.postgres_ext import ArrayField
-from common.models.base_model_sql import SQLBaseModel
+from common.models import SQLBaseModel
 
 
 class BatchJobModel(SQLBaseModel):
   """Model class for batch job"""
+
   id = UUIDField()
   name = TextField(default="")
   input_data = TextField(null=True)
@@ -44,12 +39,39 @@ class BatchJobModel(SQLBaseModel):
 
   @classmethod
   def find_by_name(cls, name):
-    pass
+    """
+    Find a batch job by its name.
+    Args:
+        name (str): The name of the batch job.
+    Returns:
+        BatchJobModel: The batch job object if found, None otherwise.
+    """
+    try:
+      return cls.get(cls.name == name)
+    except DoesNotExist:
+      return None
 
   @classmethod
-  def find_by_uuid(cls, name):
-    pass
+  def find_by_uuid(cls, uuid):
+    """
+    Find a batch job by its UUID.
+    Args:
+        uuid (str): The UUID of the batch job.
+    Returns:
+        BatchJobModel: The batch job object if found, None otherwise.
+    """
+    try:
+      return cls.get(cls.uuid == uuid)
+    except DoesNotExist:
+      return None
 
   @classmethod
   def find_by_job_type(cls, job_type):
-    pass
+    """
+    Find batch jobs by their type.
+    Args:
+        job_type (str): The type of the batch jobs.
+    Returns:
+        List[BatchJobModel]: A list of batch job objects matching the type.
+    """
+    return list(cls.select().where(cls.type == job_type))

@@ -21,25 +21,30 @@ from common.utils.secrets import get_secret
 
 Logger = Logger.get_logger(__file__)
 
-# postgres
+# postgres settings
 # TODO: create secrets for this
-PG_DBNAME = "genie_db"
-PG_HOST = get_env_setting("PG_HOST", None)
-PG_PORT = "5432"
-PG_USER = "postgres"
-PG_PASSWD = None
+PG_DBNAME = get_env_setting("PG_DBNAME", "genie_db")
+PG_HOST = get_env_setting("PG_HOST", "127.0.0.1")
+PG_PORT = get_env_setting("PG_PORT", "5432")
+PG_USER = get_env_setting("PG_USER", "postgres")
+PG_PASSWD = get_env_setting("PG_PASSWD", None)
+
+if not PG_PASSWD:
+  # load secrets
+  try:
+    PG_PASSWD = get_secret("postgres-user-passwd")
+  except Exception as e:
+    Logger.warning("Can't access postgres user password secret")
+    PG_PASSWD = None
+
 Logger.info(f"PG_HOST = [{PG_HOST}]")
 Logger.info(f"PG_DBNAME = [{PG_DBNAME}]")
+Logger.info(f"PG_USER = [{PG_USER}]")
+Logger.info(f"PG_PASSWD = [{PG_PASSWD}]")
 
-# load secrets
-try:
-  PG_PASSWD = get_secret("postgres-user-passwd")
-except Exception as e:
-  Logger.warning("Can't access postgres user password secret")
-  PG_PASSWD = None
 
 # ORM config.  See common.models.__init__.py
 SQL_ORM = "sql_orm"
 FIRESTORE_ORM = "firestore_orm"
-ORM_MODE = get_env_setting("ORM_MODE", FIRESTORE_ORM)
+ORM_MODE = get_env_setting("ORM_MODE", SQL_ORM)
 Logger.info(f"ORM_MODE = [{ORM_MODE}]")

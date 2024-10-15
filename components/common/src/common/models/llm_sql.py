@@ -14,11 +14,9 @@
 """
 SQL Models for LLM generation and chat
 """
-# pylint: disable=unused-argument,unused-import
+# pylint: disable=unused-argument
 from typing import List
-from peewee import (UUIDField,
-                    DateTimeField,
-                    TextField)
+from peewee import UUIDField, TextField, fn
 from playhouse.postgres_ext import ArrayField
 from common.models.base_model_sql import SQLBaseModel
 from common.models.llm import UserChatUtil
@@ -55,4 +53,11 @@ class UserChat(SQLBaseModel, UserChatUtil):
         List[UserChat]: List of chats for user.
 
     """
-    return None
+    objects = cls.select().where(
+      (cls.user_id == user_id) &
+      (cls.deleted_at_timestamp is None)
+    ).order_by(
+      fn.datetime(getattr(cls, order_by[1:]), 'UTC') if order_by.startswith('-') else
+      fn.datetime(getattr(cls, order_by), 'UTC')
+    ).offset(skip).limit(limit)
+    return list(objects)

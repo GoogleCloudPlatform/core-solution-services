@@ -17,6 +17,8 @@ Flatten import namespace for models
 
 from common.orm_config import ORM_MODE, SQL_ORM, FIRESTORE_ORM
 
+from .base_model import *
+
 if ORM_MODE == SQL_ORM:
 
   from .base_model_sql import *
@@ -24,11 +26,10 @@ if ORM_MODE == SQL_ORM:
   from .llm_sql import *
   from .llm_query_sql import *
   from .batch_job_sql import *
-  # from .session_sql import *
+  from .session_sql import *
 
 else: # ORM_MODE == FIRESTORE_ORM
 
-  from .base_model import *
   from .node_item import *
   from .user import *
   from .user_event import *

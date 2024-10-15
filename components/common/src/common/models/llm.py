@@ -30,14 +30,17 @@ class UserChatUtil():
   """
   Utility mixin class for UserChat
   """
+
+  def __init__(self):
+    self.history = None
+
   @classmethod
   def get_history_entry(cls, prompt: str, response: str) -> List[dict]:
     """ Get history entry for query and response """
     entry = [{CHAT_HUMAN: prompt}, {CHAT_AI: response}]
     return entry
 
-  def update_history(self,
-                     prompt: str=None,
+  def update_history(self, prompt: str=None,
                      response: str=None,
                      custom_entry: dict=None):
     """ Update history with query and response """
@@ -68,6 +71,8 @@ class UserChatUtil():
   def entry_content(cls, entry: dict) -> str:
     return list(entry.values())[0]
 
+  def save(self, merge=True):
+    raise NotImplementedError("Save method should be implemented in the subclass")
 
 class UserChat(BaseModel, UserChatUtil):
   """
@@ -109,41 +114,3 @@ class UserChat(BaseModel, UserChatUtil):
             "deleted_at_timestamp", "==",
             None).order(order_by).offset(skip).fetch(limit)
     return list(objects)
-
-  @classmethod
-  def get_history_entry(cls, prompt: str, response: str) -> List[dict]:
-    """ Get history entry for query and response """
-    entry = [{CHAT_HUMAN: prompt}, {CHAT_AI: response}]
-    return entry
-
-  def update_history(self,
-                     prompt: str=None,
-                     response: str=None,
-                     custom_entry: dict=None):
-    """ Update history with query and response """
-
-    if not self.history:
-      self.history = []
-
-    if prompt:
-      self.history.append({CHAT_HUMAN: prompt})
-
-    if response:
-      self.history.append({CHAT_AI: response})
-
-    if custom_entry:
-      self.history.append(custom_entry)
-
-    self.save(merge=True)
-
-  @classmethod
-  def is_human(cls, entry: dict) -> bool:
-    return CHAT_HUMAN in entry.keys()
-
-  @classmethod
-  def is_ai(cls, entry: dict) -> bool:
-    return CHAT_AI in entry.keys()
-
-  @classmethod
-  def entry_content(cls, entry: dict) -> str:
-    return list(entry.values())[0]

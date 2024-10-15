@@ -34,6 +34,9 @@ QE_TYPE_INTEGRATED_SEARCH = "qe_integrated_search"
 class UserQueryUtil():
   """ Utility class for UserQuery """
 
+  def __init__(self):
+    self.history = None
+
   def update_history(self, prompt: str=None,
                      response: str=None,
                      references: List[dict]=None,
@@ -68,6 +71,8 @@ class UserQueryUtil():
   def entry_content(cls, entry: dict) -> str:
     return list(entry.values())[0]
 
+  def save(self, merge=True):
+    raise NotImplementedError("Save method should be implemented in the subclass")
 
 
 class UserQuery(BaseModel, UserQueryUtil):
