@@ -518,7 +518,7 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["document_url"]=query_doc.doc_url
   query_reference_dict["modality"]=modality
   query_reference_dict["chunk_id"]=doc_chunk.id
-  query_reference_dict["linked_ids"] = doc_chunk.linked_ids
+  query_reference_dict["linked_ids"]=doc_chunk.linked_ids
   # For text chunk only
   if modality=="text":
     query_reference_dict["page"]=doc_chunk.page
