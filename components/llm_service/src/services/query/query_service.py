@@ -422,6 +422,20 @@ async def query_search(q_engine: QueryEngine,
     query_reference.save()
     query_references.append(query_reference)
 
+    # Also create a query_reference for other modalities of the same chunk
+    linked_ids = query_reference.linked_ids
+    if linked_ids:
+      for linked_id in linked_ids:
+        query_doc_chunk_friend = QueryDocumentChunk.find_by_id(linked_id)
+        query_reference_friend = make_query_reference(
+          q_engine=q_engine,
+          query_doc=query_doc,
+          doc_chunk=query_doc_chunk_friend,
+          query_embeddings=query_embeddings,
+          rank_sentences=rank_sentences)
+        query_reference_friend.save()
+        query_references.append(query_reference_friend)
+
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
 
@@ -504,6 +518,7 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["document_url"]=query_doc.doc_url
   query_reference_dict["modality"]=modality
   query_reference_dict["chunk_id"]=doc_chunk.id
+  query_reference_dict["linked_ids"]=doc_chunk.linked_ids
   # For text chunk only
   if modality=="text":
     query_reference_dict["page"]=doc_chunk.page
@@ -1071,7 +1086,10 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           for index in linked_indexes:
             query_doc_chunk = \
               QueryDocumentChunk.find_by_index(q_engine.id, index)
-            query_doc_chunk.linked_ids = linked_ids
+            friend_ids = [friend_id for friend_id in linked_ids
+                          if friend_id != query_doc_chunk.id]
+            query_doc_chunk.linked_ids = friend_ids
+            query_doc_chunk.save()
 
         else:
           # Use text-only pipeline

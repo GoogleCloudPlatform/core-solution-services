@@ -201,12 +201,17 @@ class QueryReference(BaseModel):
   document_id = TextField(required=True)  # All modalities
   document_url = TextField(required=True)  # All modalities
   modality = TextField(required=True)  # All modalities: text image video audio
-  chunk_id = TextField(required=False)  # All modalities
-  chunk_url = TextField(required=False)  # Image or video or audio only
-  page = NumberField(required=False)  # Text or image only
-  document_text = TextField(required=False)  # Text only
-  timestamp_start = NumberField(required=False)  # Video or audio only
-  timestamp_stop = NumberField(required=False)  # Video or audio only
+  chunk_id = TextField(required=True)  # All modalities
+  chunk_url = TextField(
+    required=False, default=None)  # Image or video or audio only
+  page = NumberField(required=False, default=None)  # Text or image only
+  document_text = TextField(required=False, default=None)  # Text only
+  timestamp_start = NumberField(
+    required=False, default=None)  # Video or audio only
+  timestamp_stop = NumberField(
+    required=False, default=None)  # Video or audio only
+  linked_ids = ListField(
+    IDField(), required=False, default=None)  # All modalities
 
   def __repr__(self) -> str:
     """
@@ -218,13 +223,11 @@ class QueryReference(BaseModel):
       document_text_snippet = self.document_text[:min(100,
                                                       document_text_num_chars)]
       chunk_url = None
-      page = None
     else:
       document_text_num_tokens = None
       document_text_num_chars = None
       document_text_snippet = None
       chunk_url = self.chunk_url
-      page = self.page
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
@@ -232,10 +235,11 @@ class QueryReference(BaseModel):
       f"chunk_id={self.chunk_id}, "
       f"chunk_url={chunk_url}, "
       f"modality={self.modality}, "
-      f"page={page}, "
+      f"page={self.page}, "
       f"chunk_num_tokens={document_text_num_tokens}, "
       f"chunk_num_chars={document_text_num_chars}, "
-      f"chunk_text={document_text_snippet})"
+      f"chunk_text={document_text_snippet}, "
+      f"linked_ids={self.linked_ids})"
     )
 
   class Meta:
@@ -360,14 +364,18 @@ class QueryDocumentChunk(BaseModel):
   query_document_id = TextField(required=True)  # All modalities
   index = NumberField(required=True)  # All modalities
   modality = TextField(required=True)  # All modalities: text image video audio
-  page = NumberField(required=False)  # Text or image only
-  chunk_url = TextField(required=False)  # Image or video or audio only
-  text = TextField(required=False)  # Text only
-  clean_text = TextField(required=False)  # Text only (optional)
-  sentences = ListField(required=False)  # Text only (optional)
-  timestamp_start = NumberField(required=False)  # Video or audio only
-  timestamp_stop = NumberField(required=False)  # Video or audio only
-  linked_ids = ListField(required=False)  # All modalities
+  page = NumberField(required=False, default=None)  # Text or image only
+  chunk_url = TextField(
+    required=False, default=None)  # Image or video or audio only
+  text = TextField(required=False, default=None)  # Text only
+  clean_text = TextField(required=False, default=None)  # Text only (optional)
+  sentences = ListField(required=False, default=None)  # Text only (optional)
+  timestamp_start = NumberField(
+    required=False, default=None)  # Video or audio only
+  timestamp_stop = NumberField(
+    required=False, default=None)  # Video or audio only
+  linked_ids = ListField(
+    IDField(), required=False, default=None)  # All modalities
 
   class Meta:
     ignore_none_field = False
