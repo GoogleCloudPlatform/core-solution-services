@@ -97,18 +97,24 @@ def chat_content():
                   "https://storage.googleapis.com/", 1)
 
             document_url = reference["document_url"]
+            page = reference["page"]
+            if page:
+              # References from multimodal query engines have page numbers
+              reference_header = f"\nReference {query_index}: {document_url}, Page {page+1}"
+            else:
+              # References from text-only query engines do not have page numbers
+              reference_header = f"\nReference {query_index}: {document_url}"
             if modality == "text":
               document_text = reference["document_text"]
               st.text_area(
-                f"\nReference {query_index}: {document_url}",
+                reference_header,
                 document_text,
                 key=f"ref_{query_index}")
             elif modality == "image" and chunk_type in [".pdf",
                  ".png", ".jpg", ".jpeg", ".gif", ".bmp"]:
               # .tif/.tiff not available, all other file types are untested
-              page = reference["page"]
               st.write(
-                f"\nReference {query_index}: {document_url}, Page {page+1}",
+                reference_header,
                 key=f"ref_{query_index}")
               st.image(chunk_url)
             else:
