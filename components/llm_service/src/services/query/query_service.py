@@ -425,8 +425,7 @@ async def query_search(q_engine: QueryEngine,
     # Also create a query_reference for other modalities of the same chunk
     linked_ids = query_reference.linked_ids
     if linked_ids:
-      # Explicitly set linked_ids to be a list, to get past linter
-      for linked_id in list(linked_ids):
+      for linked_id in linked_ids:
         query_doc_chunk_friend = QueryDocumentChunk.find_by_id(linked_id)
         query_reference_friend = make_query_reference(
           q_engine=q_engine,
