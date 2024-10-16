@@ -224,8 +224,6 @@ class QueryReference(BaseModel):
       document_text_num_chars = None
       document_text_snippet = None
       chunk_url = self.chunk_url
-    page = getattr(self, "page", None)
-    linked_ids = getattr(self, "linked_ids", None)
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
@@ -233,11 +231,11 @@ class QueryReference(BaseModel):
       f"chunk_id={self.chunk_id}, "
       f"chunk_url={chunk_url}, "
       f"modality={self.modality}, "
-      f"page={page}, "
+      f"page={self.page}, "
       f"chunk_num_tokens={document_text_num_tokens}, "
       f"chunk_num_chars={document_text_num_chars}, "
       f"chunk_text={document_text_snippet}, "
-      f"linked_ids={linked_ids})"
+      f"linked_ids={self.linked_ids})"
     )
 
   class Meta:
