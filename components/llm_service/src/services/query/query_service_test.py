@@ -197,7 +197,7 @@ class FakeDataSource(DataSource):
       chunk_list = [QUERY_DOCUMENT_CHUNK_EXAMPLE_2["text"]] # List of one string
     else:
       chunk_list = None
-    return chunk_list, chunk_list
+    return chunk_list
 
   def chunk_document_multi(self, doc_name:str, doc_url: str,
                             doc_filepath: str) -> List[str]:

@@ -19,6 +19,7 @@ import tempfile
 import traceback
 import os
 import json
+import re
 from numpy.linalg import norm
 import numpy as np
 import pandas as pd
@@ -720,6 +721,11 @@ async def query_engine_build(doc_url: str,
   Raises:
     ValidationError if the named query engine already exists
   """
+  # cleanup and validation of name
+  query_engine = query_engine.strip()
+  if not re.fullmatch(r"^[a-zA-Z0-9][\w\s-]*$", query_engine):
+    raise ValidationError(f"Invalid query engine name {query_engine}")
+
   q_engine = QueryEngine.find_by_name(query_engine)
   if q_engine is not None:
     raise ValidationError(f"Query engine {query_engine} already exists")
@@ -916,13 +922,9 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                                       index_doc_url,
                                                       doc_filepath)
       else:
-        #chunk_document returns 2 outputs, text_chunks and embed_chunks.
-        #Each element of text_chunks has the same info as its corresponding
-        #element in embed_chunks, but is padded with adjacent sentences
-        #before and after. Use the 2nd output here (embed_chunks).
-        _, doc_chunks = data_source.chunk_document(doc_name,
-                                                   index_doc_url,
-                                                   doc_filepath)
+        doc_chunks = data_source.chunk_document(doc_name,
+                                                index_doc_url,
+                                                doc_filepath)
 
       if doc_chunks is None or len(doc_chunks) == 0:
         # unable to process this doc; skip
@@ -1128,7 +1130,7 @@ def datasource_from_url(doc_url: str,
   If not raise an InternalServerError exception.
   """
   if doc_url.startswith("gs://"):
-    return DataSource(storage_client)
+    return DataSource(storage_client, q_engine.params)
   elif doc_url.startswith("http://") or doc_url.startswith("https://"):
     params = q_engine.params or {}
     if "depth_limit" in params:
@@ -1139,12 +1141,14 @@ def datasource_from_url(doc_url: str,
     # Create bucket name using query_engine name
     bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
     return WebDataSource(storage_client,
+                         params=q_engine.params,
                          bucket_name=bucket_name,
                          depth_limit=depth_limit)
   elif doc_url.startswith("shpt://"):
     # Create bucket name using query_engine name
     bucket_name = SharePointDataSource.downloads_bucket_name(q_engine.name)
     return SharePointDataSource(storage_client,
+                                q_engine.params,
                                 bucket_name=bucket_name)
   else:
     raise InternalServerError(
