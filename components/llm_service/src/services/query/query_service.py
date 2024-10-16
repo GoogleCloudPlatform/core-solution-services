@@ -1087,7 +1087,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           for index in linked_indexes:
             query_doc_chunk = \
               QueryDocumentChunk.find_by_index(q_engine.id, index)
-            friend_ids = [friend_id for friend_id in linked_ids \
+            friend_ids = [friend_id for friend_id in linked_ids
                           if friend_id != query_doc_chunk.id]
             query_doc_chunk.linked_ids = friend_ids
             query_doc_chunk.save()
