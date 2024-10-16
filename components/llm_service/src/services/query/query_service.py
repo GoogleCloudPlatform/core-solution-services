@@ -423,7 +423,7 @@ async def query_search(q_engine: QueryEngine,
     query_references.append(query_reference)
 
     # Also create a query_reference for other modalities of the same chunk
-    linked_ids = getattr(query_reference, "linked_ids", None)
+    linked_ids = query_reference.linked_ids
     if linked_ids:
       # Explicitly set linked_ids to be a list, to get past linter
       for linked_id in list(linked_ids):
@@ -519,7 +519,7 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["document_url"]=query_doc.doc_url
   query_reference_dict["modality"]=modality
   query_reference_dict["chunk_id"]=doc_chunk.id
-  query_reference_dict["linked_ids"]=getattr(doc_chunk, "linked_ids", None)
+  query_reference_dict["linked_ids"] = doc_chunk.linked_ids
   # For text chunk only
   if modality=="text":
     query_reference_dict["page"]=doc_chunk.page
