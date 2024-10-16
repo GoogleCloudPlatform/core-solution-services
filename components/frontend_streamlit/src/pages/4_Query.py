@@ -99,7 +99,8 @@ def chat_content():
             page = reference["page"]
             if page:
               # References from multimodal query engines have page numbers
-              reference_header = f"\nReference {query_index}: {document_url}, Page {page+1}"
+              reference_header = \
+                f"\nReference {query_index}: {document_url}, Page {page+1}"
             else:
               # References from text-only query engines do not have page numbers
               reference_header = f"\nReference {query_index}: {document_url}"
