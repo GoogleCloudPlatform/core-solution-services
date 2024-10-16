@@ -95,7 +95,6 @@ def chat_content():
               _, chunk_type = splitext(chunk_url)
               chunk_url = chunk_url.replace("gs://",
                   "https://storage.googleapis.com/", 1)
-
             document_url = reference["document_url"]
             page = reference["page"]
             if page:

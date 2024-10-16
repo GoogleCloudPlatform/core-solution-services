@@ -207,7 +207,6 @@ class QueryReference(BaseModel):
   document_text = TextField(required=False)  # Text only
   timestamp_start = NumberField(required=False)  # Video or audio only
   timestamp_stop = NumberField(required=False)  # Video or audio only
-  #SC241015: Also set linked_ids, like in QueryDocumentChunk - DONE
   linked_ids = ListField(required=False)  # All modalities
 
   def __repr__(self) -> str:
@@ -220,15 +219,13 @@ class QueryReference(BaseModel):
       document_text_snippet = self.document_text[:min(100,
                                                       document_text_num_chars)]
       chunk_url = None
-      #page = None #SC241015
     else:
       document_text_num_tokens = None
       document_text_num_chars = None
       document_text_snippet = None
       chunk_url = self.chunk_url
-      #page = self.page #SC241015
-    page = getattr(self, "page", None) #SC241015
-    linked_ids = getattr(self, "linked_ids", None) #SC241015
+    page = getattr(self, "page", None)
+    linked_ids = getattr(self, "linked_ids", None)
     return (
       f"Query_Ref(query_engine_name={self.query_engine}, "
       f"document_id={self.document_id}, "
@@ -242,7 +239,6 @@ class QueryReference(BaseModel):
       f"chunk_text={document_text_snippet}, "
       f"linked_ids={linked_ids})"
     )
-    #SC241015: Also return linked_ids field, if it exists - DONE
 
   class Meta:
     ignore_none_field = False

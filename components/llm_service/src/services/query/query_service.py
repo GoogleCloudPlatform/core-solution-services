@@ -162,8 +162,6 @@ async def query_generate(
                                                user_id,
                                                rank_sentences,
                                                query_filter)
-  #SC241015: query_references should already incorporate friends - DONE
-  Logger.info(f"\n#SC241015: In query_generate: {query_references=}")
 
   # Rerank references. Only need to do this if performing integrated search
   # from multiple child engines.
@@ -416,11 +414,6 @@ async def query_search(q_engine: QueryEngine,
       raise ResourceNotFoundException(
         f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
 
-    Logger.info(f"\n\n\n#SC241015: In query_search: About to make original QR object from doc_chunk with linked_ids = {doc_chunk.linked_ids}")
-    Logger.info(f"\n#SC241015: In query_search: About to make original QR object from doc_chunk with id = {doc_chunk.id}")
-    Logger.info(f"\n#SC241015: In query_search: About to make original QR object from doc_chunk with index = {doc_chunk.index}")
-    Logger.info(f"\n#SC241015: In query_search: About to make original QR object from doc_chunk with sentences = {doc_chunk.sentences}")
-    
     query_reference = make_query_reference(q_engine=q_engine,
                                            query_doc=query_doc,
                                            doc_chunk=doc_chunk,
@@ -428,28 +421,21 @@ async def query_search(q_engine: QueryEngine,
                                            rank_sentences=rank_sentences)
     query_reference.save()
     query_references.append(query_reference)
-    #SC241015: Insert Logger.info statement to display query_reference from simsearch match - DONE
-    Logger.info(f"\n\n\n#SC241015: In query_search: Original Reference: {query_reference.__repr__()}")
 
-    #SC241015: Also create another query_reference for its friend, if linked_ids field exists - DONE
-    #SC241015: Note that we do not need to check is_multimodal here, just need to check if
-    #Sc241015: linked_ids field exists in doc_chunk
     # Also create a query_reference for other modalities of the same chunk
     linked_ids = getattr(query_reference, "linked_ids", None)
-    Logger.info(f"\n\n\n#SC241015: In query_search: Original References: {linked_ids=}")
     if linked_ids:
-      for id in linked_ids:
-        query_doc_chunk_friend = QueryDocumentChunk.find_by_id(id)
-        query_reference_friend = make_query_reference(q_engine=q_engine,
-                                                      query_doc=query_doc,
-                                                      doc_chunk=query_doc_chunk_friend,
-                                                      query_embeddings=query_embeddings,
-                                                      rank_sentences=rank_sentences)
+      # Explicitly set linked_ids to be a list, to get past linter
+      for linked_id in list(linked_ids):
+        query_doc_chunk_friend = QueryDocumentChunk.find_by_id(linked_id)
+        query_reference_friend = make_query_reference(
+          q_engine=q_engine,
+          query_doc=query_doc,
+          doc_chunk=query_doc_chunk_friend,
+          query_embeddings=query_embeddings,
+          rank_sentences=rank_sentences)
         query_reference_friend.save()
         query_references.append(query_reference_friend)
-        #SC241015: Insert Logger.info statement to display query_reference from friend,
-        #SC241015: if linked_ids field exists - DONE
-        Logger.info(f"\n\n\n#SC241015: In query_search: Friend Reference: {query_reference_friend.__repr__}")
 
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
@@ -477,7 +463,6 @@ def make_query_reference(q_engine: QueryEngine,
   Returns:
     query_reference: The QueryReference object corresponding to doc_chunk
   """
-  Logger.info(f"\n\n\n#SC241015: In make_query_reference: {doc_chunk.linked_ids=}")
   # Get modality of document chunk, make lowercase
   # If modality is None, set it equal to default value "text"
   modality = doc_chunk.modality
@@ -534,9 +519,7 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["document_url"]=query_doc.doc_url
   query_reference_dict["modality"]=modality
   query_reference_dict["chunk_id"]=doc_chunk.id
-  #SC241015: Also save linked_ids, if it exists - DONE
   query_reference_dict["linked_ids"]=getattr(doc_chunk, "linked_ids", None)
-  Logger.info(f"\n#SC241015: In make_query_reference:  {query_reference_dict['linked_ids']=}")
   # For text chunk only
   if modality=="text":
     query_reference_dict["page"]=doc_chunk.page
@@ -1079,7 +1062,6 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 
           # Create a QueryDocumentChunk ORM object for each modality
           # of ith chunk, in alphabetical order
-          Logger.info(f"\n\n\n#SC241015: In process_documents, about to make QueryDocumentChunks ORM objects for {i=} chunk.")
           for key in sorted_keys:
             if key in MODALITY_SET:
               # doc_chunk is dict representing ith chunk
@@ -1100,20 +1082,15 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
               linked_ids.append(query_doc_chunk.id)
               # Increment counter of all ORM objects made for all chunks
               j+=1
-          Logger.info(f"\n\n\n#SC241015: In process_documents, just made QueryDocumentChunks ORM objects for {i=} chunk.")
-          Logger.info(f"\n\n\n#SC241015: In process_documents: {linked_indexes=}")
-          Logger.info(f"\n\n\n#SC241015: In process_documents: {linked_ids=}")
 
           # Set linked_ids field of all ORM objects just made for ith chunk
           for index in linked_indexes:
             query_doc_chunk = \
               QueryDocumentChunk.find_by_index(q_engine.id, index)
-            friend_ids = [friend_id for friend_id in linked_ids if friend_id != query_doc_chunk.id]
-            #query_doc_chunk.linked_ids = linked_ids #SC241015
-            query_doc_chunk.linked_ids = friend_ids #SC241015
-            query_doc_chunk.save() #SC241015
-            #SC241015: Only save its friend, not itself and its friend - DONE
-            Logger.info(f"\n\n\n#SC241015: In process_documents: {query_doc_chunk.linked_ids=}")
+            friend_ids = [friend_id for friend_id in linked_ids \
+                          if friend_id != query_doc_chunk.id]
+            query_doc_chunk.linked_ids = friend_ids
+            query_doc_chunk.save()
 
         else:
           # Use text-only pipeline
