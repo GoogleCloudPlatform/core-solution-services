@@ -19,17 +19,13 @@ interface ConfigContextType {
   setSelectedModel: (model: string) => void
   selectedEngine: string
   setSelectedEngine: (engine: string) => void
-  selectedEngineIsMultimodal: boolean
-  setSelectedEngineIsMultimodal: (isMultimodal: boolean) => void
 }
 
 const ConfigContext = createContext<ConfigContextType>({
   selectedModel: "VertexAI-Chat",
-  setSelectedModel: () => { },
+  setSelectedModel: () => {},
   selectedEngine: "",
-  setSelectedEngine: () => { },
-  selectedEngineIsMultimodal: false,
-  setSelectedEngineIsMultimodal: () => { }
+  setSelectedEngine: () => {}
 })
 
 export const useConfig = () => useContext(ConfigContext)
@@ -41,15 +37,12 @@ interface ConfigProviderProps {
 export const ConfigProvider = ({ children }: ConfigProviderProps) => {
   const [selectedModel, setSelectedModel] = useState("VertexAI-Chat")
   const [selectedEngine, setSelectedEngine] = useState("")
-  const [selectedEngineIsMultimodal, setSelectedEngineIsMultimodal] = useState(true)
 
   const value = {
     selectedModel,
     setSelectedModel,
     selectedEngine,
-    setSelectedEngine,
-    selectedEngineIsMultimodal,
-    setSelectedEngineIsMultimodal
+    setSelectedEngine
   }
 
   return (

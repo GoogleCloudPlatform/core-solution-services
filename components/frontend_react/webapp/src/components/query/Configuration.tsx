@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, { useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { fetchAllChatModels, fetchAllEngines } from "@/utils/api"
 import { useQuery } from "@tanstack/react-query"
 import Loading from "@/navigation/Loading"
@@ -25,11 +25,11 @@ interface ConfigurationProps {
 const QueryConfiguration: React.FC<ConfigurationProps> = ({ token }) => {
   const { data: engineList, isLoading: enginesLoading, error: enginesError } = useQuery(["fetchEngines"], fetchAllEngines(token))
   const { data: modelList, isLoading: modelsLoading, error: modelsError } = useQuery(["fetchModels"], fetchAllChatModels(token))
-  const { data: textOnlyModelList, isLoading: textOnlyModelsLoading, error: textOnlyModelsError } =
-    useQuery(["fetchTextOnlyModels"], fetchAllChatModels(token, false))
+  const { data: multimodalModelList, isLoading: multimodalModelsLoading, error: multimodalModelsError } =
+    useQuery(["fetchMultimodalModels"], fetchAllChatModels(token, true))
 
-  const { selectedModel, setSelectedModel, selectedEngine, setSelectedEngine,
-    selectedEngineIsMultimodal, setSelectedEngineIsMultimodal } = useConfig()
+  const { selectedModel, setSelectedModel, selectedEngine, setSelectedEngine } = useConfig()
+  const [selectedEngineIsMultimodal, setSelectedEngineIsMultimodal] = useState<boolean | undefined>(undefined)
 
   useEffect(() => {
     if (engineList && engineList.length > 0 && !selectedEngine) {
@@ -37,6 +37,7 @@ const QueryConfiguration: React.FC<ConfigurationProps> = ({ token }) => {
     }
   }, [engineList])
 
+  // Changing if the engine is multimodal when a new one is selected
   useEffect(() => {
     if (selectedEngine && engineList) {
       const engineInfo = engineList.find(
@@ -45,20 +46,23 @@ const QueryConfiguration: React.FC<ConfigurationProps> = ({ token }) => {
       if (!engineInfo) { setSelectedEngine(engineList[0].id) }
       else {
         setSelectedEngineIsMultimodal(
-          (engineInfo.params?.get("is_multimodal") ?? false) === "True")
+          (engineInfo.params?.is_multimodal ?? false) === "True")
       }
     }
   }, [selectedEngine])
 
-  if (enginesError || modelsError || textOnlyModelsError) return <></>
-  if (enginesLoading || modelsLoading || textOnlyModelsLoading) {
-    return <Loading />
-  }
+  const displayModelList = selectedEngineIsMultimodal ? multimodalModelList : modelList
+  // resetting the chat model if it is no longer valid when the engine changes
+  useEffect(() => {
+    if (displayModelList !== undefined && !displayModelList.includes(selectedModel) &&
+      displayModelList.length > 0) {
+      setSelectedModel(displayModelList[0])
+    }
+  }, [selectedEngineIsMultimodal])
 
-  const displayModelList = selectedEngineIsMultimodal ? modelList : textOnlyModelList
-  if (displayModelList !== undefined && !displayModelList.includes(selectedModel) &&
-    displayModelList.length > 0) {
-    setSelectedModel(displayModelList[0])
+  if (enginesError || modelsError || multimodalModelsLoading) return <></>
+  if (enginesLoading || modelsLoading || multimodalModelsError) {
+    return <Loading />
   }
 
   return (
