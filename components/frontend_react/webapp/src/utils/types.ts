@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { ReactNode } from "react"
-import { any, z } from "zod"
+import { z } from "zod"
 
 export type INavigationItem = {
   name: string
@@ -188,7 +188,15 @@ export type QueryEngine = {
   endpoint: string | null
   doc_url: string | null
   manifest_url: string | null
-  params: string[] | null
+  // TODO: The params field is used by the ORM object for storing
+  // a map of possible keys and values, which is not reflected in the
+  // current QueryEngine interface
+  params: {
+    is_multimodal: string
+    // typing for an object with any fields taken from
+    // https://stackoverflow.com/questions/42723922
+    [key: string]: any
+  } | null
   depth_limit: number | null
   agents: string[] | null
   child_engines: string[] | null

@@ -57,8 +57,11 @@ const jobsEndpoint = envOrFail(
 )
 
 export const fetchAllChatModels =
-  (token: string) => (): Promise<string[] | undefined> => {
-    const url = `${endpoint}/chat/chat_types`
+  (token: string, isMultimodal?: boolean) => (): Promise<string[] | undefined> => {
+    let url = `${endpoint}/chat/chat_types`
+    if (isMultimodal !== undefined) {
+      url += `?is_multimodal=${isMultimodal}`
+    }
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
