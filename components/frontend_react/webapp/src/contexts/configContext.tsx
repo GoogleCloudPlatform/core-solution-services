@@ -25,7 +25,7 @@ const ConfigContext = createContext<ConfigContextType>({
   selectedModel: "VertexAI-Chat",
   setSelectedModel: () => {},
   selectedEngine: "",
-  setSelectedEngine: () => {}
+  setSelectedEngine: () => {},
 })
 
 export const useConfig = () => useContext(ConfigContext)
@@ -42,7 +42,7 @@ export const ConfigProvider = ({ children }: ConfigProviderProps) => {
     selectedModel,
     setSelectedModel,
     selectedEngine,
-    setSelectedEngine
+    setSelectedEngine,
   }
 
   return (

@@ -93,7 +93,7 @@ export const createChat =
     fileUrl,
   }: RunChatParams): Promise<Chat | undefined> => {
     const url = `${endpoint}/chat`
-    const headers = {
+    const headers = { 
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data'
     }
@@ -238,7 +238,7 @@ export const getJobStatus =
     const url = `${jobsEndpoint}/jobs/agent_run/${jobId}`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
-  }
+ }
 
 export const getEngineJobStatus =
   async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
@@ -246,12 +246,12 @@ export const getEngineJobStatus =
     const url = `${jobsEndpoint}/jobs/query_engine_build/${jobId}`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
-  }
+ }
 
 export const fetchAllEngineJobs =
   (token: string) => (): Promise<QueryEngineBuildJob[] | undefined> => {
     const url = `${jobsEndpoint}/jobs/query_engine_build`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
-  }
+ }
 
