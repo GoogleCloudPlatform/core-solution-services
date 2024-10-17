@@ -57,8 +57,11 @@ const jobsEndpoint = envOrFail(
 )
 
 export const fetchAllChatModels =
-  (token: string) => (): Promise<string[] | undefined> => {
-    const url = `${endpoint}/chat/chat_types`
+  (token: string, isMultimodal?: boolean) => (): Promise<string[] | undefined> => {
+    let url = `${endpoint}/chat/chat_types`
+    if (isMultimodal !== undefined) {
+      url += `?is_multimodal=${isMultimodal}`
+    }
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
@@ -90,7 +93,7 @@ export const createChat =
     fileUrl,
   }: RunChatParams): Promise<Chat | undefined> => {
     const url = `${endpoint}/chat`
-    const headers = { 
+    const headers = {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data'
     }
@@ -235,7 +238,7 @@ export const getJobStatus =
     const url = `${jobsEndpoint}/jobs/agent_run/${jobId}`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
- }
+  }
 
 export const getEngineJobStatus =
   async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
@@ -243,12 +246,12 @@ export const getEngineJobStatus =
     const url = `${jobsEndpoint}/jobs/query_engine_build/${jobId}`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
- }
+  }
 
 export const fetchAllEngineJobs =
   (token: string) => (): Promise<QueryEngineBuildJob[] | undefined> => {
     const url = `${jobsEndpoint}/jobs/query_engine_build`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
- }
+  }
 

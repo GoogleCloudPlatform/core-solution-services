@@ -25,20 +25,42 @@ interface ConfigurationProps {
 const QueryConfiguration: React.FC<ConfigurationProps> = ({ token }) => {
   const { data: engineList, isLoading: enginesLoading, error: enginesError } = useQuery(["fetchEngines"], fetchAllEngines(token))
   const { data: modelList, isLoading: modelsLoading, error: modelsError } = useQuery(["fetchModels"], fetchAllChatModels(token))
+  const { data: textOnlyModelList, isLoading: textOnlyModelsLoading, error: textOnlyModelsError } =
+    useQuery(["fetchTextOnlyModels"], fetchAllChatModels(token, false))
 
-  const { selectedModel, setSelectedModel, selectedEngine, setSelectedEngine } = useConfig()
+  const { selectedModel, setSelectedModel, selectedEngine, setSelectedEngine,
+    selectedEngineIsMultimodal, setSelectedEngineIsMultimodal } = useConfig()
 
   useEffect(() => {
     if (engineList && engineList.length > 0 && !selectedEngine) {
       setSelectedEngine(engineList[0].id)
     }
-  }, [engineList, selectedEngine, setSelectedEngine])
+  }, [engineList])
 
-  if (enginesError || modelsError) return <></>
-  if (enginesLoading || modelsLoading) {
+  useEffect(() => {
+    if (selectedEngine && engineList) {
+      const engineInfo = engineList.find(
+        (engine) => engine.id == selectedEngine)
+      // if the engine isn't in the list, reset to the first one in the list
+      if (!engineInfo) { setSelectedEngine(engineList[0].id) }
+      else {
+        setSelectedEngineIsMultimodal(
+          (engineInfo.params?.get("is_multimodal") ?? false) === "True")
+      }
+    }
+  }, [selectedEngine])
+
+  if (enginesError || modelsError || textOnlyModelsError) return <></>
+  if (enginesLoading || modelsLoading || textOnlyModelsLoading) {
     return <Loading />
   }
-  
+
+  const displayModelList = selectedEngineIsMultimodal ? modelList : textOnlyModelList
+  if (displayModelList !== undefined && !displayModelList.includes(selectedModel) &&
+    displayModelList.length > 0) {
+    setSelectedModel(displayModelList[0])
+  }
+
   return (
     <div className="border-primary-content mt-2 border-t p-2 py-3">
       <div className="text-primary-content pb-3 font-semibold">
@@ -53,8 +75,8 @@ const QueryConfiguration: React.FC<ConfigurationProps> = ({ token }) => {
           onChange={(e) => setSelectedModel(e.target.value)}
           value={selectedModel}
         >
-          {modelList &&
-            modelList.map((modelOpt) => <option key={modelOpt} value={modelOpt}>{modelOpt}</option>)
+          {displayModelList &&
+            displayModelList.map((modelOpt) => <option key={modelOpt} value={modelOpt}>{modelOpt}</option>)
           }
         </select>
         <label htmlFor="engine-select" className="label w-fit pt-3"><span className="label-text text-primary-content">Query Engine:</span></label>

@@ -188,7 +188,7 @@ export type QueryEngine = {
   endpoint: string | null
   doc_url: string | null
   manifest_url: string | null
-  params: string[] | null
+  params: Map<any, any> | null
   depth_limit: number | null
   agents: string[] | null
   child_engines: string[] | null
@@ -235,5 +235,5 @@ export type QueryEngineBuildJob = {
   output_gcs_path: any
   errors: any
   job_logs: any
-  metadata: any  
+  metadata: any
 }
