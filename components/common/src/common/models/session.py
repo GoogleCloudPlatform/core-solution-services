@@ -15,7 +15,7 @@
 """Session Data Model"""
 
 from fireo.fields import (TextField, MapField, BooleanField)
-from common.models import BaseModel
+from common.models.base_model import BaseModel
 from common.utils.errors import ResourceNotFoundException
 
 

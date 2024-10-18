@@ -13,9 +13,8 @@
 # limitations under the License.
 
 """Helper functions to handle user related operations."""
-from common.models import User
+from common.models.user import User
 from common.utils.logging_handler import Logger
-# pylint: disable=logging-fstring-interpolation
 
 Logger = Logger.get_logger(__file__)
 

@@ -14,7 +14,13 @@
 """
 Config module to setup common environment
 """
+# pylint: disable=broad-exception-caught
 import os
+from common.utils.config import get_env_setting
+from common.utils.logging_handler import Logger
+from common.utils.secrets import get_secret
+
+Logger = Logger.get_logger(__file__)
 
 PROJECT_ID = os.environ.get("PROJECT_ID",
                             os.environ.get("GOOGLE_CLOUD_PROJECT"))
@@ -22,8 +28,6 @@ PROJECT_ID = os.environ.get("PROJECT_ID",
 API_BASE_URL = os.getenv("API_BASE_URL")
 BQ_REGION = os.getenv("BQ_REGION", "US")
 CLASSROOM_ADMIN_EMAIL = os.getenv("CLASSROOM_ADMIN_EMAIL")
-CLOUD_LOGGING_ENABLED = bool(
-    os.getenv("CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))
 CONTAINER_NAME = os.getenv("CONTAINER_NAME")
 DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
 DEPLOYMENT_NAME = os.getenv("DEPLOYMENT_NAME")
@@ -57,3 +61,31 @@ SERVICES = {
 }
 
 CORS_ALLOW_ORIGINS = os.getenv("CORS_ALLOW_ORIGINS", "").split(",")
+
+# postgres settings
+# TODO: create secrets for this
+PG_DBNAME = get_env_setting("PG_DBNAME", "genie_db")
+PG_HOST = get_env_setting("PG_HOST", "127.0.0.1")
+PG_PORT = get_env_setting("PG_PORT", "5432")
+PG_USER = get_env_setting("PG_USER", "postgres")
+PG_PASSWD = get_env_setting("PG_PASSWD", None)
+
+if not PG_PASSWD:
+  # load secrets
+  try:
+    PG_PASSWD = get_secret("postgres-user-passwd")
+  except Exception as e:
+    Logger.warning("Can't access postgres user password secret")
+    PG_PASSWD = None
+
+Logger.info(f"PG_HOST = [{PG_HOST}]")
+Logger.info(f"PG_DBNAME = [{PG_DBNAME}]")
+Logger.info(f"PG_USER = [{PG_USER}]")
+Logger.info(f"PG_PASSWD = [{PG_PASSWD}]")
+
+
+# ORM config.  See common.models.__init__.py
+SQL_ORM = "sql_orm"
+FIRESTORE_ORM = "firestore_orm"
+ORM_MODE = get_env_setting("ORM_MODE", SQL_ORM)
+Logger.info(f"ORM_MODE = [{ORM_MODE}]")

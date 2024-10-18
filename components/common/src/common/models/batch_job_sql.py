@@ -17,7 +17,7 @@ SQL model for batch jobs
 """
 from peewee import UUIDField, TextField, DoesNotExist
 from playhouse.postgres_ext import ArrayField
-from common.models import SQLBaseModel
+from common.models.base_model_sql import SQLBaseModel
 
 
 class BatchJobModel(SQLBaseModel):

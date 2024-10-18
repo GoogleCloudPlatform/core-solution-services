@@ -16,12 +16,11 @@ SQL BaseModel to be inherited by all other objects for SQL ORM
 """
 import datetime
 from typing import List, Tuple
-from common.orm_config import PG_HOST, PG_DBNAME, PG_USER, PG_PASSWD
+from common.config import PG_HOST, PG_DBNAME, PG_USER, PG_PASSWD
 from common.utils.errors import ResourceNotFoundException
 from peewee import Model, DoesNotExist, DateTimeField, TextField
 from playhouse.postgres_ext import PostgresqlExtDatabase
 
-# pylint: disable=unused-argument
 
 # instantiate connection to postgres db
 db = PostgresqlExtDatabase(
@@ -130,7 +129,7 @@ class SQLBaseModel(Model):
     else:
       return super().save(force_insert=force_insert, only=only)
 
-  # pylint: disable=arguments-renamed, invalid-name
+  # pylint: disable=arguments-renamed, invalid-name, unused-argument
   def update(self, __data=None, **kwargs):
     """overrides default method to update items with timestamp"""
     return self.save()

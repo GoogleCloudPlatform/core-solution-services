@@ -15,7 +15,7 @@
 Base class for Node items
 """
 import sys
-from common.models import BaseModel
+from common.models.base_model import BaseModel
 
 
 # pylint:disable=dangerous-default-value,unused-argument

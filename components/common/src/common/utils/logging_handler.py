@@ -17,8 +17,10 @@
 import logging
 import os
 import sys
-from common.config import CLOUD_LOGGING_ENABLED
 import google.cloud.logging
+
+CLOUD_LOGGING_ENABLED = bool(
+  os.getenv("CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))
 
 if CLOUD_LOGGING_ENABLED:
   client = google.cloud.logging.Client()

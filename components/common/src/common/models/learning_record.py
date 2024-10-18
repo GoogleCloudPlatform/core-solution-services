@@ -15,7 +15,8 @@
 Learning Record Service Data Models
 """
 from fireo.fields import TextField, ListField, MapField, BooleanField
-from common.models import NodeItem, BaseModel
+from common.models.base_model import BaseModel
+from common.models.node_item import NodeItem
 from common.utils.errors import ResourceNotFoundException
 
 

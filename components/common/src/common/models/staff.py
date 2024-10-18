@@ -16,7 +16,7 @@ Staff Data Model
 """
 import regex
 import re
-from common.models import BaseModel
+from common.models.base_model import BaseModel
 from common.utils.errors import ResourceNotFoundException
 from fireo.fields import (TextField, ListField, BooleanField)
 

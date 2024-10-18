@@ -17,9 +17,8 @@ Models for LLM Query Engines
 from typing import List
 from fireo.fields import (TextField, ListField, IDField,
                           BooleanField, NumberField, MapField)
-from common.models import BaseModel
+from common.models.base_model import BaseModel
 
-# pylint: disable = access-member-before-definition
 
 # constants used as tags for query history
 QUERY_HUMAN = "HumanQuestion"
@@ -72,7 +71,8 @@ class UserQueryUtil():
     return list(entry.values())[0]
 
   def save(self, merge=True):
-    raise NotImplementedError("Save method should be implemented in the subclass")
+    raise NotImplementedError(
+      "Save method should be implemented in the subclass")
 
 
 class UserQuery(BaseModel, UserQueryUtil):
@@ -162,7 +162,7 @@ class QueryEngine(BaseModel):
     return q_engine
 
   @classmethod
-  def find_children(cls, q_engine) -> List[BaseModel]:
+  def find_children(cls, q_engine) -> List["QueryEngine"]:
     """
     Find all child engines for an engine.
 

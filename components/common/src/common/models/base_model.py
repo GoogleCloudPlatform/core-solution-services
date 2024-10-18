@@ -89,7 +89,7 @@ class BaseModel(Model):
     self.last_modified_time = date_timestamp
     return super().update(key, transaction, batch)
 
-  def get_fields(self, reformat_datetime=False, remove_meta=False):
+  def get_fields(self, reformat_datetime=False, remove_meta=False) -> dict:
     """
     Overrides default method to fix data type for datetime fields.
     remove_meta=True will remove extra meta data fields (useful for testing)

@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Session Data Model"""
+"""Session SQL Data Model"""
 
 from fireo.fields import (TextField, MapField, BooleanField)
-from common.models import BaseModel
+from common.models.base_model_sql import SQLBaseModel
 from common.utils.errors import ResourceNotFoundException
 
 
-class Session(BaseModel):
+class Session(SQLBaseModel):
   """Data model class for Learner Profile"""
   # schema for object
   session_id = TextField(required=True)
@@ -28,13 +28,9 @@ class Session(BaseModel):
   session_data = MapField(default=None)
   is_expired = BooleanField(default=False)
 
-  class Meta:
-    collection_name = BaseModel.DATABASE_PREFIX + "v3_sessions"
-    ignore_none_field = False
-
   @classmethod
   def find_by_uuid(cls, uuid):
-    session = Session.collection.filter("session_id", "==", uuid).get()
+    session = cls.get("session_id", "==", uuid)
     if session is None:
       raise ResourceNotFoundException(
           f"Session with session_id {uuid} not found")
@@ -42,8 +38,7 @@ class Session(BaseModel):
 
   @classmethod
   def find_by_parent_session_id(cls, parent_session_id):
-    sessions = Session.collection.filter("parent_session_id", "==",
-                                         parent_session_id).fetch()
+    sessions = cls.get("parent_session_id", "==", parent_session_id)
     return sessions
 
   @classmethod
@@ -54,8 +49,7 @@ class Session(BaseModel):
     Returns:
         Session: Session Object
     """
-    sessions = Session.collection.filter(
-      "user_id", "==", user_id).fetch()
+    sessions = cls.get("user_id", "==", user_id)
     return sessions
 
   @classmethod
@@ -66,6 +60,5 @@ class Session(BaseModel):
     Returns:
         Session: Session Object
     """
-    sessions = Session.collection.filter(
-      "session_data.node_id", "==", node_id).fetch()
+    sessions = cls.get("session_data.node_id", "==", node_id)
     return sessions

@@ -17,7 +17,7 @@ Models for Agents
 from __future__ import annotations
 from enum import Enum
 from fireo.fields import TextField, IDField, ListField
-from common.models import BaseModel
+from common.models.base_model import BaseModel
 
 
 class AgentType(str, Enum):

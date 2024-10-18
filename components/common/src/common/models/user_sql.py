@@ -15,6 +15,7 @@
 User SQL Data Model
 """
 from common.models.base_model_sql import SQLBaseModel
+from common.models.user import validate_name, check_status, check_user_type
 from common.utils.errors import ResourceNotFoundException
 from playhouse.postgres_ext import ArrayField, JSONField
 from peewee import (UUIDField, TextField, IntegerField,
@@ -41,8 +42,6 @@ class User(SQLBaseModel):
 
   def save(self, *args, **kwargs):
     """Overrides default method to save items with timestamp and validation."""
-
-    from common.models.user import validate_name, check_status, check_user_type
 
     # Validation logic
     if not validate_name(self.first_name):
@@ -71,10 +70,10 @@ class User(SQLBaseModel):
         cls.user_id == user_id,
         cls.is_deleted == is_deleted
       )
-    except DoesNotExist:
+    except DoesNotExist as exc:
       raise ResourceNotFoundException(
         f"{cls.__name__} with user_id {user_id} not found"
-      )
+      ) from exc
 
   @classmethod
   def find_by_uuid(cls, user_id, is_deleted=False):
@@ -90,10 +89,10 @@ class User(SQLBaseModel):
         cls.user_id == user_id,
         cls.is_deleted == is_deleted
       )
-    except DoesNotExist:
+    except DoesNotExist as exc:
       raise ResourceNotFoundException(
         f"{cls.__name__} with user_id {user_id} not found"
-      )
+      ) from exc
 
   @classmethod
   def find_by_email(cls, email):
@@ -120,7 +119,7 @@ class User(SQLBaseModel):
     """
     list(
       cls.select().where(cls.status == status,
-                         cls.is_deleted == False)
+                         cls.is_deleted is False)
     )
 
 
@@ -136,12 +135,12 @@ class User(SQLBaseModel):
     try:
       return cls.get(
         cls.gaia_id == gaia_id,
-        cls.is_deleted == is_deleted
+        cls.is_deleted is is_deleted
       )
-    except DoesNotExist:
+    except DoesNotExist as exc:
       raise ResourceNotFoundException(
         f"{cls.__name__} with gaia_id {gaia_id} not found"
-      )
+      ) from exc
 
   @classmethod
   def find_by_user_type_ref(cls, user_type_ref, is_deleted=False):
@@ -155,12 +154,12 @@ class User(SQLBaseModel):
     try:
       return cls.get(
         cls.user_type_ref == user_type_ref,
-        cls.is_deleted == is_deleted,
+        cls.is_deleted is is_deleted
         )
-    except DoesNotExist:
+    except DoesNotExist as exc:
       raise ResourceNotFoundException(
         f"{cls.__name__} with user_type_ref {user_type_ref} not found"
-      )
+      ) from exc
 
   @classmethod
   def delete_by_uuid(cls, uuid):
@@ -172,10 +171,10 @@ class User(SQLBaseModel):
     """
     try:
       user = cls.get(cls.user_id == uuid,
-                     cls.is_deleted == False)
+                     cls.is_deleted is False)
       user.is_deleted = True
       user.save()
-    except DoesNotExist:
+    except DoesNotExist as exc:
       raise ResourceNotFoundException(
         f"{cls.__name__} with user_id {uuid} not found"
-      )
+      ) from exc

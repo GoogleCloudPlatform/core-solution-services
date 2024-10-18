@@ -17,7 +17,6 @@ SQL Models for LLM Query Engines
 from typing import List
 from peewee import (UUIDField, TextField, IntegerField, BooleanField, DoesNotExist)
 from playhouse.postgres_ext import ArrayField, JSONField
-
 from common.models.base_model_sql import SQLBaseModel
 from common.models.llm_query import UserQueryUtil
 
@@ -110,7 +109,7 @@ class QueryEngine(SQLBaseModel):
 
 
   @classmethod
-  def find_children(cls, q_engine) -> List[SQLBaseModel]:
+  def find_children(cls, q_engine) -> List["QueryEngine"]:
     """
     Find all child engines for an engine.
 

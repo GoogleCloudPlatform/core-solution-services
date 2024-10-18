@@ -15,7 +15,7 @@
 User Data Model
 """
 import regex
-from common.models import BaseModel
+from common.models.base_model import BaseModel
 from common.utils.errors import ResourceNotFoundException
 from fireo.fields import (TextField, NumberField, MapField,
                           ListField, BooleanField)

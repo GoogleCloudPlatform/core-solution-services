@@ -19,12 +19,13 @@ import requests
 import os
 from google.cloud import secretmanager
 
-from common.config import PROJECT_ID
 from common.utils.logging_handler import Logger
 
 Logger = Logger.get_logger(__file__)
 sm_client = secretmanager.SecretManagerServiceClient()
 
+PROJECT_ID = os.environ.get("PROJECT_ID",
+                            os.environ.get("GOOGLE_CLOUD_PROJECT"))
 
 def get_secret(secret_id):
   """Get a generic secret payload from Google Secret Manager

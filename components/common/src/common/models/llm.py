@@ -16,9 +16,8 @@ Models for LLM generation and chat
 """
 from typing import List
 from fireo.fields import TextField, ListField, IDField
-from common.models import BaseModel
+from common.models.base_model import BaseModel
 
-# pylint: disable = access-member-before-definition
 
 # constants used as tags for chat history
 CHAT_HUMAN = "HumanInput"
@@ -72,7 +71,8 @@ class UserChatUtil():
     return list(entry.values())[0]
 
   def save(self, merge=True):
-    raise NotImplementedError("Save method should be implemented in the subclass")
+    raise NotImplementedError(
+      "Save method should be implemented in the subclass")
 
 class UserChat(BaseModel, UserChatUtil):
   """

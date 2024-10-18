@@ -17,8 +17,8 @@ FireO model for batch jobs
 """
 from enum import Enum
 from fireo.fields import TextField, MapField, IDField
-from common.models import GCSPathField
-from common.models import BaseModel
+from common.models.custom_fields import GCSPathField
+from common.models.base_model import BaseModel
 
 
 class JobStatus(Enum):
