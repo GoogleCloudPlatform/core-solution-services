@@ -90,7 +90,7 @@ const References: React.FC<ReferencesProps> = ({ references }) => {
             <a href={renderCloudStorageUrl(ref.document_url)}
                target="_blank"
                rel="noopener noreferrer"
-              className="text-info hover:text-info-content break-all transition-colors mr-1.5">
+               className="text-info hover:text-info-content break-all transition-colors mr-1.5">
               {renderLinkTitle(ref.document_url)}:
             </a>
             {ref?.modality === "image" ?
