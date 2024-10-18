@@ -19,8 +19,6 @@ import traceback
 import os
 import re
 import tempfile
-from time import time
-from random import randint
 from urllib.parse import unquote
 from copy import copy
 from base64 import b64encode
@@ -46,6 +44,10 @@ Logger = Logger.get_logger(__file__)
 # number of sentences included before and after the current
 # sentence when creating chunks (chunks have overlapping text)
 CHUNK_SENTENCE_PADDING = 1
+# string added to the front of a folder to identify it as a folder crated by
+# genie to store extracted files duirng document parsing that should not
+# itself be parsed
+GENIE_FOLDER_MARKER = "_genie_"
 
 class DataSourceFile():
   """ object storing meta data about a data source file """
@@ -242,8 +244,8 @@ class DataSource:
   def chunk_document_multimodal(self,
                            doc_name: str,
                            doc_url: str,
-                           doc_filepath: str) -> \
-                            List[object]:
+                           doc_filepath: str
+                           ) -> list[object]:
     """
     Process a file document into multimodal chunks (b64 and text) for embeddings
 
@@ -275,7 +277,7 @@ class DataSource:
 
       # Get bucket name & the doc file path within bucket
       if doc_url.startswith("https://storage.googleapis.com/"):
-        bucket_parts = unquote(\
+        bucket_parts = unquote(
           doc_url.split("https://storage.googleapis.com/")[1]).split("/")
       elif doc_url.startswith("gs://"):
         bucket_parts = unquote(doc_url.split("gs://")[1]).split("/")
@@ -283,16 +285,20 @@ class DataSource:
         raise ValueError(f"Invalid Doc URL: {doc_url}")
 
       bucket_name = bucket_parts[0]
-      bucket_folder = "/".join(bucket_parts[1:-1]) \
-        if len(bucket_parts) > 2 else None
+      filepath_in_bucket = "/".join(bucket_parts[1:])
+
+      if filepath_in_bucket.startswith(GENIE_FOLDER_MARKER):
+        # if this is true this file was created by genie as a chunk of another
+        # file and should not be processed
+        return []
 
       # Determine bucket folder to store all chunk docs created
-      # Add time-in-ms_randint to ensure that that folders are unique
-      chunk_ext_i = bucket_parts[-1].rfind(".")
-      chunk_bucket_folder = bucket_parts[-1][:chunk_ext_i]+"_"+\
-        str(round(time() * 1000))+"_"+str(randint(1000,9999))
-      if bucket_folder:
-        chunk_bucket_folder = f"{bucket_folder}/{chunk_bucket_folder}"
+      # The folder is marked as a genie folder and uses a hash of the
+      # original document path
+      chunk_bucket_folder = (f"{GENIE_FOLDER_MARKER}"
+                             f"{hex(hash(filepath_in_bucket))[2:]}")
+      # a standard hashing algorithm like sha256 could be used for
+      # portability across languages but the python builtin works for now
 
       # If doc is a PDF, convert it to an array of PNGs for each page
       allowed_image_types = ["png", "jpg", "jpeg", "bmp", "gif"]
