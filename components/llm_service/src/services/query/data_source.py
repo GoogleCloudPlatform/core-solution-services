@@ -292,7 +292,7 @@ class DataSource:
         # file and should not be processed
         return []
 
-      # Determine bucket folder to store all chunk docs created
+      # Determine bucket folder for document chunks that require storage
       # The folder is marked as a genie folder and uses a hash of the
       # original document path
       chunk_bucket_folder = (f"{GENIE_FOLDER_MARKER}"
