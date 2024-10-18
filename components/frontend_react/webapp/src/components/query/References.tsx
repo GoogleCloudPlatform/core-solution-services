@@ -85,11 +85,11 @@ const References: React.FC<ReferencesProps> = ({ references }) => {
   return (
     <div className="w-full">
       {uniqueReferences.map((ref, index) => (
-        < div key={ref.chunk_id} className="mb-3 mr-4" >
+        <div key={ref.chunk_id} className="mb-3 mr-4">
           <span className="inline-ref">
             <a href={renderCloudStorageUrl(ref.document_url)}
-              target="_blank"
-              rel="noopener noreferrer"
+               target="_blank"
+               rel="noopener noreferrer"
               className="text-info hover:text-info-content break-all transition-colors mr-1.5">
               {renderLinkTitle(ref.document_url)}:
             </a>
@@ -103,7 +103,7 @@ const References: React.FC<ReferencesProps> = ({ references }) => {
           <div className={index < uniqueReferences.length - 1 ? "mx-2 pt-3 border-b" : ""} />
         </div>
       ))}
-    </div >
+    </div>
   )
 }
 
