@@ -189,6 +189,7 @@ export type QueryEngine = {
   manifest_url: string | null
   params: string[] | null
   depth_limit: number | null
+  chunk_size: number | null
   agents: string[] | null  
   child_engines: string[] | null
 }

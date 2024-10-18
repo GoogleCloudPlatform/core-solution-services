@@ -87,9 +87,9 @@ export const downloadFile = async (
     })
 }
 
-export const formValidationSchema = (variableList: IFormVariable[]) => {
-  let formValidationData: IFormValidationData = {}
-
+export const formValidationSchema = (variableList: IFormVariable[], formValidationSettings: IFormValidationData = {}) => {
+  let formValidationData: IFormValidationData = formValidationSettings
+  
   variableList.forEach((variable) => {
     variable.required
       ? (formValidationData[variable.name] =
