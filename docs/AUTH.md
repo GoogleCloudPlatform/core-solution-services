@@ -35,6 +35,39 @@ The `common.utils.auth_service.validate_token` method makes a call to the authen
 See `components/authentication/src/services/validation_service.py` which is the internal service module the Authentication service uses to perform token validation.  The `validate_token` method in this module looks for the token in cache via Redis, if the Redis cache is present in the platform.  If it finds the token in cache it returns back with a successful resopnse.  If the token is not present in cache it attempts to validate the token using a firebase library. This library is a proxy for GCP Identity Platform which validates the token according to the identity providers that are enabled for the project.
 
 ## How auth works in the React frontend
+The React frontend uses firebase to perform authentication.  We use the Firebase [typescript libraries](https://firebase.google.com/docs/auth/web/start) that allow a React app to manage authentication and use a Google sign-in popup to log the user in, if the app is using Google authentication.  The app also supports email/password authentication.
+
+The React frontend creates a [React Context](https://react.dev/learn/passing-data-deeply-with-context#context-an-alternative-to-passing-props) that contains the current signed-in user, the identity token associated with that signin, and a global "loading" variable that indicates the frontend is loading something from the backend.  This context is defined in `components/frontend_react/webapp/src/contexts/auth.tsx`.  The context is available to the entire app codebase, as defined in the main module for the app: see `components/frontend_react/webapp/src/main.tsx`.  This allows any module in the code to access the current identity token, which must be passed to any backend API call (defined in `components/frontend_react/webapp/src/utils/api.ts`).  
+
+For example in the AIRoute module (`components/frontend_react/webapp/src/routes/AIRoute.tsx`) which provides the React route for both Chat and Query pages, the auth token is retrieved from the auth context and passed to the components that render Chat and Query pages:
+
+```
+import { useAuth } from "@/contexts/auth"
+import { useQueryParams } from "@/utils/routing"
+
+export const AIChatRoute = () => {
+  const params = useQueryParams()
+  const { token } = useAuth()
+
+  if (!token) return <></>
+
+  return <GenAIChat userToken={token} initialChatId={params.get("chat_id")} />
+}
+
+export const AIQueryRoute = () => {
+  const params = useQueryParams()
+  const { token } = useAuth()
+
+  if (!token) return <></>
+
+  return <GenAIQuery userToken={token} initialQueryId={params.get("query_id")} />
+}
+```
+As you can see in the code, if the user is not signed in, the Chat and Query pages will not be active and instead will render as blank.
+
+The line `const { token } = useAuth()` retrieves the current token (one of the three global context variables defined in that context) from the Auth context, by calling the `useAuth` access method defined in the auth context module.
+
+The signin code itself is lives in `components/frontend_react/webapp/src/navigation/SigninForm.tsx".  Depending on the identity providers configured in `components/frontend_react/webapp/src/utils/AppConfig.ts` the signin module will display different popups to enable the user to sign in.
 
 
 ### How to add Microsoft sign-in to the React frontend
