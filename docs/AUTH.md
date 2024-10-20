@@ -70,10 +70,33 @@ The line `const { token } = useAuth()` retrieves the current token (one of the t
 The signin code itself is lives in `components/frontend_react/webapp/src/navigation/SigninForm.tsx".  Depending on the identity providers configured in `components/frontend_react/webapp/src/utils/AppConfig.ts` the signin module will display different popups to enable the user to sign in.
 
 
-### How to add Microsoft sign-in to the React frontend
+### Configuring auth providers in the React frontend
+
+The frontend currently supports Google, Email/Password, and Microsoft as identity providers.  See the [README for the React frontend](../components/frontend_react/README.md) for info on configuring auth providers in the React frontend.  
 
 
 ## How to generate an auth token
 
+You can generate an identity token (for example, for testing the APIs) using the gcloud CLI:
 
+```
+gcloud auth print-access-token
+```
 
+For example, to call the LLM Service to build a query engine from the command line:
+
+```
+BASE_URL=https://your.domain.com
+ID_TOKEN=$(gcloud auth print-access-token)
+QUERY_ENGINE_NAME="qe1"
+
+curl --location "$BASE_URL/llm-service/api/v1/query/engine" \
+--header "Content-Type: application/json" \
+--header "Authorization: Bearer $ID_TOKEN" \
+--data "{
+    \"doc_url\": \"gs://$PROJECT_ID-llm-docs\",
+    \"query_engine\": \"$QUERY_ENGINE_NAME\",
+    \"description\": "test"
+}"
+
+```
