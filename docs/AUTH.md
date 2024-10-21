@@ -1,6 +1,6 @@
 # Authentication in CSS
 
-This document describes the authentication scheme used in the CSS platform (and GENIE, which is based on the platform).  It also describes how to add an identity provider, using SAML as an example.
+This document describes the authentication scheme used in the CSS platform (and GENIE, which is based on the platform).
 
 ## The identity platform
 
