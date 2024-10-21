@@ -320,8 +320,8 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
   "/{query_id}",
   name="Delete user query"
 )
-def delete_query(query_id: str, hard_delete=False):
-  """Delete a user query. By default we do a soft delete.
+def delete_query(query_id: str, hard_delete=True):
+  """Delete a user query. By default we do a hard delete.
 
   Args:
     query_id (str): Query ID
@@ -400,9 +400,9 @@ def update_query_engine(query_engine_id: str,
 @router.delete(
   "/engine/{query_engine_id}",
   name="Delete a query engine")
-def delete_query_engine(query_engine_id: str, hard_delete=False):
+def delete_query_engine(query_engine_id: str, hard_delete=True):
   """
-  Delete a query engine.  By default we do a soft delete.
+  Delete a query engine.  By default we do a hard delete.
 
   Args:
       query_engine_id (LLMQueryEngineModel)
