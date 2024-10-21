@@ -30,7 +30,7 @@ api = FastAPI(
 
 This code tells FastAPI that every call to the api defined in this service depends on a call to the method `common.utils.auth_service.validate_token`.  See FastAPI docs on dependencies for details on the dependencies feature in FastAPI:  [FastAPI Dependencies](https://fastapi.tiangolo.com/tutorial/dependencies/#share-annotated-dependencies).
 
-The `common.utils.auth_service.validate_token` method makes a call to the authentication service `validate_token` endpoint defined in `components/authentication/src/routes/validate_token.py`. The validate_token method will throw an `InvalidTokenError` if the authentication API call returns a response indicating the token is invalid. 
+The `common.utils.auth_service.validate_token` method makes a call to the authentication service `validate_token` endpoint defined in `components/authentication/src/routes/validate_token.py`. The `validate_token` method will throw an `InvalidTokenError` if the authentication API call returns a response indicating the token is invalid. 
 
 See `components/authentication/src/services/validation_service.py` which is the internal service module the Authentication service uses to perform token validation.  The `validate_token` method in this module looks for the token in cache via Redis, if the Redis cache is present in the platform.  If it finds the token in cache it returns back with a successful resopnse.  If the token is not present in cache it attempts to validate the token using a firebase library. This library is a proxy for GCP Identity Platform which validates the token according to the identity providers that are enabled for the project.
 
@@ -67,7 +67,7 @@ As you can see in the code, if the user is not signed in, the Chat and Query pag
 
 The line `const { token } = useAuth()` retrieves the current token (one of the three global context variables defined in that context) from the Auth context, by calling the `useAuth` access method defined in the auth context module.
 
-The signin code itself is lives in `components/frontend_react/webapp/src/navigation/SigninForm.tsx".  Depending on the identity providers configured in `components/frontend_react/webapp/src/utils/AppConfig.ts` the signin module will display different popups to enable the user to sign in.
+The signin code itself is lives in `components/frontend_react/webapp/src/navigation/SigninForm.tsx`.  Depending on the identity providers configured in `components/frontend_react/webapp/src/utils/AppConfig.ts` the signin module will display different popups to enable the user to sign in.
 
 
 ### Configuring auth providers in the React frontend
