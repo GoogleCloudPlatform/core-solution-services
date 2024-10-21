@@ -15,6 +15,7 @@
 Query Data Sources
 """
 import json
+import hashlib
 import traceback
 import os
 import re
@@ -294,11 +295,9 @@ class DataSource:
 
       # Determine bucket folder for document chunks that require storage
       # The folder is marked as a genie folder and uses a hash of the
-      # original document path
-      chunk_bucket_folder = (f"{GENIE_FOLDER_MARKER}"
-                             f"{hex(hash(filepath_in_bucket))[2:]}")
-      # a standard hashing algorithm like sha256 could be used for
-      # portability across languages but the python builtin works for now
+      # document
+      chunk_bucket_folder = (f"{GENIE_FOLDER_MARKER}/"
+                             f"{get_file_hash(doc_filepath)}")
 
       # If doc is a PDF, convert it to an array of PNGs for each page
       allowed_image_types = ["png", "jpg", "jpeg", "bmp", "gif"]
@@ -529,3 +528,21 @@ class DataSource:
       "filename": page_pdf_filename,
       "filepath": page_pdf_filepath
     }
+
+def get_file_hash(filepath: str) -> str:
+  """
+  Calculates the sha256 hash of a file
+  This would probably be better in utils/file_helper.py but that causes a
+  circular import loop, so it's in the file where it's used for now
+  This can be replaced with hashlib.file_digest when using python3.11 or greater
+  Taken from stackoverflow.com/questions/69339582
+  Takes a path to the file
+  Returns the hash of the file as a hexadecimal string
+  """
+  h = hashlib.sha256()
+  with open(filepath, "rb") as f:
+    data = f.read(2048)
+    while data != b"":
+      h.update(data)
+      data = f.read(2048)
+  return h.hexdigest()
