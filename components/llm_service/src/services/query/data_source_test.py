@@ -24,5 +24,5 @@ def test_get_file_hash():
     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
   with tempfile.NamedTemporaryFile() as f:
     f.write(b"hello world!")
-    file_hash = services.query.data_source.get_file_hash(f)
+    file_hash = services.query.data_source.get_file_hash(f.name)
     assert file_hash == correct_hash
