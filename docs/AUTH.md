@@ -6,7 +6,7 @@ This document describes the authentication scheme used in the CSS platform (and 
 
 By default we use [Google Cloud Identity Platform (IDP)](https://cloud.google.com/security/products/identity-platform?hl=en) as the identity provider for GENIE and CSS.  We use firebase libraries to validate identity tokens in the authentication service.  Firebase is a proxy for GCP Identity Plaform - we just use firebase because the libraries are convenient. 
 
-GCP IDP allows for adding and configuring identity providers like Microsoft or SAML.  Please consult [the docs for Identity Platform](https://cloud.google.com/identity-platform/docs/) for details on adding identity providers.  It is easy to add Microsoft identity to the GENIE backend - you add that provider via Identity Platform.  There are additional changes necessary to the frontend code that is calling GENIE APIs to enable a user to sign in via your chosen provider (for example) Microsoft.  We include details below on how to update the React frontend for Microsoft identity.
+GCP IDP allows for adding and configuring identity providers like Microsoft or SAML.  Please consult [the docs for Identity Platform](https://cloud.google.com/identity-platform/docs/) for details on adding identity providers.  It is easy to add Microsoft identity to the GENIE backend - you add that provider via Identity Platform.  There are additional changes necessary to the frontend code that is calling GENIE APIs to enable a user to sign in via your chosen provider (for example) Microsoft.
 
 It is possible to implement an alternative identity platform (for example Federal CAC).  This would require adding support in the authentication service for this provider.
 
