@@ -31,6 +31,7 @@ interface IQueryEngineProps {
 
 const QueryEngineDetail: React.FC<IQueryEngineProps> = ({ token }) => {
 
+  const [deleting, setDeleting] = useState(false)
   const isAdmin = true // TODO: userStore((state) => state.isAdmin)
   const params = useQueryParams()
   const id = params.get("id")
@@ -76,13 +77,17 @@ const QueryEngineDetail: React.FC<IQueryEngineProps> = ({ token }) => {
           }
         },
         onError: () => {
-          // TODO
+          setAlert({
+            message: "Error occurred deleting",
+            type: ALERT_TYPE.ERROR,
+            durationMs: 4000,
+          })            
         }
       }
     )          
+    setDeleting(false)
     navigate("/queryengines/admin")
   }
-
 
   return (
     <div className="overflow-x-auto custom-scrollbar">

@@ -134,10 +134,15 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
           }
         },
         onError: () => {
-          // TODO
+          setAlert({
+            message: "Error occurred deleting",
+            type: ALERT_TYPE.ERROR,
+            durationMs: 4000,
+          })            
         }
       }
     )          
+    setDeleting(false)
     navigate("/queryengines/admin")
   }
 
