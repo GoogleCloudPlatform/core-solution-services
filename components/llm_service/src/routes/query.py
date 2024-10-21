@@ -354,6 +354,7 @@ def delete_query(query_id: str, hard_delete=False):
     raise ResourceNotFound(str(re)) from re
   except Exception as e:
     Logger.error(e)
+    Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
 @router.put(
