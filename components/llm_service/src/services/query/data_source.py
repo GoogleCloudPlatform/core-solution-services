@@ -263,8 +263,10 @@ class DataSource:
     try:
       doc_extension = doc_name.split(".")[-1]
       doc_extension = doc_extension.lower()
-      if doc_extension != "pdf" and doc_extension not in allowed_image_types:
-        raise ValueError(f"{doc_name} must be a PDF, PNG, JPG, BMP, or GIF")
+      if doc_extension != "pdf" and \
+        doc_extension != "txt" and \
+        doc_extension not in allowed_image_types:
+        raise ValueError(f"{doc_name} must be a PDF, TXT, PNG, JPG, BMP, or GIF")
       # TODO: Insert elif statements to check for additional types of
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
     except Exception as e:
