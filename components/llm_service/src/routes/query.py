@@ -320,7 +320,7 @@ def update_query(query_id: str, input_query: UserQueryUpdateModel):
   "/{query_id}",
   name="Delete user query"
 )
-def delete_query(query_id: str, hard_delete=True):
+def delete_query(query_id: str, hard_delete: bool = True):
   """Delete a user query. By default we do a hard delete.
 
   Args:
@@ -335,7 +335,7 @@ def delete_query(query_id: str, hard_delete=True):
     NotFoundErrorResponseModel if the user query not found,
     InternalServerErrorResponseModel if the update raises an exception
   """
-  Logger.info(f"Delete a user query by id={query_id}")
+  Logger.info(f"Delete a user query by id={query_id} hard_delete={hard_delete}")
   existing_query = UserQuery.find_by_id(query_id)
   if existing_query is None:
     raise ResourceNotFoundException(f"Query {query_id} not found")
@@ -400,7 +400,7 @@ def update_query_engine(query_engine_id: str,
 @router.delete(
   "/engine/{query_engine_id}",
   name="Delete a query engine")
-def delete_query_engine(query_engine_id: str, hard_delete=True):
+def delete_query_engine(query_engine_id: str, hard_delete: bool = True):
   """
   Delete a query engine.  By default we do a hard delete.
 
@@ -420,9 +420,10 @@ def delete_query_engine(query_engine_id: str, hard_delete=True):
     raise ResourceNotFoundException(f"Engine {query_engine_id} not found")
 
   try:
-    Logger.info(f"Deleting q_engine=[{q_engine.name}]")
+    Logger.info(
+        f"Deleting q_engine=[{q_engine.name}] hard_delete=[{hard_delete}]")
 
-    delete_engine(q_engine, hard_delete)
+    delete_engine(q_engine, hard_delete=hard_delete)
 
     Logger.info(f"Successfully deleted q_engine=[{q_engine.name}]")
   except Exception as e:
