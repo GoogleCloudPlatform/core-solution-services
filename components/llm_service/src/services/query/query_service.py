@@ -1006,10 +1006,12 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         if metadata is not None:
           metadata_list = [deepcopy(metadata) for chunk in doc_chunks]
         if is_multimodal:
+          Logger.info(f"#SC241022: About to enter index_document_multi")
           new_index_base = \
             await qe_vector_store.index_document_multimodal(doc_name,
                                                        doc_chunks,
                                                        index_base)
+          Logger.info(f"#SC241022: Just exited index_document_multi")
           Logger.info(
             f"Successfully indexed {len(doc_chunks)} chunks for [{doc_name}]"
             )

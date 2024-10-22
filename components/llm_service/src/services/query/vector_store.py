@@ -419,7 +419,8 @@ class LangChainVectorStore(VectorStore):
                                  doc_chunks: List[object],
                                  index_base: int) -> \
                                   int:
-
+    
+    Logger.info(f"#SC241022: Just entered index_document_multi")
     # Initialize counter for all embeddings of all modalities
     # created from all chunks of document
     num_embeddings = 0
@@ -477,13 +478,19 @@ class LangChainVectorStore(VectorStore):
       raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
     # add image embeddings to vector store
+    Logger.info(f"#SC241022: In index_document_multi: Length of doc_chunks={len(doc_chunks)}")
+    Logger.info(f"#SC241022: In index_document_multi: Length of chunk_text={len(chunk_texts)}")
+    Logger.info(f"#SC241022: In index_document_multi: Length of chunk_embeddings={len(chunk_embeddings)}")
+    Logger.info(f"#SC241022: About to enter lc_vector_store.add_embeddings")
     self.lc_vector_store.add_embeddings(texts=chunk_texts,
                                         embeddings=chunk_embeddings,
                                         ids=ids)
+    Logger.info(f"#SC241022: Just exited lc_vector_store.add_embeddings")
     # return new index base
     new_index_base = index_base + num_embeddings
     self.index_length = new_index_base
 
+    Logger.info(f"#SC241022: About to exit index_document_multi")
     return new_index_base
 
   async def index_document(self,
