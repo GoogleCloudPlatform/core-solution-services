@@ -358,10 +358,13 @@ class DataSource:
 
       elif doc_extension == "txt":
         # Chunk text in document
+        Logger.info(f"#SC241022: In chunk_document_multimodal: About to enter chunk_document for TXT file")
         text_chunks, _ = self.chunk_document(doc_name,
                                           doc_url,
                                           doc_filepath,
                                           )
+        Logger.info(f"#SC241022: In chunk_document_multimodal: Just exited chunk_document for TXT file")
+        Logger.info(f"#SC241022: In chunk_document_multimodal: {text_chunks=}")
         for text_chunk in text_chunks:
           # Push chunk object into chunk array
           chunk_obj = {

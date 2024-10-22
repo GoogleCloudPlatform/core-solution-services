@@ -447,13 +447,28 @@ class LangChainVectorStore(VectorStore):
         if not exist:
           doc[modality] = None
 
-      Logger.info(f"#SC241022: In index_document_multi: About to enter embeddings.get_multimodal_embeddings")
       # Get chunk embeddings
+      Logger.info(f"#SC241022: In index_document_multi: {doc["text"]=}")
+      user_text = None #SC241022
+      if doc["text"]: #SC241022
+        user_text=doc["text"] #SC241022
+      Logger.info(f"#SC241022: In index_document_multi: {user_text=}")
+      Logger.info(f"#SC241022: In index_document_multi: {doc["image"][0:9]=}")
+      user_file_bytes = None #SC241022
+      if doc["image"]: #SC241022
+        user_file_bytes = b64decode(doc["image"]) #SC241022
+      Logger.info(f"#SC241022: In index_document_multi: {user_file_bytes[0:9]=}")
+      #chunk_embedding = \
+      #  await embeddings.get_multimodal_embeddings(
+      #    user_text=doc["text"],
+      #    user_file_bytes=b64decode(doc["image"]),
+      #    embedding_type=self.embedding_type) #SC241022
+      Logger.info(f"#SC241022: In index_document_multi: About to enter embeddings.get_multimodal_embeddings")
       chunk_embedding = \
         await embeddings.get_multimodal_embeddings(
-          user_text=doc["text"],
-          user_file_bytes=b64decode(doc["image"]),
-          embedding_type=self.embedding_type)
+          user_text=user_text,
+          user_file_bytes=user_file_bytes,
+          embedding_type=self.embedding_type) #SC241022
       Logger.info(f"#SC241022: In index_document_multi: Just exited embeddings.get_multimodal_embeddings")
       # TODO: Also embed doc["video"] (video chunk) and
       # potentially doc["audio"] (audio chunk)
