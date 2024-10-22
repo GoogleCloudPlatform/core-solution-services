@@ -432,6 +432,7 @@ class LangChainVectorStore(VectorStore):
     chunk_texts = []
     chunk_embeddings = []
 
+    Logger.info(f"#SC241022: In index_document_multi: About to start looping over {len(doc_chunks)} doc_chunks")
     # Loop over chunks
     for doc in doc_chunks:
       # Raise error is doc object is formatted incorrectly
@@ -446,12 +447,14 @@ class LangChainVectorStore(VectorStore):
         if not exist:
           doc[modality] = None
 
+      Logger.info(f"#SC241022: In index_document_multi: About to enter embeddings.get_multimodal_embeddings")
       # Get chunk embeddings
       chunk_embedding = \
         await embeddings.get_multimodal_embeddings(
           user_text=doc["text"],
           user_file_bytes=b64decode(doc["image"]),
           embedding_type=self.embedding_type)
+      Logger.info(f"#SC241022: In index_document_multi: Just exited embeddings.get_multimodal_embeddings")
       # TODO: Also embed doc["video"] (video chunk) and
       # potentially doc["audio"] (audio chunk)
 
@@ -460,9 +463,12 @@ class LangChainVectorStore(VectorStore):
         if modality in chunk_embedding.keys() and \
           isinstance(chunk_embedding[modality][0], float): #SC241022
         #if modality in chunk_embedding.keys(): #SC241022
+          Logger.info(f"#SC241022: In index_document_multi: About to append doc['text'] to chunk_texts")
           chunk_texts.append(doc["text"])
+          Logger.info(f"#SC241022: In index_document_multi: About to append chunk_embedding[{modality}] to chunk_embeddings")
           chunk_embeddings.append(chunk_embedding[modality])
           # Increment counter
+          Logger.info(f"#SC241022: In index_document_multi: About to increment {num_embeddings=}")
           num_embeddings += 1
         else:
           raise RuntimeError(
@@ -470,10 +476,12 @@ class LangChainVectorStore(VectorStore):
 
     # now that all embeddings are created for all modalities of all chunks,
     # generate list of chunk IDs starting from index base
+    Logger.info(f"#SC241022: In index_document_multimodal: About to generate ids")
     ids = list(range(index_base, index_base + num_embeddings))
     Logger.info(f"Indexed {len(ids)} embeddings for [{doc_name}]")
 
     # check for success
+    Logger.info(f"#SC241022: In index_document_multi: About to check that len(chunk_embeddings) is 0")
     if len(chunk_embeddings) == 0:
       raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
