@@ -456,9 +456,9 @@ class LangChainVectorStore(VectorStore):
 
       # Check to make sure that embeddings for available modalities exist
       for modality in modality_list_sorted:
-        #if modality in chunk_embedding.keys() and \
-        #  isinstance(chunk_embedding[modality][0], float): #SC241022
-        if modality in chunk_embedding.keys(): #SC241022
+        if modality in chunk_embedding.keys() and \
+          isinstance(chunk_embedding[modality][0], float): #SC241022
+        #if modality in chunk_embedding.keys(): #SC241022
           chunk_texts.append(doc["text"])
           chunk_embeddings.append(chunk_embedding[modality])
           # Increment counter
