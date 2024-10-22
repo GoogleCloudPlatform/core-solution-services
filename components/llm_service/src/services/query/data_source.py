@@ -354,6 +354,21 @@ class DataSource:
         }
         doc_chunks.append(chunk_obj)
 
+      elif doc_extension == "txt":
+        # Chunk text in document
+        text_chunks, _ = self.chunk_document(doc_name,
+                                          doc_url,
+                                          doc_filepath,
+                                          )
+        for text_chunk in text_chunks:
+          # Push chunk object into chunk array
+          chunk_obj = {
+            "image": None,
+            "image_url": None,
+            "text": text_chunk,
+          }
+          doc_chunks.append(chunk_obj)
+
       # TODO: Insert elif statements to chunk additional types of
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
       # - For images, set "image" and "text" fields of chunk_obj
