@@ -200,7 +200,8 @@ export type QueryEngine = {
     [key: string]: any
   } | null
   depth_limit: number | null
-  agents: string[] | null
+  chunk_size: number | null
+  agents: string[] | null  
   child_engines: string[] | null
   is_multimodal: boolean | null
 }

@@ -178,6 +178,7 @@ export const createQueryEngine =
         "agents": queryEngine.agents,
         "associated_engines": queryEngine.child_engines,
         "manifest_url": queryEngine.manifest_url,
+        "chunk_size": queryEngine.chunk_size,
         "is_multimodal": queryEngine.is_multimodal ? "True" : "False",
       }
     }

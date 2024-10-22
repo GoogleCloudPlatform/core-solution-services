@@ -35,7 +35,8 @@ from langchain_community.document_loaders import CSVLoader
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper, gcs_helper
 from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import SentenceWindowNodeParser
+from llama_index.core.node_parser import (SentenceSplitter,
+                                         SentenceWindowNodeParser)
 from llama_index.core import Document
 
 # pylint: disable=broad-exception-caught
@@ -49,6 +50,13 @@ CHUNK_SENTENCE_PADDING = 1
 # genie to store extracted files duirng document parsing that should not
 # itself be parsed
 GENIE_FOLDER_MARKER = "_genie_"
+
+# default chunk size for doc chunks
+DEFAULT_CHUNK_SIZE = 250
+
+# datasource param keys
+CHUNKING_CLASS_PARAM = "chunking_class"
+CHUNK_SIZE_PARAM = "chuck_size"
 
 class DataSourceFile():
   """ object storing meta data about a data source file """
@@ -85,16 +93,29 @@ class DataSource:
   Super class for query data sources. Also implements GCS DataSource.
   """
 
-  def __init__(self, storage_client):
+  def __init__(self, storage_client, params=None):
     self.storage_client = storage_client
     self.docs_not_processed = []
-    # use llama index sentence window parser
-    self.doc_parser = SentenceWindowNodeParser.from_defaults(
-      window_size=CHUNK_SENTENCE_PADDING,
-      include_metadata=True,
-      window_metadata_key="window_text",
-      original_text_metadata_key="text",
-    )
+    self.params = params or {}
+
+    # set chunk size
+    if CHUNK_SIZE_PARAM in self.params:
+      self.chunk_size = int(self.params[CHUNK_SIZE_PARAM])
+    else:
+      self.chunk_size = DEFAULT_CHUNK_SIZE
+
+    # use llama index sentence splitter for chunking
+    if CHUNKING_CLASS_PARAM in self.params \
+        and self.params[CHUNKING_CLASS_PARAM] == "SentenceWindowNodeParser":
+      self.doc_parser = SentenceWindowNodeParser.from_defaults(
+        window_size=CHUNK_SENTENCE_PADDING,
+        include_metadata=True,
+        window_metadata_key="window_text",
+        original_text_metadata_key="text",
+      )
+    else:
+      self.doc_parser = SentenceSplitter(chunk_size=self.chunk_size)
+
 
   @classmethod
   def downloads_bucket_name(cls, q_engine_name: str) -> str:
@@ -194,12 +215,9 @@ class DataSource:
        doc_url: remote url of document
        doc_filepath: local file path of document
     Returns:
-       tuple of 
-          list of text chunks or None if the document could not be processed
-          list of embedding chunks or None
+       list of text chunks or None if the document could not be processed
     """
 
-    embed_chunks = None
     text_chunks = None
 
     Logger.info(f"generating index data for {doc_name}")
@@ -219,20 +237,22 @@ class DataSource:
     if doc_text_list is not None:
       # clean text of escape and other unprintable chars
       doc_text_list = [self.clean_text(x) for x in doc_text_list]
+
       # combine text from all pages to try to avoid small chunks
       # when there is just title text on a page, for example
       doc_text = "\n".join(doc_text_list)
+
       # llama-index base class that is used by all parsers
       doc = Document(text=doc_text)
+
       # a node = a chunk of a page
       chunks = self.doc_parser.get_nodes_from_documents([doc])
+
       # remove any empty chunks
-      chunks = [c for c in chunks if c.metadata["text"].strip() != ""]
-      # this is a sentence parser with overlap --
-      # each text chunk will include the specified
-      # number of sentences before and after the current sentence
-      embed_chunks = [c.metadata["text"] for c in chunks]
-      text_chunks = [c.metadata["window_text"] for c in chunks]
+      chunks = [c for c in chunks if c.text.strip() != ""]
+
+      # get text chunks
+      text_chunks = [c.text for c in chunks]
 
       if all(element == "" for element in text_chunks):
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
@@ -240,7 +260,7 @@ class DataSource:
       else:
         Logger.info(f"generated {len(text_chunks)} text chunks for {doc_name}")
 
-    return text_chunks, embed_chunks
+    return text_chunks
 
   def chunk_document_multimodal(self,
                            doc_name: str,
@@ -385,11 +405,8 @@ class DataSource:
     Returns:
       str containing the contextual_text of a multimodal doc
     """
-    #chunk_document returns 2 outputs, text_chunks and contextual_text.
-    #Each element of text_chunks has the same info as its corresponding
-    #element in contextual_text, but is padded with adjacent sentences
-    #before and after. Use the 2nd output here (contextual_text).
-    _, contextual_text = self.chunk_document(doc_name,
+    # Chunk the text of the document into a list of strings
+    contextual_text = self.chunk_document(doc_name,
                                           doc_url, doc_filepath)
 
     # Format text if not None
@@ -397,7 +414,7 @@ class DataSource:
       contextual_text = [string.strip() for string in contextual_text]
       contextual_text = " ".join(contextual_text)
 
-      #TODO: Consider all characters in my_contextual_text,
+      #TODO: Consider all characters in contextual_text,
       #not just the first 1024
       contextual_text = contextual_text[0:1023]
 
