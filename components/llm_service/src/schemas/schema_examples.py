@@ -20,7 +20,7 @@ LLM_GENERATE_EXAMPLE = {
   "llm_type": "VertexAI-Chat",
 }
 
-LLM_MULTI_GENERATE_EXAMPLE = {
+LLM_MULTIMODAL_GENERATE_EXAMPLE = {
   "prompt": "what is this image about?",
   "llm_type": "gemini-1.5-flash",
   "user_file_b64": "",
@@ -32,7 +32,7 @@ LLM_EMBEDDINGS_EXAMPLE = {
   "text": "",
 }
 
-LLM_MULTI_EMBEDDINGS_EXAMPLE = {
+LLM_MULTIMODAL_EMBEDDINGS_EXAMPLE = {
   "embedding_type": "",
   "user_file_b64": "",
   "user_file_name": "",
