@@ -43,7 +43,7 @@ from langchain.schema.embeddings import Embeddings
 # token limit across all chunks of 20000, and with 250 chunks we often
 # exceeded the 20K limit.
 if REGION == "us-central1":
-  ITEMS_PER_REQUEST = 50
+  ITEMS_PER_REQUEST = 20
 else:
   ITEMS_PER_REQUEST = 5
 

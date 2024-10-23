@@ -105,8 +105,10 @@ export interface QueryResponse {
 
 export interface QueryReferences {
   chunk_id: string
+  chunk_url: string
   document_url: string
   document_text: string
+  modality: string
 }
 
 export type QueryContents = {
@@ -198,7 +200,8 @@ export type QueryEngine = {
     [key: string]: any
   } | null
   depth_limit: number | null
-  agents: string[] | null
+  chunk_size: number | null
+  agents: string[] | null  
   child_engines: string[] | null
   is_multimodal: boolean | null
 }
@@ -243,5 +246,5 @@ export type QueryEngineBuildJob = {
   output_gcs_path: any
   errors: any
   job_logs: any
-  metadata: any  
+  metadata: any
 }

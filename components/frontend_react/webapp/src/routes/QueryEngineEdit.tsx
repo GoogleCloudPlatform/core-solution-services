@@ -185,7 +185,6 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   useEffect(() => {
     const updateEngineEmbeddings = async () => {
       const llmTypes = await (await fetchEmbeddingTypes(token, createEngineIsMultimodal))()
-      console.log(llmTypes)
       if (llmTypes === null || llmTypes === undefined) console.error("Failed to retrieve embedding types")
       else setCreateEngineEmbeddingOptions(llmTypes.map((embedding) => { return { option: embedding, value: embedding } }))
     }

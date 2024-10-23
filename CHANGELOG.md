@@ -1,5 +1,27 @@
 # Releases
 
+## v0.4.0
+
+New features:
+
+### GENIE ("GenAI for Enterprise" platform on GCP)
+- Multimodal RAG for images using multi-modal embeddings for search
+- Chat file upload in both backend and React app.  Upload files or specify URLs to pass to model.
+- RBAC for model access.  See README for LLM Service for docs on how to manage access to models for users.
+- Added user role management in React frontend, used for RBAC for models and query engines
+- Added documentation on authentication in the platform in docs/AUTH.md
+- Updated to recent releases of FastAPI (0.112.2) and associated libraries
+- Use L4 GPUs with Truss models
+- Chunk size and chunking class are now query engine build params
+- Add chunk size to React Query Admin engine build form
+- Switched to using llama_index.core.node_parser.SentenceSplitter for chunking by default
+- Updated default query generation model to Gemini Flash 1.5 - was set to Palm2
+- Added Microsoft login in React frontend
+
+### Fixes
+- Fixed download of PDFs from scraped sites
+
+
 ## v0.3.2
 
 New features:

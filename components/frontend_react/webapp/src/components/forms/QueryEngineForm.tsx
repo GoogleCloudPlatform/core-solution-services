@@ -19,6 +19,7 @@ import { Link } from "react-router-dom"
 import { IFormValidationData, IFormVariable } from "@/utils/types"
 import { IQueryEngine } from "@/utils/models"
 import { formValidationSchema, initialFormikValues } from "@/utils/forms"
+import * as yup from "yup"
 
 interface QueryEngineFormProps {
   queryEngine: IQueryEngine | null
@@ -78,13 +79,20 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
 
   const initialValues = Object.assign({}, defaultValues, qEngineInitialFormat)
 
+  const validationSettings = {
+    name: yup
+      .string()
+      .max(32, "Query Engine names must be less than or equal to 32 chars")
+      .matches("^[a-zA-Z0-9][\w\s-]*[a-zA-Z0-9]$", "Invalid query engine name.  May contain alphanumerics, dashes or spaces.")
+  }
   const formValidationData: IFormValidationData =
-    formValidationSchema(currentVarsData)
+    formValidationSchema(currentVarsData, validationSettings)
 
   const formik = useFormik({
     initialValues: initialValues,
     enableReinitialize: true,
     validateOnMount: true,
+    validateOnChange: true,
     validationSchema: formValidationData,
     onSubmit: async (values) => {
       await handleSubmit(values)
