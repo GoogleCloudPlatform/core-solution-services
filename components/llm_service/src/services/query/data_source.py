@@ -52,8 +52,7 @@ CHUNK_SENTENCE_PADDING = 1
 GENIE_FOLDER_MARKER = "_genie_"
 
 # default chunk size for doc chunks
-DEFAULT_CHUNK_SIZE = 250 #SC241023
-#DEFAULT_CHUNK_SIZE = 100 #SC241023
+DEFAULT_CHUNK_SIZE = 250
 
 # datasource param keys
 CHUNKING_CLASS_PARAM = "chunking_class"
@@ -384,13 +383,10 @@ class DataSource:
 
       elif doc_extension == "txt":
         # Chunk text in document
-        Logger.info(f"#SC241022: In chunk_document_multimodal: About to enter chunk_document for TXT file")
         text_chunks = self.chunk_document(doc_name,
                                           doc_url,
                                           doc_filepath,
                                           )
-        Logger.info(f"#SC241022: In chunk_document_multimodal: Just exited chunk_document for TXT file")
-        Logger.info(f"#SC241022: In chunk_document_multimodal: {text_chunks=}")
         for text_chunk in text_chunks:
           #TODO: Consider all characters in text_chunk,
           #not just the first 1024

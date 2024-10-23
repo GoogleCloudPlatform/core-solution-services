@@ -419,8 +419,7 @@ class LangChainVectorStore(VectorStore):
                                  doc_chunks: List[object],
                                  index_base: int) -> \
                                   int:
-    
-    Logger.info(f"#SC241022: Just entered index_document_multi")
+
     # Initialize counter for all embeddings of all modalities
     # created from all chunks of document
     num_embeddings = 0
@@ -432,7 +431,6 @@ class LangChainVectorStore(VectorStore):
     chunk_texts = []
     chunk_embeddings = []
 
-    Logger.info(f"#SC241022: In index_document_multi: About to start looping over {len(doc_chunks)} doc_chunks")
     # Loop over chunks
     for doc in doc_chunks:
       # Raise error is doc object is formatted incorrectly
@@ -448,44 +446,26 @@ class LangChainVectorStore(VectorStore):
           doc[modality] = None
 
       # Get chunk embeddings
-      #Logger.info(f"#SC241022: In index_document_multi: {doc['text']=}")
-      user_text = None #SC241022
-      if doc["text"] is not None: #SC241022
-        user_text=doc["text"] #SC241022
-      Logger.info(f"#SC241022: In index_document_multi: {user_text=}")
-      #Logger.info(f"#SC241022: In index_document_multi: {doc['image'][0:9]=}")
-      user_file_bytes = None #SC241022
-      user_file_bytes_09 = None #SC241022
-      if doc["image"] is not None: #SC241022
-        user_file_bytes = b64decode(doc["image"]) #SC241022
-        user_file_bytes = user_file_bytes[0:9] #SC241022
-      Logger.info(f"#SC241022: In index_document_multi: {user_file_bytes_09=}")
-      #chunk_embedding = \
-      #  await embeddings.get_multimodal_embeddings(
-      #    user_text=doc["text"],
-      #    user_file_bytes=b64decode(doc["image"]),
-      #    embedding_type=self.embedding_type) #SC241022
-      Logger.info(f"#SC241022: In index_document_multi: About to enter embeddings.get_multimodal_embeddings")
+      user_text = None
+      if doc["text"] is not None:
+        user_text=doc["text"]
+      user_file_bytes = None
+      if doc["image"] is not None:
+        user_file_bytes = b64decode(doc["image"])
       chunk_embedding = \
         await embeddings.get_multimodal_embeddings(
           user_text=user_text,
           user_file_bytes=user_file_bytes,
-          embedding_type=self.embedding_type) #SC241022
-      Logger.info(f"#SC241022: In index_document_multi: Just exited embeddings.get_multimodal_embeddings")
+          embedding_type=self.embedding_type)
       # TODO: Also embed doc["video"] (video chunk) and
       # potentially doc["audio"] (audio chunk)
 
       # Check to make sure that embeddings for available modalities exist
       for modality in modality_list_sorted:
-        #if modality in chunk_embedding.keys() and \
-        #  isinstance(chunk_embedding[modality][0], float): #SC241022
-        if modality in chunk_embedding.keys(): #SC241022
-          Logger.info(f"#SC241022: In index_document_multi: About to append doc['text'] to chunk_texts")
+        if modality in chunk_embedding.keys():
           chunk_texts.append(doc["text"])
-          Logger.info(f"#SC241022: In index_document_multi: About to append chunk_embedding[{modality}] to chunk_embeddings")
           chunk_embeddings.append(chunk_embedding[modality])
           # Increment counter
-          Logger.info(f"#SC241022: In index_document_multi: About to increment {num_embeddings=}")
           num_embeddings += 1
         else:
           raise RuntimeError(
@@ -493,29 +473,20 @@ class LangChainVectorStore(VectorStore):
 
     # now that all embeddings are created for all modalities of all chunks,
     # generate list of chunk IDs starting from index base
-    Logger.info(f"#SC241022: In index_document_multimodal: About to generate ids")
     ids = list(range(index_base, index_base + num_embeddings))
-    Logger.info(f"Indexed {len(ids)} embeddings for [{doc_name}]")
 
     # check for success
-    Logger.info(f"#SC241022: In index_document_multi: About to check that len(chunk_embeddings) is 0")
     if len(chunk_embeddings) == 0:
       raise RuntimeError(f"failed to generate embeddings for {doc_name}")
 
     # add image embeddings to vector store
-    Logger.info(f"#SC241022: In index_document_multi: Length of doc_chunks={len(doc_chunks)}")
-    Logger.info(f"#SC241022: In index_document_multi: Length of chunk_text={len(chunk_texts)}")
-    Logger.info(f"#SC241022: In index_document_multi: Length of chunk_embeddings={len(chunk_embeddings)}")
-    Logger.info(f"#SC241022: About to enter lc_vector_store.add_embeddings")
     self.lc_vector_store.add_embeddings(texts=chunk_texts,
                                         embeddings=chunk_embeddings,
                                         ids=ids)
-    Logger.info(f"#SC241022: Just exited lc_vector_store.add_embeddings")
     # return new index base
     new_index_base = index_base + num_embeddings
     self.index_length = new_index_base
 
-    Logger.info(f"#SC241022: About to exit index_document_multi")
     return new_index_base
 
   async def index_document(self,

@@ -189,10 +189,8 @@ async def query_generate(
   # (from non-text info in query_references)
   context_files = []
   for ref in query_references:
-    #if hasattr(ref, "modality") and ref.modality != "text": #SC241023
-    if ref.modality is not None and ref.modality != "text": #SC241023
-      #if hasattr(ref, "chunk_url"): #SC241023
-      if ref.chunk_url is not None: #SC241023
+    if ref.modality is not None and ref.modality != "text":
+      if ref.chunk_url is not None:
         ref_filename = ref.chunk_url
         ref_mimetype = validate_multimodal_file_type(file_name=ref_filename,
                                                      file_b64=None)
@@ -1009,12 +1007,10 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         if metadata is not None:
           metadata_list = [deepcopy(metadata) for chunk in doc_chunks]
         if is_multimodal:
-          Logger.info(f"#SC241022: About to enter index_document_multi")
           new_index_base = \
             await qe_vector_store.index_document_multimodal(doc_name,
                                                        doc_chunks,
                                                        index_base)
-          Logger.info(f"#SC241022: Just exited index_document_multi")
           Logger.info(
             f"Successfully indexed {len(doc_chunks)} chunks for [{doc_name}]"
             )
