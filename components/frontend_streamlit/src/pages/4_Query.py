@@ -91,13 +91,13 @@ def chat_content():
             modality = reference["modality"]
             chunk_url = reference["chunk_url"]
             chunk_type = ""
-            if chunk_url:
+            if chunk_url is not None:
               _, chunk_type = splitext(chunk_url)
               chunk_url = chunk_url.replace("gs://",
                   "https://storage.googleapis.com/", 1)
             document_url = reference["document_url"]
             page = reference["page"]
-            if page:
+            if page is not None:
               # References from multimodal query engines have page numbers
               reference_header = (f"\nReference {query_index}:"
                                   f" {document_url}, Page {page+1}")
@@ -119,7 +119,7 @@ def chat_content():
               st.image(chunk_url)
             else:
               logging.error("Reference modality unknown")
-              st.write("Reference modality unkown")
+              #st.write("Reference modality unkown") #SC241024
             query_index = query_index + 1
           st.divider()
 
