@@ -189,8 +189,10 @@ async def query_generate(
   # (from non-text info in query_references)
   context_files = []
   for ref in query_references:
-    if hasattr(ref, "modality") and ref.modality != "text":
-      if hasattr(ref, "chunk_url"):
+    #if hasattr(ref, "modality") and ref.modality != "text": #SC241023
+    if ref.modality is not None and ref.modality != "text": #SC241023
+      #if hasattr(ref, "chunk_url"): #SC241023
+      if ref.chunk_url is not None: #SC241023
         ref_filename = ref.chunk_url
         ref_mimetype = validate_multimodal_file_type(file_name=ref_filename,
                                                      file_b64=None)
