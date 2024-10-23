@@ -455,9 +455,11 @@ class LangChainVectorStore(VectorStore):
       Logger.info(f"#SC241022: In index_document_multi: {user_text=}")
       #Logger.info(f"#SC241022: In index_document_multi: {doc['image'][0:9]=}")
       user_file_bytes = None #SC241022
+      user_file_bytes_09 = None #SC241022
       if doc["image"] is not None: #SC241022
         user_file_bytes = b64decode(doc["image"]) #SC241022
-      Logger.info(f"#SC241022: In index_document_multi: {user_file_bytes[0:9]=}")
+        user_file_bytes = user_file_bytes[0:9] #SC241022
+      Logger.info(f"#SC241022: In index_document_multi: {user_file_bytes_09=}")
       #chunk_embedding = \
       #  await embeddings.get_multimodal_embeddings(
       #    user_text=doc["text"],
