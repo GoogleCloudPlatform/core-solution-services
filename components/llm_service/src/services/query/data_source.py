@@ -391,6 +391,9 @@ class DataSource:
         Logger.info(f"#SC241022: In chunk_document_multimodal: Just exited chunk_document for TXT file")
         Logger.info(f"#SC241022: In chunk_document_multimodal: {text_chunks=}")
         for text_chunk in text_chunks:
+          #TODO: Consider all characters in text_chunk,
+          #not just the first 1024
+          text_chunk = text_chunk[0:1023]
           # Push chunk object into chunk array
           chunk_obj = {
             "image": None,
