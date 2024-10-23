@@ -450,12 +450,12 @@ class LangChainVectorStore(VectorStore):
       # Get chunk embeddings
       #Logger.info(f"#SC241022: In index_document_multi: {doc['text']=}")
       user_text = None #SC241022
-      if doc["text"]: #SC241022
+      if doc["text"] is not None: #SC241022
         user_text=doc["text"] #SC241022
       Logger.info(f"#SC241022: In index_document_multi: {user_text=}")
       #Logger.info(f"#SC241022: In index_document_multi: {doc['image'][0:9]=}")
       user_file_bytes = None #SC241022
-      if doc["image"]: #SC241022
+      if doc["image"] is not None: #SC241022
         user_file_bytes = b64decode(doc["image"]) #SC241022
       Logger.info(f"#SC241022: In index_document_multi: {user_file_bytes[0:9]=}")
       #chunk_embedding = \
