@@ -448,12 +448,12 @@ class LangChainVectorStore(VectorStore):
           doc[modality] = None
 
       # Get chunk embeddings
-      Logger.info(f"#SC241022: In index_document_multi: {doc["text"]=}")
+      Logger.info(f"#SC241022: In index_document_multi: {doc['text']=}")
       user_text = None #SC241022
       if doc["text"]: #SC241022
         user_text=doc["text"] #SC241022
       Logger.info(f"#SC241022: In index_document_multi: {user_text=}")
-      Logger.info(f"#SC241022: In index_document_multi: {doc["image"][0:9]=}")
+      Logger.info(f"#SC241022: In index_document_multi: {doc['image'][0:9]=}")
       user_file_bytes = None #SC241022
       if doc["image"]: #SC241022
         user_file_bytes = b64decode(doc["image"]) #SC241022
@@ -475,9 +475,9 @@ class LangChainVectorStore(VectorStore):
 
       # Check to make sure that embeddings for available modalities exist
       for modality in modality_list_sorted:
-        if modality in chunk_embedding.keys() and \
-          isinstance(chunk_embedding[modality][0], float): #SC241022
-        #if modality in chunk_embedding.keys(): #SC241022
+        #if modality in chunk_embedding.keys() and \
+        #  isinstance(chunk_embedding[modality][0], float): #SC241022
+        if modality in chunk_embedding.keys(): #SC241022
           Logger.info(f"#SC241022: In index_document_multi: About to append doc['text'] to chunk_texts")
           chunk_texts.append(doc["text"])
           Logger.info(f"#SC241022: In index_document_multi: About to append chunk_embedding[{modality}] to chunk_embeddings")
