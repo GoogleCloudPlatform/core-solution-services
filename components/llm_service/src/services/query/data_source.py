@@ -384,7 +384,7 @@ class DataSource:
       elif doc_extension == "txt":
         # Chunk text in document
         Logger.info(f"#SC241022: In chunk_document_multimodal: About to enter chunk_document for TXT file")
-        text_chunks, _ = self.chunk_document(doc_name,
+        text_chunks = self.chunk_document(doc_name,
                                           doc_url,
                                           doc_filepath,
                                           )
