@@ -120,7 +120,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const deleteQueryEngineDetails = async () => {
     if (!queryEngine) throw new Error("No id of queryEngine to delete")
     setDeleting(true)
-
+    setActiveJob(true)
     deleteQEngine.mutate(
       queryEngine,
       {
@@ -143,6 +143,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
       }
     )          
     setDeleting(false)
+    setActiveJob(false)
     navigate("/queryengines/admin")
   }
 
