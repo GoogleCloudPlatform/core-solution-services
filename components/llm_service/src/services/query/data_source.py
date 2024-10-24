@@ -286,8 +286,11 @@ class DataSource:
     try:
       doc_extension = doc_name.split(".")[-1]
       doc_extension = doc_extension.lower()
-      if doc_extension != "pdf" and doc_extension not in allowed_image_types:
-        raise ValueError(f"{doc_name} must be a PDF, PNG, JPG, BMP, or GIF")
+      if (doc_extension != "pdf" and
+          doc_extension != "txt" and
+          doc_extension not in allowed_image_types):
+        raise ValueError(f"{doc_name} must be a PDF, TXT, "
+                         f"PNG, JPG, BMP, or GIF")
       # TODO: Insert elif statements to check for additional types of
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
     except Exception as e:
@@ -378,6 +381,24 @@ class DataSource:
           "text": contextual_text
         }
         doc_chunks.append(chunk_obj)
+
+      elif doc_extension == "txt":
+        # Chunk text in document
+        text_chunks = self.chunk_document(doc_name,
+                                          doc_url,
+                                          doc_filepath,
+                                          )
+        for text_chunk in text_chunks:
+          #TODO: Consider all characters in text_chunk,
+          #not just the first 1024
+          text_chunk = text_chunk[0:1023]
+          # Push chunk object into chunk array
+          chunk_obj = {
+            "image": None,
+            "image_url": None,
+            "text": text_chunk,
+          }
+          doc_chunks.append(chunk_obj)
 
       # TODO: Insert elif statements to chunk additional types of
       # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)

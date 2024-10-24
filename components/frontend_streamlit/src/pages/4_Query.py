@@ -119,7 +119,6 @@ def chat_content():
               st.image(chunk_url)
             else:
               logging.error("Reference modality unknown")
-              st.write("Reference modality unkown")
             query_index = query_index + 1
           st.divider()
 
