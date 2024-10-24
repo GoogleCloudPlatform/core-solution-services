@@ -447,7 +447,7 @@ class LangChainVectorStore(VectorStore):
 
       # Get chunk embeddings
       user_file_bytes = None
-      if doc["image"] is not None:
+      if doc["image"]:
         user_file_bytes = b64decode(doc["image"])
       chunk_embedding = \
         await embeddings.get_multimodal_embeddings(
