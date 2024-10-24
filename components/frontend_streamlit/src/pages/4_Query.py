@@ -91,13 +91,13 @@ def chat_content():
             modality = reference["modality"]
             chunk_url = reference["chunk_url"]
             chunk_type = ""
-            if chunk_url is not None:
+            if chunk_url:
               _, chunk_type = splitext(chunk_url)
               chunk_url = chunk_url.replace("gs://",
                   "https://storage.googleapis.com/", 1)
             document_url = reference["document_url"]
             page = reference["page"]
-            if page is not None:
+            if page:
               # References from multimodal query engines have page numbers
               reference_header = (f"\nReference {query_index}:"
                                   f" {document_url}, Page {page+1}")

@@ -189,15 +189,14 @@ async def query_generate(
   # (from non-text info in query_references)
   context_files = []
   for ref in query_references:
-    if ref.modality is not None and ref.modality != "text":
-      if ref.chunk_url is not None:
-        ref_filename = ref.chunk_url
-        ref_mimetype = validate_multimodal_file_type(file_name=ref_filename,
-                                                     file_b64=None)
-        context_files.append(DataSourceFile(gcs_path=ref_filename,
-                                            mime_type=ref_mimetype))
-        # TODO: If ref is a video chunk, then update new element of
-        # context_files according to ref.timestamp_start and ref.timestamp_stop
+    if ref.modality != "text" and ref.chunk_url:
+      ref_filename = ref.chunk_url
+      ref_mimetype = validate_multimodal_file_type(file_name=ref_filename,
+                                                   file_b64=None)
+      context_files.append(DataSourceFile(gcs_path=ref_filename,
+                                          mime_type=ref_mimetype))
+      # TODO: If ref is a video chunk, then update new element of
+      # context_files according to ref.timestamp_start and ref.timestamp_stop
 
   # send prompt and additional context to model
   question_response = await llm_chat(question_prompt, llm_type,

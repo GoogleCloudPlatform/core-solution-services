@@ -446,15 +446,12 @@ class LangChainVectorStore(VectorStore):
           doc[modality] = None
 
       # Get chunk embeddings
-      user_text = None
-      if doc["text"] is not None:
-        user_text=doc["text"]
       user_file_bytes = None
       if doc["image"] is not None:
         user_file_bytes = b64decode(doc["image"])
       chunk_embedding = \
         await embeddings.get_multimodal_embeddings(
-          user_text=user_text,
+          user_text=doc["text"],
           user_file_bytes=user_file_bytes,
           embedding_type=self.embedding_type)
       # TODO: Also embed doc["video"] (video chunk) and
@@ -462,7 +459,7 @@ class LangChainVectorStore(VectorStore):
 
       # Check to make sure that embeddings for available modalities exist
       for modality in modality_list_sorted:
-        if modality in chunk_embedding.keys():
+        if modality in chunk_embedding:
           chunk_texts.append(doc["text"])
           chunk_embeddings.append(chunk_embedding[modality])
           # Increment counter
