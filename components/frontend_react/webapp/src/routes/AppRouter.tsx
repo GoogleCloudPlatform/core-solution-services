@@ -61,10 +61,6 @@ export const AuthAppRouter: React.FunctionComponent<AuthAppRouterProps> = ({
           path="/queryengines/admin"
           element={<QueryEngineAdmin token={token!} />}
         />
-        <Route
-          path="/queryengines/detail"
-          element={<QueryEngineDetail token={token!} />}
-        />
         <Route path="/about" element={<About />} />
         <Route path="/aichat" element={<AIChatRoute />} />
         <Route path="/aiquery" element={<AIQueryRoute />} />
