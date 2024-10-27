@@ -31,6 +31,8 @@ interface IQueryEngineProps {
 }
 
 const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeJob, setActiveJob] = useState(false)
   const [formError, setFormError] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -44,6 +46,17 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
 
   const [queryEngines, setQueryEngines] = useState<QueryEngine[]>([])
   const [queryEngine, setQueryEngine] = useState<QueryEngine | null>(null)
+
+  const openDeleteModal = () => {
+    setIsModalOpen(true)
+    const modalToggle = document.getElementById('delete-queryEngine-modal')
+    modalToggle.checked = true
+  }    
+  const closeDeleteModal = () => {
+    setIsModalOpen(false)
+    const modalToggle = document.getElementById('delete-queryEngine-modal')
+    modalToggle.checked = false
+  }
 
   const { isLoading, data: engineList } = useQuery(
     ["QueryEngines"],
@@ -119,6 +132,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
 
   const deleteQueryEngineDetails = async () => {
     if (!queryEngine) throw new Error("No id of queryEngine to delete")
+
     setDeleting(true)
     setActiveJob(true)
     deleteQEngine.mutate(
@@ -132,6 +146,10 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               durationMs: 4000,
             })            
           }
+          setDeleting(false)
+          setActiveJob(false)
+          closeDeleteModal()
+          navigate("/queryengines")
         },
         onError: () => {
           setAlert({
@@ -139,12 +157,13 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
             type: ALERT_TYPE.ERROR,
             durationMs: 4000,
           })            
+          setDeleting(false)
+          setActiveJob(false)
+          closeDeleteModal()
+          navigate("/queryengines/admin")
         }
       }
     )          
-    setDeleting(false)
-    setActiveJob(false)
-    navigate("/queryengines/admin")
   }
 
   useEffect(() => {
@@ -184,12 +203,9 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
                     View Details
                   </button>
                 </Link>
-                <label
-                  htmlFor="delete-queryEngine-modal"
-                  className="absolute right-0 top-0 z-10"
-                >
+                <button className="absolute right-0 top-0 z-10" onClick={openDeleteModal}>
                   <TrashIcon className="text-dim hover:text-normal w-8 cursor-pointer text-error transition" />
-                </label>
+                </button>
               </>
             )}
             <div className="flex flex-col">
@@ -227,9 +243,12 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               </h3>
               <p className="py-4">This action cannot be undone</p>
               <div className="modal-action">
-                <label htmlFor="delete-queryEngine-modal" className="btn btn-outline">
+                {activeJob && (
+                  <i className="i-svg-spinners-180-ring text-info group-hover:text-base-content/100 transition h-6 w-6 shrink-0"></i>
+                )}
+                <button className="btn btn-outline" onClick={closeDeleteModal}>
                   Cancel
-                </label>
+                </button>
                 <button
                   className="btn btn-error"
                   disabled={deleting}
