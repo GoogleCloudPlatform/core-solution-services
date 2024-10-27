@@ -60,7 +60,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token)):
     }
   except Exception as e:
     Logger.error(e)
-    Logger.error(traceback.print_exc())    
+    Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
 
