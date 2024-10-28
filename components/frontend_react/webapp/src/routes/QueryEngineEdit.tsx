@@ -25,6 +25,7 @@ import { ALERT_TYPE } from "@/utils/types"
 import { Link, useNavigate } from "react-router-dom"
 import { useQueryParams } from "@/utils/routing"
 import { userStore, alertStore } from "@/store"
+import { fetchEmbeddingTypes } from "@/utils/api"
 
 interface IQueryEngineProps {
   token: string
@@ -46,6 +47,8 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
 
   const [queryEngines, setQueryEngines] = useState<QueryEngine[]>([])
   const [queryEngine, setQueryEngine] = useState<QueryEngine | null>(null)
+  const [createEngineIsMultimodal, setCreateEngineIsMultimodal] = useState(false)
+  const [createEngineEmbeddingOptions, setCreateEngineEmbeddingOptions] = useState<{ option: string; value: string; }[]>([])
 
   const openDeleteModal = () => {
     setIsModalOpen(true)
@@ -191,6 +194,28 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
     return <Loading />
   }
 
+  const updatedQueryEngineFormData = QUERY_ENGINE_FORM_DATA.map(
+    (entry) => {
+      switch (entry.name) {
+        case "is_multimodal":
+          return { ...entry, onClick: () => { setCreateEngineIsMultimodal(!createEngineIsMultimodal) } }
+        case "embedding_type":
+          return { ...entry, options: createEngineEmbeddingOptions }
+        default:
+          return entry
+      }
+    })
+
+  useEffect(() => {
+    const updateEngineEmbeddings = async () => {
+      const llmTypes = await (await fetchEmbeddingTypes(token, createEngineIsMultimodal))()
+      if (llmTypes === null || llmTypes === undefined) console.error("Failed to retrieve embedding types")
+      else setCreateEngineEmbeddingOptions(llmTypes.map((embedding) => { return { option: embedding, value: embedding } }))
+    }
+    updateEngineEmbeddings()
+  },
+    [createEngineIsMultimodal])
+
   return (
     <div className="overflow-x-auto custom-scrollbar">
       <div className="min-h-screen">
@@ -226,7 +251,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               onFailure={onFailure}
               handleFiles={null}
               queryEngine={queryEngine}
-              currentVarsData={QUERY_ENGINE_FORM_DATA}
+              currentVarsData={updatedQueryEngineFormData}
             />
           </div>
 

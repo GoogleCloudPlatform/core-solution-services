@@ -31,7 +31,11 @@ def get_question_prompt(prompt: str,
   """ Create question prompt with context for LLM """
   Logger.info(f"Creating question prompt with context "
               f"for LLM prompt=[{prompt}]")
-  context_list = [ref.document_text for ref in query_context]
+  context_list = []
+  for ref in query_context:
+    if hasattr(ref, "modality") and ref.modality=="text":
+      if hasattr(ref, "document_text"):
+        context_list.append(ref.document_text)
   text_context = "\n\n".join(context_list)
 
   if llm_type == TRUSS_LLM_LLAMA2_CHAT:

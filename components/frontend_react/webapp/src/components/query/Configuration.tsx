@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, { useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { fetchAllChatModels, fetchAllEngines } from "@/utils/api"
 import { useQuery } from "@tanstack/react-query"
 import Loading from "@/navigation/Loading"
@@ -25,20 +25,46 @@ interface ConfigurationProps {
 const QueryConfiguration: React.FC<ConfigurationProps> = ({ token }) => {
   const { data: engineList, isLoading: enginesLoading, error: enginesError } = useQuery(["fetchEngines"], fetchAllEngines(token))
   const { data: modelList, isLoading: modelsLoading, error: modelsError } = useQuery(["fetchModels"], fetchAllChatModels(token))
+  const { data: multimodalModelList, isLoading: multimodalModelsLoading, error: multimodalModelsError } =
+    useQuery(["fetchMultimodalModels"], fetchAllChatModels(token, true))
 
   const { selectedModel, setSelectedModel, selectedEngine, setSelectedEngine } = useConfig()
+  const [selectedEngineIsMultimodal, setSelectedEngineIsMultimodal] = useState<boolean | undefined>(undefined)
 
   useEffect(() => {
     if (engineList && engineList.length > 0 && !selectedEngine) {
       setSelectedEngine(engineList[0].id)
     }
-  }, [engineList, selectedEngine, setSelectedEngine])
+  }, [engineList])
 
-  if (enginesError || modelsError) return <></>
-  if (enginesLoading || modelsLoading) {
+  // Changing if the engine is multimodal when a new one is selected
+  useEffect(() => {
+    if (selectedEngine && engineList) {
+      const engineInfo = engineList.find(
+        (engine) => engine.id == selectedEngine)
+      // if the engine isn't in the list, reset to the first one in the list
+      if (!engineInfo) { setSelectedEngine(engineList[0].id) }
+      else {
+        setSelectedEngineIsMultimodal(
+          (engineInfo.params?.is_multimodal ?? false) === "True")
+      }
+    }
+  }, [selectedEngine])
+
+  const displayModelList = selectedEngineIsMultimodal ? multimodalModelList : modelList
+  // resetting the chat model if it is no longer valid when the engine changes
+  useEffect(() => {
+    if (displayModelList !== undefined && !displayModelList.includes(selectedModel) &&
+      displayModelList.length > 0) {
+      setSelectedModel(displayModelList[0])
+    }
+  }, [selectedEngineIsMultimodal])
+
+  if (enginesError || modelsError || multimodalModelsLoading) return <></>
+  if (enginesLoading || modelsLoading || multimodalModelsError) {
     return <Loading />
   }
-  
+
   return (
     <div className="border-primary-content mt-2 border-t p-2 py-3">
       <div className="text-primary-content pb-3 font-semibold">
@@ -53,8 +79,8 @@ const QueryConfiguration: React.FC<ConfigurationProps> = ({ token }) => {
           onChange={(e) => setSelectedModel(e.target.value)}
           value={selectedModel}
         >
-          {modelList &&
-            modelList.map((modelOpt) => <option key={modelOpt} value={modelOpt}>{modelOpt}</option>)
+          {displayModelList &&
+            displayModelList.map((modelOpt) => <option key={modelOpt} value={modelOpt}>{modelOpt}</option>)
           }
         </select>
         <label htmlFor="engine-select" className="label w-fit pt-3"><span className="label-text text-primary-content">Query Engine:</span></label>

@@ -15,6 +15,7 @@
 # pylint: disable = broad-except
 
 """ LLM endpoints """
+from typing import Optional
 from base64 import b64decode
 from fastapi import APIRouter, Depends
 
@@ -25,17 +26,17 @@ from common.utils.auth_service import validate_token
 from config import (PAYLOAD_FILE_SIZE,
                     ERROR_RESPONSES, get_model_config)
 from schemas.llm_schema import (LLMGenerateModel,
-                                LLMMultiGenerateModel,
+                                LLMMultimodalGenerateModel,
                                 LLMGetTypesResponse,
                                 LLMGetEmbeddingTypesResponse,
                                 LLMGenerateResponse,
                                 LLMEmbeddingsResponse,
-                                LLMMultiEmbeddingsResponse,
+                                LLMMultimodalEmbeddingsResponse,
                                 LLMEmbeddingsModel,
-                                LLMMultiEmbeddingsModel)
-from services.llm_generate import llm_generate, llm_generate_multi
-from services.embeddings import get_embeddings, get_multi_embeddings
-from utils.file_helper import validate_multi_file_type
+                                LLMMultimodalEmbeddingsModel)
+from services.llm_generate import llm_generate, llm_generate_multimodal
+from services.embeddings import get_embeddings, get_multimodal_embeddings
+from utils.file_helper import validate_multimodal_file_type
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
 
@@ -45,16 +46,29 @@ Logger = Logger.get_logger(__file__)
     "",
     name="Get all LLM types",
     response_model=LLMGetTypesResponse)
-def get_llm_list(user_data: dict = Depends(validate_token)):
+def get_llm_list(user_data: dict = Depends(validate_token),
+                 is_multimodal: Optional[bool] = None):
   """
-  Get available LLMs
+  Get available LLMs, optionally filter by
+  multimodal capabilities
+
+  Args:
+    is_multimodal: `bool`
+      Optional: Is llm model multimodal <br/>
 
   Returns:
       LLMGetTypesResponse
   """
   try:
-    all_llm_types = get_model_config().get_llm_types()
-    user_enabled_llms = [llm for llm in all_llm_types if \
+    if is_multimodal is True:
+      llm_types = get_model_config().get_multimodal_llm_types()
+    elif is_multimodal is False:
+      llm_types = get_model_config().get_text_llm_types()
+    elif is_multimodal is None:
+      llm_types = get_model_config().get_llm_types()
+    else:
+      return BadRequest("Invalid request parameter value: is_multimodal")
+    user_enabled_llms = [llm for llm in llm_types if \
                 get_model_config().is_model_enabled_for_user(llm, user_data)]
     return {
       "success": True,
@@ -69,13 +83,13 @@ def get_llm_list(user_data: dict = Depends(validate_token)):
     "/embedding_types",
     name="Get supported embedding types",
     response_model=LLMGetEmbeddingTypesResponse)
-def get_embedding_types(is_multi: bool = None):
+def get_embedding_types(is_multimodal: Optional[bool] = None):
   """
   Get supported embedding types, optionally filter by
   multimodal capabilities
 
   Args:
-    is_multi: `bool`
+    is_multimodal: `bool`
       Optional: If True, only multimodal embedding types are returned.
         If False, only non-multimodal (text) embedding types are returned.
         If None, all embedding types are returned.
@@ -84,14 +98,14 @@ def get_embedding_types(is_multi: bool = None):
       LLMGetEmbeddingTypesResponse
   """
   try:
-    if is_multi is True:
-      embedding_types = get_model_config().get_multi_embedding_types()
-    elif is_multi is False:
+    if is_multimodal is True:
+      embedding_types = get_model_config().get_multimodal_embedding_types()
+    elif is_multimodal is False:
       embedding_types = get_model_config().get_text_embedding_types()
-    elif is_multi is None:
+    elif is_multimodal is None:
       embedding_types = get_model_config().get_embedding_types()
     else:
-      return BadRequest("Missing or invalid payload parameters")
+      return BadRequest("Invalid request parameter value: is_multimodal")
 
     return {
       "success": True,
@@ -139,10 +153,11 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
     raise InternalServerError(str(e)) from e
 
 @router.post(
-    "/embedding/multi",
+    "/embedding/multimodal",
     name="Generate multimodal embeddings from LLM",
-    response_model=LLMMultiEmbeddingsResponse)
-async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
+    response_model=LLMMultimodalEmbeddingsResponse)
+async def generate_embeddings_multimodal(
+  embeddings_config: LLMMultimodalEmbeddingsModel):
   """
   Generate multimodal embeddings with an LLM
 
@@ -151,7 +166,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
         user_file_name(str), text(str), and embedding_type(str) type for model
 
   Returns:
-      LLMMultiEmbeddingsResponse
+      LLMMultimodalEmbeddingsResponse
   """
   embeddings_config_dict = {**embeddings_config.dict()}
   text = embeddings_config_dict.get("text")
@@ -169,7 +184,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
       f"Text must be less than {PAYLOAD_FILE_SIZE}")
 
 
-  file_mime_type = validate_multi_file_type(user_file_name,
+  file_mime_type = validate_multimodal_file_type(user_file_name,
                                             file_b64=user_file_b64)
   if file_mime_type and file_mime_type.startswith("video"):
     return BadRequest("File type must be a supported image.")
@@ -177,7 +192,7 @@ async def generate_embeddings_multi(embeddings_config: LLMMultiEmbeddingsModel):
   try:
     user_file_bytes = b64decode(user_file_b64)
     embeddings = \
-        await get_multi_embeddings(text, user_file_bytes, embedding_type)
+        await get_multimodal_embeddings(text, user_file_bytes, embedding_type)
 
     return {
         "success": True,
@@ -226,10 +241,10 @@ async def generate(gen_config: LLMGenerateModel):
     raise InternalServerError(str(e)) from e
 
 @router.post(
-    "/generate/multi",
+    "/generate/multimodal",
     name="Generate text with a multimodal LLM",
     response_model=LLMGenerateResponse)
-async def generate_multi(gen_config: LLMMultiGenerateModel):
+async def generate_multimodal(gen_config: LLMMultimodalGenerateModel):
   """
   Generate text with a multimodal LLM
 
@@ -239,7 +254,7 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
         prompt(str), and llm_type(str) type for model
 
   Returns:
-      LLMMultiGenerateResponse
+      LLMMultimodalGenerateResponse
   """
   genconfig_dict = {**gen_config.dict()}
   user_file_b64 = genconfig_dict.get("user_file_b64")
@@ -257,14 +272,14 @@ async def generate_multi(gen_config: LLMMultiGenerateModel):
       f"Prompt must be less than {PAYLOAD_FILE_SIZE}")
 
   # Make sure that the user file is a valid image or video
-  file_mime_type = validate_multi_file_type(user_file_name,
+  file_mime_type = validate_multimodal_file_type(user_file_name,
                                             file_b64=user_file_b64)
   if file_mime_type is None:
     return BadRequest("File type must be a supported image or video.")
 
   try:
     user_file_bytes = b64decode(user_file_b64)
-    result = await llm_generate_multi(prompt, file_mime_type, llm_type,
+    result = await llm_generate_multimodal(prompt, [file_mime_type], llm_type,
                                       user_file_bytes)
 
     return {

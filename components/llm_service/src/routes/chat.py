@@ -16,7 +16,7 @@
 
 """ Chat endpoints """
 import traceback
-from typing import Union, Annotated
+from typing import Union, Annotated, Optional
 from fastapi import APIRouter, Depends, Form, UploadFile
 from common.models import User, UserChat
 from common.models.llm import CHAT_FILE, CHAT_FILE_URL
@@ -42,16 +42,31 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     "/chat_types",
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
-def get_chat_llm_list(user_data: dict = Depends(validate_token)):
+def get_chat_llm_list(user_data: dict = Depends(validate_token),
+                      is_multimodal: Optional[bool] = None):
   """
-  Get available Chat LLMs
+  Get available Chat LLMs, optionally filter by
+  multimodal capabilities
+
+  Args:
+    is_multimodal: `bool`
+      Optional: If True, only multimodal embedding types are returned.
+        If False, only non-multimodal embedding types are returned.
+        If None, all embedding types are returned.
 
   Returns:
       LLMGetTypesResponse
   """
   try:
-    all_llm_types = get_model_config().get_chat_llm_types()
-    user_enabled_llms = [llm for llm in all_llm_types if \
+    if is_multimodal is True:
+      llm_types = get_model_config().get_multimodal_chat_llm_types()
+    elif is_multimodal is False:
+      llm_types = get_model_config().get_text_chat_llm_types()
+    elif is_multimodal is None:
+      llm_types = get_model_config().get_chat_llm_types()
+    else:
+      return BadRequest("Invalid request parameter value: is_multimodal")
+    user_enabled_llms = [llm for llm in llm_types if \
                 get_model_config().is_model_enabled_for_user(llm, user_data)]
     return {
       "success": True,
