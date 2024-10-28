@@ -237,7 +237,7 @@ def test_delete_query_engine_soft(mock_vector_store, create_user,
   url = f"{api_url}/engine/{q_engine_id}"
 
   query_engine_before = QueryEngine.find_by_id(q_engine_id)
-  resp = client_with_emulator.delete(url)
+  resp = client_with_emulator.delete(url, params={"hard_delete": False})
   json_response = resp.json()
   query_data = json_response.get("message")
 
@@ -272,7 +272,7 @@ def test_delete_query_engine_hard(mock_vector_store, create_user,
   q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
   q_doc_id = QUERY_DOCUMENT_EXAMPLE_1["id"]
   q_chunk_id = QUERY_DOCUMENT_CHUNK_EXAMPLE_1["id"]
-  url = f"{api_url}/engine/{q_engine_id}?hard_delete=True"
+  url = f"{api_url}/engine/{q_engine_id}"
 
   query_engine_before = QueryEngine.find_by_id(q_engine_id)
   resp = client_with_emulator.delete(url)
