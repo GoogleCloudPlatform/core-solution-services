@@ -177,10 +177,7 @@ class BaseModel(Model):
     obj = cls.collection.filter("id", "in",
                                 [object_id]).filter("deleted_at_timestamp",
                                                     "==", None).get()
-    if obj is None:
-      raise ResourceNotFoundException(
-          f"{cls.collection_name} with id {object_id} is not found")
-    else:
+    if obj is not None:
       obj.deleted_at_timestamp = datetime.datetime.utcnow()
       obj.deleted_by = by_user
       obj.update()

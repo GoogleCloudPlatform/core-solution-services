@@ -17,9 +17,11 @@ New features:
 - Switched to using llama_index.core.node_parser.SentenceSplitter for chunking by default
 - Updated default query generation model to Gemini Flash 1.5 - was set to Palm2
 - Added Microsoft login in React frontend
+- Add timestamps to logging
 
 ### Fixes
 - Fixed download of PDFs from scraped sites
+- Fixed deletion of query engines in React frontend; made hard delete the default
 
 
 ## v0.3.2

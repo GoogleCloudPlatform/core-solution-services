@@ -1238,10 +1238,13 @@ def datasource_from_url(doc_url: str,
     raise InternalServerError(
         f"No datasource available for doc url [{doc_url}]")
 
-def delete_engine(q_engine: QueryEngine, hard_delete=False):
+def delete_engine(q_engine: QueryEngine, hard_delete: bool=False):
   """
   Delete query engine and associated models and vector store data.
   """
+  Logger.info(f"Deleting query engine [{q_engine.id}]"
+              f" hard_delete=[{hard_delete}]")
+
   # delete vector store data
   try:
     if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
@@ -1255,7 +1258,7 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
         f"error deleting vector store for query engine {q_engine.id}")
     Logger.error(traceback.print_exc())
 
-  if hard_delete:
+  if hard_delete is True:
     Logger.info(f"performing hard delete of query engine {q_engine.id}")
 
     # delete query docs and chunks
