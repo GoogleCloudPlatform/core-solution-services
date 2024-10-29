@@ -16,7 +16,6 @@ LLM Generation Service
 """
 # pylint: disable=import-outside-toplevel,line-too-long
 import time
-import json
 import requests
 from typing import Optional, List
 import google.auth
