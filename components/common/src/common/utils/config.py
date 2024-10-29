@@ -70,9 +70,6 @@ def get_config_list(config_str: str) -> List[str]:
   return config_list
 
 
-IS_CLOUD_LOGGING_ENABLED = bool(
-  os.getenv("IS_CLOUD_LOGGING_ENABLED", "true").lower() in ("true",))
-
 DEFAULT_JOB_LIMITS = {
     "cpu": "4",
     "memory": "16000Mi"

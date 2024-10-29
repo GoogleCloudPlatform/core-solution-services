@@ -61,8 +61,8 @@ FAKE_USER_DATA = {
 }
 
 FAKE_GENERATE_PARAMS = {
+    "prompt": "test prompt",
     "llm_type": "VertexAI-Chat",
-    "prompt": "test prompt"
   }
 
 FAKE_GENERATE_RESPONSE = "test generation"
@@ -126,7 +126,7 @@ def test_create_chat(create_user, client_with_emulator):
 
   with mock.patch("routes.chat.llm_chat",
                   return_value = FAKE_GENERATE_RESPONSE):
-    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+    resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"

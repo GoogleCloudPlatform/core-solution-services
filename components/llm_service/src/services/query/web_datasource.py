@@ -25,7 +25,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from typing import List
+from typing import List, Union
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
 from scrapy.linkextractors import LinkExtractor
@@ -42,14 +42,19 @@ from utils.html_helper import (html_trim_tags,
 
 Logger = Logger.get_logger(__file__)
 
-def save_content(filepath: str, file_name: str, content: str) -> None:
+def save_content(filepath: str, file_name: str,
+                 content: Union[str, bytes]) -> None:
   """
   Save content in a file in a local directory
   """
   Logger.info(f"Saving {file_name} to {filepath}")
   doc_filepath = os.path.join(filepath, file_name)
-  with open(doc_filepath, "w", encoding="utf-8") as f:
-    f.write(content)
+  if isinstance(content, bytes):
+    with open(doc_filepath, "wb") as f:
+      f.write(content)
+  else:
+    with open(doc_filepath, "w", encoding="utf-8") as f:
+      f.write(content)
   Logger.info(f"{len(content)} bytes written")
   return doc_filepath
 
@@ -202,6 +207,7 @@ class WebDataSource(DataSource):
 
   def __init__(self,
                storage_client,
+               params=None,
                bucket_name=None,
                depth_limit=DEFAULT_WEB_DEPTH_LIMIT):
     """
@@ -214,7 +220,7 @@ class WebDataSource(DataSource):
       depth_limit (int): depth limit to crawl. 0=don't crawl, just
                          download provided URLs
     """
-    super().__init__(storage_client)
+    super().__init__(storage_client, params)
     self.depth_limit = depth_limit
     self.bucket_name = bucket_name
     self.doc_data = []
@@ -266,7 +272,7 @@ class WebDataSource(DataSource):
     # in the same process.
     # See https://stackoverflow.com/questions/39946632/reactornotrestartable-error-in-while-loop-with-scrapy
     queue = multiprocessing.Queue()
-    process_args = (queue, doc_url, spider_class, temp_dir,
+    process_args = (queue, doc_url, spider_class, temp_dir, self.params,
                     self.depth_limit, self.bucket_name)
     p = multiprocessing.Process(target=run_crawler, args=process_args)
     p.start()
@@ -289,6 +295,7 @@ def run_crawler(queue,
                 doc_url,
                 spider_class_name,
                 temp_dir,
+                params,
                 depth_limit,
                 bucket_name):
   """
@@ -310,7 +317,10 @@ def run_crawler(queue,
 
   # create datasource class
   storage_client = storage.Client()
-  data_source = WebDataSource(storage_client, bucket_name, depth_limit)
+  data_source = WebDataSource(storage_client,
+                              params=params,
+                              bucket_name=bucket_name,
+                              depth_limit=depth_limit)
 
   # define Scrapy settings
   settings = {

@@ -44,6 +44,7 @@ from common.models.llm_query import (QUERY_HUMAN,
 from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.utils.logging_handler import Logger
 from common.utils.config import set_env_var
+from common.utils.errors import UnauthorizedUserError
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
 
 with set_env_var("PG_HOST", ""):
@@ -159,9 +160,18 @@ class FakeVectorStore(VectorStore):
     pass
   def init_index(self):
     pass
-  async def index_document(self, doc_name: str, text_chunks: List[str],
+  async def index_document(self,
+                           doc_name: str,
+                           text_chunks: List[str],
                            index_base: int,
-                           metadata: List[dict] = None) -> int:
+                           metadata: List[dict] = None) -> \
+                            int:
+    return 0
+  async def index_document_multi(self,
+                                 doc_name: str,
+                                 doc_chunks: List[object],
+                                 index_base: int) -> \
+                                  int:
     return 0
   def deploy(self):
     pass
@@ -182,12 +192,30 @@ class FakeDataSource(DataSource):
   def chunk_document(self, doc_name: str, doc_url: str,
                      doc_filepath: str) -> List[str]:
     if doc_url == QUERY_DOCUMENT_EXAMPLE_1["doc_url"]:
-      chunk_list = QUERY_DOCUMENT_CHUNK_EXAMPLE_1["text"]
+      chunk_list = [QUERY_DOCUMENT_CHUNK_EXAMPLE_1["text"]] # List of one string
     elif doc_url == QUERY_DOCUMENT_EXAMPLE_2["doc_url"]:
-      chunk_list = QUERY_DOCUMENT_CHUNK_EXAMPLE_2["text"]
+      chunk_list = [QUERY_DOCUMENT_CHUNK_EXAMPLE_2["text"]] # List of one string
     else:
       chunk_list = None
-    return chunk_list, chunk_list
+    return chunk_list
+
+  def chunk_document_multi(self, doc_name:str, doc_url: str,
+                            doc_filepath: str) -> List[str]:
+    if doc_url == QUERY_DOCUMENT_EXAMPLE_1["doc_url"]:
+      chunk_list = [{
+        "image_b64": "fake_val",
+        "image_url": "fake_url",
+        "text_chunks": ""
+      }] # List of one dict
+    elif doc_url == QUERY_DOCUMENT_EXAMPLE_2["doc_url"]:
+      chunk_list = [{
+        "image_b64": "fake_val",
+        "image_url": "fake_url",
+        "text_chunks": ""
+      }] # List of one dict
+    else:
+      chunk_list = None
+    return chunk_list
 
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.llm_chat")
@@ -208,6 +236,24 @@ async def test_query_generate(mock_query_search, mock_llm_chat,
   assert len(query_references) == 2
   assert query_references[0] == create_query_reference
   assert query_references[1] == create_query_reference_2
+
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.llm_chat")
+@mock.patch("services.query.query_service.query_search")
+async def test_query_generate_auth_error(mock_query_search, mock_llm_chat,
+                        restore_config, create_engine, create_user,
+                        create_query_result, create_query_reference,
+                        create_query_reference_2):
+  prompt = QUERY_EXAMPLE["prompt"]
+  mock_query_search.return_value = [create_query_reference,
+                                    create_query_reference_2]
+  mock_llm_chat.return_value = FAKE_GENERATE_RESPONSE
+  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                  return_value=False):
+    with pytest.raises(Exception) as excinfo:
+      _, _ = await query_generate(create_user.id, prompt, create_engine)
+  assert excinfo.type == UnauthorizedUserError
+  assert str(excinfo.value) == "User does not have access to model"
 
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.llm_chat")
@@ -286,12 +332,15 @@ async def test_query_search(mock_get_top_relevant_sentences,
   assert query_references[1].chunk_id == qdoc_chunk2.id
   assert query_references[2].chunk_id == qdoc_chunk3.id
 
-
+# Test of query_engine_build function, with no optional input argument params
+# Uses same 3 example docs as other tests of this function
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.build_doc_index")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
-async def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
-                            create_query_docs, create_user):
+async def test_query_engine_build(mock_get_vector_store,
+                                  mock_build_doc_index,
+                                  create_query_docs,
+                                  create_user):
   mock_get_vector_store.return_value = FakeVectorStore()
   mock_build_doc_index.return_value = (
       [create_query_docs[0], create_query_docs[1]],
@@ -300,7 +349,8 @@ async def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   doc_url = FAKE_GCS_PATH
   q_engine, docs_processed, docs_not_processed = \
       await query_engine_build(doc_url,
-                               QUERY_ENGINE_EXAMPLE["name"], create_user.id)
+                               QUERY_ENGINE_EXAMPLE["name"],
+                               create_user.id)
   assert q_engine.created_by == create_user.id
   assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
   assert q_engine.doc_url == doc_url
@@ -314,7 +364,8 @@ async def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   }
   q_engine_2, docs_processed, docs_not_processed = \
       await query_engine_build(doc_url,
-                               "test integrated search", create_user.id,
+                               "test integrated search",
+                               create_user.id,
                                query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
                                params=build_params)
   assert docs_processed == []
@@ -322,10 +373,112 @@ async def test_query_engine_build(mock_get_vector_store, mock_build_doc_index,
   q_engine = QueryEngine.find_by_id(q_engine.id)
   assert q_engine.parent_engine_id == q_engine_2.id
 
+# Test of query_engine_build function, with optional input argument params,
+# which includes is_multimodal=True
+# Uses same 3 example docs as other tests of this function
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.build_doc_index")
+@mock.patch("services.query.query_service.vector_store_from_query_engine")
+async def test_query_engine_build_multi(mock_get_vector_store,
+                                        mock_build_doc_index,
+                                        create_query_docs,
+                                        create_user):
+  mock_get_vector_store.return_value = FakeVectorStore()
+  mock_build_doc_index.return_value = (
+      [create_query_docs[0], create_query_docs[1]],
+      [create_query_docs[2]]
+  )
+  doc_url = FAKE_GCS_PATH
+  build_params = {
+    "is_multimodal": "True"
+  }
+  q_engine, docs_processed, docs_not_processed = \
+      await query_engine_build(doc_url=doc_url,
+                               query_engine=QUERY_ENGINE_EXAMPLE["name"],
+                               user_id=create_user.id,
+                               params=build_params)
+  assert q_engine.created_by == create_user.id
+  assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
+  assert q_engine.doc_url == doc_url
+  assert q_engine.params["is_multimodal"].lower() ==\
+    build_params["is_multimodal"].lower()
+  assert docs_processed == [create_query_docs[0], create_query_docs[1]]
+  assert docs_not_processed == [create_query_docs[2]]
+
+  # test integrated search build
+  doc_url = ""
+  build_params = {
+    "associated_engines": q_engine.name,
+    "is_multimodal": "True"
+  }
+  q_engine_2, docs_processed, docs_not_processed =\
+      await query_engine_build(doc_url=doc_url,
+                               query_engine="test integrated search",
+                               user_id=create_user.id,
+                               query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
+                               params=build_params)
+  assert docs_processed == []
+  assert docs_not_processed == []
+  q_engine = QueryEngine.find_by_id(q_engine.id)
+  assert q_engine.parent_engine_id == q_engine_2.id
+
+# Test of query_engine_build function, with optional input argument params,
+# which includes is_multimodal=False
+# Uses same 3 example docs as other tests of this function
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.build_doc_index")
+@mock.patch("services.query.query_service.vector_store_from_query_engine")
+async def test_query_engine_build_textonly(mock_get_vector_store,
+                                           mock_build_doc_index,
+                                           create_query_docs,
+                                           create_user):
+  mock_get_vector_store.return_value = FakeVectorStore()
+  mock_build_doc_index.return_value = (
+      [create_query_docs[0], create_query_docs[1]],
+      [create_query_docs[2]]
+  )
+  doc_url = FAKE_GCS_PATH
+  build_params = {
+    "is_multimodal": "False"
+  }
+  q_engine, docs_processed, docs_not_processed =\
+      await query_engine_build(doc_url=doc_url,
+                               query_engine=QUERY_ENGINE_EXAMPLE["name"],
+                               user_id=create_user.id,
+                               params=build_params)
+  assert q_engine.created_by == create_user.id
+  assert q_engine.name == QUERY_ENGINE_EXAMPLE["name"]
+  assert q_engine.doc_url == doc_url
+  assert q_engine.params["is_multimodal"].lower() ==\
+    build_params["is_multimodal"].lower()
+  assert docs_processed == [create_query_docs[0], create_query_docs[1]]
+  assert docs_not_processed == [create_query_docs[2]]
+
+  # test integrated search build
+  doc_url = ""
+  build_params = {
+    "associated_engines": q_engine.name,
+    "is_multimodal": "False"
+  }
+  q_engine_2, docs_processed, docs_not_processed = \
+      await query_engine_build(doc_url=doc_url,
+                               query_engine="test integrated search",
+                               user_id=create_user.id,
+                               query_engine_type=QE_TYPE_INTEGRATED_SEARCH,
+                               params=build_params)
+  assert docs_processed == []
+  assert docs_not_processed == []
+  q_engine = QueryEngine.find_by_id(q_engine.id)
+  assert q_engine.parent_engine_id == q_engine_2.id
+
+# Test of build_doc_index function, with no optional input argument
+# is_multimodal (which defaults to False)
+# Uses same 3 example docs as other tests of this function
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.process_documents")
-async def test_build_doc_index(mock_process_documents, create_engine,
-                         create_query_docs):
+async def test_build_doc_index(mock_process_documents,
+                               create_engine,
+                               create_query_docs):
   doc_url = FAKE_GCS_PATH
   qe_vector_store = FakeVectorStore()
   mock_process_documents.return_value = (
@@ -334,10 +487,61 @@ async def test_build_doc_index(mock_process_documents, create_engine,
   )
   with mock.patch("google.cloud.storage.Client"):
     docs_processed, docs_not_processed = \
-        await build_doc_index(doc_url, create_engine, qe_vector_store)
+        await build_doc_index(doc_url=doc_url,
+                              q_engine=create_engine,
+                              qe_vector_store=qe_vector_store)
   assert docs_processed == [create_query_docs[0], create_query_docs[1]]
   assert docs_not_processed == [create_query_docs[2]]
 
+# Test of build_doc_index function, with optional input argument
+# is_multimodal=True
+# Uses same 3 example docs as other tests of this function
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.process_documents")
+async def test_build_doc_index_multi(mock_process_documents,
+                                     create_engine,
+                                     create_query_docs):
+  doc_url = FAKE_GCS_PATH
+  qe_vector_store = FakeVectorStore()
+  mock_process_documents.return_value = (
+      [create_query_docs[0], create_query_docs[1]],
+      [create_query_docs[2]]
+  )
+  with mock.patch("google.cloud.storage.Client"):
+    docs_processed, docs_not_processed = \
+        await build_doc_index(doc_url=doc_url,
+                              q_engine=create_engine,
+                              qe_vector_store=qe_vector_store,
+                              is_multimodal=True)
+  assert docs_processed == [create_query_docs[0], create_query_docs[1]]
+  assert docs_not_processed == [create_query_docs[2]]
+
+# Test of build_doc_index function, with optional input argument
+# is_multimodal=False
+# Uses same 3 example docs as other tests of this function
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.process_documents")
+async def test_build_doc_index_textonly(mock_process_documents,
+                                        create_engine,
+                                        create_query_docs):
+  doc_url = FAKE_GCS_PATH
+  qe_vector_store = FakeVectorStore()
+  mock_process_documents.return_value = (
+      [create_query_docs[0], create_query_docs[1]],
+      [create_query_docs[2]]
+  )
+  with mock.patch("google.cloud.storage.Client"):
+    docs_processed, docs_not_processed = \
+        await build_doc_index(doc_url=doc_url,
+                              q_engine=create_engine,
+                              qe_vector_store=qe_vector_store,
+                              is_multimodal=False)
+  assert docs_processed == [create_query_docs[0], create_query_docs[1]]
+  assert docs_not_processed == [create_query_docs[2]]
+
+# Test of process_documents function, with no optional input argument
+# is_multimodal (which defaults to False)
+# Uses same 3 example docs as other tests of this function
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.datasource_from_url")
 async def test_process_documents(mock_get_datasource, create_engine):
@@ -347,7 +551,50 @@ async def test_process_documents(mock_get_datasource, create_engine):
   Path(DSF1.local_path).touch()
   Path(DSF2.local_path).touch()
   docs_processed, docs_not_processed = \
-      await process_documents(doc_url, qe_vector_store, create_engine, None)
+      await process_documents(doc_url=doc_url,
+                              qe_vector_store=qe_vector_store,
+                              q_engine=create_engine,
+                              storage_client=None)
+  assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
+  assert set(docs_not_processed) == {DSF3.src_url}
+
+# Test of process_documents function, with optional input argument
+# is_multimodal=True
+# Uses same 3 example docs as other tests of this function
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.datasource_from_url")
+async def test_process_documents_multi(mock_get_datasource, create_engine):
+  mock_get_datasource.return_value = FakeDataSource()
+  doc_url = FAKE_GCS_PATH
+  qe_vector_store = FakeVectorStore()
+  Path(DSF1.local_path).touch()
+  Path(DSF2.local_path).touch()
+  docs_processed, docs_not_processed = \
+      await process_documents(doc_url=doc_url,
+                              qe_vector_store=qe_vector_store,
+                              q_engine=create_engine,
+                              storage_client=None,
+                              is_multimodal=True)
+  assert {doc.doc_url for doc in docs_processed} == {DSF1.src_url, DSF2.src_url}
+  assert set(docs_not_processed) == {DSF3.src_url}
+
+# Test of process_documents function, with optional input argument
+# is_multimodal=False
+# Uses same 3 example docs as other tests of this function
+@pytest.mark.asyncio
+@mock.patch("services.query.query_service.datasource_from_url")
+async def test_process_documents_textonly(mock_get_datasource, create_engine):
+  mock_get_datasource.return_value = FakeDataSource()
+  doc_url = FAKE_GCS_PATH
+  qe_vector_store = FakeVectorStore()
+  Path(DSF1.local_path).touch()
+  Path(DSF2.local_path).touch()
+  docs_processed, docs_not_processed = \
+      await process_documents(doc_url=doc_url,
+                              qe_vector_store=qe_vector_store,
+                              q_engine=create_engine,
+                              storage_client=None,
+                              is_multimodal=False)
   assert {doc.doc_url for doc in docs_processed} == \
          {DSF1.src_url, DSF2.src_url}
   assert set(docs_not_processed) == {DSF3.src_url}

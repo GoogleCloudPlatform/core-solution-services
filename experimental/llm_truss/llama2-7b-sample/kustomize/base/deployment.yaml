@@ -39,3 +39,5 @@ spec:
           resources:
             limits:
               nvidia.com/gpu: "1"
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-l4

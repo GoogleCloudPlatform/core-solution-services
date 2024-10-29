@@ -17,6 +17,7 @@ gcloud container node-pools create gpu-node-pool \
   --disk-type pd-balanced \
   --disk-size 100 \
   --num-nodes=1
+
 gcloud container node-pools list --region=${REGION} --cluster=${CLUSTER_NAME}
 ```
 
@@ -32,7 +33,6 @@ kubectl create secret generic hf-secret \
   --dry-run=client -o yaml | kubectl apply -f -
 kubectl describe secret hf-secret
 ```
-
 
 ## Deployment
 Deploy Gemma 2B LLM using `kubectl`

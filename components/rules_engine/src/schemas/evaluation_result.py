@@ -14,7 +14,7 @@
 
 """Pydantic Model for Rules evaluation result"""
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 from typing import Optional
 
 class EvaluationResultSchema(BaseModel):
@@ -23,18 +23,15 @@ class EvaluationResultSchema(BaseModel):
   # This is the reference API spec for Rule data model.
   rules_runner: str
   status: str
-  result: Optional[dict]
-  message: Optional[str]
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "rules_runner": "gorules",
-        "message": "Rules evaluation finished.",
-        "status": "Success",
-        "result": {
-          "sample": "test"
-        }
+  result: Optional[dict] = None
+  message: Optional[str] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "rules_runner": "gorules",
+      "message": "Rules evaluation finished.",
+      "status": "Success",
+      "result": {
+        "sample": "test"
       }
     }
+  })

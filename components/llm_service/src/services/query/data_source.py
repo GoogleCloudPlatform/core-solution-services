@@ -15,6 +15,7 @@
 Query Data Sources
 """
 import json
+import traceback
 import os
 import re
 import tempfile
@@ -33,7 +34,8 @@ from langchain_community.document_loaders import CSVLoader
 from utils.errors import NoDocumentsIndexedException
 from utils import text_helper, gcs_helper
 from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import SentenceWindowNodeParser
+from llama_index.core.node_parser import (SentenceSplitter,
+                                         SentenceWindowNodeParser)
 from llama_index.core import Document
 
 # pylint: disable=broad-exception-caught
@@ -44,6 +46,13 @@ Logger = Logger.get_logger(__file__)
 # sentence when creating chunks (chunks have overlapping text)
 CHUNK_SENTENCE_PADDING = 1
 
+# default chunk size for doc chunks
+DEFAULT_CHUNK_SIZE = 250
+
+# datasource param keys
+CHUNKING_CLASS_PARAM = "chunking_class"
+CHUNK_SIZE_PARAM = "chuck_size"
+
 class DataSourceFile():
   """ object storing meta data about a data source file """
   def __init__(self,
@@ -51,42 +60,71 @@ class DataSourceFile():
                src_url:str=None,
                local_path:str=None,
                gcs_path:str=None,
-               doc_id:str=None):
+               doc_id:str=None,
+               mime_type:str=None):
     self.doc_name = doc_name
     self.src_url = src_url
     self.local_path = local_path
     self.gcs_path = gcs_path
     self.doc_id = doc_id
+    self.mime_type = mime_type
+
+  def __repr__(self) -> str:
+    """
+    Log-friendly string representation of a DataSourceFile
+    """
+    return (
+      f"DataSourceFile(doc_name={self.doc_name}, "
+      f"src_url={self.src_url}, "
+      f"local_path={self.local_path}, "
+      f"gcs_path={self.gcs_path}, "
+      f"doc_id={self.doc_id}, "
+      f"mime_type={self.mime_type})"
+    )
+
 
 class DataSource:
   """
   Super class for query data sources. Also implements GCS DataSource.
   """
 
-  def __init__(self, storage_client):
+  def __init__(self, storage_client, params=None):
     self.storage_client = storage_client
     self.docs_not_processed = []
-    # use llama index sentence window parser
-    self.doc_parser = SentenceWindowNodeParser.from_defaults(
-      window_size=CHUNK_SENTENCE_PADDING,
-      include_metadata=True,
-      window_metadata_key="window_text",
-      original_text_metadata_key="text",
-    )
+    self.params = params or {}
+
+    # set chunk size
+    if CHUNK_SIZE_PARAM in self.params:
+      self.chunk_size = int(self.params[CHUNK_SIZE_PARAM])
+    else:
+      self.chunk_size = DEFAULT_CHUNK_SIZE
+
+    # use llama index sentence splitter for chunking
+    if CHUNKING_CLASS_PARAM in self.params \
+        and self.params[CHUNKING_CLASS_PARAM] == "SentenceWindowNodeParser":
+      self.doc_parser = SentenceWindowNodeParser.from_defaults(
+        window_size=CHUNK_SENTENCE_PADDING,
+        include_metadata=True,
+        window_metadata_key="window_text",
+        original_text_metadata_key="text",
+      )
+    else:
+      self.doc_parser = SentenceSplitter(chunk_size=self.chunk_size)
+
 
   @classmethod
-  def downloads_bucket_name(cls, q_engine: QueryEngine) -> str:
+  def downloads_bucket_name(cls, q_engine_name: str) -> str:
     """
     Generate a unique downloads bucket name, that obeys the rules of
     GCS bucket names.
 
     Args:
-        q_engine: the QueryEngine to generate the bucket name for.
+        q_engine_name: name of QueryEngine to generate the bucket name for.
 
     Returns:
         bucket name (str)
     """
-    qe_name = q_engine.name.replace(" ", "-")
+    qe_name = q_engine_name.replace(" ", "-")
     qe_name = qe_name.replace("_", "-").lower()
     bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
     if not re.fullmatch("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucket_name):
@@ -172,12 +210,9 @@ class DataSource:
        doc_url: remote url of document
        doc_filepath: local file path of document
     Returns:
-       tuple of 
-          list of text chunks or None if the document could not be processed
-          list of embedding chunks or None
+       list of text chunks or None if the document could not be processed
     """
 
-    embed_chunks = None
     text_chunks = None
 
     Logger.info(f"generating index data for {doc_name}")
@@ -197,20 +232,22 @@ class DataSource:
     if doc_text_list is not None:
       # clean text of escape and other unprintable chars
       doc_text_list = [self.clean_text(x) for x in doc_text_list]
+
       # combine text from all pages to try to avoid small chunks
       # when there is just title text on a page, for example
       doc_text = "\n".join(doc_text_list)
+
       # llama-index base class that is used by all parsers
       doc = Document(text=doc_text)
+
       # a node = a chunk of a page
       chunks = self.doc_parser.get_nodes_from_documents([doc])
+
       # remove any empty chunks
-      chunks = [c for c in chunks if c.metadata["text"].strip() != ""]
-      # this is a sentence parser with overlap --
-      # each text chunk will include the specified
-      # number of sentences before and after the current sentence
-      embed_chunks = [c.metadata["text"] for c in chunks]
-      text_chunks = [c.metadata["window_text"] for c in chunks]
+      chunks = [c for c in chunks if c.text.strip() != ""]
+
+      # get text chunks
+      text_chunks = [c.text for c in chunks]
 
       if all(element == "" for element in text_chunks):
         Logger.warning(f"All extracted pages from {doc_name} are empty.")
@@ -218,10 +255,13 @@ class DataSource:
       else:
         Logger.info(f"generated {len(text_chunks)} text chunks for {doc_name}")
 
-    return text_chunks, embed_chunks
+    return text_chunks
 
-  def chunk_document_multi(self, doc_name: str, doc_url: str,
-                     doc_filepath: str) -> List[str]:
+  def chunk_document_multi(self,
+                           doc_name: str,
+                           doc_url: str,
+                           doc_filepath: str) -> \
+                            List[object]:
     """
     Process a pdf document into multimodal chunks (b64 and text) for embeddings
 
@@ -242,53 +282,79 @@ class DataSource:
       doc_extension = doc_extension.lower()
       if doc_extension != "pdf":
         raise ValueError(f"File {doc_name} must be a PDF")
+      # TODO: Insert elif statements to check for additional types of
+      # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
+      # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
     except Exception as e:
       Logger.error(f"error reading doc {doc_name}: {e}")
 
     doc_chunks = []
     try:
-      # Convert PDF to an array of PNGs for each page
-      bucket_name = unquote(doc_url.split("/b/")[1].split("/")[0])
-      object_name = unquote(doc_url.split("/o/")[1].split("/")[0])
 
-      with tempfile.TemporaryDirectory() as path:
-        png_array = convert_from_path(doc_filepath, output_folder=path)
-      # Open PDF and iterate over pages
-      with open(doc_filepath, "rb") as f:
-        reader = PdfReader(f)
-        num_pages = len(reader.pages)
-        Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
-        for i in range(num_pages):
-          # Create a pdf file for the page and chunk into text chunks
-          pdf_doc = self.create_pdf_page(reader.pages[i], doc_filepath, i)
-          text_chunks = self.chunk_document(pdf_doc["filename"],
-                                            doc_url, pdf_doc["filepath"])
+      # Get bucket name
+      if doc_url.startswith("https://storage.googleapis.com/"):
+        bucket_name = \
+          unquote(
+            doc_url.split("https://storage.googleapis.com/")[1].split("/")[0]
+            )
+      elif doc_url.startswith("gs://"):
+        bucket_name = \
+          unquote(
+            doc_url.split("gs://")[1].split("/")[0]
+            )
+      else:
+        raise ValueError(f"Invalid Doc URL: {doc_url}")
 
-          # Take PNG version of page and convert to b64
-          png_doc_filepath = ".png".join(pdf_doc["filepath"].rsplit(".pdf", 1))
-          png_array[i].save(png_doc_filepath, format="png")
-          with open(png_doc_filepath, "rb") as f:
-            png_bytes = f.read()
-          png_b64 = b64encode(png_bytes).decode("utf-8")
+      # If doc is a PDF, convert it to an array of PNGs for each page
+      if doc_extension == "pdf":
 
-          # Upload to Google Cloud Bucket and return gs URL
-          page_png_name = ".png".join(f"{i}_{object_name}".rsplit(".pdf", 1))
-          png_url = gcs_helper.upload_to_gcs(self.storage_client,
-                        bucket_name, page_png_name, png_b64, "image/png")
+        with tempfile.TemporaryDirectory() as path:
+          png_array = convert_from_path(doc_filepath, output_folder=path)
 
-          # Clean up temp files
-          os.remove(pdf_doc["filepath"])
-          os.remove(png_doc_filepath)
+        # Open PDF and iterate over pages
+        with open(doc_filepath, "rb") as f:
+          reader = PdfReader(f)
+          num_pages = len(reader.pages)
+          Logger.info(f"Reading pdf doc {doc_name} with {num_pages} pages")
+          for i in range(num_pages):
+            # Create a pdf file for the page and chunk into text chunks
+            pdf_doc = self.create_pdf_page(reader.pages[i], doc_filepath, i)
 
-          # Push chunk object into chunk array
-          chunk_obj = {
-            "image_b64": png_b64,
-            "image_url": png_url,
-            "text_chunks": text_chunks
-          }
-          doc_chunks.append(chunk_obj)
+            text_chunks = self.chunk_document(pdf_doc["filename"],
+                                               doc_url, pdf_doc["filepath"])
+
+            # Take PNG version of page and convert to b64
+            png_doc_filepath = \
+              ".png".join(pdf_doc["filepath"].rsplit(".pdf", 1))
+            png_array[i].save(png_doc_filepath, format="png")
+            with open(png_doc_filepath, "rb") as f:
+              png_bytes = f.read()
+            png_b64 = b64encode(png_bytes).decode("utf-8")
+
+            # Upload to Google Cloud Bucket and return gs URL
+            png_url = gcs_helper.upload_to_gcs(self.storage_client,
+                                               bucket_name,
+                                               png_doc_filepath)
+
+            # Clean up temp files
+            os.remove(pdf_doc["filepath"])
+            os.remove(png_doc_filepath)
+
+            # Push chunk object into chunk array
+            chunk_obj = {
+              "image_b64": png_b64,
+              "image_url": png_url,
+              "text_chunks": text_chunks
+            }
+            doc_chunks.append(chunk_obj)
+
+      # TODO: Insert elif statements to chunk additional types of
+      # multimodal docs, such as images (PNG, JPG, BMP, GIF, TIFF, etc),
+      # videos (AVI, MP4, MOV, etc), and audio (MP3, WAV, etc)
+
     except Exception as e:
       Logger.error(f"error processing doc {doc_name}: {e}")
+      Logger.error(traceback.format_exc())
 
     # Return array of page data
     return doc_chunks

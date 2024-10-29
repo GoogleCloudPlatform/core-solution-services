@@ -39,7 +39,7 @@ class Logger:
     module_name = f"{folder}/{filename}"
     self.logger = logging.getLogger(module_name)
     handler = logging.StreamHandler(sys.stdout)
-    log_format = "%(levelname)s: [%(name)s:%(lineno)d - " \
+    log_format = "%(asctime)s:%(levelname)s: [%(name)s:%(lineno)d - " \
                  "%(funcName)s()] %(message)s"
     handler.setFormatter(logging.Formatter(log_format))
     self.logger.addHandler(handler)

@@ -19,6 +19,7 @@ import tempfile
 import traceback
 import os
 import json
+import re
 from numpy.linalg import norm
 import numpy as np
 import pandas as pd
@@ -36,7 +37,8 @@ from common.models.llm_query import (QE_TYPE_VERTEX_SEARCH,
                                      QUERY_AI_RESPONSE)
 from common.utils.auth_service import create_authz_filter
 from common.utils.errors import (ResourceNotFoundException,
-                                 ValidationError)
+                                 ValidationError,
+                                 UnauthorizedUserError)
 from common.utils.http_exceptions import InternalServerError
 from services import embeddings
 from services.llm_generate import (get_context_prompt,
@@ -58,8 +60,10 @@ from utils.errors import (NoDocumentsIndexedException,
                           ContextWindowExceededException)
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
+                    DEFAULT_MULTI_LLM_TYPE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
-                    DEFAULT_WEB_DEPTH_LIMIT)
+                    DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
+                    DEFAULT_WEB_DEPTH_LIMIT, get_model_config)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
@@ -145,6 +149,10 @@ async def query_generate(
       llm_type = q_engine.llm_type
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
+
+  # check if user has access to model
+  if not get_model_config().is_model_enabled_for_user(llm_type, user_data):
+    raise UnauthorizedUserError("User does not have access to model")
 
   # perform retrieval
   query_references = await retrieve_references(prompt,
@@ -355,10 +363,56 @@ async def query_search(q_engine: QueryEngine,
       raise ResourceNotFoundException(
         f"Query doc {doc_chunk.query_document_id} q_engine {q_engine.name}")
 
+    query_reference = make_query_reference(q_engine=q_engine,
+                                           query_doc=query_doc,
+                                           doc_chunk=doc_chunk,
+                                           query_embeddings=query_embeddings,
+                                           rank_sentences=rank_sentences)
+    query_reference.save()
+    query_references.append(query_reference)
+
+  Logger.info(f"Retrieved {len(query_references)} "
+               f"references={query_references}")
+  return query_references
+
+
+# Create a single QueryReference object
+def make_query_reference(q_engine: QueryEngine,
+                           query_doc: QueryDocument,
+                           doc_chunk: QueryDocumentChunk,
+                           query_embeddings: List[Optional[List[float]]],
+                           rank_sentences: bool = False) -> \
+                            QueryReference:
+  """
+  Make a single QueryReference object, with appropriate fields
+  for modality
+  
+  Args:
+    q_engine: The QueryEngine object that was searched
+    query_doc: The QueryDocument object retreived from q_engine
+    doc_chunk: The QueryDocumentChunk object of the retrieved query_doc
+    query_embeddings: The embedding vector for the query prompt
+    
+  Returns:
+    query_reference: The QueryReference object corresponding to doc_chunk
+  """
+
+  # Get modality of document chunk, make lowercase
+  # If modality is None, set it equal to default value "text"
+  modality = doc_chunk.modality
+  if modality is None:
+    modality = "text"
+  modality = modality.casefold()
+
+  # Clean up text chunk
+  if modality=="text":
+
+    # Clean up text in document chunk.
     clean_text = doc_chunk.clean_text
     if not clean_text:
       clean_text = text_helper.clean_text(doc_chunk.text)
 
+    # Pick out sentences from document chunk and rank them.
     if rank_sentences:
       # Assemble sentences from a document chunk. Currently it gets the
       # sentences from the top-ranked document chunk.
@@ -374,21 +428,51 @@ async def query_search(q_engine: QueryEngine,
             expand_neighbors=2, highlight_top_sentence=True)
         clean_text = " ".join(top_sentences)
 
-    # save query reference
-    query_reference = QueryReference(
-      query_engine_id=q_engine.id,
-      query_engine=q_engine.name,
-      document_id=query_doc.id,
-      document_url=query_doc.doc_url,
-      chunk_id=doc_chunk.id,
-      document_text=clean_text
-    )
-    query_reference.save()
-    query_references.append(query_reference)
+  # Clean up image chunk
+  elif modality=="image":
+    # TODO: Placeholder to fill with actual logic
+    pass
 
-  Logger.info(f"Retrieved {len(query_references)} "
-               f"references={query_references}")
-  return query_references
+  # Clean up video chunk
+  elif modality=="video":
+    # TODO: Placeholder to fill with actual logic
+    pass
+
+  # Clean up audio chunk
+  elif modality=="audio":
+    # TODO: Placeholder to fill with actual logic
+    pass
+
+  # Create dict to hold all fields of query_reference,
+  # depending on its modality
+  query_reference_dict = {}
+  # For chunk of any modality
+  query_reference_dict["query_engine_id"]=q_engine.id
+  query_reference_dict["query_engine"]=q_engine.name
+  query_reference_dict["document_id"]=query_doc.id
+  query_reference_dict["document_url"]=query_doc.doc_url
+  query_reference_dict["modality"]=modality
+  query_reference_dict["chunk_id"]=doc_chunk.id
+  # For text chunk only
+  if modality=="text":
+    query_reference_dict["page"]=doc_chunk.page
+    query_reference_dict["document_text"]=clean_text
+  # For image chunk only
+  elif modality=="image":
+    query_reference_dict["page"]=doc_chunk.page
+    query_reference_dict["chunk_url"]=doc_chunk.chunk_url
+  # For video and audio chunks only
+  elif modality in {"video", "audio"}:
+    query_reference_dict["chunk_url"]=doc_chunk.chunk_url
+    query_reference_dict["timestamp_start"]=doc_chunk.timestamp_start
+    query_reference_dict["timestamp_stop"]=doc_chunk.timestamp_stop
+
+  # Create query_reference out of dict
+  query_reference = QueryReference.from_dict(query_reference_dict)
+
+  # Return query_reference
+  return query_reference
+
 
 def rerank_references(prompt: str,
                       query_references: List[QueryReference]) -> \
@@ -637,27 +721,23 @@ async def query_engine_build(doc_url: str,
   Raises:
     ValidationError if the named query engine already exists
   """
+  # cleanup and validation of name
+  query_engine = query_engine.strip()
+  if not re.fullmatch(r"^[a-zA-Z0-9][\w\s-]*$", query_engine):
+    raise ValidationError(f"Invalid query engine name {query_engine}")
+
   q_engine = QueryEngine.find_by_name(query_engine)
   if q_engine is not None:
     raise ValidationError(f"Query engine {query_engine} already exists")
 
-  # create model
-  if llm_type is None:
-    llm_type = DEFAULT_QUERY_CHAT_MODEL
-
-  if embedding_type is None:
-    embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
-
-  if not query_engine_type:
-    query_engine_type = QE_TYPE_LLM_SERVICE
-
-  if query_engine_type in (QE_TYPE_VERTEX_SEARCH,
-                           QE_TYPE_INTEGRATED_SEARCH):
-    # no vector store set for vertex search or integrated search
-    vector_store_type = None
-
   # process special build params
   params = params or {}
+
+  is_multimodal = False
+  if "is_multimodal" in params and isinstance(params["is_multimodal"], str):
+    is_multimodal = params["is_multimodal"].lower()
+    is_multimodal = is_multimodal == "true"
+
   is_public = True
   if "is_public" in params and isinstance(params["is_public"], str):
     is_public = params["is_public"].lower()
@@ -679,6 +759,27 @@ async def query_engine_build(doc_url: str,
   manifest_url = None
   if "manifest_url" in params:
     manifest_url = params["manifest_url"]
+
+  # create model
+  if llm_type is None:
+    if is_multimodal:
+      llm_type = DEFAULT_MULTI_LLM_TYPE
+    else:
+      llm_type = DEFAULT_QUERY_CHAT_MODEL
+
+  if embedding_type is None:
+    if is_multimodal:
+      embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
+    else:
+      embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
+
+  if not query_engine_type:
+    query_engine_type = QE_TYPE_LLM_SERVICE
+
+  if query_engine_type in (QE_TYPE_VERTEX_SEARCH,
+                           QE_TYPE_INTEGRATED_SEARCH):
+    # no vector store set for vertex search or integrated search
+    vector_store_type = None
 
   # create query engine model
   q_engine = QueryEngine(name=query_engine,
@@ -711,7 +812,10 @@ async def query_engine_build(doc_url: str,
       q_engine.update()
 
       docs_processed, docs_not_processed = \
-          await build_doc_index(doc_url, q_engine, qe_vector_store)
+          await build_doc_index(doc_url,
+                                q_engine,
+                                qe_vector_store,
+                                is_multimodal)
 
     elif query_engine_type == QE_TYPE_INTEGRATED_SEARCH:
       # for each associated query engine store the current engine as its parent
@@ -731,7 +835,8 @@ async def query_engine_build(doc_url: str,
   return q_engine, docs_processed, docs_not_processed
 
 async def build_doc_index(doc_url: str, q_engine: QueryEngine,
-                          qe_vector_store: VectorStore) -> \
+                    qe_vector_store: VectorStore,
+                    is_multimodal: Optional[bool]=False) -> \
         Tuple[List[QueryDocument], List[str]]:
   """
   Build the document index.
@@ -740,7 +845,9 @@ async def build_doc_index(doc_url: str, q_engine: QueryEngine,
 
   Args:
     doc_url: URL pointing to folder of documents
-    query_engine: the query engine name to build the index for
+    q_engine: the query engine name to build the index for
+    qe_vector_store: the vector store used for the query engine
+    is_multimodal: True if multimodal, False if text-only (default False)
 
   Returns:
     Tuple of list of QueryDocument objects of docs processed,
@@ -754,7 +861,7 @@ async def build_doc_index(doc_url: str, q_engine: QueryEngine,
   try:
     # process docs at url and upload embeddings to vector store
     docs_processed, docs_not_processed = await process_documents(
-      doc_url, qe_vector_store, q_engine, storage_client)
+      doc_url, qe_vector_store, q_engine, storage_client, is_multimodal)
 
     # make sure we actually processed some docs
     if len(docs_processed) == 0:
@@ -773,10 +880,19 @@ async def build_doc_index(doc_url: str, q_engine: QueryEngine,
     raise InternalServerError(str(e)) from e
 
 async def process_documents(doc_url: str, qe_vector_store: VectorStore,
-                            q_engine: QueryEngine, storage_client) -> \
-                            Tuple[List[QueryDocument], List[str]]:
+                      q_engine: QueryEngine, storage_client,
+                      is_multimodal: Optional[bool] = False) -> \
+                      Tuple[List[QueryDocument], List[str]]:
   """
   Process docs in data source and upload embeddings to vector store
+  
+  Args:
+    doc_url: URL pointing to folder of documents
+    qe_vector_store: the vector store used for the query engine
+    q_engine: the query engine name to build the index for
+    storage_client: client used for storing the data source
+    is_multimodal: True if multimodal, False if text-only (default False)
+  
   Returns:
      Tuple of list of QueryDocument objects for docs processed,
         list of doc urls of docs not processed
@@ -799,14 +915,18 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       index_doc_url = data_source_file.src_url
       doc_filepath = data_source_file.local_path
 
-      Logger.info(f"processing [{doc_name}]")
+      Logger.info(f"processing [{doc_name}] with {is_multimodal=}")
 
-      text_chunks, embed_chunks = data_source.chunk_document(
-        doc_name,
-        index_doc_url,
-        doc_filepath)
+      if is_multimodal:
+        doc_chunks = data_source.chunk_document_multi(doc_name,
+                                                      index_doc_url,
+                                                      doc_filepath)
+      else:
+        doc_chunks = data_source.chunk_document(doc_name,
+                                                index_doc_url,
+                                                doc_filepath)
 
-      if text_chunks is None or len(text_chunks) == 0:
+      if doc_chunks is None or len(doc_chunks) == 0:
         # unable to process this doc; skip
         Logger.error(f"unable to chunk doc [{index_doc_url}]")
         continue
@@ -818,20 +938,29 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
         metadata = metadata_manifest.get(doc_name, None)
         metadata_list = []
         if metadata is not None:
-          metadata_list = [deepcopy(metadata) for chunk in text_chunks]
-        new_index_base = \
+          metadata_list = [deepcopy(metadata) for chunk in doc_chunks]
+        if is_multimodal:
+          new_index_base = \
+            await qe_vector_store.index_document_multi(doc_name,
+                                                       doc_chunks,
+                                                       index_base)
+          Logger.info(
+            f"Successfully indexed {len(doc_chunks)} chunks for [{doc_name}]"
+            )
+        else:
+          new_index_base = \
             await qe_vector_store.index_document(doc_name,
-                                                 embed_chunks, index_base,
+                                                 doc_chunks,
+                                                 index_base,
                                                  metadata_list)
+          Logger.info(
+            f"Successfully indexed {len(doc_chunks)} chunks for [{doc_name}]"
+            )
       except Exception as e:
         # unable to process this doc; skip
         Logger.error(f"error indexing doc [{index_doc_url}]: {str(e)}")
         data_source.docs_not_processed.append(index_doc_url)
         continue
-
-      Logger.info(
-        f"Successfully indexed {len(embed_chunks)} chunks for [{doc_name}]"
-      )
 
       # cleanup temp local file
       os.remove(doc_filepath)
@@ -846,18 +975,29 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                 metadata=metadata)
       query_doc.save()
 
-      for i in range(0, len(text_chunks)):
-        # break chunks into sentences and store in chunk model
-        clean_text = data_source.clean_text(text_chunks[i])
-        sentences = data_source.text_to_sentence_list(text_chunks[i])
+      for i in range(0, len(doc_chunks)):
 
-        query_doc_chunk = QueryDocumentChunk(
-                              query_engine_id=q_engine.id,
-                              query_document_id=query_doc.id,
-                              index=i+index_base,
-                              text=text_chunks[i],
-                              clean_text=clean_text,
-                              sentences=sentences)
+        # Get string representing doc_chunks[i]
+        # Will use string to make QueryDocumentChunk object
+        if is_multimodal:
+          # doc_chunks[i] is an image, so
+          # String holds url where image is saved
+          doc_chunk=doc_chunks[i]["image_url"]
+        else:
+          # doc_chunks[i] is text, so
+          # String holds text itself
+          doc_chunk=doc_chunks[i]
+
+        # Make QueryDocumentChunk object for doc_chunk
+        query_doc_chunk = make_query_document_chunk(
+          query_engine_id=q_engine.id,
+          query_document_id=query_doc.id,
+          index=i+index_base,
+          doc_chunk=doc_chunk,
+          page=i,
+          data_source=data_source,
+          is_multimodal=is_multimodal,
+        )
         query_doc_chunk.save()
 
       Logger.info(f"doc chunk models created for [{doc_name}]")
@@ -866,6 +1006,100 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       docs_processed.append(query_doc)
 
   return docs_processed, data_source.docs_not_processed
+
+# Create a single QueryDocumentChunk object
+def make_query_document_chunk(query_engine_id: str,
+                              query_document_id: str,
+                              index: int,
+                              doc_chunk: str,
+                              page: int,
+                              data_source: DataSource,
+                              is_multimodal: bool) -> \
+                                QueryDocumentChunk:
+  """
+  Make a single QueryDocumentChunk object, with appropriate fields
+  for modality
+  
+  Args:
+    query_engine_id: The ID of the query engine
+    query_document_id: The ID of the document that the doc_chunk came from
+    index: The index assigned to the doc_chunk 
+    doc_chunk: String representing the doc_chunk
+      If doc_chunk is text, then string holds the text itself
+      If doc_chunk is an image, then string holds the url
+        of the cloud bucket where the image is saved
+    page: The page of the document that the doc_chunk came from
+    data_source: The data source class of the document
+    is_multimodal: True if multimodal processing, False if text-only
+  
+  Returns:
+    query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
+  """
+
+  # Set modality
+  if is_multimodal:
+    modality="image"  # Fix later to not assume all multimodal docs are images
+  else:
+    modality="text"
+
+  # Clean up text chunk
+  if modality=="text":
+    # doc_chunk is a string holding the text itself
+    clean_text = data_source.clean_text(doc_chunk)
+    sentences = data_source.text_to_sentence_list(doc_chunk)
+
+  # Clean up image chunk
+  elif modality=="image":
+    #TODO: If needed, insert logic to filter, tile, or otherwise
+    #pre-process image
+    pass
+
+  # Clean up video chunk
+  elif modality=="video":
+    #TODO: If needed, insert logic to filter, transcribe, or otherwise
+    #pre-process video
+    pass
+
+  # Clean up audio chunk
+  elif modality=="audio":
+    #TODO: If needed, insert logic to filter, transcribe, or otherwise
+    #pre-process audio.
+    pass
+
+  # Create dict to hold all fields of query_document_chunk,
+  # depending on its modality
+  query_document_chunk_dict = {}
+  # For chunk of any modality
+  query_document_chunk_dict["query_engine_id"]=query_engine_id
+  query_document_chunk_dict["query_document_id"]=query_document_id
+  query_document_chunk_dict["index"]=index
+  query_document_chunk_dict["modality"]=modality
+  # For text chunk only
+  if modality=="text":
+    # doc_chunk is a string holding text itself
+    query_document_chunk_dict["page"]=page
+    query_document_chunk_dict["text"]=doc_chunk
+    query_document_chunk_dict["clean_text"]=clean_text
+    query_document_chunk_dict["sentences"]=sentences
+  # For image chunk only
+  elif modality=="image":
+    # doc_chunk is a string holding url of the file that the image is saved to
+    query_document_chunk_dict["page"]=page
+    query_document_chunk_dict["chunk_url"]=doc_chunk
+  # For video and audio chunks only
+  elif modality in {"video", "audio"}:
+    #TODO: Insert logic to set values of the following keys:
+    #  "chunk_url": Holds url to the file that the video/audio is saved to
+    #  "timestamp_start": Holds timestamp of beginning of video/audio chunk
+    #  "timestamp_stop": Holds timestamp of ending of video/audio chunk
+    pass
+
+  # Create query_document_chunk out of dict
+  query_document_chunk = QueryDocumentChunk.from_dict(query_document_chunk_dict)
+
+  # Return query_document_chunk
+  return query_document_chunk
+
 
 def vector_store_from_query_engine(q_engine: QueryEngine) -> VectorStore:
   """
@@ -896,7 +1130,7 @@ def datasource_from_url(doc_url: str,
   If not raise an InternalServerError exception.
   """
   if doc_url.startswith("gs://"):
-    return DataSource(storage_client)
+    return DataSource(storage_client, q_engine.params)
   elif doc_url.startswith("http://") or doc_url.startswith("https://"):
     params = q_engine.params or {}
     if "depth_limit" in params:
@@ -905,23 +1139,28 @@ def datasource_from_url(doc_url: str,
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
     # Create bucket name using query_engine name
-    bucket_name = WebDataSource.downloads_bucket_name(q_engine)
+    bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
     return WebDataSource(storage_client,
+                         params=q_engine.params,
                          bucket_name=bucket_name,
                          depth_limit=depth_limit)
   elif doc_url.startswith("shpt://"):
     # Create bucket name using query_engine name
-    bucket_name = SharePointDataSource.downloads_bucket_name(q_engine)
+    bucket_name = SharePointDataSource.downloads_bucket_name(q_engine.name)
     return SharePointDataSource(storage_client,
+                                q_engine.params,
                                 bucket_name=bucket_name)
   else:
     raise InternalServerError(
         f"No datasource available for doc url [{doc_url}]")
 
-def delete_engine(q_engine: QueryEngine, hard_delete=False):
+def delete_engine(q_engine: QueryEngine, hard_delete: bool=False):
   """
   Delete query engine and associated models and vector store data.
   """
+  Logger.info(f"Deleting query engine [{q_engine.id}]"
+              f" hard_delete=[{hard_delete}]")
+
   # delete vector store data
   try:
     if q_engine.query_engine_type == QE_TYPE_VERTEX_SEARCH:
@@ -935,7 +1174,7 @@ def delete_engine(q_engine: QueryEngine, hard_delete=False):
         f"error deleting vector store for query engine {q_engine.id}")
     Logger.error(traceback.print_exc())
 
-  if hard_delete:
+  if hard_delete is True:
     Logger.info(f"performing hard delete of query engine {q_engine.id}")
 
     # delete query docs and chunks

@@ -14,7 +14,7 @@
 
 """Pydantic Model for Email's related API's"""
 
-from pydantic import BaseModel
+from pydantic import ConfigDict, BaseModel
 
 class CreateSheetSchema(BaseModel):
   """Email Pydantic Model"""
@@ -23,14 +23,11 @@ class CreateSheetSchema(BaseModel):
   columns: list
   rows: list
   share_emails: list
-
-  class Config:
-    orm_mode = True
-    schema_extra = {
-      "example": {
-        "name": "Name of the Spreadsheet",
-        "columns": ["A", "B"],
-        "rows": [[1,2], [3,4]],
-        "share_emails": ["test@example.com"]
-      }
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+    "example": {
+      "name": "Name of the Spreadsheet",
+      "columns": ["A", "B"],
+      "rows": [[1,2], [3,4]],
+      "share_emails": ["test@example.com"]
     }
+  })

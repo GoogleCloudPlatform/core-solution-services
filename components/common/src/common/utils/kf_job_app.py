@@ -28,8 +28,8 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 from common.utils.errors import BatchJobError
 from common.models.batch_job import BatchJobModel
-from common.utils.config import (DEFAULT_JOB_LIMITS, DEFAULT_JOB_REQUESTS)
-from common.utils.config import (JOB_TYPES_WITH_PREDETERMINED_TITLES,
+from common.utils.config import (DEFAULT_JOB_LIMITS, DEFAULT_JOB_REQUESTS,
+                                 JOB_TYPES_WITH_PREDETERMINED_TITLES,
                                  BATCH_JOB_FETCH_TIME,
                                  BATCH_JOB_PENDING_TIME_THRESHOLD,
                                  GCLOUD_LOG_URL)
