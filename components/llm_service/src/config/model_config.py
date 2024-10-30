@@ -60,6 +60,7 @@ KEY_MODEL_ENDPOINT = "model_endpoint"
 KEY_VENDOR = "vendor"
 KEY_DIMENSION = "dimension"
 KEY_ROLE_ACCESS = "roles"
+KEY_SUB_PROVIDER = "sub_provider"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -81,7 +82,8 @@ MODEL_CONFIG_KEYS = [
   KEY_MODEL_ENDPOINT,
   KEY_VENDOR,
   KEY_DIMENSION,
-  KEY_ROLE_ACCESS
+  KEY_ROLE_ACCESS,
+  KEY_SUB_PROVIDER
 ]
 
 # model providers
@@ -95,6 +97,9 @@ PROVIDER_LLM_SERVICE = "LLMService"
 # model vendors
 VENDOR_OPENAI = "OpenAI"
 VENDOR_COHERE = "Cohere"
+
+# model sub-providers
+SUB_PROVIDER_OPENAPI = "OpenAPI"
 
 # model ids
 OPENAI_LLM_TYPE_GPT3_5 = "OpenAI-GPT3.5"

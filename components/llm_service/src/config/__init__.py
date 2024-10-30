@@ -114,6 +114,8 @@ from config.model_config import (
     KEY_MODEL_PATH,
     KEY_MODEL_ENDPOINT,
     KEY_VENDOR,
+    KEY_ROLE_ACCESS,
+    KEY_SUB_PROVIDER,
 
     # model providers
     PROVIDER_VERTEX,
@@ -126,6 +128,9 @@ from config.model_config import (
     # model vendors
     VENDOR_OPENAI,
     VENDOR_COHERE,
+
+    # model sub-providers
+    SUB_PROVIDER_OPENAPI,
     )
 
 from config.vector_store_config import (
