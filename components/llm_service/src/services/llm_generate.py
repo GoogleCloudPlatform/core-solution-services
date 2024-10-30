@@ -40,7 +40,7 @@ from config import (get_model_config, get_provider_models,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
-                    DEFAULT_LLM_TYPE, DEFAULT_MULTI_LLM_TYPE,
+                    DEFAULT_LLM_TYPE, DEFAULT_MULTIMODAL_LLM_TYPE,
                     KEY_SUB_PROVIDER, SUB_PROVIDER_OPENAPI)
 from services.langchain_service import langchain_llm_generate
 from services.query.data_source import DataSourceFile
