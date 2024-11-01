@@ -271,7 +271,10 @@ class WebDataSource(DataSource):
     settings = {
       "ROBOTSTXT_OBEY": False,
       "DEPTH_LIMIT": self.depth_limit,
-      "LOG_LEVEL": "INFO"
+      "LOG_LEVEL": "INFO",
+      "DOWNLOAD_TIMEOUT": 360,
+      "CLOSESPIDER_TIMEOUT": 1800,
+      "CLOSESPIDER_TIMEOUT_NO_ITEM": 300,
     }
     # create the Scrapy crawler process
     process = CrawlerProcess(settings=settings)
