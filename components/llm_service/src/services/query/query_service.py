@@ -51,7 +51,7 @@ from services.query.vector_store import (VectorStore,
                                          PostgresVectorStore,
                                          NUM_MATCH_RESULTS)
 from services.query.data_source import DataSource
-from services.query.web_datasource import WebDataSource
+from services.query.web_datasource import WebDataSource, WebDataSourceJob
 from services.query.sharepoint_datasource import SharePointDataSource
 from services.query.vertex_search import (build_vertex_search,
                                           query_vertex_search,
@@ -1125,7 +1125,7 @@ def datasource_from_url(doc_url: str,
                         q_engine: QueryEngine,
                         storage_client) -> DataSource:
   """
-  Check if doc_url is supported as a data source.  If so return
+  Check if doc_url is supported as a data source. If so return
   a DataSource class to handle the url.
   If not raise an InternalServerError exception.
   """
@@ -1138,12 +1138,20 @@ def datasource_from_url(doc_url: str,
     else:
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
+    
     # Create bucket name using query_engine name
     bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
-    return WebDataSource(storage_client,
-                         params=q_engine.params,
-                         bucket_name=bucket_name,
-                         depth_limit=depth_limit)
+    
+    # Use WebDataSource for depth_limit=0, WebDataSourceJob otherwise
+    if depth_limit == 0:
+      return WebDataSource(storage_client,
+                           params=q_engine.params
+                           bucket_name=bucket_name,
+                           depth_limit=depth_limit)
+    else:
+      return WebDataSourceJob(storage_client,
+                              q_engine.name,
+                              params=q_engine.params)
   elif doc_url.startswith("shpt://"):
     # Create bucket name using query_engine name
     bucket_name = SharePointDataSource.downloads_bucket_name(q_engine.name)
