@@ -76,6 +76,7 @@ func main() {
 		colly.MaxDepth(depthLimit),
 		colly.AllowedDomains(allowedDomains...), // Allow both with and without www
 		colly.Debugger(&debug.LogDebugger{}),
+		colly.Async(true),
 	)
 
 	// Add error handling
@@ -149,6 +150,7 @@ func main() {
 			e.Request.Visit(absoluteURL)
 		} else {
 			// Visit all links within depth limit
+			log.Printf("Visiting URL: %s", absoluteURL)
 			e.Request.Visit(absoluteURL)
 		}
 	})
