@@ -11,6 +11,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/gocolly/colly"
+	"github.com/gocolly/colly/debug"
 )
 
 // ScrapedDocument represents metadata about a scraped document
@@ -30,6 +31,7 @@ func main() {
 	if url == "" {
 		log.Fatal("URL environment variable not set")
 	}
+	log.Printf("Starting scrape of URL: %s", url)
 
 	depthLimitStr := os.Getenv("DEPTH_LIMIT")
 	if depthLimitStr == "" {
@@ -39,28 +41,49 @@ func main() {
 	if err != nil {
 		log.Fatal("Invalid DEPTH_LIMIT value")
 	}
+	log.Printf("Depth limit set to: %d", depthLimit)
 
 	projectID := os.Getenv("GCP_PROJECT")
 	if projectID == "" {
-		panic("GCP_PROJECT environment variable not set")
+		log.Fatal("GCP_PROJECT environment variable not set")
 	}
 
-	// Generate bucket name using same logic as WebDataSource class
+	// Generate bucket name
 	bucketName := fmt.Sprintf("%s-downloads-%s", projectID,
 		strings.ReplaceAll(strings.ReplaceAll(url, "://", "-"), "/", "-"))
+	log.Printf("Using bucket: %s", bucketName)
 
 	// Create a slice to store document metadata
 	var scrapedDocs []ScrapedDocument
 
-	// Create a new collector
+	baseDomain := extractDomain(url)
+	allowedDomains := []string{
+		baseDomain,
+		"www." + baseDomain,
+	}
+	log.Printf("Allowed domains: %v", allowedDomains)
+
+	// Create a new collector with debug logging
 	c := colly.NewCollector(
 		colly.MaxDepth(depthLimit),
-		colly.AllowedDomains(extractDomain(url)), // Restrict to same domain
+		colly.AllowedDomains(allowedDomains...), // Allow both with and without www
+		colly.Debugger(&debug.LogDebugger{}),
 	)
+
+	// Add error handling
+	c.OnError(func(r *colly.Response, err error) {
+		log.Printf("Error scraping %s: %v", r.Request.URL, err)
+	})
+
+	// Log when starting a new page
+	c.OnRequest(func(r *colly.Request) {
+		log.Printf("Visiting %s", r.URL.String())
+	})
 
 	// Handle all responses
 	c.OnResponse(func(r *colly.Response) {
 		contentType := r.Headers.Get("Content-Type")
+		log.Printf("Got response from %s (type: %s)", r.Request.URL, contentType)
 
 		// Generate filename from URL
 		filename := sanitizeFilename(r.Request.URL.String())
@@ -89,19 +112,43 @@ func main() {
 		log.Printf("Scraped document: %+v\n", doc)
 	})
 
-	// Add PDF link detection
+	// Add PDF link detection and handle all links
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 		link := e.Attr("href")
+		log.Printf("Found link: %s", link)
+
+		// Handle relative URLs
+		absoluteURL := e.Request.AbsoluteURL(link)
+		if absoluteURL == "" {
+			log.Printf("Skipping invalid URL: %s", link)
+			return
+		}
+
 		if strings.HasSuffix(strings.ToLower(link), ".pdf") {
-			e.Request.Visit(link)
+			log.Printf("Found PDF link: %s", absoluteURL)
+			e.Request.Visit(absoluteURL)
+		} else {
+			// Visit all links within depth limit
+			e.Request.Visit(absoluteURL)
 		}
 	})
 
 	// Start scraping
-	c.Visit(url)
+	log.Printf("Starting scrape...")
+	err = c.Visit(url)
+	if err != nil {
+		log.Printf("Error starting scrape: %v", err)
+	}
+
+	// Wait for scraping to finish
+	c.Wait()
+
+	log.Printf("Scraping complete. Found %d documents", len(scrapedDocs))
 
 	// Write results as JSON to stdout for job results
-	json.NewEncoder(os.Stdout).Encode(scrapedDocs)
+	if err := json.NewEncoder(os.Stdout).Encode(scrapedDocs); err != nil {
+		log.Printf("Error encoding results: %v", err)
+	}
 }
 
 func writeDataToGCS(bucketName, objectName string, data []byte) error {
@@ -163,10 +210,17 @@ func sanitizeFilename(url string) string {
 }
 
 func extractDomain(url string) string {
+	domain := ""
 	parts := strings.SplitN(url, "://", 2)
-	if len(parts) != 2 {
-		return ""
+	if len(parts) == 2 {
+		// Get the domain part
+		domain = strings.SplitN(parts[1], "/", 2)[0]
+
+		// Handle www and other subdomains
+		if strings.HasPrefix(domain, "www.") {
+			domain = domain[4:] // Remove www.
+		}
 	}
-	domain := strings.SplitN(parts[1], "/", 2)[0]
+	log.Printf("Extracted domain: %s from URL: %s", domain, url)
 	return domain
 }
