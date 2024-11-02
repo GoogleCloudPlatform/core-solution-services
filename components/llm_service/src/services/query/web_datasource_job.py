@@ -52,11 +52,11 @@ class WebDataSourceJob(DataSource):
       "container_image": f"gcr.io/{PROJECT_ID}/webscraper:latest"
     }
 
-    # Set environment variables
+    # Set environment variables. Depth limit for scraper is GENIE depth+1
     env_vars = {
       "GCP_PROJECT": PROJECT_ID,
       "URL": doc_url,
-      "DEPTH_LIMIT": str(self.depth_limit)
+      "DEPTH_LIMIT": str(self.depth_limit + 1)
     }
 
     # Create and start the job
