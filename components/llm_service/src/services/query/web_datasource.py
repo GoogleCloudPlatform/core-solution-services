@@ -116,9 +116,9 @@ class WebDataSourceParser:
     }
     saved_path = save_content(self.filepath, file_name, file_content)
     if self.storage_client and self.bucket_name:
-      # rename .htm files to .html for upload to GCS
+      # rename .htm, .shtml files to .html for upload to GCS
       file_extension = Path(file_name).suffix
-      if file_extension == ".htm":
+      if file_extension == ".htm" or file_extension == ".shtml":
         new_filename = Path(file_name).stem + ".html"
         new_filepath = str(Path.joinpath(
           Path(saved_path).parent,
