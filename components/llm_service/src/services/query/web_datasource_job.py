@@ -14,15 +14,17 @@ Logger = Logger.get_logger(__file__)
 class WebDataSourceJob(DataSource):
   """Web site data source that uses batch jobs for scraping"""
 
-  def __init__(self, storage_client, params=None):
+  def __init__(self, storage_client, query_engine_name: str, params=None):
     """Initialize the WebDataSourceJob
     
     Args:
         storage_client: Google cloud storage client instance
+        query_engine_name: Name of the query engine
         params: Optional parameters dict
     """
     super().__init__(storage_client, params)
     self.namespace = os.getenv("SKAFFOLD_NAMESPACE", "default")
+    self.query_engine_name = query_engine_name
 
   def download_documents(self, doc_url: str, temp_dir: str) -> List[DataSourceFile]:
     """Start webscraper job to download files from doc_url
@@ -40,7 +42,8 @@ class WebDataSourceJob(DataSource):
     job_input = {
       "url": doc_url,
       "title": f"webscraper-{doc_url.replace('://', '-').replace('/', '-')}",
-      "depth_limit": self.depth_limit
+      "depth_limit": self.depth_limit,
+      "query_engine_name": self.query_engine_name
     }
 
     job_specs = {
