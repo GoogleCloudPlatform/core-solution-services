@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webscraper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webscraper
+  template:
+    metadata:
+      labels:
+        app: webscraper
+    spec:
+      containers:
+      - name: webscraper
+        image: webscraper
+        env:
+        - name: TARGET_URL
+          value: "https://example.com"  # Replace with your target URL
+        - name: DEPTH_LIMIT
+          value: "3"
+        - name: GCS_PATH
+          value: "gs://your-bucket/path/to/output"  # Replace with your GCS path
+        # You'll need to add GCP credentials as well
+        volumeMounts:
+        - name: google-cloud-key
+          mountPath: /var/secrets/google
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
+      volumes:
+      - name: google-cloud-key
+        secret:
+          secretName: gcp-key  # Create this secret with your GCP credentials 
