@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -20,6 +21,56 @@ type ScrapedDocument struct {
 	URL         string `json:"url"`
 	GCSPath     string `json:"gcs_path"`
 	ContentType string `json:"content_type"`
+}
+
+// Add function to generate bucket name using same logic as Python code
+func generateBucketName(projectID string, qEngineName string) (string, error) {
+	// Replace spaces and underscores with hyphens, convert to lowercase
+	qeName := strings.ToLower(qEngineName)
+	qeName = strings.ReplaceAll(qeName, " ", "-")
+	qeName = strings.ReplaceAll(qeName, "_", "-")
+
+	bucketName := fmt.Sprintf("%s-downloads-%s", projectID, qeName)
+
+	// Validate bucket name matches GCS requirements
+	if match, _ := regexp.MatchString("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucketName); !match {
+		return "", fmt.Errorf("invalid bucket name: %s", bucketName)
+	}
+
+	return bucketName, nil
+}
+
+func writeDataToGCS(ctx context.Context, bucketName string, filename string, content []byte) error {
+	// Create storage client
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return fmt.Errorf("error creating storage client: %v", err)
+	}
+	defer client.Close()
+
+	// Get bucket handle and create if doesn't exist
+	bucket := client.Bucket(bucketName)
+	if _, err := bucket.Attrs(ctx); err == storage.ErrBucketNotExist {
+		log.Printf("Creating bucket %s", bucketName)
+		if err := bucket.Create(ctx, projectID, nil); err != nil {
+			return fmt.Errorf("error creating bucket: %v", err)
+		}
+	}
+
+	// Write content to GCS
+	obj := bucket.Object(filename)
+	writer := obj.NewWriter(ctx)
+
+	if _, err := writer.Write(content); err != nil {
+		return fmt.Errorf("error writing to GCS: %v", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("error closing GCS writer: %v", err)
+	}
+
+	log.Printf("Successfully wrote %s to GCS bucket %s", filename, bucketName)
+	return nil
 }
 
 func main() {
@@ -48,9 +99,16 @@ func main() {
 		log.Fatal("GCP_PROJECT environment variable not set")
 	}
 
-	// Generate bucket name
-	bucketName := fmt.Sprintf("%s-downloads-%s", projectID,
-		strings.ReplaceAll(strings.ReplaceAll(url, "://", "-"), "/", "-"))
+	qEngineName := os.Getenv("QUERY_ENGINE_NAME")
+	if qEngineName == "" {
+		log.Fatal("QUERY_ENGINE_NAME environment variable not set")
+	}
+
+	// Generate bucket name using same logic as Python code
+	bucketName, err := generateBucketName(projectID, qEngineName)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Printf("Using bucket: %s", bucketName)
 
 	// Create a slice to store document metadata
@@ -85,31 +143,43 @@ func main() {
 		contentType := r.Headers.Get("Content-Type")
 		log.Printf("Got response from %s (type: %s)", r.Request.URL, contentType)
 
+		// Skip non-HTML, non-PDF content
+		if !strings.Contains(contentType, "text/html") && !strings.Contains(contentType, "application/pdf") {
+			log.Printf("Skipping non-HTML/PDF content type: %s", contentType)
+			return
+		}
+
 		// Generate filename from URL
 		filename := sanitizeFilename(r.Request.URL.String())
-		if !strings.HasSuffix(filename, ".html") && !strings.HasSuffix(filename, ".pdf") {
-			filename += ".html"
+		if strings.Contains(contentType, "application/pdf") {
+			if !strings.HasSuffix(filename, ".pdf") {
+				filename += ".pdf"
+			}
+		} else {
+			if !strings.HasSuffix(filename, ".html") {
+				filename += ".html"
+			}
 		}
 
 		// Create GCS path
 		gcsPath := fmt.Sprintf("gs://%s/%s", bucketName, filename)
+		log.Printf("Saving content to: %s", gcsPath)
 
 		// Write content to GCS
-		err := writeDataToGCS(bucketName, filename, r.Body)
-		if err != nil {
-			log.Printf("Error writing to GCS: %v\n", err)
+		if err := writeDataToGCS(context.Background(), bucketName, filename, r.Body); err != nil {
+			log.Printf("Error writing to GCS: %v", err)
 			return
 		}
 
-		// Store document metadata
+		// Add to scraped documents
 		doc := ScrapedDocument{
-			Filename:    filename,
 			URL:         r.Request.URL.String(),
+			Filename:    filename,
 			GCSPath:     gcsPath,
 			ContentType: contentType,
 		}
 		scrapedDocs = append(scrapedDocs, doc)
-		log.Printf("Scraped document: %+v\n", doc)
+		log.Printf("Successfully saved document: %s", gcsPath)
 	})
 
 	// Add PDF link detection and handle all links
@@ -149,38 +219,6 @@ func main() {
 	if err := json.NewEncoder(os.Stdout).Encode(scrapedDocs); err != nil {
 		log.Printf("Error encoding results: %v", err)
 	}
-}
-
-func writeDataToGCS(bucketName, objectName string, data []byte) error {
-	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("storage.NewClient: %w", err)
-	}
-	defer client.Close()
-
-	bucket := client.Bucket(bucketName)
-
-	// Create bucket if it doesn't exist
-	if err := bucket.Create(ctx, "", nil); err != nil {
-		// Ignore error if bucket already exists
-		if !strings.Contains(err.Error(), "already exists") {
-			return fmt.Errorf("Bucket.Create: %w", err)
-		}
-	}
-
-	obj := bucket.Object(objectName)
-	w := obj.NewWriter(ctx)
-
-	if _, err := w.Write(data); err != nil {
-		return fmt.Errorf("Writer.Write: %w", err)
-	}
-
-	if err := w.Close(); err != nil {
-		return fmt.Errorf("Writer.Close: %w", err)
-	}
-
-	return nil
 }
 
 func sanitizeFilename(url string) string {
