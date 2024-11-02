@@ -32,7 +32,8 @@ from common.utils.config import (DEFAULT_JOB_LIMITS, DEFAULT_JOB_REQUESTS,
                                  JOB_TYPES_WITH_PREDETERMINED_TITLES,
                                  BATCH_JOB_FETCH_TIME,
                                  BATCH_JOB_PENDING_TIME_THRESHOLD,
-                                 GCLOUD_LOG_URL)
+                                 GCLOUD_LOG_URL,
+                                 JOB_TYPE_WEBSCRAPER)
 
 from common.config import GKE_SERVICE_ACCOUNT_NAME
 
@@ -174,19 +175,16 @@ def kube_create_job_object(name,
                            requests,
                            namespace="default",
                            container_name="jobcontainer",
-                           env_vars={}):
+                           env_vars={},
+                           command=None,
+                           args=None):
   """
     Create a k8 Job Object
-    Minimum definition of a job object:
-    {"api_version": None, - Str
-    "kind": None,     - Str
-    "metadata": None, - Metada Object
-    "spec": None,     -V1JobSpec
-    "status": None}   - V1Job Status
-    V1Job -> V1ObjectMeta
-          -> V1JobStatus
-          -> V1JobSpec -> V1PodTemplate -> V1PodTemplateSpec -> V1Container
-    """
+
+    Args:
+      command: Optional list of commands to override default python command
+      args: Optional list of arguments to override default args
+  """
   # Body is the object Body
   body = client.V1Job(api_version="batch/v1", kind="Job")
   # Body needs Metadata
@@ -205,13 +203,20 @@ def kube_create_job_object(name,
     limits=limits,
     requests=requests
   )
+
+  # Default command and args for Python jobs
+  if command is None:
+    command = ["python", "run_batch_job.py"]
+  if args is None:
+    args = ["--container_name", name]
+
   container = client.V1Container(
       name=container_name,
       image=container_image,
       env=env_list,
       resources=resources,
-      command=["python", "run_batch_job.py"],
-      args=["--container_name", name])
+      command=command,
+      args=args)
   template.template.spec = client.V1PodSpec(
       containers=[container],
       restart_policy="Never",
@@ -350,13 +355,24 @@ def kube_create_job(
 
     logging.info("Batch Job {}:  "
                  "creating kube job object".format(job_model.name))
+
+    # Handle different container types
+    command = None
+    args = None
+    if job_specs["type"] == JOB_TYPE_WEBSCRAPER:
+      # Webscraper uses Go binary
+      command = ["/app/main"]
+      args = []  # Add any required args for webscraper
+
     body = kube_create_job_object(
       name=name,
       container_image=container_image,
       namespace=namespace,
       env_vars=env_vars,
       limits=limits,
-      requests=requests)
+      requests=requests,
+      command=command,
+      args=args)
 
     logging.info("Batch Job {}:  "
                  "kube job body created".format(job_model.name))
