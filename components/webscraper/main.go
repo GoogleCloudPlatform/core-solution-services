@@ -23,56 +23,6 @@ type ScrapedDocument struct {
 	ContentType string `json:"content_type"`
 }
 
-// Add function to generate bucket name using same logic as Python code
-func generateBucketName(projectID string, qEngineName string) (string, error) {
-	// Replace spaces and underscores with hyphens, convert to lowercase
-	qeName := strings.ToLower(qEngineName)
-	qeName = strings.ReplaceAll(qeName, " ", "-")
-	qeName = strings.ReplaceAll(qeName, "_", "-")
-
-	bucketName := fmt.Sprintf("%s-downloads-%s", projectID, qeName)
-
-	// Validate bucket name matches GCS requirements
-	if match, _ := regexp.MatchString("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucketName); !match {
-		return "", fmt.Errorf("invalid bucket name: %s", bucketName)
-	}
-
-	return bucketName, nil
-}
-
-func writeDataToGCS(ctx context.Context, bucketName string, filename string, content []byte) error {
-	// Create storage client
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("error creating storage client: %v", err)
-	}
-	defer client.Close()
-
-	// Get bucket handle and create if doesn't exist
-	bucket := client.Bucket(bucketName)
-	if _, err := bucket.Attrs(ctx); err == storage.ErrBucketNotExist {
-		log.Printf("Creating bucket %s", bucketName)
-		if err := bucket.Create(ctx, projectID, nil); err != nil {
-			return fmt.Errorf("error creating bucket: %v", err)
-		}
-	}
-
-	// Write content to GCS
-	obj := bucket.Object(filename)
-	writer := obj.NewWriter(ctx)
-
-	if _, err := writer.Write(content); err != nil {
-		return fmt.Errorf("error writing to GCS: %v", err)
-	}
-
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("error closing GCS writer: %v", err)
-	}
-
-	log.Printf("Successfully wrote %s to GCS bucket %s", filename, bucketName)
-	return nil
-}
-
 func main() {
 	// Configure logger to write to stdout
 	log.SetOutput(os.Stdout)
@@ -166,7 +116,7 @@ func main() {
 		log.Printf("Saving content to: %s", gcsPath)
 
 		// Write content to GCS
-		if err := writeDataToGCS(context.Background(), bucketName, filename, r.Body); err != nil {
+		if err := writeDataToGCS(context.Background(), projectID, bucketName, filename, r.Body); err != nil {
 			log.Printf("Error writing to GCS: %v", err)
 			return
 		}
@@ -261,4 +211,54 @@ func extractDomain(url string) string {
 	}
 	log.Printf("Extracted domain: %s from URL: %s", domain, url)
 	return domain
+}
+
+// Add function to generate bucket name using same logic as Python code
+func generateBucketName(projectID string, qEngineName string) (string, error) {
+	// Replace spaces and underscores with hyphens, convert to lowercase
+	qeName := strings.ToLower(qEngineName)
+	qeName = strings.ReplaceAll(qeName, " ", "-")
+	qeName = strings.ReplaceAll(qeName, "_", "-")
+
+	bucketName := fmt.Sprintf("%s-downloads-%s", projectID, qeName)
+
+	// Validate bucket name matches GCS requirements
+	if match, _ := regexp.MatchString("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucketName); !match {
+		return "", fmt.Errorf("invalid bucket name: %s", bucketName)
+	}
+
+	return bucketName, nil
+}
+
+func writeDataToGCS(ctx context.Context, projectID string, bucketName string, filename string, content []byte) error {
+	// Create storage client
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return fmt.Errorf("error creating storage client: %v", err)
+	}
+	defer client.Close()
+
+	// Get bucket handle and create if doesn't exist
+	bucket := client.Bucket(bucketName)
+	if _, err := bucket.Attrs(ctx); err == storage.ErrBucketNotExist {
+		log.Printf("Creating bucket %s", bucketName)
+		if err := bucket.Create(ctx, projectID, nil); err != nil {
+			return fmt.Errorf("error creating bucket: %v", err)
+		}
+	}
+
+	// Write content to GCS
+	obj := bucket.Object(filename)
+	writer := obj.NewWriter(ctx)
+
+	if _, err := writer.Write(content); err != nil {
+		return fmt.Errorf("error writing to GCS: %v", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("error closing GCS writer: %v", err)
+	}
+
+	log.Printf("Successfully wrote %s to GCS bucket %s", filename, bucketName)
+	return nil
 }
