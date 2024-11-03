@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
-	"cloud.google.com/go/storage"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,94 +32,6 @@ func clearFirestore(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Failed to clear Firestore, status: %d", resp.StatusCode)
 	}
-}
-
-// Mock GCS storage client components
-type mockWriter struct {
-	content []byte
-}
-
-func (w *mockWriter) Write(p []byte) (n int, err error) {
-	w.content = append(w.content, p...)
-	return len(p), nil
-}
-
-func (w *mockWriter) Close() error {
-	return nil
-}
-
-func (w *mockWriter) Attrs() *storage.ObjectAttrs {
-	return &storage.ObjectAttrs{}
-}
-
-type mockObject struct {
-	name    string
-	content []byte
-}
-
-func (o *mockObject) NewWriter(ctx context.Context) io.WriteCloser {
-	return &mockWriter{content: make([]byte, 0)}
-}
-
-func (o *mockObject) Delete(ctx context.Context) error {
-	return nil
-}
-
-type mockBucket struct {
-	name    string
-	objects map[string]*mockObject
-}
-
-func (b *mockBucket) Object(name string) interface {
-	NewWriter(context.Context) io.WriteCloser
-	Delete(context.Context) error
-} {
-	if obj, exists := b.objects[name]; exists {
-		return obj
-	}
-	obj := &mockObject{name: name}
-	b.objects[name] = obj
-	return obj
-}
-
-func (b *mockBucket) Create(ctx context.Context, projectID string, attrs *storage.BucketAttrs) error {
-	return nil
-}
-
-func (b *mockBucket) Attrs(ctx context.Context) (*storage.BucketAttrs, error) {
-	return &storage.BucketAttrs{}, nil
-}
-
-func (b *mockBucket) Objects(ctx context.Context, q *storage.Query) *storage.ObjectIterator {
-	return &storage.ObjectIterator{}
-}
-
-type mockStorage struct {
-	buckets map[string]*mockBucket
-}
-
-func (s *mockStorage) Bucket(name string) interface {
-	Object(string) interface {
-		NewWriter(context.Context) io.WriteCloser
-		Delete(context.Context) error
-	}
-	Create(context.Context, string, *storage.BucketAttrs) error
-	Attrs(context.Context) (*storage.BucketAttrs, error)
-	Objects(context.Context, *storage.Query) *storage.ObjectIterator
-} {
-	if bucket, exists := s.buckets[name]; exists {
-		return bucket
-	}
-	bucket := &mockBucket{
-		name:    name,
-		objects: make(map[string]*mockObject),
-	}
-	s.buckets[name] = bucket
-	return bucket
-}
-
-func (s *mockStorage) Close() error {
-	return nil
 }
 
 func TestWebscraper(t *testing.T) {
@@ -171,12 +81,6 @@ func TestWebscraper(t *testing.T) {
 		t.Fatalf("Failed to create Firestore client: %v", err)
 	}
 	defer client.Close()
-
-	// Initialize mock storage client
-	mockClient := &mockStorage{
-		buckets: make(map[string]*mockBucket),
-	}
-	storageClient = mockClient
 
 	// Create test batch job
 	jobInput := JobInput{
