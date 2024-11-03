@@ -30,6 +30,10 @@ class WebDataSourceJob(DataSource):
     super().__init__(storage_client, params)
     self.namespace = os.getenv("SKAFFOLD_NAMESPACE", "default")
     self.query_engine_name = query_engine_name
+    if "depth_limit" in params:
+      self.depth_limit = int(params["depth_limit"])
+    else:
+      self.depth_limit = 1
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \
       List[DataSourceFile]:
