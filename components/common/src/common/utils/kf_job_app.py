@@ -273,7 +273,7 @@ def get_cloud_link(microservice_name):
 
 
 def kube_create_job(
-        job_specs, namespace="default", env_vars={}) -> BatchJobModel:
+    job_specs, namespace="default", env_vars={}, existing_job_model=None) -> BatchJobModel:
   """ Create a kube job based on the job spec """
   logging.info("kube_create_job: {}".format(job_specs))
   logging.info("kube_create_job: namespace {} env {}".format(
@@ -289,15 +289,20 @@ def kube_create_job(
     container_image = job_specs["container_image"]
     limits = job_specs.get("limits", DEFAULT_JOB_LIMITS)
     requests = job_specs.get("requests", DEFAULT_JOB_REQUESTS)
-    name = str(uuid.uuid4())  # job name
+    
+    if existing_job_model:
+      job_model = existing_job_model
+      name = job_model.id
+    else:
+      name = str(uuid.uuid4())  # job name
+      # creating a job entry in firestore
+      job_model = BatchJobModel()
+      job_model.id = name
+      job_model.type = job_specs["type"]
+      job_model.status = "pending"
+      job_model.uuid = name
+      job_model.save()
 
-    # creating a job entry in firestore
-    job_model = BatchJobModel()
-    job_model.id = name
-    job_model.type = job_specs["type"]
-    job_model.status = "pending"
-    job_model.uuid = name
-    job_model.save()
     logging.info("Batch Job {}: Started with job type "
                  "{}".format(job_model.name, job_model.type))
     logging.info("Batch Job {}: Updated Batch Job Status "
