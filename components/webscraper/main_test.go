@@ -16,34 +16,99 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Mock GCS storage client
-type mockGCSWriter struct {
+// Helper function to clear Firestore
+func clearFirestore(t *testing.T) {
+	req, err := http.NewRequest("DELETE",
+		"http://localhost:8080/emulator/v1/projects/fake-project/databases/(default)/documents",
+		nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Failed to clear Firestore: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Failed to clear Firestore, status: %d", resp.StatusCode)
+	}
+}
+
+// Mock GCS storage client components
+type mockWriter struct {
 	strings.Builder
 }
 
-func (w *mockGCSWriter) Close() error {
+func (w *mockWriter) Write(p []byte) (n int, err error) {
+	return w.Builder.Write(p)
+}
+
+func (w *mockWriter) Close() error {
 	return nil
 }
 
-type mockGCSObject struct {
+type mockObjectHandle struct {
 	name    string
 	content string
+	writer  *mockWriter
 }
 
-type mockGCSBucket struct {
-	objects map[string]*mockGCSObject
+func (o *mockObjectHandle) NewWriter(ctx context.Context) *storage.Writer {
+	o.writer = &mockWriter{}
+	return &storage.Writer{}
 }
 
-func (b *mockGCSBucket) Object(name string) *storage.ObjectHandle {
+func (o *mockObjectHandle) Delete(ctx context.Context) error {
+	return nil
+}
+
+type mockBucketHandle struct {
+	objects map[string]*mockObjectHandle
+}
+
+func (b *mockBucketHandle) Object(name string) *storage.ObjectHandle {
+	if _, exists := b.objects[name]; !exists {
+		b.objects[name] = &mockObjectHandle{name: name}
+	}
 	return &storage.ObjectHandle{}
 }
 
-func (b *mockGCSBucket) Create(ctx context.Context, projectID string, attrs *storage.BucketAttrs) error {
+func (b *mockBucketHandle) Create(ctx context.Context, projectID string, attrs *storage.BucketAttrs) error {
 	return nil
 }
 
-func (b *mockGCSBucket) Objects(ctx context.Context, q *storage.Query) *storage.ObjectIterator {
+func (b *mockBucketHandle) Attrs(ctx context.Context) (*storage.BucketAttrs, error) {
+	return nil, storage.ErrBucketNotExist
+}
+
+func (b *mockBucketHandle) Objects(ctx context.Context, q *storage.Query) *storage.ObjectIterator {
 	return &storage.ObjectIterator{}
+}
+
+// Create interface for storage client to ensure our mock matches required methods
+type storageClientInterface interface {
+	Bucket(name string) *storage.BucketHandle
+	Close() error
+}
+
+// Mock storage client
+type mockStorageClient struct {
+	buckets map[string]*mockBucketHandle
+}
+
+func (c *mockStorageClient) Bucket(name string) *storage.BucketHandle {
+	if _, exists := c.buckets[name]; !exists {
+		c.buckets[name] = &mockBucketHandle{
+			objects: make(map[string]*mockObjectHandle),
+		}
+	}
+	return &storage.BucketHandle{}
+}
+
+func (c *mockStorageClient) Close() error {
+	return nil
 }
 
 func TestWebscraper(t *testing.T) {
@@ -94,11 +159,9 @@ func TestWebscraper(t *testing.T) {
 	}
 	defer client.Close()
 
-	// Initialize mock GCS client
-	mockBucket := &mockGCSBucket{
-		objects: make(map[string]*mockGCSObject),
-	}
-	storageClient = &storage.Client{} // Set the global client to our mock
+	// Initialize mock storage client
+	mockClient := &storage.Client{}
+	storageClient = mockClient // Set the global storage client to our mock
 
 	// Create test batch job
 	jobInput := JobInput{
