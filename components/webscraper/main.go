@@ -70,9 +70,10 @@ func main() {
 
 	// Read input from jobDoc input_data
 	var jobInput JobInput
-	if err := json.NewDecoder(strings.NewReader(jobDoc.Data()["input_data"].(string))).Decode(&jobInput); err != nil {
+	if err := json.Unmarshal(jobDoc.Data()["input_data"], &jobInput); err != nil {
 		log.Fatalf("Failed to decode job input: %v", err)
 	}
+	log.Printf("Job input: %+v", jobInput)
 
 	if jobInput.URL == "" {
 		log.Fatal("URL not found in input data")
