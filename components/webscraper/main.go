@@ -277,9 +277,7 @@ func extractDomain(url string) string {
 		domain = strings.SplitN(parts[1], "/", 2)[0]
 
 		// Handle www and other subdomains
-		if strings.HasPrefix(domain, "www.") {
-			domain = domain[4:] // Remove www.
-		}
+		domain = strings.TrimPrefix(domain, "www.")
 	}
 	log.Printf("Extracted domain: %s from URL: %s", domain, url)
 	return domain
