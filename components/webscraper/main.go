@@ -174,7 +174,7 @@ func main() {
 		log.Printf("Saving content to: %s", gcsPath)
 
 		// Write content to GCS
-		if err := writeDataToGCS(context.Background(), projectID, bucketName, filename, r.Body); err != nil {
+		if err := writeDataToGCS(context.Background(), bucketName, filename, r.Body); err != nil {
 			log.Printf("Error writing to GCS: %v", err)
 			return
 		}
@@ -334,7 +334,7 @@ func initializeBucket(ctx context.Context, projectID, bucketName string) error {
 }
 
 // Modify writeDataToGCS to use global client
-func writeDataToGCS(ctx context.Context, projectID string, bucketName string, filename string, content []byte) error {
+func writeDataToGCS(ctx context.Context, bucketName string, filename string, content []byte) error {
 	// Use global storage client instead of creating new one
 	bucket := storageClient.Bucket(bucketName)
 
