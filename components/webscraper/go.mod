@@ -5,6 +5,7 @@ go 1.23
 toolchain go1.23.2
 
 require (
+	cloud.google.com/go/firestore v1.17.0
 	cloud.google.com/go/storage v1.46.0
 	github.com/gocolly/colly v1.2.0
 )
@@ -16,6 +17,7 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.5 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/iam v1.2.1 // indirect
+	cloud.google.com/go/longrunning v0.6.1 // indirect
 	cloud.google.com/go/monitoring v1.21.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 // indirect

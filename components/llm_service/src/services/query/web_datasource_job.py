@@ -1,13 +1,17 @@
 """Web data source that uses batch jobs for scraping"""
 
 import os
+import time
 from typing import List
-from google.cloud import storage
+from common.models.batch_job import BatchJobModel, JobStatus
+from common.utils.http_exceptions import InternalServerError
 from common.utils.kf_job_app import kube_create_job
-from common.models.batch_job import BatchJobModel
-from services.query.data_source import DataSource, DataSourceFile
 from common.utils.logging_handler import Logger
+from services.query.data_source import DataSource, DataSourceFile
 from config import PROJECT_ID, JOB_TYPE_WEBSCRAPER
+from timeout_decorator import timeout
+import uuid
+import json
 
 Logger = Logger.get_logger(__file__)
 
@@ -26,66 +30,98 @@ class WebDataSourceJob(DataSource):
     self.namespace = os.getenv("SKAFFOLD_NAMESPACE", "default")
     self.query_engine_name = query_engine_name
 
-  def download_documents(self, doc_url: str, temp_dir: str) -> List[DataSourceFile]:
+  def download_documents(self, doc_url: str, temp_dir: str) -> \
+      List[DataSourceFile]:
     """Start webscraper job to download files from doc_url
-    
+
     Args:
         doc_url: URL to scrape
-        temp_dir: Path to temporary directory (not used for job-based scraping)
-        
+        temp_dir: Path to temporary directory
+
     Returns:
         List of DataSourceFile objects representing scraped pages
     """
     Logger.info(f"Starting webscraper job for URL: {doc_url}")
 
-    # Create job spec
+    # Create batch job model first
+    job_model = BatchJobModel()
+    job_model.id = str(uuid.uuid4())
+    job_model.type = JOB_TYPE_WEBSCRAPER
+    job_model.status = "pending"
+    job_model.uuid = job_model.id
+    job_model.name = f"webscraper-{job_model.id[:8]}"
+    job_model.save()
+
+    # Create job spec with URL and job ID in input_data
+    # Depth limit for scraper is GENIE depth+1
     job_input = {
       "url": doc_url,
-      "title": f"webscraper-{doc_url.replace('://', '-').replace('/', '-')}",
-      "depth_limit": self.depth_limit,
-      "query_engine_name": self.query_engine_name
+      "query_engine_name": self.query_engine_name,
+      "depth_limit": str(self.depth_limit + 1),
     }
-
     job_specs = {
       "type": JOB_TYPE_WEBSCRAPER,
-      "input_data": job_input,
+      "input_data": json.dumps(job_input),  # Convert dict to JSON string
       "container_image": f"gcr.io/{PROJECT_ID}/webscraper:latest"
     }
 
-    # Set environment variables. Depth limit for scraper is GENIE depth+1
+    # Set environment variables.
     env_vars = {
       "GCP_PROJECT": PROJECT_ID,
-      "URL": doc_url,
-      "DEPTH_LIMIT": str(self.depth_limit + 1)
+      "JOB_ID": job_model.id
     }
 
-    # Create and start the job
-    job_model = kube_create_job(
+    # Create and start the job with existing job model
+    kube_create_job(
       job_specs=job_specs,
-      namespace=self.namespace, 
-      env_vars=env_vars
+      namespace=self.namespace,
+      env_vars=env_vars,
+      existing_job_model=job_model
     )
 
     Logger.info(f"Started webscraper job {job_model.id}")
 
     # Wait for job completion and get results
-    job_model = BatchJobModel.find_by_id(job_model.id)
-    while job_model.status not in ["completed", "failed"]:
+    @timeout(6000)
+    def wait_for_job(job_model):
       job_model = BatchJobModel.find_by_id(job_model.id)
+      while job_model.status not in [JobStatus.JOB_STATUS_FAILED,
+                                     JobStatus.JOB_STATUS_SUCCEEDED]:
+        time.sleep(1)
+        job_model = BatchJobModel.find_by_id(job_model.id)
 
-    if job_model.status == "failed":
-      raise Exception(f"Webscraper job failed: {job_model.error}")
+    wait_for_job(job_model)
+    if job_model.status != JobStatus.JOB_STATUS_SUCCEEDED:
+      if job_model.status == JobStatus.JOB_STATUS_ACTIVE:
+        raise InternalServerError("Webscraper job timed out")
+      else:
+        raise InternalServerError(f"Webscraper job failed: {job_model.error}")
 
-    # Convert job results to DataSourceFile objects
+    # Update result processing to match new schema
     doc_files = []
-    for result in job_model.results:
-      doc_file = DataSourceFile(
-        doc_name=result["filename"],
-        src_url=result["url"], 
-        gcs_path=result["gcs_path"],
-        mime_type=result["content_type"]
-      )
-      doc_files.append(doc_file)
+    if job_model.result_data and "scraped_documents" in job_model.result_data:
+      for doc in job_model.result_data["scraped_documents"]:
+        # Parse GCS path to get bucket and blob path
+        gcs_path = doc["gcs_path"]
+        if gcs_path.startswith("gs://"):
+          bucket_name = gcs_path.split("/")[2]
+          blob_path = "/".join(gcs_path.split("/")[3:])
+        else:
+          raise InternalServerError(f"Invalid GCS path format: {gcs_path}")
+
+        # Download file from GCS
+        blob = self.storage_client.get_bucket(bucket_name).blob(blob_path)
+        local_path = os.path.join(temp_dir, doc["filename"])
+        blob.download_to_filename(local_path)
+
+        doc_file = DataSourceFile(
+            doc_name=doc["filename"],
+            src_url=doc["url"],
+            gcs_path=doc["gcs_path"],
+            mime_type=doc["content_type"],
+            local_path=local_path
+        )
+        doc_files.append(doc_file)
 
     Logger.info(f"Webscraper job completed with {len(doc_files)} files")
-    return doc_files 
+    return doc_files

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/debug"
@@ -23,35 +24,70 @@ type ScrapedDocument struct {
 	ContentType string `json:"content_type"`
 }
 
+// Add struct for job input data
+type JobInput struct {
+	URL        string `json:"url"`
+	EngineName string `json:"query_engine_name"`
+	DepthLimit string `json:"depth_limit"`
+}
+
 func main() {
 	// Configure logger to write to stdout
 	log.SetOutput(os.Stdout)
 
-	// Get environment variables
-	url := os.Getenv("URL")
-	if url == "" {
-		log.Fatal("URL environment variable not set")
-	}
-	log.Printf("Starting scrape of URL: %s", url)
-
-	depthLimitStr := os.Getenv("DEPTH_LIMIT")
-	if depthLimitStr == "" {
-		log.Fatal("DEPTH_LIMIT environment variable not set")
-	}
-	depthLimit, err := strconv.Atoi(depthLimitStr)
-	if err != nil {
-		log.Fatal("Invalid DEPTH_LIMIT value")
-	}
-	log.Printf("Depth limit set to: %d", depthLimit)
-
+	// Get GCP project ID
 	projectID := os.Getenv("GCP_PROJECT")
 	if projectID == "" {
 		log.Fatal("GCP_PROJECT environment variable not set")
 	}
 
-	qEngineName := os.Getenv("QUERY_ENGINE_NAME")
+	// Get job model ID
+	jobID := os.Getenv("JOB_ID")
+	if jobID == "" {
+		log.Fatal("Job ID environment variable not set")
+	}
+	log.Printf("Processing job ID: %s", jobID)
+
+	// Initialize Firestore client
+	ctx := context.Background()
+	firestoreClient, err := firestore.NewClient(ctx, projectID)
+	if err != nil {
+		log.Fatalf("Failed to create Firestore client: %v", err)
+	}
+	defer firestoreClient.Close()
+
+	// Get job document
+	collectionName := "batch_jobs"
+	docRef := firestoreClient.Collection(collectionName).Doc(jobID)
+	jobDoc, err := docRef.Get(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get job document: %v", err)
+	}
+
+	// Read input from jobDoc input_data
+	var jobInput JobInput
+	if err := json.NewDecoder(strings.NewReader(jobDoc.Data()["input_data"].(string))).Decode(&jobInput); err != nil {
+		log.Fatalf("Failed to decode job input: %v", err)
+	}
+
+	if jobInput.URL == "" {
+		log.Fatal("URL not found in input data")
+	}
+	log.Printf("Starting scrape of URL: %s", jobInput.URL)
+
+	depthLimitStr := jobInput.DepthLimit
+	if depthLimitStr == "" {
+		log.Fatal("depth limit not found in input data")
+	}
+	depthLimit, err := strconv.Atoi(depthLimitStr)
+	if err != nil {
+		log.Fatal("Invalid depth limit value")
+	}
+	log.Printf("Depth limit set to: %d", depthLimit)
+
+	qEngineName := jobInput.EngineName
 	if qEngineName == "" {
-		log.Fatal("QUERY_ENGINE_NAME environment variable not set")
+		log.Fatal("query engine name not found in input data")
 	}
 
 	// Generate bucket name using same logic as Python code
@@ -64,7 +100,7 @@ func main() {
 	// Create a slice to store document metadata
 	var scrapedDocs []ScrapedDocument
 
-	baseDomain := extractDomain(url)
+	baseDomain := extractDomain(jobInput.URL)
 	allowedDomains := []string{
 		baseDomain,
 		"www." + baseDomain,
@@ -157,7 +193,7 @@ func main() {
 
 	// Start scraping
 	log.Printf("Starting scrape...")
-	err = c.Visit(url)
+	err = c.Visit(jobInput.URL)
 	if err != nil {
 		log.Printf("Error starting scrape: %v", err)
 	}
@@ -171,6 +207,19 @@ func main() {
 	if err := json.NewEncoder(os.Stdout).Encode(scrapedDocs); err != nil {
 		log.Printf("Error encoding results: %v", err)
 	}
+
+	// After scraping is complete, update the job document
+	resultData := map[string]interface{}{
+		"scraped_documents": scrapedDocs,
+	}
+
+	_, err = docRef.Update(ctx, []firestore.Update{
+		{Path: "result_data", Value: resultData},
+	})
+	if err != nil {
+		log.Fatalf("Failed to update job document: %v", err)
+	}
+	log.Printf("Successfully updated job with %d scraped documents", len(scrapedDocs))
 }
 
 func sanitizeFilename(url string) string {
