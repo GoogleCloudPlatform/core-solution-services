@@ -130,7 +130,10 @@ func TestWebscraper(t *testing.T) {
 	foundPDF := false
 	for _, doc := range scrapedDocs {
 		docMap := doc.(map[string]interface{})
-		contentType := docMap["content_type"].(string)
+		contentType, ok := docMap["ContentType"].(string)
+		if !ok {
+			t.Fatalf("ContentType not found or not a string in document: %v", docMap)
+		}
 		if contentType == "text/html" {
 			foundHTML = true
 		} else if contentType == "application/pdf" {
