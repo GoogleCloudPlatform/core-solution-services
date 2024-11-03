@@ -70,7 +70,11 @@ func main() {
 
 	// Read input from jobDoc input_data
 	var jobInput JobInput
-	if err := json.Unmarshal(jobDoc.Data()["input_data"], &jobInput); err != nil {
+	inputData, ok := jobDoc.Data()["input_data"].(string)
+	if !ok {
+		log.Fatalf("Failed to get input_data as string from job document")
+	}
+	if err := json.Unmarshal([]byte(inputData), &jobInput); err != nil {
 		log.Fatalf("Failed to decode job input: %v", err)
 	}
 	log.Printf("Job input: %+v", jobInput)
