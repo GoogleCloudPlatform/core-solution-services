@@ -1138,14 +1138,14 @@ def datasource_from_url(doc_url: str,
     else:
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
-    
+
     # Create bucket name using query_engine name
     bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
-    
+
     # Use WebDataSource for depth_limit=0, WebDataSourceJob otherwise
     if depth_limit == 0:
       return WebDataSource(storage_client,
-                           params=q_engine.params
+                           params=q_engine.params,
                            bucket_name=bucket_name,
                            depth_limit=depth_limit)
     else:

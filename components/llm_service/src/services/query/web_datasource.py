@@ -118,7 +118,7 @@ class WebDataSourceParser:
     if self.storage_client and self.bucket_name:
       # rename .htm, .shtml files to .html for upload to GCS
       file_extension = Path(file_name).suffix
-      if file_extension == ".htm" or file_extension == ".shtml":
+      if file_extension in [".htm", ".shtml"]:
         new_filename = Path(file_name).stem + ".html"
         new_filepath = str(Path.joinpath(
           Path(saved_path).parent,
