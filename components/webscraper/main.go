@@ -14,6 +14,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/debug"
+	"google.golang.org/api/iterator"
 )
 
 // ScrapedDocument represents metadata about a scraped document
@@ -30,6 +31,9 @@ type JobInput struct {
 	EngineName string `json:"query_engine_name"`
 	DepthLimit string `json:"depth_limit"`
 }
+
+// Add global storage client
+var storageClient *storage.Client
 
 func main() {
 	// Configure logger to write to stdout
@@ -96,6 +100,18 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("Using bucket: %s", bucketName)
+
+	// Initialize storage client globally
+	storageClient, err = storage.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("Failed to create storage client: %v", err)
+	}
+	defer storageClient.Close()
+
+	// Initialize or clear bucket
+	if err := initializeBucket(ctx, projectID, bucketName); err != nil {
+		log.Fatalf("Failed to initialize bucket: %v", err)
+	}
 
 	// Create a slice to store document metadata
 	var scrapedDocs []ScrapedDocument
@@ -281,22 +297,43 @@ func generateBucketName(projectID string, qEngineName string) (string, error) {
 	return bucketName, nil
 }
 
-func writeDataToGCS(ctx context.Context, projectID string, bucketName string, filename string, content []byte) error {
-	// Create storage client
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		return fmt.Errorf("error creating storage client: %v", err)
-	}
-	defer client.Close()
+// Add new function to handle bucket initialization
+func initializeBucket(ctx context.Context, projectID, bucketName string) error {
+	bucket := storageClient.Bucket(bucketName)
 
-	// Get bucket handle and create if doesn't exist
-	bucket := client.Bucket(bucketName)
-	if _, err := bucket.Attrs(ctx); err == storage.ErrBucketNotExist {
+	// Check if bucket exists
+	_, err := bucket.Attrs(ctx)
+	if err == storage.ErrBucketNotExist {
 		log.Printf("Creating bucket %s", bucketName)
 		if err := bucket.Create(ctx, projectID, nil); err != nil {
 			return fmt.Errorf("error creating bucket: %v", err)
 		}
+	} else if err != nil {
+		return fmt.Errorf("error checking bucket: %v", err)
+	} else {
+		// Bucket exists, clear all objects
+		log.Printf("Clearing existing objects from bucket %s", bucketName)
+		it := bucket.Objects(ctx, nil)
+		for {
+			attrs, err := it.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				return fmt.Errorf("error listing objects: %v", err)
+			}
+			if err := bucket.Object(attrs.Name).Delete(ctx); err != nil {
+				return fmt.Errorf("error deleting object %s: %v", attrs.Name, err)
+			}
+		}
 	}
+	return nil
+}
+
+// Modify writeDataToGCS to use global client
+func writeDataToGCS(ctx context.Context, projectID string, bucketName string, filename string, content []byte) error {
+	// Use global storage client instead of creating new one
+	bucket := storageClient.Bucket(bucketName)
 
 	// Write content to GCS
 	obj := bucket.Object(filename)
