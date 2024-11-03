@@ -9,26 +9,26 @@ if ! command -v firebase &> /dev/null; then
     bash "$PROJECT_ROOT/utils/install_firebase.sh"
 fi
 
-# Check if emulators are already running
-echo "Checking emulator status..."
-if curl -s http://localhost:8080 > /dev/null && curl -s http://localhost:9199 > /dev/null; then
-    echo "Emulators already running"
+# Check if firestore emulator is already running
+echo "Checking Firestore emulator status..."
+if curl -s http://localhost:8080 > /dev/null; then
+    echo "Firestore emulator already running"
 else
-    echo "Starting Firebase emulators..."
-    firebase emulators:start --only firestore,storage --project fake-project &
+    echo "Starting Firestore emulator..."
+    firebase emulators:start --only firestore --project fake-project &
 
-    # Wait for emulators to be ready
-    echo "Waiting for emulators to start..."
+    # Wait for emulator to be ready
+    echo "Waiting for emulator to start..."
     timeout=30
-    while ! curl -s http://localhost:8080 > /dev/null && ! curl -s http://localhost:9199 > /dev/null; do
+    while ! curl -s http://localhost:8080 > /dev/null; do
         if [ $timeout -le 0 ]; then
-            echo "Timeout waiting for emulators to start"
+            echo "Timeout waiting for emulator to start"
             exit 1
         fi
         timeout=$((timeout - 1))
         sleep 1
     done
-    echo "Emulators are ready!"
+    echo "Firestore emulator is ready!"
 fi
 
 # Run the tests

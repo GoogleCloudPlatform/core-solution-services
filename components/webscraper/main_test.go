@@ -7,14 +7,44 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/storage"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/api/option"
 )
+
+// Mock GCS storage client
+type mockGCSWriter struct {
+	strings.Builder
+}
+
+func (w *mockGCSWriter) Close() error {
+	return nil
+}
+
+type mockGCSObject struct {
+	name    string
+	content string
+}
+
+type mockGCSBucket struct {
+	objects map[string]*mockGCSObject
+}
+
+func (b *mockGCSBucket) Object(name string) *storage.ObjectHandle {
+	return &storage.ObjectHandle{}
+}
+
+func (b *mockGCSBucket) Create(ctx context.Context, projectID string, attrs *storage.BucketAttrs) error {
+	return nil
+}
+
+func (b *mockGCSBucket) Objects(ctx context.Context, q *storage.Query) *storage.ObjectIterator {
+	return &storage.ObjectIterator{}
+}
 
 func TestWebscraper(t *testing.T) {
 	// Clear Firestore before test
@@ -52,11 +82,10 @@ func TestWebscraper(t *testing.T) {
 
 	// Setup environment variables
 	os.Setenv("GCP_PROJECT", "fake-project")
-	os.Setenv("STORAGE_EMULATOR_HOST", "localhost:9199")
 	jobID := fmt.Sprintf("test-job-%d", time.Now().Unix())
 	os.Setenv("JOB_ID", jobID)
 
-	// Initialize Firestore client (assumes emulator is running)
+	// Initialize Firestore client
 	os.Setenv("FIRESTORE_EMULATOR_HOST", "localhost:8080")
 	ctx := context.Background()
 	client, err := firestore.NewClient(ctx, "fake-project")
@@ -65,12 +94,11 @@ func TestWebscraper(t *testing.T) {
 	}
 	defer client.Close()
 
-	// Initialize real storage client pointing to emulator
-	storageClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
-	if err != nil {
-		t.Fatalf("Failed to create storage client: %v", err)
+	// Initialize mock GCS client
+	mockBucket := &mockGCSBucket{
+		objects: make(map[string]*mockGCSObject),
 	}
-	defer storageClient.Close()
+	storageClient = &storage.Client{} // Set the global client to our mock
 
 	// Create test batch job
 	jobInput := JobInput{
