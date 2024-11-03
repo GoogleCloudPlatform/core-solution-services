@@ -1,17 +1,18 @@
 """Web data source that uses batch jobs for scraping"""
 
+import json
 import os
 import time
+import uuid
 from typing import List
+from timeout_decorator import timeout
 from common.models.batch_job import BatchJobModel, JobStatus
+from common.utils.config import JOB_TYPE_WEBSCRAPER
 from common.utils.http_exceptions import InternalServerError
 from common.utils.kf_job_app import kube_create_job
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource, DataSourceFile
-from config import PROJECT_ID, JOB_TYPE_WEBSCRAPER
-from timeout_decorator import timeout
-import uuid
-import json
+from config import PROJECT_ID
 
 Logger = Logger.get_logger(__file__)
 
