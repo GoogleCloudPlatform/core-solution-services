@@ -17,7 +17,7 @@ New features:
 - Switched to using llama_index.core.node_parser.SentenceSplitter for chunking by default
 - Updated default query generation model to Gemini Flash 1.5 - was set to Palm2
 - Added Microsoft login in React frontend
-- Add webscraping component written in go for performance. Used for web data query engines with depth > 0.
+- Add webscraping component written in Go for performance. Used for web data query engines with depth > 0.
 
 ### Fixes
 - Fixed download of PDFs from scraped sites
