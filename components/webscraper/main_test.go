@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -38,76 +38,89 @@ func clearFirestore(t *testing.T) {
 
 // Mock GCS storage client components
 type mockWriter struct {
-	strings.Builder
+	content []byte
 }
 
 func (w *mockWriter) Write(p []byte) (n int, err error) {
-	return w.Builder.Write(p)
+	w.content = append(w.content, p...)
+	return len(p), nil
 }
 
 func (w *mockWriter) Close() error {
 	return nil
 }
 
-type mockObjectHandle struct {
+func (w *mockWriter) Attrs() *storage.ObjectAttrs {
+	return &storage.ObjectAttrs{}
+}
+
+type mockObject struct {
 	name    string
-	content string
-	writer  *mockWriter
+	content []byte
 }
 
-func (o *mockObjectHandle) NewWriter(ctx context.Context) *storage.Writer {
-	o.writer = &mockWriter{}
-	return &storage.Writer{}
+func (o *mockObject) NewWriter(ctx context.Context) io.WriteCloser {
+	return &mockWriter{content: make([]byte, 0)}
 }
 
-func (o *mockObjectHandle) Delete(ctx context.Context) error {
+func (o *mockObject) Delete(ctx context.Context) error {
 	return nil
 }
 
-type mockBucketHandle struct {
-	objects map[string]*mockObjectHandle
+type mockBucket struct {
+	name    string
+	objects map[string]*mockObject
 }
 
-func (b *mockBucketHandle) Object(name string) *storage.ObjectHandle {
-	if _, exists := b.objects[name]; !exists {
-		b.objects[name] = &mockObjectHandle{name: name}
+func (b *mockBucket) Object(name string) interface {
+	NewWriter(context.Context) io.WriteCloser
+	Delete(context.Context) error
+} {
+	if obj, exists := b.objects[name]; exists {
+		return obj
 	}
-	return &storage.ObjectHandle{}
+	obj := &mockObject{name: name}
+	b.objects[name] = obj
+	return obj
 }
 
-func (b *mockBucketHandle) Create(ctx context.Context, projectID string, attrs *storage.BucketAttrs) error {
+func (b *mockBucket) Create(ctx context.Context, projectID string, attrs *storage.BucketAttrs) error {
 	return nil
 }
 
-func (b *mockBucketHandle) Attrs(ctx context.Context) (*storage.BucketAttrs, error) {
-	return nil, storage.ErrBucketNotExist
+func (b *mockBucket) Attrs(ctx context.Context) (*storage.BucketAttrs, error) {
+	return &storage.BucketAttrs{}, nil
 }
 
-func (b *mockBucketHandle) Objects(ctx context.Context, q *storage.Query) *storage.ObjectIterator {
+func (b *mockBucket) Objects(ctx context.Context, q *storage.Query) *storage.ObjectIterator {
 	return &storage.ObjectIterator{}
 }
 
-// Create interface for storage client to ensure our mock matches required methods
-type storageClientInterface interface {
-	Bucket(name string) *storage.BucketHandle
-	Close() error
+type mockStorage struct {
+	buckets map[string]*mockBucket
 }
 
-// Mock storage client
-type mockStorageClient struct {
-	buckets map[string]*mockBucketHandle
-}
-
-func (c *mockStorageClient) Bucket(name string) *storage.BucketHandle {
-	if _, exists := c.buckets[name]; !exists {
-		c.buckets[name] = &mockBucketHandle{
-			objects: make(map[string]*mockObjectHandle),
-		}
+func (s *mockStorage) Bucket(name string) interface {
+	Object(string) interface {
+		NewWriter(context.Context) io.WriteCloser
+		Delete(context.Context) error
 	}
-	return &storage.BucketHandle{}
+	Create(context.Context, string, *storage.BucketAttrs) error
+	Attrs(context.Context) (*storage.BucketAttrs, error)
+	Objects(context.Context, *storage.Query) *storage.ObjectIterator
+} {
+	if bucket, exists := s.buckets[name]; exists {
+		return bucket
+	}
+	bucket := &mockBucket{
+		name:    name,
+		objects: make(map[string]*mockObject),
+	}
+	s.buckets[name] = bucket
+	return bucket
 }
 
-func (c *mockStorageClient) Close() error {
+func (s *mockStorage) Close() error {
 	return nil
 }
 
@@ -160,8 +173,10 @@ func TestWebscraper(t *testing.T) {
 	defer client.Close()
 
 	// Initialize mock storage client
-	mockClient := &storage.Client{}
-	storageClient = mockClient // Set the global storage client to our mock
+	mockClient := &mockStorage{
+		buckets: make(map[string]*mockBucket),
+	}
+	storageClient = mockClient
 
 	// Create test batch job
 	jobInput := JobInput{
