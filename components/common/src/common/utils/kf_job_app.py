@@ -36,6 +36,8 @@ from common.utils.config import (DEFAULT_JOB_LIMITS, DEFAULT_JOB_REQUESTS,
                                  JOB_TYPE_WEBSCRAPER)
 
 from common.config import GKE_SERVICE_ACCOUNT_NAME
+from google.cloud import artifactregistry_v1
+from google.cloud.artifactregistry_v1 import ListTagsRequest
 
 # pylint: disable=dangerous-default-value
 # pylint: disable=logging-not-lazy
@@ -475,3 +477,50 @@ def find_duplicate_jobs(job_type, request_body=None):
 
   # return empty if no duplicate jobs
   return {}
+
+
+def get_latest_artifact_registry_image(repository: str, image_name: str, location="us", project_id=None):
+  """Get the latest image version from Artifact Registry
+
+  Args:
+      repository: Name of the Artifact Registry repository
+      image_name: Name of the container image
+      location: Registry location (defaults to 'us')
+      project_id: GCP project ID (defaults to None)
+
+  Returns:
+      Full image path including latest version tag
+  """
+  try:
+    client = artifactregistry_v1.ArtifactRegistryClient()
+
+    # Format: projects/{project}/locations/{location}/repositories/{repository}
+    parent = client.repository_path(project_id, location, repository)
+
+    # List tags for the image
+    request = ListTagsRequest(
+        parent=parent,
+        filter=f"package={image_name}"
+    )
+
+    # Get all tags and find the latest
+    tags = client.list_tags(request)
+    latest_tag = None
+    latest_version = None
+
+    for tag in tags:
+      if tag.version:
+        if not latest_version or tag.version > latest_version:
+          latest_tag = tag
+          latest_version = tag.version
+
+    if latest_tag:
+      # Format the full image path with version
+      return f"{location}-docker.pkg.dev/{project_id}/{repository}/{image_name}@{latest_tag.name}"
+
+    raise Exception(f"No versions found for image {image_name}")
+
+  except Exception as e:
+    logging.error(f"Error getting latest image version: {str(e)}")
+    # Fall back to default image path without version
+    return f"{location}-docker.pkg.dev/{project_id}/{repository}/{image_name}"

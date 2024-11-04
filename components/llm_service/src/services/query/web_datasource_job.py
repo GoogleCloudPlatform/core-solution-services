@@ -10,7 +10,7 @@ from common.models.batch_job import BatchJobModel, JobStatus
 from common.utils.config import JOB_TYPE_WEBSCRAPER
 from common.utils.http_exceptions import InternalServerError
 from common.utils.kf_job_app import (kube_create_job,
-                                     kube_get_namespaced_deployment_image_path)
+                                     get_latest_artifact_registry_image)
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource, DataSourceFile
 from config import PROJECT_ID, DEPLOYMENT_NAME, JOB_NAMESPACE
@@ -66,9 +66,13 @@ class WebDataSourceJob(DataSource):
       "depth_limit": str(self.depth_limit + 1),
     }
 
-    # create job spec with container image
-    container_image = kube_get_namespaced_deployment_image_path(
-        DEPLOYMENT_NAME, "webscraper", JOB_NAMESPACE, PROJECT_ID)
+    # Get container image from Artifact Registry instead of deployment
+    container_image = get_latest_artifact_registry_image(
+        repository="default",
+        image_name="webscraper", 
+        project_id=PROJECT_ID
+    )
+    
     job_specs = {
       "type": JOB_TYPE_WEBSCRAPER,
       "input_data": json.dumps(job_input),
