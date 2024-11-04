@@ -13,7 +13,7 @@ from common.utils.kf_job_app import (kube_create_job,
                                      kube_get_namespaced_deployment_image_path)
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource, DataSourceFile
-from config import PROJECT_ID, DEPLOYMENT_NAME, NAMESPACE
+from config import PROJECT_ID, DEPLOYMENT_NAME, JOB_NAMESPACE
 
 Logger = Logger.get_logger(__file__)
 
@@ -68,7 +68,7 @@ class WebDataSourceJob(DataSource):
 
     # create job spec with container image
     container_image = kube_get_namespaced_deployment_image_path(
-        DEPLOYMENT_NAME, "webscraper", NAMESPACE, PROJECT_ID)
+        DEPLOYMENT_NAME, "webscraper", JOB_NAMESPACE, PROJECT_ID)
     job_specs = {
       "type": JOB_TYPE_WEBSCRAPER,
       "input_data": json.dumps(job_input),
