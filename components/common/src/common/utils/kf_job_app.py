@@ -272,8 +272,10 @@ def get_cloud_link(microservice_name):
   return url
 
 
-def kube_create_job(
-    job_specs, namespace="default", env_vars={}, existing_job_model=None) -> BatchJobModel:
+def kube_create_job(job_specs,
+                    namespace="default",
+                    env_vars={},
+                    existing_job_model=None) -> BatchJobModel:
   """ Create a kube job based on the job spec """
   logging.info("kube_create_job: {}".format(job_specs))
   logging.info("kube_create_job: namespace {} env {}".format(
@@ -289,7 +291,7 @@ def kube_create_job(
     container_image = job_specs["container_image"]
     limits = job_specs.get("limits", DEFAULT_JOB_LIMITS)
     requests = job_specs.get("requests", DEFAULT_JOB_REQUESTS)
-    
+
     if existing_job_model:
       job_model = existing_job_model
       name = job_model.id
