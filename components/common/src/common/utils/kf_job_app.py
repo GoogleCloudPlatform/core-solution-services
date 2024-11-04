@@ -420,11 +420,13 @@ def kube_get_namespaced_deployment_image_path(deployment_name, container_name,
     for container in resp.spec.template.spec.containers:
       if container_name == container.name:
         image_path = container.image.split("@")[0]
+        logging.info(f"found container {container.name} image path {image_path}")
         break
   except ApiException as e:
     logging.info("---ERROR---")
     logging.info(e)
     raise BatchJobError(str(e)) from e
+  logging.info(f"image path {image_path}")
   return image_path
 
 
