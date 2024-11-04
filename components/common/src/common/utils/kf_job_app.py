@@ -410,7 +410,8 @@ def kube_get_namespaced_deployment_image_path(deployment_name, container_name,
     returns:
       image_path: (str)- container image path
   """
-  image_path = "gcr.io/{}/{}:latest".format(gcp_project, container_name)
+  image_path = \
+      f"us-docker.pkg.dev/{gcp_project}/default/{container_name}:latest"
   try:
     apis_api = client.AppsV1Api()
     resp = apis_api.read_namespaced_deployment(deployment_name, namespace)
