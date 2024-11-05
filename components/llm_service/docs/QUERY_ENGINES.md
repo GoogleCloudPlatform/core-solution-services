@@ -254,3 +254,42 @@ class QueryDocumentChunk:
     timestamp_stop: int       # Media end time
 ```
 
+## Integrated Search Engines
+
+Integrated search engines (`qe_integrated_search`) allow you to combine multiple query engines into a single interface. When queried, they:
+
+1. Forward the query to all child engines
+2. Collect and combine the results 
+3. Rerank the combined results for relevance
+4. Return the top results (default: 6 references)
+
+To create an integrated search engine:
+
+```bash
+curl -X POST "https://{YOUR_DOMAIN}/llm-service/api/v1/query/engine" \
+  -H "Authorization: Bearer {TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query_engine": "integrated-search",
+    "query_engine_type": "qe_integrated_search",
+    "description": "Combined search across multiple engines",
+    "embedding_type": "vertex_embedding",
+    "params": {
+      "associated_engines": ["docs-engine", "web-engine"],
+    }
+  }'
+```
+Associated engines (aka "child engines") must already exist before creating the integrated engine.  They will be added as child engines by updating the parent_engine_id field of the child engine.  Thus child engines are linked to the parent engine, not the other way around.  A child engine can be added to any existing integrated engine at any time by setting the `parent_engine_id` field of the child engine.
+
+When an integrated engine is queried:
+- Queries are distributed across all child engines
+- Results are combined and reranked before being returned
+
+## Result Reranking
+
+Query engines can use reranking to improve the relevance of search results. Reranking works by:
+
+1. Retrieving an initial set of results using vector similarity search
+2. Using a specialized reranking model to score each result against the query
+3. Reordering results based on these relevance scores
+
