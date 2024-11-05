@@ -1,6 +1,6 @@
 # Query Engines
 
-Query Engines allow you to create searchable knowledge bases from various data sources. They support different types of data including text, images, video and audio.
+Query Engines allow you to create searchable knowledge bases from various data sources. They support different types of data including text from both html and pdf documents and images. Video and audio are not yet supported but will be added soon.
 
 ## Types of Query Engines
 
@@ -14,7 +14,7 @@ There are three main types of query engines:
 
 Query engines can be created through either:
 
-1. The web UI under the "Query Engines" page
+1. The web UI under the "Query Engines" page in the React frontend.
 2. The REST API directly
 
 ### Using the REST API
@@ -51,14 +51,66 @@ Optional fields:
 - `llm_type` - LLM to use for queries
 - `manifest_url` - URL to a manifest file for additional configuration
 
+### Query Engine Parameters
+
+The `params` field accepts the following configuration options:
+
+#### Document Processing
+- `chunk_size` (int, default: 500)
+  - Number of characters per text chunk when processing documents
+  - Larger chunks provide more context but may reduce relevance accuracy
+  - Smaller chunks increase build time significantly
+
+- `depth_limit` (int, default: 0)
+  - Controls web crawling depth when processing web URLs
+  - Only applies when using web URLs as document sources
+  - Values:
+    - `0`: Download only the specified URL, don't follow any links
+    - `1`: Download the specified URL and follow all links from that page
+    - `2`: Download the specified URL, follow all links, and follow links from those pages
+    - etc.
+  - Higher values will increase processing time and storage requirements
+  - Use caution with depth > 2 as the number of pages grows exponentially
+
+- `is_multimodal` (bool, default: false)
+  - Enable multimodal processing for images and text
+  - When true, uses multimodal embedding models and LLMs
+
+#### Access Control
+- `is_public` (bool, default: true)
+  - Controls visibility of the query engine
+  - When false, only the creator can access the engine
+
+#### Integration Options
+- `agents` (list[str], optional)
+  - List of agent IDs to enable for this engine. 
+
+- `associated_engines` (list[str], optional)
+  - List of query engine IDs to include in an integrated search
+  - Only applies when `query_engine_type` is `qe_integrated_search`
+  - Child engines must exist before creating the integrated engine
+
+#### Vector Store Configuration
+- `similarity_threshold` (float, default: 0.7)
+  - Minimum similarity score (0.0 to 1.0) for including results
+  - Higher values return only more relevant matches
+  - Lower values return more results but may be less relevant
+  - Recommended range: 0.5-0.9
+
+- `max_results` (int, default: 10) 
+  - Maximum number of similar chunks to retrieve per query
+  - Higher values provide more context but increase response time
+  - Lower values are faster but may miss relevant content
+  - Recommended range: 5-20
+
 ### Document Sources
 
 The following document source types are supported via the `doc_url` parameter:
 
 - Google Cloud Storage: `gs://bucket/path`
-- Web URLs: `http://` or `https://`
-- BigQuery tables: `bq://project.dataset.table` 
-- SharePoint: `shpt://site/path`
+- Web URLs: `http://` or `https://` (Only GENIE engines)
+- BigQuery tables: `bq://project.dataset.table` (Only Vertex Search engines)
+- SharePoint: `shpt://site/path` (Only GENIE engines)
 
 The URL should point to a folder/container of documents, not individual files.
 
@@ -77,51 +129,69 @@ curl -X POST "https://{YOUR_DOMAIN}/llm-service/api/v1/query/engine/{ENGINE_ID}"
 ```
 
 The response will include:
-- The generated answer
-- Source references with document URLs and relevant excerpts
-- A unique query ID for retrieving the conversation history
-
-## Managing Query Engines
-
-### Listing Engines
-
-Get all available query engines:
-
-```bash
-curl "https://{YOUR_DOMAIN}/llm-service/api/v1/query" \
-  -H "Authorization: Bearer {TOKEN}"
+```json
+{
+  "success": true,
+  "message": "Successfully performed query",
+  "data": {
+    "query_id": "abc123",
+    "query_engine_id": "my-engine",
+    "query_engine": "my-engine",
+    "prompt": "What is the capital of France?",
+    "response": "The capital of France is Paris.",
+    "references": [
+      {
+        "id": "ref123",
+        "query_engine_id": "my-engine", 
+        "query_engine": "my-engine",
+        "document_id": "doc123",
+        "document_url": "gs://my-bucket/docs/france.pdf",
+        "modality": "text",
+        "page": 1,
+        "document_text": "Paris is the capital and largest city of France...",
+        "chunk_id": "chunk123"
+      }
+    ],
+    "history": [
+      {
+        "HumanQuestion": "What is the capital of France?"
+      },
+      {
+        "AIResponse": "The capital of France is Paris."
+      },
+      {
+        "AIReferences": [
+          {
+            "id": "ref123",
+            "document_url": "gs://my-bucket/docs/france.pdf",
+            "document_text": "Paris is the capital and largest city of France..."
+          }
+        ]
+      }
+    ]
+  }
+}
 ```
 
-### Getting Engine Details
+The response contains:
+- `query_id` - Unique identifier for this query
+- `query_engine_id` - ID of the query engine used
+- `query_engine` - Name of the query engine used
+- `prompt` - Original query prompt
+- `response` - Generated answer from the LLM
+- `references` - List of source references used to generate the answer, including:
+  - Document URLs
+  - Page numbers (for PDFs)
+  - Relevant text excerpts
+  - Timestamps (for audio/video)
+- `history` - Conversation history including:
+  - Human questions
+  - AI responses 
+  - Source references
 
-Get details for a specific engine:
+## Query Engines API
 
-```bash
-curl "https://{YOUR_DOMAIN}/llm-service/api/v1/query/engine/{ENGINE_ID}" \
-  -H "Authorization: Bearer {TOKEN}"
-```
-
-### Updating an Engine
-
-Update engine description:
-
-```bash
-curl -X PUT "https://{YOUR_DOMAIN}/llm-service/api/v1/query/engine/{ENGINE_ID}" \
-  -H "Authorization: Bearer {TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "description": "Updated description"
-  }'
-```
-
-### Deleting an Engine
-
-Delete a query engine and all associated data:
-
-```bash
-curl -X DELETE "https://{YOUR_DOMAIN}/llm-service/api/v1/query/engine/{ENGINE_ID}" \
-  -H "Authorization: Bearer {TOKEN}"
-```
+See the API docs at `/llm-service/api/v1/docs` for details on building and managing query engines via the REST API. These docs are auto-generated from the FastAPI endpoints.
 
 ## Data Model
 
@@ -184,24 +254,3 @@ class QueryDocumentChunk:
     timestamp_stop: int       # Media end time
 ```
 
-## Best Practices
-
-1. **Document Organization**
-   - Group related documents in the same source folder
-   - Use consistent file formats within a query engine
-   - Consider document size and chunking parameters
-
-2. **Query Engine Design**
-   - Create separate engines for different topics/domains
-   - Use descriptive names and descriptions
-   - Consider access patterns when choosing engine type
-
-3. **Performance**
-   - Monitor query response times
-   - Adjust chunk sizes based on document types
-   - Use appropriate embedding and vector store types
-
-4. **Security**
-   - Ensure proper access controls on document sources
-   - Use non-public engines for sensitive data
-   - Review and clean up unused engines 
