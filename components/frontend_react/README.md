@@ -45,7 +45,7 @@ export const AppConfig: IAppConfig = {
 
 ## Build and Deploy the app using the deploy script
 
-To deploy the app the first time, use the provided `deploy.sh` script. This script will install all necessary dependencies, configure Firebase, build the app, and deploy it.
+To deploy the app the first time, use the provided `deploy.sh` script. This script will install all necessary dependencies, setup and configure Firebase, configure the app itself, build the app, and deploy it.
 
 ### Usage
 
