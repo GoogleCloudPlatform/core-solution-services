@@ -14,9 +14,10 @@ CONTACT_EMAIL=$4
 # Install jq
 echo "Installing jq..."
 if ! command -v jq &> /dev/null; then
-  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  OS_TYPE=$(uname)
+  if [[ "$OS_TYPE" == "Linux" ]]; then
     sudo apt-get update && sudo apt-get install -y jq
-  elif [[ "$OSTYPE" == "darwin"* ]]; then
+  elif [[ "$OS_TYPE" == "Darwin" ]]; then
     brew install jq
   else
     echo "Please install jq manually for your OS."
