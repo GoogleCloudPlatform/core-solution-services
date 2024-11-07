@@ -22,7 +22,7 @@ To deploy the app the first time, use the provided `deploy.sh` script. This scri
 
 ### Usage
 
-Run the script in the `components/frontend_react/` with the following command, replacing the placeholders with your actual values:
+Run the script in the `components/frontend_react/` directory with the following command, replacing the placeholders with your actual values. `Domain name` should be the domain you set for the ingress in GKE - it is the domain that the frontend will use for API calls.  You can pick any name you wish for the firebase app name - for example you can use the PROJECT_ID.
 
 ```bash
 ./deploy.sh <your-project-id> <your-firebase-app-name> <your-domain-name> <your-contact-email>
@@ -31,7 +31,7 @@ Run the script in the `components/frontend_react/` with the following command, r
 Example:
 
 ```bash
-./deploy.sh my-genie-project my-firebase-app mydomain.com contact@mydomain.com
+./deploy.sh $PROJECT_ID my-firebase-app myapp.cloudpssolutions.com contact@mydomain.com
 ```
 
 This command will:
