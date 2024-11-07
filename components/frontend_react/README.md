@@ -59,9 +59,9 @@ firebase deploy --only hosting
 
 ### Add Google identity provider
 
-Add Google as an identity provider.  This must be done manually via the console currently.  We recommend you do this in the [Firebase console](https://console.firebase.google.com/), because it automatically creates a web client for you.  In firebase, navigate to Build > Authentication > Sign-in Method.  
+Add Google as an identity provider.  This must be done manually via the console currently.  We recommend you do this in the [Firebase console](https://console.firebase.google.com/), because it automatically creates a web client for you.  In firebase, navigate to Build > Authentication > Sign-in Method.  [Pick Google as a new "Sign-in provider"](../../docs/assets/firebase_add_identity.png).  [Enable the provider](../../docs/assets/firebase_google_provider.png) and enter your email address as support email.
 
-If you are an expert in OAuth authentication you can also configure the Google identity provider in the [GCP console](https://console.cloud.google.com/customer-identity/providers).  Refer to authentication component [README.md](https://github.com/GPS-Solutions/core-solution-services/blob/main/components/authentication/README.md) for more information.
+If you are an expert in OAuth authentication you can also configure the Google identity provider in the [GCP console](https://console.cloud.google.com/customer-identity/providers).  Refer to authentication component [README.md](../authentication/README.md) for more information.
 
 ### Authorizing User Domains during Sign-in
 The frontend_react component provides an initial check for authorizing user domains during a user's sign-in process with Google. Thus, you'll need to change the `authProviders` and `authorizedDomains` attribute within `AppConfig` with your user's or client's organizational domain.
