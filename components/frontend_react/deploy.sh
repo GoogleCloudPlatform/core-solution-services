@@ -76,12 +76,14 @@ echo "Fetching Firebase SDK config..."
 firebase apps:sdkconfig WEB "$FIREBASE_APP_NAME" > sdkconfig.json
 
 # Extract values from sdkconfig.json
-PROJECT_ID=$(jq -r '.projectId' sdkconfig.json)
-APP_ID=$(jq -r '.appId' sdkconfig.json)
-STORAGE_BUCKET=$(jq -r '.storageBucket' sdkconfig.json)
-API_KEY=$(jq -r '.apiKey' sdkconfig.json)
-AUTH_DOMAIN=$(jq -r '.authDomain' sdkconfig.json)
-MESSAGING_SENDER_ID=$(jq -r '.messagingSenderId' sdkconfig.json)
+echo "Extracting values from sdkconfig.json..."
+JSON_CONTENT=$(sed -n '/firebase.initializeApp({/,/});/p' sdkconfig.json | sed '1d;$d' | tr -d '\n' | sed 's/^/{/;s/$/}/')
+PROJECT_ID=$(echo "$JSON_CONTENT" | jq -r '.projectId')
+APP_ID=$(echo "$JSON_CONTENT" | jq -r '.appId')
+STORAGE_BUCKET=$(echo "$JSON_CONTENT" | jq -r '.storageBucket')
+API_KEY=$(echo "$JSON_CONTENT" | jq -r '.apiKey')
+AUTH_DOMAIN=$(echo "$JSON_CONTENT" | jq -r '.authDomain')
+MESSAGING_SENDER_ID=$(echo "$JSON_CONTENT" | jq -r '.messagingSenderId')
 
 # Populate .env.production and .env.development
 echo "Populating environment files..."
