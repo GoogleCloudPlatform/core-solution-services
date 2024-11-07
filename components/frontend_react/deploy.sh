@@ -11,6 +11,14 @@ FIREBASE_APP_NAME=$2
 DOMAIN_NAME=$3
 CONTACT_EMAIL=$4
 
+# Determine the base directory of the repository
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+# Navigate to the webapp directory
+WEBAPP_DIR="$BASE_DIR/components/frontend_react/webapp"
+echo "Changing directory to $WEBAPP_DIR..."
+cd "$WEBAPP_DIR" || { echo "Failed to change directory to $WEBAPP_DIR. Please run this script from the components/frontend_react directory."; exit 1; }
+
 # Install jq
 echo "Installing jq..."
 if ! command -v jq &> /dev/null; then
@@ -27,7 +35,9 @@ fi
 
 # Install nvm (Node Version Manager)
 echo "Installing nvm..."
+pushd $HOME
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+popd
 
 # Load nvm
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
@@ -39,10 +49,7 @@ nvm install 22
 
 # Install Firebase CLI
 echo "Installing Firebase CLI..."
-./utils/install_firebase.sh v13.1.0
-
-# Navigate to the webapp directory
-cd components/frontend_react/webapp || exit
+"$BASE_DIR/utils/install_firebase.sh" v13.1.0
 
 # Install dependencies
 echo "Installing dependencies..."

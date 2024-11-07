@@ -49,7 +49,7 @@ To deploy the app the first time, use the provided `deploy.sh` script. This scri
 
 ### Usage
 
-Run the script with the following command, replacing the placeholders with your actual values:
+Run the script in the `components/frontend_react/` with the following command, replacing the placeholders with your actual values:
 
 ```bash
 ./deploy.sh <your-project-id> <your-firebase-app-name> <your-domain-name> <your-contact-email>
