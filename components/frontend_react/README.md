@@ -15,33 +15,6 @@ The following prerequisites must be installed to deploy the React frontend app. 
 | `firebase CLI`      | `>= v13.1.0`     | `utils/install_firebase.sh v13.1.0` |
 
 
-### Add Google identity provider
-
-Add Google as an identity provider. You can do this in the [GCP console](https://console.cloud.google.com/customer-identity/providers) or in the [Firebase console](https://console.firebase.google.com/). In firebase, navigate to Build > Authentication > Sign-in Method. Refer to authentication component [README.md](https://github.com/GPS-Solutions/core-solution-services/blob/main/components/authentication/README.md) for more information.
-
-### Authorizing User Domains during Sign-in
-The frontend_react component provides an initial check for authorizing user domains during a user's sign-in process with Google. Thus, you'll need to change the `authProviders` and `authorizedDomains` attribute within `AppConfig` with your user's or client's organizational domain.
-
-Under the `frontend_react/src/src/utils/AppConfig.ts` file:
-
-```
-export const AppConfig: IAppConfig = {
-  siteName: "GenAI for Public Sector",
-  locale: "en",
-  logoPath: "/assets/images/rit-logo.png",
-  simpleLogoPath: "/assets/images/rit-brain.png",
-  imagesPath: "/assets/images",
-  theme: "light",
-  authProviders: ["google", "microsoft", "facebook", "password"],
-  authorizedDomains: [/@google\.com$/i, /@gmail\.com$/i, /@\w+\.altostrat\.com$/i],
-}
-```
-
-> Add or Change the `authProviders` and `authorizedDomains` to your respective input.
-
->**NOTE:** The `authorizedDomain` attributes are in reg expressions. (i.e "/@gmail\.com$/i")
-
-> In addition to this frontend configuration, you'll need to ensure the [Google Cloud Identity](https://console.cloud.google.com/customer-identity/providers) has added the providers on Google Cloud's backend. Each provider (e.g Microsoft, Facebook) will have require an authentication client on the provider-side that Google Cloud refers to via `App ID` and `App Secret` to direct authentication. Ensure Authorized Redirect URIs are set on the authentication provider side. See provider's documentation for more info. 
 
 ## Build and Deploy the app using the deploy script
 
@@ -84,9 +57,40 @@ npm run build
 firebase deploy --only hosting
 ```
 
-## Authorizing Redirect URIs (OAuth 2.0 Authentication)
-In the Google Cloud Console -> APIs & Services -> [Credentials](https://console.cloud.google.com/apis/credentials):
-- Click on your default Web Client(auto-created by Google Service).
+### Add Google identity provider
+
+Add Google as an identity provider.  This must be done manually via the console currently.  We recommend you do this in the [Firebase console](https://console.firebase.google.com/), because it automatically creates a web client for you.  In firebase, navigate to Build > Authentication > Sign-in Method.  
+
+If you are an expert in OAuth authentication you can also configure the Google identity provider in the [GCP console](https://console.cloud.google.com/customer-identity/providers).  Refer to authentication component [README.md](https://github.com/GPS-Solutions/core-solution-services/blob/main/components/authentication/README.md) for more information.
+
+### Authorizing User Domains during Sign-in
+The frontend_react component provides an initial check for authorizing user domains during a user's sign-in process with Google. Thus, you'll need to change the `authProviders` and `authorizedDomains` attribute within `AppConfig` with your user's or client's organizational domain.
+
+Under the `frontend_react/src/src/utils/AppConfig.ts` file:
+
+```
+export const AppConfig: IAppConfig = {
+  siteName: "GenAI for Public Sector",
+  locale: "en",
+  logoPath: "/assets/images/rit-logo.png",
+  simpleLogoPath: "/assets/images/rit-brain.png",
+  imagesPath: "/assets/images",
+  theme: "light",
+  authProviders: ["google", "microsoft", "facebook", "password"],
+  authorizedDomains: [/@google\.com$/i, /@gmail\.com$/i, /@\w+\.altostrat\.com$/i],
+}
+```
+
+> Add or Change the `authProviders` and `authorizedDomains` to your respective input.
+
+>**NOTE:** The `authorizedDomain` attributes are in reg expressions. (i.e "/@gmail\.com$/i")
+
+> In addition to this frontend configuration, you'll need to ensure the [Google Cloud Identity](https://console.cloud.google.com/customer-identity/providers) has added the providers on Google Cloud's backend. Each provider (e.g Microsoft, Facebook) will have require an authentication client on the provider-side that Google Cloud refers to via `App ID` and `App Secret` to direct authentication. Ensure Authorized Redirect URIs are set on the authentication provider side. See provider's documentation for more info. 
+
+### Authorizing Redirect URIs (OAuth 2.0 Authentication)
+If you set up auth the Google Identity platform you will need to update the Web Client for authentication.
+- Navigate to the Google Cloud Console -> APIs & Services -> [Credentials](https://console.cloud.google.com/apis/credentials)
+- Click on your default Web Client (auto-created by Firebase).
 - Under Authorized redirect URIs, add the following with your domain name:
   - `https://<your-domain-name>.web.app/__/auth/handler`
 

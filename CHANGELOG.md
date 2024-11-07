@@ -18,6 +18,7 @@ New features:
 - Updated default query generation model to Gemini Flash 1.5 - was set to Palm2
 - Added Microsoft login in React frontend
 - Add timestamps to logging
+- New deploy script for React frontend
 
 ### Fixes
 - Fixed download of PDFs from scraped sites
