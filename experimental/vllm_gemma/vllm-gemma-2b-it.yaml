@@ -11,13 +11,13 @@ spec:
     metadata:
       labels:
         app: gemma-server
-        ai.gke.io/model: gemma-2b-it
+        ai.gke.io/model: gemma-1.1-2b-it
         ai.gke.io/inference-server: vllm
         examples.ai.gke.io/source: user-guide
     spec:
       containers:
       - name: inference-server
-        image: us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20240220_0936_RC01
+        image: us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20240527_0916_RC00
         resources:
           requests:
             cpu: "2"
@@ -61,5 +61,5 @@ spec:
   type: ClusterIP
   ports:
     - protocol: TCP
-      port: 8000
+      port: 80
       targetPort: 8000

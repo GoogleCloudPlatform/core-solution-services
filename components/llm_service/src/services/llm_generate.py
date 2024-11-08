@@ -16,7 +16,10 @@ LLM Generation Service
 """
 # pylint: disable=import-outside-toplevel,line-too-long
 import time
+import requests
 from typing import Optional, List
+import google.auth
+import google.auth.transport.requests
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
 from vertexai.preview.generative_models import (
@@ -26,7 +29,8 @@ from common.models import UserChat, UserQuery
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
-from common.utils.request_handler import post_method
+from common.utils.request_handler import (post_method,
+                                          DEFAULT_TIMEOUT)
 from common.utils.token_handler import UserCredentials
 from config import (get_model_config, get_provider_models,
                     get_provider_value, get_provider_model_config,
@@ -36,7 +40,8 @@ from config import (get_model_config, get_provider_models,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
-                    DEFAULT_LLM_TYPE, DEFAULT_MULTI_LLM_TYPE)
+                    DEFAULT_LLM_TYPE, DEFAULT_MULTI_LLM_TYPE,
+                    KEY_SUB_PROVIDER, SUB_PROVIDER_OPENAPI)
 from services.langchain_service import langchain_llm_generate
 from services.query.data_source import DataSourceFile
 from utils.errors import ContextWindowExceededException
@@ -456,6 +461,41 @@ async def model_garden_predict(prompt: str,
   """
   aip_endpoint_name = get_provider_value(
       PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
+
+  sub_provider_name = get_provider_value(
+      PROVIDER_MODEL_GARDEN, KEY_SUB_PROVIDER, llm_type)
+
+  if str(sub_provider_name) == str(SUB_PROVIDER_OPENAPI):
+    creds, _ = google.auth.default()
+    if not creds.valid:
+      auth_req = google.auth.transport.requests.Request()
+      creds.refresh(auth_req)
+    auth_token = creds.token
+
+    openapi_endpoint = f"https://{REGION}-aiplatform.googleapis.com/" \
+                       f"v1/projects/{PROJECT_ID}/locations/{REGION}/" \
+                      f"endpoints/openapi/chat/completions"
+    req_headers = {"Authorization": f"Bearer {auth_token}",
+                   "Content-Type": "application/json"}
+    req_body = {"model": f"{aip_endpoint_name}",
+                "messages":[{"role": "user",
+                             "content": f"{prompt}"}]}
+    Logger.info(f"Generating text using OpenAPI for Model Garden "
+              f"endpoint=[{openapi_endpoint}], req_headers=[{req_headers}], "
+              f"req_body=[{req_body}.")
+
+    resp = requests.post(
+      url=f"{openapi_endpoint}", json=req_body, headers=req_headers,
+      timeout=DEFAULT_TIMEOUT)
+
+    if resp.status_code != 200:
+      raise InternalServerError(
+        f"Error status {resp.status_code}: {str(resp)}")
+
+    json_response = resp.json()
+    Logger.info(f"Got LLM service response {json_response}")
+    output = json_response["choices"][0]["message"]["content"]
+    return output
 
   aip_endpoint = f"projects/{PROJECT_ID}/locations/" \
                  f"{REGION}/endpoints/{aip_endpoint_name}"
