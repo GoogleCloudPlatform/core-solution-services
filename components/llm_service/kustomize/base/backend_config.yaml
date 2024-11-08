@@ -3,4 +3,4 @@ kind: BackendConfig
 metadata:
   name: default-backend-config
 spec:
-  timeoutSec: 60
+  timeoutSec: 360
