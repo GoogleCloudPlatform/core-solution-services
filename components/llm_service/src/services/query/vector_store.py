@@ -58,10 +58,6 @@ NUM_MATCH_RESULTS = 5
 # number of text chunks to process into an embeddings file
 MAX_NUM_TEXT_CHUNK_PROCESS = 1000
 
-# Default values for vector store parameters
-DEFAULT_SIMILARITY_THRESHOLD = 0.7
-DEFAULT_MAX_RESULTS = 10
-
 
 class VectorStore(ABC):
   """
@@ -72,11 +68,6 @@ class VectorStore(ABC):
   def __init__(self, q_engine: QueryEngine, embedding_type: str=None) -> None:
     self.q_engine = q_engine
     self.embedding_type = embedding_type
-
-    # Initialize vector store parameters from query engine params
-    params = q_engine.params or {}
-    self.similarity_threshold = float(params.get('similarity_threshold', DEFAULT_SIMILARITY_THRESHOLD))
-    self.max_results = int(params.get('max_results', DEFAULT_MAX_RESULTS))
 
   @property
   def vector_store_type(self):
@@ -655,12 +646,8 @@ class PostgresVectorStore(LangChainVectorStore):
     langchain_vector_store = LLMServicePGVector(
         embedding_function=embeddings.LangchainEmbeddings,
         connection_string=connection_string,
-        collection_name=collection_name,
-        search_kwargs={
-            "k": self.max_results,
-            "score_threshold": self.similarity_threshold,
-        }
-    )
+        collection_name=collection_name
+        )
 
     return langchain_vector_store
 
