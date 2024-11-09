@@ -13,7 +13,7 @@ from common.utils.kf_job_app import (kube_create_job,
                                      get_latest_artifact_registry_image)
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource, DataSourceFile
-from config import PROJECT_ID, DEPLOYMENT_NAME, JOB_NAMESPACE
+from config import PROJECT_ID
 
 Logger = Logger.get_logger(__file__)
 
@@ -69,10 +69,10 @@ class WebDataSourceJob(DataSource):
     # Get container image from Artifact Registry instead of deployment
     container_image = get_latest_artifact_registry_image(
         repository="default",
-        image_name="webscraper", 
+        package_name="webscraper",
         project_id=PROJECT_ID
     )
-    
+
     job_specs = {
       "type": JOB_TYPE_WEBSCRAPER,
       "input_data": json.dumps(job_input),

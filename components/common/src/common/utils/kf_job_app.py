@@ -39,11 +39,8 @@ from common.config import GKE_SERVICE_ACCOUNT_NAME
 from google.cloud import artifactregistry_v1
 from google.cloud.artifactregistry_v1 import ListTagsRequest
 
-# pylint: disable=dangerous-default-value
-# pylint: disable=logging-not-lazy
-# pylint: disable=consider-using-f-string
-# pylint: disable=logging-format-interpolation
-# pylint: disable=broad-exception-raised
+# pylint: disable=dangerous-default-value,broad-exception-caught, logging-not-lazy, consider-using-f-string, logging-format-interpolation, broad-exception-raised, line-too-long, possibly-used-before-assignment
+
 # Set logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
@@ -479,12 +476,13 @@ def find_duplicate_jobs(job_type, request_body=None):
   return {}
 
 
-def get_latest_artifact_registry_image(repository: str, image_name: str, location="us", project_id=None):
+def get_latest_artifact_registry_image(
+    repository: str, package_name: str, location="us", project_id=None):
   """Get the latest image version from Artifact Registry
 
   Args:
       repository: Name of the Artifact Registry repository
-      image_name: Name of the container image
+      package_name: Name of the container package
       location: Registry location (defaults to 'us')
       project_id: GCP project ID (defaults to None)
 
@@ -492,22 +490,16 @@ def get_latest_artifact_registry_image(repository: str, image_name: str, locatio
       Full image path including latest version tag
   """
   try:
-    client = artifactregistry_v1.ArtifactRegistryClient()
-
-    # Format: projects/{project}/locations/{location}/repositories/{repository}
-    parent = client.repository_path(project_id, location, repository)
-
-    # List tags for the image
+    # Get all tags and find the latest
+    registry_client = artifactregistry_v1.ArtifactRegistryClient()
+    parent = registry_client.package_path(project_id, location, repository, package_name)
     request = ListTagsRequest(
         parent=parent,
-        filter=f"package={image_name}"
     )
+    tags = registry_client.list_tags(request)
 
-    # Get all tags and find the latest
-    tags = client.list_tags(request)
     latest_tag = None
     latest_version = None
-
     for tag in tags:
       if tag.version:
         if not latest_version or tag.version > latest_version:
@@ -515,12 +507,12 @@ def get_latest_artifact_registry_image(repository: str, image_name: str, locatio
           latest_version = tag.version
 
     if latest_tag:
-      # Format the full image path with version
-      return f"{location}-docker.pkg.dev/{project_id}/{repository}/{image_name}@{latest_tag.name}"
+      tag_dict = registry_client.parse_tag_path(latest_tag)
+      return f"{location}-docker.pkg.dev/{project_id}/{repository}/{package_name}:{tag_dict['tag']}"
 
-    raise Exception(f"No versions found for image {image_name}")
+    raise Exception(f"No versions found for image {package_name}")
 
   except Exception as e:
     logging.error(f"Error getting latest image version: {str(e)}")
     # Fall back to default image path without version
-    return f"{location}-docker.pkg.dev/{project_id}/{repository}/{image_name}"
+    return f"{location}-docker.pkg.dev/{project_id}/{repository}/{package_name}"
