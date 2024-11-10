@@ -103,6 +103,7 @@ class WebDataSourceJob(DataSource):
                                      JobStatus.JOB_STATUS_SUCCEEDED]:
         time.sleep(1)
         job_model = BatchJobModel.find_by_uuid(job_model.id)
+        Logger.info(f"Webscraper job {job_model.id} status {job_model.status}")
 
     try:
       wait_for_job(job_model)
@@ -114,10 +115,14 @@ class WebDataSourceJob(DataSource):
       else:
         raise InternalServerError(f"Webscraper job failed: {job_model.error}")
 
+    Logger.info(f"Webscraper job [{job_model.id}] completed")
+
     # Update result processing to match new schema
     doc_files = []
     if job_model.result_data and "scraped_documents" in job_model.result_data:
-      for doc in job_model.result_data["scraped_documents"]:
+      scraped_docs = job_model.result_data["scraped_documents"]
+      Logger.info(f"downloading [{len(scraped_docs)}] documents")
+      for doc in scraped_docs:
         # Parse GCS path to get bucket and blob path
         gcs_path = doc["GCSPath"]
         if gcs_path.startswith("gs://"):
