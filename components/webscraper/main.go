@@ -248,7 +248,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to update job document status: %v", err)
 	}
-	log.Printf("Successfully updated job status", len(scrapedDocs))
+	log.Printf("Successfully updated job status")
 }
 
 func sanitizeFilename(url string) string {
