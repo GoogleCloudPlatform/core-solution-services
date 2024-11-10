@@ -119,7 +119,7 @@ class WebDataSourceJob(DataSource):
     if job_model.result_data and "scraped_documents" in job_model.result_data:
       for doc in job_model.result_data["scraped_documents"]:
         # Parse GCS path to get bucket and blob path
-        gcs_path = doc["gcs_path"]
+        gcs_path = doc["GCSPath"]
         if gcs_path.startswith("gs://"):
           bucket_name = gcs_path.split("/")[2]
           blob_path = "/".join(gcs_path.split("/")[3:])
@@ -128,14 +128,14 @@ class WebDataSourceJob(DataSource):
 
         # Download file from GCS
         blob = self.storage_client.get_bucket(bucket_name).blob(blob_path)
-        local_path = os.path.join(temp_dir, doc["filename"])
+        local_path = os.path.join(temp_dir, doc["Filename"])
         blob.download_to_filename(local_path)
 
         doc_file = DataSourceFile(
-            doc_name=doc["filename"],
-            src_url=doc["url"],
-            gcs_path=doc["gcs_path"],
-            mime_type=doc["content_type"],
+            doc_name=doc["Filename"],
+            src_url=doc["URL"],
+            gcs_path=doc["GCSPath"],
+            mime_type=doc["ContentType"],
             local_path=local_path
         )
         doc_files.append(doc_file)
