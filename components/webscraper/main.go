@@ -241,6 +241,14 @@ func main() {
 		log.Fatalf("Failed to update job document: %v", err)
 	}
 	log.Printf("Successfully updated job with %d scraped documents", len(scrapedDocs))
+
+	_, err = docRef.Update(ctx, []firestore.Update{
+		{Path: "status", Value: "succeeded"},
+	})
+	if err != nil {
+		log.Fatalf("Failed to update job document status: %v", err)
+	}
+	log.Printf("Successfully updated job status", len(scrapedDocs))
 }
 
 func sanitizeFilename(url string) string {
