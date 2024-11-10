@@ -98,11 +98,11 @@ class WebDataSourceJob(DataSource):
     # wait for job completion and get results
     @timeout(6000)
     def wait_for_job(job_model):
-      job_model = BatchJobModel.find_by_id(job_model.id)
+      job_model = BatchJobModel.find_by_uuid(job_model.id)
       while job_model.status not in [JobStatus.JOB_STATUS_FAILED,
                                      JobStatus.JOB_STATUS_SUCCEEDED]:
         time.sleep(1)
-        job_model = BatchJobModel.find_by_id(job_model.id)
+        job_model = BatchJobModel.find_by_uuid(job_model.id)
 
     try:
       wait_for_job(job_model)
