@@ -507,7 +507,7 @@ def get_latest_artifact_registry_image(
           latest_version = tag.version
 
     if latest_tag:
-      tag_dict = registry_client.parse_tag_path(latest_tag)
+      tag_dict = registry_client.parse_tag_path(latest_tag.name)
       return f"{location}-docker.pkg.dev/{project_id}/{repository}/{package_name}:{tag_dict['tag']}"
 
     raise Exception(f"No versions found for image {package_name}")
