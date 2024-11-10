@@ -15,5 +15,4 @@ COPY . .
 # Build the application
 RUN go build -o webscraper ./main.go
 
-# Run the web service on container startup
-CMD ["/app/webscraper"]
+ENTRYPOINT ["/app/webscraper"]

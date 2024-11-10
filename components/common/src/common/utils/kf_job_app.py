@@ -367,7 +367,7 @@ def kube_create_job(job_specs,
     args = None
     if job_specs["type"] == JOB_TYPE_WEBSCRAPER:
       # Webscraper uses Go binary
-      command = ["/app/main"]
+      command = ["/app/webscraper"]
       args = []  # Add any required args for webscraper
 
     body = kube_create_job_object(
