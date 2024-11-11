@@ -99,7 +99,7 @@ class WebDataSourceJob(DataSource):
     @timeout(6000)
     def wait_for_job(job_model):
       job_model = BatchJobModel.find_by_uuid(job_model.id)
-      while job_model.status not in [JobStatus.JOB_STATUS_FAILED,
+      while job_model.status.strip() not in [JobStatus.JOB_STATUS_FAILED,
                                      JobStatus.JOB_STATUS_SUCCEEDED]:
         time.sleep(1)
         job_model = BatchJobModel.find_by_uuid(job_model.id)
@@ -109,11 +109,11 @@ class WebDataSourceJob(DataSource):
       wait_for_job(job_model)
     except Exception as e:
       raise InternalServerError("Timed out waiting for webscraper") from e
-    if job_model.status != JobStatus.JOB_STATUS_SUCCEEDED:
-      if job_model.status == JobStatus.JOB_STATUS_ACTIVE:
+    if job_model.status.strip() != JobStatus.JOB_STATUS_SUCCEEDED:
+      if job_model.status.strip() == JobStatus.JOB_STATUS_ACTIVE:
         raise InternalServerError("Webscraper job failed to complete")
       else:
-        raise InternalServerError(f"Webscraper job failed: {job_model.error}")
+        raise InternalServerError(f"Webscraper job failed: {job_model.errors}")
 
     Logger.info(f"Webscraper job [{job_model.id}] completed")
 
