@@ -108,6 +108,8 @@ class WebDataSourceJob(DataSource):
       wait_for_job(job_model)
     except Exception as e:
       raise InternalServerError("Timed out waiting for webscraper") from e
+    
+    job_model = BatchJobModel.find_by_uuid(job_model.id)
     if job_model.status != "succeeded":
       if job_model.status == "active":
         raise InternalServerError("Webscraper job failed to complete")
