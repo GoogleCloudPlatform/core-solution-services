@@ -226,7 +226,7 @@ kubectl get nodes
 3. Build webscraper container
 Perform a one-time build of the webscraper utility container.  Run this command at the top level repo directory.
 ```
-skaffold build webscraper
+skaffold build -m webscraper
 ```
 
 ## Deploy Backend Microservices
