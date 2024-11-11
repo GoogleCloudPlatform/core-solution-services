@@ -66,7 +66,7 @@ class WebDataSourceJob(DataSource):
       "depth_limit": str(self.depth_limit + 1),
     }
 
-    # Get container image from Artifact Registry instead of deployment
+    # Get container image from Artifact Registry
     container_image = get_latest_artifact_registry_image(
         repository="default",
         package_name="webscraper",
@@ -118,7 +118,7 @@ class WebDataSourceJob(DataSource):
 
     Logger.info(f"Webscraper job [{job_model.id}] completed")
 
-    # Update result processing to match new schema
+    # download documents from GCS and build DataSourceFile list
     doc_files = []
     if job_model.result_data and "scraped_documents" in job_model.result_data:
       scraped_docs = job_model.result_data["scraped_documents"]
@@ -132,7 +132,7 @@ class WebDataSourceJob(DataSource):
         else:
           raise InternalServerError(f"Invalid GCS path format: {gcs_path}")
 
-        # Download file from GCS
+        # download file from GCS
         blob = self.storage_client.get_bucket(bucket_name).blob(blob_path)
         local_path = os.path.join(temp_dir, doc["Filename"])
         blob.download_to_filename(local_path)
