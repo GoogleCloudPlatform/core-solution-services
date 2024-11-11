@@ -223,6 +223,12 @@ kubectl get nodes
   - We recommend deploying AlloyDB and PG Vector as a vector store.  See the section on AlloyDB in the LLM Service [README](components/llm_service/README.md)
 - Tools Service:  If you are using the Tool Service (for GenAI agents that use Tools) follow the instructions in the [README](components/tools_service/README.md)
 
+3. Build webscraper container
+Perform a one-time build of the webscraper utility container.  Run this command at the top level repo directory.
+```
+skaffold build webscraper
+```
+
 ## Deploy Backend Microservices
 
 
