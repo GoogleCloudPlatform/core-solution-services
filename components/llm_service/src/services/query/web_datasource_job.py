@@ -99,8 +99,8 @@ class WebDataSourceJob(DataSource):
     @timeout(6000)
     def wait_for_job(job_model):
       job_model = BatchJobModel.find_by_uuid(job_model.id)
-      while job_model.status.strip() not in [JobStatus.JOB_STATUS_FAILED,
-                                     JobStatus.JOB_STATUS_SUCCEEDED]:
+      while job_model.status.strip() != JobStatus.JOB_STATUS_SUCCEEDED \
+          and job_model.status.strip() != JobStatus.JOB_STATUS_FAILED:
         time.sleep(1)
         job_model = BatchJobModel.find_by_uuid(job_model.id)
         Logger.info(f"Webscraper job {job_model.id} status {job_model.status}")
