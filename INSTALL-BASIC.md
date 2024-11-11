@@ -349,7 +349,7 @@ The command below will create a secret called `postgres-user-passwd`.
 gcloud secrets create "postgres-user-passwd"
 ```
 
-In the command below, replace `<your-postgres-password>` with the password you would like to use, and note the password.
+In the command below, replace `<your-postgres-password>` with the password you would like to use, and SAVE THE DATABASE PASSWORD.
 
 ```
 echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
@@ -360,3 +360,55 @@ Create a CLoudSQL PostgreSQL instance
 ```
 ./utils/cloudsql_db.sh
 ```
+
+The output of this script will look like the following
+
+```
+Cloud SQL Host IP address is 10.60.0.2
+```
+
+SAVE THE DATABASE IP ADDRESS.
+
+```
+export PG_HOST=<db-host-IP-address>
+```
+
+Add the PGVector extension
+
+```
+kubectl run psql-client --rm -i --tty --image ubuntu -- bash
+```
+
+Once inside the pod, run
+
+```
+apt update -y && apt install -y postgresql-client
+```
+
+In the next command, replace <your-postgres-password> with the DB password you saved.
+``
+export PGPASSWORD=<your-postgres-password>
+
+```
+In the next command, replace <pghost-ip-address> with the DB IP address you saved.
+``
+export PGHOST=<pghost-ip-address>
+```
+
+Then run
+
+```
+psql -U postgres -c "CREATE DATABASE pgvector"
+psql -U postgres -c "CREATE EXTENSION IF NOT EXISTS vector"
+exit
+```
+
+The last command exits the temporary pod
+
+Update the environment variables
+
+```
+sudo bash -c "echo 'export PG_HOST=${PG_HOST}' >> /etc/profile.d/genie_env.sh"
+```
+
+## Deploy backend microservices
