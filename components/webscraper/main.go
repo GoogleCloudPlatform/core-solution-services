@@ -35,6 +35,16 @@ type JobInput struct {
 // Add global storage client
 var storageClient *storage.Client
 
+func updateJobError(ctx context.Context, docRef *firestore.DocumentRef, err error) {
+	_, updateErr := docRef.Update(ctx, []firestore.Update{
+		{Path: "errors", Value: []string{err.Error()}},
+		{Path: "status", Value: "failed"},
+	})
+	if updateErr != nil {
+		log.Printf("Failed to update job error status: %v", updateErr)
+	}
+}
+
 func main() {
 	// Configure logger to write to stdout
 	log.SetOutput(os.Stdout)
@@ -42,13 +52,17 @@ func main() {
 	// Get GCP project ID
 	projectID := os.Getenv("GCP_PROJECT")
 	if projectID == "" {
-		log.Fatal("GCP_PROJECT environment variable not set")
+		err := fmt.Errorf("GCP_PROJECT environment variable not set")
+		log.Print(err)
+		os.Exit(1)
 	}
 
 	// Get job model ID
 	jobID := os.Getenv("JOB_ID")
 	if jobID == "" {
-		log.Fatal("Job ID environment variable not set")
+		err := fmt.Errorf("JOB_ID environment variable not set")
+		log.Print(err)
+		os.Exit(1)
 	}
 	log.Printf("Processing job ID: %s", jobID)
 
@@ -56,7 +70,8 @@ func main() {
 	ctx := context.Background()
 	firestoreClient, err := firestore.NewClient(ctx, projectID)
 	if err != nil {
-		log.Fatalf("Failed to create Firestore client: %v", err)
+		log.Printf("Failed to create Firestore client: %v", err)
+		os.Exit(1)
 	}
 	defer firestoreClient.Close()
 
@@ -65,57 +80,82 @@ func main() {
 	docRef := firestoreClient.Collection(collectionName).Doc(jobID)
 	jobDoc, err := docRef.Get(ctx)
 	if err != nil {
-		log.Fatalf("Failed to get job document: %v", err)
+		updateJobError(ctx, docRef, fmt.Errorf("failed to get job document: %v", err))
+		log.Print(err)
+		return
 	}
 
 	// Read input from jobDoc input_data
 	var jobInput JobInput
 	inputData, ok := jobDoc.Data()["input_data"].(string)
 	if !ok {
-		log.Fatalf("Failed to get input_data as string from job document")
+		err := fmt.Errorf("failed to get input_data as string from job document")
+		updateJobError(ctx, docRef, err)
+		log.Print(err)
+		return
 	}
 	if err := json.Unmarshal([]byte(inputData), &jobInput); err != nil {
-		log.Fatalf("Failed to decode job input: %v", err)
+		updateJobError(ctx, docRef, fmt.Errorf("failed to decode job input: %v", err))
+		log.Print(err)
+		return
 	}
 	log.Printf("Job input: %+v", jobInput)
 
 	if jobInput.URL == "" {
-		log.Fatal("URL not found in input data")
+		err := fmt.Errorf("URL not found in input data")
+		updateJobError(ctx, docRef, err)
+		log.Print(err)
+		return
 	}
 	log.Printf("Starting scrape of URL: %s", jobInput.URL)
 
 	depthLimitStr := jobInput.DepthLimit
 	if depthLimitStr == "" {
-		log.Fatal("depth limit not found in input data")
+		err := fmt.Errorf("depth limit not found in input data")
+		updateJobError(ctx, docRef, err)
+		log.Print(err)
+		return
 	}
 	depthLimit, err := strconv.Atoi(depthLimitStr)
 	if err != nil {
-		log.Fatal("Invalid depth limit value")
+		err := fmt.Errorf("invalid depth limit value")
+		updateJobError(ctx, docRef, err)
+		log.Print(err)
+		return
 	}
 	log.Printf("Depth limit set to: %d", depthLimit)
 
 	qEngineName := jobInput.EngineName
 	if qEngineName == "" {
-		log.Fatal("query engine name not found in input data")
+		err := fmt.Errorf("query engine name not found in input data")
+		updateJobError(ctx, docRef, err)
+		log.Print(err)
+		return
 	}
 
 	// Generate bucket name using same logic as Python code
 	bucketName, err := generateBucketName(projectID, qEngineName)
 	if err != nil {
-		log.Fatal(err)
+		updateJobError(ctx, docRef, err)
+		log.Print(err)
+		return
 	}
 	log.Printf("Using bucket: %s", bucketName)
 
 	// Initialize storage client globally
 	storageClient, err = storage.NewClient(ctx)
 	if err != nil {
-		log.Fatalf("Failed to create storage client: %v", err)
+		updateJobError(ctx, docRef, fmt.Errorf("failed to create storage client: %v", err))
+		log.Print(err)
+		return
 	}
 	defer storageClient.Close()
 
 	// Initialize or clear bucket
 	if err := initializeBucket(ctx, projectID, bucketName); err != nil {
-		log.Fatalf("Failed to initialize bucket: %v", err)
+		updateJobError(ctx, docRef, fmt.Errorf("failed to initialize bucket: %v", err))
+		log.Print(err)
+		return
 	}
 
 	// Create a slice to store document metadata
@@ -226,7 +266,9 @@ func main() {
 
 	// Write results as JSON to stdout for job results
 	if err := json.NewEncoder(os.Stdout).Encode(scrapedDocs); err != nil {
-		log.Printf("Error encoding results: %v", err)
+		updateJobError(ctx, docRef, fmt.Errorf("error encoding results: %v", err))
+		log.Print(err)
+		return
 	}
 
 	// After scraping is complete, update the job document
@@ -238,7 +280,9 @@ func main() {
 		{Path: "result_data", Value: resultData},
 	})
 	if err != nil {
-		log.Fatalf("Failed to update job document: %v", err)
+		updateJobError(ctx, docRef, fmt.Errorf("failed to update job document: %v", err))
+		log.Print(err)
+		return
 	}
 	log.Printf("Successfully updated job with %d scraped documents", len(scrapedDocs))
 
@@ -246,7 +290,9 @@ func main() {
 		{Path: "status", Value: "succeeded"},
 	})
 	if err != nil {
-		log.Fatalf("Failed to update job document status: %v", err)
+		updateJobError(ctx, docRef, fmt.Errorf("failed to update job document status: %v", err))
+		log.Print(err)
+		return
 	}
 	log.Printf("Successfully updated job status")
 }
