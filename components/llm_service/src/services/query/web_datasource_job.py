@@ -6,7 +6,7 @@ import time
 import uuid
 from typing import List
 from timeout_decorator import timeout
-from common.models.batch_job import BatchJobModel, JobStatus
+from common.models.batch_job import BatchJobModel
 from common.utils.config import JOB_TYPE_WEBSCRAPER
 from common.utils.http_exceptions import InternalServerError
 from common.utils.kf_job_app import (kube_create_job,
@@ -99,8 +99,7 @@ class WebDataSourceJob(DataSource):
     @timeout(6000)
     def wait_for_job(job_model):
       job_model = BatchJobModel.find_by_uuid(job_model.id)
-      while job_model.status.strip() != JobStatus.JOB_STATUS_SUCCEEDED \
-          and job_model.status.strip() != JobStatus.JOB_STATUS_FAILED:
+      while job_model.status not in ["succeeded", "failed"]:
         time.sleep(1)
         job_model = BatchJobModel.find_by_uuid(job_model.id)
         Logger.info(f"Webscraper job {job_model.id} status {job_model.status}")
@@ -109,8 +108,8 @@ class WebDataSourceJob(DataSource):
       wait_for_job(job_model)
     except Exception as e:
       raise InternalServerError("Timed out waiting for webscraper") from e
-    if job_model.status.strip() != JobStatus.JOB_STATUS_SUCCEEDED:
-      if job_model.status.strip() == JobStatus.JOB_STATUS_ACTIVE:
+    if job_model.status != "succeeded":
+      if job_model.status == "active":
         raise InternalServerError("Webscraper job failed to complete")
       else:
         raise InternalServerError(f"Webscraper job failed: {job_model.errors}")
