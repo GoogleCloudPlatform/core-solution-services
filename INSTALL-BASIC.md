@@ -1,9 +1,9 @@
 # Overview of basic install
 
-The goal of a basic GENIE install is to use the latest GENIE code to deploy an instance of the GENIE software stack into a GCP project that you own.
+The goal of a _basic_ GENIE install is to use the latest GENIE code to deploy an instance of the GENIE software stack into a GCP project that you own.
 At the end of this install, you will be able to access the GENIE React front end running in your GCP project that uses GENIE microservices also deployed in your GCP project to run a RAG demo.
 
-There are many possible variations for how to deploy and develop with GENIE. However, the following are proscriptive steps that deploys GENIE using the simplest approach applicable to as many starting environments as possible, with a basic configuration. Once this installation is complete, you can dive deeper into add READMEs for how to deploy and work with additional features.
+There are many possible variations for how to deploy and develop with GENIE. However, the following are prescriptive steps that deploy GENIE using the simplest approach applicable to as many starting environments as possible, with a basic configuration. Once this installation is complete, you can dive deeper into other GENIE READMEs for information on how to deploy and work with additional features.
 
 There are four logical steps to deploy GENIE:
 
@@ -71,10 +71,12 @@ Note: if you do not have `Organization Policy Administrator`, you will receive a
 
 ## Enable the following APIs within your project
 
-- Cloud Resource Manager API
-- Compute Engine API (compute.googleapis.com)
+```
+gcloud services enable cloudresourcemanager.googleapis.com
+gcloud services enable compute.googleapis.com
+```
 
-## Confirm the prerequsisite software is installed in Cloud Shell.
+## Confirm the prerequisite software is installed in Cloud Shell.
 
 The following software and versions are required to deploy GENIE:
 
@@ -87,31 +89,6 @@ Acceptable versions of `python` and `terraform` should already be installed in C
 python --version
 terraform --version
 ```
-
-## Note on Cloud Shell
-
-The Cloud Shell VM is ephemeral. If you log out or your Cloud Shell stops due to inactivity, you will need to rerun these commands to reset the environment variables:
-
-```
-export PROJECT_ID=$(gcloud config get project)
-export ORGANIZATION_ID=$(gcloud projects describe "$PROJECT_ID" --format="value(parent.id)")
-```
-
-While the Cloud Shell VM is ephemeral, your `$HOME` folder resides on a persistent disk so files in that directory persist between Cloud Shell sessions. By default, when you log into Cloud Shell you should be in your `$HOME` directory.
-
-You can check by running
-
-```
-echo $HOME
-```
-
-and then
-
-```
-pwd
-```
-
-to see your current directory.
 
 ## Clone the repo
 
@@ -162,6 +139,8 @@ Enter 'Y' at the prompt.
 
 You have now confirmed that your GCP organization, project, Cloud Shell environment variables and libraries are ready for the next step, to create the jump host.
 
+Follow these instructions if you need to [reconnect to Cloud Shell](#reconnect-to-cloud-shell), such as after a session timeout.
+
 # 2. Create the jump host
 
 ## Deploy the jump host
@@ -201,8 +180,7 @@ Once you no longer see the error when running the command, the file exists and t
 ## Authenticate on the jump host
 
 ```
-gcloud auth login
-gcloud auth application-default login
+gcloud auth login --update-adc
 gcloud auth configure-docker us-docker.pkg.dev
 ```
 
@@ -227,15 +205,23 @@ sb set project-id ${PROJECT_ID}
 
 ## Select domain name
 
-To deploy the GENIE backend, you need a domain name that can be mapped (via DNS) to the IP address of the GENIE microservices you will be deploying in Steps 3 and 4.
-The RIT team owns the `cloudpssolutions.com` domain and can create a subdomain for you of the form `<your-project-id>.cloudpssolutions.com`. These instructions assume that you
-will create a domain name in this format.
+To deploy the GENIE backend, you need a domain or subdomain that can be mapped (via DNS) to the IP address of the GENIE microservices you will be deploying in Steps 3 and 4.
 
-There are instructions later (at the end of Step 3) for how to request that the RIT team create the DNS A record that maps your subdomain to the IP address of your backend GENIE microservices.
+If you are using your own domain name and will set up the DNS A record yourself, then enter it as the DOMAIN_NAME value below
+
+```
+export DOMAIN_NAME=<your-domain-name>
+```
+
+Alternatively, the RIT team owns the `cloudpssolutions.com` for GPS internal users can create a subdomain in the form `<your-project-id>.cloudpssolutions.com`. If you want to use this approach, run the command below.
 
 ```
 export DOMAIN_NAME=${PROJECT_ID}.cloudpssolutions.com
 ```
+
+SAVE THE DOMAIN NAME you have created.
+
+Instruction in Step 3 will tell you when to set up the DNS A record.
 
 ```
 export API_BASE_URL=https://${DOMAIN_NAME}
@@ -263,12 +249,12 @@ cat /etc/profile.d/genie_env.sh
 
 You have now fully deployed the jump host and are ready for the next step, to deploy the GENIE backend microservices.
 
-# 3. Deploy the GENIE backend microservices
+# 3. Deploy the GENIE backend
 
 ## Apply the bootstrap terraform
 
 ```
-sb infra apply 1-genie-backend
+sb infra apply 1-bootstrap
 ```
 
 Enter 'Y' and 'yes' when prompted
@@ -280,6 +266,8 @@ sb infra apply 2-foundation
 ```
 
 Enter 'Y' and 'yes' when prompted
+
+Note: there is a known timing issue with this step which can result in a Firebase error. Check the [troubleshooting guide](#firebase-database-already-exists) for information about this error, and the fix.
 
 ## Apply the GKE and ingress install
 
@@ -295,15 +283,17 @@ sb infra apply 3-gke-ingress
 
 Enter 'Y' and 'yes' when prompted
 
-The output of this step should start with something similar to below. Save the IP address that is provided.
+The output of this step should start with something similar to below.
 
 ```
 ingress_ip_address = [
   {
-    "address" = "34.8.216.192"
+    "address" = "8.8.8.8"
     "address_type" = "EXTERNAL"
     "creation_timestamp" = "2024-11-11T15:12:34.332-08:00"
 ```
+
+SAVE THE INGRESS IP ADDRESS that is provided.
 
 Update the jump host with additional environment variables
 
@@ -316,6 +306,16 @@ And update the saved environment variables on the jump host
 ```
 sudo bash -c "echo 'export REGION=$REGION' >> /etc/profile.d/genie_env.sh"
 ```
+
+## Offline: Create a DNS A record
+
+The GENIE installation requires setting up a DNS A record that maps your domain or subdomain to your the INGRESS IP ADDRESS.
+If you are using your own domain, create the DNS A record now.
+If you plan to use a subdomain of cloudpssolutions.com, ping the `GENIE Solution Dev` with your DOMAIN_NAME and
+INGRESS_IP, and ask that an A record be created.
+
+Once you start this process, you can immediately continue with the rest of the GENIE backend deployment (Step 3).
+The DNS A record will need to be operational by the end of Step 3 so you can verify the deployment.
 
 ## Apply the LLM service infarstructure
 
@@ -349,11 +349,13 @@ The command below will create a secret called `postgres-user-passwd`.
 gcloud secrets create "postgres-user-passwd"
 ```
 
-In the command below, replace `<your-postgres-password>` with the password you would like to use, and SAVE THE DATABASE PASSWORD.
+In the command below, replace `<your-postgres-password>` with the password you would like to use.
 
 ```
 echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
 ```
+
+SAVE THE DATABASE PASSWORD you created.
 
 Create a CLoudSQL PostgreSQL instance
 
@@ -361,7 +363,7 @@ Create a CLoudSQL PostgreSQL instance
 ./utils/cloudsql_db.sh
 ```
 
-The output of this script will look like the following
+The output of this script will look like the following (IP address will be different)
 
 ```
 Cloud SQL Host IP address is 10.60.0.2
@@ -412,3 +414,361 @@ sudo bash -c "echo 'export PG_HOST=${PG_HOST}' >> /etc/profile.d/genie_env.sh"
 ```
 
 ## Deploy backend microservices
+
+At this point, all the required environment variables should already be set on the jump host. To confirm, you can run the
+following and check the output.
+
+```
+echo $PROJECT_ID
+echo $NAMESPACE
+echo $PG_HOST
+echo $DOMAIN_NAME
+echo $API_BASE_URL
+echo $SKAFFOLD_DEFAULT_REPO
+```
+
+From the `core-solution-services` directory in the jump host, run the command below to deploy the backend microservices
+
+```
+skaffold run -p default-deploy -n $NAMESPACE
+```
+
+This step will take 15-20 minutes.
+
+Note: At times we see errors when running this step. Check the [troubleshooting guide](#failed-to-download-openapi) for more information and next steps.
+
+Once the step completes, check that the pods for the GENIE microservices are running.
+
+```
+kubectl get pods
+```
+
+You should see output similar to the following
+
+```
+NAME                                    READY   STATUS    RESTARTS   AGE
+authentication-69bfb78d69-4j64d         1/1     Running   0          91m
+frontend-flutterflow-5559bbcc85-rwvjg   1/1     Running   0          80m
+frontend-streamlit-f7d7f7b5d-cjmjr      1/1     Running   0          80m
+jobs-service-7ccc46f786-w5lr5           1/1     Running   0          85m
+llm-service-799f986dcd-t852z            1/1     Running   0          89m
+redis-master-0                          1/1     Running   0          84m
+redis-replicas-0                        1/1     Running   0          84m
+redis-replicas-1                        1/1     Running   0          84m
+redis-replicas-2                        1/1     Running   0          83m
+rules-engine-56dcd7bbb-sdpt5            1/1     Running   0          82m
+tools-service-7ffc95556b-77656          1/1     Running   0          82m
+user-management-6479c84668-p2c2l        1/1     Running   0          90m
+```
+
+## Deploy the microservices ingress
+
+For the next step, change to the `ingress` folder
+
+```
+cd ingress
+```
+
+And then run
+
+```
+skaffold run -p default-deploy -n $NAMESPACE --default-repo="${SKAFFOLD_DEFAULT_REPO}"
+```
+
+This step should complete almost immediately. This kicks off the process of creating the managed certificate for
+the microservices ingress IP. Creating the managed certificate could take from 15 minutes - 24 hours (though
+unlikely).
+
+Until the managed certificate is ACTIVE, the GENIE installation is not complete. You can check the status of the
+managed certificate by running
+
+```
+kubectl get managedcertificate
+```
+
+Once the status is ACTIVE, you have completed the GENIE backend installation.
+
+## Verify installation
+
+To check if the GENIE backend has successfully been deployed, in a web browser load the microservices API pages:
+
+```
+https://<your-project-id>.cloudpssolutions.com/authentication/api/v1/docs
+https://<your-project-id>.cloudpssolutions.com/llm-service/api/v1/docs
+```
+
+When both of these pages load, the GENIE backend is deployed.
+
+# 4. Deploy the GENIE front end
+
+The front end is a React app that we will deploy to Firebase Hosting. We will use Google as the authentication provider to allow anyone with a google.com email address to log in.
+
+## Add Google as a Firebase identity provider
+
+In a web browser, go to the [Firebase console](https://firebase.corp.google.com/). Using the project selection options (this will depend on whether your Organization has previously used Firebase), select the project ID of the Google Cloud project you created to deploy GENIE. Note that you do not need to enable Google Analytics.
+
+Your Google Cloud project will now also be a Firebase project of the same name.
+
+Once the Firebase project is created, in the menu bar at the left select `Build` and then `Authentication`. If
+necesary, click the `Get Started` button.
+
+On the Authentication page, click the `Sign-in method` tab at the top.
+
+Under Additional providers, select `Google`.
+
+In the top right, click the `Enable` slider to enable the Google provider.
+
+Select a support email for the project.
+
+Once that is done, click Save.
+
+# Install firebase on jump host
+
+Using Cloud Shell, SSH to the jump host. Change to the `core-solution-services` directory
+
+Run this to install the Firebase CLI.
+
+```
+utils/install_firebase.sh v13.1.0
+```
+
+When the install is complete, log in using the firebase CLI
+
+```
+firebase login --no-localhost
+```
+
+Make sure the quota project is set
+
+```
+gcloud auth application-default set-quota-project $PROJECT_ID
+```
+
+# Build the React front end
+
+To build hte front end, change to the `webapp` directory
+
+```
+cd components/frontend_react/webapp
+```
+
+Install the npm dependcies
+
+```
+npm install
+```
+
+# Configure Firebase app
+
+In this directory, open the `.firebaserc` file. Change `your-project-id` to be the project ID you created for the GENIE deploy. Save that file.
+
+Run this command, substituting the project ID you created for the GENIE deploy for `<your-project-id>`
+
+```
+firebase apps:create web <your-project-id>-app
+```
+
+When that is complete, copy the last line of the input which should be in the form:
+
+```
+firebase apps:sdkconfig WEB 1:936005173737:web:292e7e9fa799dd1e070b78
+```
+
+Paste it and run it at the prompt. The output is the configuration information for your app, and should look similar to this:
+
+```
+firebase.initializeApp({
+  "projectId": "fed-ce-genie-workshop",
+  "appId": "1:936005173737:web:292e7e9fa799dd1e070b78",
+  "storageBucket": "fed-ce-genie-workshop.firebasestorage.app",
+  "locationId": "us-central",
+  "apiKey": "AIzaSyA6O3bPJGVjq4nngOBewJisQAcHVfY_QHM",
+  "authDomain": "fed-ce-genie-workshop.firebaseapp.com",
+  "messagingSenderId": "936005173737"
+});
+```
+
+Open the `config.production.env` file, and update the default values in that file with the new values provided in the firebase app config.
+Note that all fields in `config.production.env` are prefixed with `VITE_`.
+
+For the fields not provided by Firebase app config
+
+- for `VITE_PUBLIC_CONTACT_US_EMAIL`, use your email address.
+- for `VITE_PUBLIC_API_ENDPOINT`, use `https://<your-project-id>.cloudpssolutions.com/llm-service/api/v1`
+- for `VITE_PUBLIC_API_JOBS_ENDPOINT`, use `https://<your-project-id>.cloudpssolutions.com/llm-service/api/v1`
+
+Save the updated `config.production.env` file.
+
+From the `webapp` directory, run these comands
+
+```
+cp config.production.env .env.production
+cp config.production.env .env.development
+```
+
+# Deploy the Firebase app
+
+Build the app for production
+
+```
+npm run build
+```
+
+Deploy the app to Firebase
+
+```
+firebase deploy --only hosting
+```
+
+## Add the Redirect URI
+
+In the Google Cloud console -> APIs & Services -> [Credentials](https://console.cloud.google.com/apis/credentials) section,
+in the OAuth 2.0 Client IDs section, select the default Web Client that has been created for you.
+
+Under Authorized redirect URIs, click `Add URI`. Add the following URI, substituting the project ID you created for the GENIE deploy for `<your-project-id>`
+
+```
+https://<your-project-id>.web.app
+```
+
+Click Save.
+
+## Test the front end
+
+In a new incognito browser window, go to
+
+```
+https://<your-project-id>.web.app
+```
+
+The Sign in page should load. Click Sign-in with your google.com email address.
+Once sign in is complete,the GENIE main page should load.
+
+Enter
+
+```
+Hello world
+```
+
+And Gemini should respond.
+
+# Troubleshooting [Step 1](#1-set-up) | [Step 2](#2-create-the-jump-host) | [Step 3](#3-deploy-the-genie-backend) | [Step 4](#4-deploy-the-genie-front-end)
+
+## Reconnect to Cloud Shell
+
+If Cloud Shell stops due to inactivity or you need to log out, the VM is ephemeral and you will need to reset the environment variables the next time you open Cloud Shell in order to SSH to the jump host. You can reset them by running the commands below:
+
+```
+
+export PROJECT_ID=$(gcloud config get project)
+export ORGANIZATION_ID=$(gcloud projects describe "$PROJECT_ID" --format="value(parent.id)")
+export JUMP_HOST_ZONE=$(gcloud compute instances list --filter="name=(jump-host)" --format="value(zone)")
+
+```
+
+While the Cloud Shell VM is ephemeral, your `$HOME` directory resides on a persistent disk, so files in `$HOME` will persist between Cloud Shell sessions.
+By default, when you log into Cloud Shell you should be in your `$HOME` directory
+
+You can check what your `$HOME` directory is by running
+
+```
+
+echo $HOME
+
+```
+
+And check your current directory by running:
+
+```
+
+pwd
+
+```
+
+Once the environment variables are re-set in Cloud Shell, you can SSH to the jump host again using
+
+```
+
+gcloud compute ssh jump-host --zone=${JUMP_HOST_ZONE} --tunnel-through-iap --project=${PROJECT_ID}
+
+```
+
+Note that every time you reconnect to the jump host, you need to re-authenticate.
+
+```
+
+gcloud auth login --update-adc
+gcloud auth configure-docker us-docker.pkg.dev
+
+```
+
+## Firebase database already exists
+
+There is a known error when running:
+
+```
+
+sb infra apply 2-foundation
+
+```
+
+That looks like this:
+
+> Error: Error creating Database: googleapi: Error 409: Database already exists. Please use another database_id
+>
+> with google_firestore_database.database,
+> on firestore_setup.tf line 42, in resource "google_firestore_database" "database":
+> 42: resource "google_firestore_database" "database" {
+
+The fix for this is below. Make sure to run all lines.
+
+```
+
+cd terraform/stages/2-foundation/
+terraform import google_firestore_database.database "(default)"
+cd -
+
+```
+
+Once you have run the fix, rerun the original step.
+
+```
+
+sb infra apply 2-foundation
+
+```
+
+## Failed to download openapi
+
+When running this step
+
+```
+
+skaffold run -p default-deploy -n $NAMESPACE
+
+```
+
+This error has been seen, which we think is another timing issue.
+
+```
+
+error: error validating "STDIN": error validating data: failed to download openapi: Get "https://34.55.197.78/openapi/v2?timeout=32s": dial tcp 34.55.197.78:443: i/o timeout; if you choose to ignore these errors, turn validation off with --validate=false
+
+```
+
+To fix, log out of the jump host by typing `exit`.
+[SSH back into the jump host](#reconnect-to-cloud-shell), and reauthenticate on the jump host.
+
+Re-run the command
+
+```
+
+skaffold run -p default-deploy -n $NAMESPACE
+
+```
+
+Generally, the deploy will now complete.
+
+```
+
+```
