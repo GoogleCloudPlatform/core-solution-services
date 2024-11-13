@@ -391,6 +391,8 @@ class DataSource:
         for text_chunk in text_chunks:
           #TODO: Consider all characters in text_chunk,
           #not just the first 1024
+          #As of Nov 2024, multimodalembedding@001 API throws error if
+          #text input argument >1024 characters
           text_chunk = text_chunk[0:1023]
           # Push chunk object into chunk array
           chunk_obj = {
@@ -437,6 +439,8 @@ class DataSource:
 
       #TODO: Consider all characters in contextual_text,
       #not just the first 1024
+      #As of Nov 2024, multimodalembedding@001 API throws error if
+      #text input argument >1024 characters
       contextual_text = contextual_text[0:1023]
 
     return contextual_text
