@@ -32,15 +32,15 @@ from common.utils.config import (DEFAULT_JOB_LIMITS, DEFAULT_JOB_REQUESTS,
                                  JOB_TYPES_WITH_PREDETERMINED_TITLES,
                                  BATCH_JOB_FETCH_TIME,
                                  BATCH_JOB_PENDING_TIME_THRESHOLD,
-                                 GCLOUD_LOG_URL)
+                                 GCLOUD_LOG_URL,
+                                 JOB_TYPE_WEBSCRAPER)
 
 from common.config import GKE_SERVICE_ACCOUNT_NAME
+from google.cloud import artifactregistry_v1
+from google.cloud.artifactregistry_v1 import ListTagsRequest
 
-# pylint: disable=dangerous-default-value
-# pylint: disable=logging-not-lazy
-# pylint: disable=consider-using-f-string
-# pylint: disable=logging-format-interpolation
-# pylint: disable=broad-exception-raised
+# pylint: disable=dangerous-default-value,broad-exception-caught, logging-not-lazy, consider-using-f-string, logging-format-interpolation, broad-exception-raised, line-too-long, possibly-used-before-assignment
+
 # Set logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
@@ -174,19 +174,16 @@ def kube_create_job_object(name,
                            requests,
                            namespace="default",
                            container_name="jobcontainer",
-                           env_vars={}):
+                           env_vars={},
+                           command=None,
+                           args=None):
   """
     Create a k8 Job Object
-    Minimum definition of a job object:
-    {"api_version": None, - Str
-    "kind": None,     - Str
-    "metadata": None, - Metada Object
-    "spec": None,     -V1JobSpec
-    "status": None}   - V1Job Status
-    V1Job -> V1ObjectMeta
-          -> V1JobStatus
-          -> V1JobSpec -> V1PodTemplate -> V1PodTemplateSpec -> V1Container
-    """
+
+    Args:
+      command: Optional list of commands to override default python command
+      args: Optional list of arguments to override default args
+  """
   # Body is the object Body
   body = client.V1Job(api_version="batch/v1", kind="Job")
   # Body needs Metadata
@@ -205,13 +202,20 @@ def kube_create_job_object(name,
     limits=limits,
     requests=requests
   )
+
+  # Default command and args for Python jobs
+  if command is None:
+    command = ["python", "run_batch_job.py"]
+  if args is None:
+    args = ["--container_name", name]
+
   container = client.V1Container(
       name=container_name,
       image=container_image,
       env=env_list,
       resources=resources,
-      command=["python", "run_batch_job.py"],
-      args=["--container_name", name])
+      command=command,
+      args=args)
   template.template.spec = client.V1PodSpec(
       containers=[container],
       restart_policy="Never",
@@ -267,8 +271,10 @@ def get_cloud_link(microservice_name):
   return url
 
 
-def kube_create_job(
-        job_specs, namespace="default", env_vars={}) -> BatchJobModel:
+def kube_create_job(job_specs,
+                    namespace="default",
+                    env_vars={},
+                    existing_job_model=None) -> BatchJobModel:
   """ Create a kube job based on the job spec """
   logging.info("kube_create_job: {}".format(job_specs))
   logging.info("kube_create_job: namespace {} env {}".format(
@@ -284,15 +290,20 @@ def kube_create_job(
     container_image = job_specs["container_image"]
     limits = job_specs.get("limits", DEFAULT_JOB_LIMITS)
     requests = job_specs.get("requests", DEFAULT_JOB_REQUESTS)
-    name = str(uuid.uuid4())  # job name
 
-    # creating a job entry in firestore
-    job_model = BatchJobModel()
-    job_model.id = name
-    job_model.type = job_specs["type"]
-    job_model.status = "pending"
-    job_model.uuid = name
-    job_model.save()
+    if existing_job_model:
+      job_model = existing_job_model
+      name = job_model.id
+    else:
+      name = str(uuid.uuid4())  # job name
+      # creating a job entry in firestore
+      job_model = BatchJobModel()
+      job_model.id = name
+      job_model.type = job_specs["type"]
+      job_model.status = "pending"
+      job_model.uuid = name
+      job_model.save()
+
     logging.info("Batch Job {}: Started with job type "
                  "{}".format(job_model.name, job_model.type))
     logging.info("Batch Job {}: Updated Batch Job Status "
@@ -350,13 +361,24 @@ def kube_create_job(
 
     logging.info("Batch Job {}:  "
                  "creating kube job object".format(job_model.name))
+
+    # Handle different container types
+    command = None
+    args = None
+    if job_specs["type"] == JOB_TYPE_WEBSCRAPER:
+      # Webscraper uses Go binary
+      command = ["/app/webscraper"]
+      args = []  # Add any required args for webscraper
+
     body = kube_create_job_object(
       name=name,
       container_image=container_image,
       namespace=namespace,
       env_vars=env_vars,
       limits=limits,
-      requests=requests)
+      requests=requests,
+      command=command,
+      args=args)
 
     logging.info("Batch Job {}:  "
                  "kube job body created".format(job_model.name))
@@ -389,18 +411,22 @@ def kube_get_namespaced_deployment_image_path(deployment_name, container_name,
     returns:
       image_path: (str)- container image path
   """
-  image_path = "gcr.io/{}/{}:latest".format(gcp_project, container_name)
+  image_path = \
+      f"us-docker.pkg.dev/{gcp_project}/default/{container_name}"
   try:
     apis_api = client.AppsV1Api()
     resp = apis_api.read_namespaced_deployment(deployment_name, namespace)
     for container in resp.spec.template.spec.containers:
       if container_name == container.name:
         image_path = container.image.split("@")[0]
+        logging.info(
+            f"found container {container.name} image path {image_path}")
         break
   except ApiException as e:
     logging.info("---ERROR---")
     logging.info(e)
     raise BatchJobError(str(e)) from e
+  logging.info(f"image path {image_path}")
   return image_path
 
 
@@ -448,3 +474,45 @@ def find_duplicate_jobs(job_type, request_body=None):
 
   # return empty if no duplicate jobs
   return {}
+
+
+def get_latest_artifact_registry_image(
+    repository: str, package_name: str, location="us", project_id=None):
+  """Get the latest image version from Artifact Registry
+
+  Args:
+      repository: Name of the Artifact Registry repository
+      package_name: Name of the container package
+      location: Registry location (defaults to 'us')
+      project_id: GCP project ID (defaults to None)
+
+  Returns:
+      Full image path including latest version tag
+  """
+  try:
+    # Get all tags and find the latest
+    registry_client = artifactregistry_v1.ArtifactRegistryClient()
+    parent = registry_client.package_path(project_id, location, repository, package_name)
+    request = ListTagsRequest(
+        parent=parent,
+    )
+    tags = registry_client.list_tags(request)
+
+    latest_tag = None
+    latest_version = None
+    for tag in tags:
+      if tag.version:
+        if not latest_version or tag.version > latest_version:
+          latest_tag = tag
+          latest_version = tag.version
+
+    if latest_tag:
+      tag_dict = registry_client.parse_tag_path(latest_tag.name)
+      return f"{location}-docker.pkg.dev/{project_id}/{repository}/{package_name}:{tag_dict['tag']}"
+
+    raise Exception(f"No versions found for image {package_name}")
+
+  except Exception as e:
+    logging.error(f"Error getting latest image version: {str(e)}")
+    # Fall back to default image path without version
+    return f"{location}-docker.pkg.dev/{project_id}/{repository}/{package_name}"

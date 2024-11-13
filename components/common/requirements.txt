@@ -13,6 +13,7 @@ google-cloud-bigquery==3.10.0
 google-cloud-core==2.3.2
 google-cloud-logging==3.5.0
 google-cloud-secret-manager==2.16.1
+google-cloud-artifact-registry==1.13.0
 google-crc32c==1.5.0
 jsonschema==4.18.0
 kubernetes==27.2.0

@@ -45,6 +45,7 @@ def initiate_batch_job(request_body, job_type, env_vars={},
       "input_data": json.dumps(request_body)
   }
   env_vars.update({"GCP_PROJECT": GCP_PROJECT})
+  env_vars.update({"DEPLOYMENT_NAME": DEPLOYMENT_NAME})
 
   # Find duplicate job.
   if not allow_duplicate_jobs:
