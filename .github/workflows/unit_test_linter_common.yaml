@@ -8,7 +8,6 @@ on:
   pull_request:
     branches:
       - main
-      - dev
     paths:
       - "components/common/src/**.py"
       - ".github/workflows/unit_test_linter_common.yaml"
