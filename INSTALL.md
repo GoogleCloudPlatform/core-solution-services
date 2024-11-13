@@ -462,3 +462,15 @@ Fix
 brew install gettext
 brew link --force gettext 
 ```
+
+### 502 Bad Gateway Error when using LLM Service
+If you have an existing Genie installation where the response takes a while and returns an 502 error, it could be because the backend LLM service is using the default timeout of 30 sec. The solution is to redeploy the LLM service manually because `skaffold run` does not automatically apply the backendconfig changes.
+
+Fix
+```shell
+cd components/llm_service/kustomize/base
+kubectl delete service llm-service
+kubectl apply -f backend_config.yaml
+kubectl apply -f service.yaml
+cd -
+```
