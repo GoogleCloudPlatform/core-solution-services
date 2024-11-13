@@ -46,7 +46,7 @@ Logger = Logger.get_logger(__file__)
 # number of sentences included before and after the current
 # sentence when creating chunks (chunks have overlapping text)
 CHUNK_SENTENCE_PADDING = 1
-# string added to the front of a folder to identify it as a folder crated by
+# string added to the front of a folder to identify it as a folder created by
 # genie to store extracted files duirng document parsing that should not
 # itself be parsed
 GENIE_FOLDER_MARKER = "_genie_"
