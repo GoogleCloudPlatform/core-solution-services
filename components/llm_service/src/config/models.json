@@ -87,7 +87,7 @@
     },
     "VertexAI-Gemini-Pro": {
       "is_chat": true,
-      "is_multi": true,
+      "is_multi": false,
       "provider": "Vertex",
       "model_name": "gemini-pro",
       "context_length": 128000

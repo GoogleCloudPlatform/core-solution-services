@@ -57,8 +57,11 @@ const jobsEndpoint = envOrFail(
 )
 
 export const fetchAllChatModels =
-  (token: string) => (): Promise<string[] | undefined> => {
-    const url = `${endpoint}/chat/chat_types`
+  (token: string, isMultimodal?: boolean) => (): Promise<string[] | undefined> => {
+    let url = `${endpoint}/chat/chat_types`
+    if (isMultimodal !== undefined) {
+      url += `?is_multimodal=${isMultimodal}`
+    }
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
@@ -118,6 +121,13 @@ export const resumeChat =
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
 
+export const fetchEmbeddingTypes =
+  (token: string, are_multimodal: boolean) => (): Promise<string[] | undefined | null> => {
+    let url = `${endpoint}/llm/embedding_types?is_multimodal=${are_multimodal}`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+  }
+
 export const fetchQuery =
   (token: string, queryId: string | null) => (): Promise<Query | undefined | null> => {
     if (!queryId) return Promise.resolve(null)
@@ -169,6 +179,7 @@ export const createQueryEngine =
         "associated_engines": queryEngine.child_engines,
         "manifest_url": queryEngine.manifest_url,
         "chunk_size": queryEngine.chunk_size,
+        "is_multimodal": queryEngine.is_multimodal ? "True" : "False",
       }
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))

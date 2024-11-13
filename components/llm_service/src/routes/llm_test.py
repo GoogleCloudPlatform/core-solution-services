@@ -65,7 +65,7 @@ FAKE_GENERATE_PARAMS = {
   "prompt": "test prompt"
 }
 
-FAKE_GENERATE_MULTI_PARAMS = {
+FAKE_GENERATE_MULTIMODAL_PARAMS = {
   "llm_type": "LLM Test",
   "prompt": "test prompt",
   "user_file_b64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs\
@@ -78,7 +78,7 @@ FAKE_GENERATE_EMBEDDINGS = {
   "text": "test prompt"
 }
 
-FAKE_GENERATE_EMBEDDINGS_MULTI = {
+FAKE_GENERATE_EMBEDDINGS_MULTIMODAL = {
   "embedding_type": "Embedding Test",
   "text": "test prompt",
   "user_file_b64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs\
@@ -88,7 +88,7 @@ FAKE_GENERATE_EMBEDDINGS_MULTI = {
 
 FAKE_GENERATE_RESPONSE = "test generation"
 FAKE_EMBEDDINGS = [0.01234]
-FAKE_EMBEDDINGS_MULTI = {
+FAKE_EMBEDDINGS_MULTIMODAL = {
   "image_embeddings": FAKE_EMBEDDINGS,
   "text_embeddings": FAKE_EMBEDDINGS
 }
@@ -136,18 +136,18 @@ def test_embedding_types(client_with_emulator):
   assert resp.status_code == 200, "Status 200"
   assert json_response.get("data") == get_model_config().get_embedding_types()
 
-def test_embedding_types_multi(client_with_emulator):
+def test_embedding_types_multimodal(client_with_emulator):
   url = f"{api_url}/embedding_types"
-  params = {"is_multi": True}
+  params = {"is_multimodal": True}
   resp = client_with_emulator.get(url, params = params)
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
   assert json_response.get("data") == \
-    get_model_config().get_multi_embedding_types()
+    get_model_config().get_multimodal_embedding_types()
 
 def test_embedding_types_text(client_with_emulator):
   url = f"{api_url}/embedding_types"
-  params = {"is_multi": False}
+  params = {"is_multimodal": False}
   resp = client_with_emulator.get(url, params = params)
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
@@ -167,16 +167,17 @@ def test_generate_embeddings(client_with_emulator):
     "returned generated embeddings"
 
 
-def test_generate_embeddings_multi(client_with_emulator):
-  url = f"{api_url}/embedding/multi"
+def test_generate_embeddings_multimodal(client_with_emulator):
+  url = f"{api_url}/embedding/multimodal"
 
-  with mock.patch("routes.llm.get_multi_embeddings",
-                  return_value=FAKE_EMBEDDINGS_MULTI):
-    resp = client_with_emulator.post(url, json=FAKE_GENERATE_EMBEDDINGS_MULTI)
+  with mock.patch("routes.llm.get_multimodal_embeddings",
+                  return_value=FAKE_EMBEDDINGS_MULTIMODAL):
+    resp = client_with_emulator.post(url,
+                                     json=FAKE_GENERATE_EMBEDDINGS_MULTIMODAL)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
-  assert json_response.get("data") == FAKE_EMBEDDINGS_MULTI, \
+  assert json_response.get("data") == FAKE_EMBEDDINGS_MULTIMODAL, \
     "returned generated embeddings"
 
 
@@ -192,13 +193,13 @@ def test_llm_generate(client_with_emulator):
   assert json_response.get("content") == FAKE_GENERATE_RESPONSE, \
     "returned generated text"
 
-def test_llm_generate_multi(client_with_emulator):
-  url = f"{api_url}/generate/multi"
+def test_llm_generate_multimodal(client_with_emulator):
+  url = f"{api_url}/generate/multimodal"
 
-  with mock.patch("routes.llm.llm_generate_multi",
+  with mock.patch("routes.llm.llm_generate_multimodal",
                   return_value=FAKE_GENERATE_RESPONSE):
     resp = client_with_emulator.post(url, data=json.dumps(
-      FAKE_GENERATE_MULTI_PARAMS))
+      FAKE_GENERATE_MULTIMODAL_PARAMS))
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
