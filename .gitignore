@@ -41,3 +41,7 @@ node_modules
 
 # VSCode related
 *.code-workspace
+
+# react deployment configurations
+components/frontend_react/webapp/.env.production
+components/frontend_react/webapp/.env.development

@@ -50,20 +50,23 @@ from services.query.vector_store import (VectorStore,
                                          MatchingEngineVectorStore,
                                          PostgresVectorStore,
                                          NUM_MATCH_RESULTS)
-from services.query.data_source import DataSource
+from services.query.data_source import DataSource, DataSourceFile
 from services.query.web_datasource import WebDataSource
+from services.query.web_datasource_job import WebDataSourceJob
 from services.query.sharepoint_datasource import SharePointDataSource
 from services.query.vertex_search import (build_vertex_search,
                                           query_vertex_search,
                                           delete_vertex_search)
 from utils.errors import (NoDocumentsIndexedException,
                           ContextWindowExceededException)
+from utils.file_helper import validate_multimodal_file_type
 from utils import text_helper
 from config import (PROJECT_ID, DEFAULT_QUERY_CHAT_MODEL,
-                    DEFAULT_MULTI_LLM_TYPE,
+                    DEFAULT_MULTIMODAL_LLM_TYPE,
                     DEFAULT_QUERY_EMBEDDING_MODEL,
-                    DEFAULT_QUERY_MULTI_EMBEDDING_MODEL,
-                    DEFAULT_WEB_DEPTH_LIMIT, get_model_config)
+                    DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL,
+                    DEFAULT_WEB_DEPTH_LIMIT, get_model_config,
+                    MODALITY_SET)
 from config.vector_store_config import (DEFAULT_VECTOR_STORE,
                                         VECTOR_STORE_LANGCHAIN_PGVECTOR,
                                         VECTOR_STORE_MATCHING_ENGINE)
@@ -149,6 +152,7 @@ async def query_generate(
       llm_type = q_engine.llm_type
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
+  Logger.info(f"query_generate {llm_type=}")
 
   # check if user has access to model
   if not get_model_config().is_model_enabled_for_user(llm_type, user_data):
@@ -175,14 +179,29 @@ async def query_generate(
         prompt, None, user_id, q_engine, query_references, user_query)
 
   # generate question prompt
+  # (from user's text prompt plus text info in query_references)
   question_prompt, query_references = \
       await generate_question_prompt(prompt,
                                      llm_type,
                                      query_references,
                                      user_query)
 
-  # send prompt to model
-  question_response = await llm_chat(question_prompt, llm_type)
+  # generate list of URLs for additional context
+  # (from non-text info in query_references)
+  context_files = []
+  for ref in query_references:
+    if ref.modality != "text" and ref.chunk_url:
+      ref_filename = ref.chunk_url
+      ref_mimetype = validate_multimodal_file_type(file_name=ref_filename,
+                                                   file_b64=None)
+      context_files.append(DataSourceFile(gcs_path=ref_filename,
+                                          mime_type=ref_mimetype))
+      # TODO: If ref is a video chunk, then update new element of
+      # context_files according to ref.timestamp_start and ref.timestamp_stop
+
+  # send prompt and additional context to model
+  question_response = await llm_chat(question_prompt, llm_type,
+                                     chat_files=context_files)
 
   # update user query with response
   if user_query:
@@ -318,6 +337,7 @@ async def retrieve_references(prompt: str,
     # default if type is not set to llm service query
     query_references = await query_search(q_engine, prompt,
                                           rank_sentences, query_filter)
+
   return query_references
 
 async def query_search(q_engine: QueryEngine,
@@ -337,20 +357,52 @@ async def query_search(q_engine: QueryEngine,
     list of QueryReference models
 
   """
+  # Get is_multimodal flag from q_engine
+  params = q_engine.params #q_engine should always have a field called params
+  is_multimodal = False
+  if "is_multimodal" in params and isinstance(params["is_multimodal"], str):
+    is_multimodal = params["is_multimodal"].lower()
+    is_multimodal = is_multimodal == "true"
+
   Logger.info(f"Retrieving doc references for q_engine=[{q_engine.name}], "
               f"query_prompt=[{query_prompt}]")
   # generate embeddings for prompt
-  _, query_embeddings = \
-      await embeddings.get_embeddings([query_prompt], q_engine.embedding_type)
-  query_embedding = query_embeddings[0]
+  if is_multimodal:
+    # TODO: Once multimodal embedding model can operate in batch mode
+    # and get_multimodal_embeddings is edited to send multiple chunks to
+    # the model in batch mode, then edit this code so that we input a
+    # LIST of text strings and a LIST of images to get_multimodal_embeddings
+    # instead of a single text string and a single image. Then also
+    # extract a single embedding vector from the output instead
+    # of a LIST of embedding vectors.
+    # TODO: Once we allow multimodal queries, input an image or video
+    # potentially audio into get_multimodal_embeddings, instead of None,
+    # and set "image" or "video" or potentially "audio" keys of query_embedding
+    query_embeddings = \
+      await embeddings.get_multimodal_embeddings(query_prompt,
+                                            None,
+                                            q_engine.embedding_type)
+    query_embedding = query_embeddings["text"]
+  else:
+    # The text-only embedding model operates in batch mode
+    # and get_embeddings sends multiple chunks to
+    # the model in batch mode, and so we input a
+    # LIST of text strings to get_embeddings
+    # instead of a single text string.  Then we
+    # extract a single embedding vector from the output instead
+    # of a LIST of embedding vectors.
+    _, query_embeddings = \
+        await embeddings.get_embeddings([query_prompt],
+                                        q_engine.embedding_type)
+    query_embedding = query_embeddings[0]
 
   # retrieve indexes of relevant document chunks from vector store
   qe_vector_store = vector_store_from_query_engine(q_engine)
   match_indexes_list = qe_vector_store.similarity_search(q_engine,
                                                          query_embedding,
                                                          query_filter)
-  query_references = []
 
+  query_references = []
   # Assemble document chunk models from vector store indexes
   for match in match_indexes_list:
     doc_chunk = QueryDocumentChunk.find_by_index(q_engine.id, match)
@@ -371,8 +423,23 @@ async def query_search(q_engine: QueryEngine,
     query_reference.save()
     query_references.append(query_reference)
 
+    # Also create a query_reference for other modalities of the same chunk
+    linked_ids = query_reference.linked_ids
+    if linked_ids:
+      for linked_id in linked_ids:
+        query_doc_chunk_friend = QueryDocumentChunk.find_by_id(linked_id)
+        query_reference_friend = make_query_reference(
+          q_engine=q_engine,
+          query_doc=query_doc,
+          doc_chunk=query_doc_chunk_friend,
+          query_embeddings=query_embeddings,
+          rank_sentences=rank_sentences)
+        query_reference_friend.save()
+        query_references.append(query_reference_friend)
+
   Logger.info(f"Retrieved {len(query_references)} "
                f"references={query_references}")
+
   return query_references
 
 
@@ -396,7 +463,6 @@ def make_query_reference(q_engine: QueryEngine,
   Returns:
     query_reference: The QueryReference object corresponding to doc_chunk
   """
-
   # Get modality of document chunk, make lowercase
   # If modality is None, set it equal to default value "text"
   modality = doc_chunk.modality
@@ -453,6 +519,7 @@ def make_query_reference(q_engine: QueryEngine,
   query_reference_dict["document_url"]=query_doc.doc_url
   query_reference_dict["modality"]=modality
   query_reference_dict["chunk_id"]=doc_chunk.id
+  query_reference_dict["linked_ids"]=doc_chunk.linked_ids
   # For text chunk only
   if modality=="text":
     query_reference_dict["page"]=doc_chunk.page
@@ -616,7 +683,7 @@ def update_user_query(prompt: str,
                       query_references: List[QueryReference],
                       user_query: UserQuery = None,
                       query_filter=None) -> \
-                      Tuple[UserQuery, dict]:
+                      Tuple[UserQuery, List[dict]]:
   """ Save user query history """
   query_reference_dicts = [
     ref.get_fields(reformat_datetime=True) for ref in query_references
@@ -763,13 +830,13 @@ async def query_engine_build(doc_url: str,
   # create model
   if llm_type is None:
     if is_multimodal:
-      llm_type = DEFAULT_MULTI_LLM_TYPE
+      llm_type = DEFAULT_MULTIMODAL_LLM_TYPE
     else:
       llm_type = DEFAULT_QUERY_CHAT_MODEL
 
   if embedding_type is None:
     if is_multimodal:
-      embedding_type = DEFAULT_QUERY_MULTI_EMBEDDING_MODEL
+      embedding_type = DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL
     else:
       embedding_type = DEFAULT_QUERY_EMBEDDING_MODEL
 
@@ -918,7 +985,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
       Logger.info(f"processing [{doc_name}] with {is_multimodal=}")
 
       if is_multimodal:
-        doc_chunks = data_source.chunk_document_multi(doc_name,
+        doc_chunks = data_source.chunk_document_multimodal(doc_name,
                                                       index_doc_url,
                                                       doc_filepath)
       else:
@@ -941,7 +1008,7 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           metadata_list = [deepcopy(metadata) for chunk in doc_chunks]
         if is_multimodal:
           new_index_base = \
-            await qe_vector_store.index_document_multi(doc_name,
+            await qe_vector_store.index_document_multimodal(doc_name,
                                                        doc_chunks,
                                                        index_base)
           Logger.info(
@@ -975,32 +1042,79 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
                                 metadata=metadata)
       query_doc.save()
 
+      # Initialize counter of all ORM objects to be made from all chunks
+      j = 0
+      # Iterate over all chunks
       for i in range(0, len(doc_chunks)):
 
-        # Get string representing doc_chunks[i]
-        # Will use string to make QueryDocumentChunk object
         if is_multimodal:
-          # doc_chunks[i] is an image, so
-          # String holds url where image is saved
-          doc_chunk=doc_chunks[i]["image_url"]
+          # Use multimodal pipeline
+
+          # Initialize list of ORM object indexes and ids to be made
+          # from this chunk
+          linked_indexes = []
+          linked_ids = []
+          # Sort keys of ith chunk in alphabetical order
+          # Keys of interest are in MODALITY_SET
+          # These keys hold info related to specific modalities that
+          # need to be stored in ORM objects
+          sorted_keys = sorted(list(doc_chunks[i].keys()))
+
+          # Create a QueryDocumentChunk ORM object for each modality
+          # of ith chunk, in alphabetical order
+          for key in sorted_keys:
+            if key in MODALITY_SET:
+              # doc_chunk is dict representing ith chunk
+              doc_chunk = doc_chunks[i]
+              # Make ORM object for current modality of ith chunk
+              query_doc_chunk = make_query_document_chunk(
+                query_engine_id=q_engine.id,
+                query_document_id=query_doc.id,
+                index=j+index_base,
+                doc_chunk=doc_chunk,
+                page=i,
+                data_source=data_source,
+                modality=key)
+              # Save ORM object in Firestore
+              query_doc_chunk.save()
+              # Build up lists of ORM object indexes and ids made for ith chunk
+              linked_indexes.append(query_doc_chunk.index)
+              linked_ids.append(query_doc_chunk.id)
+              # Increment counter of all ORM objects made for all chunks
+              j+=1
+
+          # Set linked_ids field of all ORM objects just made for ith chunk
+          for index in linked_indexes:
+            query_doc_chunk = \
+              QueryDocumentChunk.find_by_index(q_engine.id, index)
+            friend_ids = [friend_id for friend_id in linked_ids
+                          if friend_id != query_doc_chunk.id]
+            query_doc_chunk.linked_ids = friend_ids
+            query_doc_chunk.save()
+
         else:
-          # doc_chunks[i] is text, so
-          # String holds text itself
-          doc_chunk=doc_chunks[i]
+          # Use text-only pipeline
 
-        # Make QueryDocumentChunk object for doc_chunk
-        query_doc_chunk = make_query_document_chunk(
-          query_engine_id=q_engine.id,
-          query_document_id=query_doc.id,
-          index=i+index_base,
-          doc_chunk=doc_chunk,
-          page=i,
-          data_source=data_source,
-          is_multimodal=is_multimodal,
-        )
-        query_doc_chunk.save()
+          # doc_chunk is a dict representing the ith chunk
+          # with key "text"
+          doc_chunk = {}
+          doc_chunk["text"] = doc_chunks[i]
+          # Make ORM object for text modality of ith chunk
+          query_doc_chunk = make_query_document_chunk(
+            query_engine_id=q_engine.id,
+            query_document_id=query_doc.id,
+            index=i+index_base,
+            doc_chunk=doc_chunk,
+            page=None,
+            data_source=data_source,
+            modality="text")
+          # Save ORM object in Firestore
+          query_doc_chunk.save()
 
-      Logger.info(f"doc chunk models created for [{doc_name}]")
+      if is_multimodal:
+        Logger.info(f"{j} doc chunk models created for [{doc_name}]")
+      else:
+        Logger.info(f"{i+1} doc chunk models created for [{doc_name}]")
 
       index_base = new_index_base
       docs_processed.append(query_doc)
@@ -1011,10 +1125,10 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
 def make_query_document_chunk(query_engine_id: str,
                               query_document_id: str,
                               index: int,
-                              doc_chunk: str,
+                              doc_chunk: dict,
                               page: int,
                               data_source: DataSource,
-                              is_multimodal: bool) -> \
+                              modality: str) -> \
                                 QueryDocumentChunk:
   """
   Make a single QueryDocumentChunk object, with appropriate fields
@@ -1024,48 +1138,17 @@ def make_query_document_chunk(query_engine_id: str,
     query_engine_id: The ID of the query engine
     query_document_id: The ID of the document that the doc_chunk came from
     index: The index assigned to the doc_chunk 
-    doc_chunk: String representing the doc_chunk
-      If doc_chunk is text, then string holds the text itself
-      If doc_chunk is an image, then string holds the url
-        of the cloud bucket where the image is saved
+    doc_chunk: A dict representing the doc_chunk, with fields:
+      "text": The text extracted from doc_chunk
+      "image": The image bytes extracted from doc_chunk
     page: The page of the document that the doc_chunk came from
     data_source: The data source class of the document
-    is_multimodal: True if multimodal processing, False if text-only
+    modality: The modality of the corresponding embedding vector 
+      extracted from the doc_chunk
   
   Returns:
     query_document_chunk: QueryDocumentChunk object corresponding to doc_chunk
   """
-
-  # Set modality
-  if is_multimodal:
-    modality="image"  # Fix later to not assume all multimodal docs are images
-  else:
-    modality="text"
-
-  # Clean up text chunk
-  if modality=="text":
-    # doc_chunk is a string holding the text itself
-    clean_text = data_source.clean_text(doc_chunk)
-    sentences = data_source.text_to_sentence_list(doc_chunk)
-
-  # Clean up image chunk
-  elif modality=="image":
-    #TODO: If needed, insert logic to filter, tile, or otherwise
-    #pre-process image
-    pass
-
-  # Clean up video chunk
-  elif modality=="video":
-    #TODO: If needed, insert logic to filter, transcribe, or otherwise
-    #pre-process video
-    pass
-
-  # Clean up audio chunk
-  elif modality=="audio":
-    #TODO: If needed, insert logic to filter, transcribe, or otherwise
-    #pre-process audio.
-    pass
-
   # Create dict to hold all fields of query_document_chunk,
   # depending on its modality
   query_document_chunk_dict = {}
@@ -1076,20 +1159,22 @@ def make_query_document_chunk(query_engine_id: str,
   query_document_chunk_dict["modality"]=modality
   # For text chunk only
   if modality=="text":
-    # doc_chunk is a string holding text itself
     query_document_chunk_dict["page"]=page
-    query_document_chunk_dict["text"]=doc_chunk
-    query_document_chunk_dict["clean_text"]=clean_text
-    query_document_chunk_dict["sentences"]=sentences
+    query_document_chunk_dict["text"]=doc_chunk["text"]
+    query_document_chunk_dict["clean_text"]=\
+      data_source.clean_text(doc_chunk["text"])
+    query_document_chunk_dict["sentences"]=\
+      data_source.text_to_sentence_list(doc_chunk["text"])
   # For image chunk only
   elif modality=="image":
-    # doc_chunk is a string holding url of the file that the image is saved to
     query_document_chunk_dict["page"]=page
-    query_document_chunk_dict["chunk_url"]=doc_chunk
+    if "image_url" in doc_chunk:
+      query_document_chunk_dict["chunk_url"]=doc_chunk["image_url"]
   # For video and audio chunks only
   elif modality in {"video", "audio"}:
     #TODO: Insert logic to set values of the following keys:
-    #  "chunk_url": Holds url to the file that the video/audio is saved to
+    #  "chunk_url": Holds url to the file that the video/audio is saved to,
+    #    if the video/audio chunk is saved to a separate file
     #  "timestamp_start": Holds timestamp of beginning of video/audio chunk
     #  "timestamp_stop": Holds timestamp of ending of video/audio chunk
     pass
@@ -1125,7 +1210,7 @@ def datasource_from_url(doc_url: str,
                         q_engine: QueryEngine,
                         storage_client) -> DataSource:
   """
-  Check if doc_url is supported as a data source.  If so return
+  Check if doc_url is supported as a data source. If so return
   a DataSource class to handle the url.
   If not raise an InternalServerError exception.
   """
@@ -1138,12 +1223,20 @@ def datasource_from_url(doc_url: str,
     else:
       depth_limit = DEFAULT_WEB_DEPTH_LIMIT
     Logger.info(f"creating WebDataSource with depth limit [{depth_limit}]")
+
     # Create bucket name using query_engine name
     bucket_name = WebDataSource.downloads_bucket_name(q_engine.name)
-    return WebDataSource(storage_client,
-                         params=q_engine.params,
-                         bucket_name=bucket_name,
-                         depth_limit=depth_limit)
+
+    # Use WebDataSource for depth_limit=0, WebDataSourceJob otherwise
+    if depth_limit == 0:
+      return WebDataSource(storage_client,
+                           params=q_engine.params,
+                           bucket_name=bucket_name,
+                           depth_limit=depth_limit)
+    else:
+      return WebDataSourceJob(storage_client,
+                              q_engine.name,
+                              params=q_engine.params)
   elif doc_url.startswith("shpt://"):
     # Create bucket name using query_engine name
     bucket_name = SharePointDataSource.downloads_bucket_name(q_engine.name)

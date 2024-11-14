@@ -26,7 +26,7 @@ const References: React.FC<ReferencesProps> = ({ references }) => {
     const map = new Map<string, T>()
     items.forEach(item => {
       const key: string = String(item[dedupKey])
-        map.set(key, item)
+      map.set(key, item)
     })
     return Array.from(map.values())
   }
@@ -37,6 +37,8 @@ const References: React.FC<ReferencesProps> = ({ references }) => {
         .replace("/b/", "https://storage.googleapis.com/")
         .replace("/o/", "/")
     }
+    if (url.startsWith("gs://"))
+      return url.replace("gs://", "https://storage.googleapis.com/")
     return url
   }
 
@@ -91,7 +93,12 @@ const References: React.FC<ReferencesProps> = ({ references }) => {
                className="text-info hover:text-info-content break-all transition-colors mr-1.5">
               {renderLinkTitle(ref.document_url)}:
             </a>
-            <Markdown children={truncateText(ref.document_text)} rehypePlugins={[rehypeRaw]} />
+            {ref?.modality === "image" ?
+              <img src={renderCloudStorageUrl(ref.chunk_url)} /> :
+              // if the modality is not image assume it is text to handle
+              // legacy query engines that didn't set a modality
+              <Markdown children={truncateText(ref.document_text)} rehypePlugins={[rehypeRaw]} />
+            }
           </span>
           <div className={index < uniqueReferences.length - 1 ? "mx-2 pt-3 border-b" : ""} />
         </div>

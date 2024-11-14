@@ -116,9 +116,9 @@ class WebDataSourceParser:
     }
     saved_path = save_content(self.filepath, file_name, file_content)
     if self.storage_client and self.bucket_name:
-      # rename .htm files to .html for upload to GCS
+      # rename .htm, .shtml files to .html for upload to GCS
       file_extension = Path(file_name).suffix
-      if file_extension == ".htm":
+      if file_extension in [".htm", ".shtml"]:
         new_filename = Path(file_name).stem + ".html"
         new_filepath = str(Path.joinpath(
           Path(saved_path).parent,
@@ -326,7 +326,11 @@ def run_crawler(queue,
   settings = {
     "ROBOTSTXT_OBEY": False,
     "DEPTH_LIMIT": depth_limit,
-    "LOG_LEVEL": "INFO"
+    "LOG_LEVEL": "INFO",
+    "DOWNLOAD_TIMEOUT": 360,
+    "CLOSESPIDER_TIMEOUT": 1800,
+    "CLOSESPIDER_TIMEOUT_NO_ITEM": 300,
+    "RETRY_TIMES": 1,
   }
   # create the Scrapy crawler process
   process = CrawlerProcess(settings=settings)

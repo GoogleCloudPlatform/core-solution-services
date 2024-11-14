@@ -70,6 +70,7 @@ export const FormVariable = z.object({
   fileLabel: z.string().optional(),
   multiple: z.boolean().default(false).optional(),
   accept: z.string().optional(),
+  onClick: z.function().optional(),
 })
 
 export type IFormVariable = z.infer<typeof FormVariable>
@@ -104,8 +105,10 @@ export interface QueryResponse {
 
 export interface QueryReferences {
   chunk_id: string
+  chunk_url: string
   document_url: string
   document_text: string
+  modality: string
 }
 
 export type QueryContents = {
@@ -187,11 +190,20 @@ export type QueryEngine = {
   endpoint: string | null
   doc_url: string | null
   manifest_url: string | null
-  params: string[] | null
+  // TODO: The params field is used by the ORM object for storing
+  // a map of possible keys and values, which is not reflected in the
+  // current QueryEngine interface
+  params: {
+    is_multimodal: string
+    // typing for an object with any fields taken from
+    // https://stackoverflow.com/questions/42723922
+    [key: string]: any
+  } | null
   depth_limit: number | null
   chunk_size: number | null
   agents: string[] | null  
   child_engines: string[] | null
+  is_multimodal: boolean | null
 }
 
 export type QueryEngineBuildParams = {
@@ -234,5 +246,5 @@ export type QueryEngineBuildJob = {
   output_gcs_path: any
   errors: any
   job_logs: any
-  metadata: any  
+  metadata: any
 }

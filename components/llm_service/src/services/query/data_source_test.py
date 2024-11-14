@@ -11,21 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+  Unit tests for Data Source
+"""
+import services
+import tempfile
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: llm-service
-  labels:
-    app: llm-service
-  annotations:
-    cloud.google.com/backend-config: '{"ports": {"80":"default-backend-config"}}'
-    cloud.google.com/neg: '{"ingress": true}' # Creates a NEG after an Ingress is created
-spec:
-  type: NodePort
-  ports:
-  - port: 80
-    protocol: TCP
-    targetPort: 80
-  selector:
-    app: llm-service
+import services.query.data_source
+
+def test_get_file_hash():
+  correct_hash = (
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+  with tempfile.NamedTemporaryFile() as f:
+    f.write(b"hello world!")
+    file_hash = services.query.data_source.get_file_hash(f.name)
+    assert file_hash == correct_hash

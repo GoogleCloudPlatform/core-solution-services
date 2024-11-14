@@ -33,3 +33,6 @@ requires:
 - configs:
   - frontend_flutterflow
   path: ./components/frontend_flutterflow
+- configs:
+  - webscraper
+  path: ./components/webscraper
