@@ -23,8 +23,7 @@ import google.auth.transport.requests
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
 from vertexai.preview.generative_models import (
-    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold,
-    GenerateContentResponse)
+    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
 from common.utils.errors import ResourceNotFoundException
@@ -637,7 +636,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
               if chunk.text:
                 yield chunk.text
           return response_generator()
-          
+
         return response.text
 
       else:
