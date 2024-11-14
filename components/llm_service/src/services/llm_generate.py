@@ -17,13 +17,14 @@ LLM Generation Service
 # pylint: disable=import-outside-toplevel,line-too-long
 import time
 import requests
-from typing import Optional, List
+from typing import Optional, List, AsyncGenerator, Union
 import google.auth
 import google.auth.transport.requests
 import google.cloud.aiplatform
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
 from vertexai.preview.generative_models import (
-    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold)
+    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold,
+    GenerateContentResponse)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
 from common.utils.errors import ResourceNotFoundException
@@ -52,14 +53,16 @@ Logger = Logger.get_logger(__file__)
 # whether prompt length exceeds context window size
 CHARS_PER_TOKEN = 3
 
-async def llm_generate(prompt: str, llm_type: str) -> str:
+async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
+    Union[str, AsyncGenerator[str, None]]:
   """
   Generate text with an LLM given a prompt.
   Args:
     prompt: the text prompt to pass to the LLM
     llm_type: the type of LLM to use (default to openai)
+    stream: whether to stream the response
   Returns:
-    the text response: str
+    Either the full text response as str, or an AsyncGenerator yielding response chunks
   """
   Logger.info(f"Generating text with an LLM given a prompt={prompt},"
               f" llm_type={llm_type}")
@@ -99,7 +102,8 @@ async def llm_generate(prompt: str, llm_type: str) -> str:
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = llm_type in chat_llm_types
       is_multi = False
-      response = await google_llm_predict(prompt, is_chat, is_multi, google_llm)
+      response = await google_llm_predict(
+          prompt, is_chat, is_multi, google_llm, stream=stream)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type)
     else:
@@ -165,9 +169,11 @@ async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
                    chat_files: List[DataSourceFile] = None,
-                   chat_file_bytes: bytes = None) -> str:
+                   chat_file_bytes: bytes = None,
+                   stream: bool = False) -> \
+                       Union[str, AsyncGenerator[str, None]]:
   """
-  Send a prompt to a chat model and return string response.
+  Send a prompt to a chat model and return string response or stream.
   Supports including a file in the chat context, either by URL or
   directly from file content.
 
@@ -178,8 +184,10 @@ async def llm_chat(prompt: str, llm_type: str,
     user_query (optional): a user query to use for context
     chat_files (List[DataSourceFile]): files to include in chat context
     chat_file_bytes (bytes): bytes of file to include in chat context
+    stream: whether to stream the response
   Returns:
-    the text response: str
+    Either the full text response as str, or an AsyncGenerator
+      yielding response chunks
   """
   chat_file_bytes_log = chat_file_bytes[:10] if chat_file_bytes else None
   Logger.info(f"Generating chat with llm_type=[{llm_type}],"
@@ -238,10 +246,9 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
-      response = await google_llm_predict(prompt, is_chat, is_multi,
-                                          google_llm, user_chat,
-                                          chat_file_bytes,
-                                          chat_files)
+      response = await google_llm_predict(prompt, is_chat, is_multi, google_llm,
+                                        user_chat, chat_file_bytes, chat_files,
+                                        stream=stream)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
     return response
@@ -525,7 +532,8 @@ async def model_garden_predict(prompt: str,
 async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
                 google_llm: str, user_chat=None,
                 user_file_bytes: bytes=None,
-                user_files: List[DataSourceFile]=None) -> str:
+                user_files: List[DataSourceFile]=None,
+                stream: bool=False) -> Union[str, AsyncGenerator[str, None]]:
   """
   Generate text with a Google multimodal LLM given a prompt.
   Args:
@@ -536,8 +544,9 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
     user_chat: chat history
     user_file_bytes: the bytes of the file provided by the user
     user_files: list of DataSourceFiles for files provided by the user
+    stream: whether to stream the response
   Returns:
-    the text response.
+    Either the full text response as str, or an AsyncGenerator yielding response chunks
   """
   user_file_bytes_log = user_file_bytes[:10] if user_file_bytes else None
   Logger.info(f"Generating text with a Google multimodal LLM:"
@@ -600,11 +609,24 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multi: bool,
           Logger.info(f"context list {context_list}")
           generation_config = GenerationConfig(**parameters)
           response = await chat_model.generate_content_async(context_list,
-              generation_config=generation_config)
+              generation_config=generation_config,
+              stream=stream)
         else:
           chat = chat_model.start_chat()
           response = await chat.send_message_async(context_prompt,
-              generation_config=parameters, safety_settings=safety_settings)
+              generation_config=parameters,
+              safety_settings=safety_settings,
+              stream=stream)
+
+        if stream:
+          async def response_generator():
+            async for chunk in response:
+              if chunk.text:
+                yield chunk.text
+          return response_generator()
+          
+        return response.text
+
       else:
         chat_model = ChatModel.from_pretrained(google_llm)
         chat = chat_model.start_chat()
