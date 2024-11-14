@@ -18,6 +18,7 @@
 import traceback
 from typing import Union, Annotated
 from fastapi import APIRouter, Depends, Form, UploadFile
+from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
 from common.models.llm import CHAT_FILE, CHAT_FILE_URL
 from common.utils.auth_service import validate_token
@@ -231,13 +232,13 @@ def delete_chat(chat_id: str, hard_delete=False):
 
 @router.post(
     "",
-    name="Create new chat",
-    response_model=LLMUserChatResponse)
+    name="Create new chat")
 async def create_user_chat(
      prompt: Annotated[str, Form()],
      llm_type: Annotated[str, Form()] = None,
      chat_file_url: Annotated[str, Form()] = None,
      chat_file: Union[UploadFile, None] = None,
+     stream: Annotated[bool, Form()] = False,
      user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.  
@@ -249,13 +250,15 @@ async def create_user_chat(
       llm_type(str): llm model id
       chat_file(UploadFile): file upload for chat context
       chat_file_url(str): file url for chat context
+      stream(bool): whether to stream the response
 
   Returns:
-      LLMUserChatResponse
+      LLMUserChatResponse or StreamingResponse
   """
   Logger.info("Creating new chat using"
               f" prompt={prompt} llm_type={llm_type}"
-              f" chat_file={chat_file} chat_file_url={chat_file_url}")
+              f" chat_file={chat_file} chat_file_url={chat_file_url}"
+              f" stream={stream}")
 
   if prompt is None or prompt == "":
     return BadRequest("Missing or invalid payload parameters")
@@ -277,9 +280,17 @@ async def create_user_chat(
 
     # generate text from prompt
     response = await llm_chat(prompt,
-                              llm_type,
-                              chat_files=chat_files,
-                              chat_file_bytes=chat_file_bytes)
+                            llm_type,
+                            chat_files=chat_files,
+                            chat_file_bytes=chat_file_bytes,
+                            stream=stream)
+
+    if stream:
+      # Return streaming response
+      return StreamingResponse(
+          response,
+          media_type="text/event-stream"
+      )
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
@@ -310,24 +321,22 @@ async def create_user_chat(
 
 
 @router.post(
-    "/{chat_id}/generate",
-    name="Generate new chat response",
-    response_model=LLMUserChatResponse)
+    "/{chat_id}/generate")
 async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   """
   Continue chat based on context of user chat
 
   Args:
       gen_config: Input config dictionary,
-        including prompt(str) and llm_type(str) type for model
+        including prompt(str), llm_type(str) type for model,
+        and stream(bool) for streaming mode
 
   Returns:
-      LLMUserChatResponse
+      LLMUserChatResponse or StreamingResponse
   """
   genconfig_dict = {**gen_config.dict()}
   Logger.info(f"Generating new chat response for chat_id={chat_id},"
               f"genconfig_dict={genconfig_dict}")
-  response = []
 
   prompt = genconfig_dict.get("prompt")
   if prompt is None or prompt == "":
@@ -343,8 +352,18 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   if llm_type is None:
     llm_type = user_chat.llm_type or DEFAULT_CHAT_LLM_TYPE
 
+  # get streaming mode
+  stream = genconfig_dict.get("stream", False)
+
   try:
-    response = await llm_chat(prompt, llm_type, user_chat)
+    response = await llm_chat(prompt, llm_type, user_chat, stream=stream)
+
+    if stream:
+      # Return streaming response
+      return StreamingResponse(
+          response,
+          media_type="text/event-stream"
+      )
 
     # save chat history
     user_chat.update_history(prompt, response)

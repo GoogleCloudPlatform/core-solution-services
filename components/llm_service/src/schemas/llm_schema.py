@@ -98,6 +98,7 @@ class LLMGenerateModel(BaseModel):
   """LLM Generate request model"""
   prompt: str
   llm_type: Optional[str] = None
+  stream: Optional[bool] = False
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": LLM_GENERATE_EXAMPLE
   })
