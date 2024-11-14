@@ -28,18 +28,21 @@ interface RunChatParams {
   llmType: string
   uploadFile: File
   fileUrl: string
+  stream: boolean
 }
 
 interface ResumeQueryParams {
   queryId: string
   userInput: string
   llmType: string
+  stream: boolean
 }
 
 interface ResumeChatParams {
   chatId: string
   userInput: string
   llmType: string
+  stream: boolean
 }
 
 interface JobStatusResponse {
@@ -88,19 +91,30 @@ export const createChat =
     llmType,
     uploadFile,
     fileUrl,
-  }: RunChatParams): Promise<Chat | undefined> => {
+    stream = false
+  }: RunChatParams): Promise<Chat | ReadableStream | undefined> => {
     const url = `${endpoint}/chat`
     const headers = { 
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data'
     }
-    let data = {
-      prompt: userInput,
-      llm_type: llmType,
-      chat_file: uploadFile,
-      chat_file_url: fileUrl
+    const formData = new FormData()
+    formData.append('prompt', userInput)
+    formData.append('llm_type', llmType)
+    formData.append('stream', String(stream))
+    if (uploadFile) formData.append('chat_file', uploadFile)
+    if (fileUrl) formData.append('chat_file_url', fileUrl)
+
+    if (stream) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      })
+      return response.body
     }
-    return axios.post(url, data, { headers }).then(path(["data", "data"]))
+
+    return axios.post(url, formData, { headers }).then(path(["data", "data"]))
   }
 
 export const resumeChat =
@@ -108,13 +122,28 @@ export const resumeChat =
     chatId,
     userInput,
     llmType,
-  }: ResumeChatParams): Promise<Chat | undefined> => {
+    stream = false
+  }: ResumeChatParams): Promise<Chat | ReadableStream | undefined> => {
     const url = `${endpoint}/chat/${chatId}/generate`
     const headers = { Authorization: `Bearer ${token}` }
     const data = {
       prompt: userInput,
       llm_type: llmType,
+      stream
     }
+
+    if (stream) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      return response.body
+    }
+
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
 
@@ -211,6 +240,7 @@ export const resumeQuery =
     queryId,
     userInput,
     llmType,
+    stream = false
   }: ResumeQueryParams): Promise<Query | undefined> => {
     const url = `${endpoint}/query/${queryId}`
     const headers = { Authorization: `Bearer ${token}` }
@@ -218,6 +248,7 @@ export const resumeQuery =
       prompt: userInput,
       llm_type: llmType,
       sentence_references: false,
+      stream
     }
     return axios.post(url, data, { headers }).then(path(["data", "data", "user_query_id"]))
   }
