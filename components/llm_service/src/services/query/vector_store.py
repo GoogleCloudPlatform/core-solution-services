@@ -95,6 +95,21 @@ class VectorStore(ABC):
     """
 
   @abstractmethod
+  async def index_document_multi(self, doc_name: str, doc_chunks: List[dict],
+                                 index_base: int,
+                                 metadata: List[dict] = None) -> int:
+    """
+    Generate index for a multimodal document in this vector store
+    Args:
+        doc_name (str): name of document to be indexed
+        doc_chunks (List[dict]): list of dicts containing chunk data
+        index_base (int): index to start from; each chunk gets its own index
+        metadata (List[dict]): list of metadata dicts for chunks
+    Returns:
+        new_index_base: updated query engine index base
+    """
+
+  @abstractmethod
   def deploy(self):
     """ Deploy vector store index for this query engine """
 

@@ -18,26 +18,28 @@ Flatten import namespace for models
 from common.config import ORM_MODE, SQL_ORM, FIRESTORE_ORM
 
 from .base_model import BaseModel
+from .batch_job import JobStatus
+from .user_event import UserEvent
+from .learning_record import LearningRecord
+from .agent import Agent
+from .node_item import NodeItem
+from .custom_fields import GCSPathField
+from .staff import Staff
 
 if ORM_MODE == SQL_ORM:
 
   from .base_model_sql import SQLBaseModel
   from .user_sql import User
   from .llm_sql import UserChat
-  from .llm_query_sql import QueryEngine, QueryReference, QueryResult, QueryDocument, QueryDocumentChunk
+  from .llm_query_sql import QueryEngine, QueryReference, QueryResult, QueryDocument, QueryDocumentChunk, UserQuery
   from .batch_job_sql import BatchJobModel
   from .session_sql import Session
 
 else: # ORM_MODE == FIRESTORE_ORM
 
-  from .node_item import NodeItem
   from .user import User
-  from .user_event import UserEvent
-  from .learning_record import LearningRecord
   from .llm import UserChat
-  from .llm_query import QueryEngine, QueryReference, QueryResult, QueryDocument, QueryDocumentChunk
-  from .agent import Agent
-  from .custom_fields import GCSPathField
+  from .llm_query import QueryEngine, QueryReference, QueryResult, QueryDocument, QueryDocumentChunk, UserQuery
   from .batch_job import BatchJobModel
   from .session import Session
-  from .staff import Staff
+

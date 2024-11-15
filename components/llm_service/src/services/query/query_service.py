@@ -23,8 +23,9 @@ import re
 from numpy.linalg import norm
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Union
 from google.cloud import storage
+from openai import OpenAI
 from rerankers import Reranker
 from common.utils.logging_handler import Logger
 from common.models import (UserQuery, QueryResult, QueryEngine,
@@ -225,7 +226,7 @@ async def generate_question_prompt(prompt: str,
                                    llm_type: str,
                                    query_references: List[QueryReference],
                                    user_query=None) -> \
-                                   Tuple[str, QueryReference]:
+                                   Tuple[str, List[QueryReference]]:
   """
   Generate question prompt for RAG, given initial prompt and retrieved
   references.  If necessary, trim context or references to fit context window
@@ -330,6 +331,7 @@ async def retrieve_references(prompt: str,
       child_query_references = await retrieve_references(prompt,
                                                          child_engine,
                                                          user_id,
+                                                         rank_sentences,
                                                          query_filter)
       query_references += child_query_references
   elif q_engine.query_engine_type == QE_TYPE_LLM_SERVICE or \
@@ -352,6 +354,7 @@ async def query_search(q_engine: QueryEngine,
     q_engine: QueryEngine to search
     query_prompt (str):  user query
     rank_sentences: rank sentence relevance in retrieved chunks
+    query_filter (dict)
 
   Returns:
     list of QueryReference models
@@ -633,9 +636,9 @@ async def batch_query_generate(request_body: Dict, job: BatchJobModel) -> Dict:
   query_engine_id = request_body.get("query_engine_id")
   prompt = request_body.get("prompt")
   user_id = request_body.get("user_id")
-  user_query_id = request_body.get("user_query_id", None)
+  user_query_id: Optional[str] = request_body.get("user_query_id", None)
   llm_type = request_body.get("llm_type")
-  rank_sentences = request_body.get("rank_sentences", None)
+  rank_sentences: Optional[str] = request_body.get("rank_sentences", None)
 
   q_engine = QueryEngine.find_by_id(query_engine_id)
   if q_engine is None:
@@ -685,13 +688,13 @@ def update_user_query(prompt: str,
                       query_filter=None) -> \
                       Tuple[UserQuery, List[dict]]:
   """ Save user query history """
-  query_reference_dicts = [
+  query_reference_dicts: List[dict] = [
     ref.get_fields(reformat_datetime=True) for ref in query_references
   ]
 
   # create user query if needed
   if user_query is None:
-    user_query = UserQuery(user_id=user_id,
+    user_query: UserQuery = UserQuery(user_id=user_id,
                           query_engine_id=q_engine.id,
                           prompt=prompt)
     user_query.save()
@@ -766,7 +769,7 @@ async def query_engine_build(doc_url: str,
                              embedding_type: Optional[str] = None,
                              vector_store_type: Optional[str] = None,
                              params: Optional[dict] = None
-                             ) -> Tuple[str, List[QueryDocument], List[str]]:
+                             ) -> Tuple[QueryEngine, List[QueryDocument], List[str]]:
   """
   Build a new query engine.
 
@@ -1010,7 +1013,8 @@ async def process_documents(doc_url: str, qe_vector_store: VectorStore,
           new_index_base = \
             await qe_vector_store.index_document_multimodal(doc_name,
                                                        doc_chunks,
-                                                       index_base)
+                                                       index_base,
+                                                       metadata_list)
           Logger.info(
             f"Successfully indexed {len(doc_chunks)} chunks for [{doc_name}]"
             )
@@ -1143,7 +1147,7 @@ def make_query_document_chunk(query_engine_id: str,
       "image": The image bytes extracted from doc_chunk
     page: The page of the document that the doc_chunk came from
     data_source: The data source class of the document
-    modality: The modality of the corresponding embedding vector 
+    modality: The modality of the corresponding embedding vector
       extracted from the doc_chunk
   
   Returns:
@@ -1271,19 +1275,19 @@ def delete_engine(q_engine: QueryEngine, hard_delete: bool=False):
     Logger.info(f"performing hard delete of query engine {q_engine.id}")
 
     # delete query docs and chunks
-    QueryDocument.collection.filter(
+    QueryDocument.filter(
       "query_engine_id", "==", q_engine.id
     ).delete()
 
-    QueryDocumentChunk.collection.filter(
+    QueryDocumentChunk.filter(
       "query_engine_id", "==", q_engine.id
     ).delete()
 
-    QueryReference.collection.filter(
+    QueryReference.filter(
       "query_engine_id", "==", q_engine.id
     ).delete()
 
-    QueryResult.collection.filter(
+    QueryResult.filter(
       "query_engine_id", "==", q_engine.id
     ).delete()
 
@@ -1293,22 +1297,22 @@ def delete_engine(q_engine: QueryEngine, hard_delete: bool=False):
     Logger.info(f"performing soft delete of query engine {q_engine.id}")
 
     # delete query docs and chunks
-    qdocs = QueryDocument.collection.filter(
+    qdocs = QueryDocument.filter(
       "query_engine_id", "==", q_engine.id).fetch()
     for qd in qdocs:
       qd.soft_delete_by_id(qd.id)
 
-    qchunks = QueryDocumentChunk.collection.filter(
+    qchunks = QueryDocumentChunk.filter(
       "query_engine_id", "==", q_engine.id).fetch()
     for qc in qchunks:
       qc.soft_delete_by_id(qc.id)
 
-    qrefs = QueryReference.collection.filter(
+    qrefs = QueryReference.filter(
       "query_engine_id", "==", q_engine.id).fetch()
     for qr in qrefs:
       qr.soft_delete_by_id(qr.id)
 
-    qres = QueryResult.collection.filter(
+    qres = QueryResult.filter(
       "query_engine_id", "==", q_engine.id).fetch()
     for qr in qres:
       qr.soft_delete_by_id(qr.id)

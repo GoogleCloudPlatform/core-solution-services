@@ -20,7 +20,7 @@ from common.utils.errors import ResourceNotFoundException
 
 
 class Session(BaseModel):
-  """Data model class for Learner Profile"""
+  """Data model class for User Session"""
   # schema for object
   session_id = TextField(required=True)
   user_id = TextField(required=True)

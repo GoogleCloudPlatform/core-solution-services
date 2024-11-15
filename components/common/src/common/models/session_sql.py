@@ -14,18 +14,20 @@
 
 """Session SQL Data Model"""
 
-from fireo.fields import (TextField, MapField, BooleanField)
+from peewee import TextField, BooleanField
+from playhouse.postgres_ext import JSONField
 from common.models.base_model_sql import SQLBaseModel
 from common.utils.errors import ResourceNotFoundException
 
 
 class Session(SQLBaseModel):
-  """Data model class for Learner Profile"""
+  """Data model class for User Session"""
   # schema for object
-  session_id = TextField(required=True)
-  user_id = TextField(required=True)
-  parent_session_id = TextField(default=None)
-  session_data = MapField(default=None)
+  session_id = TextField(primary_key=True)
+  user_id = TextField()
+  parent_session_id = TextField(null=True)
+  session_desc = TextField(null=True)
+  session_data = JSONField(default=dict)
   is_expired = BooleanField(default=False)
 
   @classmethod

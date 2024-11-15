@@ -15,22 +15,41 @@
 """
 student learner profile integration service
 """
-from common.models import Session
+import datetime
+from common.models.session_sql import Session
 from common.utils.http_exceptions import InternalServerError
 
+# pylint: disable = protected-access, redefined-outer-name
 
 def create_session(user_id: str = None):
   """ Create a new session"""
   try:
     new_session = Session()
-    data = {"user_id": user_id}
-    new_session = new_session.from_dict(data)
+    print("Class meta:", new_session._meta) # noqa
     new_session.user_id = user_id
     new_session.session_id = ""
+    new_session.is_expired = False
+    new_session.created_time = datetime.datetime.now()
+    new_session.last_modified_time = new_session.created_time
+    new_session.session_desc = "Test123"
+    new_session.save()  # Save to generate the ID
+    print("ID:", new_session.id)
+    print("Session ID:", new_session.session_id)
+    # new_session.session_id = new_session.id  # Now assign the session_id
+    new_session.session_desc = "Test345"
+    new_session.last_modified_time = datetime.datetime.now()
+    print("Before save:", new_session.__data__)
     new_session.save()
-    new_session.session_id = new_session.id
-    new_session.update()
+    print("After save:", new_session.__data__)
 
     return new_session.get_fields(reformat_datetime=True)
+
   except Exception as e:
     raise InternalServerError(str(e)) from e
+
+if __name__ == "__main__":
+  from common.testing.example_objects import TEST_SESSION
+  new_session = create_session(TEST_SESSION["user_id"])
+  session = Session.find_by_id(new_session["id"])
+  assert session.user_id == TEST_SESSION["user_id"]
+  assert session.session_id == session.id
