@@ -26,9 +26,10 @@ interface ChatWindowProps {
   messages: ChatContents[]
   activeJob: boolean
   handleFiles: Function
+  streamingMessage: string
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, handleFiles }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, handleFiles, streamingMessage }) => {
   let index = 0
   const renderChat = (message: ChatContents) => {
     if (message.HumanInput) {
@@ -74,7 +75,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, 
     <div className="flex flex-grow flex-col justify-between max-w-4xl">
       <div className="text-md flex-grow overflow-y-auto custom-scrollbar max-h-[calc(100vh-17.3rem)]">
         {messages.map(renderChat)}
-        {activeJob && (
+        {activeJob && streamingMessage && (
+          <div className="flex items-center gap-6 mx-2 pb-7">
+            <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start"/>
+            <div>
+              <Markdown children={streamingMessage} rehypePlugins={[rehypeRaw]} />
+            </div>
+          </div>
+        )}
+        {activeJob && !streamingMessage && (
           <div className="flex items-center gap-6 pb-7 pt-2 mx-2">
             <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start loader ease-linear"/>
           </div>
