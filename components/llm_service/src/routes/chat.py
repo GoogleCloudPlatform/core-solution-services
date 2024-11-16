@@ -263,7 +263,7 @@ async def create_user_chat(
   Takes input payload as a multipart form.
 
   Args:
-      prompt(str): prompt to initiate chat (optional if history provided)
+      prompt(str): prompt to initiate chat
       llm_type(str): llm model id
       chat_file(UploadFile): file upload for chat context
       chat_file_url(str): file url for chat context
@@ -278,10 +278,6 @@ async def create_user_chat(
               f" prompt={prompt} llm_type={llm_type}"
               f" chat_file={chat_file} chat_file_url={chat_file_url}"
               f" stream={stream} history={history}")
-
-  # Validate that either prompt or history is provided
-  if (not prompt or prompt == "") and not history:
-    return BadRequest("Must provide either prompt or history")
 
   # process chat file(s): upload to GCS and determine mime type
   chat_file_bytes = None
