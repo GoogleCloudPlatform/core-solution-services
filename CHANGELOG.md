@@ -7,6 +7,7 @@ New features:
 ### GENIE ("GenAI for Enterprise" platform on GCP)
 - Multimodal RAG for images using multi-modal embeddings for search
 - Chat file upload in both backend and React app.  Upload files or specify URLs to pass to model.
+- Streaming of chat responses in React frontend
 - RBAC for model access.  See README for LLM Service for docs on how to manage access to models for users.
 - Added user role management in React frontend, used for RBAC for models and query engines
 - Added documentation on authentication in the platform in docs/AUTH.md
