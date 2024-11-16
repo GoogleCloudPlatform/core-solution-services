@@ -17,7 +17,7 @@
 """ Chat endpoints """
 import traceback
 import json
-from typing import Union, Annotated, Optional, List
+from typing import Union, Annotated, Optional
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
@@ -305,7 +305,8 @@ async def create_user_chat(
       except json.JSONDecodeError as e:
         return BadRequest(f"Invalid JSON in history: {str(e)}")
 
-      user_chat = UserChat(user_id=user.user_id, llm_type=llm_type)
+      user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
+                           prompt=prompt)
       user_chat.history = history_list  # Use the parsed list
       if chat_file:
         user_chat.update_history(custom_entry={

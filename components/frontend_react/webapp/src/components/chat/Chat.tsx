@@ -190,7 +190,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           
           // Create permanent chat with accumulated history
           const newChat = await createChat(userToken)({
-            userInput: "", // Empty prompt since we're using history
+            userInput: userInput,
             llmType: selectedModel,
             uploadFile,
             fileUrl: doc_url,
