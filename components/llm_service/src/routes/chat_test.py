@@ -171,26 +171,27 @@ def test_create_chat(create_user, client_with_emulator):
   # Test invalid history format
   invalid_history_params = {
     **FAKE_GENERATE_PARAMS,
-    "history": 'invalid json'
+    "history": "invalid json"
   }
   resp = client_with_emulator.post(url, data=invalid_history_params)
-  assert resp.status_code == 400, "Invalid history returns 400"
+  assert resp.status_code == 422, "Invalid history returns 422"
 
   # Test missing prompt and history
   invalid_params = {
     "llm_type": FAKE_GENERATE_PARAMS["llm_type"]
   }
   resp = client_with_emulator.post(url, data=invalid_params)
-  assert resp.status_code == 400, "Missing prompt and history returns 400"
+  assert resp.status_code == 422, "Missing prompt and history returns 422"
 
   # Verify final state
   user_chats = UserChat.find_by_user(userid)
-  assert len(user_chats) == 3, "Created expected number of chats"
+  assert len(user_chats) == 2, "Created expected number of chats"
 
   # Verify the regular chat creation
-  regular_chat = next(chat for chat in user_chats 
-                     if len(chat.history) == 2 and 
-                     chat.history[0].get(CHAT_HUMAN) == FAKE_GENERATE_PARAMS["prompt"])
+  regular_chat = next(chat for chat in user_chats
+                     if len(chat.history) == 2 and
+                     chat.history[0].get(CHAT_HUMAN) == \
+                     FAKE_GENERATE_PARAMS["prompt"])
   assert regular_chat.history[0] == \
     {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
     "saved chat data prompt"

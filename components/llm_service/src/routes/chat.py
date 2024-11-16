@@ -298,8 +298,10 @@ async def create_user_chat(
     if history:
       try:
         history_list = json.loads(history)  # Parse the JSON string into a list
+        if not isinstance(history_list, list):
+          raise ValidationError("History must be a JSON array")
       except json.JSONDecodeError as e:
-        return BadRequest(f"Invalid JSON in history: {str(e)}")
+        raise ValidationError(f"Invalid JSON in history: {str(e)}") from e
 
       user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
                            prompt=prompt)
@@ -359,6 +361,8 @@ async def create_user_chat(
         "message": "Successfully created chat",
         "data": chat_data
     }
+  except ValidationError as e:
+    raise BadRequest(str(e)) from e
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
