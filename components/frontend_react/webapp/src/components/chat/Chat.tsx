@@ -168,6 +168,8 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
 
         if (response instanceof ReadableStream) {
           const fullResponse = await handleStream(response)
+          // Update messages with the streamed response
+          setMessages(prev => [...prev, { AIOutput: fullResponse }])
           setResumeChatId(initialChatId)
           refetch()
         }
@@ -182,14 +184,20 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
 
         if (response instanceof ReadableStream) {
           const fullResponse = await handleStream(response)
-          // Create new chat with accumulated response
+          // Update messages with the streamed response
+          const updatedMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
+          setMessages(updatedMessages)
+          
+          // Create permanent chat with accumulated history
           const newChat = await createChat(userToken)({
-            userInput,
+            userInput: "", // Empty prompt since we're using history
             llmType: selectedModel,
             uploadFile,
             fileUrl: doc_url,
-            stream: false
+            stream: false,
+            history: updatedMessages // Pass full message history
           })
+
           if (newChat && 'id' in newChat) {
             setNewChatId(newChat.id)
           }
@@ -202,6 +210,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
       setFileUrl(null)
       setUploadFile(null)
       setStreamingMessage("")
+      setActiveJob(false)
     }
   }
 

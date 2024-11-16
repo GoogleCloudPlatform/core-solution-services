@@ -28,7 +28,8 @@ interface RunChatParams {
   llmType: string
   uploadFile: File
   fileUrl: string
-  stream: boolean
+  stream?: boolean
+  history?: Array<{[key: string]: string}>
 }
 
 interface ResumeQueryParams {
@@ -42,7 +43,7 @@ interface ResumeChatParams {
   chatId: string
   userInput: string
   llmType: string
-  stream: boolean
+  stream?: boolean
 }
 
 interface JobStatusResponse {
@@ -94,7 +95,8 @@ export const createChat =
     llmType,
     uploadFile,
     fileUrl,
-    stream = false
+    stream = true,
+    history
   }: RunChatParams): Promise<Chat | ReadableStream | undefined> => {
     const url = `${endpoint}/chat`
     const headers = { 
@@ -102,11 +104,16 @@ export const createChat =
       'Content-Type': 'multipart/form-data'
     }
     const formData = new FormData()
-    formData.append('prompt', userInput)
+    
+    if (!history) {
+      formData.append('prompt', userInput)
+    }
+    
     formData.append('llm_type', llmType)
     formData.append('stream', String(stream))
     if (uploadFile) formData.append('chat_file', uploadFile)
     if (fileUrl) formData.append('chat_file_url', fileUrl)
+    if (history) formData.append('history', JSON.stringify(history))
 
     if (stream) {
       const response = await fetch(url, {
@@ -125,7 +132,7 @@ export const resumeChat =
     chatId,
     userInput,
     llmType,
-    stream = false
+    stream = true
   }: ResumeChatParams): Promise<Chat | ReadableStream | undefined> => {
     const url = `${endpoint}/chat/${chatId}/generate`
     const headers = { Authorization: `Bearer ${token}` }
