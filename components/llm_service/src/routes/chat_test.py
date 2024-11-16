@@ -220,16 +220,39 @@ def test_update_chat(create_user, create_chat, client_with_emulator):
 
   url = f"{api_url}/{chatid}"
 
+  # Test updating title
   update_params = {
     "title": "updated title"
   }
   resp = client_with_emulator.put(url, json=update_params)
-
-  json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
-
   updated_chat = UserChat.find_by_id(chatid)
-  assert updated_chat.title == "updated title", "user chat updated"
+  assert updated_chat.title == "updated title", "user chat title updated"
+
+  # Test updating history
+  new_history = [
+    {"human": "new question"},
+    {"ai": "new response"}
+  ]
+  update_params = {
+    "history": new_history
+  }
+  resp = client_with_emulator.put(url, json=update_params)
+  assert resp.status_code == 200, "Status 200"
+  updated_chat = UserChat.find_by_id(chatid)
+  assert updated_chat.history == new_history, "user chat history updated"
+
+  # Test updating both title and history
+  update_params = {
+    "title": "another title",
+    "history": [{"human": "q"}, {"ai": "a"}]
+  }
+  resp = client_with_emulator.put(url, json=update_params)
+  assert resp.status_code == 200, "Status 200"
+  updated_chat = UserChat.find_by_id(chatid)
+  assert updated_chat.title == "another title", "title updated"
+  assert updated_chat.history == \
+      [{"human": "q"}, {"ai": "a"}], "history updated"
 
 
 def test_chat_generate(create_chat, client_with_emulator):

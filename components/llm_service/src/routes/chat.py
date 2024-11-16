@@ -177,7 +177,7 @@ def update_chat(chat_id: str, input_chat: ChatUpdateModel):
 
   Args:
     input_chat (ChatUpdateModel): fields in body of chat to update.
-      The only field that can be updated is the title.
+      Fields that can be updated are the title and history.
 
   Raises:
     ResourceNotFoundException: If the Chat does not exist
@@ -200,6 +200,7 @@ def update_chat(chat_id: str, input_chat: ChatUpdateModel):
     return {
       "success": True,
       "message": f"Successfully updated user chat {chat_id}",
+      "data": existing_chat.get_fields(reformat_datetime=True)
     }
   except ResourceNotFoundException as re:
     raise ResourceNotFound(str(re)) from re

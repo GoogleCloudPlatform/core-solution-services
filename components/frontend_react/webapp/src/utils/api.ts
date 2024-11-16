@@ -50,6 +50,12 @@ interface JobStatusResponse {
   status: "succeeded" | "failed" | "active"
 }
 
+interface UpdateChatParams {
+  chatId: string
+  title?: string
+  history?: Array<{[key: string]: string}>
+}
+
 const endpoint = envOrFail(
   "VITE_PUBLIC_API_ENDPOINT",
   import.meta.env.VITE_PUBLIC_API_ENDPOINT,
@@ -289,4 +295,22 @@ export const fetchAllEngineJobs =
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
  }
+
+export const updateChat = 
+  (token: string) => async ({
+    chatId,
+    title,
+    history
+  }: UpdateChatParams): Promise<Chat | undefined> => {
+    const url = `${endpoint}/chat/${chatId}`
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+    const data = {
+      ...(title && { title }),
+      ...(history && { history })
+    }
+    return axios.put(url, data, { headers }).then(path(["data", "data"]))
+  }
 

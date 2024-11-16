@@ -14,7 +14,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import ChatWindow from "@/components/chat/ChatWindow"
-import { fetchChat, createChat, resumeChat } from "@/utils/api"
+import { fetchChat, createChat, resumeChat, updateChat } from "@/utils/api"
 import { Chat, ChatContents, IFormVariable } from "@/utils/types"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
@@ -168,8 +168,16 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
 
         if (response instanceof ReadableStream) {
           const fullResponse = await handleStream(response)
-          // Update messages with the streamed response
-          setMessages(prev => [...prev, { AIOutput: fullResponse }])
+          // Update messages with both the user input and AI response
+          const finalMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
+          setMessages(finalMessages)
+          
+          // Update the chat with the new history
+          await updateChat(userToken)({
+            chatId: initialChatId,
+            history: finalMessages
+          })
+          
           setResumeChatId(initialChatId)
         }
       } else {
