@@ -16,6 +16,7 @@
 
 """ Chat endpoints """
 import traceback
+import json
 from typing import Union, Annotated, Optional, List
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import StreamingResponse
@@ -254,7 +255,7 @@ async def create_user_chat(
      chat_file_url: Annotated[str, Form()] = None,
      chat_file: Union[UploadFile, None] = None,
      stream: Annotated[bool, Form()] = False,
-     history: Annotated[List[dict], Form()] = None,
+     history: Annotated[str, Form()] = None,
      user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.  
@@ -267,7 +268,7 @@ async def create_user_chat(
       chat_file(UploadFile): file upload for chat context
       chat_file_url(str): file url for chat context
       stream(bool): whether to stream the response
-      history(List[dict]): optional chat history to create chat from previous
+      history(str): optional chat history to create chat from previous
                            streaming response
 
   Returns:
@@ -297,10 +298,15 @@ async def create_user_chat(
   try:
     user = User.find_by_email(user_data.get("email"))
 
-    # If history is provided, create chat with existing history
+    # If history is provided, parse the JSON string into a list
     if history:
+      try:
+        history_list = json.loads(history)  # Parse the JSON string into a list
+      except json.JSONDecodeError as e:
+        return BadRequest(f"Invalid JSON in history: {str(e)}")
+
       user_chat = UserChat(user_id=user.user_id, llm_type=llm_type)
-      user_chat.history = history
+      user_chat.history = history_list  # Use the parsed list
       if chat_file:
         user_chat.update_history(custom_entry={
           f"{CHAT_FILE}": chat_file.filename
