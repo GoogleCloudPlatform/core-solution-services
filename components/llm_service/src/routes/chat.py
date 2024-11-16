@@ -16,7 +16,7 @@
 
 """ Chat endpoints """
 import traceback
-from typing import Union, Annotated, Optional
+from typing import Union, Annotated, Optional, List
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
@@ -249,11 +249,12 @@ def delete_chat(chat_id: str, hard_delete=False):
     "",
     name="Create new chat")
 async def create_user_chat(
-     prompt: Annotated[str, Form()],
+     prompt: Annotated[str, Form()] = "",
      llm_type: Annotated[str, Form()] = None,
      chat_file_url: Annotated[str, Form()] = None,
      chat_file: Union[UploadFile, None] = None,
      stream: Annotated[bool, Form()] = False,
+     history: Annotated[List[dict], Form()] = None,
      user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.  
@@ -261,11 +262,13 @@ async def create_user_chat(
   Takes input payload as a multipart form.
 
   Args:
-      prompt(str): prompt to initiate chat
+      prompt(str): prompt to initiate chat (optional if history provided)
       llm_type(str): llm model id
       chat_file(UploadFile): file upload for chat context
       chat_file_url(str): file url for chat context
       stream(bool): whether to stream the response
+      history(List[dict]): optional chat history to create chat from previous
+                           streaming response
 
   Returns:
       LLMUserChatResponse or StreamingResponse
@@ -273,10 +276,11 @@ async def create_user_chat(
   Logger.info("Creating new chat using"
               f" prompt={prompt} llm_type={llm_type}"
               f" chat_file={chat_file} chat_file_url={chat_file_url}"
-              f" stream={stream}")
+              f" stream={stream} history={history}")
 
-  if prompt is None or prompt == "":
-    return BadRequest("Missing or invalid payload parameters")
+  # Validate that either prompt or history is provided
+  if (not prompt or prompt == "") and not history:
+    return BadRequest("Must provide either prompt or history")
 
   # process chat file(s): upload to GCS and determine mime type
   chat_file_bytes = None
@@ -293,12 +297,35 @@ async def create_user_chat(
   try:
     user = User.find_by_email(user_data.get("email"))
 
-    # generate text from prompt
+    # If history is provided, create chat with existing history
+    if history:
+      user_chat = UserChat(user_id=user.user_id, llm_type=llm_type)
+      user_chat.history = history
+      if chat_file:
+        user_chat.update_history(custom_entry={
+          f"{CHAT_FILE}": chat_file.filename
+        })
+      elif chat_file_url:
+        user_chat.update_history(custom_entry={
+          f"{CHAT_FILE_URL}": chat_file_url
+        })
+      user_chat.save()
+
+      chat_data = user_chat.get_fields(reformat_datetime=True)
+      chat_data["id"] = user_chat.id
+
+      return {
+          "success": True,
+          "message": "Successfully created chat from history",
+          "data": chat_data
+      }
+
+    # Otherwise generate text from prompt
     response = await llm_chat(prompt,
-                            llm_type,
-                            chat_files=chat_files,
-                            chat_file_bytes=chat_file_bytes,
-                            stream=stream)
+                           llm_type,
+                           chat_files=chat_files,
+                           chat_file_bytes=chat_file_bytes,
+                           stream=stream)
 
     if stream:
       # Return streaming response
