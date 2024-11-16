@@ -17,7 +17,6 @@ import ChatWindow from "@/components/chat/ChatWindow"
 import { fetchChat, createChat, resumeChat, updateChat } from "@/utils/api"
 import { Chat, ChatContents, IFormVariable } from "@/utils/types"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { useNavigate } from "react-router-dom"
 import { useConfig } from "@/contexts/configContext"
 import Loading from "@/navigation/Loading"
 
@@ -81,7 +80,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
   // Handle onSuccess from creating a chat
   useEffect(() => {
     if (!newChatId) return
-    if ((newChatId && newChatId == initialChatId) || (newChatId && !initialChatId)) {
+    if ((newChatId && newChatId === initialChatId) || (newChatId && !initialChatId)) {
       updateUrlParam(newChatId)
       initialChatRef.current = newChatId
       setActiveJob(false)
@@ -125,10 +124,10 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     mutationFn: resumeChat(userToken),
   })
 
-  const navigate = useNavigate()
-
   const updateUrlParam = (chatId: string | null) => {
-    navigate(`?chat_id=${chatId}`, { replace: true })
+    if (chatId) {
+      window.history.replaceState({}, '', `?chat_id=${chatId}`)
+    }
   }
 
   // Helper function to handle streaming response
