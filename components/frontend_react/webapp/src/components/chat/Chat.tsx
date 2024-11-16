@@ -171,7 +171,6 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           // Update messages with the streamed response
           setMessages(prev => [...prev, { AIOutput: fullResponse }])
           setResumeChatId(initialChatId)
-          refetch()
         }
       } else {
         const response = await createChat(userToken)({

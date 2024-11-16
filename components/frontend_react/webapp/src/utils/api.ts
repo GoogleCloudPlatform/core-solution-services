@@ -104,11 +104,7 @@ export const createChat =
       'Content-Type': 'multipart/form-data'
     }
     const formData = new FormData()
-    
-    if (!history) {
-      formData.append('prompt', userInput)
-    }
-    
+    formData.append('prompt', userInput)
     formData.append('llm_type', llmType)
     formData.append('stream', String(stream))
     if (uploadFile) formData.append('chat_file', uploadFile)

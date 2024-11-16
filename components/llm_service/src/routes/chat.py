@@ -250,7 +250,7 @@ def delete_chat(chat_id: str, hard_delete=False):
     "",
     name="Create new chat")
 async def create_user_chat(
-     prompt: Annotated[str, Form()] = "",
+     prompt: Annotated[str, Form()],
      llm_type: Annotated[str, Form()] = None,
      chat_file_url: Annotated[str, Form()] = None,
      chat_file: Union[UploadFile, None] = None,
