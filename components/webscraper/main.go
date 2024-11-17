@@ -223,6 +223,7 @@ func setupCollector(ctx context.Context, jobInput JobInput, bucketName string, d
 		colly.Debugger(&debug.LogDebugger{}),
 		colly.Async(true),
 		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"),
+		colly.IgnoreRobotsTxt(),
 	)
 
 	// Add error handling
