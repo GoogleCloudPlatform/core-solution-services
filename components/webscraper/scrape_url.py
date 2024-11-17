@@ -4,8 +4,17 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 import uuid
-from common.models.batch_job import BatchJobModel, JobStatus
+
+try:
+    from common.models.batch_job import BatchJobModel, JobStatus
+except ImportError:
+    print("Error: Unable to import common package.")
+    print("Usage: PYTHONPATH=../common/src python scrape_url.py <your url>")
+    print("\nMake sure you've set your PYTHONPATH to include the common package location.")
+    print("\nAlso make sure to run in a virtual environment with fireo and other packages from common/requirements.txt installed.")
+    sys.exit(1)
 
 def get_gcp_project():
     """Get GCP project from gcloud config"""
@@ -55,7 +64,10 @@ def run_webscraper(job_id: str, project_id: str):
     return True
 
 def main():
-    parser = argparse.ArgumentParser(description='Scrape a URL using the webscraper')
+    parser = argparse.ArgumentParser(
+        description='Scrape a URL using the webscraper',
+        epilog='Example usage: PYTHONPATH=../common/src python scrape_url.py <your url>'
+    )
     parser.add_argument('url', help='URL to scrape')
     parser.add_argument('--depth', type=str, default="1", help='Depth limit for scraping')
     parser.add_argument('--engine', type=str, default="default", help='Query engine name')
@@ -88,17 +100,18 @@ def main():
     # Extract and display results
     if job.result_data and 'scraped_documents' in job.result_data:
         docs = job.result_data['scraped_documents']
-        print(f"\nScraped {len(docs)} pages:")
+        if docs is None:
+          print(f"\nScraped 0 pages")
+        else:
+          print(f"\nScraped {len(docs)} pages:")
+          
+          gcs_path = docs[0]['GCSPath']
+          bucket_name = gcs_path.split('/')[2]
+          print(f"\nGCS Bucket: gs://{bucket_name}")
         
-        # Get bucket name from first GCS path
-        if docs:
-            gcs_path = docs[0]['GCSPath']
-            bucket_name = gcs_path.split('/')[2]
-            print(f"\nGCS Bucket: gs://{bucket_name}")
-        
-        # Print all URLs
-        for doc in docs:
-            print(f"- {doc['URL']}")
+          # Print all URLs
+          for doc in docs:
+              print(f"- {doc['URL']}")
     
 if __name__ == "__main__":
     main() 
