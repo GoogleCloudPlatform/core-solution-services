@@ -1,10 +1,10 @@
-# Webscraper Service
+# Webscraper Component
 
-The webscraper service provides web crawling and content extraction capabilities for GENIE's Query Engine system. It crawls websites to a specified depth and extracts both HTML and PDF content, storing the results in Google Cloud Storage for later processing by the LLM service.
+The webscraper component provides web crawling and content extraction capabilities for GENIE's Query Engine system. It crawls websites to a specified depth and extracts both HTML and PDF content, storing the results in Google Cloud Storage for later processing by the LLM service.
 
 ## Technical Approach
 
-The webscraper consists of two main components:
+The webscraper consists of two main subcomponents:
 
 1. A Go-based web crawler (`main.go`) built using the [Colly](http://go-colly.org/) framework that performs the actual crawling
 2. A Python wrapper (`scrape_url.py`) that provides a command-line interface for testing and direct use
