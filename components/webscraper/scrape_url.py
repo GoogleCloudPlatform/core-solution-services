@@ -101,17 +101,22 @@ def main():
     if job.result_data and 'scraped_documents' in job.result_data:
         docs = job.result_data['scraped_documents']
         if docs is None:
-          print(f"\nScraped 0 pages")
+            print(f"\nScraped 0 pages")
         else:
-          print(f"\nScraped {len(docs)} pages:")
-          
-          gcs_path = docs[0]['GCSPath']
-          bucket_name = gcs_path.split('/')[2]
-          print(f"\nGCS Bucket: gs://{bucket_name}")
-        
-          # Print all URLs
-          for doc in docs:
-              print(f"- {doc['URL']}")
+            print(f"\nScraped {len(docs)} pages:")
+            
+            gcs_path = docs[0]['GCSPath']
+            bucket_name = gcs_path.split('/')[2]
+            print(f"\nGCS Bucket: gs://{bucket_name}")
+            
+            # Print all URLs and their corresponding GCS paths
+            print("\nScraped URLs:")
+            for doc in docs:
+                print(f"- {doc['URL']}")
+                
+            print("\nDownloaded files:")
+            for doc in docs:
+                print(f"- {doc['GCSPath']}")
     
 if __name__ == "__main__":
     main() 
