@@ -84,6 +84,7 @@ func TestWebscraper(t *testing.T) {
 
 	// Setup environment variables
 	os.Setenv("GCP_PROJECT", "fake-project")
+	os.Setenv("STORAGE_EMULATOR_HOST", "http://localhost:9023")
 	jobID := fmt.Sprintf("test-job-%d", time.Now().Unix())
 	os.Setenv("JOB_ID", jobID)
 

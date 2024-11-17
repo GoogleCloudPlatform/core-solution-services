@@ -62,6 +62,15 @@ func main() {
 	firestoreClient := initializeFirestore(ctx, projectID)
 	defer firestoreClient.Close()
 
+	// Initialize storage client
+	var err error
+	storageClient, err = storage.NewClient(ctx)
+	if err != nil {
+		log.Printf("Failed to create storage client: %v", err)
+		os.Exit(1)
+	}
+	defer storageClient.Close()
+
 	// Retrieve and parse job document
 	jobDoc, docRef := fetchJobDocument(ctx, firestoreClient, jobID)
 	jobInput := parseJobInput(ctx, jobDoc, docRef)
@@ -69,14 +78,11 @@ func main() {
 	// Generate and initialize bucket
 	bucketName := generateAndInitializeBucket(ctx, projectID, jobInput, docRef)
 
-	// Initialize storage client
-	initStorageClient(ctx, jobDoc, docRef)
-
 	// Set up Colly collector
 	collector, scrapedDocs := setupCollector(ctx, jobInput, bucketName, docRef)
 
 	// Start scraping
-	err := collector.Visit(jobInput.URL)
+	err = collector.Visit(jobInput.URL)
 	if err != nil {
 		log.Printf("Error starting scrape: %v", err)
 	}
@@ -159,9 +165,9 @@ func parseJobInput(ctx context.Context, jobDoc *firestore.DocumentSnapshot, docR
 		updateJobError(ctx, docRef, err)
 		log.Print(err)
 	}
-	depthLimit, err := strconv.Atoi(jobInput.DepthLimit)
+	_, err := strconv.Atoi(jobInput.DepthLimit)
 	if err != nil {
-		err := fmt.Errorf("invalid depth limit value %s", depthLimit)
+		err := fmt.Errorf("invalid depth limit value %s", jobInput.DepthLimit)
 		updateJobError(ctx, docRef, err)
 		log.Print(err)
 	}
@@ -193,16 +199,6 @@ func generateAndInitializeBucket(ctx context.Context, projectID string, jobInput
 	return bucketName
 }
 
-func initStorageClient(ctx context.Context, jobDoc *firestore.DocumentSnapshot, docRef *firestore.DocumentRef) {
-	var err error
-	storageClient, err = storage.NewClient(ctx)
-	if err != nil {
-		updateJobError(ctx, docRef, fmt.Errorf("failed to create storage client: %v", err))
-		log.Print(err)
-		os.Exit(1)
-	}
-}
-
 func setupCollector(ctx context.Context, jobInput JobInput, bucketName string, docRef *firestore.DocumentRef) (*colly.Collector, *[]ScrapedDocument) {
 	var scrapedDocs []ScrapedDocument
 
@@ -226,6 +222,7 @@ func setupCollector(ctx context.Context, jobInput JobInput, bucketName string, d
 		colly.AllowedDomains(allowedDomains...), // Allow both with and without www
 		colly.Debugger(&debug.LogDebugger{}),
 		colly.Async(true),
+		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"),
 	)
 
 	// Add error handling
