@@ -96,6 +96,22 @@ If you set up auth the Google Identity platform you will need to update the Web 
 
 >This allows your backend to authorize your frontend web app in requesting an OAuth 2.0 authentication. Without this authorized redirect URIs, you will receive an unauthorized error.
 
+### Customizing the Logo
+The main application logo can be customized in `src/utils/AppConfig.ts`.
+
+To update the logo:
+1. Add your logo image to the `public/assets/images/` directory
+2. Update the path in `AppConfig.ts` to point to your new image:
+```typescript
+export const AppConfig: IAppConfig = {
+  // ... other config ...
+  logoPath: "/assets/images/your_logo.png",
+  // ... other config ...
+}
+```
+
+Rebuild and redeploy the app.
+
 # Development
 
 ## Run a local dev server
