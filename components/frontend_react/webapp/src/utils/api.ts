@@ -118,12 +118,21 @@ export const createChat =
     if (history) formData.append('history', JSON.stringify(history))
 
     if (stream) {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      })
-      return response.body
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.body
+      } catch (error) {
+        console.error('Error in createChat:', error);
+        throw error;
+      }
     }
 
     return axios.post(url, formData, { headers }).then(path(["data", "data"]))
@@ -145,15 +154,24 @@ export const resumeChat =
     }
 
     if (stream) {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
-      return response.body
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.body
+      } catch (error) {
+        console.error('Error in resumeChat:', error);
+        throw error;
+      }
     }
 
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
@@ -270,7 +288,14 @@ export const resumeQuery =
       sentence_references: false,
       stream
     }
-    return axios.post(url, data, { headers }).then(path(["data", "data", "user_query_id"]))
+
+    try {
+      const response = await axios.post(url, data, { headers });
+      return path(["data", "data", "user_query_id"], response);
+    } catch (error) {
+      console.error('Error in resumeQuery:', error);
+      throw error;
+    }
   }
 
 export const getJobStatus =

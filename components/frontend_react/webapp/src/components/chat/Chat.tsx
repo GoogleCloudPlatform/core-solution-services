@@ -210,6 +210,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
         }
       }
     } catch (error) {
+      console.log(error)
       setActiveJob(false)
       setMessages((prev) => [...prev, errMsg])
     } finally {
