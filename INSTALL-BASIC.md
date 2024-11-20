@@ -1,14 +1,18 @@
 # Overview of basic install
 
 The goal of a **basic** GENIE install is to use the latest GENIE code to deploy an instance of the GENIE software stack into a GCP project that you own.
-At the end of this install, you will be able to access the GENIE React front end running in your GCP project that uses GENIE microservices also deployed in your GCP project to run a RAG demo.
 
-There are many possible variations for how to deploy and develop with GENIE. However, the following are prescriptive steps that deploy GENIE using the simplest approach applicable to as many starting environments as possible, with a basic configuration. Once this installation is complete, you can dive deeper into other GENIE READMEs for information on how to deploy and work with additional features.
+At the end of this install, you will be able to use the GENIE React front end to call the GENIE microservices,
+both of which are deployed in your GCP project, and run a RAG demo.
+
+There are many possible variations for how to deploy and develop with GENIE.
+The following are prescriptive steps to deploy a basic GENIE configuration, using the simplest approach applicable to as many starting environments as possible.
+Once this installation is complete, you can dive deeper into other GENIE READMEs to deploy and work with additional features.
 
 There are four logical steps to deploy GENIE:
 
-1. **Set up**. Create a new GCP Project, set up Cloud Shell, get the GENIE code.
-2. **Create the jump host**. We use Cloud Shell to deploy a jump host (virtual machine running in your GCP project) that will be used to do the actual GENIE deployment. We deploy from a jump host to ensure that all deployments start from the same virtual machine configuration.
+1. **Set up**. Create a new GCP Project, set up Cloud Shell, clone the GENIE code.
+2. **Create a jump host**. We use Cloud Shell to deploy a jump host (virtual machine running in your GCP project) that will be used to do the actual GENIE deployment. We deploy from a jump host to ensure that all deployments start from the same virtual machine configuration.
 3. **Deploy GENIE backend**. From the jump host, deploy the GENIE infrastructure (GKE, databases, etc) and microservices.
 4. **Deploy GENIE front end**. From the jump host, deploy the GENIE front end application.
 
@@ -17,7 +21,9 @@ There are four logical steps to deploy GENIE:
 ## Create a new GCP Project
 
 In your GCP Organization, create a new GCP Project and note the `Project ID`.
-You may need `Organization Policy Administrator` permissions for the project, since, depending on your Organization, some default policies may need to be changed.
+To deploy GENIE, certain organization policies must be either not enforced or deleted.
+Depending on your organization's specific default policies, you
+may need `Organization Policy Administrator` permission to change some policies to allow for the GENIE install in the steps below.
 
 ## Open Cloud Shell
 
@@ -48,6 +54,9 @@ In Cloud Shell, run
 
 ```
 export PROJECT_ID=$(gcloud config get project)
+```
+
+```
 export ORGANIZATION_ID=$(gcloud projects describe "$PROJECT_ID" --format="value(parent.id)")
 ```
 
@@ -55,6 +64,9 @@ And then confirm
 
 ```
 echo $PROJECT_ID
+```
+
+```
 echo $ORGANIZATION_ID
 ```
 
@@ -94,6 +106,9 @@ Acceptable versions of `python` and `terraform` should already be installed in C
 
 ```
 python --version
+```
+
+```
 terraform --version
 ```
 
@@ -105,12 +120,19 @@ Run the command below to clone the repo into a local folder called `core-solutio
 
 ```
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
+```
+
+Then, change to the repo directory.
+
+```
 cd core-solution-services
 ```
 
 Until stated otherwise, the remaining steps should be done from the `core-solution-services` directory in Cloud Shell.
 
 ## Set up Python virtual environment
+
+Run the following commands to install `solutions-builder`, which is required for GENIE deployment.
 
 ```
 python -m venv .venv
@@ -158,7 +180,8 @@ sb infra apply 0-jumphost
 
 Enter 'Y' and 'yes' when prompted
 
-Once the script completes in the Cloud Shell, the jump host VM has been deployed. Run the command below to save the zone of the jump host, we will use it while SSH-ing.
+Once the script completes in the Cloud Shell, the jump host VM has been deployed. Run the command below to save the zone of the jump host.
+We will use it while SSH-ing.
 
 ```
 export JUMP_HOST_ZONE=$(gcloud compute instances list --filter="name=(jump-host)" --format="value(zone)")
@@ -172,16 +195,17 @@ You are now able to SSH to the jump host from Cloud Shell. Run the following:
 gcloud compute ssh jump-host --zone=${JUMP_HOST_ZONE} --tunnel-through-iap --project=${PROJECT_ID}
 ```
 
-You may be asked to create the `.ssh` directory. Enter `Y` to continue and press enter when asked for a passphrase.
+You may be asked to create the `.ssh` directory. Enter `Y` to continue and press `Enter` when asked for a passphrase.
 
 On the jump host, it is likely that the the required software is still installing (usually takes 5-10 minutes after deployment).
-You can check if all software is installed and the jump host is ready running:
+You can check if all software is installed and the jump host is ready by running:
 
 ```
 ls -la /tmp/jumphost_ready
 ```
 
 The output will be `No such file or directory` until the `jumphost_ready` file is created.
+
 Once you no longer see the error when running the command, the file exists and the jump host is ready for the next step.
 
 ## Authenticate on the jump host
@@ -198,10 +222,13 @@ gcloud auth configure-docker us-docker.pkg.dev
 
 ```
 git clone https://github.com/GoogleCloudPlatform/core-solution-services
+```
+
+```
 cd core-solution-services
 ```
 
-Unless specifically stated otherwise, the remaining steps should all be done from the `core-solution-services` directory of the jump host.
+Until specifically stated otherwise, the remaining steps should all be done from the `core-solution-services` directory of the jump host.
 
 ## Configure the jump host environment
 
@@ -217,21 +244,24 @@ sb set project-id ${PROJECT_ID}
 
 To deploy the GENIE backend, you need a domain or subdomain that can be mapped (via DNS) to the IP address of the GENIE microservices you will be deploying in Steps 3 and 4.
 
-If you are using your own domain name and will set up the DNS A record, then enter it as the DOMAIN_NAME value below
+If you are using your own domain name and will set up the DNS A record yourself, then provide it here as the `DOMAIN_NAME` value below.
 
 ```
 export DOMAIN_NAME=<your-domain-name>
 ```
 
-Alternatively, the RIT team owns the `cloudpssolutions.com`, and for GPS internal users can create a subdomain of the form `<your-project-id>.cloudpssolutions.com`. If you want to use this approach, run the command below.
+Alternatively, the RIT team owns the `cloudpssolutions.com` domain. For GPS internal users we can create a subdomain of the form `<your-project-id>.cloudpssolutions.com`.
+If you plan to deploy GENIE using this approach, run the command below instead.
 
 ```
 export DOMAIN_NAME=${PROJECT_ID}.cloudpssolutions.com
 ```
 
-SAVE THE DOMAIN NAME you have specified.
+**Save the `DOMAIN NAME`** you have specified.
 
-Later in Step 3 the instructions will go over how to get the DNS A record created.
+Later, the instructions in Step 3 will go over how to get the DNS A record created.
+
+Continue setting the environment variables.
 
 ```
 export API_BASE_URL=https://${DOMAIN_NAME}
@@ -241,7 +271,8 @@ export API_BASE_URL=https://${DOMAIN_NAME}
 sb vars set domain_name ${DOMAIN_NAME}
 ```
 
-Finally, save all the environment variables we have set thus far in a script that runs every tiem you SSH to the jump host, so you will not have to reset them
+Finally, save all the environment variables we have set thus far in a script that runs every time you SSH to the jump host,
+so you will not have to reset them.
 
 ```
 sudo bash -c "cat << EOF >> /etc/profile.d/genie_env.sh
@@ -257,7 +288,7 @@ You can check that the variables have been saved to this file by running this co
 cat /etc/profile.d/genie_env.sh
 ```
 
-You have now fully deployed the jump host and are ready for the next step --> deploying the GENIE backend microservices.
+You have now fully deployed the jump host and are ready for the next step --> Deploying the GENIE backend microservices.
 
 # 3. Deploy the GENIE backend
 
@@ -303,7 +334,7 @@ ingress_ip_address = [
     "creation_timestamp" = "2024-11-11T15:12:34.332-08:00"
 ```
 
-SAVE THE INGRESS IP ADDRESS that is provided.
+**Save the ingress IP address** that is provided.
 
 Update the jump host with additional environment variables
 
@@ -319,13 +350,14 @@ sudo bash -c "echo 'export REGION=$REGION' >> /etc/profile.d/genie_env.sh"
 
 ## Offline: Create a DNS A record
 
-The GENIE installation requires setting up a DNS A record that maps your domain or subdomain to your INGRESS IP ADDRESS.
+The GENIE installation requires setting up a DNS A record that maps your domain or subdomain to your ingress IP address.
+
 If you are using your own domain, create the DNS A record now.
 
-If you plan to use a subdomain of `cloudpssolutions.com`, ping the `GENIE Solution Dev` chat space with your DOMAIN_NAME and
-INGRESS IP ADDRESS, and ask that an A record be created.
+If you plan to use a subdomain of `cloudpssolutions.com`, ping the `GENIE Solution Dev` chat space with your `DOMAIN_NAME` and
+ingress IP address, and ask that an A record be created.
 
-Once you start The DNS process, you can immediately continue with the rest of the GENIE backend deployment (Step 3).
+Once you start The DNS process, you can immediately resume the rest of the GENIE backend deployment here (Step 3).
 The DNS A record will need to be operational to verify the deployment at the end of Step 3.
 
 ## Apply the LLM service infarstructure
@@ -338,13 +370,13 @@ Enter 'Y' and 'yes' when prompted
 
 ## Connect to GKE cluster
 
-Get credentials for the GKE cluster
+Get credentials for the GENIE GKE cluster that was deployed.
 
 ```
 gcloud container clusters get-credentials main-cluster --region ${REGION} --project ${PROJECT_ID}
 ```
 
-Check that you can connect to the cluster and see the nodes running
+Check that you can connect to the cluster and see the nodes that are running.
 
 ```
 kubectl get nodes
@@ -352,7 +384,7 @@ kubectl get nodes
 
 ## Set up a vector database
 
-RAG requires a vector database. This deployment uses a CLoudSQL PostgreSQL DB with the PGVector extension as the vector database.
+RAG requires a vector database. This deployment uses a CloudSQL for PostgreSQL DB with the PGVector extension as the vector database.
 
 The command below will create a secret called `postgres-user-passwd`.
 
@@ -366,9 +398,9 @@ In the command below, replace `<your-postgres-password>` with the password you w
 echo '<your-postgres-password>' | gcloud secrets versions add "postgres-user-passwd" --data-file=-
 ```
 
-SAVE THE DATABASE PASSWORD you created.
+**Save the database password** you just created.
 
-Create a CLoudSQL PostgreSQL instance
+Create a CloudSQL for PostgreSQL DB instance
 
 ```
 ./utils/cloudsql_db.sh
@@ -380,7 +412,7 @@ The output of this script will look like the following (IP address will be diffe
 Cloud SQL Host IP address is 192.168.0.10.
 ```
 
-SAVE THE DATABASE IP ADDRESS.
+**Save the database IP address**.
 
 In the command below, replace `<db-host-IP-address>` with the database IP address.
 
@@ -403,14 +435,13 @@ Once inside the pod, run
 apt update -y && apt install -y postgresql-client
 ```
 
-In the next command, replace `<your-postgres-password>` with the DB password you saved.
+In the next command, replace `<your-postgres-password>` with the DB password you saved previously.
 
 ```
 export PGPASSWORD=<your-postgres-password>
-
 ```
 
-In the next command, replace <pghost-ip-address> with the DB IP address you saved.
+In the next command, replace `<pghost-ip-address>` with the DB IP address you saved.
 
 ```
 export PGHOST=<pghost-ip-address>
@@ -426,7 +457,7 @@ exit
 
 The `exit` command exits the temporary pod.
 
-Update the environment variables
+Back on the jump host now, update the environment variables again
 
 ```
 sudo bash -c "echo 'export PG_HOST=${PG_HOST}' >> /etc/profile.d/genie_env.sh"
@@ -509,7 +540,8 @@ Once the status is ACTIVE, you have completed the GENIE backend installation.
 
 ## Verify installation
 
-To check if the GENIE backend has successfully been deployed, in a web browser load the microservices API pages:
+To check if the GENIE backend has successfully been deployed, in a web browser load the microservices API pages -
+make sure to replace `<your-project-id>` in the URLs below.
 
 ```
 https://<your-project-id>.cloudpssolutions.com/authentication/api/v1/docs
@@ -565,7 +597,7 @@ gcloud auth application-default set-quota-project $PROJECT_ID
 
 ## Build the React front end
 
-To build hte front end, change to the `webapp` directory
+To build the front end, change to the `webapp` directory
 
 ```
 cd components/frontend_react/webapp
@@ -579,7 +611,9 @@ npm install
 
 ## Configure Firebase app
 
-In this directory, open the `.firebaserc` file. Change `your-project-id` to be the project ID you created for the GENIE deploy. Save that file.
+In this directory, open the `.firebaserc` file.
+
+Change `your-project-id` to be the project ID you created for the GENIE deploy. Save that file.
 
 Run this command, substituting the project ID you created for the GENIE deploy for `<your-project-id>`
 
@@ -593,7 +627,9 @@ When that is complete, copy the last line of the input which should be in the fo
 firebase apps:sdkconfig WEB 1:936005173737:web:292e7e9fa799dd1e070b78
 ```
 
-Paste it and run it at the prompt. The output is the configuration information for your app, and should look similar to this:
+Paste it and run it at the prompt.
+
+The output is the configuration information for your app, and should look similar to this:
 
 ```
 firebase.initializeApp({
@@ -778,7 +814,3 @@ skaffold run -p default-deploy -n $NAMESPACE
 ```
 
 Generally, the deploy will now complete.
-
-```
-
-```
