@@ -14,10 +14,9 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import ChatWindow from "@/components/chat/ChatWindow"
-import { fetchChat, createChat, resumeChat } from "@/utils/api"
+import { fetchChat, createChat, resumeChat, updateChat } from "@/utils/api"
 import { Chat, ChatContents, IFormVariable } from "@/utils/types"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { useNavigate } from "react-router-dom"
 import { useConfig } from "@/contexts/configContext"
 import Loading from "@/navigation/Loading"
 
@@ -43,6 +42,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
   const { selectedModel, selectedEngine } = useConfig()
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [fileUrl, setFileUrl] = useState<string | null>(null)
+  const [streamingMessage, setStreamingMessage] = useState("")
 
   const handleFiles = (_files: FileList, _uploadVariable: IFormVariable) => {
     console.log("handleFiles")
@@ -80,7 +80,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
   // Handle onSuccess from creating a chat
   useEffect(() => {
     if (!newChatId) return
-    if ((newChatId && newChatId == initialChatId) || (newChatId && !initialChatId)) {
+    if ((newChatId && newChatId === initialChatId) || (newChatId && !initialChatId)) {
       updateUrlParam(newChatId)
       initialChatRef.current = newChatId
       setActiveJob(false)
@@ -124,67 +124,100 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     mutationFn: resumeChat(userToken),
   })
 
-  const navigate = useNavigate()
-
   const updateUrlParam = (chatId: string | null) => {
-    navigate(`?chat_id=${chatId}`, { replace: true })
+    if (chatId) {
+      window.history.replaceState({}, '', `?chat_id=${chatId}`)
+    }
   }
 
-  const onSubmit = (userInput: string, doc_url: string) => {
-    console.log("doc_url", doc_url)
-    setFileUrl(doc_url)
-    setActiveJob(true)
+  // Helper function to handle streaming response
+  const handleStream = async (stream: ReadableStream) => {
+    const reader = stream.getReader()
+    const decoder = new TextDecoder()
+    let accumulatedResponse = ""
 
-    // Display user prompt in chat immediately
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        accumulatedResponse += chunk
+        setStreamingMessage(accumulatedResponse)
+      }
+      return accumulatedResponse
+    } finally {
+      reader.releaseLock()
+    }
+  }
+
+  const onSubmit = async (userInput: string, doc_url: string) => {
+    setActiveJob(true)
+    setStreamingMessage("")
     setMessages((prev) => [...prev, { HumanInput: userInput }])
 
-    // Resume chat if an ID param is set, otherwise create a chat
-    if (initialChatId) {
-      continueChat.mutate(
-        {
+    try {
+      if (initialChatId) {
+        const response = await resumeChat(userToken)({
           chatId: initialChatId,
           userInput,
           llmType: selectedModel,
-        },
-        {
-          onSuccess: (resp?: Chat) => {
-            const currChatId = resp?.id ?? null
+          stream: true
+        })
 
-            if (currChatId) {
-              setResumeChatId(currChatId)
-              refetch()
-            }
-          },
-          onError: () => {
-            setActiveJob(false)
-            setMessages((prev) => [...prev, errMsg])
-          }
+        if (response instanceof ReadableStream) {
+          const fullResponse = await handleStream(response)
+          // Update messages with both the user input and AI response
+          const finalMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
+          setMessages(finalMessages)
+          
+          // Update the chat with the new history
+          await updateChat(userToken)({
+            chatId: initialChatId,
+            history: finalMessages
+          })
+          
+          setResumeChatId(initialChatId)
         }
-      )
-    } else {
-      addChat.mutate(
-        {
+      } else {
+        const response = await createChat(userToken)({
           userInput,
           llmType: selectedModel,
-          uploadFile: uploadFile,
-          fileUrl: doc_url
-        },
-        {
-          onSuccess: (resp?: Chat) => {
-            const updatedChatId = resp?.id ?? null
+          uploadFile,
+          fileUrl: doc_url,
+          stream: true
+        })
 
-            if (updatedChatId) {
-              setNewChatId(updatedChatId)
-            }
-            setFileUrl(null)
-            setUploadFile(null)
-          },
-          onError: () => {
-            setActiveJob(false)
-            setMessages((prev) => [...prev, errMsg])
+        if (response instanceof ReadableStream) {
+          const fullResponse = await handleStream(response)
+          // Update messages with the streamed response
+          const updatedMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
+          setMessages(updatedMessages)
+          
+          // Create permanent chat with accumulated history
+          const newChat = await createChat(userToken)({
+            userInput: userInput,
+            llmType: selectedModel,
+            uploadFile,
+            fileUrl: doc_url,
+            stream: false,
+            history: updatedMessages // Pass full message history
+          })
+
+          if (newChat && 'id' in newChat) {
+            setNewChatId(newChat.id)
           }
         }
-      )
+      }
+    } catch (error) {
+      console.log(error)
+      setActiveJob(false)
+      setMessages((prev) => [...prev, errMsg])
+    } finally {
+      setFileUrl(null)
+      setUploadFile(null)
+      setStreamingMessage("")
+      setActiveJob(false)
     }
   }
 
@@ -193,7 +226,13 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
   return (
     <div className="bg-primary/20 flex flex-grow gap-4 rounded-lg p-3">
       <div className="bg-base-100 flex w-full rounded-lg chat-p justify-center py-6">
-        <ChatWindow onSubmit={onSubmit} messages={messages} activeJob={activeJob} handleFiles={handleFiles} />
+        <ChatWindow 
+          onSubmit={onSubmit} 
+          messages={messages} 
+          activeJob={activeJob} 
+          handleFiles={handleFiles}
+          streamingMessage={streamingMessage}
+        />
       </div>
     </div>
   )

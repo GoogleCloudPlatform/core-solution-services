@@ -28,22 +28,32 @@ interface RunChatParams {
   llmType: string
   uploadFile: File
   fileUrl: string
+  stream?: boolean
+  history?: Array<{[key: string]: string}>
 }
 
 interface ResumeQueryParams {
   queryId: string
   userInput: string
   llmType: string
+  stream: boolean
 }
 
 interface ResumeChatParams {
   chatId: string
   userInput: string
   llmType: string
+  stream?: boolean
 }
 
 interface JobStatusResponse {
   status: "succeeded" | "failed" | "active"
+}
+
+interface UpdateChatParams {
+  chatId: string
+  title?: string
+  history?: Array<{[key: string]: string}>
 }
 
 const endpoint = envOrFail(
@@ -91,19 +101,41 @@ export const createChat =
     llmType,
     uploadFile,
     fileUrl,
-  }: RunChatParams): Promise<Chat | undefined> => {
+    stream = true,
+    history
+  }: RunChatParams): Promise<Chat | ReadableStream | undefined> => {
     const url = `${endpoint}/chat`
     const headers = { 
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data'
     }
-    let data = {
-      prompt: userInput,
-      llm_type: llmType,
-      chat_file: uploadFile,
-      chat_file_url: fileUrl
+    const formData = new FormData()
+    formData.append('prompt', userInput)
+    formData.append('llm_type', llmType)
+    formData.append('stream', String(stream))
+    if (uploadFile) formData.append('chat_file', uploadFile)
+    if (fileUrl) formData.append('chat_file_url', fileUrl)
+    if (history) formData.append('history', JSON.stringify(history))
+
+    if (stream) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.body
+      } catch (error) {
+        console.error('Error in createChat:', error);
+        throw error;
+      }
     }
-    return axios.post(url, data, { headers }).then(path(["data", "data"]))
+
+    return axios.post(url, formData, { headers }).then(path(["data", "data"]))
   }
 
 export const resumeChat =
@@ -111,13 +143,37 @@ export const resumeChat =
     chatId,
     userInput,
     llmType,
-  }: ResumeChatParams): Promise<Chat | undefined> => {
+    stream = true
+  }: ResumeChatParams): Promise<Chat | ReadableStream | undefined> => {
     const url = `${endpoint}/chat/${chatId}/generate`
     const headers = { Authorization: `Bearer ${token}` }
     const data = {
       prompt: userInput,
       llm_type: llmType,
+      stream
     }
+
+    if (stream) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.body
+      } catch (error) {
+        console.error('Error in resumeChat:', error);
+        throw error;
+      }
+    }
+
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
 
@@ -222,6 +278,7 @@ export const resumeQuery =
     queryId,
     userInput,
     llmType,
+    stream = false
   }: ResumeQueryParams): Promise<Query | undefined> => {
     const url = `${endpoint}/query/${queryId}`
     const headers = { Authorization: `Bearer ${token}` }
@@ -229,8 +286,16 @@ export const resumeQuery =
       prompt: userInput,
       llm_type: llmType,
       sentence_references: false,
+      stream
     }
-    return axios.post(url, data, { headers }).then(path(["data", "data", "user_query_id"]))
+
+    try {
+      const response = await axios.post(url, data, { headers });
+      return path(["data", "data", "user_query_id"], response);
+    } catch (error) {
+      console.error('Error in resumeQuery:', error);
+      throw error;
+    }
   }
 
 export const getJobStatus =
@@ -255,4 +320,22 @@ export const fetchAllEngineJobs =
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
  }
+
+export const updateChat = 
+  (token: string) => async ({
+    chatId,
+    title,
+    history
+  }: UpdateChatParams): Promise<Chat | undefined> => {
+    const url = `${endpoint}/chat/${chatId}`
+    const headers = { 
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+    const data = {
+      ...(title && { title }),
+      ...(history && { history })
+    }
+    return axios.put(url, data, { headers }).then(path(["data", "data"]))
+  }
 

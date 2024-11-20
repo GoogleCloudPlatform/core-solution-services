@@ -124,8 +124,9 @@ def test_create_chat(create_user, client_with_emulator):
   userid = CHAT_EXAMPLE["user_id"]
   url = f"{api_url}"
 
+  # Test regular chat creation
   with mock.patch("routes.chat.llm_chat",
-                  return_value = FAKE_GENERATE_RESPONSE):
+                  return_value=FAKE_GENERATE_RESPONSE):
     resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS)
 
   json_response = resp.json()
@@ -138,15 +139,65 @@ def test_create_chat(create_user, client_with_emulator):
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "returned chat data generated text"
 
+  # Test streaming chat creation
+  streaming_params = {
+    **FAKE_GENERATE_PARAMS,
+    "stream": True
+  }
+  with mock.patch("routes.chat.llm_chat",
+                  return_value=iter([FAKE_GENERATE_RESPONSE])):
+    resp = client_with_emulator.post(url, data=streaming_params)
+    assert resp.status_code == 200, "Streaming response status 200"
+    assert resp.headers["content-type"] == "text/event-stream; charset=utf-8", \
+      "Streaming response content type"
+
+  # Test chat creation with history
+  history_params = {
+    **FAKE_GENERATE_PARAMS,
+    "history": '[{"human": "test prompt"}, {"ai": "test response"}]'
+  }
+  with mock.patch("routes.chat.llm_chat",
+                  return_value=FAKE_GENERATE_RESPONSE):
+    resp = client_with_emulator.post(url, data=history_params)
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  chat_data = json_response.get("data")
+  assert len(chat_data["history"]) == 2, "History preserved"
+  assert chat_data["history"][0] == {"human": "test prompt"}, \
+    "History human message preserved"
+  assert chat_data["history"][1] == {"ai": "test response"}, \
+    "History AI message preserved"
+
+  # Test invalid history format
+  invalid_history_params = {
+    **FAKE_GENERATE_PARAMS,
+    "history": "invalid json"
+  }
+  resp = client_with_emulator.post(url, data=invalid_history_params)
+  assert resp.status_code == 422, "Invalid history returns 422"
+
+  # Test missing prompt and history
+  invalid_params = {
+    "llm_type": FAKE_GENERATE_PARAMS["llm_type"]
+  }
+  resp = client_with_emulator.post(url, data=invalid_params)
+  assert resp.status_code == 422, "Missing prompt and history returns 422"
+
+  # Verify final state
   user_chats = UserChat.find_by_user(userid)
-  assert len(user_chats) == 1, "retrieved new user chat"
-  user_chat = user_chats[0]
-  assert user_chat.history[0] == \
+  assert len(user_chats) == 2, "Created expected number of chats"
+
+  # Verify the regular chat creation
+  regular_chat = next(chat for chat in user_chats
+                     if len(chat.history) == 2 and
+                     chat.history[0].get(CHAT_HUMAN) == \
+                     FAKE_GENERATE_PARAMS["prompt"])
+  assert regular_chat.history[0] == \
     {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
-    "retrieved user chat prompt"
-  assert user_chat.history[1] == \
+    "saved chat data prompt"
+  assert regular_chat.history[1] == \
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
-    "retrieved user chat response"
+    "saved chat data generated text"
 
 
 def test_delete_chat(create_user, create_chat, client_with_emulator):
@@ -169,16 +220,39 @@ def test_update_chat(create_user, create_chat, client_with_emulator):
 
   url = f"{api_url}/{chatid}"
 
+  # Test updating title
   update_params = {
     "title": "updated title"
   }
   resp = client_with_emulator.put(url, json=update_params)
-
-  json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
-
   updated_chat = UserChat.find_by_id(chatid)
-  assert updated_chat.title == "updated title", "user chat updated"
+  assert updated_chat.title == "updated title", "user chat title updated"
+
+  # Test updating history
+  new_history = [
+    {"human": "new question"},
+    {"ai": "new response"}
+  ]
+  update_params = {
+    "history": new_history
+  }
+  resp = client_with_emulator.put(url, json=update_params)
+  assert resp.status_code == 200, "Status 200"
+  updated_chat = UserChat.find_by_id(chatid)
+  assert updated_chat.history == new_history, "user chat history updated"
+
+  # Test updating both title and history
+  update_params = {
+    "title": "another title",
+    "history": [{"human": "q"}, {"ai": "a"}]
+  }
+  resp = client_with_emulator.put(url, json=update_params)
+  assert resp.status_code == 200, "Status 200"
+  updated_chat = UserChat.find_by_id(chatid)
+  assert updated_chat.title == "another title", "title updated"
+  assert updated_chat.history == \
+      [{"human": "q"}, {"ai": "a"}], "history updated"
 
 
 def test_chat_generate(create_chat, client_with_emulator):

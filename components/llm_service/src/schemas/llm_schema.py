@@ -37,7 +37,18 @@ class ChatModel(BaseModel):
 
 
 class ChatUpdateModel(BaseModel):
-  title: str
+  """Model for updating chat properties"""
+  title: Optional[str] = None
+  history: Optional[List[dict]] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": {
+          "title": "Updated Chat Title",
+          "history": [
+              {"human": "What is machine learning?"},
+              {"ai": "Machine learning is a branch of ai..."}
+          ]
+      }
+  })
 
 class UserQueryUpdateModel(BaseModel):
   title: str
@@ -98,6 +109,7 @@ class LLMGenerateModel(BaseModel):
   """LLM Generate request model"""
   prompt: str
   llm_type: Optional[str] = None
+  stream: Optional[bool] = False
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": LLM_GENERATE_EXAMPLE
   })
