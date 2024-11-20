@@ -28,7 +28,8 @@ os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
 os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 os.environ["VLLM_GEMMA_ENDPOINT"] = "fake-endpoint"
 
-from services.llm_generate import llm_generate, llm_chat, llm_generate_multimodal
+from services.llm_generate import llm_generate, llm_chat, llm_generate_multi,\
+    llm_vllm_service_predict
 from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
 from vertexai.preview.language_models import TextGenerationResponse
@@ -255,14 +256,33 @@ async def test_llm_truss_service_predict(clean_firestore, test_chat):
 @pytest.mark.asyncio
 async def test_llm_vllm_service_predict(clean_firestore, test_chat):
   get_model_config().llm_model_providers = {
-    PROVIDER_VLLM: TEST_VLLM_CONFIG
-  }
+    PROVIDER_VLLM: TEST_VLLM_CONFIG }
   get_model_config().llm_models = TEST_VLLM_CONFIG
-  with mock.patch(
-          "services.llm_generate.post_method",
-          return_value=mock.Mock(status_code=200,
-                                 json=lambda: FAKE_VLLM_RESPONSE)):
-    response = await llm_chat(
-      FAKE_PROMPT, VLLM_LLM_GEMMA_CHAT)
 
-  assert response == FAKE_GENERATE_RESPONSE
+  with mock.patch("services.llm_generate.OpenAI") as mock_open_ai:
+    mock_client = mock_open_ai.return_value
+    mock_model_list = mock.Mock()
+    mock_model_list.data = [mock.Mock(id="fake-model-id")]
+    mock_client.models.list.return_value = mock_model_list
+
+    mock_response = mock.Mock()
+    mock_response.choices = [mock.Mock(message=mock.Mock \
+                    (content=FAKE_GENERATE_RESPONSE))]
+    mock_client.chat.completions.create.return_value = mock_response
+
+    result = await llm_vllm_service_predict(
+      llm_type=VLLM_LLM_GEMMA_CHAT,
+      prompt=FAKE_PROMPT,
+      model_endpoint="fake-endpoint"
+    )
+
+    assert result == FAKE_GENERATE_RESPONSE
+    mock_client.models.list.assert_called_once()
+    mock_client.chat.completions.create.assert_called_once_with(
+      model="fake-model-id",
+      messages=[{"role": "user", "content": FAKE_PROMPT}],
+      temperature=0.2,
+      max_tokens=900,
+      top_p=1.0,
+      top_k=10
+    )
