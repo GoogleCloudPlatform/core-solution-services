@@ -28,8 +28,8 @@ os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
 os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 os.environ["VLLM_GEMMA_ENDPOINT"] = "fake-endpoint"
 
-from services.llm_generate import llm_generate, llm_chat, llm_generate_multi,\
-    llm_vllm_service_predict
+from services.llm_generate import llm_generate, llm_chat, llm_generate_multimodal,\
+  llm_vllm_service_predict
 from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
 from vertexai.preview.language_models import TextGenerationResponse
