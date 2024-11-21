@@ -18,7 +18,10 @@ There are four logical steps to deploy GENIE:
 
 We have also included a [Troubleshooting](#troubleshooting) section at the end that provides potential fixes for issues seen during this basic install process.
 
-For the complete set of GENIE install instructions and troubleshooting options, visit [INSTALL.md](./INSTALL.md). We will continue to consolidate GENIE documentation as the codebase evolves.
+For the complete set of GENIE install instructions and troubleshooting options, visit [INSTALL.md](./INSTALL.md). Compared with the full instructions, these specify a single installation
+path instead of presenting multiple options, and have all instructions on one page.
+
+We will continue to consolidate GENIE documentation as the codebase evolves.
 
 # 1. Set up
 
