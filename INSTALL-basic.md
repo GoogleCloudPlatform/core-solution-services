@@ -11,10 +11,14 @@ Once this installation is complete, you can dive deeper into other GENIE READMEs
 
 There are four logical steps to deploy GENIE:
 
-1. **Set up**. Create a new GCP Project, set up Cloud Shell, clone the GENIE code.
-2. **Create a jump host**. We use Cloud Shell to deploy a jump host (virtual machine running in your GCP project) that will be used to do the actual GENIE deployment. We deploy from a jump host to ensure that all deployments start from the same virtual machine configuration.
-3. **Deploy GENIE backend**. From the jump host, deploy the GENIE infrastructure (GKE, databases, etc) and microservices.
-4. **Deploy GENIE front end**. From the jump host, deploy the GENIE front end application.
+1. [**Set up**](#1-set-up). Create a new GCP Project, set up Cloud Shell, clone the GENIE code.
+2. [**Create a jump host**](#2-create-the-jump-host). We use Cloud Shell to deploy a jump host (virtual machine running in your GCP project) that will be used to do the actual GENIE deployment. We deploy from a jump host to ensure that all deployments start from the same virtual machine configuration.
+3. [**Deploy GENIE backend**](#3-deploy-the-genie-backend). From the jump host, deploy the GENIE infrastructure (GKE, databases, etc) and microservices.
+4. [**Deploy GENIE front end**](#4-deploy-the-genie-front-end). From the jump host, deploy the GENIE front end application.
+
+We have also included a [Troubleshooting](#troubleshooting) section at the end that provides potential fixes for issues seen during this basic install process.
+
+For the complete set of GENIE install instructions and troubleshooting options, visit [INSTALL.md](./INSTALL.md). We will continue to consolidate GENIE documentation as the codebase evolves.
 
 # 1. Set up
 
@@ -707,7 +711,9 @@ Hello world
 
 And Gemini should respond.
 
-# Troubleshooting [Step 1](#1-set-up) | [Step 2](#2-create-the-jump-host) | [Step 3](#3-deploy-the-genie-backend) | [Step 4](#4-deploy-the-genie-front-end)
+# Troubleshooting
+
+Go back to [Step 1](#1-set-up) | [Step 2](#2-create-the-jump-host) | [Step 3](#3-deploy-the-genie-backend) | [Step 4](#4-deploy-the-genie-front-end)
 
 ## Reconnect to Cloud Shell
 
