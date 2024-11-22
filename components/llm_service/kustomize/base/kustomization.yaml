@@ -19,6 +19,7 @@ resources:
   - ./service.yaml
   - ./role_binding.yaml
   - ./role.yaml
+  - ./backend_config.yaml
 configMapGenerator:
   - name: env-vars
     envs:
