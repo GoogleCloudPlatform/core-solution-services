@@ -39,7 +39,7 @@ type ScrapedDocument struct {
 	ContentType string `json:"content_type"`
 }
 
-// Add struct for job input data
+// JobInput represents the input data for a scraping job
 type JobInput struct {
 	URL        string `json:"url"`
 	EngineName string `json:"query_engine_name"`
@@ -49,22 +49,56 @@ type JobInput struct {
 // Add global storage client
 var storageClient *storage.Client
 
-// Utility function to update error in firestore job doc
-func updateJobError(ctx context.Context, docRef *firestore.DocumentRef, err error) {
-	_, updateErr := docRef.Update(ctx, []firestore.Update{
-		{Path: "errors", Value: []string{err.Error()}},
-		{Path: "status", Value: "failed"},
-	})
-	if updateErr != nil {
-		log.Printf("Failed to update job error status: %v", updateErr)
+func main() {
+	ctx := context.Background()
+
+	// Configure logger
+	configureLogger()
+
+	// Retrieve environment variables
+	projectID, jobID := getEnvVariables()
+
+	// Initialize Firestore client
+	firestoreClient := initializeFirestore(ctx, projectID)
+	defer firestoreClient.Close()
+
+	// Initialize storage client
+	var err error
+	storageClient, err = storage.NewClient(ctx)
+	if err != nil {
+		log.Printf("Failed to create storage client: %v", err)
+		os.Exit(1)
 	}
+	defer storageClient.Close()
+
+	// Retrieve and parse job document
+	jobDoc, docRef := fetchJobDocument(ctx, firestoreClient, jobID)
+	jobInput := parseJobInput(ctx, jobDoc, docRef)
+
+	// Generate and initialize bucket
+	bucketName := generateAndInitializeBucket(ctx, projectID, jobInput, docRef)
+
+	// Set up Colly collector
+	collector, scrapedDocs := setupCollector(ctx, jobInput, bucketName, docRef)
+
+	// Start scraping
+	err = collector.Visit(jobInput.URL)
+	if err != nil {
+		log.Printf("Error starting scrape: %v", err)
+	}
+	collector.Wait()
+
+	log.Printf("Scraping complete. Found %d documents", len(*scrapedDocs))
+
+	// Save results and update job status
+	saveResults(ctx, firestoreClient, docRef, scrapedDocs)
 }
 
-func main() {
-	// Configure logger to write to stdout
+func configureLogger() {
 	log.SetOutput(os.Stdout)
+}
 
-	// Get GCP project ID
+func getEnvVariables() (string, string) {
 	projectID := os.Getenv("GCP_PROJECT")
 	if projectID == "" {
 		err := fmt.Errorf("GCP_PROJECT environment variable not set")
@@ -72,7 +106,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Get job model ID
 	jobID := os.Getenv("JOB_ID")
 	if jobID == "" {
 		err := fmt.Errorf("JOB_ID environment variable not set")
@@ -81,99 +114,92 @@ func main() {
 	}
 	log.Printf("Processing job ID: %s", jobID)
 
-	// Initialize Firestore client
-	ctx := context.Background()
+	return projectID, jobID
+}
+
+func initializeFirestore(ctx context.Context, projectID string) *firestore.Client {
 	firestoreClient, err := firestore.NewClient(ctx, projectID)
 	if err != nil {
 		log.Printf("Failed to create Firestore client: %v", err)
 		os.Exit(1)
 	}
-	defer firestoreClient.Close()
+	return firestoreClient
+}
 
-	// Get job document
+func fetchJobDocument(ctx context.Context, firestoreClient *firestore.Client, jobID string) (*firestore.DocumentSnapshot, *firestore.DocumentRef) {
 	collectionName := "batch_jobs"
 	docRef := firestoreClient.Collection(collectionName).Doc(jobID)
 	jobDoc, err := docRef.Get(ctx)
 	if err != nil {
 		updateJobError(ctx, docRef, fmt.Errorf("failed to get job document: %v", err))
 		log.Print(err)
-		return
+		return nil, docRef
 	}
+	return jobDoc, docRef
+}
 
-	// Read input from jobDoc input_data
+func parseJobInput(ctx context.Context, jobDoc *firestore.DocumentSnapshot, docRef *firestore.DocumentRef) JobInput {
 	var jobInput JobInput
 	inputData, ok := jobDoc.Data()["input_data"].(string)
 	if !ok {
 		err := fmt.Errorf("failed to get input_data as string from job document")
 		updateJobError(ctx, docRef, err)
 		log.Print(err)
-		return
+		return jobInput
 	}
 	if err := json.Unmarshal([]byte(inputData), &jobInput); err != nil {
 		updateJobError(ctx, docRef, fmt.Errorf("failed to decode job input: %v", err))
 		log.Print(err)
-		return
+		return jobInput
 	}
 	log.Printf("Job input: %+v", jobInput)
 
+	// Validate job input
 	if jobInput.URL == "" {
 		err := fmt.Errorf("URL not found in input data")
 		updateJobError(ctx, docRef, err)
 		log.Print(err)
-		return
 	}
-	log.Printf("Starting scrape of URL: %s", jobInput.URL)
-
-	depthLimitStr := jobInput.DepthLimit
-	if depthLimitStr == "" {
+	if jobInput.DepthLimit == "" {
 		err := fmt.Errorf("depth limit not found in input data")
 		updateJobError(ctx, docRef, err)
 		log.Print(err)
-		return
 	}
-	depthLimit, err := strconv.Atoi(depthLimitStr)
+	_, err := strconv.Atoi(jobInput.DepthLimit)
 	if err != nil {
-		err := fmt.Errorf("invalid depth limit value")
+		err := fmt.Errorf("invalid depth limit value %s", jobInput.DepthLimit)
 		updateJobError(ctx, docRef, err)
 		log.Print(err)
-		return
 	}
-	log.Printf("Depth limit set to: %d", depthLimit)
-
-	qEngineName := jobInput.EngineName
-	if qEngineName == "" {
+	if jobInput.EngineName == "" {
 		err := fmt.Errorf("query engine name not found in input data")
 		updateJobError(ctx, docRef, err)
 		log.Print(err)
-		return
 	}
 
-	// Generate bucket name using same logic as Python code
-	bucketName, err := generateBucketName(projectID, qEngineName)
+	return jobInput
+}
+
+func generateAndInitializeBucket(ctx context.Context, projectID string, jobInput JobInput, docRef *firestore.DocumentRef) string {
+	// Generate bucket name
+	bucketName, err := generateBucketName(projectID, jobInput.EngineName)
 	if err != nil {
 		updateJobError(ctx, docRef, err)
 		log.Print(err)
-		return
 	}
+
 	log.Printf("Using bucket: %s", bucketName)
 
-	// Initialize storage client globally
-	storageClient, err = storage.NewClient(ctx)
-	if err != nil {
-		updateJobError(ctx, docRef, fmt.Errorf("failed to create storage client: %v", err))
-		log.Print(err)
-		return
-	}
-	defer storageClient.Close()
-
-	// Initialize or clear bucket
+	// Initialize bucket
 	if err := initializeBucket(ctx, projectID, bucketName); err != nil {
 		updateJobError(ctx, docRef, fmt.Errorf("failed to initialize bucket: %v", err))
 		log.Print(err)
-		return
 	}
 
-	// Create a slice to store document metadata
+	return bucketName
+}
+
+func setupCollector(ctx context.Context, jobInput JobInput, bucketName string, docRef *firestore.DocumentRef) (*colly.Collector, *[]ScrapedDocument) {
 	var scrapedDocs []ScrapedDocument
 
 	baseDomain := extractDomain(jobInput.URL)
@@ -185,10 +211,19 @@ func main() {
 
 	// Create a new collector with debug logging
 	c := colly.NewCollector(
-		colly.MaxDepth(depthLimit),
+		colly.MaxDepth(func() int {
+			depth, err := strconv.Atoi(jobInput.DepthLimit)
+			if err != nil {
+				log.Printf("Invalid depth limit, defaulting to 1")
+				return 1
+			}
+			return depth
+		}()),
 		colly.AllowedDomains(allowedDomains...), // Allow both with and without www
 		colly.Debugger(&debug.LogDebugger{}),
 		colly.Async(true),
+		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"),
+		colly.IgnoreRobotsTxt(),
 	)
 
 	// Add error handling
@@ -203,82 +238,82 @@ func main() {
 
 	// Handle all responses
 	c.OnResponse(func(r *colly.Response) {
-		contentType := r.Headers.Get("Content-Type")
-		log.Printf("Got response from %s (type: %s)", r.Request.URL, contentType)
-
-		// Skip non-HTML, non-PDF content
-		if !strings.Contains(contentType, "text/html") && !strings.Contains(contentType, "application/pdf") {
-			log.Printf("Skipping non-HTML/PDF content type: %s", contentType)
-			return
-		}
-
-		// Generate filename from URL
-		filename := sanitizeFilename(r.Request.URL.String())
-		if strings.Contains(contentType, "application/pdf") {
-			if !strings.HasSuffix(filename, ".pdf") {
-				filename += ".pdf"
-			}
-		} else {
-			if !strings.HasSuffix(filename, ".html") {
-				filename += ".html"
-			}
-		}
-
-		// Create GCS path
-		gcsPath := fmt.Sprintf("gs://%s/%s", bucketName, filename)
-		log.Printf("Saving content to: %s", gcsPath)
-
-		// Write content to GCS
-		if err := writeDataToGCS(context.Background(), bucketName, filename, r.Body); err != nil {
-			log.Printf("Error writing to GCS: %v", err)
-			return
-		}
-
-		// Add to scraped documents
-		doc := ScrapedDocument{
-			URL:         r.Request.URL.String(),
-			Filename:    filename,
-			GCSPath:     gcsPath,
-			ContentType: contentType,
-		}
-		scrapedDocs = append(scrapedDocs, doc)
-		log.Printf("Successfully saved document: %s", gcsPath)
+		handleResponse(r, bucketName, &scrapedDocs)
 	})
 
-	// Add PDF link detection and handle all links
+	// Handle HTML elements
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		link := e.Attr("href")
-		log.Printf("Found link: %s", link)
-
-		// Handle relative URLs
-		absoluteURL := e.Request.AbsoluteURL(link)
-		if absoluteURL == "" {
-			log.Printf("Skipping invalid URL: %s", link)
-			return
-		}
-
-		if strings.HasSuffix(strings.ToLower(link), ".pdf") {
-			log.Printf("Found PDF link: %s", absoluteURL)
-			e.Request.Visit(absoluteURL)
-		} else {
-			// Visit all links within depth limit
-			log.Printf("Visiting URL: %s", absoluteURL)
-			e.Request.Visit(absoluteURL)
-		}
+		handleHTML(e)
 	})
 
-	// Start scraping
-	log.Printf("Starting scrape...")
-	err = c.Visit(jobInput.URL)
-	if err != nil {
-		log.Printf("Error starting scrape: %v", err)
+	return c, &scrapedDocs
+}
+
+func handleResponse(r *colly.Response, bucketName string, scrapedDocs *[]ScrapedDocument) {
+	contentType := r.Headers.Get("Content-Type")
+	log.Printf("Got response from %s (type: %s)", r.Request.URL, contentType)
+
+	// Skip non-HTML, non-PDF content
+	if !strings.Contains(contentType, "text/html") && !strings.Contains(contentType, "application/pdf") {
+		log.Printf("Skipping non-HTML/PDF content type: %s", contentType)
+		return
 	}
 
-	// Wait for scraping to finish
-	c.Wait()
+	// Generate filename from URL
+	filename := sanitizeFilename(r.Request.URL.String())
+	if strings.Contains(contentType, "application/pdf") {
+		if !strings.HasSuffix(filename, ".pdf") {
+			filename += ".pdf"
+		}
+	} else {
+		if !strings.HasSuffix(filename, ".html") {
+			filename += ".html"
+		}
+	}
 
-	log.Printf("Scraping complete. Found %d documents", len(scrapedDocs))
+	// Create GCS path
+	gcsPath := fmt.Sprintf("gs://%s/%s", bucketName, filename)
+	log.Printf("Saving content to: %s", gcsPath)
 
+	// Write content to GCS
+	if err := writeDataToGCS(context.Background(), bucketName, filename, r.Body); err != nil {
+		log.Printf("Error writing to GCS: %v", err)
+		return
+	}
+
+	// Add to scraped documents
+	doc := ScrapedDocument{
+		URL:         r.Request.URL.String(),
+		Filename:    filename,
+		GCSPath:     gcsPath,
+		ContentType: contentType,
+	}
+	*scrapedDocs = append(*scrapedDocs, doc)
+	log.Printf("Successfully saved document: %s", gcsPath)
+}
+
+func handleHTML(e *colly.HTMLElement) {
+	link := e.Attr("href")
+	log.Printf("Found link: %s", link)
+
+	// Handle relative URLs
+	absoluteURL := e.Request.AbsoluteURL(link)
+	if absoluteURL == "" {
+		log.Printf("Skipping invalid URL: %s", link)
+		return
+	}
+
+	if strings.HasSuffix(strings.ToLower(link), ".pdf") {
+		log.Printf("Found PDF link: %s", absoluteURL)
+		e.Request.Visit(absoluteURL)
+	} else {
+		// Visit all links within depth limit
+		log.Printf("Visiting URL: %s", absoluteURL)
+		e.Request.Visit(absoluteURL)
+	}
+}
+
+func saveResults(ctx context.Context, firestoreClient *firestore.Client, docRef *firestore.DocumentRef, scrapedDocs *[]ScrapedDocument) {
 	// Write results as JSON to stdout for job results
 	if err := json.NewEncoder(os.Stdout).Encode(scrapedDocs); err != nil {
 		updateJobError(ctx, docRef, fmt.Errorf("error encoding results: %v", err))
@@ -286,12 +321,12 @@ func main() {
 		return
 	}
 
-	// After scraping is complete, update the job document
+	// Update the job document with results
 	resultData := map[string]interface{}{
 		"scraped_documents": scrapedDocs,
 	}
 
-	_, err = docRef.Update(ctx, []firestore.Update{
+	_, err := docRef.Update(ctx, []firestore.Update{
 		{Path: "result_data", Value: resultData},
 	})
 	if err != nil {
@@ -299,8 +334,9 @@ func main() {
 		log.Print(err)
 		return
 	}
-	log.Printf("Successfully updated job with %d scraped documents", len(scrapedDocs))
+	log.Printf("Successfully updated job with %d scraped documents", len(*scrapedDocs))
 
+	// Update job status to succeeded
 	_, err = docRef.Update(ctx, []firestore.Update{
 		{Path: "status", Value: "succeeded"},
 	})
@@ -312,6 +348,7 @@ func main() {
 	log.Printf("Successfully updated job status")
 }
 
+// sanitizeFilename sanitizes the URL to create a safe filename
 func sanitizeFilename(url string) string {
 	// Remove the scheme and domain
 	parts := strings.SplitN(url, "://", 2)
@@ -338,6 +375,7 @@ func sanitizeFilename(url string) string {
 	return safe
 }
 
+// extractDomain extracts the base domain from a URL
 func extractDomain(url string) string {
 	domain := ""
 	parts := strings.SplitN(url, "://", 2)
@@ -352,7 +390,7 @@ func extractDomain(url string) string {
 	return domain
 }
 
-// Add function to generate bucket name using same logic as Python code
+// generateBucketName generates a GCS bucket name based on project ID and engine name
 func generateBucketName(projectID string, qEngineName string) (string, error) {
 	// Replace spaces and underscores with hyphens, convert to lowercase
 	qeName := strings.ToLower(qEngineName)
@@ -369,7 +407,8 @@ func generateBucketName(projectID string, qEngineName string) (string, error) {
 	return bucketName, nil
 }
 
-// Add new function to handle bucket initialization
+// initializeBucket initializes the GCS bucket by creating it if it doesn't exist
+// or clearing its contents if it does
 func initializeBucket(ctx context.Context, projectID, bucketName string) error {
 	bucket := storageClient.Bucket(bucketName)
 
@@ -402,7 +441,7 @@ func initializeBucket(ctx context.Context, projectID, bucketName string) error {
 	return nil
 }
 
-// Modify writeDataToGCS to use global client
+// writeDataToGCS writes data to the specified GCS bucket and filename
 func writeDataToGCS(ctx context.Context, bucketName string, filename string, content []byte) error {
 	// Use global storage client instead of creating new one
 	bucket := storageClient.Bucket(bucketName)
@@ -421,4 +460,15 @@ func writeDataToGCS(ctx context.Context, bucketName string, filename string, con
 
 	log.Printf("Successfully wrote %s to GCS bucket %s", filename, bucketName)
 	return nil
+}
+
+// updateJobError updates the job document with the provided error and sets status to failed
+func updateJobError(ctx context.Context, docRef *firestore.DocumentRef, err error) {
+	_, updateErr := docRef.Update(ctx, []firestore.Update{
+		{Path: "errors", Value: []string{err.Error()}},
+		{Path: "status", Value: "failed"},
+	})
+	if updateErr != nil {
+		log.Printf("Failed to update job error status: %v", updateErr)
+	}
 }

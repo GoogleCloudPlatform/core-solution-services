@@ -55,7 +55,7 @@ const (
 	collectionName = "batch_jobs"
 )
 
-func main() {
+func webscraper_main() {
 	http.HandleFunc("/start-webscraper", startWebscraperHandler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
