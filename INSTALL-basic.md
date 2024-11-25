@@ -703,16 +703,53 @@ In a new incognito browser window, go to
 https://<your-project-id>.web.app
 ```
 
-The Sign in page should load. Click Sign-in with your google.com email address.
-Once sign in is complete,the GENIE main page should load.
+The Sign in page should load. Click Sign-in, and **log in using your `google.com` email address**.
+Once sign in is complete, the GENIE main page should load.
 
-Enter
+On the left menu bar, click **New Chat**. Select the **VertexAI-Chat** model from the Model drop-down (this is Gemin Pro).
+In the prompt area, enter
 
 ```
 Hello world
 ```
 
-And Gemini should respond.
+And Gemini should respond with an answer based on its training data (this is not RAG).
+
+# 5. Create a Query Engine
+
+To do a RAG demo, we need to create data source for RAG to retrieve from, which GENIE refers to as a query engine.
+GENIE allows you to create query engines based on data from different sources, including Cloud Storage buckets and web sites.
+These instructions will create a query engine based on data in a Cloud Storage bucket.
+
+## Add data to Cloud Storage bucket
+
+In the cloud console, create a new storage bucket. Save the name of the bucket. Upload a set of sample documents for your RAG demo to the bucket.
+
+## Create the Query Engine
+
+In the React front end, select **+ Query Engines Admin**. In the **Add Query Engine** tab, add the following information, making sure to substitute the name of your bucket.
+
+| Field             | Value                     |
+| ----------------- | ------------------------- |
+| Name              | Name of your query engine |
+| Query Engine Type | GENIE Search              |
+| Data URL          | `gs://<your-bucket-name>` |
+| Vector Store      | PGVector                  |
+| Embedding Type    | VertexAI-Embedding        |
+
+You can leave the other fields blank and click Submit. GENIE creates a Kubernetes job that chunks and indexes all the source files, and
+saves them in the vector database so they can be included in the RAG pipeline. Depending on the number of files and their size, the job could take minutes or hours.
+You can check the status of the Query Engine build in the **Query Engine Jobs** tab.
+
+## Enable bucket access
+
+To allow users to click on the filenames included in the RAG results and see their contents, the contents of the bucket need to be publicly accessible.
+
+In the console, go to Cloud Storage. Select the bucket you created and choose `PERMISSIONS` at the top.
+In the Permissions pane, select `ADD PRINCIPAL`. For principal, use `allUsers`. For role, select `Storage Legacy Object Reader`. Click Save.
+
+Note: we recognize that this is not a secure, long-term solution and only appropriate for demo-ing with public data. We are working towards a secure approach
+that is appropriate for private / confidential data.
 
 # Troubleshooting
 
