@@ -16,7 +16,12 @@ There are four logical steps to deploy GENIE:
 3. [**Deploy GENIE backend**](#3-deploy-the-genie-backend). From the jump host, deploy the GENIE infrastructure (GKE, databases, etc) and microservices.
 4. [**Deploy GENIE front end**](#4-deploy-the-genie-front-end). From the jump host, deploy the GENIE front end application.
 
-We have also included a [Troubleshooting](#troubleshooting) section at the end that provides potential fixes for issues seen during this basic install process.
+For RAG use cases you will also need to complete:
+
+5. [**Create a Query Engine**](#5-create-a-query-engine).
+
+We have also included a [Tips](#tips) section at the end with useful commands, and
+a [Troubleshooting](#troubleshooting) section that provides potential fixes for issues seen during this basic install process.
 
 For the complete set of GENIE install instructions and troubleshooting options, visit [INSTALL.md](./INSTALL.md). Compared with the full instructions, these specify a single installation
 path instead of presenting multiple options, and have all instructions on one page.
@@ -175,7 +180,7 @@ Enter 'Y' at the prompt.
 
 You have now confirmed that your GCP organization, project, Cloud Shell environment variables and libraries are ready for the next step, to create the jump host.
 
-Follow these instructions if you need to [reconnect to Cloud Shell](#reconnect-to-cloud-shell), such as after a session timeout.
+Follow these instructions if you need to [reconnect to jump host](#reconnect-to-jump-host), such as after a session timeout.
 
 # 2. Create the jump host
 
@@ -741,6 +746,23 @@ You can leave the other fields blank and click Submit. GENIE creates a Kubernete
 saves them in the vector database so they can be included in the RAG pipeline. Depending on the number of files and their size, the job could take minutes or hours.
 You can check the status of the Query Engine build in the **Query Engine Jobs** tab.
 
+### Optional: Create a parent query engine
+
+Note that before creating a parent query engine you must first create all the child query engines.
+
+In the React front end, select **+ Query Engines Admin**. In the **Add Query Engine** tab, add the following information.
+
+| Field             | Value                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------- |
+| Name              | Name of your parent query engine                                                        |
+| Query Engine Type | Integrated Search                                                                       |
+| Data URL          | `gs://` (no bucket needed)                                                              |
+| Vector Store      | PGVector                                                                                |
+| Embedding Type    | VertexAI-Embedding                                                                      |
+| Child engines     | Comma-separated list of the names of the child query engines. For example `qe1,qe2,qe3` |
+
+You can leave the other fields blank and click Submit.
+
 ## Enable bucket access
 
 To allow users to click on the filenames included in the RAG results and see their contents, the contents of the bucket need to be publicly accessible.
@@ -751,47 +773,64 @@ In the Permissions pane, select `ADD PRINCIPAL`. For principal, use `allUsers`. 
 Note: we recognize that this is not a secure, long-term solution and only appropriate for demo-ing with public data. We are working towards a secure approach
 that is appropriate for private / confidential data.
 
+# Tips
+
+All tips below should be run from the jump host.
+
+To see the GENIE pods currently running
+
+```
+kubectl get pods
+```
+
+To tail the logs of any pod, run the command below. For `<pod-name>`, substitute any pod from the output of `kubectl get pods`
+
+```
+kubectl logs --tail=300 -f <pod-name>
+```
+
+To redploy the LLM service (such as after changing the prompt, model configuration, or any other LLM-related code changes):
+
+```
+cd core-solution-services
+```
+
+```
+skaffold run -p default-deploy -m llm_service
+```
+
 # Troubleshooting
 
 Go back to [Step 1](#1-set-up) | [Step 2](#2-create-the-jump-host) | [Step 3](#3-deploy-the-genie-backend) | [Step 4](#4-deploy-the-genie-front-end)
 
-## Reconnect to Cloud Shell
+## Reconnect to Jump Host
 
-If Cloud Shell stops due to inactivity or you need to log out, the VM is ephemeral and you will need to reset the environment variables the next time you open Cloud Shell in order to SSH to the jump host. You can reset them by running the commands below:
+If Cloud Shell stops due to inactivity or you need to log out, the VM is ephemeral and you will need to reset the environment variables the next time you open Cloud Shell in order to SSH to the jump host.
+
+You can reset them by running the commands below:
 
 ```
-
 export PROJECT_ID=$(gcloud config get project)
 export ORGANIZATION_ID=$(gcloud projects describe "$PROJECT_ID" --format="value(parent.id)")
 export JUMP_HOST_ZONE=$(gcloud compute instances list --filter="name=(jump-host)" --format="value(zone)")
 
 ```
 
-While the Cloud Shell VM is ephemeral, your `$HOME` directory resides on a persistent disk, so files in `$HOME` will persist between Cloud Shell sessions.
-By default, when you log into Cloud Shell you should be in your `$HOME` directory
-
-You can check what your `$HOME` directory is by running
+Once the environment variables are re-set in Cloud Shell, you can SSH to the jump host again using:
 
 ```
-
-echo $HOME
-
-```
-
-And check your current directory by running:
-
-```
-
-pwd
-
-```
-
-Once the environment variables are re-set in Cloud Shell, you can SSH to the jump host again using
-
-```
-
 gcloud compute ssh jump-host --zone=${JUMP_HOST_ZONE} --tunnel-through-iap --project=${PROJECT_ID}
 
+```
+
+Once you are on the jump host, we recommend re-authenticating
+
+```
+gcloud auth login --update-adc
+```
+
+```
+gcloud auth configure-docker us-docker.pkg.dev
 ```
 
 ## Firebase database already exists
@@ -849,7 +888,7 @@ error: error validating "STDIN": error validating data: failed to download opena
 ```
 
 To fix, log out of the jump host by typing `exit`.
-[SSH back into the jump host](#reconnect-to-cloud-shell), and reauthenticate on the jump host.
+[SSH back into the jump host](#reconnect-to-jump-host), and reauthenticate on the jump host.
 
 Re-run the command
 
