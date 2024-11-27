@@ -765,13 +765,10 @@ You can leave the other fields blank and click Submit.
 
 ## Enable bucket access
 
-To allow users to click on the filenames included in the RAG results and see their contents, the contents of the bucket need to be publicly accessible.
-
-In the console, go to Cloud Storage. Select the bucket you created and choose `PERMISSIONS` at the top.
-In the Permissions pane, select `ADD PRINCIPAL`. For principal, use `allUsers`. For role, select `Storage Legacy Object Reader`. Click Save.
-
-Note: we recognize that this is not a secure, long-term solution and only appropriate for demo-ing with public data. We are working towards a secure approach
-that is appropriate for private / confidential data.
+The RAG results include the answer to the user's prompt along with the document chunks that the answer was grounded in,
+and links to the source documents. To allow users to click on document names in the RAG results to view them, the appropriate permssions need to be set on the
+Cloud Storage bucket. If you are an internal GPS user and need help with this, you can ping the `GENIE Solution Dev` chat space
+for additional support.
 
 # Tips
 
