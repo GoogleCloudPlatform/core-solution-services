@@ -372,7 +372,7 @@ ingress IP address, and ask that an A record be created.
 Once you start The DNS process, you can immediately resume the rest of the GENIE backend deployment here (Step 3).
 The DNS A record will need to be operational to verify the deployment at the end of Step 3.
 
-## Apply the LLM service infarstructure
+## Apply the LLM service infrastructure
 
 ```
 sb infra apply 4-llm
