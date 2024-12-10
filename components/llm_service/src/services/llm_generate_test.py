@@ -81,7 +81,6 @@ FAKE_VLLM_RESPONSE = {
 FAKE_FILE_NAME = "test.png"
 FAKE_PROMPT = "test prompt"
 
-
 @pytest.fixture
 def create_user(firestore_emulator, clean_firestore):
   user_dict = USER_EXAMPLE
