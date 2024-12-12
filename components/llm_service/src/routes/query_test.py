@@ -176,13 +176,13 @@ def test_get_query_engine_list(create_engine, client_with_emulator):
   assert resp.status_code == 200, "Status 200"
   saved_ids = [i.get("id") for i in json_response.get("data")]
   assert QUERY_ENGINE_EXAMPLE["id"] in saved_ids, "all data not retrieved"
-  read_access_group_found = False
-  for i in json_response.get("data"):
-    if i.get("id") == QUERY_ENGINE_EXAMPLE["id"]:
-      if i.get("read_access_group") == \
-          QUERY_ENGINE_EXAMPLE["read_access_group"]:
-        read_access_group_found = True
-  assert read_access_group_found, "read access group found"
+  for i in json_response["data"]:
+    if (i["id"] == QUERY_ENGINE_EXAMPLE["id"] and \
+        i["read_access_group"] == \
+        QUERY_ENGINE_EXAMPLE["read_access_group"]):
+          break
+  else:
+    assert False, "read access group not found"
 
 
 def test_get_query_engine_urls(create_engine, create_query_docs,
