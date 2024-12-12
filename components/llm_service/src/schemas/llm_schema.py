@@ -170,6 +170,7 @@ class LLMQueryEngineModel(BaseModel):
   query_engine: str
   description: str
   query_engine_type: Optional[str] = None
+  read_access_group: Optional[str] = None
   llm_type: Optional[str] = None
   embedding_type: Optional[str] = None
   vector_store: Optional[str] = None

@@ -86,6 +86,7 @@ QUERY_ENGINE_EXAMPLE = {
   "doc_url": "https://example.com",
   "query_engine_type": "qe_llm_service",
   "embedding_type": "VertexAI-Chat",
+  "read_access_group": "2023:7:50:080:101:A1",
   "vector_store": "langchain_pgvector",
   "created_by": "fake-user-id",
   "is_public": True,

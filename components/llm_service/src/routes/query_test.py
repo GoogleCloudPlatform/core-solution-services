@@ -176,6 +176,13 @@ def test_get_query_engine_list(create_engine, client_with_emulator):
   assert resp.status_code == 200, "Status 200"
   saved_ids = [i.get("id") for i in json_response.get("data")]
   assert QUERY_ENGINE_EXAMPLE["id"] in saved_ids, "all data not retrieved"
+  read_access_group_found = False
+  for i in json_response.get("data"):
+    if i.get("id") == QUERY_ENGINE_EXAMPLE["id"]:
+      if i.get("read_access_group") == \
+          QUERY_ENGINE_EXAMPLE["read_access_group"]:
+        read_access_group_found = True
+  assert read_access_group_found, "read access group found"
 
 
 def test_get_query_engine_urls(create_engine, create_query_docs,
@@ -223,6 +230,44 @@ def test_create_query_engine(create_user, client_with_emulator):
   query_engine_data = json_response.get("data")
   assert query_engine_data == FAKE_QE_BUILD_RESPONSE["data"]
 
+def test_get_query_engine(create_engine, client_with_emulator):
+  url = f"{api_url}/engine/{QUERY_ENGINE_EXAMPLE["id"]}"
+  resp = client_with_emulator.get(url)
+  json_response = resp.json()
+
+  assert resp.status_code == 200, "Status 200"
+  saved_id = json_response.get("data").get("id")
+  assert QUERY_ENGINE_EXAMPLE["id"] == saved_id, "all data not retrieved"
+  saved_read_access_group = json_response.get("data").get("read_access_group")
+  assert QUERY_ENGINE_EXAMPLE["read_access_group"] == saved_read_access_group, \
+    "all data not retrieved"
+
+def test_update_query_engine(create_engine, client_with_emulator):
+  url = f"{api_url}/engine/{QUERY_ENGINE_EXAMPLE["id"]}"
+  new_query_engine_fields = {
+    "query_engine": QUERY_ENGINE_EXAMPLE["name"],
+    "description": "New Engine Description",
+    "read_access_group": "2024:11:40:190:203:B1",
+    "doc_url": "",
+  }
+  resp = client_with_emulator.put(url, json=new_query_engine_fields)
+  json_response = resp.json()
+
+  assert resp.status_code == 200, "Status 200"
+
+  url = f"{api_url}/engine/{QUERY_ENGINE_EXAMPLE["id"]}"
+  resp = client_with_emulator.get(url)
+  json_response = resp.json()
+
+  assert resp.status_code == 200, "Status 200"
+  saved_id = json_response.get("data").get("id")
+  assert QUERY_ENGINE_EXAMPLE["id"] == saved_id, "all data not retrieved"
+  saved_read_access_group = json_response.get("data").get("read_access_group")
+  saved_description = json_response.get("data").get("description")
+  assert new_query_engine_fields["read_access_group"] == \
+    saved_read_access_group, "all data not retrieved"
+  assert new_query_engine_fields["description"] == \
+    saved_description, "all data not retrieved"
 
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 def test_delete_query_engine_soft(mock_vector_store, create_user,
