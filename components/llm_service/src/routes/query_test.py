@@ -231,7 +231,8 @@ def test_create_query_engine(create_user, client_with_emulator):
   assert query_engine_data == FAKE_QE_BUILD_RESPONSE["data"]
 
 def test_get_query_engine(create_engine, client_with_emulator):
-  url = f"{api_url}/engine/{QUERY_ENGINE_EXAMPLE["id"]}"
+  qe_id = QUERY_ENGINE_EXAMPLE["id"]
+  url = f"{api_url}/engine/{qe_id}"
   resp = client_with_emulator.get(url)
   json_response = resp.json()
 
@@ -243,7 +244,8 @@ def test_get_query_engine(create_engine, client_with_emulator):
     "all data not retrieved"
 
 def test_update_query_engine(create_engine, client_with_emulator):
-  url = f"{api_url}/engine/{QUERY_ENGINE_EXAMPLE["id"]}"
+  qe_id = QUERY_ENGINE_EXAMPLE["id"]
+  url = f"{api_url}/engine/{qe_id}"
   new_query_engine_fields = {
     "query_engine": QUERY_ENGINE_EXAMPLE["name"],
     "description": "New Engine Description",
@@ -255,7 +257,7 @@ def test_update_query_engine(create_engine, client_with_emulator):
 
   assert resp.status_code == 200, "Status 200"
 
-  url = f"{api_url}/engine/{QUERY_ENGINE_EXAMPLE["id"]}"
+  url = f"{api_url}/engine/{qe_id}"
   resp = client_with_emulator.get(url)
   json_response = resp.json()
 
