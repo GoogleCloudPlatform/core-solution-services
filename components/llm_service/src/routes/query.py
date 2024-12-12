@@ -70,6 +70,7 @@ def get_engine_list():
     "query_engine_type": qe.query_engine_type,
     "doc_url": qe.doc_url,
     "description": qe.description,
+    "read_access_group": qe.read_access_group,
     "llm_type": qe.llm_type,
     "embedding_type": qe.embedding_type,
     "vector_store": qe.vector_store,
@@ -363,7 +364,8 @@ def delete_query(query_id: str, hard_delete: bool = True):
 def update_query_engine(query_engine_id: str,
                         data_config: LLMQueryEngineModel):
   """
-  Update a query engine. It only supports updating description.
+  Update a query engine. It only supports updating description
+  and read access group.
 
   Args:
       query_engine_id (LLMQueryEngineModel)
@@ -384,6 +386,7 @@ def update_query_engine(query_engine_id: str,
   try:
     Logger.info(f"Updating q_engine=[{q_engine.name}]")
     q_engine.description = data_dict["description"]
+    q_engine.read_access_group = data_dict["read_access_group"]
     q_engine.save()
     Logger.info(f"Successfully updated q_engine=[{q_engine.name}]")
 

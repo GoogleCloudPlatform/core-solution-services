@@ -119,6 +119,7 @@ class QueryEngine(BaseModel):
   created_by = TextField(required=True)
   is_public = BooleanField(default=False)
   index_id = TextField(required=False)
+  read_access_group = TextField(required=False)
   index_name = TextField(required=False)
   endpoint = TextField(required=False)
   doc_url = TextField(required=False)
