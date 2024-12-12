@@ -266,9 +266,9 @@ def test_update_query_engine(create_engine, client_with_emulator):
   assert QUERY_ENGINE_EXAMPLE["id"] == saved_id, "all data not retrieved"
   saved_read_access_group = json_response["data"]["read_access_group"]
   saved_description = json_response["data"]["description"]
-  assert new_query_engine_fields["read_access_group"] ==
+  assert new_query_engine_fields["read_access_group"] == \
     saved_read_access_group, "all data not retrieved"
-  assert new_query_engine_fields["description"] ==
+  assert new_query_engine_fields["description"] == \
     saved_description, "all data not retrieved"
 
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
