@@ -177,8 +177,8 @@ def test_get_query_engine_list(create_engine, client_with_emulator):
   saved_ids = [i.get("id") for i in json_response.get("data")]
   assert QUERY_ENGINE_EXAMPLE["id"] in saved_ids, "all data not retrieved"
   for i in json_response["data"]:
-    if (i["id"] == QUERY_ENGINE_EXAMPLE["id"] and \
-        i["read_access_group"] == \
+    if (i["id"] == QUERY_ENGINE_EXAMPLE["id"] and
+        i["read_access_group"] ==
         QUERY_ENGINE_EXAMPLE["read_access_group"]):
           break
   else:
@@ -237,10 +237,10 @@ def test_get_query_engine(create_engine, client_with_emulator):
   json_response = resp.json()
 
   assert resp.status_code == 200, "Status 200"
-  saved_id = json_response.get("data").get("id")
+  saved_id = json_response["data"]["id"]
   assert QUERY_ENGINE_EXAMPLE["id"] == saved_id, "all data not retrieved"
-  saved_read_access_group = json_response.get("data").get("read_access_group")
-  assert QUERY_ENGINE_EXAMPLE["read_access_group"] == saved_read_access_group, \
+  saved_read_access_group = json_response["data"]["read_access_group"]
+  assert QUERY_ENGINE_EXAMPLE["read_access_group"] == saved_read_access_group,
     "all data not retrieved"
 
 def test_update_query_engine(create_engine, client_with_emulator):
@@ -262,13 +262,13 @@ def test_update_query_engine(create_engine, client_with_emulator):
   json_response = resp.json()
 
   assert resp.status_code == 200, "Status 200"
-  saved_id = json_response.get("data").get("id")
+  saved_id = json_response["data"]["id"]
   assert QUERY_ENGINE_EXAMPLE["id"] == saved_id, "all data not retrieved"
-  saved_read_access_group = json_response.get("data").get("read_access_group")
-  saved_description = json_response.get("data").get("description")
-  assert new_query_engine_fields["read_access_group"] == \
+  saved_read_access_group = json_response["data"]["read_access_group"]
+  saved_description = json_response["data"]["description"]
+  assert new_query_engine_fields["read_access_group"] ==
     saved_read_access_group, "all data not retrieved"
-  assert new_query_engine_fields["description"] == \
+  assert new_query_engine_fields["description"] ==
     saved_description, "all data not retrieved"
 
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
