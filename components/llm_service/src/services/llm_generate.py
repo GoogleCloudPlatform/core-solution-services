@@ -21,6 +21,7 @@ from typing import Optional, List, AsyncGenerator, Union
 import google.auth
 import google.auth.transport.requests
 import google.cloud.aiplatform
+from openai import OpenAI, OpenAIError
 from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
 from vertexai.preview.generative_models import (
     GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold)
@@ -367,7 +368,9 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
                                    model_endpoint: str,
                                    parameters: dict = None) -> str:
   """
-  Send a prompt to an instance of the LLM service and return response.
+  Send a prompt to an instance of the vllm service using the openai api.
+  Assumes that the vllm server is only hosting a single model and will call the
+  first model returned by client.models.list.
   Args:
     llm_type:
     prompt: the text prompt to pass to the LLM
@@ -381,28 +384,43 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
     parameters = get_provider_value(
         PROVIDER_VLLM, KEY_MODEL_PARAMS, llm_type)
 
-  parameters.update({"prompt": f"<start_of_turn>user\n{prompt}<end_of_turn>\n"})
+  if parameters is None:
+    parameter_kwargs = {}
+  else:
+    parameter_kwargs = dict(parameters)
 
-  api_url = f"http://{model_endpoint}/generate"
-  Logger.info(f"Generating text using vLLM Hosted Model "
-              f"api_url=[{api_url}], prompt=[{prompt}], "
-              f"parameters=[{parameters}.")
+  openai_api_key = "EMPTY"  # Not required for vLLM
+  openai_api_base = f"http://{model_endpoint}/v1"
 
-  resp = post_method(api_url, request_body=parameters)
+  client = OpenAI(
+    api_key=openai_api_key,
+    base_url=openai_api_base,
+  )
 
-  if resp.status_code != 200:
-    raise InternalServerError(
-      f"Error status {resp.status_code}: {str(resp)}")
+  try:
+    models = client.models.list()
+    model = models.data[0].id
 
-  json_response = resp.json()
+    Logger.info(f"Generating text using vLLM Hosted Model {model} hosted at"
+            f"api_base=[{openai_api_base}], prompt=[{prompt}], "
+            f"parameters=[{parameters}.")
 
-  Logger.info(f"Got LLM service response {json_response}")
-  output = json_response["data"]["generated_text"]
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+          {"role": "user", "content": prompt}
+        ],
+        **parameter_kwargs
+    )
+    output = response.choices[0].message.content
+    Logger.info(f"Got LLM service response {response}")
 
-  # if the prompt is repeated as part of the response, remove it
-  output = output.replace(prompt, "")
+  except OpenAIError as e:
+    Logger.error(f"OpenAI API error: {e}")
+    raise InternalServerError(f"Error: {e}") from e
 
   return output
+
 
 async def llm_service_predict(prompt: str, is_chat: bool,
                               llm_type: str, user_chat=None,
