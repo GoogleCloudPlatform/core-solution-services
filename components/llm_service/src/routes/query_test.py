@@ -180,7 +180,7 @@ def test_get_query_engine_list(create_engine, client_with_emulator):
     if (i["id"] == QUERY_ENGINE_EXAMPLE["id"] and
         i["read_access_group"] ==
         QUERY_ENGINE_EXAMPLE["read_access_group"]):
-          break
+      break
   else:
     assert False, "read access group not found"
 
