@@ -240,8 +240,8 @@ def test_get_query_engine(create_engine, client_with_emulator):
   saved_id = json_response["data"]["id"]
   assert QUERY_ENGINE_EXAMPLE["id"] == saved_id, "all data not retrieved"
   saved_read_access_group = json_response["data"]["read_access_group"]
-  assert QUERY_ENGINE_EXAMPLE["read_access_group"] == saved_read_access_group,
-    "all data not retrieved"
+  assert QUERY_ENGINE_EXAMPLE["read_access_group"] ==
+    saved_read_access_group, "all data not retrieved"
 
 def test_update_query_engine(create_engine, client_with_emulator):
   qe_id = QUERY_ENGINE_EXAMPLE["id"]
