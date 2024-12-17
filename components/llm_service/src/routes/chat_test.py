@@ -18,6 +18,7 @@
 # disabling pylint rules that conflict with pytest fixtures
 # pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
 import os
+import json
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -26,7 +27,7 @@ from testing.test_config import API_URL, TESTING_FOLDER_PATH
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
                                      USER_EXAMPLE)
 from common.models import UserChat, User
-from common.models.llm import CHAT_HUMAN, CHAT_AI
+from common.models.llm import CHAT_HUMAN, CHAT_AI, CHAT_FILE, CHAT_FILE_BASE64
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
@@ -289,3 +290,74 @@ def test_chat_generate(create_chat, client_with_emulator):
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "retrieved user chat response"
 
+def test_invalid_tool_names_chat(client_with_emulator):
+  """Verify that llm tool name validation catches invalid cases"""
+  url = f"{api_url}"
+  create_generate_params = FAKE_GENERATE_PARAMS.copy()
+  # testing with a non-list input string
+  create_generate_params["tool_names"] = "(invalid_tool)"
+  resp = client_with_emulator.post(url, data=create_generate_params)
+  assert resp.status_code == 422
+  json_response = resp.json()
+  assert "detail" in json_response, str(json_response)
+  assert "json formatted list" in json_response["detail"]
+  # testing with a tool that does not exist
+  create_generate_params["tool_names"] = json.dumps(
+    ["nonexistent_tool", "tool2"])
+  resp = client_with_emulator.post(url, data=create_generate_params)
+  assert resp.status_code == 422
+  json_response = resp.json()
+  assert "nonexistent_tool" in json_response["detail"]
+
+def test_invalid_tool_names_chat_generate(create_user, create_chat,
+                                          client_with_emulator):
+  """Verify that llm tool name validation catches invalid cases"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate"
+  generate_params = FAKE_GENERATE_PARAMS.copy()
+  # testing with a non-list input string
+  generate_params["tool_names"] = "(invalid_tool,)"
+  resp = client_with_emulator.post(url, json=generate_params)
+  assert resp.status_code == 422
+  json_response = resp.json()
+  assert "json formatted list" in json_response["detail"]
+  # testing with a tool that does not exist
+  generate_params["tool_names"] = json.dumps(
+    ["nonexistent_tool", "tool2"])
+  resp = client_with_emulator.post(url, json=generate_params)
+  assert resp.status_code == 422
+  json_response = resp.json()
+  assert "nonexistent_tool" in json_response["detail"]
+
+@pytest.mark.long
+def test_create_chat_code_interpreter(create_user, create_chat,
+                                      client_with_emulator):
+  url = f"{api_url}"
+  generate_params = FAKE_GENERATE_PARAMS.copy()
+  # testing with a non-list input strng
+  generate_params["tool_names"] = '["vertex_code_interpreter_tool"]'
+  generate_params["prompt"] = "give me a pie chart of continents by land area"
+  resp = client_with_emulator.post(url, data=generate_params)
+  assert resp.status_code == 200
+  json_response = resp.json()
+  user_chat = json_response["data"]
+  assert len(user_chat["history"]) == 4, "user has unexpected number of entries"
+  assert CHAT_FILE in user_chat["history"][2], "No generated file name found"
+  assert CHAT_FILE_BASE64 in user_chat["history"][3], "File conetent not found"
+
+@pytest.mark.long
+def test_generate_chat_code_interpreter(create_user, create_chat,
+                                      client_with_emulator):
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate"
+  generate_params = FAKE_GENERATE_PARAMS.copy()
+  # testing with a non-list input strng
+  generate_params["tool_names"] = '["vertex_code_interpreter_tool"]'
+  generate_params["prompt"] = "give me a pie chart of continents by land area"
+  resp = client_with_emulator.post(url, json=generate_params)
+  assert resp.status_code == 200
+  json_response = resp.json()
+  user_chat = json_response["data"]
+  assert len(user_chat["history"]) == len(CHAT_EXAMPLE["history"]) + 4
+  assert CHAT_FILE in user_chat["history"][-2], "No generated file name found"
+  assert CHAT_FILE_BASE64 in user_chat["history"][-1], "File conetent not found"
