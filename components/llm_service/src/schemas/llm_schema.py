@@ -110,6 +110,7 @@ class LLMGenerateModel(BaseModel):
   prompt: str
   llm_type: Optional[str] = None
   stream: Optional[bool] = False
+  tool_names: Optional[str] = None # a json encoded list of strings
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": LLM_GENERATE_EXAMPLE
   })

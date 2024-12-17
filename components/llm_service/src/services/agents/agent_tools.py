@@ -15,12 +15,13 @@
 """ Agent tools """
 
 # pylint: disable=unused-argument,unused-import,import-outside-toplevel
-
+from typing import TypedDict, Optional
 from common.utils.logging_handler import Logger
 from common.utils.request_handler import get_method, post_method
 from langchain.tools import tool as langchain_tool, StructuredTool
 from config import SERVICES, auth_client
 from typing import List, Dict
+from vertexai.preview import extensions
 
 Logger = Logger.get_logger(__file__)
 
@@ -31,6 +32,8 @@ Logger = Logger.get_logger(__file__)
 #    ...
 # }
 agent_tool_registry = {}
+
+chat_tools = {"vertex_code_interpreter_tool"}
 
 def agent_tool(*dec_args, **dec_kwargs):
   """ Extend langchain tool decorator to allow us to manage tools """
@@ -294,3 +297,38 @@ async def execute_db_query(database_query_prompt: str) -> dict:
   except RuntimeError as e:
     Logger.error(f"[database_tool] Unable to execute query: {e}")
   return output
+
+def vertex_code_interpreter_tool(query: str) -> dict:
+  """
+    Answers questions requiring generating code. Get the results of a natural 
+    language query by generating and executing a 
+    code snippet. Can generate graph output as images.
+    query: The natural language query to get the results for.
+  """
+  extension_code_interpreter = extensions.Extension.from_hub("code_interpreter")
+  response = extension_code_interpreter.execute(
+    operation_id = "generate_and_execute",
+    operation_params = {"query": query},
+  )
+  return response
+
+class FileInResponse(TypedDict):
+  name: str
+  contents: str # the base64 encoding of that file's contents
+def run_chat_tools(prompt: str) -> tuple[str, Optional[list[FileInResponse]]]:
+  """Takes a prompt and returns the result of running tools against it
+  The results are returned as a tuple consisting of a first elements
+  with the text response and a second element containing a list of files
+  with the filename in a 'name' field and the base64 encoded contents of the
+  file in the 'contents' field"""
+  # for now assume code interpreter is used as it is the only chat tool
+  response_files = None
+  tool_response = vertex_code_interpreter_tool(prompt)
+  if tool_error := tool_response["execution_error"]:
+    response = tool_error
+  else:
+    response = (f"Code generated\n\n```{tool_response['generated_code']}```"
+                "Execution result from the code: "
+                f"```{tool_response['execution_result']}```")
+    response_files = tool_response["output_files"]
+  return response, response_files

@@ -23,6 +23,7 @@ CHAT_HUMAN = "HumanInput"
 CHAT_AI = "AIOutput"
 CHAT_FILE = "UploadedFile"
 CHAT_FILE_URL = "FileURL"
+CHAT_FILE_BASE64 = "FileContentsBase64"
 
 class UserChat(BaseModel):
   """

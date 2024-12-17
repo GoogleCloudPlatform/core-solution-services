@@ -18,10 +18,10 @@
 import traceback
 import json
 from typing import Union, Annotated, Optional
-from fastapi import APIRouter, Depends, Form, UploadFile
+from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
-from common.models.llm import CHAT_FILE, CHAT_FILE_URL
+from common.models.llm import CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64
 from common.utils.auth_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
@@ -35,6 +35,7 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse)
 from services.llm_generate import llm_chat
+from services.agents.agent_tools import chat_tools, run_chat_tools
 from utils.file_helper import process_chat_file
 
 Logger = Logger.get_logger(__file__)
@@ -246,6 +247,22 @@ def delete_chat(chat_id: str, hard_delete=False):
     Logger.error(e)
     raise InternalServerError(str(e)) from e
 
+def validate_tool_names(tool_names: Optional[str]):
+  """Attempts to validate a tool_names input for chat, raises an error
+  if the provided value is invalid"""
+  if tool_names:
+  # ensuring the tool names provided were properly formatted
+    try:
+      tool_names = json.loads(tool_names)
+    except json.decoder.JSONDecodeError as e:
+      raise HTTPException(status_code=422,
+                          detail=("Tool names must be a string representing a"
+                          " json formatted list")) from e
+    # ensuring the tools provided are valid for chat
+    if invalid_tools := [tool for tool in tool_names if tool not in chat_tools]:
+      failure_message = f"Invalid tool names: {','.join(invalid_tools)}"
+      raise HTTPException(status_code=422, detail=failure_message)
+
 
 @router.post(
     "",
@@ -255,6 +272,7 @@ async def create_user_chat(
      llm_type: Annotated[str, Form()] = None,
      chat_file_url: Annotated[str, Form()] = None,
      chat_file: Union[UploadFile, None] = None,
+     tool_names: Annotated[str, Form()] = None,
      stream: Annotated[bool, Form()] = False,
      history: Annotated[str, Form()] = None,
      user_data: dict = Depends(validate_token)):
@@ -268,6 +286,8 @@ async def create_user_chat(
       llm_type(str): llm model id
       chat_file(UploadFile): file upload for chat context
       chat_file_url(str): file url for chat context
+      tool_names(list[str]): list of tool names to be used, as a serialized 
+        string due to fastapi limitations
       stream(bool): whether to stream the response
       history(str): optional chat history to create chat from previous
                            streaming response
@@ -278,7 +298,10 @@ async def create_user_chat(
   Logger.info("Creating new chat using"
               f" prompt={prompt} llm_type={llm_type}"
               f" chat_file={chat_file} chat_file_url={chat_file_url}"
-              f" stream={stream} history={history}")
+              f" tools={tool_names} stream={stream} history={history}")
+  # a file that could be returned as part of the response as base64 contents
+  response_files: list[str] = None
+  validate_tool_names(tool_names)
 
   # process chat file(s): upload to GCS and determine mime type
   chat_file_bytes = None
@@ -326,19 +349,21 @@ async def create_user_chat(
           "data": chat_data
       }
 
-    # Otherwise generate text from prompt
-    response = await llm_chat(prompt,
-                           llm_type,
-                           chat_files=chat_files,
-                           chat_file_bytes=chat_file_bytes,
-                           stream=stream)
-
-    if stream:
-      # Return streaming response
-      return StreamingResponse(
-          response,
-          media_type="text/event-stream"
-      )
+    if tool_names:
+      response, response_files = run_chat_tools(prompt)
+    # Otherwise generate text from prompt if no tools
+    else:
+      response = await llm_chat(prompt,
+                            llm_type,
+                            chat_files=chat_files,
+                            chat_file_bytes=chat_file_bytes,
+                            stream=stream)
+      if stream:
+        # Return streaming response
+        return StreamingResponse(
+            response,
+            media_type="text/event-stream"
+        )
 
     # create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
@@ -352,6 +377,14 @@ async def create_user_chat(
       user_chat.update_history(custom_entry={
         f"{CHAT_FILE_URL}": chat_file_url
       })
+    if response_files:
+      for file in response_files:
+        user_chat.update_history(custom_entry={
+          f"{CHAT_FILE}": file["name"]
+        })
+        user_chat.update_history(custom_entry={
+          f"{CHAT_FILE_BASE64}": file["contents"]
+        })
     user_chat.save()
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
@@ -384,6 +417,9 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   Returns:
       LLMUserChatResponse or StreamingResponse
   """
+  response_files = None
+  tool_names = gen_config.tool_names
+  validate_tool_names(tool_names)
   genconfig_dict = {**gen_config.dict()}
   Logger.info(f"Generating new chat response for chat_id={chat_id},"
               f"genconfig_dict={genconfig_dict}")
@@ -406,17 +442,30 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   stream = genconfig_dict.get("stream", False)
 
   try:
-    response = await llm_chat(prompt, llm_type, user_chat, stream=stream)
-
-    if stream:
-      # Return streaming response
-      return StreamingResponse(
-          response,
-          media_type="text/event-stream"
-      )
+    if tool_names:
+      response, response_files = run_chat_tools(prompt)
+    # Otherwise generate text from prompt if no tools
+    else:
+      response = await llm_chat(prompt,
+                            llm_type,
+                            stream=stream)
+      if stream:
+        # Return streaming response
+        return StreamingResponse(
+            response,
+            media_type="text/event-stream"
+        )
 
     # save chat history
     user_chat.update_history(prompt, response)
+    if response_files:
+      for file in response_files:
+        user_chat.update_history(custom_entry={
+          f"{CHAT_FILE}": file["name"]
+        })
+        user_chat.update_history(custom_entry={
+          f"{CHAT_FILE_BASE64}": file["contents"]
+        })
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
