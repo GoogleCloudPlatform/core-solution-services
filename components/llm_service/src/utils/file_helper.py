@@ -56,7 +56,8 @@ async def process_chat_file(chat_file: UploadFile,
     chat_file_type = validate_multimodal_file_type(chat_file.filename)
     if chat_file_type is None:
       raise InvalidFileType(
-          f"The uploaded file is not a supported file type: {chat_file.filename}")
+          f"The uploaded file is not a supported file type:
+           {chat_file.filename}")
     chat_files = [
         DataSourceFile(gcs_path=chat_file_url, mime_type=chat_file_type)
     ]
@@ -76,7 +77,8 @@ async def process_chat_file(chat_file: UploadFile,
         chat_file_type = validate_multimodal_file_type(chat_file_name)
         if chat_file_type is None:
           raise InvalidFileType(
-              f"The uploaded file is not a supported file type: {chat_file.filename}")
+              f"The uploaded file is not a supported file type:
+               {chat_file.filename}")
       else:
         # assume html if no extension
         chat_file_type = "text/html"

@@ -66,11 +66,11 @@ def add_exception_handlers(_app: FastAPI):
   @_app.exception_handler(InvalidFileType)
   async def invalid_file_type_exception_handler(req: Request,
                                                 exc: InvalidFileType):
-      return JSONResponse(
-          status_code=400,
-          content={
-            "success": False,
-            "message": exc.message
+    return JSONResponse(
+      status_code=400,
+      content={
+        "success": False,
+        "message": exc.message
       })
 
 
