@@ -24,8 +24,8 @@ from urllib.parse import urlparse
 from base64 import b64decode
 from fastapi import UploadFile
 from config import PAYLOAD_FILE_SIZE, PROJECT_ID
-from common.utils.errors import (PayloadTooLargeError,
-                                 ValidationError, UnsupportedError)
+from common.utils.errors import (PayloadTooLargeError, ValidationError,
+                                 UnsupportedError, InvalidFileType)
 from common.utils.logging_handler import Logger
 from utils.gcs_helper import create_bucket_for_file, upload_file_to_gcs
 from google.cloud import storage
@@ -55,8 +55,9 @@ async def process_chat_file(chat_file: UploadFile,
     chat_file_url = await process_upload_file(chat_file, bucket)
     chat_file_type = validate_multimodal_file_type(chat_file.filename)
     if chat_file_type is None:
-      raise ValidationError(
-          f"unsupported file type upload file {chat_file.filename}")
+      raise InvalidFileType(
+          f"The uploaded file is not a supported file type:\
+           {chat_file.filename}")
     chat_files = [
         DataSourceFile(gcs_path=chat_file_url, mime_type=chat_file_type)
     ]
@@ -75,8 +76,9 @@ async def process_chat_file(chat_file: UploadFile,
       if file_extension:
         chat_file_type = validate_multimodal_file_type(chat_file_name)
         if chat_file_type is None:
-          raise ValidationError(
-              f"unsupported file type file url {chat_file_url}")
+          raise InvalidFileType(
+              f"The uploaded file is not a supported file type:\
+               {chat_file.filename}")
       else:
         # assume html if no extension
         chat_file_type = "text/html"

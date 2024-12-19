@@ -19,7 +19,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.requests import Request
-
+from common.utils.errors import InvalidFileType
 
 # pylint: disable=unused-argument,invalid-name
 
@@ -61,6 +61,16 @@ def add_exception_handlers(_app: FastAPI):
         "success": False,
         "message": "Validation Failed",
         "data": str(exc.errors())
+      })
+
+  @_app.exception_handler(InvalidFileType)
+  async def invalid_file_type_exception_handler(req: Request,
+                                                exc: InvalidFileType):
+    return JSONResponse(
+      status_code=400,
+      content={
+        "success": False,
+        "message": exc.message
       })
 
 

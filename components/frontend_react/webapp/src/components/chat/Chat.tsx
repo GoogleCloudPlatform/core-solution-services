@@ -25,9 +25,9 @@ interface GenAIChatProps {
   initialChatId: string | null
 }
 
-const initialOutput = {AIOutput: "Welcome! How can I assist you today?"}
-const errMsg = {AIOutput: "I'm sorry, the request could not be completed. A network error was detected."}
-const chatError = {AIOutput: "I could not fetch the chat history. A network error was detected."}
+const initialOutput = { AIOutput: "Welcome! How can I assist you today?" }
+const errMsg = { AIOutput: "I'm sorry, the request could not be completed. A network error was detected." }
+const chatError = { AIOutput: "I could not fetch the chat history. A network error was detected." }
 
 const GenAIChat: React.FC<GenAIChatProps> = ({
   userToken,
@@ -54,7 +54,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
       setFileUrl(_files[0])
       _uploadVariable.value = ""
       console.log("setFileUrl", _files[0])
-    }  
+    }
   }
 
   const {
@@ -170,13 +170,13 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           // Update messages with both the user input and AI response
           const finalMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
           setMessages(finalMessages)
-          
+
           // Update the chat with the new history
           await updateChat(userToken)({
             chatId: initialChatId,
             history: finalMessages
           })
-          
+
           setResumeChatId(initialChatId)
         }
       } else {
@@ -193,7 +193,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           // Update messages with the streamed response
           const updatedMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
           setMessages(updatedMessages)
-          
+
           // Create permanent chat with accumulated history
           const newChat = await createChat(userToken)({
             userInput: userInput,
@@ -209,10 +209,10 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           }
         }
       }
-    } catch (error) {
-      console.log(error)
+    } catch (error: any) {
+      console.error(error)
       setActiveJob(false)
-      setMessages((prev) => [...prev, errMsg])
+      setMessages((prev) => [...prev, { AIOutput: error.message }])
     } finally {
       setFileUrl(null)
       setUploadFile(null)
@@ -226,10 +226,10 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
   return (
     <div className="bg-primary/20 flex flex-grow gap-4 rounded-lg p-3">
       <div className="bg-base-100 flex w-full rounded-lg chat-p justify-center py-6">
-        <ChatWindow 
-          onSubmit={onSubmit} 
-          messages={messages} 
-          activeJob={activeJob} 
+        <ChatWindow
+          onSubmit={onSubmit}
+          messages={messages}
+          activeJob={activeJob}
           handleFiles={handleFiles}
           streamingMessage={streamingMessage}
         />
