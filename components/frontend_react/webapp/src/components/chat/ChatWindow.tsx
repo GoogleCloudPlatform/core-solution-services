@@ -36,7 +36,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, 
       return (
         <div key={index++}>
           <div className="flex items-center gap-6 pb-7 mx-2">
-            <div className="i-material-symbols-face-outline color-info h-8 w-8 shrink-0 self-start"/>
+            <div className="i-material-symbols-face-outline color-info h-8 w-8 shrink-0 self-start" />
             <div>
               {message.HumanInput}
             </div>
@@ -47,12 +47,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, 
       return (
         <div key={index++}>
           <div className="flex items-center gap-6 mx-2 pb-7">
-            <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start"/>
+            <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start" />
             <div>
               <Markdown children={message.AIOutput} rehypePlugins={[rehypeRaw]} />
             </div>
           </div>
         </div>
+      )
+    } else if (message.FileContentsBase64) {
+      console.log("showing b64 image")
+      return (
+        <img src={`data:image;base64,${message.FileContentsBase64}`} />
       )
     } else {
       return
@@ -77,7 +82,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, 
         {messages.map(renderChat)}
         {activeJob && streamingMessage && (
           <div className="flex items-center gap-6 mx-2 pb-7">
-            <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start"/>
+            <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start" />
             <div>
               <Markdown children={streamingMessage} rehypePlugins={[rehypeRaw]} />
             </div>
@@ -85,12 +90,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, 
         )}
         {activeJob && !streamingMessage && (
           <div className="flex items-center gap-6 pb-7 pt-2 mx-2">
-            <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start loader ease-linear"/>
+            <div className="i-logos-google-bard-icon h-8 w-8 shrink-0 self-start loader ease-linear" />
           </div>
         )}
         <div ref={endOfMessagesRef} />
       </div>
-      <ChatInput onSubmit={onSubmit} activeJob={activeJob} handleFiles={handleFiles}/>
+      <ChatInput onSubmit={onSubmit} activeJob={activeJob} handleFiles={handleFiles} />
     </div>
   )
 }

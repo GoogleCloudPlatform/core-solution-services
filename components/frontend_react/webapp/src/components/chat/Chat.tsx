@@ -151,7 +151,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     }
   }
 
-  const onSubmit = async (userInput: string, doc_url: string) => {
+  const onSubmit = async (userInput: string, doc_url: string, tools: string[]) => {
     setActiveJob(true)
     setStreamingMessage("")
     setMessages((prev) => [...prev, { HumanInput: userInput }])
@@ -185,10 +185,16 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           llmType: selectedModel,
           uploadFile,
           fileUrl: doc_url,
+          toolNames: tools,
           stream: true
         })
 
-        if (response instanceof ReadableStream) {
+        if (response instanceof ReadableStream && tools.length > 0) {
+          // TODO: Currently the response is a ReadableStream even when the 
+          // backend doesn't return a steam, as when tools are enabled
+          // The current fix is to stop it from continuing if tool use in
+          // enabled but future investigation should better understand why
+          // this happens
           const fullResponse = await handleStream(response)
           // Update messages with the streamed response
           const updatedMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]

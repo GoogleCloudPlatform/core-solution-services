@@ -29,6 +29,7 @@ interface RunChatParams {
   uploadFile: File
   fileUrl: string
   stream?: boolean
+  toolNames?: string[]
   history?: Array<{ [key: string]: string }>
 }
 
@@ -43,7 +44,15 @@ interface ResumeChatParams {
   chatId: string
   userInput: string
   llmType: string
+  toolNames?: string[]
   stream?: boolean
+}
+
+interface ResumeChatApiParams {
+  prompt: string,
+  llm_type: string,
+  stream: boolean,
+  tool_names?: string
 }
 
 interface JobStatusResponse {
@@ -101,6 +110,7 @@ export const createChat =
     llmType,
     uploadFile,
     fileUrl,
+    toolNames,
     stream = true,
     history
   }: RunChatParams): Promise<Chat | ReadableStream | undefined | null> => {
@@ -109,12 +119,16 @@ export const createChat =
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data'
     }
+    console.log("tool names in api.ts ", toolNames)
     const formData = new FormData()
     formData.append('prompt', userInput)
     formData.append('llm_type', llmType)
     formData.append('stream', String(stream))
     if (uploadFile) formData.append('chat_file', uploadFile)
     if (fileUrl) formData.append('chat_file_url', fileUrl)
+    if (toolNames && toolNames.length > 0) {
+      formData.append('tool_names', JSON.stringify(toolNames))
+    }
     if (history) formData.append('history', JSON.stringify(history))
 
     if (stream) {
@@ -144,14 +158,18 @@ export const resumeChat =
     chatId,
     userInput,
     llmType,
+    toolNames,
     stream = true
   }: ResumeChatParams): Promise<Chat | ReadableStream | undefined | null> => {
     const url = `${endpoint}/chat/${chatId}/generate`
     const headers = { Authorization: `Bearer ${token}` }
-    const data = {
+    let data: ResumeChatApiParams = {
       prompt: userInput,
       llm_type: llmType,
       stream
+    }
+    if (toolNames && toolNames.length > 0) {
+      data['tool_names'] = JSON.stringify(toolNames)
     }
 
     if (stream) {
