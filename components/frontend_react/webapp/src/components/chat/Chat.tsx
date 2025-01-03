@@ -189,29 +189,35 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           stream: true
         })
 
-        if (response instanceof ReadableStream && tools.length > 0) {
-          // TODO: Currently the response is a ReadableStream even when the 
-          // backend doesn't return a steam, as when tools are enabled
-          // The current fix is to stop it from continuing if tool use in
-          // enabled but future investigation should better understand why
-          // this happens
+        if (response instanceof ReadableStream) {
           const fullResponse = await handleStream(response)
           // Update messages with the streamed response
-          const updatedMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
+          const updatedMessages = ((tools.length === 0) ?
+            [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
+            JSON.parse(fullResponse)['data']['history'])
           setMessages(updatedMessages)
-
           // Create permanent chat with accumulated history
-          const newChat = await createChat(userToken)({
-            userInput: userInput,
-            llmType: selectedModel,
-            uploadFile,
-            fileUrl: doc_url,
-            stream: false,
-            history: updatedMessages // Pass full message history
-          })
+          if (tools.length === 0) {
+            const newChat = await createChat(userToken)({
+              userInput: userInput,
+              llmType: selectedModel,
+              uploadFile,
+              fileUrl: doc_url,
+              stream: false,
+              history: updatedMessages // Pass full message history
+            })
 
-          if (newChat && 'id' in newChat) {
-            setNewChatId(newChat.id)
+            if (newChat && 'id' in newChat) {
+              setNewChatId(newChat.id)
+            }
+          } else {
+            // TODO: When tools are present the response is still treated as
+            // a streaming response, requireming extra checks to determine
+            // how to handle the streaming response. This should be resoved
+            // by better understanding how the repsonse is set and
+            // ensuring that tool based responses are non-streaming
+            const response = JSON.parse(fullResponse)
+            setNewChatId(response['data']['id'])
           }
         }
       }

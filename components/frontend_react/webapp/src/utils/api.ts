@@ -119,7 +119,6 @@ export const createChat =
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data'
     }
-    console.log("tool names in api.ts ", toolNames)
     const formData = new FormData()
     formData.append('prompt', userInput)
     formData.append('llm_type', llmType)
@@ -130,7 +129,6 @@ export const createChat =
       formData.append('tool_names', JSON.stringify(toolNames))
     }
     if (history) formData.append('history', JSON.stringify(history))
-
     if (stream) {
       try {
         const response = await fetch(url, {
