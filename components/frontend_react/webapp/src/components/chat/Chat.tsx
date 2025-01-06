@@ -162,13 +162,15 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           chatId: initialChatId,
           userInput,
           llmType: selectedModel,
+          toolNames: tools,
           stream: true
         })
-
         if (response instanceof ReadableStream) {
           const fullResponse = await handleStream(response)
           // Update messages with both the user input and AI response
-          const finalMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
+          const finalMessages = ((tools.length === 0) ?
+            [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
+            JSON.parse(fullResponse)['data']['history'])
           setMessages(finalMessages)
 
           // Update the chat with the new history
@@ -176,7 +178,6 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
             chatId: initialChatId,
             history: finalMessages
           })
-
           setResumeChatId(initialChatId)
         }
       } else {
