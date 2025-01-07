@@ -95,7 +95,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles 
         </div>
         <div
           onClick={handleToolsClick}
-          title="Code Interpreter"
+          title="Code Interpreter - Generates code and graphs to answer questions"
           className={"flex rounded-lg items-center text-start text-sm p-2.5 group bg-base-100 hover:bg-base-200 transition cursor-pointer"}
         >
           {toolNames.length > 0 ?
