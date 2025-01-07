@@ -95,13 +95,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles 
         </div>
         <div
           onClick={handleToolsClick}
-          title="Code Interpreter - Generates code and graphs to answer questions"
+          title="Code Interpreter - Generates code and graphs to answer questions. Generation may take a few minutes."
           className={"flex rounded-lg items-center text-start text-sm p-2.5 group bg-base-100 hover:bg-base-200 transition cursor-pointer"}
+          style={{ "borderRadius": "10px", border: "2px solid", opacity: toolNames.length > 0 ? 1 : .5 }}
         >
-          {toolNames.length > 0 ?
-            <div className="i-heroicons-code-bracket h-8 w-8 shrink-0 hover:text-info transition" /> :
-            <div className="i-heroicons-code-bracket h-8 w-8 shrink-0 hover:text-info transition opacity-50" />}
-
+          <p>Generate Graph</p>
         </div>
         <button
           type="submit"
@@ -111,7 +109,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles 
         >
           <div className="i-material-symbols-send-outline-rounded h-8 w-8 shrink-0" />
         </button>
-      </form>
+      </form >
       {isUploadOpen &&
         <div className="w-full justify-center rounded-lg border-2 border-primary border-opacity-50 p-4 md:flex">
           <ChatUploadForm
@@ -120,7 +118,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles 
             currentVarsData={CHAT_UPLOAD_FORM_DATA}
           />
         </div>}
-    </div>
+    </div >
   )
 }
 
