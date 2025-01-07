@@ -120,6 +120,9 @@ export type QueryContents = {
 export type ChatContents = {
   HumanInput?: string
   AIOutput?: string
+  UploadedFile?: string
+  FileURL?: string
+  FileContentsBase64?: string
 }
 
 export type Query = {
@@ -201,7 +204,7 @@ export type QueryEngine = {
   } | null
   depth_limit: number | null
   chunk_size: number | null
-  agents: string[] | null  
+  agents: string[] | null
   child_engines: string[] | null
   is_multimodal: boolean | null
 }

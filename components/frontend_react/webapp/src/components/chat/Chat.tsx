@@ -151,7 +151,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     }
   }
 
-  const onSubmit = async (userInput: string, doc_url: string) => {
+  const onSubmit = async (userInput: string, doc_url: string, tools: string[]) => {
     setActiveJob(true)
     setStreamingMessage("")
     setMessages((prev) => [...prev, { HumanInput: userInput }])
@@ -162,13 +162,15 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           chatId: initialChatId,
           userInput,
           llmType: selectedModel,
+          toolNames: tools,
           stream: true
         })
-
         if (response instanceof ReadableStream) {
           const fullResponse = await handleStream(response)
           // Update messages with both the user input and AI response
-          const finalMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
+          const finalMessages = ((tools.length === 0) ?
+            [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
+            JSON.parse(fullResponse)['data']['history'])
           setMessages(finalMessages)
 
           // Update the chat with the new history
@@ -176,7 +178,6 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
             chatId: initialChatId,
             history: finalMessages
           })
-
           setResumeChatId(initialChatId)
         }
       } else {
@@ -185,27 +186,39 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           llmType: selectedModel,
           uploadFile,
           fileUrl: doc_url,
+          toolNames: tools,
           stream: true
         })
 
         if (response instanceof ReadableStream) {
           const fullResponse = await handleStream(response)
           // Update messages with the streamed response
-          const updatedMessages = [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }]
+          const updatedMessages = ((tools.length === 0) ?
+            [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
+            JSON.parse(fullResponse)['data']['history'])
           setMessages(updatedMessages)
-
           // Create permanent chat with accumulated history
-          const newChat = await createChat(userToken)({
-            userInput: userInput,
-            llmType: selectedModel,
-            uploadFile,
-            fileUrl: doc_url,
-            stream: false,
-            history: updatedMessages // Pass full message history
-          })
+          if (tools.length === 0) {
+            const newChat = await createChat(userToken)({
+              userInput: userInput,
+              llmType: selectedModel,
+              uploadFile,
+              fileUrl: doc_url,
+              stream: false,
+              history: updatedMessages // Pass full message history
+            })
 
-          if (newChat && 'id' in newChat) {
-            setNewChatId(newChat.id)
+            if (newChat && 'id' in newChat) {
+              setNewChatId(newChat.id)
+            }
+          } else {
+            // TODO: When tools are present the response is still treated as
+            // a streaming response, requireming extra checks to determine
+            // how to handle the streaming response. This should be resoved
+            // by better understanding how the repsonse is set and
+            // ensuring that tool based responses are non-streaming
+            const response = JSON.parse(fullResponse)
+            setNewChatId(response['data']['id'])
           }
         }
       }
