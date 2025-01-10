@@ -121,7 +121,7 @@ class DataSource:
   @classmethod
   def downloads_bucket_name(cls, q_engine_name: str) -> str:
     """
-    Generate a unique index data bucket name, that obeys the rules of
+    Generate a unique downloads bucket name, that obeys the rules of
     GCS bucket names. Previously a more complex algorithm was used that
     was replaced with returning a uuuid. The funciton was left to avoid
     breaking existing code. Can be removed in a future refactor
