@@ -17,13 +17,11 @@
 Google Storage helper functions.
 """
 import io
-import re
 import uuid
 from pathlib import Path
 from typing import List
 from common.utils.logging_handler import Logger
 from google.cloud import storage
-import google.cloud.exceptions
 from config import PROJECT_ID
 
 Logger = Logger.get_logger(__file__)
@@ -111,5 +109,6 @@ def create_bucket_for_file(filename: str) -> storage.Bucket:
   bucket.location = "US"
   bucket.storage_class = "STANDARD"
   bucket.create()
+  print(PROJECT_ID)
   Logger.info(f"Bucket {bucket.name} created")
   return bucket
