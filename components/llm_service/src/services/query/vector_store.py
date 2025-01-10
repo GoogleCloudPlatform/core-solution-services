@@ -22,6 +22,7 @@ import json
 import gc
 import os
 import re
+import uuid
 import shutil
 import tempfile
 import numpy as np
@@ -201,7 +202,9 @@ class MatchingEngineVectorStore(VectorStore):
   def data_bucket_name(cls, q_engine: QueryEngine) -> str:
     """
     Generate a unique index data bucket name, that obeys the rules of
-    GCS bucket names.
+    GCS bucket names. Previously a more complex algorithm was used that
+    was replaced with returning a uuuid. The funciton was left to avoid
+    breaking existing code. Can be removed in a future refactor
 
     Args:
         q_engine: the QueryEngine to generate the bucket name for.
@@ -209,12 +212,7 @@ class MatchingEngineVectorStore(VectorStore):
     Returns:
         bucket name (str)
     """
-    qe_name = q_engine.name.replace(" ", "-")
-    qe_name = qe_name.replace("_", "-").lower()
-    bucket_name = f"{PROJECT_ID}-{qe_name}-data"
-    if not re.fullmatch("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucket_name):
-      raise RuntimeError(f"Invalid downloads bucket name {bucket_name}")
-    return bucket_name
+    return str(uuid.uuid4())
 
   def init_index(self):
     # create bucket for ME index data

@@ -19,6 +19,7 @@ import hashlib
 import traceback
 import os
 import re
+import uuid
 import tempfile
 from urllib.parse import unquote
 from copy import copy
@@ -120,8 +121,10 @@ class DataSource:
   @classmethod
   def downloads_bucket_name(cls, q_engine_name: str) -> str:
     """
-    Generate a unique downloads bucket name, that obeys the rules of
-    GCS bucket names.
+    Generate a unique index data bucket name, that obeys the rules of
+    GCS bucket names. Previously a more complex algorithm was used that
+    was replaced with returning a uuuid. The funciton was left to avoid
+    breaking existing code. Can be removed in a future refactor
 
     Args:
         q_engine_name: name of QueryEngine to generate the bucket name for.
@@ -129,12 +132,7 @@ class DataSource:
     Returns:
         bucket name (str)
     """
-    qe_name = q_engine_name.replace(" ", "-")
-    qe_name = qe_name.replace("_", "-").lower()
-    bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
-    if not re.fullmatch("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucket_name):
-      raise RuntimeError(f"Invalid downloads bucket name {bucket_name}")
-    return bucket_name
+    return str(uuid.uuid4())
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[DataSourceFile]:
