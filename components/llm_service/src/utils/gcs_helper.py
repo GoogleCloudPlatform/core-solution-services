@@ -18,6 +18,7 @@ Google Storage helper functions.
 """
 import io
 import re
+import uuid
 from pathlib import Path
 from typing import List
 from common.utils.logging_handler import Logger
@@ -101,32 +102,14 @@ def upload_file_to_gcs(bucket: storage.Bucket,
   return gcs_url
 
 def create_bucket_for_file(filename: str) -> storage.Bucket:
+  """This funciton creates a bucket to be used for storage
+  The filename parameter was originaly used to help create a unique name
+  for a bucket but is no longer used. It has been left in for compatability"""
   storage_client = storage.Client()
-
-  # base name is projectid_filename
-  base_name = PROJECT_ID + "_" + Path(filename).name
-
-  # Convert to lowercase, replace invalid characters with hyphens,
-  # and ensure length is within limits
-  bucket_name = re.sub(r"[^a-z0-9\-]", "-", base_name.lower())[:63]
-
-  # Add a suffix if needed to ensure uniqueness
-  suffix = 0
-  bucket = None
-  while True:
-    try:
-      bucket = storage_client.bucket(bucket_name)
-      bucket.location = "US"
-      bucket.storage_class = "STANDARD"
-      bucket.create()
-      break  # Bucket created successfully, exit the loop
-    except google.cloud.exceptions.Conflict:
-      suffix += 1
-      if suffix == 1:
-        bucket_name = f"{bucket_name}-{suffix}"
-      else:
-        bucket_name = \
-            f"{bucket_name[:len(bucket_name)-len(str(suffix-1))-1]}-{suffix}"
-
+  bucket_name = str(uuid.uuid4())
+  bucket = storage_client.bucket(bucket_name)
+  bucket.location = "US"
+  bucket.storage_class = "STANDARD"
+  bucket.create()
   Logger.info(f"Bucket {bucket.name} created")
   return bucket
