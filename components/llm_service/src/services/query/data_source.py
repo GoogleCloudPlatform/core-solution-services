@@ -18,7 +18,7 @@ import json
 import hashlib
 import traceback
 import os
-import re
+import uuid
 import tempfile
 from urllib.parse import unquote
 from copy import copy
@@ -28,7 +28,7 @@ from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.models import QueryEngine
-from config import PROJECT_ID, get_default_manifest
+from config import get_default_manifest
 from pypdf import PdfReader, PdfWriter, PageObject
 from pdf2image import convert_from_path
 from langchain_community.document_loaders import CSVLoader
@@ -39,7 +39,7 @@ from llama_index.core.node_parser import (SentenceSplitter,
                                          SentenceWindowNodeParser)
 from llama_index.core import Document
 
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,unused-argument
 
 # text chunk size for embedding data
 Logger = Logger.get_logger(__file__)
@@ -121,7 +121,9 @@ class DataSource:
   def downloads_bucket_name(cls, q_engine_name: str) -> str:
     """
     Generate a unique downloads bucket name, that obeys the rules of
-    GCS bucket names.
+    GCS bucket names. Previously a more complex algorithm was used that
+    was replaced with returning a uuuid. The funciton was left to avoid
+    breaking existing code. Can be removed in a future refactor
 
     Args:
         q_engine_name: name of QueryEngine to generate the bucket name for.
@@ -129,12 +131,7 @@ class DataSource:
     Returns:
         bucket name (str)
     """
-    qe_name = q_engine_name.replace(" ", "-")
-    qe_name = qe_name.replace("_", "-").lower()
-    bucket_name = f"{PROJECT_ID}-downloads-{qe_name}"
-    if not re.fullmatch("^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$", bucket_name):
-      raise RuntimeError(f"Invalid downloads bucket name {bucket_name}")
-    return bucket_name
+    return str(uuid.uuid4())
 
   def download_documents(self, doc_url: str, temp_dir: str) -> \
         List[DataSourceFile]:
