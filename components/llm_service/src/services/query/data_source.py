@@ -28,7 +28,7 @@ from pathlib import Path
 from common.utils.logging_handler import Logger
 from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.models import QueryEngine
-from config import PROJECT_ID, get_default_manifest
+from config import get_default_manifest
 from pypdf import PdfReader, PdfWriter, PageObject
 from pdf2image import convert_from_path
 from langchain_community.document_loaders import CSVLoader
