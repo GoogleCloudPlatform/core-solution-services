@@ -18,7 +18,6 @@ import json
 import hashlib
 import traceback
 import os
-import re
 import uuid
 import tempfile
 from urllib.parse import unquote
@@ -40,7 +39,7 @@ from llama_index.core.node_parser import (SentenceSplitter,
                                          SentenceWindowNodeParser)
 from llama_index.core import Document
 
-# pylint: disable=broad-exception-caught
+# pylint: disable=broad-exception-caught,unused-argument
 
 # text chunk size for embedding data
 Logger = Logger.get_logger(__file__)

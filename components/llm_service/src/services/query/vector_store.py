@@ -14,14 +14,13 @@
 """
 Query Vector Store
 """
-# pylint: disable=broad-exception-caught,ungrouped-imports,invalid-name
+# pylint: disable=broad-exception-caught,ungrouped-imports,invalid-name,unused-argument
 
 from abc import ABC, abstractmethod
 from base64 import b64decode
 import json
 import gc
 import os
-import re
 import uuid
 import shutil
 import tempfile
