@@ -336,38 +336,80 @@ func handleHTML(e *colly.HTMLElement, c *colly.Collector, maxDepth int) {
 }
 
 func saveResults(ctx context.Context, firestoreClient *firestore.Client, docRef *firestore.DocumentRef, scrapedDocs *[]ScrapedDocument) {
-	// Write results as JSON to stdout for job results
-	if err := json.NewEncoder(os.Stdout).Encode(scrapedDocs); err != nil {
-		updateJobError(ctx, docRef, fmt.Errorf("error encoding results: %v", err))
-		log.Print(err)
-		return
-	}
+    // Marshal the entire scrapedDocs to JSON to check the total size
+    fullResultDataJSON, err := json.Marshal(map[string]interface{}{
+        "scraped_documents": scrapedDocs,
+    })
+    if err != nil {
+        updateJobError(ctx, docRef, fmt.Errorf("error marshaling resultData: %v", err))
+        log.Print(err)
+        return
+    }
 
-	// Update the job document with results
-	resultData := map[string]interface{}{
-		"scraped_documents": scrapedDocs,
-	}
+    // Check if the total size exceeds the Firestore limit
+	// Keep the limit 1000000 instead of 1048576 to account for firestore padding
+    if len(fullResultDataJSON) > 1000000 {
+        log.Printf("resultData size exceeds Firestore limit. Truncating data.")
 
-	_, err := docRef.Update(ctx, []firestore.Update{
-		{Path: "result_data", Value: resultData},
-	})
-	if err != nil {
-		updateJobError(ctx, docRef, fmt.Errorf("failed to update job document: %v", err))
-		log.Print(err)
-		return
-	}
-	log.Printf("Successfully updated job with %d scraped documents", len(*scrapedDocs))
+        // If it exceeds, truncate the data to fit within the limit
+        var truncatedDocs []ScrapedDocument
+        truncatedSize := 0
 
-	// Update job status to succeeded
-	_, err = docRef.Update(ctx, []firestore.Update{
-		{Path: "status", Value: "succeeded"},
-	})
-	if err != nil {
-		updateJobError(ctx, docRef, fmt.Errorf("failed to update job document status: %v", err))
-		log.Print(err)
-		return
-	}
-	log.Printf("Successfully updated job status")
+        // Iterate through the scraped documents and add them to the truncated list
+        // until the size is close to but does not exceed the limit
+        for _, doc := range *scrapedDocs {
+            docJSON, err := json.Marshal(doc)
+            if err != nil {
+                updateJobError(ctx, docRef, fmt.Errorf("error marshaling individual document: %v", err))
+                log.Print(err)
+                return
+            }
+
+            if truncatedSize+len(docJSON) > 1000000 {
+                // Stop adding documents if the next one would exceed the limit
+                break
+            }
+
+            truncatedDocs = append(truncatedDocs, doc)
+            truncatedSize += len(docJSON)
+        }
+
+        // Prepare the truncated data to be written to Firestore
+        resultData := map[string]interface{}{
+            "scraped_documents": truncatedDocs,
+        }
+
+        // Update Firestore with the truncated data
+        _, err = docRef.Update(ctx, []firestore.Update{
+            {Path: "result_data", Value: resultData},
+            {Path: "status", Value: "succeeded"},
+        })
+        if err != nil {
+            updateJobError(ctx, docRef, fmt.Errorf("failed to update job document with truncated data: %v", err))
+            log.Print(err)
+            return
+        }
+
+        log.Printf("Successfully updated job with truncated scraped documents")
+        return
+    }
+
+    // If the total size is within the limit, proceed with updating the Firestore document as is
+    resultData := map[string]interface{}{
+        "scraped_documents": scrapedDocs,
+    }
+
+    _, err = docRef.Update(ctx, []firestore.Update{
+        {Path: "result_data", Value: resultData},
+        {Path: "status", Value: "succeeded"},
+    })
+    if err != nil {
+        updateJobError(ctx, docRef, fmt.Errorf("failed to update job document: %v", err))
+        log.Print(err)
+        return
+    }
+
+    log.Printf("Successfully updated job with %d scraped documents", len(*scrapedDocs))
 }
 
 // sanitizeFilename sanitizes the URL to create a safe filename
