@@ -219,6 +219,7 @@ func setupCollector(ctx context.Context, jobInput JobInput, bucketName string, d
 
 	// Create a new collector
 	c := colly.NewCollector(
+		colly.MaxDepth(maxDepth),
 		colly.AllowedDomains(allowedDomains...), // Allow both with and without www
 		colly.Debugger(&debug.LogDebugger{}),
 		colly.Async(true),
