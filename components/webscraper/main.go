@@ -201,6 +201,14 @@ func generateAndInitializeBucket(ctx context.Context, projectID string, jobInput
 
 func setupCollector(ctx context.Context, jobInput JobInput, bucketName string, docRef *firestore.DocumentRef) (*colly.Collector, *[]ScrapedDocument) {
 	var scrapedDocs []ScrapedDocument
+	maxDepth := 1 // Default maxDepth to 1
+	// Parse maxDepth from jobInput, defaulting to 1 if invalid
+	if depth, err := strconv.Atoi(jobInput.DepthLimit); err == nil {
+		maxDepth = depth
+	} else {
+		log.Printf("Invalid depth limit in input: %s, defaulting to 1", jobInput.DepthLimit)
+	}
+	log.Printf("Max depth set to: %d", maxDepth)
 
 	baseDomain := extractDomain(jobInput.URL)
 	allowedDomains := []string{
@@ -209,22 +217,23 @@ func setupCollector(ctx context.Context, jobInput JobInput, bucketName string, d
 	}
 	log.Printf("Allowed domains: %v", allowedDomains)
 
-	// Create a new collector with debug logging
+	// Create a new collector
 	c := colly.NewCollector(
-		colly.MaxDepth(func() int {
-			depth, err := strconv.Atoi(jobInput.DepthLimit)
-			if err != nil {
-				log.Printf("Invalid depth limit, defaulting to 1")
-				return 1
-			}
-			return depth
-		}()),
+		colly.MaxDepth(maxDepth),
 		colly.AllowedDomains(allowedDomains...), // Allow both with and without www
 		colly.Debugger(&debug.LogDebugger{}),
 		colly.Async(true),
 		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"),
 		colly.IgnoreRobotsTxt(),
 	)
+
+	err := c.Limit(&colly.LimitRule{
+		DomainGlob:  "*",
+		Parallelism: 5,
+	})
+	if err != nil {
+		log.Printf("Error setting limit rule: %v", err)
+	}
 
 	// Add error handling
 	c.OnError(func(r *colly.Response, err error) {
@@ -233,7 +242,7 @@ func setupCollector(ctx context.Context, jobInput JobInput, bucketName string, d
 
 	// Log when starting a new page
 	c.OnRequest(func(r *colly.Request) {
-		log.Printf("Visiting %s", r.URL.String())
+		log.Printf("Visiting %s (depth: %d)", r.URL.String(), r.Ctx.GetAny("depth"))
 	})
 
 	// Handle all responses
@@ -243,7 +252,7 @@ func setupCollector(ctx context.Context, jobInput JobInput, bucketName string, d
 
 	// Handle HTML elements
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		handleHTML(e)
+		handleHTML(e, c, maxDepth)
 	})
 
 	return c, &scrapedDocs
@@ -292,7 +301,7 @@ func handleResponse(r *colly.Response, bucketName string, scrapedDocs *[]Scraped
 	log.Printf("Successfully saved document: %s", gcsPath)
 }
 
-func handleHTML(e *colly.HTMLElement) {
+func handleHTML(e *colly.HTMLElement, c *colly.Collector, maxDepth int) {
 	link := e.Attr("href")
 	log.Printf("Found link: %s", link)
 
@@ -303,49 +312,105 @@ func handleHTML(e *colly.HTMLElement) {
 		return
 	}
 
-	if strings.HasSuffix(strings.ToLower(link), ".pdf") {
-		log.Printf("Found PDF link: %s", absoluteURL)
-		e.Request.Visit(absoluteURL)
-	} else {
-		// Visit all links within depth limit
-		log.Printf("Visiting URL: %s", absoluteURL)
-		e.Request.Visit(absoluteURL)
+	// Get the current depth from the context
+	currentDepth, ok := e.Request.Ctx.GetAny("depth").(int)
+	if !ok {
+		currentDepth = 0 // Default to 0 if not found
+	}
+
+	// Check if the maximum depth has been reached
+	if currentDepth >= maxDepth {
+		log.Printf("Max depth reached at %s (depth: %d)", absoluteURL, currentDepth)
+		return
+	}
+
+	// Visit link with incremented depth in context
+	log.Printf("Visiting URL: %s (depth: %d)", absoluteURL, currentDepth+1)
+
+	// Create a new context
+	visitCtx := colly.NewContext()
+	visitCtx.Put("depth", currentDepth + 1)
+
+	if err := c.Request("GET", absoluteURL, nil, visitCtx, nil); err != nil {
+		log.Printf("Error visiting %s: %v", absoluteURL, err)
 	}
 }
 
 func saveResults(ctx context.Context, firestoreClient *firestore.Client, docRef *firestore.DocumentRef, scrapedDocs *[]ScrapedDocument) {
-	// Write results as JSON to stdout for job results
-	if err := json.NewEncoder(os.Stdout).Encode(scrapedDocs); err != nil {
-		updateJobError(ctx, docRef, fmt.Errorf("error encoding results: %v", err))
-		log.Print(err)
-		return
-	}
+    // Marshal the entire scrapedDocs to JSON to check the total size
+    fullResultDataJSON, err := json.Marshal(map[string]interface{}{
+        "scraped_documents": scrapedDocs,
+    })
+    if err != nil {
+        updateJobError(ctx, docRef, fmt.Errorf("error marshaling resultData: %v", err))
+        log.Print(err)
+        return
+    }
 
-	// Update the job document with results
-	resultData := map[string]interface{}{
-		"scraped_documents": scrapedDocs,
-	}
+    // Check if the total size exceeds the Firestore limit
+	// Keep the limit 1000000 instead of 1048576 to account for firestore padding
+    if len(fullResultDataJSON) > 1000000 {
+        log.Printf("resultData size exceeds Firestore limit. Truncating data.")
 
-	_, err := docRef.Update(ctx, []firestore.Update{
-		{Path: "result_data", Value: resultData},
-	})
-	if err != nil {
-		updateJobError(ctx, docRef, fmt.Errorf("failed to update job document: %v", err))
-		log.Print(err)
-		return
-	}
-	log.Printf("Successfully updated job with %d scraped documents", len(*scrapedDocs))
+        // If it exceeds, truncate the data to fit within the limit
+        var truncatedDocs []ScrapedDocument
+        truncatedSize := 0
 
-	// Update job status to succeeded
-	_, err = docRef.Update(ctx, []firestore.Update{
-		{Path: "status", Value: "succeeded"},
-	})
-	if err != nil {
-		updateJobError(ctx, docRef, fmt.Errorf("failed to update job document status: %v", err))
-		log.Print(err)
-		return
-	}
-	log.Printf("Successfully updated job status")
+        // Iterate through the scraped documents and add them to the truncated list
+        // until the size is close to but does not exceed the limit
+        for _, doc := range *scrapedDocs {
+            docJSON, err := json.Marshal(doc)
+            if err != nil {
+                updateJobError(ctx, docRef, fmt.Errorf("error marshaling individual document: %v", err))
+                log.Print(err)
+                return
+            }
+
+            if truncatedSize+len(docJSON) > 1000000 {
+                // Stop adding documents if the next one would exceed the limit
+                break
+            }
+
+            truncatedDocs = append(truncatedDocs, doc)
+            truncatedSize += len(docJSON)
+        }
+
+        // Prepare the truncated data to be written to Firestore
+        resultData := map[string]interface{}{
+            "scraped_documents": truncatedDocs,
+        }
+
+        // Update Firestore with the truncated data
+        _, err = docRef.Update(ctx, []firestore.Update{
+            {Path: "result_data", Value: resultData},
+            {Path: "status", Value: "succeeded"},
+        })
+        if err != nil {
+            updateJobError(ctx, docRef, fmt.Errorf("failed to update job document with truncated data: %v", err))
+            log.Print(err)
+            return
+        }
+
+        log.Printf("Successfully updated job with truncated scraped documents")
+        return
+    }
+
+    // If the total size is within the limit, proceed with updating the Firestore document as is
+    resultData := map[string]interface{}{
+        "scraped_documents": scrapedDocs,
+    }
+
+    _, err = docRef.Update(ctx, []firestore.Update{
+        {Path: "result_data", Value: resultData},
+        {Path: "status", Value: "succeeded"},
+    })
+    if err != nil {
+        updateJobError(ctx, docRef, fmt.Errorf("failed to update job document: %v", err))
+        log.Print(err)
+        return
+    }
+
+    log.Printf("Successfully updated job with %d scraped documents", len(*scrapedDocs))
 }
 
 // sanitizeFilename sanitizes the URL to create a safe filename
