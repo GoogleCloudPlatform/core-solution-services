@@ -172,7 +172,8 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
             [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
             JSON.parse(fullResponse)['data']['history'])
           setMessages(finalMessages)
-
+          setStreamingMessage("")
+          setActiveJob(false)
           // Update the chat with the new history
           await updateChat(userToken)({
             chatId: initialChatId,
@@ -197,6 +198,8 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
             [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
             JSON.parse(fullResponse)['data']['history'])
           setMessages(updatedMessages)
+          setStreamingMessage("")
+          setActiveJob(false)
           // Create permanent chat with accumulated history
           if (tools.length === 0) {
             const newChat = await createChat(userToken)({
@@ -229,6 +232,10 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     } finally {
       setFileUrl(null)
       setUploadFile(null)
+      // streaming messages and the active job tracker are cleared here
+      // as a final catch in case
+      // of an errror but are intended to be cleared previously once
+      // the stream has finished sending text
       setStreamingMessage("")
       setActiveJob(false)
     }
