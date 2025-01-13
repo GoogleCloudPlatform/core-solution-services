@@ -20,7 +20,7 @@ import {
   ExclamationCircleIcon,
 } from "@heroicons/react/24/outline"
 import { useState } from "react"
-import { Link } from "react-router-dom"
+
 const defaultAccept = "image/*,.pdf,.docx,.doc,.ppt,.xls,.xlsx,.mp3,.mp4"
 
 const DocumentUpload = ({
