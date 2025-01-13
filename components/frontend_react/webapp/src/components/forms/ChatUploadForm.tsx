@@ -31,7 +31,9 @@ const ChatUploadForm: React.FunctionComponent<ChatUploadFormProps> = ({
   currentVarsData,
 }) => {
   const [initialFormat, setInitialFormat] = useState({})
-
+  // This state is used as a key for the form element so the clear butotn
+  // can change it to reset everything
+  const [resetKey, setResetKey] = useState(1)
   const defaultValues = initialFormikValues(currentVarsData)
 
   const initialValues = Object.assign({}, defaultValues, initialFormat)
@@ -49,7 +51,7 @@ const ChatUploadForm: React.FunctionComponent<ChatUploadFormProps> = ({
 
   return (
     <div className="w-full">
-      <FormikProvider value={formik}>
+      <FormikProvider value={formik} key={resetKey}>
         <Form spellCheck="true">
           {currentVarsData ? (
             <FormFields
@@ -65,7 +67,11 @@ const ChatUploadForm: React.FunctionComponent<ChatUploadFormProps> = ({
             <Link href="#">
               <button
                 className="btn btn-outline btn-sm"
-                onClick={() => {formik.resetForm()}}
+                onClick={() => {
+                  formik.resetForm()
+                  handleFiles(null, "")
+                  setResetKey(resetKey * -1)
+                }}
               >
                 Clear
               </button>
@@ -73,7 +79,7 @@ const ChatUploadForm: React.FunctionComponent<ChatUploadFormProps> = ({
           </div>
         </Form>
       </FormikProvider>
-    </div>
+    </div >
   )
 }
 

@@ -44,16 +44,16 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
   const [fileUrl, setFileUrl] = useState<string | null>(null)
   const [streamingMessage, setStreamingMessage] = useState("")
 
-  const handleFiles = (_files: FileList, _uploadVariable: IFormVariable) => {
-    console.log("handleFiles")
-    if (_uploadVariable.name == "file_upload") {
+  const handleFiles = (_files: FileList | null, _uploadVariable: IFormVariable) => {
+    if (_uploadVariable.name == "file_upload" && _files) {
       setUploadFile(_files[0])
       _uploadVariable.value = null
-      console.log("_files", _files)
-    } else if (_uploadVariable.name == "doc_url") {
+    } else if (_uploadVariable.name == "doc_url" && _files) {
       setFileUrl(_files[0])
       _uploadVariable.value = ""
-      console.log("setFileUrl", _files[0])
+    } else if (_files?.length === 0) {
+      setFileUrl(null)
+      setUploadFile(null)
     }
   }
 

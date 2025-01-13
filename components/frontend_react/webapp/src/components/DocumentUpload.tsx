@@ -44,10 +44,14 @@ const DocumentUpload = ({
 
   const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (!files) return
     setFailed(false)
     setUploaded(false)
     setUploading(true)
+    if (files === null || files.length < 1) {
+      setUploading(false)
+      setFilesLabel(null)
+      return
+    }
 
     try {
       await handleFiles({ files, type, label })
