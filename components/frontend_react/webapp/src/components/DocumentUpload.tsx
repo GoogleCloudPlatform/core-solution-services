@@ -20,7 +20,7 @@ import {
   ExclamationCircleIcon,
 } from "@heroicons/react/24/outline"
 import { useState } from "react"
-
+import { Link } from "react-router-dom"
 const defaultAccept = "image/*,.pdf,.docx,.doc,.ppt,.xls,.xlsx,.mp3,.mp4"
 
 const DocumentUpload = ({
@@ -44,10 +44,14 @@ const DocumentUpload = ({
 
   const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (!files) return
     setFailed(false)
     setUploaded(false)
     setUploading(true)
+    if (files === null || files.length < 1) {
+      setUploading(false)
+      setFilesLabel(null)
+      return
+    }
 
     try {
       await handleFiles({ files, type, label })

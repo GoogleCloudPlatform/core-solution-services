@@ -53,6 +53,8 @@ const CHAT_UPLOAD_FORM_DATA: IFormVariable[] = [
 const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles }) => {
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [toolNames, setToolNames] = useState<string[]>([])
+  // changed to reset the upload files when the chat is submitted
+  const [chatUploadResetkey, setChatUploadResetkey] = useState(1)
 
   const handleUploadClick = () => {
     setIsUploadOpen((prev) => !prev)
@@ -73,6 +75,8 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles 
           const doc_url = document.getElementById("doc_url") as HTMLInputElement | null
           if (input?.value !== null && input?.value !== "") {
             onSubmit(input.value, doc_url?.value || "", toolNames)
+            handleFiles(null, "")
+            setChatUploadResetkey(chatUploadResetkey * -1)
           }
           input.value = ""
           if (doc_url) {
@@ -111,7 +115,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSubmit, activeJob, handleFiles 
         </button>
       </form >
       {isUploadOpen &&
-        <div className="w-full justify-center rounded-lg border-2 border-primary border-opacity-50 p-4 md:flex">
+        <div key={chatUploadResetkey} className="w-full justify-center rounded-lg border-2 border-primary border-opacity-50 p-4 md:flex">
           <ChatUploadForm
             key="upload"
             handleFiles={handleFiles}
