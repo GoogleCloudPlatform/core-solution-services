@@ -650,9 +650,26 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
 
         if stream:
           async def response_generator():
-            async for chunk in response:
-              if chunk.text:
-                yield chunk.text
+            try:
+              async for chunk in response:
+                if chunk.text:
+                  yield chunk.text
+            except ValueError as e:
+              if "Cannot get the Candidate text." in str(e):
+                candidate_start = str(e).find("Candidate:")
+                if candidate_start != -1:
+                  candidate_info = str(e)[candidate_start:]
+                yield "\n"
+                yield (
+                  " ...I'm sorry, any further response has been blocked because the "
+                  "succeeding content violates my safety filters.\n"
+                  f"Details: {candidate_info}"
+                )
+                return
+              else:
+                raise
+            except Exception as e:
+              raise InternalServerError(str(e)) from e
           return response_generator()
 
         return response.text
