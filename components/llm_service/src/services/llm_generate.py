@@ -660,9 +660,8 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 candidate_start = str(e).find("Candidate:")
                 if candidate_start != -1:
                   candidate_info = str(e)[candidate_start:]
-                yield "\n"
                 yield (
-                  " ...I'm sorry, any further response has been blocked because the "
+                  " \n ...I'm sorry, any further response has been blocked because the "
                   "succeeding content violates my safety filters.\n"
                   f"Details: {candidate_info}"
                 )
