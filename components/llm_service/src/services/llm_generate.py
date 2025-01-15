@@ -656,6 +656,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                   yield chunk.text
             except ValueError as e:
               if "Cannot get the Candidate text." in str(e):
+                candidate_info = ""
                 candidate_start = str(e).find("Candidate:")
                 if candidate_start != -1:
                   candidate_info = str(e)[candidate_start:]
