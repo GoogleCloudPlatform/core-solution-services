@@ -107,12 +107,13 @@ class LLMGetQueryEnginesResponse(BaseModel):
 
 class LLMGenerateModel(BaseModel):
   """LLM Generate request model"""
-  prompt: str
-  llm_type: Optional[str] = None
-  stream: Optional[bool] = False
+  prompt: Annotated[str, Form()]
+  llm_type: Optional[Annotated[str, Form()]] = None
+  stream: Optional[Annotated[str, Form()]] = False
   chat_file_url: Annotated[str, Form()] = None
   chat_file: Union[UploadFile, None] = None
-  tool_names: Optional[str] = None # a json encoded list of strings
+  # a json encoded list of strings
+  tool_names: Optional[Annotated[str, Form()]] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": LLM_GENERATE_EXAMPLE
   })

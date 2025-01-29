@@ -405,7 +405,8 @@ async def create_user_chat(
 
 @router.post(
     "/{chat_id}/generate")
-async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
+async def user_chat_generate(chat_id: Annotated[str, Form()],
+                             gen_config: LLMGenerateModel):
   """
   Continue chat based on context of user chat
 
