@@ -624,18 +624,17 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
              HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
         }
         chat_model = GenerativeModel(google_llm)
-        if user_file_bytes is not None and user_files is not None:
-          # user_file_bytes refers to a single image and so we index into
-          # user_files (a list) to get a single mime type
-          prompt_list.append(Part.from_data(user_file_bytes,
+        if is_multimodal:
+          if user_file_bytes is not None and user_files is not None:
+            # user_file_bytes refers to a single image and so we index into
+            # user_files (a list) to get a single mime type
+            prompt_list.append(Part.from_data(user_file_bytes,
                                             mime_type=user_files[0].mime_type))
-        elif user_files is not None:
-          # user_files is a list referring to one or more images
-          for user_file in user_files:
-            prompt_list.append(Part.from_uri(user_file.gcs_path, mime_type=user_file.mime_type))
-        else:
-          raise RuntimeError(
-              "if is_multi user_files must be set")
+          elif user_files is not None:
+            # user_files is a list referring to one or more images
+            for user_file in user_files:
+              prompt_list.append(Part.from_uri(user_file.gcs_path,
+                                               mime_type=user_file.mime_type))
         Logger.info(f"context list {prompt_list}")
         generation_config = GenerationConfig(**parameters)
         response = await chat_model.generate_content_async(prompt_list,
