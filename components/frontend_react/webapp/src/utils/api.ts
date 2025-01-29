@@ -26,7 +26,7 @@ interface RunQueryParams {
 interface RunChatParams {
   userInput: string
   llmType: string
-  uploadFile: File
+  uploadFile?: File
   fileUrl: string
   stream?: boolean
   toolNames?: string[]
@@ -44,6 +44,8 @@ interface ResumeChatParams {
   chatId: string
   userInput: string
   llmType: string
+  uploadFile: File | null
+  fileUrl: string
   toolNames?: string[]
   stream?: boolean
 }
@@ -51,6 +53,8 @@ interface ResumeChatParams {
 interface ResumeChatApiParams {
   prompt: string,
   llm_type: string,
+  uploadFile?: File | null
+  fileUrl?: string
   stream: boolean,
   tool_names?: string
 }
@@ -156,6 +160,8 @@ export const resumeChat =
     chatId,
     userInput,
     llmType,
+    uploadFile,
+    fileUrl,
     toolNames,
     stream = true
   }: ResumeChatParams): Promise<Chat | ReadableStream | undefined | null> => {
@@ -164,6 +170,8 @@ export const resumeChat =
     let data: ResumeChatApiParams = {
       prompt: userInput,
       llm_type: llmType,
+      uploadFile,
+      fileUrl,
       stream
     }
     if (toolNames && toolNames.length > 0) {

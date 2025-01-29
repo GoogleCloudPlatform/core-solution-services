@@ -14,8 +14,8 @@
 """
 Pydantic Model for LLM API's
 """
-from fastapi import UploadFile
-from typing import List, Optional
+from fastapi import UploadFile, Form
+from typing import List, Optional, Union, Annotated
 from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      LLM_MULTIMODAL_GENERATE_EXAMPLE,
@@ -110,6 +110,8 @@ class LLMGenerateModel(BaseModel):
   prompt: str
   llm_type: Optional[str] = None
   stream: Optional[bool] = False
+  chat_file_url: Annotated[str, Form()] = None
+  chat_file: Union[UploadFile, None] = None
   tool_names: Optional[str] = None # a json encoded list of strings
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": LLM_GENERATE_EXAMPLE

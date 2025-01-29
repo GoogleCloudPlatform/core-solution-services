@@ -162,6 +162,8 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           chatId: initialChatId,
           userInput,
           llmType: selectedModel,
+          uploadFile,
+          fileUrl: doc_url,
           toolNames: tools,
           stream: true
         })
@@ -234,7 +236,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
       setUploadFile(null)
       // streaming messages and the active job tracker are cleared here
       // as a final catch in case
-      // of an errror but are intended to be cleared previously once
+      // of an error but are intended to be cleared previously once
       // the stream has finished sending text
       setStreamingMessage("")
       setActiveJob(false)

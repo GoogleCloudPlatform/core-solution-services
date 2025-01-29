@@ -554,7 +554,7 @@ async def model_garden_predict(prompt: str,
   return predictions_text
 
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
-                google_llm: str, user_chat=None,
+                google_llm: str, user_chat: Optional[UserChat]=None,
                 user_file_bytes: bytes=None,
                 user_files: List[DataSourceFile]=None,
                 stream: bool=False) -> Union[str, AsyncGenerator[str, None]]:
@@ -590,8 +590,13 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         prompt_list.append(f"Human input: {content}")
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
-      # prompt_list includes only text (no images/video)
-      # from user_chat.history
+      elif is_multimodal:
+        if UserChat.is_file_bytes(entry):
+          prompt_list.append(Part.from_data(UserChat.get_file_b64(entry),
+                                      mime_type=UserChat.get_file_type(entry)))
+        if UserChat.is_file_uri(entry):
+          prompt_list.append(Part.from_uri(UserChat.get_file_uri(entry),
+                                      mime_type=UserChat.get_file_type(entry)))
   prompt_list.append(prompt)
   context_prompt = "\n\n".join(prompt_list)
 
@@ -619,34 +624,24 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
              HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
         }
         chat_model = GenerativeModel(google_llm)
-        if is_multimodal:
-          user_file_parts = []
-          if user_file_bytes is not None and user_files is not None:
-            # user_file_bytes refers to a single image and so we index into
-            # user_files (a list) to get a single mime type
-            user_file_parts = [Part.from_data(user_file_bytes,
-                                              mime_type=user_files[0].mime_type)]
-          elif user_files is not None:
-            # user_files is a list referring to one or more images
-            user_file_parts = [
-              Part.from_uri(user_file.gcs_path, mime_type=user_file.mime_type)
-              for user_file in user_files
-            ]
-          else:
-            raise RuntimeError(
-                "if is_multi user_files must be set")
-          context_list = [*user_file_parts, context_prompt]
-          Logger.info(f"context list {context_list}")
-          generation_config = GenerationConfig(**parameters)
-          response = await chat_model.generate_content_async(context_list,
-              generation_config=generation_config,
-              stream=stream)
+        if user_file_bytes is not None and user_files is not None:
+          # user_file_bytes refers to a single image and so we index into
+          # user_files (a list) to get a single mime type
+          prompt_list.append(Part.from_data(user_file_bytes,
+                                            mime_type=user_files[0].mime_type))
+        elif user_files is not None:
+          # user_files is a list referring to one or more images
+          for user_file in user_files:
+            prompt_list.append(Part.from_uri(user_file.gcs_path, mime_type=user_file.mime_type))
         else:
-          chat = chat_model.start_chat()
-          response = await chat.send_message_async(context_prompt,
-              generation_config=parameters,
-              safety_settings=safety_settings,
-              stream=stream)
+          raise RuntimeError(
+              "if is_multi user_files must be set")
+        Logger.info(f"context list {prompt_list}")
+        generation_config = GenerationConfig(**parameters)
+        response = await chat_model.generate_content_async(prompt_list,
+            generation_config=generation_config,
+            safety_settings=safety_settings,
+            stream=stream)
 
         if stream:
           async def response_generator():

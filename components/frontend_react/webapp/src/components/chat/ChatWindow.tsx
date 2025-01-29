@@ -62,6 +62,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, 
           </div>
         </div>
       )
+    } else if (message.FileURL) {
+      return (
+        <div key={index++}>
+          <div className="flex items-center gap-6 mx-2 pb-7">
+            <img src={message.FileURL} />
+          </div>
+        </div>
+      )
     } else {
       return
     }

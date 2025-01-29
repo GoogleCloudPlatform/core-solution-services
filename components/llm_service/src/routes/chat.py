@@ -21,7 +21,7 @@ from typing import Union, Annotated, Optional
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
-from common.models.llm import CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64
+from common.models.llm import CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64, CHAT_FILE_TYPE
 from common.utils.auth_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
@@ -36,7 +36,7 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGetTypesResponse)
 from services.llm_generate import llm_chat
 from services.agents.agent_tools import chat_tools, run_chat_tools
-from utils.file_helper import process_chat_file
+from utils.file_helper import process_chat_file, validate_multimodal_file_type
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
@@ -420,7 +420,21 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   response_files = None
   tool_names = gen_config.tool_names
   validate_tool_names(tool_names)
-  genconfig_dict = {**gen_config.dict()}
+
+  # process chat file(s): upload to GCS and determine mime type
+  chat_file_bytes = None
+  chat_files = None
+  chat_file = gen_config.chat_file
+  chat_file_url = gen_config.chat_file_url
+  if chat_file is not None or chat_file_url is not None:
+    chat_files = await process_chat_file(chat_file, chat_file_url)
+  # only read chat file bytes if for some reason we can't
+  # upload the file(s) to GCS
+  if not chat_files and chat_file is not None:
+    await chat_file.seek(0)
+    chat_file_bytes = await chat_file.read()
+
+  genconfig_dict = {**gen_config.model_dump()}
   Logger.info(f"Generating new chat response for chat_id={chat_id},"
               f"genconfig_dict={genconfig_dict}")
 
@@ -432,6 +446,18 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   user_chat = UserChat.find_by_id(chat_id)
   if user_chat is None:
     raise ResourceNotFoundException(f"Chat {chat_id} not found ")
+  if (chat_file_bytes
+      and (mime_type := validate_multimodal_file_type(chat_file.filename))):
+    user_chat.update_history(custom_entry={
+      CHAT_FILE_BASE64: chat_file_bytes,
+      CHAT_FILE_TYPE: mime_type
+    })
+  if chat_files:
+    for cur_chat_file in chat_files:
+      user_chat.update_history(custom_entry={
+        CHAT_FILE_URL: cur_chat_file.gcs_path,
+        CHAT_FILE_TYPE: cur_chat_file.mime_type
+      })
 
   # set llm type for chat
   llm_type = genconfig_dict.get("llm_type", None)
@@ -448,6 +474,9 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
     else:
       response = await llm_chat(prompt,
                             llm_type,
+                            user_chat=user_chat,
+                            chat_files=chat_files,
+                            chat_file_bytes=chat_file_bytes,
                             stream=stream)
       if stream:
         # Return streaming response
@@ -461,10 +490,11 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
     if response_files:
       for file in response_files:
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE}": file["name"]
+          CHAT_FILE: file["name"]
         })
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE_BASE64}": file["contents"]
+          CHAT_FILE_BASE64: file["contents"],
+          CHAT_FILE_TYPE: "image/png"
         })
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
