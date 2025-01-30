@@ -1,0 +1,200 @@
+
+.app {
+  display: flex;
+  height: 100vh;
+  background-color: #1a1a1a;
+  color: white;
+}
+
+.history-drawer .MuiDrawer-paper {
+  width: 300px;
+  background-color: #242424;
+  color: white;
+  border-right: 1px solid #333;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #333;
+}
+
+.history-header button {
+  color: white;
+}
+
+.history-content {
+  padding: 1rem;
+}
+
+.history-item {
+  padding: 1rem;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+}
+
+.history-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.history-time {
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.sidebar {
+  width: 60px;
+  background-color: #242424;
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.menu-button {
+  color: white !important;
+  margin: 4px 0 !important;
+}
+
+.history-button {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.history-button:hover {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.greeting {
+  text-align: center;
+  margin-bottom: 2rem !important;
+}
+
+.hello {
+  color: #4a90e2;
+}
+
+.name {
+  color: #e57373;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.feature-card {
+  background-color: #242424 !important;
+  color: white !important;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 8px !important;
+}
+
+.subtitle {
+  color: #888;
+}
+
+.action {
+  margin-top: auto;
+  color: #4a90e2;
+}
+
+.prompt-container {
+  margin-top: auto;
+  padding: 1rem;
+}
+
+.prompt-input {
+  display: flex;
+  align-items: center;
+  background-color: #242424 !important;
+  padding: 0.5rem 1rem;
+  border-radius: 24px !important;
+}
+
+.prompt-input input {
+  color: white;
+}
+
+.prompt-input button {
+  color: white;
+}
+
+.chat-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #333;
+}
+
+.chat-type-select {
+  color: white !important;
+}
+
+.chat-type-select .MuiSelect-icon {
+  color: white;
+}
+
+.chat-messages {
+  flex-grow: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.message {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-start;
+}
+
+.message-avatar {
+  width: 32px !important;
+  height: 32px !important;
+  background-color: #4a90e2 !important;
+}
+
+.user-message .message-avatar {
+  background-color: #e57373 !important;
+}
+
+.chat-input-container {
+  padding: 1rem;
+}
+
+.chat-input {
+  display: flex;
+  align-items: center;
+  background-color: #242424 !important;
+  padding: 0.5rem 1rem;
+  border-radius: 24px !important;
+}
+
+.chat-input input {
+  color: white;
+}
+
+.chat-input button {
+  color: white;
+}
