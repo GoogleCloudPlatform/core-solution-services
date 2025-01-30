@@ -109,7 +109,7 @@ class LLMGenerateModel(BaseModel):
   """LLM Generate request model"""
   prompt: str
   llm_type: Optional[str] = None
-  stream: Optional[str] = False
+  stream: Optional[bool] = False
   # a url to a bucket or file in a bucket
   chat_file_url: Optional[str] = None
   # the chat file in base64 encoding and it's name are included instead of
