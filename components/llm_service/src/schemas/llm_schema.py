@@ -107,11 +107,17 @@ class LLMGetQueryEnginesResponse(BaseModel):
 
 class LLMGenerateModel(BaseModel):
   """LLM Generate request model"""
-  prompt: Annotated[str, Form()]
-  llm_type: Optional[Annotated[str, Form()]] = None
-  stream: Optional[Annotated[str, Form()]] = False
-  chat_file_url: Annotated[str, Form()] = None
-  chat_file: Union[UploadFile, None] = None
+  prompt: str
+  llm_type: Optional[str] = None
+  stream: Optional[str] = False
+  # a url to a bucket or file in a bucket
+  chat_file_url: Optional[str] = None
+  # the chat file in base64 encoding and it's name are included instead of
+  # using UploadFile because HTTP protocols can't support both the form
+  # field for the file and regular json parameters for the path parametrs
+  # https://fastapi.tiangolo.com/tutorial/request-forms/#about-form-fields
+  chat_file_b64: Optional[str] = None
+  chat_file_b64_name: Optional[str] = None
   # a json encoded list of strings
   tool_names: Optional[Annotated[str, Form()]] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={

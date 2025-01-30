@@ -17,6 +17,8 @@
 """ Chat endpoints """
 import traceback
 import json
+import base64
+import io
 from typing import Union, Annotated, Optional
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
@@ -369,13 +371,32 @@ async def create_user_chat(
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
                          prompt=prompt)
     user_chat.history = UserChat.get_history_entry(prompt, response)
-    if chat_file:
+    if (chat_file_bytes
+        and (mime_type := validate_multimodal_file_type(chat_file.filename))):
       user_chat.update_history(custom_entry={
-        f"{CHAT_FILE}": chat_file.filename
+        CHAT_FILE_BASE64: chat_file_bytes,
+        CHAT_FILE_TYPE: mime_type
       })
-    elif chat_file_url:
+    if chat_files:
+      for cur_chat_file in chat_files:
+        user_chat.update_history(custom_entry={
+          CHAT_FILE_URL: cur_chat_file.gcs_path,
+          CHAT_FILE_TYPE: cur_chat_file.mime_type
+        })
+    if (chat_file and
+       (mime_type := validate_multimodal_file_type(chat_file.filename))):
+      await chat_file.seek(0)
+      base64_encoded = base64.b64encode(await chat_file.read()).decode()
       user_chat.update_history(custom_entry={
-        f"{CHAT_FILE_URL}": chat_file_url
+        f"{CHAT_FILE}": chat_file.filename,
+        CHAT_FILE_TYPE: mime_type,
+        CHAT_FILE_BASE64: base64_encoded
+      })
+    elif (chat_file_url and
+         (mime_type := validate_multimodal_file_type(chat_file.filename))):
+      user_chat.update_history(custom_entry={
+        f"{CHAT_FILE_URL}": chat_file_url,
+        CHAT_FILE_TYPE: mime_type
       })
     if response_files:
       for file in response_files:
@@ -424,7 +445,12 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   # process chat file(s): upload to GCS and determine mime type
   chat_file_bytes = None
   chat_files = None
-  chat_file = gen_config.chat_file
+  chat_file = None
+  if gen_config.chat_file_b64 and gen_config.chat_file_b64_name:
+    content = base64.b64decode(gen_config.chat_file_b64)
+    chat_file = UploadFile(io.BytesIO(content),
+                          filename=gen_config.chat_file_b64_name,
+                          size=len(content))
   chat_file_url = gen_config.chat_file_url
   if chat_file is not None or chat_file_url is not None:
     chat_files = await process_chat_file(chat_file, chat_file_url)

@@ -53,8 +53,9 @@ interface ResumeChatParams {
 interface ResumeChatApiParams {
   prompt: string,
   llm_type: string,
-  uploadFile?: File | null
-  fileUrl?: string
+  chat_file_b64?: string
+  chat_file_b64_name?: string
+  chat_file_url?: string
   stream: boolean,
   tool_names?: string
 }
@@ -155,6 +156,14 @@ export const createChat =
     return axios.post(url, formData, { headers }).then(path(["data", "data"]))
   }
 
+// taken from stackoverflow.com/questions/36280818
+const toBase64 = (file: File): Promise<string | ArrayBuffer | null> => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = reject;
+});
+
 export const resumeChat =
   (token: string) => async ({
     chatId,
@@ -167,17 +176,23 @@ export const resumeChat =
   }: ResumeChatParams): Promise<Chat | ReadableStream | undefined | null> => {
     const url = `${endpoint}/chat/${chatId}/generate`
     const headers = { Authorization: `Bearer ${token}` }
+    console.log('in api', uploadFile)
     let data: ResumeChatApiParams = {
       prompt: userInput,
       llm_type: llmType,
-      uploadFile,
-      fileUrl,
       stream
     }
     if (toolNames && toolNames.length > 0) {
       data['tool_names'] = JSON.stringify(toolNames)
     }
-
+    if (fileUrl) data.chat_file_url = fileUrl
+    if (uploadFile) {
+      const file_b64 = await toBase64(uploadFile)
+      if (typeof file_b64 === 'string') {
+        data.chat_file_b64 = file_b64
+        data.chat_file_b64_name = uploadFile.name
+      }
+    }
     if (stream) {
       try {
         const response = await fetch(url, {
