@@ -119,7 +119,7 @@ class LLMGenerateModel(BaseModel):
   chat_file_b64: Optional[str] = None
   chat_file_b64_name: Optional[str] = None
   # a json encoded list of strings
-  tool_names: Optional[Annotated[str, Form()]] = None
+  tool_names: Optional[str] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": LLM_GENERATE_EXAMPLE
   })
