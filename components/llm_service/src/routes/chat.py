@@ -334,11 +334,13 @@ async def create_user_chat(
       user_chat.history = history_list  # Use the parsed list
       if chat_file:
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE}": chat_file.filename
+          f"{CHAT_FILE}": chat_file.filename,
+          "test": 'test'
         })
       elif chat_file_url:
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE_URL}": chat_file_url
+          f"{CHAT_FILE_URL}": chat_file_url,
+          'test2': 'test2'
         })
       user_chat.save()
 
@@ -371,18 +373,6 @@ async def create_user_chat(
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
                          prompt=prompt)
     user_chat.history = UserChat.get_history_entry(prompt, response)
-    if (chat_file_bytes
-        and (mime_type := validate_multimodal_file_type(chat_file.filename))):
-      user_chat.update_history(custom_entry={
-        CHAT_FILE_BASE64: chat_file_bytes,
-        CHAT_FILE_TYPE: mime_type
-      })
-    if chat_files:
-      for cur_chat_file in chat_files:
-        user_chat.update_history(custom_entry={
-          CHAT_FILE_URL: cur_chat_file.gcs_path,
-          CHAT_FILE_TYPE: cur_chat_file.mime_type
-        })
     if (chat_file and
        (mime_type := validate_multimodal_file_type(chat_file.filename))):
       await chat_file.seek(0)
