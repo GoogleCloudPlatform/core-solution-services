@@ -598,7 +598,10 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
           prompt_list.append(Part.from_uri(UserChat.get_file_uri(entry),
                                       mime_type=UserChat.get_file_type(entry)))
   prompt_list.append(prompt)
-  context_prompt = "\n\n".join(prompt_list)
+  # the context prompt is only used for non-gemini models and canot handle
+  # the gemini Part object
+  context_prompt = "\n\n".join(entry for entry in prompt_list
+                               if isinstance(entry, str))
 
   # Get model params. If params are set at the model level
   # use those else use global vertex params.
