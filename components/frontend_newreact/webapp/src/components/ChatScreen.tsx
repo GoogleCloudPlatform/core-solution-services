@@ -45,7 +45,7 @@ const ChatScreen = ({ currentChat }: ChatScreenProps) => {
         response = await resumeChat(user.token)({
           chatId,
           userInput: prompt,
-          llmType: 'chat-bison', // You may want to make this configurable
+          llmType: 'chat-bison',
           stream: false
         });
       } else {
@@ -53,9 +53,9 @@ const ChatScreen = ({ currentChat }: ChatScreenProps) => {
         response = await createChat(user.token)({
           userInput: prompt,
           llmType: 'chat-bison',
-          uploadFile: null,
-          fileUrl: '',
+          fileUrl: '', // Empty string for no file URL
           stream: false
+          // Don't include uploadFile if we don't have one
         });
 
         // Store the chat ID for future messages

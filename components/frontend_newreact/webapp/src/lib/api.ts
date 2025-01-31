@@ -26,7 +26,7 @@ interface RunQueryParams {
 interface RunChatParams {
   userInput: string
   llmType: string
-  uploadFile: File
+  uploadFile?: File
   fileUrl: string
   stream?: boolean
   toolNames?: string[]
