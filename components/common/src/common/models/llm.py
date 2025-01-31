@@ -103,11 +103,11 @@ class UserChat(BaseModel):
 
   @classmethod
   def is_file_bytes(cls, entry: dict) -> bool:
-    return CHAT_FILE_BASE64 in entry.keys()
+    return CHAT_FILE_BASE64 in entry
 
   @classmethod
   def is_file_uri(cls, entry: dict) -> bool:
-    return CHAT_FILE_URL in entry.keys()
+    return CHAT_FILE_URL in entry
 
   @classmethod
   def get_file_b64(cls, entry: dict) -> str:

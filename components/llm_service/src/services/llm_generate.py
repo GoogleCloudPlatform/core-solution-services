@@ -589,14 +589,18 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
       content = UserChat.entry_content(entry)
       if UserChat.is_human(entry):
         prompt_list.append(f"Human input: {content}")
+        prompt_list.append('here1')
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
+        prompt_list.append('here2')
       elif is_multimodal:
+        prompt_list.append('here3')
         if UserChat.is_file_bytes(entry):
+          prompt_list.append('here4')
           prompt_list.append(
             Part.from_data(base64.b64decode(UserChat.get_file_b64(entry)),
                             mime_type=UserChat.get_file_type(entry)))
-        if UserChat.is_file_uri(entry):
+        elif UserChat.is_file_uri(entry):
           prompt_list.append(Part.from_uri(UserChat.get_file_uri(entry),
                                       mime_type=UserChat.get_file_type(entry)))
   prompt_list.append(prompt)
