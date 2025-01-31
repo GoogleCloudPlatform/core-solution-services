@@ -17,6 +17,7 @@ LLM Generation Service
 # pylint: disable=import-outside-toplevel,line-too-long
 import time
 import requests
+import base64
 from typing import Optional, List, AsyncGenerator, Union
 import google.auth
 import google.auth.transport.requests
@@ -592,8 +593,9 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         prompt_list.append(f"AI response: {content}")
       elif is_multimodal:
         if UserChat.is_file_bytes(entry):
-          prompt_list.append(Part.from_data(UserChat.get_file_b64(entry),
-                                      mime_type=UserChat.get_file_type(entry)))
+          prompt_list.append(
+            Part.from_data(base64.b64decode(UserChat.get_file_b64(entry)),
+                            mime_type=UserChat.get_file_type(entry)))
         if UserChat.is_file_uri(entry):
           prompt_list.append(Part.from_uri(UserChat.get_file_uri(entry),
                                       mime_type=UserChat.get_file_type(entry)))

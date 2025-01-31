@@ -157,7 +157,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     setMessages((prev) => [...prev, { HumanInput: userInput }])
 
     try {
-      if (initialChatId || initialChatRef.current || resumeChatId) {
+      if (initialChatId) {
         console.log('here', 'uplaodfile', uploadFile)
         const response = await resumeChat(userToken)({
           chatId: initialChatId,
