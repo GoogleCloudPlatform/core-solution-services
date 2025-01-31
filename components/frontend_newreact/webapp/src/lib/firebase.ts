@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { AppConfig } from "@/lib/auth"
 import { envOrFail } from "@/lib/env"
 import {
   logEvent as fbLogEvent,
@@ -23,11 +24,6 @@ import { getFirestore } from "firebase/firestore"
 import { connectFunctionsEmulator, getFunctions } from "firebase/functions"
 import { connectStorageEmulator, getStorage } from "firebase/storage"
 
-const OAuthScopesList: string = envOrFail(
-  "VITE_FIREBASE_OAUTH_SCOPES",
-  import.meta.env.VITE_FIREBASE_OAUTH_SCOPES,
-)
-const OAuthScopes: string[] = OAuthScopesList.split(",")
 
 const apiKey = envOrFail(
   "VITE_FIREBASE_PUBLIC_API_KEY",
@@ -98,7 +94,7 @@ const functions = getFunctions(app)
 const storage = getStorage(app)
 
 const googleProvider = new GoogleAuthProvider()
-OAuthScopes.forEach((scope) => googleProvider.addScope(scope))
+AppConfig.oAuthScopes.forEach((scope) => googleProvider.addScope(scope))
 
 if (import.meta.env.DEV) {
   try {

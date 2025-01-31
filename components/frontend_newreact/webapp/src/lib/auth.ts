@@ -23,6 +23,7 @@ export const AppConfig: IAppConfig = {
   theme: "light",
   authProviders: ["google", "password"],
   authorizedDomains: [/@google\.com$/i, /@\w+\.altostrat\.com$/i],
+  oAuthScopes: []
 }
 
 export const isEmailAuthorized = (authorizedDomains: RegExp[], email: string) =>

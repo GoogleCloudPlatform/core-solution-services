@@ -35,6 +35,7 @@ export type IAppConfig = {
   theme: string
   authProviders: IAuthProvider[]
   authorizedDomains: RegExp[]
+  oAuthScopes: string[]
 }
 
 export const User = z.object({
