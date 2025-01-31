@@ -9,8 +9,26 @@ import ImageIcon from '@mui/icons-material/Image';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import './App.css';
 import ChatScreen from './components/ChatScreen';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import SignIn from './pages/SignIn';
+import { useAuth } from './contexts/AuthContext';
 
-export default function App() {
+const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/signin" />;
+  }
+
+  return <>{children}</>;
+};
+
+const MainApp = () => {
   const [prompt, setPrompt] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -94,5 +112,25 @@ export default function App() {
         )}
       </Box>
     </Box>
+  );
+};
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/signin" element={<SignIn />} />
+          <Route
+            path="/*"
+            element={
+              <PrivateRoute>
+                <MainApp />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
