@@ -14,7 +14,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import ChatWindow from "@/components/chat/ChatWindow"
-import { fetchChat, createChat, resumeChat, updateChat } from "@/utils/api"
+import { fetchChat, createChat, resumeChat, updateChat, toBase64 } from "@/utils/api"
 import { Chat, ChatContents, IFormVariable } from "@/utils/types"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useConfig } from "@/contexts/configContext"
@@ -174,6 +174,11 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           const finalMessages = ((tools.length === 0) ?
             [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
             JSON.parse(fullResponse)['data']['history'])
+          if (uploadFile) {
+            const b64Contents = await toBase64(uploadFile)
+            const fileHistory = { FileContentsBase64: b64Contents, FileType: uploadFile.type }
+            finalMessages.splice(-1, 0, fileHistory)
+          }
           setMessages(finalMessages)
           setStreamingMessage("")
           setActiveJob(false)
@@ -200,6 +205,11 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           const updatedMessages = ((tools.length === 0) ?
             [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
             JSON.parse(fullResponse)['data']['history'])
+          if (uploadFile) {
+            const b64Contents = await toBase64(uploadFile)
+            const fileHistory = { FileContentsBase64: b64Contents, FileType: uploadFile.type }
+            updatedMessages.splice(-1, 0, fileHistory)
+          }
           setMessages(updatedMessages)
           setStreamingMessage("")
           setActiveJob(false)
