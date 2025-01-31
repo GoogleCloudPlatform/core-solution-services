@@ -9,17 +9,19 @@ interface ChatHistoryProps {
   onClose: () => void;
   onSelectChat: (chat: Chat) => void;
   selectedChatId?: string;
+  isOpen: boolean;
 }
 
-const ChatHistory = ({ onClose, onSelectChat, selectedChatId }: ChatHistoryProps) => {
+const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHistoryProps) => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
+    if (!isOpen || !user) return;
+    
     const loadHistory = async () => {
-      if (!user) return;
-      
+      setLoading(true);
       try {
         const history = await fetchChatHistory(user.token)();
         if (history) {
@@ -33,7 +35,7 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId }: ChatHistoryProps
     };
 
     loadHistory();
-  }, [user]);
+  }, [user, isOpen]);
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);

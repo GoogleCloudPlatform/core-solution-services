@@ -72,6 +72,7 @@ const MainApp = () => {
           onClose={toggleHistory}
           onSelectChat={handleSelectChat}
           selectedChatId={currentChat?.id}
+          isOpen={historyOpen}
         />
       </Drawer>
       <Box className="sidebar">
