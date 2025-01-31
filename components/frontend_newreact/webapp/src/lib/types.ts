@@ -45,9 +45,19 @@ export interface User extends FirebaseUser {
   lastName: string;
 }
 
-export type IUser = z.infer<typeof User>
+export const UserSchema = z.object({
+  token: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  uid: z.string(),
+  email: z.string().nullable(),
+  displayName: z.string().nullable(),
+  photoURL: z.string().nullable(),
+})
 
-export const Users = z.array(User)
+export type IUser = z.infer<typeof UserSchema>
+
+export const Users = z.array(UserSchema)
 
 const FIELD_TYPE = [
   "string",
