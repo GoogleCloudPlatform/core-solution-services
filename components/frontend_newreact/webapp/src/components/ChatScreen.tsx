@@ -3,16 +3,28 @@ import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useAuth } from '../contexts/AuthContext';
-import { createChat } from '../lib/api';
+import { createChat, resumeChat } from '../lib/api';
+import { Chat } from '../lib/types';
 
 interface ChatMessage {
   text: string;
   isUser: boolean;
 }
 
-const ChatScreen = () => {
+interface ChatScreenProps {
+  currentChat?: Chat;
+}
+
+const ChatScreen = ({ currentChat }: ChatScreenProps) => {
   const [prompt, setPrompt] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => 
+    // Initialize messages from currentChat if it exists
+    currentChat?.history.map(h => ({
+      text: h.HumanInput || h.AIOutput || '',
+      isUser: !!h.HumanInput
+    })) || []
+  );
+  const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
   const { user } = useAuth();
 
   const handleSubmit = async () => {
@@ -26,14 +38,31 @@ const ChatScreen = () => {
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      // Make API call to create chat
-      const response = await createChat(user.token)({
-        userInput: prompt,
-        llmType: 'chat-bison', // You may want to make this configurable
-        uploadFile: null,
-        fileUrl: '',
-        stream: false
-      });
+      let response;
+      
+      if (chatId) {
+        // Continue existing chat
+        response = await resumeChat(user.token)({
+          chatId,
+          userInput: prompt,
+          llmType: 'chat-bison', // You may want to make this configurable
+          stream: false
+        });
+      } else {
+        // Create new chat
+        response = await createChat(user.token)({
+          userInput: prompt,
+          llmType: 'chat-bison',
+          uploadFile: null,
+          fileUrl: '',
+          stream: false
+        });
+
+        // Store the chat ID for future messages
+        if (response && 'id' in response) {
+          setChatId(response.id);
+        }
+      }
 
       // Add AI response to chat
       if (response && 'history' in response) {
@@ -47,7 +76,7 @@ const ChatScreen = () => {
       // Clear prompt
       setPrompt('');
     } catch (error) {
-      console.error('Error creating chat:', error);
+      console.error('Error in chat:', error);
       // You might want to show an error message to the user here
     }
   };
@@ -62,7 +91,9 @@ const ChatScreen = () => {
   return (
     <Box className="chat-screen">
       <Box className="chat-header">
-        <Typography variant="h6">Topical Gist</Typography>
+        <Typography variant="h6">
+          {currentChat?.title || 'New Chat'}
+        </Typography>
         <Select
           value="Default Chat"
           variant="standard"
