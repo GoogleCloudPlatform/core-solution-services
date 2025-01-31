@@ -224,3 +224,28 @@
   margin-bottom: 2rem;
   text-align: center;
 }
+
+.history-drawer {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #1e1e1e;
+  color: white;
+}
+
+.history-header {
+  background-color: #2d2d2d;
+}
+
+.history-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.history-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.history-content::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}

@@ -13,6 +13,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import SignIn from './pages/SignIn';
 import { useAuth } from './contexts/AuthContext';
+import ChatHistory from './components/ChatHistory';
+import { Chat } from './lib/types';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -32,14 +34,17 @@ const MainApp = () => {
   const [prompt, setPrompt] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [currentChat, setCurrentChat] = useState<Chat | undefined>();
   const username = 'Ian';
 
   const toggleHistory = () => {
     setHistoryOpen(!historyOpen);
   };
 
-  const toggleChat = () => {
-    setShowChat(!showChat);
+  const handleSelectChat = (chat: Chat) => {
+    setCurrentChat(chat);
+    setShowChat(true);
+    setHistoryOpen(false);
   };
 
   const features = [
@@ -59,29 +64,18 @@ const MainApp = () => {
           '& .MuiDrawer-paper': {
             width: 240,
             boxSizing: 'border-box',
+            bgcolor: 'background.paper'
           }
         }}
-        classes={{
-          paper: 'history-drawer-paper'
-        }}
       >
-        <Box className="history-header">
-          <Typography variant="h6">History</Typography>
-          <IconButton onClick={toggleHistory}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
-        <Box className="history-content">
-          {[1, 2].map((_, index) => (
-            <Box key={index} className="history-item">
-              <Typography variant="body2" className="history-time">4y ago</Typography>
-              <Typography variant="body1">Topical Gist</Typography>
-            </Box>
-          ))}
-        </Box>
+        <ChatHistory 
+          onClose={toggleHistory}
+          onSelectChat={handleSelectChat}
+          selectedChatId={currentChat?.id}
+        />
       </Drawer>
       <Box className="sidebar">
-        <IconButton className="menu-button" onClick={toggleChat}>
+        <IconButton className="menu-button" onClick={() => setShowChat(true)}>
           <AddIcon />
         </IconButton>
         <IconButton className="menu-button history-button" onClick={toggleHistory}>
@@ -91,7 +85,7 @@ const MainApp = () => {
       
       <Box className="main-content">
         {showChat ? (
-          <ChatScreen />
+          <ChatScreen currentChat={currentChat} />
         ) : (
           <>
             <Typography variant="h4" className="greeting">
