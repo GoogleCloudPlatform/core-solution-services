@@ -37,7 +37,12 @@ export default function App() {
         anchor="left"
         open={historyOpen}
         variant="persistent"
-        className="history-drawer"
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: 240,
+            boxSizing: 'border-box',
+          }
+        }}
         classes={{
           paper: 'history-drawer-paper'
         }}
