@@ -70,11 +70,6 @@ const endpoint = envOrFail(
   import.meta.env.VITE_PUBLIC_API_ENDPOINT,
 )
 
-const jobsEndpoint = envOrFail(
-  "VITE_PUBLIC_API_JOBS_ENDPOINT",
-  import.meta.env.VITE_PUBLIC_API_JOBS_ENDPOINT,
-)
-
 export const fetchAllChatModels =
   (token: string, isMultimodal?: boolean) => (): Promise<string[] | undefined> => {
     let url = `${endpoint}/chat/chat_types`
@@ -195,12 +190,6 @@ export const resumeChat =
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
 
-export const fetchEmbeddingTypes =
-  (token: string, are_multimodal: boolean) => (): Promise<string[] | undefined | null> => {
-    let url = `${endpoint}/llm/embedding_types?is_multimodal=${are_multimodal}`
-    const headers = { Authorization: `Bearer ${token}` }
-    return axios.get(url, { headers }).then(path(["data", "data"]))
-  }
 
 export const fetchQuery =
   (token: string, queryId: string | null) => (): Promise<Query | undefined | null> => {
@@ -314,29 +303,6 @@ export const resumeQuery =
       console.error('Error in resumeQuery:', error);
       throw error;
     }
-  }
-
-export const getJobStatus =
-  async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
-    if (!token) return Promise.resolve(undefined)
-    const url = `${jobsEndpoint}/jobs/agent_run/${jobId}`
-    const headers = { Authorization: `Bearer ${token}` }
-    return axios.get(url, { headers }).then(path(["data", "data"]))
-  }
-
-export const getEngineJobStatus =
-  async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
-    if (!token) return Promise.resolve(undefined)
-    const url = `${jobsEndpoint}/jobs/query_engine_build/${jobId}`
-    const headers = { Authorization: `Bearer ${token}` }
-    return axios.get(url, { headers }).then(path(["data", "data"]))
-  }
-
-export const fetchAllEngineJobs =
-  (token: string) => (): Promise<QueryEngineBuildJob[] | undefined> => {
-    const url = `${jobsEndpoint}/jobs/query_engine_build`
-    const headers = { Authorization: `Bearer ${token}` }
-    return axios.get(url, { headers }).then(path(["data", "data"]))
   }
 
 export const updateChat =
