@@ -334,13 +334,11 @@ async def create_user_chat(
       user_chat.history = history_list  # Use the parsed list
       if chat_file:
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE}": chat_file.filename,
-          "test": 'test'
+          f"{CHAT_FILE}": chat_file.filename
         })
       elif chat_file_url:
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE_URL}": chat_file_url,
-          'test2': 'test2'
+          f"{CHAT_FILE_URL}": chat_file_url
         })
       user_chat.save()
 

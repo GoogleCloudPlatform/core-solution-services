@@ -201,15 +201,14 @@ async def llm_chat(prompt: str, llm_type: str,
   if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
-  # validate chat file params
-  is_multimodal = False
+  # validate chat file params and model for them
+  is_multimodal = llm_type in get_provider_models(PROVIDER_VERTEX)
   if chat_file_bytes is not None or chat_files:
     if chat_file_bytes is not None and chat_files:
       raise InternalServerError(
           "Must set only one of chat_file_bytes/chat_files")
-    if llm_type not in get_provider_models(PROVIDER_VERTEX):
+    if not is_multimodal:
       raise InternalServerError("Chat files only supported for Vertex")
-    is_multimodal = True
 
   try:
     response = None
