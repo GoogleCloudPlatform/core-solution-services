@@ -14,6 +14,7 @@
 
 import { ReactNode } from "react"
 import { z } from "zod"
+import { User as FirebaseUser } from 'firebase/auth'
 
 export type INavigationItem = {
   name: string
@@ -38,10 +39,11 @@ export type IAppConfig = {
   oAuthScopes: string[]
 }
 
-export const User = z.object({
-  firstName: z.string(),
-  lastName: z.string(),
-})
+export interface User extends FirebaseUser {
+  token: string;
+  firstName: string;
+  lastName: string;
+}
 
 export type IUser = z.infer<typeof User>
 

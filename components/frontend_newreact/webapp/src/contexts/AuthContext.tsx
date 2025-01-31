@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User } from 'firebase/auth'
+import { User } from '@/lib/types'
 import { auth } from '@/lib/firebase'
 
 interface AuthContextType {
@@ -14,12 +14,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      setUser(user);
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Get the ID token
+          const token = await firebaseUser.getIdToken();
+          // Create extended user object with token
+          const userWithToken = {
+            ...firebaseUser,
+            token,
+            firstName: '', // Add default values for required User fields
+            lastName: ''
+          } as User;
+          setUser(userWithToken);
+        } catch (error) {
+          console.error('Error getting auth token:', error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
-    return unsubscribe;
+    // Set up token refresh
+    const tokenRefreshInterval = setInterval(async () => {
+      if (auth.currentUser) {
+        try {
+          const token = await auth.currentUser.getIdToken(true);
+          setUser(prev => prev ? { ...prev, token } as User : null);
+        } catch (error) {
+          console.error('Error refreshing token:', error);
+        }
+      }
+    }, 45 * 60 * 1000); // Refresh token every 45 minutes
+
+    return () => {
+      unsubscribe();
+      clearInterval(tokenRefreshInterval);
+    };
   }, []);
 
   return (
