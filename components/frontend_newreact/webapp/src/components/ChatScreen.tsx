@@ -45,14 +45,14 @@ const ChatScreen = ({ currentChat }: ChatScreenProps) => {
         response = await resumeChat(user.token)({
           chatId,
           userInput: prompt,
-          llmType: 'chat-bison',
+          llmType: 'VertexAI-Chat',
           stream: false
         });
       } else {
         // Create new chat
         response = await createChat(user.token)({
           userInput: prompt,
-          llmType: 'chat-bison',
+          llmType: 'VertexAI-Chat',
           fileUrl: '', // Empty string for no file URL
           stream: false
           // Don't include uploadFile if we don't have one
@@ -81,7 +81,7 @@ const ChatScreen = ({ currentChat }: ChatScreenProps) => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
@@ -117,7 +117,7 @@ const ChatScreen = ({ currentChat }: ChatScreenProps) => {
             placeholder="Enter your prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             fullWidth
             multiline
           />
