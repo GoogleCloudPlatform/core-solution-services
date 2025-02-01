@@ -266,139 +266,22 @@ def validate_tool_names(tool_names: Optional[str]):
       raise HTTPException(status_code=422, detail=failure_message)
 
 
-@router.post(
-    "",
-    name="Create new chat")
-async def create_user_chat(
-     prompt: Annotated[str, Form()],
-     llm_type: Annotated[str, Form()] = None,
-     chat_file_url: Annotated[str, Form()] = None,
-     chat_file: Union[UploadFile, None] = None,
-     tool_names: Annotated[str, Form()] = None,
-     stream: Annotated[bool, Form()] = False,
-     history: Annotated[str, Form()] = None,
-     user_data: dict = Depends(validate_token)):
+@router.post("", name="Create new chat")
+async def create_user_chat(user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.  
-                           
-  Takes input payload as a multipart form.
-
-  Args:
-      prompt(str): prompt to initiate chat
-      llm_type(str): llm model id
-      chat_file(UploadFile): file upload for chat context
-      chat_file_url(str): file url for chat context
-      tool_names(list[str]): list of tool names to be used, as a serialized 
-        string due to fastapi limitations
-      stream(bool): whether to stream the response
-      history(str): optional chat history to create chat from previous
-                           streaming response
-
   Returns:
-      LLMUserChatResponse or StreamingResponse
+      Data for the newly created chat
   """
-  Logger.info("Creating new chat using"
-              f" prompt={prompt} llm_type={llm_type}"
-              f" chat_file={chat_file} chat_file_url={chat_file_url}"
-              f" tools={tool_names} stream={stream} history={history}")
-  # a file that could be returned as part of the response as base64 contents
-  response_files: list[str] = None
-  validate_tool_names(tool_names)
-
-  # process chat file(s): upload to GCS and determine mime type
-  chat_file_bytes = None
-  chat_files = None
-  if chat_file is not None or chat_file_url is not None:
-    chat_files = await process_chat_file(chat_file, chat_file_url)
-
-  # only read chat file bytes if for some reason we can't
-  # upload the file(s) to GCS
-  if not chat_files and chat_file is not None:
-    await chat_file.seek(0)
-    chat_file_bytes = await chat_file.read()
+  Logger.info(f"Creating new chat for {user_data}")
 
   try:
     user = User.find_by_email(user_data.get("email"))
-
-    # If history is provided, parse the JSON string into a list
-    if history:
-      try:
-        history_list = json.loads(history)  # Parse the JSON string into a list
-        if not isinstance(history_list, list):
-          raise ValidationError("History must be a JSON array")
-      except json.JSONDecodeError as e:
-        raise ValidationError(f"Invalid JSON in history: {str(e)}") from e
-
-      user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                           prompt=prompt)
-      user_chat.history = history_list  # Use the parsed list
-      if chat_file:
-        user_chat.update_history(custom_entry={
-          f"{CHAT_FILE}": chat_file.filename
-        })
-      elif chat_file_url:
-        user_chat.update_history(custom_entry={
-          f"{CHAT_FILE_URL}": chat_file_url
-        })
-      user_chat.save()
-
-      chat_data = user_chat.get_fields(reformat_datetime=True)
-      chat_data["id"] = user_chat.id
-
-      return {
-          "success": True,
-          "message": "Successfully created chat from history",
-          "data": chat_data
-      }
-
-    if tool_names:
-      response, response_files = run_chat_tools(prompt)
-    # Otherwise generate text from prompt if no tools
-    else:
-      response = await llm_chat(prompt,
-                            llm_type,
-                            chat_files=chat_files,
-                            chat_file_bytes=chat_file_bytes,
-                            stream=stream)
-      if stream:
-        # Return streaming response
-        return StreamingResponse(
-            response,
-            media_type="text/event-stream"
-        )
-
     # create new chat for user
-    user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                         prompt=prompt)
-    user_chat.history = UserChat.get_history_entry(prompt, response)
-    if (chat_file and
-       (mime_type := validate_multimodal_file_type(chat_file.filename))):
-      await chat_file.seek(0)
-      base64_encoded = base64.b64encode(await chat_file.read()).decode()
-      user_chat.update_history(custom_entry={
-        f"{CHAT_FILE}": chat_file.filename,
-        CHAT_FILE_TYPE: mime_type,
-        CHAT_FILE_BASE64: base64_encoded
-      })
-    elif (chat_file_url and
-         (mime_type := validate_multimodal_file_type(chat_file.filename))):
-      user_chat.update_history(custom_entry={
-        f"{CHAT_FILE_URL}": chat_file_url,
-        CHAT_FILE_TYPE: mime_type
-      })
-    if response_files:
-      for file in response_files:
-        user_chat.update_history(custom_entry={
-          f"{CHAT_FILE}": file["name"]
-        })
-        user_chat.update_history(custom_entry={
-          f"{CHAT_FILE_BASE64}": file["contents"]
-        })
+    user_chat = UserChat(user_id=user.user_id)
     user_chat.save()
-
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
-
     return {
         "success": True,
         "message": "Successfully created chat",
