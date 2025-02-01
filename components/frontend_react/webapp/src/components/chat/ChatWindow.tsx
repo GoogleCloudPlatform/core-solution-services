@@ -82,7 +82,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, 
     if (activeJob) {
       endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" })
     }
-    if (!messages[messages.length - 1].HumanInput && !activeJob) {
+    if (!messages[messages.length - 1]?.HumanInput && !activeJob) {
       endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" })
     }
   }, [messages, activeJob])

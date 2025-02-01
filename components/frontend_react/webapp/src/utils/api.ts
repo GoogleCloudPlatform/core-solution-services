@@ -23,16 +23,6 @@ interface RunQueryParams {
   llmType: string
 }
 
-interface RunChatParams {
-  userInput: string
-  llmType: string
-  uploadFile?: File
-  fileUrl: string
-  stream?: boolean
-  toolNames?: string[]
-  history?: Array<{ [key: string]: string }>
-}
-
 interface ResumeQueryParams {
   queryId: string
   userInput: string
@@ -110,50 +100,13 @@ export const fetchChat =
   }
 
 export const createChat =
-  (token: string) => async ({
-    userInput,
-    llmType,
-    uploadFile,
-    fileUrl,
-    toolNames,
-    stream = true,
-    history
-  }: RunChatParams): Promise<Chat | ReadableStream | undefined | null> => {
+  (token: string) => async (): Promise<any> => {
     const url = `${endpoint}/chat`
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data'
-    }
-    const formData = new FormData()
-    formData.append('prompt', userInput)
-    formData.append('llm_type', llmType)
-    formData.append('stream', String(stream))
-    if (uploadFile) formData.append('chat_file', uploadFile)
-    if (fileUrl) formData.append('chat_file_url', fileUrl)
-    if (toolNames && toolNames.length > 0) {
-      formData.append('tool_names', JSON.stringify(toolNames))
-    }
-    if (history) formData.append('history', JSON.stringify(history))
-    if (stream) {
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message.replace(/^\d+\s+/, ''))
-        }
-        return response.body
-      } catch (error: any) {
-        console.error('Error in createChat:', error);
-        throw error;
-      }
-    }
-
-    return axios.post(url, formData, { headers }).then(path(["data", "data"]))
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    return response.json()
   }
 
 // taken from stackoverflow.com/questions/36280818
@@ -163,7 +116,7 @@ export const toBase64 = (file: File): Promise<string | ArrayBuffer | null> => ne
   reader.onload = () => {
     const result = reader.result
     if (result === null || result instanceof ArrayBuffer) reject()
-    else { console.log(result.split(',')[1]); resolve(result.split(',')[1]) }
+    else { resolve(result.split(',')[1]) }
   }
   reader.onerror = reject;
 });
@@ -180,7 +133,6 @@ export const resumeChat =
   }: ResumeChatParams): Promise<Chat | ReadableStream | undefined | null> => {
     const url = `${endpoint}/chat/${chatId}/generate`
     const headers = { Authorization: `Bearer ${token}` }
-    console.log('in api', uploadFile)
     let data: ResumeChatApiParams = {
       prompt: userInput,
       llm_type: llmType,

@@ -198,6 +198,10 @@ def update_chat(chat_id: str, input_chat: ChatUpdateModel):
     for key in input_chat_dict:
       if input_chat_dict.get(key) is not None:
         setattr(existing_chat, key, input_chat_dict.get(key))
+    # if the chat was created as empty we add the intial user prompt if
+    # available
+    if not existing_chat.prompt and len(existing_chat.history) > 1:
+      existing_chat.prompt = UserChat.entry_content(existing_chat.history[1])
     existing_chat.update()
 
     return {
