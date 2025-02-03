@@ -409,7 +409,7 @@ async def create_user_chat(
     raise InternalServerError(str(e)) from e
 
 
-@router.post("empty_chat", name="Create new chat")
+@router.post("/empty_chat", name="Create new chat")
 async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.  
