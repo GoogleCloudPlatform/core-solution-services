@@ -67,7 +67,6 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
   // Handle onSuccess from creating a chat
   useEffect(() => {
     updateUrlParam(chatId)
-    setActiveJob(false)
   }, [chatId])
 
   // Once the chat history is fetched, clear or set msgs and refs
@@ -152,7 +151,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           if (uploadFile) {
             const b64Contents = await toBase64(uploadFile)
             const fileHistory = { FileContentsBase64: b64Contents, FileType: uploadFile.type }
-            finalMessages.splice(-2, 0, fileHistory)
+            finalMessages.splice(-1, 0, fileHistory)
           }
           setMessages(finalMessages)
           setStreamingMessage("")
