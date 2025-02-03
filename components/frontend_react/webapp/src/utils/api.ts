@@ -101,7 +101,7 @@ export const fetchChat =
 
 export const createChat =
   (token: string) => async (): Promise<any> => {
-    const url = `${endpoint}/chat`
+    const url = `${endpoint}/chat/empty_chat`
     const response = await fetch(url, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
