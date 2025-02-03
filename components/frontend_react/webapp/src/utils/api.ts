@@ -110,7 +110,7 @@ export const createChat =
   }
 
 // taken from stackoverflow.com/questions/36280818
-export const toBase64 = (file: File): Promise<string | ArrayBuffer | null> => new Promise((resolve, reject) => {
+export const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
   const reader = new FileReader();
   reader.readAsDataURL(file);
   reader.onload = () => {
