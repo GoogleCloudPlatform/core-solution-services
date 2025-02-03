@@ -18,6 +18,7 @@ import ChatHistory from './components/ChatHistory';
 import { Chat } from './lib/types';
 import SettingsDrawer from './components/SettingsDrawer'; // Import the SettingsDrawer component
 import { useSidebarStore } from './lib/sidebarStore';
+import { ProfileMenu } from './components/profile-menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Sidebar } from './components/Sidebar';
 
@@ -58,6 +59,23 @@ const Header = styled(Box, {
   left: `${sidebarWidth + panelWidth}px`,
   transition: 'left 0.3s ease-in-out',
 }));
+
+const Title = styled(Box)({
+  fontSize: '22px',
+  fontWeight: 500,
+  fontFamily: 'Google Sans',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  '& .primary': {
+    color: '#E3E3E3',
+  },
+  '& .gradient': {
+    background: 'linear-gradient(to right, #4C8DF6, #FF0000)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  },
+});
 
 const Main = styled(Box, {
   shouldForwardProp: (prop) => prop !== "sidebarWidth" && prop !== "panelWidth",
@@ -166,7 +184,16 @@ const MainApp = () => {
         </IconButton>
       </Box> */}
       <Sidebar />
-
+      <Header sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
+        <Title>
+          <span className="primary">genAI</span>
+          <span className="gradient">for Public Sector</span>
+        </Title>
+        <ProfileMenu
+          username="Ian Smith"
+          email="IanSmith@google.com"
+        />
+      </Header>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         {showChat ? (
           <ChatScreen currentChat={currentChat} />

@@ -23,6 +23,7 @@ import StorageIcon from '@mui/icons-material/Storage';
 import CloudIcon from '@mui/icons-material/Cloud';
 // import { ModelSelector } from "@/components/settings/model-selector";
 import Divider from '@mui/material/Divider';
+import ChatHistory from './ChatHistory';
 import { useSidebarStore } from '@/lib/sidebarStore';
 
 const drawerWidth = 150;
