@@ -110,7 +110,16 @@ class LLMGenerateModel(BaseModel):
   prompt: str
   llm_type: Optional[str] = None
   stream: Optional[bool] = False
-  tool_names: Optional[str] = None # a json encoded list of strings
+  # a url to a bucket or file in a bucket
+  chat_file_url: Optional[str] = None
+  # the chat file in base64 encoding and it's name are included instead of
+  # using UploadFile because HTTP protocols can't support both the form
+  # field for the file and regular json parameters for the path parametrs
+  # https://fastapi.tiangolo.com/tutorial/request-forms/#about-form-fields
+  chat_file_b64: Optional[str] = None
+  chat_file_b64_name: Optional[str] = None
+  # a json encoded list of strings
+  tool_names: Optional[str] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": LLM_GENERATE_EXAMPLE
   })

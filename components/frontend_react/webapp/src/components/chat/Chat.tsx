@@ -14,7 +14,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import ChatWindow from "@/components/chat/ChatWindow"
-import { fetchChat, createChat, resumeChat, updateChat } from "@/utils/api"
+import { fetchChat, createChat, resumeChat, updateChat, toBase64 } from "@/utils/api"
 import { Chat, ChatContents, IFormVariable } from "@/utils/types"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { useConfig } from "@/contexts/configContext"
@@ -36,9 +36,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
 
   const [messages, setMessages] = useState<ChatContents[]>([initialOutput])
   const [activeJob, setActiveJob] = useState(false)
-  const [newChatId, setNewChatId] = useState<string | null>(null)
-  const [resumeChatId, setResumeChatId] = useState<string | null>(null)
-  const initialChatRef = useRef(initialChatId)
+  const [chatId, setChatId] = useState<string | null>(initialChatId)
   const { selectedModel, selectedEngine } = useConfig()
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [fileUrl, setFileUrl] = useState<string | null>(null)
@@ -62,51 +60,19 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     data: chat,
     refetch,
     isError,
-  } = useQuery(["Chat", initialChatId], fetchChat(userToken, initialChatId ?? ""),
-    { enabled: !!initialChatId }
+  } = useQuery(["Chat", chatId], fetchChat(userToken, chatId ?? ""),
+    { enabled: !!chatId }
   )
-
-  useEffect(() => {
-    // Clear loading indicator when the chat ID changes
-    if (initialChatId && initialChatId !== initialChatRef.current) {
-      setActiveJob(false)
-    }
-    // Clears loading indicator when a new chat is pending but the ID has changed
-    if (activeJob && !initialChatId) {
-      setActiveJob(false)
-    }
-  }, [initialChatId])
 
   // Handle onSuccess from creating a chat
   useEffect(() => {
-    if (!newChatId) return
-    if ((newChatId && newChatId === initialChatId) || (newChatId && !initialChatId)) {
-      updateUrlParam(newChatId)
-      initialChatRef.current = newChatId
-      setActiveJob(false)
-      setNewChatId(null)
-    }
-  }, [newChatId])
-
-  // Handle onSuccess from resuming a chat
-  useEffect(() => {
-    if (resumeChatId && resumeChatId == initialChatId) {
-      initialChatRef.current = resumeChatId
-      setActiveJob(false)
-      setResumeChatId(null)
-    } else if (resumeChatId && resumeChatId != initialChatId) {
-      initialChatRef.current = initialChatId
-      setActiveJob(false)
-      setResumeChatId(null)
-    } else {
-      return
-    }
-  }, [resumeChatId])
+    updateUrlParam(chatId)
+  }, [chatId])
 
   // Once the chat history is fetched, clear or set msgs and refs
   useEffect(() => {
     chat?.history ? setMessages(chat.history) : setMessages([initialOutput])
-    !initialChatId && setMessages([initialOutput])
+    !chatId && setMessages([initialOutput])
   }, [chat])
 
   // Handle error from fetching chat history
@@ -155,13 +121,33 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     setActiveJob(true)
     setStreamingMessage("")
     setMessages((prev) => [...prev, { HumanInput: userInput }])
+    if (doc_url) setMessages((prev) => [...prev, { FileURL: doc_url }])
+    if (uploadFile) {
+      const contents = await toBase64(uploadFile)
+      setMessages((prev) => [...prev,
+      {
+        FileType: uploadFile.type, FileContentsBase64: contents
+      }]
+      )
+    }
 
     try {
-      if (initialChatId) {
+      let curChatId = chatId
+      if (!curChatId) {
+        const response = await createChat(userToken)()
+        if (response?.data?.id) {
+          curChatId = response['data']['id']
+          // setChatId(curChatId)
+        }
+        else throw Error("creat chat request returned unexpected format")
+      }
+      if (curChatId) {
         const response = await resumeChat(userToken)({
-          chatId: initialChatId,
+          chatId: curChatId,
           userInput,
           llmType: selectedModel,
+          uploadFile,
+          fileUrl: doc_url,
           toolNames: tools,
           stream: true
         })
@@ -171,60 +157,22 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           const finalMessages = ((tools.length === 0) ?
             [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
             JSON.parse(fullResponse)['data']['history'])
+          if (uploadFile) {
+            const b64Contents = await toBase64(uploadFile)
+            const fileHistory = { FileContentsBase64: b64Contents, FileType: uploadFile.type }
+            finalMessages.splice(-1, 0, fileHistory)
+          }
           setMessages(finalMessages)
           setStreamingMessage("")
           setActiveJob(false)
           // Update the chat with the new history
           await updateChat(userToken)({
-            chatId: initialChatId,
+            chatId: curChatId,
             history: finalMessages
           })
-          setResumeChatId(initialChatId)
-        }
-      } else {
-        const response = await createChat(userToken)({
-          userInput,
-          llmType: selectedModel,
-          uploadFile,
-          fileUrl: doc_url,
-          toolNames: tools,
-          stream: true
-        })
-
-        if (response instanceof ReadableStream) {
-          const fullResponse = await handleStream(response)
-          // Update messages with the streamed response
-          const updatedMessages = ((tools.length === 0) ?
-            [...messages, { HumanInput: userInput }, { AIOutput: fullResponse }] :
-            JSON.parse(fullResponse)['data']['history'])
-          setMessages(updatedMessages)
-          setStreamingMessage("")
-          setActiveJob(false)
-          // Create permanent chat with accumulated history
-          if (tools.length === 0) {
-            const newChat = await createChat(userToken)({
-              userInput: userInput,
-              llmType: selectedModel,
-              uploadFile,
-              fileUrl: doc_url,
-              stream: false,
-              history: updatedMessages // Pass full message history
-            })
-
-            if (newChat && 'id' in newChat) {
-              setNewChatId(newChat.id)
-            }
-          } else {
-            // TODO: When tools are present the response is still treated as
-            // a streaming response, requireming extra checks to determine
-            // how to handle the streaming response. This should be resoved
-            // by better understanding how the repsonse is set and
-            // ensuring that tool based responses are non-streaming
-            const response = JSON.parse(fullResponse)
-            setNewChatId(response['data']['id'])
-          }
         }
       }
+      if (!chatId) setChatId(curChatId)
     } catch (error: any) {
       console.error(error)
       setActiveJob(false)
@@ -234,14 +182,14 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
       setUploadFile(null)
       // streaming messages and the active job tracker are cleared here
       // as a final catch in case
-      // of an errror but are intended to be cleared previously once
+      // of an error but are intended to be cleared previously once
       // the stream has finished sending text
       setStreamingMessage("")
       setActiveJob(false)
     }
   }
 
-  if (initialChatId && isLoading) return <Loading />
+  // if (chatId && isLoading) return <Loading />
 
   return (
     <div className="bg-primary/20 flex flex-grow gap-4 rounded-lg p-3">
