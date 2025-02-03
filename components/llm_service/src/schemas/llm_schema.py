@@ -14,8 +14,8 @@
 """
 Pydantic Model for LLM API's
 """
-from fastapi import UploadFile, Form
-from typing import List, Optional, Union, Annotated
+from fastapi import UploadFile
+from typing import List, Optional
 from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      LLM_MULTIMODAL_GENERATE_EXAMPLE,

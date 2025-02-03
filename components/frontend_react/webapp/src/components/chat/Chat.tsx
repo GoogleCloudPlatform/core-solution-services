@@ -121,6 +121,15 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     setActiveJob(true)
     setStreamingMessage("")
     setMessages((prev) => [...prev, { HumanInput: userInput }])
+    if (doc_url) setMessages((prev) => [...prev, { FileURL: doc_url }])
+    if (uploadFile) {
+      const contents = await toBase64(uploadFile)
+      setMessages((prev) => [...prev,
+      {
+        FileType: uploadFile.type, FileContentsBase64: contents
+      }]
+      )
+    }
 
     try {
       let curChatId = chatId
@@ -128,7 +137,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
         const response = await createChat(userToken)()
         if (response?.data?.id) {
           curChatId = response['data']['id']
-          setChatId(curChatId)
+          // setChatId(curChatId)
         }
         else throw Error("creat chat request returned unexpected format")
       }
@@ -163,6 +172,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
           })
         }
       }
+      if (!chatId) setChatId(curChatId)
     } catch (error: any) {
       console.error(error)
       setActiveJob(false)
@@ -179,7 +189,7 @@ const GenAIChat: React.FC<GenAIChatProps> = ({
     }
   }
 
-  if (chatId && isLoading) return <Loading />
+  // if (chatId && isLoading) return <Loading />
 
   return (
     <div className="bg-primary/20 flex flex-grow gap-4 rounded-lg p-3">
