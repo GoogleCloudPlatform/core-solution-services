@@ -45,3 +45,4 @@ node_modules
 # react deployment configurations
 components/frontend_react/webapp/.env.production
 components/frontend_react/webapp/.env.development
+components/frontend_newreact/webapp/.env.development

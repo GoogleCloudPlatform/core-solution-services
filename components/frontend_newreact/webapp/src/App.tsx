@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Box, Typography, IconButton, Paper, InputBase, Drawer, Avatar, Select, MenuItem } from '@mui/material';
+import { Box, Typography, IconButton, Paper, InputBase, Drawer, Avatar, Select, MenuItem, styled } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
 import ChatIcon from '@mui/icons-material/Chat';
 import HistoryIcon from '@mui/icons-material/History';
 import FolderIcon from '@mui/icons-material/Folder';
 import ImageIcon from '@mui/icons-material/Image';
+import SettingsIcon from '@mui/icons-material/Settings'; // Import the settings icon
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import './App.css';
 import ChatScreen from './components/ChatScreen';
@@ -15,14 +16,19 @@ import SignIn from './pages/SignIn';
 import { useAuth } from './contexts/AuthContext';
 import ChatHistory from './components/ChatHistory';
 import { Chat } from './lib/types';
+import SettingsDrawer from './components/SettingsDrawer'; // Import the SettingsDrawer component
+import { useSidebarStore } from './lib/sidebarStore';
+import MenuIcon from '@mui/icons-material/Menu';
+import { Sidebar } from './components/Sidebar';
+
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return <div>Loading...</div>;
   }
-  
+
   if (!user) {
     return <Navigate to="/signin" />;
   }
@@ -30,16 +36,65 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const MainContainer = styled(Box)(({ theme }) => ({
+  minHeight: '100vh',
+  backgroundColor: theme.palette.background.default,
+  display: "flex",
+  background: "#1a1a1a",
+  color: "white",
+}));
+
+const Header = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "sidebarWidth" && prop !== "panelWidth",
+})<{ sidebarWidth: number, panelWidth: number }>(({ theme, sidebarWidth, panelWidth }) => ({
+  position: 'fixed',
+  zIndex: 50,
+  padding: theme.spacing(2),
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  background: `linear-gradient(to bottom, ${theme.palette.background.default}CC, ${theme.palette.background.default}00)`,
+  right: 0,
+  left: `${sidebarWidth + panelWidth}px`,
+  transition: 'left 0.3s ease-in-out',
+}));
+
+const Main = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "sidebarWidth" && prop !== "panelWidth",
+})<{ sidebarWidth: number, panelWidth: number }>(({ sidebarWidth, panelWidth }) => ({
+  transition: 'margin-left 0.3s ease-in-out',
+  paddingTop: '64px',
+  paddingLeft: '16px',
+  paddingRight: '16px',
+  marginLeft: `${sidebarWidth + panelWidth}px`,
+  flexGrow: 1,
+  display: "flex",
+  flexDirection: "column",
+}));
+
 const MainApp = () => {
   const [prompt, setPrompt] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
+  const [settingsOpen, setSettingsOpen] = useState(false); // Add state for settings drawer
+
+  const { isOpen, activePanel, toggle } = useSidebarStore();
+
+  const hasActivePanel = activePanel === 'history' || activePanel === 'settings';
+  const sidebarWidth = isOpen ? 150 : 52;
+  const panelWidth = hasActivePanel ? 300 : 0;
+
   const username = 'Ian';
 
   const toggleHistory = () => {
     setHistoryOpen(!historyOpen);
   };
+
+  const toggleSettings = () => {  // Add function to toggle settings drawer
+    setSettingsOpen(!settingsOpen);
+  };
+
 
   const handleSelectChat = (chat: Chat) => {
     setCurrentChat(chat);
@@ -55,8 +110,8 @@ const MainApp = () => {
   ];
 
   return (
-    <Box className="app">
-      <Drawer
+    <MainContainer>
+      {/* <Drawer
         anchor="left"
         open={historyOpen}
         variant="persistent"
@@ -68,23 +123,51 @@ const MainApp = () => {
           }
         }}
       >
-        <ChatHistory 
+        <ChatHistory
           onClose={toggleHistory}
           onSelectChat={handleSelectChat}
           selectedChatId={currentChat?.id}
           isOpen={historyOpen}
         />
-      </Drawer>
-      <Box className="sidebar">
+        <SettingsDrawer
+          open={settingsOpen}
+          onClose={toggleSettings}
+        />
+        <ChatHistory
+          onClose={toggleHistory}
+          onSelectChat={handleSelectChat}
+          selectedChatId={currentChat?.id}
+          isOpen={historyOpen}
+        /> 
+      </Drawer>*/}
+      {/* <Box className="sidebar">
+        <IconButton
+          onClick={toggle}
+          sx={{
+            color: 'rgba(255, 255, 255, 0.7)',
+            '&:hover': {
+              backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            },
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
         <IconButton className="menu-button" onClick={() => setShowChat(true)}>
           <AddIcon />
         </IconButton>
         <IconButton className="menu-button history-button" onClick={toggleHistory}>
           <HistoryIcon />
         </IconButton>
-      </Box>
-      
-      <Box className="main-content">
+        <IconButton className="menu-button settings-button" onClick={toggleSettings}>
+          <SettingsIcon />
+        </IconButton>
+        <IconButton className="menu-button settings-button" onClick={toggleSettings}> 
+          <SettingsIcon />
+        </IconButton>
+      </Box> */}
+      <Sidebar />
+
+      <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         {showChat ? (
           <ChatScreen currentChat={currentChat} />
         ) : (
@@ -105,8 +188,8 @@ const MainApp = () => {
             </Box>
           </>
         )}
-      </Box>
-    </Box>
+      </Main>
+    </MainContainer>
   );
 };
 
