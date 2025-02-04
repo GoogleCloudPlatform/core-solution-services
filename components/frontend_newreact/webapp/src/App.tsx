@@ -192,16 +192,13 @@ const MainApp = () => {
           <SettingsIcon />
         </IconButton>
       </Box> */}
-      <Sidebar />
+      <Sidebar setShowChat={setShowChat} />
       <Header sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         <Title>
           <span className="primary">genAI</span>
           <span className="gradient">for Public Sector</span>
         </Title>
-        <ProfileMenu
-          username=""
-          email=""
-        />
+        <ProfileMenu />
       </Header>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         {showChat ? (

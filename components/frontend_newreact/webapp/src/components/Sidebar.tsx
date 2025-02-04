@@ -24,10 +24,15 @@ import CloudIcon from '@mui/icons-material/Cloud';
 // import { ModelSelector } from "@/components/settings/model-selector";
 import Divider from '@mui/material/Divider';
 import ChatHistory from './ChatHistory';
+import ChatScreen from './ChatScreen';
 import { useSidebarStore } from '@/lib/sidebarStore';
 
 const drawerWidth = 150;
 const collapsedWidth = 52;
+
+interface SidebarProps {
+    setShowChat: React.Dispatch<React.SetStateAction<boolean>>; // Define prop type
+}
 
 const DrawerHeader = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -87,7 +92,7 @@ const PanelHeader = styled(Box)(({ theme }) => ({
     alignItems: 'center',
 }));
 
-export function Sidebar() {
+export const Sidebar: React.FC<SidebarProps> = ({ setShowChat }) => { // Add setShowChat to the props
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
 
     const handleItemClick = (item: string) => {
@@ -172,6 +177,7 @@ export function Sidebar() {
                         <MenuIcon />
                     </IconButton>
                     <IconButton
+                        onClick={() => setShowChat(true)}
                         sx={{
                             bgcolor: '#000',
                             borderRadius: '50%',

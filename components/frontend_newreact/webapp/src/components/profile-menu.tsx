@@ -7,11 +7,10 @@ import { useEffect } from 'react';
 import { getAuth } from "firebase/auth";
 
 interface ProfileMenuProps {
-    username: string;
-    email: string;
+
 }
 
-export function ProfileMenu({ username, email }: ProfileMenuProps) {
+export function ProfileMenu({ }: ProfileMenuProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
