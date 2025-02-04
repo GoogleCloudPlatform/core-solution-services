@@ -25,4 +25,4 @@ regex==2023.6.3
 httpx==0.27.2
 uvicorn==0.30.6
 peewee==3.17.6
-
+psycopg2==2.9.10

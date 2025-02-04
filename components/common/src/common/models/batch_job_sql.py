@@ -15,36 +15,35 @@
 """
 SQL model for batch jobs
 """
-from peewee import UUIDField, TextField, DoesNotExist
-from playhouse.postgres_ext import ArrayField
+import uuid
+from peewee import TextField, DoesNotExist
+from playhouse.postgres_ext import JSONField
 from common.models.base_model_sql import SQLBaseModel
 
 
 class BatchJobModel(SQLBaseModel):
   """Model class for batch job"""
-
-  id = UUIDField()
-  name = TextField(default="")
+  name = TextField()
   input_data = TextField(null=True)
   type = TextField()
   status = TextField()
   message = TextField(default="")
   generated_item_id = TextField(null=True)
   output_gcs_path = TextField(null=True)
-  errors = ArrayField(default=[])
-  job_logs = ArrayField(default=[])
-  metadata = ArrayField(default=[])
-  result_data = ArrayField(default=[])
-  uuid = TextField(null=True)
+  errors = JSONField(default=dict)
+  job_logs = JSONField(default=dict)
+  metadata = JSONField(default=dict)
+  result_data = JSONField(default=dict)
+  uuid = TextField(primary_key=True, default=str(uuid.uuid4))
+
+  class Meta:
+    table_name = SQLBaseModel.DATABASE_PREFIX + "batch_jobs"
+    primary_key = False
 
   @classmethod
   def find_by_name(cls, name):
     """
-    Find a batch job by its name.
-    Args:
-        name (str): The name of the batch job.
-    Returns:
-        BatchJobModel: The batch job object if found, None otherwise.
+    Find a batch job by name.
     """
     try:
       return cls.get(cls.name == name)
@@ -54,11 +53,7 @@ class BatchJobModel(SQLBaseModel):
   @classmethod
   def find_by_uuid(cls, uuid):
     """
-    Find a batch job by its UUID.
-    Args:
-        uuid (str): The UUID of the batch job.
-    Returns:
-        BatchJobModel: The batch job object if found, None otherwise.
+    Find a batch job by UUID.
     """
     try:
       return cls.get(cls.uuid == uuid)
@@ -68,10 +63,6 @@ class BatchJobModel(SQLBaseModel):
   @classmethod
   def find_by_job_type(cls, job_type):
     """
-    Find batch jobs by their type.
-    Args:
-        job_type (str): The type of the batch jobs.
-    Returns:
-        List[BatchJobModel]: A list of batch job objects matching the type.
+    Find batch jobs by job type.
     """
     return list(cls.select().where(cls.type == job_type))

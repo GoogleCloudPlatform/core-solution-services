@@ -68,7 +68,7 @@ PG_DBNAME = get_env_setting("PG_DBNAME", "genie_db")
 PG_HOST = get_env_setting("PG_HOST", "127.0.0.1")
 PG_PORT = get_env_setting("PG_PORT", "5432")
 PG_USER = get_env_setting("PG_USER", "postgres")
-PG_PASSWD = get_env_setting("PG_PASSWD", None)
+PG_PASSWD = get_env_setting("PG_PASSWD", "genie")
 
 if not PG_PASSWD:
   # load secrets
@@ -88,4 +88,5 @@ Logger.info(f"PG_PASSWD = [{PG_PASSWD}]")
 SQL_ORM = "sql_orm"
 FIRESTORE_ORM = "firestore_orm"
 ORM_MODE = get_env_setting("ORM_MODE", SQL_ORM)
+#ORM_MODE = get_env_setting("ORM_MODE", FIRESTORE_ORM)
 Logger.info(f"ORM_MODE = [{ORM_MODE}]")

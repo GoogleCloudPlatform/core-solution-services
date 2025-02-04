@@ -25,25 +25,15 @@ def create_session(user_id: str = None):
   """ Create a new session"""
   try:
     new_session = Session()
-    print("Class meta:", new_session._meta) # noqa
     new_session.user_id = user_id
     new_session.session_id = ""
-    new_session.is_expired = False
-    new_session.created_time = datetime.datetime.now()
-    new_session.last_modified_time = new_session.created_time
-    new_session.session_desc = "Test123"
     new_session.save()  # Save to generate the ID
     print("ID:", new_session.id)
     print("Session ID:", new_session.session_id)
-    # new_session.session_id = new_session.id  # Now assign the session_id
-    new_session.session_desc = "Test345"
-    new_session.last_modified_time = datetime.datetime.now()
-    print("Before save:", new_session.__data__)
-    new_session.save()
-    print("After save:", new_session.__data__)
-
+    new_session.session_id = new_session.id  # Now assign the session_id
+    new_session.session_desc = "123"
+    new_session.update()
     return new_session.get_fields(reformat_datetime=True)
-
   except Exception as e:
     raise InternalServerError(str(e)) from e
 

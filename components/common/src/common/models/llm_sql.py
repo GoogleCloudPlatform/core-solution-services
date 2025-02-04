@@ -14,7 +14,8 @@
 """
 SQL Models for LLM generation and chat
 """
-from peewee import UUIDField, TextField, fn
+import uuid
+from peewee import TextField, fn
 from playhouse.postgres_ext import ArrayField
 from common.models.base_model_sql import SQLBaseModel
 from common.models.llm import UserChatUtil
@@ -24,7 +25,7 @@ class UserChat(SQLBaseModel, UserChatUtil):
   """
   UserChat ORM class
   """
-  id = UUIDField()
+  id = TextField(primary_key=True, default=str(uuid.uuid4))
   user_id = TextField()
   prompt = TextField(default="")
   title = TextField(default="")

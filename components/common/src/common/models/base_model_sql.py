@@ -17,12 +17,11 @@ SQL BaseModel to be inherited by all other objects for SQL ORM
 import datetime
 import uuid
 from typing import List, Tuple
+import common.config
 from common.config import PG_HOST, PG_DBNAME, PG_USER, PG_PASSWD
 from common.utils.errors import ResourceNotFoundException
 from peewee import Model, DoesNotExist, DateTimeField, TextField
 from playhouse.postgres_ext import PostgresqlExtDatabase
-
-# pylint: disable = protected-access, arguments-renamed
 
 # instantiate connection to postgres db
 db = PostgresqlExtDatabase(
@@ -41,20 +40,19 @@ class SQLBaseModel(Model):
   archived_by = TextField(default="")
   created_by = TextField(default="")
   last_modified_by = TextField(default="")
+  DATABASE_PREFIX = common.config.DATABASE_PREFIX
 
   class Meta:
     database = db
     legacy_table_names = False
-
-  def __init__(self, *args, **kwargs):
-    super().__init__(args, kwargs)
+    abstract = True
 
   @property
   def id(self):
     """
     Returns the value of the primary key field.
     """
-    return getattr(self, self._meta.primary_key.name) # noqa
+    return getattr(self, self._meta.primary_key.name)
 
   @property
   def collection(self):
@@ -77,7 +75,7 @@ class SQLBaseModel(Model):
   def from_dict(cls, data):
     instance = cls()
     for key, value in data.items():
-      if key in instance.__data__:
+      if key in cls._meta.fields:
         setattr(instance, key, value)
     return instance
 
@@ -94,154 +92,132 @@ class SQLBaseModel(Model):
     Returns:
       A query object that can be further refined or used to fetch objects.
     """
-    return cls.select().where(*args, **kwargs)
+    query = cls.select()
+    if args:
+      query = query.where(*args)
+    if kwargs:
+      # Convert kwargs to Peewee-compatible expressions
+      for field, value in kwargs.items():
+        query = query.where(getattr(cls, field) == value)
+    return query
 
   @classmethod
-  def find_by_id(cls, doc_id):
-    """Looks up in the Database and returns an object of this type by id
-       (not key)
-        Args:
-            doc_id (string): the document id
-        Returns:
-            [any]: an instance of object returned by the database, type is
-            the subclassed Model,
-            None if object not found
-        """
-    class_meta = cls._meta # noqa
-    primary_key_field = class_meta.primary_key.name
+  def find_by_id(cls, pk):
+    """
+    Find an object by primary key.
+    """
     try:
-      return cls.get(
-        (getattr(cls, primary_key_field) == doc_id) &
-        (cls.deleted_at_timestamp.is_null())
-      )
-    except DoesNotExist as exc:
-      raise ResourceNotFoundException(
-        f"{class_meta.table_name} with id {doc_id} is not found") from exc
+      return cls.get_by_id(pk)
+    except DoesNotExist:
+      raise ResourceNotFoundException(f"{cls.__name__} with id {pk} not found")
 
-  def save(self, force_insert=False, only=None, merge=None):
+  def to_dict(self, reformat_datetime=False, remove_meta=False) -> dict:
     """
-    Overrides default method to save items with timestamp
+    Convert the model instance to a dictionary.
     Args:
-      force_insert (bool): If True, forces an INSERT statement
-      only (list or tuple): A list of field instances to save
-      merge (bool, optional): If specified, performs a get_or_create-style save
+        reformat_datetime (bool): Convert datetime fields to string.
+        remove_meta (bool): Remove meta fields like timestamps and audit fields.
     Returns:
-      The saved instance
+        dict: Dictionary representation of the instance.
     """
-    class_meta = self._meta # noqa
-    primary_key_field = class_meta.primary_key.name
+    data = {}
+    for field_name in self._meta.sorted_field_names:
+      field_value = getattr(self, field_name, None)
+      if isinstance(field_value, datetime.datetime) and reformat_datetime:
+        field_value = field_value.isoformat()
+      data[field_name] = field_value
+
+    # Include primary key under 'id' if it is not explicitly named
+    if "id" not in data:
+      data["id"] = getattr(self, self._meta.primary_key.name)
+
+    if remove_meta:
+      data = self.remove_field_meta(data)
+    return data
+
+  def save(self, force_insert=False, *args, **kwargs):
+    """
+    Save the instance to the database.
+    Automatically handles inserting new records or updating existing ones.
+    """
     try:
+      # Check if the primary key is null and generate one if needed
+      primary_key_field = self._meta.primary_key.name
+      primary_key_value = getattr(self, primary_key_field, None)
+      if not primary_key_value or primary_key_value.strip() == "":
+        new_pk = str(uuid.uuid4())
+        print(f"Generating new primary key: {new_pk}")
+        setattr(self, primary_key_field, new_pk)
+
+      # Determine if this is a new record based on the primary key existence
+      is_new_instance = not self.__class__.select().where(
+        self.__class__._meta.primary_key == # noqa
+          getattr(self, primary_key_field)).exists()
+
       # Update timestamps
       date_timestamp = datetime.datetime.utcnow()
-      if not self.id:
-        print("Generating ID value")
+      if is_new_instance or force_insert:
         self.created_time = date_timestamp
-        setattr(self, primary_key_field, str(uuid.uuid4()))
       self.last_modified_time = date_timestamp
 
-      if merge:
-        print("MERGE MODE")
-        fields = self._meta.fields.keys() # noqa
-        if only:
-          fields = [field.name for field in only]
-        query_data = {field: getattr(self, field) for field in fields}
-
-        # Perform the get_or_create operation
-        instance, created = self.__class__.get_or_create(
-          defaults=query_data, **query_data
-        )
-
-        # Update existing instance's fields if not created
-        if not created:
-          for field in fields:
-            setattr(instance, field, getattr(self, field))
-          # Save the updated instance
-          instance._saving = True  # Prevent recursion during save
-          instance.save(only=fields)
-          instance._saving = False  # Clear the flag after saving
-
-        return instance
-
+      # Insert or update based on `created_time`
+      if is_new_instance or force_insert:
+        print("Inserting new record.")
+        return super().save(force_insert=True, *args, **kwargs)
       else:
-        print("NON MERGE MODE")
-        print(f"Attempting to save: {self.__class__.__name__} "
-              f"with id {self.id}")
-        print(f"Data to save: {self.__data__}")
-
-        # Call the super save method
-        result = super().save(force_insert=force_insert, only=only)
-        if result is None:
-          print("Super save returned None. Check the model and database connection.")
-        print("Exiting save()")
-        return result
-
+        print("Updating existing record.")
+        return super().save(force_insert=False, *args, **kwargs)
     except Exception as e:
-      print("Error during super().save():", str(e))
       raise
 
-  def update1(self): # noqa
+  def update_instance(self, input_datetime=None, **update_fields):
     """
-    Instance-level update method:
-    Updates the current instance and saves the changes to the database.
+    Updates instance fields and refreshes the `last_modified_time`.
+    Args:
+        input_datetime (datetime): Timestamp for modification.
+        update_fields (dict): Fields to update with values.
     """
-    # Debug print to check state before saving
-    print("Before update, instance state:", self.__dict__)
-
-    try:
-      # Make sure to only save fields that have changed
-      fields_to_update = self.__dict__.get("_dirty")
-      print("Fields to update:", fields_to_update)
-      self.save(only=fields_to_update)
-      _ = super().update()
-
-      print("Update successful")
-    except Exception as e:
-      print(f"Update failed: {e}")
-      raise
+    date_timestamp = input_datetime or datetime.datetime.utcnow()
+    update_fields['last_modified_time'] = date_timestamp
+    query = type(self).update(**update_fields).where(type(self).id == self.id)
+    return query.execute()
 
   @classmethod
-  def delete_by_id(cls, pk):
-    """Deletes from the Database the object of this type by id (not key)
-    Args:
-      pk (string): the document id without collection_name
-      (i.e. not the key)
+  def soft_delete_by_id(cls, object_id, by_user=""):
     """
-    class_meta = cls._meta # noqa
-    return cls.delete().where(class_meta.primary_key.name == pk).execute()
-
-  @classmethod
-  def soft_delete_by_id(cls, object_id, by_user=None):
-    """Soft delete an object by id
-    Args:
-      object_id (str): unique id
-      by_user
-    Raises:
-      ResourceNotFoundException: If the object does not exist
+    Soft delete an object by setting `deleted_at_timestamp` and `deleted_by`.
     """
     try:
-      obj = cls.find_by_id(object_id)
+      obj = cls.get(cls.id == object_id, cls.deleted_at_timestamp.is_null(True))
       obj.deleted_at_timestamp = datetime.datetime.utcnow()
       obj.deleted_by = by_user
       obj.save()
-    except DoesNotExist as ex:
-      raise ResourceNotFoundException(
-        f"{cls.__name__} with id {object_id} is not found") from ex
+    except DoesNotExist:
+      raise ResourceNotFoundException(f"{cls.__name__} with id {object_id} not found")
+
+  @classmethod
+  def archive_by_id(cls, object_id, by_user=""):
+    """
+    Archive an object by setting `archived_at_timestamp` and `archived_by`.
+    """
+    try:
+      obj = cls.get(cls.id == object_id, cls.deleted_at_timestamp.is_null(True))
+      obj.archived_at_timestamp = datetime.datetime.utcnow()
+      obj.archived_by = by_user
+      obj.save()
+    except DoesNotExist:
+      raise ResourceNotFoundException(f"{cls.__name__} with id {object_id} not found")
 
   @classmethod
   def fetch_all(cls, skip=0, limit=1000, order_by="-created_time"):
-    """ fetch all documents
-    Args:
-      skip (int, optional): _description_. Defaults to 0.
-      limit (int, optional): _description_. Defaults to 1000.
-      order_by (str, optional): _description_. Defaults to "-created_time".
-    Returns:
-      list: list of objects
     """
-    order_by_field = getattr(cls, order_by[1:])
+    Fetch all objects with optional skip, limit, and ordering.
+    """
+    order_field = getattr(cls, order_by.lstrip("-"), cls.created_time)
     if order_by.startswith("-"):
-      order_by_field = order_by_field.desc()
-    objects = cls.select().order_by(order_by_field).offset(skip).limit(limit)
-    return list(objects)
+      order_field = order_field.desc()
+    query = cls.select().where(cls.deleted_at_timestamp.is_null(True)).order_by(order_field).offset(skip).limit(limit)
+    return list(query)
 
   def get_fields(self, reformat_datetime=False, remove_meta=False):
     """
@@ -249,38 +225,75 @@ class SQLBaseModel(Model):
     remove_meta=True will remove extra meta data fields (useful for testing)
     """
     fields = {}
-    for field_name in self._meta.sorted_field_names: # noqa
-      field_value = getattr(self, field_name)
+    for field_name in self._meta.sorted_field_names:
+      field_value = getattr(self, field_name, None)
       if isinstance(field_value, datetime.datetime) and reformat_datetime:
-        field_value = str(field_value)
+        field_value = field_value.isoformat()
       fields[field_name] = field_value
+
+    # Include primary key under 'id' if it is not explicitly named
+    if "id" not in fields:
+      fields["id"] = getattr(self, self._meta.primary_key.name)
+
     if remove_meta:
       fields = self.remove_field_meta(fields)
-    # fields["id"] = getattr(self, self._meta.primary_key.name)
-    fields["id"] = self.id
+
     return fields
 
   @classmethod
   def remove_field_meta(cls, fields: dict) -> dict:
-    """Remove meta keys from the fields dictionary."""
-    del fields["created_time"]
-    del fields["created_by"]
-    del fields["archived_at_timestamp"]
-    del fields["archived_by"]
-    del fields["deleted_at_timestamp"]
-    del fields["deleted_by"]
-    del fields["last_modified_time"]
-    del fields["last_modified_by"]
-    return fields
+    """
+    Remove meta fields from the dictionary representation.
+    Args:
+        fields (dict): Dictionary to clean.
+    Returns:
+        dict: Cleaned dictionary without meta fields.
+    """
+    meta_fields = [
+      "created_time", "last_modified_time", "deleted_at_timestamp",
+      "deleted_by", "archived_at_timestamp", "archived_by",
+      "created_by", "last_modified_by"
+    ]
+    return {key: value for key, value in fields.items() if key not in meta_fields}
 
   @classmethod
-  def validate(cls) -> Tuple[bool, List[str]]:
+  def fetch_all_documents(cls, limit=1000):
     """
-    Validate a model in this class.
-    Returns:
-      True,[] or False, list of error messages
+    Fetch all documents (records) in batches.
+    """
+    query = cls.select().where(cls.deleted_at_timestamp.is_null(True)).limit(limit)
+    all_docs = []
+    while True:
+      docs = list(query)
+      if not docs:
+        break
+      all_docs.extend(docs)
+      if len(docs) < limit:
+        break
+      query = query.limit(limit).offset(len(all_docs))
+    return all_docs
+
+  @classmethod
+  def delete_by_id(cls, object_id):
+    """
+    Permanently delete an object by primary key.
+    """
+    try:
+      obj = cls.get_by_id(object_id)
+      obj.delete_instance()
+    except DoesNotExist:
+      raise ResourceNotFoundException(f"{cls.__name__} with id {object_id} not found")
+
+  @classmethod
+  def validate(cls, instance) -> Tuple[bool, List[str]]:
+    """
+    Validate the fields of the instance.
     """
     errors = []
-    # Placeholder for validation logic.
-    # Add custom validation rules here for model fields.
-    return len(errors) == 0, errors
+    valid = True
+    for field_name, field_obj in instance._meta.fields.items():
+      value = getattr(instance, field_name, None)
+      if field_obj.null is False and value is None:
+        valid = False
+        errors.append(f"Field '{field_name}' cannot be null.")
+    return valid, errors

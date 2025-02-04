@@ -14,8 +14,9 @@
 """
 SQL Models for LLM Query Engines
 """
+import uuid
 from typing import List
-from peewee import (UUIDField, TextField, IntegerField, BooleanField, DoesNotExist)
+from peewee import (TextField, IntegerField, BooleanField, DoesNotExist)
 from playhouse.postgres_ext import ArrayField, JSONField
 from common.models.base_model_sql import SQLBaseModel
 from common.models.llm_query import UserQueryUtil
@@ -25,7 +26,7 @@ class UserQuery(SQLBaseModel, UserQueryUtil):
   """
   UserQuery SQL ORM class
   """
-  id = UUIDField()
+  id = TextField(primary_key=True, default=str(uuid.uuid4))
   user_id = TextField()
   title = TextField(null=True)
   query_engine_id = TextField()
@@ -71,7 +72,7 @@ class QueryEngine(SQLBaseModel):
   """
   QueryEngine ORM class
   """
-  id = UUIDField()
+  id = TextField(primary_key=True, default=str(uuid.uuid4))
   name = TextField()
   query_engine_type = TextField()
   description = TextField(default="")
@@ -132,7 +133,7 @@ class QueryReference(SQLBaseModel):
   It points to a specific chunk of text in one of the indexed documents.
 
   """
-  id = UUIDField()  # All modalities
+  id = TextField(primary_key=True, default=str(uuid.uuid4)) # All modalities
   query_engine_id = TextField()  # All modalities
   query_engine = TextField()  # All modalities
   document_id = TextField()  # All modalities
@@ -152,7 +153,7 @@ class QueryResult(SQLBaseModel):
   response and a list of links to source query documents, as a
   list of query reference ids.
   """
-  id = UUIDField()
+  id = TextField(primary_key=True, default=str(uuid.uuid4))
   query_engine_id = TextField()
   query_engine = TextField()
   query_refs = ArrayField(default=[])
@@ -163,7 +164,7 @@ class QueryDocument(SQLBaseModel):
   """
   QueryDocument ORM class.
   """
-  id = UUIDField()
+  id = TextField(primary_key=True, default=str(uuid.uuid4))
   query_engine_id = TextField()
   query_engine = TextField()
   doc_url = TextField()
@@ -263,7 +264,7 @@ class QueryDocumentChunk(SQLBaseModel):
   """
   QueryDocumentChunk ORM class.
   """
-  id = UUIDField()  # All modalities
+  id = TextField(primary_key=True, default=str(uuid.uuid4))  # All modalities
   query_engine_id = TextField()  # All modalities
   query_document_id = TextField()  # All modalities
   index = IntegerField()  # All modalities
