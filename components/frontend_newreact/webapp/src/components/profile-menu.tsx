@@ -3,7 +3,6 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { User } from "firebase/auth"
 import { useEffect } from 'react';
 
 interface ProfileMenuProps {
@@ -17,12 +16,19 @@ export function ProfileMenu({ username, email }: ProfileMenuProps) {
     const navigate = useNavigate();
     const { user } = useAuth(); // Get user and signOut from context
 
+    useEffect(() => {
+        console.log(user)
+    }, [user])
 
-    const initials = username
+    const displayName = user?.displayName || 'User';
+    const userEmail = user?.email || 'user@example.com';
+    const userPhotoURL = user?.photoURL; // Get photoURL
+    const initials = displayName
         .split(' ')
         .map(n => n[0])
         .join('')
         .toUpperCase();
+
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -36,7 +42,7 @@ export function ProfileMenu({ username, email }: ProfileMenuProps) {
         <>
             <Avatar
                 onClick={handleClick}
-                src={`https://api.dicebear.com/7.x/initials/svg?seed=${username}`}
+                src={userPhotoURL}
                 sx={{
                     width: 32,
                     height: 32,
@@ -76,14 +82,16 @@ export function ProfileMenu({ username, email }: ProfileMenuProps) {
                         fontSize: '0.875rem',
                         fontWeight: 500,
                         color: 'white',
-                    }}>
-                        {username}
+                    }}
+                    >
+                        {displayName}
                     </div>
                     <div style={{
                         fontSize: '0.75rem',
                         color: 'rgba(255, 255, 255, 0.7)',
-                    }}>
-                        {email}
+                    }}
+                    >
+                        {userEmail}
                     </div>
                 </div>
                 <MenuItem sx={{

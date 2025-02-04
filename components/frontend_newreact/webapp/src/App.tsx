@@ -103,7 +103,16 @@ const MainApp = () => {
   const sidebarWidth = isOpen ? 150 : 52;
   const panelWidth = hasActivePanel ? 300 : 0;
 
-  const username = 'Ian';
+  const { user } = useAuth();
+
+  const username = user.displayName || 'User';
+  const email = user.email || 'user@example.com';
+  const photoURL = user.photoURL; // Get photoURL
+  const initials = username
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase();
 
   const toggleHistory = () => {
     setHistoryOpen(!historyOpen);
@@ -190,8 +199,8 @@ const MainApp = () => {
           <span className="gradient">for Public Sector</span>
         </Title>
         <ProfileMenu
-          username="Ian Smith"
-          email="IanSmith@google.com"
+          username=""
+          email=""
         />
       </Header>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
@@ -200,7 +209,7 @@ const MainApp = () => {
         ) : (
           <>
             <Typography variant="h4" className="greeting">
-              <span className="hello">Hello,</span> <span className="name">{username}</span>
+              <span className="hello">Hello, {username}</span>
             </Typography>
 
             <Box className="features-grid">

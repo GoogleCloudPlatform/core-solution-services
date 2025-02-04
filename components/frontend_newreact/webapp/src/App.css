@@ -85,11 +85,16 @@
 }
 
 .hello {
-  color: #4a90e2;
-}
-
-.name {
-  color: #e57373;
+  background: linear-gradient(to right, #4C8DF6, #FF0000);
+  /* Apply gradient as background */
+  -webkit-background-clip: text;
+  /* Clip the background to the text */
+  -webkit-text-fill-color: transparent;
+  /* Make the text transparent to reveal the gradient */
+  background-clip: text;
+  /* Standard syntax for background-clip */
+  text-fill-color: transparent;
+  /* Standard syntax for text-fill-color */
 }
 
 .features-grid {
