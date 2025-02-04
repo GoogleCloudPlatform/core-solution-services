@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
+import { getAuth } from "firebase/auth";
 
 interface ProfileMenuProps {
     username: string;
@@ -15,6 +16,8 @@ export function ProfileMenu({ username, email }: ProfileMenuProps) {
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
     const { user } = useAuth(); // Get user and signOut from context
+    const auth = getAuth();
+
 
     useEffect(() => {
         console.log(user)
@@ -37,6 +40,19 @@ export function ProfileMenu({ username, email }: ProfileMenuProps) {
     const handleClose = () => {
         setAnchorEl(null);
     };
+
+    const handleLogout = async () => {  // Use async/await
+        try {
+            // Call the signOut function from your context (NOT auth.signOut directly)
+            await auth.signOut();
+            // Redirect after successful logout
+            navigate('/signin');
+        } catch (error) {
+            // Optionally, show an error message to the user
+            console.error("Logout error:", error);
+        }
+        handleClose();
+    }
 
     return (
         <>
@@ -94,7 +110,7 @@ export function ProfileMenu({ username, email }: ProfileMenuProps) {
                         {userEmail}
                     </div>
                 </div>
-                <MenuItem sx={{
+                <MenuItem onClick={handleLogout} sx={{
                     display: 'flex',
                     gap: 1,
                     mt: 1,
