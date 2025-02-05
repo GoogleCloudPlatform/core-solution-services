@@ -132,66 +132,10 @@ const MainApp = () => {
   const features = [
     { icon: <ChatIcon />, title: 'Chat', subtitle: 'Latest Topical Gist', action: 'Resume' },
     { icon: <FolderIcon />, title: 'Knowledge Sources', subtitle: 'Knowledge Source Name', action: 'Query' },
-    { icon: <HistoryIcon />, title: 'Latest Gem', subtitle: 'Plug-in Title', action: 'Run again' },
-    { icon: <ImageIcon />, title: 'Create Images', subtitle: 'Generate custom images using Imagen 3', action: 'Try it' },
   ];
 
   return (
     <MainContainer>
-      {/* <Drawer
-        anchor="left"
-        open={historyOpen}
-        variant="persistent"
-        sx={{
-          '& .MuiDrawer-paper': {
-            width: 240,
-            boxSizing: 'border-box',
-            bgcolor: 'background.paper'
-          }
-        }}
-      >
-        <ChatHistory
-          onClose={toggleHistory}
-          onSelectChat={handleSelectChat}
-          selectedChatId={currentChat?.id}
-          isOpen={historyOpen}
-        />
-        <SettingsDrawer
-          open={settingsOpen}
-          onClose={toggleSettings}
-        />
-        <ChatHistory
-          onClose={toggleHistory}
-          onSelectChat={handleSelectChat}
-          selectedChatId={currentChat?.id}
-          isOpen={historyOpen}
-        /> 
-      </Drawer>*/}
-      {/* <Box className="sidebar">
-        <IconButton
-          onClick={toggle}
-          sx={{
-            color: 'rgba(255, 255, 255, 0.7)',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.06)',
-            },
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
-        <IconButton className="menu-button" onClick={() => setShowChat(true)}>
-          <AddIcon />
-        </IconButton>
-        <IconButton className="menu-button history-button" onClick={toggleHistory}>
-          <HistoryIcon />
-        </IconButton>
-        <IconButton className="menu-button settings-button" onClick={toggleSettings}>
-          <SettingsIcon />
-        </IconButton>
-        <IconButton className="menu-button settings-button" onClick={toggleSettings}> 
-          <SettingsIcon />
-        </IconButton>
-      </Box> */}
       <Sidebar setShowChat={setShowChat} onSelectChat={handleSelectChat} selectedChatId={currentChat?.id} />
       <Header sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         <Title>

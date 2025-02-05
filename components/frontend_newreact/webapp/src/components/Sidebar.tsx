@@ -27,6 +27,7 @@ import ChatHistory from './ChatHistory';
 import ChatScreen from './ChatScreen';
 import { useSidebarStore } from '@/lib/sidebarStore';
 import { Chat } from '../lib/types'; // Make sure you import the Chat type
+import SettingsDrawer from './SettingsDrawer';
 
 const drawerWidth = 150;
 const collapsedWidth = 52;
@@ -226,9 +227,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, sel
                         <MenuIcon />
                     </IconButton>
                 </PanelHeader>
-                {/* <Box sx={{ p: 2 }}>
-                    <ModelSelector />
-                </Box> */}
+                <Box sx={{ 
+                    height: 'calc(100% - 56px)', // Subtract header height
+                    overflow: 'auto'
+                }}>
+                    <SettingsDrawer 
+                        open={activePanel === 'settings'} 
+                        onClose={() => {
+                            setActivePanel(null);
+                            setSelectedItem(null);
+                        }} 
+                    />
+                </Box>
             </SidePanel>
 
             {/* History Panel */}

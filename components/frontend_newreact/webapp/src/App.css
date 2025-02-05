@@ -261,3 +261,44 @@
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
+
+/* Add these new styles */
+.MuiSelect-select {
+    color: white !important;
+}
+
+.MuiMenuItem-root {
+    color: white !important;
+}
+
+.MuiSlider-root {
+    color: #4a90e2 !important;
+}
+
+.MuiSlider-rail {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.MuiSlider-track {
+    background-color: #4a90e2 !important;
+}
+
+.MuiSlider-thumb {
+    background-color: #4a90e2 !important;
+}
+
+.settings-panel {
+    background-color: #1f1f1f;
+    color: white;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.model-description {
+    background-color: #242424;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 16px;
+    margin: 16px 0;
+    color: rgba(255, 255, 255, 0.7);
+}
