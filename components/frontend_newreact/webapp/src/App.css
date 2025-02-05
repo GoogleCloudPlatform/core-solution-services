@@ -302,3 +302,30 @@
     margin: 16px 0;
     color: rgba(255, 255, 255, 0.7);
 }
+
+/* Update existing sidebar styles */
+.sidebar-icon-button {
+    color: rgba(255, 255, 255, 0.7) !important;
+    margin: 4px 0 !important;
+    padding: 12px !important;
+}
+
+.sidebar-add-button {
+    background-color: #000 !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    margin: 8px 0 !important;
+}
+
+.sidebar-add-button:hover {
+    background-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+/* Update drawer styles */
+.MuiDrawer-paper {
+    background-color: #1f1f1f !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+}

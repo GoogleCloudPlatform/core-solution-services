@@ -17,7 +17,7 @@ import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import AddIcon from '@mui/icons-material/Add';
 import HistoryIcon from '@mui/icons-material/History';
-import SettingsIcon from '@mui/icons-material/Settings';
+import TuneIcon from '@mui/icons-material/Tune';
 import ChatIcon from '@mui/icons-material/Chat';
 import StorageIcon from '@mui/icons-material/Storage';
 import CloudIcon from '@mui/icons-material/Cloud';
@@ -29,8 +29,8 @@ import { useSidebarStore } from '@/lib/sidebarStore';
 import { Chat } from '../lib/types'; // Make sure you import the Chat type
 import SettingsDrawer from './SettingsDrawer';
 
-const drawerWidth = 150;
-const collapsedWidth = 52;
+const drawerWidth = 60;
+const collapsedWidth = 60;
 
 interface SidebarProps {
     setShowChat: React.Dispatch<React.SetStateAction<boolean>>; // Define prop type
@@ -50,21 +50,17 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 const StyledDrawer = styled(Drawer, {
     shouldForwardProp: (prop) => prop !== "isOpen",
 })<{ isOpen: boolean }>(({ theme, isOpen }) => ({
-    width: isOpen ? drawerWidth : collapsedWidth,
+    width: drawerWidth,
     flexShrink: 0,
     whiteSpace: 'nowrap',
     boxSizing: 'border-box',
     '& .MuiDrawer-paper': {
-        width: isOpen ? drawerWidth : collapsedWidth,
+        width: drawerWidth,
         boxSizing: 'border-box',
         backgroundColor: '#1f1f1f',
         borderRight: '1px solid #2f2f2f',
         color: 'rgba(255, 255, 255, 0.9)',
         overflowX: 'hidden',
-        transition: theme.transitions.create('width', {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.enteringScreen,
-        }),
     },
 }));
 
@@ -72,13 +68,13 @@ const SidePanel = styled(Box, {
     shouldForwardProp: (prop) => prop !== "isOpen" && prop !== "drawerIsOpen",
 })<{ isOpen: boolean, drawerIsOpen: boolean }>(({ theme, isOpen, drawerIsOpen }) => ({
     position: 'fixed',
-    left: drawerIsOpen ? drawerWidth : collapsedWidth,
+    left: drawerWidth,
     top: 0,
     height: '100vh',
     width: 300,
     backgroundColor: '#1f1f1f',
     borderRight: '1px solid #2f2f2f',
-    transition: theme.transitions.create(['left', 'transform'], {
+    transition: theme.transitions.create(['transform'], {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.enteringScreen,
     }),
@@ -96,7 +92,7 @@ const PanelHeader = styled(Box)(({ theme }) => ({
     alignItems: 'center',
 }));
 
-export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, selectedChatId }) => { // Add props
+export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, selectedChatId }) => {
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
 
     const handleItemClick = (item: string) => {
@@ -110,14 +106,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, sel
     };
 
     const mainMenuItems = [
-        { text: 'History', icon: <HistoryIcon />, id: 'history' },
-        { text: 'Settings', icon: <SettingsIcon />, id: 'settings' },
+        { icon: <HistoryIcon />, id: 'history' },
+        { icon: <TuneIcon />, id: 'settings' },
     ];
 
     const bottomMenuItems = [
-        { text: 'Chat', icon: <ChatIcon />, id: 'chat' },
-        { text: 'Sources', icon: <StorageIcon />, id: 'sources' },
-        { text: 'GCP Cloud', icon: <CloudIcon />, id: 'cloud' },
+        { icon: <ChatIcon />, id: 'chat' },
+        { icon: <StorageIcon />, id: 'sources' },
+        { icon: <CloudIcon />, id: 'cloud' },
     ];
 
     const renderMenuItem = (item: typeof mainMenuItems[0], index: number) => (
@@ -126,9 +122,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, sel
                 selected={selectedItem === item.id}
                 onClick={() => handleItemClick(item.id)}
                 sx={{
-                    minHeight: 42,
-                    px: 1.75,
-                    justifyContent: isOpen ? 'initial' : 'center',
+                    minHeight: 48,
+                    justifyContent: 'center',
+                    px: 2.5,
                     '&.Mui-selected': {
                         backgroundColor: 'rgba(0, 0, 0, 0.2)',
                     },
@@ -140,24 +136,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, sel
                 <ListItemIcon
                     sx={{
                         minWidth: 0,
-                        mr: isOpen ? 2 : 'auto',
                         justifyContent: 'center',
                         color: 'rgba(255, 255, 255, 0.7)',
                     }}
                 >
                     {item.icon}
                 </ListItemIcon>
-                <ListItemText
-                    primary={item.text}
-                    sx={{
-                        opacity: isOpen ? 1 : 0,
-                        transition: 'opacity 0.2s',
-                        '& .MuiTypography-root': {
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            fontSize: '0.875rem',
-                        },
-                    }}
-                />
             </ListItemButton>
         </ListItem>
     );
@@ -185,12 +169,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, sel
                         sx={{
                             bgcolor: '#000',
                             borderRadius: '50%',
+                            width: 36,
+                            height: 36,
                             '&:hover': {
                                 bgcolor: 'rgba(0, 0, 0, 0.9)',
                             },
                         }}
                     >
-                        <AddIcon sx={{ color: 'white' }} />
+                        <AddIcon sx={{ color: 'white', fontSize: 20 }} />
                     </IconButton>
                 </DrawerHeader>
 
