@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal } from '@mui/material';
+import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CloseIcon from '@mui/icons-material/Close';
@@ -133,48 +133,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
     setUploadedFiles(prev => prev.filter(file => file.name !== fileName));
   };
 
-  const handleAddFiles = async () => {
-    if (!user) return;
+  const handleAddFiles = () => {
+    handleCloseUploadModal();
+  };
 
-    try {
-      // Create a new chat with the file or URL
-      const response = await createChat(user.token)({
-        userInput: "I've uploaded a new file. Please help me analyze it.",
-        llmType: selectedModel.name,
-        uploadFile: selectedFile || undefined,
-        fileUrl: importUrl,
-        stream: false,
-        temperature: temperature
-      });
-
-      // If we get a successful response, update the chat ID
-      if (response && 'id' in response) {
-        setChatId(response.id);
-        
-        // Add system message about file upload
-        const systemMessage: ChatMessage = {
-          text: `File ${selectedFile ? selectedFile.name : importUrl} has been uploaded successfully.`,
-          isUser: false
-        };
-        setMessages(prev => [...prev, systemMessage]);
-      }
-
-      // Clear the upload state
-      handleCloseUploadModal();
-      setSelectedFile(null);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      // Update the file status to show error
-      if (selectedFile) {
-        setUploadedFiles(prev => 
-          prev.map(file => 
-            file.name === selectedFile.name 
-              ? { ...file, error: 'Upload failed' }
-              : file
-          )
-        );
-      }
-    }
+  const handleRemoveSelectedFile = () => {
+    setSelectedFile(null);
+    setImportUrl('');
   };
 
   return (
@@ -202,6 +167,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
       </Box>
       <Box className="chat-input-container">
         <Paper className="chat-input">
+          {(selectedFile || importUrl) && (
+            <Box className="file-chip-container">
+              <Chip
+                label={selectedFile ? selectedFile.name : importUrl}
+                onDelete={handleRemoveSelectedFile}
+                size="small"
+              />
+            </Box>
+          )}
           <InputBase
             placeholder="Enter your prompt"
             value={prompt}

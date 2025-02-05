@@ -81,4 +81,43 @@
   justify-content: flex-end;
   gap: 8px;
   margin-top: 24px;
+}
+
+.chat-input {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+}
+
+.file-chip-container {
+  margin-bottom: 8px;
+}
+
+.chat-input .MuiInputBase-root {
+  padding: 8px;
+}
+
+/* Add these new styles */
+.chat-input-container {
+  padding: 16px;
+}
+
+.chat-input {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.chat-input .MuiIconButton-root {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+}
+
+.chat-input .MuiInputBase-root {
+  padding-right: 40px; /* Make room for the plus button */
+}
+
+.file-chip-container {
+  padding: 8px 8px 0 8px;
 } 
