@@ -6,24 +6,25 @@ import ModelBrowser from './ModelBrowser';
 interface SettingsDrawerProps {
     open: boolean;
     onClose: () => void;
+    selectedModel: string;
+    onModelChange: (modelName: string) => void;
 }
 
-const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open }) => {
-    const [selectedModel, setSelectedModel] = useState('Default Chat');
+const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ 
+    open, 
+    selectedModel,
+    onModelChange 
+}) => {
     const [temperature, setTemperature] = useState(1.0);
     const [modelBrowserOpen, setModelBrowserOpen] = useState(false);
 
-    const handleModelChange = (event: any) => {
-        setSelectedModel(event.target.value);
+    const handleModelSelect = (modelName: string) => {
+        onModelChange(modelName);
+        setModelBrowserOpen(false);
     };
 
     const handleTemperatureChange = (event: Event, newValue: number | number[]) => {
         setTemperature(newValue as number);
-    };
-
-    const handleModelSelect = (modelName: string) => {
-        setSelectedModel(modelName);
-        setModelBrowserOpen(false);
     };
 
     if (!open) return null;

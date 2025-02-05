@@ -95,6 +95,7 @@ const MainApp = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
+  const [selectedModel, setSelectedModel] = useState('Default Chat');
   const [settingsOpen, setSettingsOpen] = useState(false); // Add state for settings drawer
 
   const { isOpen, activePanel, toggle } = useSidebarStore();
@@ -146,7 +147,10 @@ const MainApp = () => {
       </Header>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         {showChat ? (
-          <ChatScreen currentChat={currentChat} />
+          <ChatScreen 
+            currentChat={currentChat}
+            selectedModel={selectedModel} 
+          />
         ) : (
           <>
             <Typography variant="h4" className="greeting">
@@ -166,6 +170,7 @@ const MainApp = () => {
           </>
         )}
       </Main>
+
     </MainContainer>
   );
 };

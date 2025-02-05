@@ -13,9 +13,10 @@ interface ChatMessage {
 
 interface ChatScreenProps {
   currentChat?: Chat;
+  selectedModel: string;
 }
 
-const ChatScreen = ({ currentChat }: ChatScreenProps) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, selectedModel }) => {
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(() => 
     // Initialize messages from currentChat if it exists
@@ -45,14 +46,14 @@ const ChatScreen = ({ currentChat }: ChatScreenProps) => {
         response = await resumeChat(user.token)({
           chatId,
           userInput: prompt,
-          llmType: 'VertexAI-Chat',
+          llmType: selectedModel,
           stream: false
         });
       } else {
         // Create new chat
         response = await createChat(user.token)({
           userInput: prompt,
-          llmType: 'VertexAI-Chat',
+          llmType: selectedModel,
           fileUrl: '', // Empty string for no file URL
           stream: false
           // Don't include uploadFile if we don't have one
