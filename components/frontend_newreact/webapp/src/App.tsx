@@ -105,9 +105,9 @@ const MainApp = () => {
 
   const { user } = useAuth();
 
-  const username = user.displayName || 'User';
-  const email = user.email || 'user@example.com';
-  const photoURL = user.photoURL; // Get photoURL
+  const username = user?.displayName || 'User';
+  const email = user?.email || 'user@example.com';
+  const photoURL = user?.photoURL || ''; // Get photoURL
   const initials = username
     .split(' ')
     .map(n => n[0])
