@@ -113,8 +113,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
   const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false);
     setUploadedFiles([]);
-    setImportUrl('');
-    setSelectedFile(null);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {

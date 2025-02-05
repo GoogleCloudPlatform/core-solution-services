@@ -86,14 +86,16 @@
 .chat-input {
   display: flex;
   flex-direction: column;
-  padding: 8px;
+  padding: 16px;
   position: relative;
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 24px !important;
+  min-height: 56px;
 }
 
 .chat-input .MuiInputBase-root {
-  padding: 8px 40px 8px 8px;
+  order: 2;
+  padding: 8px 40px 8px 0;
   color: #fff;
 }
 
@@ -101,36 +103,49 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-.chat-input .MuiIconButton-root {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.chat-input .MuiIconButton-root:hover {
-  color: #fff;
-}
-
 .file-chip-container {
+  order: 1;
+  display: flex;
+  justify-content: flex-start;
   margin-bottom: 8px;
-  padding: 0 8px;
+  width: 100%;
 }
 
 /* Style the chip for dark background */
 .file-chip-container .MuiChip-root {
-  max-width: 100%;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(48, 48, 48, 1);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.3);
+  border: none;
+  height: 32px;
+  margin-left: 0;
 }
 
+/* Style the chip delete icon */
 .file-chip-container .MuiChip-deleteIcon {
-  color: rgba(255, 255, 255, 0.7);
+  color: #fff;
+  opacity: 0.7;
 }
 
 .file-chip-container .MuiChip-deleteIcon:hover {
+  opacity: 1;
+}
+
+/* Style the add button */
+.chat-input .MuiIconButton-root {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(48, 48, 48, 1);
+  color: rgba(255, 255, 255, 0.7);
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+}
+
+.chat-input .MuiIconButton-root:hover {
+  background-color: rgba(48, 48, 48, 0.8);
   color: #fff;
 }
 
