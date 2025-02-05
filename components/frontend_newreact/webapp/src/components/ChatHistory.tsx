@@ -19,7 +19,7 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
 
   useEffect(() => {
     if (!isOpen || !user) return;
-    
+
     const loadHistory = async () => {
       setLoading(true);
       try {
@@ -41,7 +41,7 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
     const date = new Date(timestamp);
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
+
     if (diffInSeconds < 60) return 'just now';
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
@@ -51,19 +51,6 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
 
   return (
     <Box className="history-drawer">
-      <Box className="history-header" sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 2,
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-      }}>
-        <Typography variant="h6">History</Typography>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </Box>
-      
       <Box className="history-content" sx={{
         overflowY: 'auto',
         height: 'calc(100vh - 64px)'
@@ -87,8 +74,8 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
                 }
               }}
             >
-              <Typography 
-                variant="body2" 
+              <Typography
+                variant="body2"
                 color="text.secondary"
                 sx={{ mb: 0.5 }}
               >

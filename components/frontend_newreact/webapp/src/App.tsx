@@ -192,7 +192,7 @@ const MainApp = () => {
           <SettingsIcon />
         </IconButton>
       </Box> */}
-      <Sidebar setShowChat={setShowChat} />
+      <Sidebar setShowChat={setShowChat} onSelectChat={handleSelectChat} selectedChatId={currentChat?.id} />
       <Header sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         <Title>
           <span className="primary">genAI</span>

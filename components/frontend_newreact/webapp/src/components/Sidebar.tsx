@@ -26,12 +26,15 @@ import Divider from '@mui/material/Divider';
 import ChatHistory from './ChatHistory';
 import ChatScreen from './ChatScreen';
 import { useSidebarStore } from '@/lib/sidebarStore';
+import { Chat } from '../lib/types'; // Make sure you import the Chat type
 
 const drawerWidth = 150;
 const collapsedWidth = 52;
 
 interface SidebarProps {
     setShowChat: React.Dispatch<React.SetStateAction<boolean>>; // Define prop type
+    onSelectChat: (chat: Chat) => void;  // Add onSelectChat prop
+    selectedChatId?: string; // Add to manage highlighting of selected chat
 }
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -92,7 +95,7 @@ const PanelHeader = styled(Box)(({ theme }) => ({
     alignItems: 'center',
 }));
 
-export const Sidebar: React.FC<SidebarProps> = ({ setShowChat }) => { // Add setShowChat to the props
+export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, selectedChatId }) => { // Add props
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
 
     const handleItemClick = (item: string) => {
@@ -252,48 +255,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ setShowChat }) => { // Add set
                         <MenuIcon />
                     </IconButton>
                 </PanelHeader>
-                <List>
-                    <ListItem disablePadding>
-                        <ListItemButton
-                            sx={{
-                                py: 0.5,
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                                },
-                            }}
-                        >
-                            <ListItemText
-                                primary="Topical Gist"
-                                sx={{
-                                    '& .MuiTypography-root': {
-                                        fontSize: '0.875rem',
-                                        color: 'rgba(255, 255, 255, 0.7)',
-                                    },
-                                }}
-                            />
-                        </ListItemButton>
-                    </ListItem>
-                    <ListItem disablePadding>
-                        <ListItemButton
-                            sx={{
-                                py: 0.5,
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                                },
-                            }}
-                        >
-                            <ListItemText
-                                primary="Recent Chat 2"
-                                sx={{
-                                    '& .MuiTypography-root': {
-                                        fontSize: '0.875rem',
-                                        color: 'rgba(255, 255, 255, 0.7)',
-                                    },
-                                }}
-                            />
-                        </ListItemButton>
-                    </ListItem>
-                </List>
+                {/* Render ChatHistory here, inside the SidePanel */}
+                {activePanel === 'history' && ( // Conditionally render
+                    <ChatHistory
+                        onClose={() => setActivePanel(null)} // Close panel when ChatHistory closes
+                        onSelectChat={onSelectChat}  // Pass the prop
+                        selectedChatId={selectedChatId}
+                        isOpen={activePanel === 'history'}
+                    />
+                )}
             </SidePanel>
         </Box>
     );
