@@ -188,6 +188,7 @@ class LLMQueryEngineModel(BaseModel):
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": QUERY_ENGINE_BUILD_EXAMPLE
   })
+  documents: Optional[list[UploadFile]] = None
 
 class LLMQueryEngineResponse(BaseModel):
   """LLM Generate Response model"""

@@ -48,6 +48,8 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import (query_generate,
                                           delete_engine, update_user_query)
+from utils.gcs_helper import upload_uploadfiles_to_gcs
+
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
 
@@ -460,9 +462,12 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
   Logger.info(f"Create a query engine with {genconfig_dict}")
 
   doc_url = genconfig_dict.get("doc_url")
+  documents = genconfig_dict.get("documents")
   query_engine_type = genconfig_dict.get("query_engine_type", None)
 
   if query_engine_type != QE_TYPE_INTEGRATED_SEARCH:
+    if documents:
+      doc_url = (await upload_uploadfiles_to_gcs(documents)).name
     # validate doc_url
     if doc_url is None or doc_url == "":
       return BadRequest("Missing or invalid payload parameters: doc_url")

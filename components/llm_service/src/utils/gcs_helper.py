@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import List
 from common.utils.logging_handler import Logger
 from google.cloud import storage
+from fastapi import UploadFile
 
 Logger = Logger.get_logger(__file__)
 
@@ -109,4 +110,13 @@ def create_bucket_for_file(filename: str) -> storage.Bucket:
   bucket.storage_class = "STANDARD"
   bucket.create()
   Logger.info(f"Bucket {bucket.name} created")
+  return bucket
+
+async def upload_uploadfiles_to_gcs(files: list[UploadFile]) -> storage.Bucket:
+  """ Creates a bucket and uploads the UploadFiles into it
+  returns a storage bucket created for upload """
+  bucket = create_bucket_for_file("")
+  for file in files:
+    contents = await file.read()
+    upload_file_to_gcs(bucket, file.filename, io.BytesIO(contents))
   return bucket
