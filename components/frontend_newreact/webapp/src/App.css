@@ -329,3 +329,48 @@
     background-color: #1f1f1f !important;
     border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
+
+/* Add these styles to the existing App.css file */
+
+.MuiTableContainer-root {
+  background-color: #242424;
+  border: 1px solid #333;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.MuiTableCell-root {
+  border-bottom: 1px solid #333 !important;
+}
+
+.MuiTableRow-root:last-child .MuiTableCell-root {
+  border-bottom: none !important;
+}
+
+.MuiTablePagination-root {
+  color: white !important;
+}
+
+.MuiTablePagination-select {
+  color: white !important;
+}
+
+.MuiSelect-icon {
+  color: white !important;
+}
+
+.MuiMenuItem-root {
+  color: rgba(255, 255, 255, 0.87) !important;
+}
+
+.MuiMenuItem-root:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.MuiCheckbox-root {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.MuiCheckbox-root.Mui-checked {
+  color: #4a90e2 !important;
+}
