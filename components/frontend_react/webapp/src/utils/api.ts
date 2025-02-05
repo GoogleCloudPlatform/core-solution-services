@@ -23,16 +23,6 @@ interface RunQueryParams {
   llmType: string
 }
 
-interface RunChatParams {
-  userInput: string
-  llmType: string
-  uploadFile: File
-  fileUrl: string
-  stream?: boolean
-  toolNames?: string[]
-  history?: Array<{ [key: string]: string }>
-}
-
 interface ResumeQueryParams {
   queryId: string
   userInput: string
@@ -44,6 +34,8 @@ interface ResumeChatParams {
   chatId: string
   userInput: string
   llmType: string
+  uploadFile: File | null
+  fileUrl: string
   toolNames?: string[]
   stream?: boolean
 }
@@ -51,6 +43,9 @@ interface ResumeChatParams {
 interface ResumeChatApiParams {
   prompt: string,
   llm_type: string,
+  chat_file_b64?: string
+  chat_file_b64_name?: string
+  chat_file_url?: string
   stream: boolean,
   tool_names?: string
 }
@@ -105,57 +100,34 @@ export const fetchChat =
   }
 
 export const createChat =
-  (token: string) => async ({
-    userInput,
-    llmType,
-    uploadFile,
-    fileUrl,
-    toolNames,
-    stream = true,
-    history
-  }: RunChatParams): Promise<Chat | ReadableStream | undefined | null> => {
-    const url = `${endpoint}/chat`
-    const headers = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data'
-    }
-    const formData = new FormData()
-    formData.append('prompt', userInput)
-    formData.append('llm_type', llmType)
-    formData.append('stream', String(stream))
-    if (uploadFile) formData.append('chat_file', uploadFile)
-    if (fileUrl) formData.append('chat_file_url', fileUrl)
-    if (toolNames && toolNames.length > 0) {
-      formData.append('tool_names', JSON.stringify(toolNames))
-    }
-    if (history) formData.append('history', JSON.stringify(history))
-    if (stream) {
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message.replace(/^\d+\s+/, ''))
-        }
-        return response.body
-      } catch (error: any) {
-        console.error('Error in createChat:', error);
-        throw error;
-      }
-    }
-
-    return axios.post(url, formData, { headers }).then(path(["data", "data"]))
+  (token: string) => async (): Promise<any> => {
+    const url = `${endpoint}/chat/empty_chat`
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    return response.json()
   }
+
+// taken from stackoverflow.com/questions/36280818
+export const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => {
+    const result = reader.result
+    if (result === null || result instanceof ArrayBuffer) reject()
+    else { resolve(result.split(',')[1]) }
+  }
+  reader.onerror = reject;
+});
 
 export const resumeChat =
   (token: string) => async ({
     chatId,
     userInput,
     llmType,
+    uploadFile,
+    fileUrl,
     toolNames,
     stream = true
   }: ResumeChatParams): Promise<Chat | ReadableStream | undefined | null> => {
@@ -169,7 +141,14 @@ export const resumeChat =
     if (toolNames && toolNames.length > 0) {
       data['tool_names'] = JSON.stringify(toolNames)
     }
-
+    if (fileUrl) data.chat_file_url = fileUrl
+    if (uploadFile) {
+      const file_b64 = await toBase64(uploadFile)
+      if (typeof file_b64 === 'string') {
+        data.chat_file_b64 = file_b64
+        data.chat_file_b64_name = uploadFile.name
+      }
+    }
     if (stream) {
       try {
         const response = await fetch(url, {

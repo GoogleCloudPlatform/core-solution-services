@@ -17,6 +17,7 @@ LLM Generation Service
 # pylint: disable=import-outside-toplevel,line-too-long
 import time
 import requests
+import base64
 from typing import Optional, List, AsyncGenerator, Union
 import google.auth
 import google.auth.transport.requests
@@ -200,15 +201,14 @@ async def llm_chat(prompt: str, llm_type: str,
   if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
-  # validate chat file params
-  is_multimodal = False
+  # validate chat file params and model for them
+  is_multimodal = llm_type in get_provider_models(PROVIDER_VERTEX)
   if chat_file_bytes is not None or chat_files:
     if chat_file_bytes is not None and chat_files:
       raise InternalServerError(
           "Must set only one of chat_file_bytes/chat_files")
-    if llm_type not in get_provider_models(PROVIDER_VERTEX):
+    if not is_multimodal:
       raise InternalServerError("Chat files only supported for Vertex")
-    is_multimodal = True
 
   try:
     response = None
@@ -554,7 +554,7 @@ async def model_garden_predict(prompt: str,
   return predictions_text
 
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
-                google_llm: str, user_chat=None,
+                google_llm: str, user_chat: Optional[UserChat]=None,
                 user_file_bytes: bytes=None,
                 user_files: List[DataSourceFile]=None,
                 stream: bool=False) -> Union[str, AsyncGenerator[str, None]]:
@@ -590,10 +590,19 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         prompt_list.append(f"Human input: {content}")
       elif UserChat.is_ai(entry):
         prompt_list.append(f"AI response: {content}")
-      # prompt_list includes only text (no images/video)
-      # from user_chat.history
+      elif is_multimodal:
+        if UserChat.is_file_bytes(entry):
+          prompt_list.append(
+            Part.from_data(base64.b64decode(UserChat.get_file_b64(entry)),
+                            mime_type=UserChat.get_file_type(entry)))
+        elif UserChat.is_file_uri(entry):
+          prompt_list.append(Part.from_uri(UserChat.get_file_uri(entry),
+                                      mime_type=UserChat.get_file_type(entry)))
   prompt_list.append(prompt)
-  context_prompt = "\n\n".join(prompt_list)
+  # the context prompt is only used for non-gemini models and canot handle
+  # the gemini Part object
+  context_prompt = "\n\n".join(entry for entry in prompt_list
+                               if isinstance(entry, str))
 
   # Get model params. If params are set at the model level
   # use those else use global vertex params.
@@ -620,39 +629,47 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         }
         chat_model = GenerativeModel(google_llm)
         if is_multimodal:
-          user_file_parts = []
           if user_file_bytes is not None and user_files is not None:
             # user_file_bytes refers to a single image and so we index into
             # user_files (a list) to get a single mime type
-            user_file_parts = [Part.from_data(user_file_bytes,
-                                              mime_type=user_files[0].mime_type)]
+            prompt_list.append(Part.from_data(user_file_bytes,
+                                            mime_type=user_files[0].mime_type))
           elif user_files is not None:
             # user_files is a list referring to one or more images
-            user_file_parts = [
-              Part.from_uri(user_file.gcs_path, mime_type=user_file.mime_type)
-              for user_file in user_files
-            ]
-          else:
-            raise RuntimeError(
-                "if is_multi user_files must be set")
-          context_list = [*user_file_parts, context_prompt]
-          Logger.info(f"context list {context_list}")
-          generation_config = GenerationConfig(**parameters)
-          response = await chat_model.generate_content_async(context_list,
-              generation_config=generation_config,
-              stream=stream)
-        else:
-          chat = chat_model.start_chat()
-          response = await chat.send_message_async(context_prompt,
-              generation_config=parameters,
-              safety_settings=safety_settings,
-              stream=stream)
+            for user_file in user_files:
+              prompt_list.append(Part.from_uri(user_file.gcs_path,
+                                               mime_type=user_file.mime_type))
+        # Logger.info(f"context list {prompt_list}")
+        for l in prompt_list:
+          Logger.info(l if len(str(l)) < 50 else str(l)[:49])
+        generation_config = GenerationConfig(**parameters)
+        response = await chat_model.generate_content_async(prompt_list,
+            generation_config=generation_config,
+            safety_settings=safety_settings,
+            stream=stream)
 
         if stream:
           async def response_generator():
-            async for chunk in response:
-              if chunk.text:
-                yield chunk.text
+            try:
+              async for chunk in response:
+                if chunk.text:
+                  yield chunk.text
+            except ValueError as e:
+              if "Cannot get the Candidate text." in str(e):
+                candidate_info = ""
+                candidate_start = str(e).find("Candidate:")
+                if candidate_start != -1:
+                  candidate_info = str(e)[candidate_start:]
+                yield (
+                  " \n ...I'm sorry, any further response has been blocked because the "
+                  "succeeding content violates my safety filters.\n"
+                  f"Details: {candidate_info}"
+                )
+                return
+              else:
+                raise
+            except Exception as e:
+              raise InternalServerError(str(e)) from e
           return response_generator()
 
         return response.text

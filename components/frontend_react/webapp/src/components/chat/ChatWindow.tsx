@@ -55,10 +55,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, 
         </div>
       )
     } else if (message.FileContentsBase64) {
+      if (message?.FileType?.includes("image")) {
+        return (
+          <div key={index++}>
+            <div className="flex items-center gap-6 mx-2 pb-7">
+              <img src={`data:image;base64, ${message.FileContentsBase64}`} />
+            </div>
+          </div>
+        )
+      } else return (
+        <div key={index++} className="flex items-center gap-6 mx-2 pb-7"><p>{message?.FileType}</p>
+        </div>
+      )
+    } else if (message.FileURL) {
       return (
         <div key={index++}>
           <div className="flex items-center gap-6 mx-2 pb-7">
-            <img src={`data:image;base64,${message.FileContentsBase64}`} />
+            <img src={message.FileURL} />
           </div>
         </div>
       )
@@ -74,7 +87,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onSubmit, messages, activeJob, 
     if (activeJob) {
       endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" })
     }
-    if (!messages[messages.length - 1].HumanInput && !activeJob) {
+    if (!messages[messages.length - 1]?.HumanInput && !activeJob) {
       endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" })
     }
   }, [messages, activeJob])

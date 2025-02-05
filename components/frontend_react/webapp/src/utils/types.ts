@@ -120,9 +120,9 @@ export type QueryContents = {
 export type ChatContents = {
   HumanInput?: string
   AIOutput?: string
-  UploadedFile?: string
   FileURL?: string
   FileContentsBase64?: string
+  FileType?: string
 }
 
 export type Query = {

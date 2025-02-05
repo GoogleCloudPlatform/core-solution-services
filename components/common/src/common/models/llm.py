@@ -24,6 +24,7 @@ CHAT_AI = "AIOutput"
 CHAT_FILE = "UploadedFile"
 CHAT_FILE_URL = "FileURL"
 CHAT_FILE_BASE64 = "FileContentsBase64"
+CHAT_FILE_TYPE = "FileType"
 
 class UserChat(BaseModel):
   """
@@ -99,6 +100,26 @@ class UserChat(BaseModel):
   @classmethod
   def is_ai(cls, entry: dict) -> bool:
     return CHAT_AI in entry.keys()
+
+  @classmethod
+  def is_file_bytes(cls, entry: dict) -> bool:
+    return CHAT_FILE_BASE64 in entry
+
+  @classmethod
+  def is_file_uri(cls, entry: dict) -> bool:
+    return CHAT_FILE_URL in entry
+
+  @classmethod
+  def get_file_b64(cls, entry: dict) -> str:
+    return entry[CHAT_FILE_BASE64]
+
+  @classmethod
+  def get_file_type(cls, entry: dict) -> str:
+    return entry[CHAT_FILE_TYPE]
+
+  @classmethod
+  def get_file_uri(cls, entry: dict) -> str:
+    return entry[CHAT_FILE_URL]
 
   @classmethod
   def entry_content(cls, entry: dict) -> str:
