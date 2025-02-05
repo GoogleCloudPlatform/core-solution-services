@@ -12,10 +12,38 @@ import {
   Button,
   IconButton,
   Collapse,
+  Slider,
 } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ClearIcon from '@mui/icons-material/Clear';
+import styled from '@emotion/styled';
+
+const StyledSelect = styled(Select)({
+  backgroundColor: '#242424',
+  color: 'white',
+  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#333' },
+  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#444' },
+});
+
+const StyledSlider = styled(Slider)({
+  color: '#4a90e2',
+  '& .MuiSlider-rail': {
+    backgroundColor: '#333',
+  },
+  '& .MuiSlider-track': {
+    backgroundColor: '#4a90e2',
+  },
+  '& .MuiSlider-thumb': {
+    backgroundColor: '#4a90e2',
+  },
+  '& .MuiSlider-mark': {
+    backgroundColor: '#666',
+  },
+  '& .MuiSlider-markLabel': {
+    color: '#888',
+  },
+});
 
 const AddSource = () => {
   const navigate = useNavigate();
@@ -59,6 +87,14 @@ const AddSource = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDepthLimitChange = (_event: Event, newValue: number | number[]) => {
+    handleChange('depth_limit', newValue as number);
+  };
+
+  const handleChunkSizeChange = (_event: Event, newValue: number | number[]) => {
+    handleChange('chunk_size', newValue as number);
   };
 
   return (
@@ -202,7 +238,124 @@ const AddSource = () => {
 
         <Collapse in={showAdvanced}>
           <Box sx={{ mt: 3 }}>
-            {/* Add your advanced settings fields here */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+                  Vector Store
+                </Typography>
+                <StyledSelect
+                  fullWidth
+                  value={formData.vector_store}
+                  onChange={(e) => handleChange('vector_store', e.target.value)}
+                >
+                  <MenuItem value="vertex_matching_engine">Vertex Matching Engine</MenuItem>
+                </StyledSelect>
+              </Box>
+
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+                  Embedding Type
+                </Typography>
+                <StyledSelect
+                  fullWidth
+                  value={formData.embedding_type}
+                  onChange={(e) => handleChange('embedding_type', e.target.value)}
+                >
+                  <MenuItem value="text-embedding-ada-002">text-embedding-ada-002</MenuItem>
+                </StyledSelect>
+              </Box>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="caption" sx={{ color: '#888' }}>
+                  Depth Limit
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'white' }}>
+                  {formData.depth_limit}
+                </Typography>
+              </Box>
+              <StyledSlider
+                value={formData.depth_limit}
+                onChange={handleDepthLimitChange}
+                min={1}
+                max={10}
+                step={1}
+                marks
+                sx={{ mb: 4 }}
+              />
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="caption" sx={{ color: '#888' }}>
+                  Chunk Size
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'white' }}>
+                  {formData.chunk_size}
+                </Typography>
+              </Box>
+              <StyledSlider
+                value={formData.chunk_size}
+                onChange={handleChunkSizeChange}
+                min={100}
+                max={1000}
+                step={100}
+                marks
+              />
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+                Agents
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="Placeholder"
+                value={formData.agents?.join(', ') || ''}
+                onChange={(e) => handleChange('agents', e.target.value.split(',').map(s => s.trim()))}
+                InputProps={{
+                  endAdornment: formData.agents?.length ? (
+                    <IconButton size="small" onClick={() => handleChange('agents', [])}>
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  ) : null
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#242424',
+                    color: 'white',
+                    '& fieldset': { borderColor: '#333' },
+                    '&:hover fieldset': { borderColor: '#444' },
+                  }
+                }}
+              />
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+                Child Sources
+              </Typography>
+              <TextField
+                fullWidth
+                placeholder="Placeholder"
+                value={formData.child_engines?.join(', ') || ''}
+                onChange={(e) => handleChange('child_engines', e.target.value.split(',').map(s => s.trim()))}
+                InputProps={{
+                  endAdornment: formData.child_engines?.length ? (
+                    <IconButton size="small" onClick={() => handleChange('child_engines', [])}>
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  ) : null
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#242424',
+                    color: 'white',
+                    '& fieldset': { borderColor: '#333' },
+                    '&:hover fieldset': { borderColor: '#444' },
+                  }
+                }}
+              />
+            </Box>
           </Box>
         </Collapse>
 
