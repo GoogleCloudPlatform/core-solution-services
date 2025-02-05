@@ -25,6 +25,7 @@ import { ModelProvider } from './contexts/ModelContext';
 import Sources from './pages/Sources';
 import StorageIcon from '@mui/icons-material/Storage';
 import CloudIcon from '@mui/icons-material/Cloud';
+import AddSource from './pages/AddSource';
 
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -205,6 +206,7 @@ export default function App() {
                 </PrivateRoute>
               }
             />
+            <Route path="/sources/add" element={<AddSource />} />
           </Routes>
         </BrowserRouter>
       </ModelProvider>

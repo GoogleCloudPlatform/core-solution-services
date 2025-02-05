@@ -25,6 +25,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import SyncIcon from '@mui/icons-material/Sync';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { useNavigate } from 'react-router-dom';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   borderBottom: '1px solid #333',
@@ -68,6 +69,7 @@ const Sources = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [jobStatusFilter, setJobStatusFilter] = useState('all');
   const [rowsPerPage, setRowsPerPage] = useState(3);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadSources = async () => {
@@ -132,6 +134,7 @@ const Sources = () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
+          onClick={() => navigate('/sources/add')}
           sx={{ 
             backgroundColor: '#4a90e2',
             '&:hover': { backgroundColor: '#357abd' },
