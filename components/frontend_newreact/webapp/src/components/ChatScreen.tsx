@@ -43,11 +43,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([]);
   const [importUrl, setImportUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
 
-    // Add user message to chat
     const userMessage: ChatMessage = {
       text: prompt,
       isUser: true
@@ -71,12 +71,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
         response = await createChat(user.token)({
           userInput: prompt,
           llmType: selectedModel.name,
-          fileUrl: '',
+          uploadFile: selectedFile || undefined,
+          fileUrl: importUrl,
           stream: false,
           temperature: temperature
         });
 
-        // Store the chat ID for future messages
         if (response && 'id' in response) {
           setChatId(response.id);
         }
@@ -91,11 +91,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
         setMessages(prev => [...prev, aiMessage]);
       }
 
-      // Clear prompt
       setPrompt('');
     } catch (error) {
       console.error('Error in chat:', error);
-      // You might want to show an error message to the user here
+      // Add error message to chat
+      const errorMessage: ChatMessage = {
+        text: 'An error occurred while processing your request.',
+        isUser: false
+      };
+      setMessages(prev => [...prev, errorMessage]);
     }
   };
 
@@ -110,17 +114,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
     setIsUploadModalOpen(false);
     setUploadedFiles([]);
     setImportUrl('');
+    setSelectedFile(null);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files) {
+    if (files && files[0]) {
+      setSelectedFile(files[0]);
       const newFiles = Array.from(files).map(file => ({
         name: file.name,
         progress: 0
       }));
       setUploadedFiles(prev => [...prev, ...newFiles]);
-      // TODO: Implement actual file upload logic here
     }
   };
 
@@ -128,9 +133,48 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
     setUploadedFiles(prev => prev.filter(file => file.name !== fileName));
   };
 
-  const handleAddFiles = () => {
-    // TODO: Implement the actual file upload/URL import logic here
-    handleCloseUploadModal();
+  const handleAddFiles = async () => {
+    if (!user) return;
+
+    try {
+      // Create a new chat with the file or URL
+      const response = await createChat(user.token)({
+        userInput: "I've uploaded a new file. Please help me analyze it.",
+        llmType: selectedModel.name,
+        uploadFile: selectedFile || undefined,
+        fileUrl: importUrl,
+        stream: false,
+        temperature: temperature
+      });
+
+      // If we get a successful response, update the chat ID
+      if (response && 'id' in response) {
+        setChatId(response.id);
+        
+        // Add system message about file upload
+        const systemMessage: ChatMessage = {
+          text: `File ${selectedFile ? selectedFile.name : importUrl} has been uploaded successfully.`,
+          isUser: false
+        };
+        setMessages(prev => [...prev, systemMessage]);
+      }
+
+      // Clear the upload state
+      handleCloseUploadModal();
+      setSelectedFile(null);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      // Update the file status to show error
+      if (selectedFile) {
+        setUploadedFiles(prev => 
+          prev.map(file => 
+            file.name === selectedFile.name 
+              ? { ...file, error: 'Upload failed' }
+              : file
+          )
+        );
+      }
+    }
   };
 
   return (
