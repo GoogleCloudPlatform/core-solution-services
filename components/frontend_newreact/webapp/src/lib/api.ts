@@ -51,10 +51,11 @@ interface ResumeChatParams {
 }
 
 interface ResumeChatApiParams {
-  prompt: string,
-  llm_type: string,
-  stream: boolean,
-  tool_names?: string
+  prompt: string;
+  llm_type: string;
+  stream: boolean;
+  tool_names?: string;
+  temperature?: number;
 }
 
 interface JobStatusResponse {
