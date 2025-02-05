@@ -22,7 +22,7 @@ import { ProfileMenu } from './components/profile-menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Sidebar } from './components/Sidebar';
 import { ModelProvider } from './contexts/ModelContext';
-import Sources from './components/Sources';
+import Sources from './pages/Sources';
 import StorageIcon from '@mui/icons-material/Storage';
 import CloudIcon from '@mui/icons-material/Cloud';
 
