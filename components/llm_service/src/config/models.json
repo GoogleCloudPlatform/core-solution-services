@@ -3,6 +3,7 @@
     "Vertex": {
       "enabled": true,
       "env_flag": "ENABLE_GOOGLE_LLM",
+      "description": "Google Vertex AI provides access to powerful large language models.",
       "model_params": {
         "temperature": 0.2,
         "max_output_tokens": 1024,
@@ -13,6 +14,7 @@
     "ModelGarden": {
       "enabled": true,
       "env_flag": "ENABLE_GOOGLE_MODEL_GARDEN",
+      "description": "Access models from Google's Model Garden repository.",
       "model_params": {
         "temperature": 0.2,
         "max_tokens": 900,
@@ -22,38 +24,45 @@
     },
     "Langchain": {
       "enabled": true,
-      "env_flag": "ENABLE_LANGCHAIN_LLM"
+      "env_flag": "ENABLE_LANGCHAIN_LLM",
+      "description": "Provides integration with various language models through the Langchain framework."
     },
     "LLMService": {
       "enabled": false,
-      "env_flag": "ENABLE_LLM_SERVICE_PROVIDER"
+      "env_flag": "ENABLE_LLM_SERVICE_PROVIDER",
+      "description": "Provides access to custom or locally hosted language models."
     },
     "Truss": {
       "enabled": false,
-      "env_flag": "ENABLE_TRUSS_LLAMA2"
+      "env_flag": "ENABLE_TRUSS_LLAMA2",
+      "description": "Provides access to Truss' Llama2 models."
     },
     "vLLM": {
       "enabled": true,
-      "env_flag": "ENABLE_VLLM_GEMMA"
+      "env_flag": "ENABLE_VLLM_GEMMA",
+      "description": "Provides access to vLLM's Gemma models."
     }
   },
   "vendors": {
     "OpenAI": {
       "enabled": false,
       "api_key": "openai-api-key",
-      "env_flag": "ENABLE_OPENAI_LLM"
+      "env_flag": "ENABLE_OPENAI_LLM",
+      "description": "Provides access to OpenAI's powerful language models like GPT-3, GPT-4, and others."
     },
     "Cohere": {
       "enabled": false,
       "api_key": "cohere-api-key",
-      "env_flag": "ENABLE_COHERE_LLM"
+      "env_flag": "ENABLE_COHERE_LLM",
+      "description": "Provides access to Cohere's large language models."
     }
   },
   "models": {
     "VertexAI-Text": {
       "is_chat": false,
       "provider": "Vertex",
-      "model_name": "text-bison@002"
+      "model_name": "text-bison@002",
+      "description": "A powerful text generation model from Vertex AI."
     },
     "VertexAI-Chat": {
       "is_chat": true,
@@ -61,7 +70,11 @@
       "provider": "Vertex",
       "model_name": "gemini-1.5-flash",
       "description": "Latest Gemini model optimized for fast responses while maintaining high quality output",
-      "capabilities": ["Chat", "Text Generation", "Code Generation"],
+      "capabilities": [
+        "Chat",
+        "Text Generation",
+        "Code Generation"
+      ],
       "date_added": "2024-03-15",
       "model_params": {
         "temperature": 0.2,
@@ -74,19 +87,22 @@
     "VertexAI-Chat-Palm2": {
       "is_chat": true,
       "provider": "Vertex",
-      "model_name": "chat-bison@002"
+      "model_name": "chat-bison@002",
+      "description": "A chat-optimized version of PaLM 2 from Vertex AI."
     },
     "VertexAI-Chat-Palm2-V2": {
       "is_chat": true,
       "provider": "Vertex",
-      "model_name": "chat-bison@002"
+      "model_name": "chat-bison@002",
+      "description": "An updated version of the chat-optimized PaLM 2 from Vertex AI."
     },
     "VertexAI-Gemini-Flash": {
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
       "model_name": "gemini-1.5-flash",
-      "context_length": 1000000
+      "context_length": 1000000,
+      "description": "A fast and versatile Gemini model from Vertex AI."
     },
     "VertexAI-Gemini-Pro": {
       "is_chat": true,
@@ -94,7 +110,11 @@
       "provider": "Vertex",
       "model_name": "gemini-pro",
       "description": "Advanced language model with strong general capabilities",
-      "capabilities": ["Chat", "Text Generation", "Analysis"],
+      "capabilities": [
+        "Chat",
+        "Text Generation",
+        "Analysis"
+      ],
       "date_added": "2024-01-10",
       "context_length": 128000
     },
@@ -104,40 +124,49 @@
       "provider": "Vertex",
       "model_name": "gemini-pro-vision",
       "description": "Multimodal model capable of understanding both text and images",
-      "capabilities": ["Chat", "Image Analysis", "Visual Understanding"],
+      "capabilities": [
+        "Chat",
+        "Image Analysis",
+        "Visual Understanding"
+      ],
       "date_added": "2024-02-01"
     },
     "VertexAI-Gemini-1.5-Pro": {
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
-      "model_name": "gemini-1.5-pro-001"
+      "model_name": "gemini-1.5-pro-001",
+      "description": "A powerful and versatile Gemini 1.5 Pro model from Vertex AI."
     },
     "VertexAI-Chat-Palm2V2-Langchain": {
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "chat-bison@002",
       "model_class": "ChatVertexAI",
-      "context_length": 2048
+      "context_length": 2048,
+      "description": "Vertex AI's PaLM 2 chat model accessed via Langchain."
     },
     "VertexAI-Chat-Palm2-32k": {
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "chat-bison-32k",
-      "context_length": 32000
+      "context_length": 32000,
+      "description": "Vertex AI's PaLM 2 chat model with a 32k context window."
     },
     "VertexAI-Chat-Palm2-32k-Langchain": {
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "chat-bison-32k",
       "model_class": "ChatVertexAI",
-      "context_length": 32000
+      "context_length": 32000,
+      "description": "Vertex AI's PaLM 2 chat model with a 32k context window, accessed via Langchain."
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "gemini-pro",
-      "model_class": "ChatVertexAI"
+      "model_class": "ChatVertexAI",
+      "description": "Vertex AI's Gemini Pro chat model accessed via Langchain."
     },
     "Truss-Llama2-Chat": {
       "model_endpoint": "truss-llama2-7b-service",
@@ -150,7 +179,8 @@
         "top_p": 0.95,
         "top_k": 40,
         "max_new_tokens": 1024
-      }
+      },
+      "description": "Truss' Llama2 chat model."
     },
     "vLLM-Gemma-Chat": {
       "model_endpoint": "vllm-gemma-service",
@@ -163,14 +193,16 @@
         "top_p": 0.95,
         "top_k": 40,
         "max_tokens": 2048
-      }
+      },
+      "description": "vLLM's Gemma chat model."
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
       "is_chat": true,
       "provider": "ModelGarden",
       "enabled": false,
       "context_length": 4096,
-      "model_endpoint": "xxx"
+      "model_endpoint": "xxx",
+      "description": "LLAMA2 chat model from Vertex AI's Model Garden."
     },
     "OpenAI-GPT4": {
       "vendor": "OpenAI",
@@ -182,7 +214,8 @@
       "context_length": 8192,
       "model_params": {
         "temperature": 0
-      }
+      },
+      "description": "OpenAI's most advanced language model, capable of complex reasoning and creative tasks."
     },
     "OpenAI-GPT4-latest": {
       "vendor": "OpenAI",
@@ -194,7 +227,8 @@
       "context_length": 128000,
       "model_params": {
         "temperature": 0
-      }
+      },
+      "description": "The latest version of OpenAI's GPT-4 model."
     },
     "OpenAI-GPT3.5": {
       "vendor": "OpenAI",
@@ -206,14 +240,16 @@
       "context_length": 16385,
       "model_params": {
         "temperature": 0
-      }
+      },
+      "description": "OpenAI's GPT-3.5 Turbo model."
     },
     "Cohere": {
       "vendor": "Cohere",
       "is_chat": true,
       "provider": "Langchain",
       "enabled": true,
-      "model_class": "ChatCohere"
+      "model_class": "ChatCohere",
+      "description": "A chat model from Cohere."
     }
   },
   "embeddings": {
@@ -222,24 +258,29 @@
       "provider": "LLMService",
       "model_class": "LlamaCpp",
       "enabled": false,
-      "env_flag": "ENABLE_LLAMA2CPP_LLM"
+      "env_flag": "ENABLE_LLAMA2CPP_LLM",
+      "description": "Local Embeddings based on Llama2cpp"
     },
     "VertexAI-Embedding": {
       "provider": "Vertex",
       "model_name": "text-embedding-004",
-      "token_limit": 2000
+      "token_limit": 2000,
+      "description": "Vertex AI's high-quality text embedding model."
     },
     "VertexAI-Embedding-Vision": {
       "provider": "Vertex",
       "model_name": "multimodalembedding@001",
-      "is_multi": true
+      "is_multi": true,
+      "description": "Vertex AI's multimodal embedding model for text and images."
     },
     "OpenAI-Embedding": {
-      "provider": "Langchain"
+      "provider": "Langchain",
+      "description": "OpenAI's text embedding model, accessed via Langchain."
     },
     "HuggingFaceEmbeddings": {
       "provider": "Langchain",
-      "model_class": "HuggingFaceEmbeddings"
+      "model_class": "HuggingFaceEmbeddings",
+      "description": "Hugging Face embeddings, accessed via Langchain."
     }
   }
 }
