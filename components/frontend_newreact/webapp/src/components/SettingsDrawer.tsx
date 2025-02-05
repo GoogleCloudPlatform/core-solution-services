@@ -1,4 +1,5 @@
-import { Box, Typography, Select, MenuItem, Slider, Paper } from '@mui/material';
+import { Box, Typography, Button, Slider, Paper } from '@mui/material';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import React, { useState } from 'react';
 import ModelBrowser from './ModelBrowser';
 
@@ -38,28 +39,26 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open }) => {
                 Model
             </Typography>
             
-            <Select
-                value={selectedModel}
+            <Button
                 onClick={() => setModelBrowserOpen(true)}
                 fullWidth
+                endIcon={<KeyboardArrowDownIcon />}
                 sx={{
                     mb: 3,
                     backgroundColor: '#242424',
                     color: 'white',
-                    '& .MuiSelect-icon': {
-                        color: 'white'
-                    },
-                    '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(255, 255, 255, 0.2)'
+                    justifyContent: 'space-between',
+                    padding: '14px',
+                    textAlign: 'left',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    '&:hover': {
+                        backgroundColor: '#2a2a2a',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
                     }
                 }}
             >
-                <MenuItem value="Default Chat">Default Chat</MenuItem>
-                {/* Add more model options as needed */}
-            </Select>
+                {selectedModel}
+            </Button>
 
             <Paper 
                 sx={{ 
