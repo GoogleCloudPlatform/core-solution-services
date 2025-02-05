@@ -1,8 +1,25 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #1a1a1a;
+  overflow-x: hidden;
+}
+
 .app {
   display: flex;
   height: 100vh;
+  width: 100vw;
   background-color: #1a1a1a;
   color: white;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .history-drawer .MuiDrawer-paper {

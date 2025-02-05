@@ -48,6 +48,10 @@ const MainContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   background: "#1a1a1a",
   color: "white",
+  margin: 0,
+  padding: 0,
+  width: '100%',
+  overflow: 'hidden',
 }));
 
 const Header = styled(Box, {
