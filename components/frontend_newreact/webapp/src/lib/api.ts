@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { envOrFail } from "@/lib/env"
-import { Chat, Query, QueryEngine, QueryEngineBuildJob } from "@/lib/types"
+import { Chat, ChatModel, Query, QueryEngine, QueryEngineBuildJob } from "@/lib/types"
 import axios from "axios"
 import { path } from "ramda"
 
@@ -65,6 +65,14 @@ interface UpdateChatParams {
   history?: Array<{ [key: string]: string }>
 }
 
+interface ModelResponse {
+    name: string;
+    description: string;
+    capabilities: string[];
+    date_added: string;
+    is_multi: boolean;
+}
+
 const endpoint = envOrFail(
   "VITE_PUBLIC_API_ENDPOINT",
   import.meta.env.VITE_PUBLIC_API_ENDPOINT,
@@ -80,12 +88,12 @@ export const fetchAllChatModels =
     
     try {
       const response = await axios.get(url, { headers });
-      const modelDetails = response.data.data;
+      const modelDetails: ModelResponse[] = response.data.data;
       
       if (!modelDetails) return undefined;
 
       // Transform backend model details into ChatModel objects
-      const chatModels: ChatModel[] = modelDetails.map(model => {
+      const chatModels: ChatModel[] = modelDetails.map((model: ModelResponse) => {
         // Calculate if model is new (added in last 30 days)
         const dateAdded = new Date(model.date_added);
         const now = new Date();

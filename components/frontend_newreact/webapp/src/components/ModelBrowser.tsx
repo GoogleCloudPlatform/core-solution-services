@@ -25,6 +25,14 @@ interface ModelBrowserProps {
     selectedModel: string;
 }
 
+interface ModelResponse {
+    name: string;
+    description: string;
+    capabilities: string[];
+    date_added: string;
+    is_multi: boolean;
+}
+
 const SearchBox = styled(Box)(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
@@ -59,15 +67,8 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
             
             try {
                 setLoading(true);
-                const modelNames = await fetchAllChatModels(user.token)();
-                if (modelNames) {
-                    // Transform the model names into ChatModel objects
-                    const chatModels: ChatModel[] = modelNames.map(name => ({
-                        name,
-                        description: "Advanced language model capable of understanding and generating human-like text.",
-                        purposes: ['Chat', 'Text Generation', 'Analysis'],
-                        isNew: false // You might want to determine this based on some criteria
-                    }));
+                const chatModels = await fetchAllChatModels(user.token)();
+                if (chatModels) {
                     setModels(chatModels);
                 }
             } catch (err) {
@@ -161,10 +162,10 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
                                         variant="body2" 
                                         sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}
                                     >
-                                        {model.description}
+                                        {model.description || 'No description available'}
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 1 }}>
-                                        {model.purposes.map((purpose, i) => (
+                                        {(model.purposes || []).map((purpose, i) => (
                                             <Chip
                                                 key={i}
                                                 label={purpose}

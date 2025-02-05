@@ -267,8 +267,8 @@ export type QueryEngineBuildJob = {
 
 export interface ChatModel {
     name: string;
-    description: string;
-    purposes: string[];
+    description?: string;
+    purposes?: string[];
     isNew?: boolean;
     isMultimodal?: boolean;
 }
