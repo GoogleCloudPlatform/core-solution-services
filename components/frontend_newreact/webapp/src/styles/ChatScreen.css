@@ -86,21 +86,22 @@
 .chat-input {
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 12px 16px;
   position: relative;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(32, 33, 35, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 24px !important;
-  min-height: 56px;
 }
 
 .chat-input .MuiInputBase-root {
   order: 2;
-  padding: 8px 40px 8px 0;
-  color: #fff;
+  padding: 0 40px 0 0;
+  color: rgba(255, 255, 255, 0.9);
+  min-height: 24px;
 }
 
 .chat-input .MuiInputBase-root input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .file-chip-container {
@@ -133,10 +134,10 @@
 /* Style the add button */
 .chat-input .MuiIconButton-root {
   position: absolute;
-  right: 12px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  background-color: rgba(48, 48, 48, 1);
+  background-color: rgba(64, 65, 79, 1);
   color: rgba(255, 255, 255, 0.7);
   z-index: 1;
   width: 32px;
@@ -145,7 +146,7 @@
 }
 
 .chat-input .MuiIconButton-root:hover {
-  background-color: rgba(48, 48, 48, 0.8);
+  background-color: rgba(64, 65, 79, 0.8);
   color: #fff;
 }
 
