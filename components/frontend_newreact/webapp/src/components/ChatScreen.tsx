@@ -28,6 +28,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
   const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
   const { user } = useAuth();
   const { selectedModel } = useModel();
+  const [temperature, setTemperature] = useState(1.0);
 
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
@@ -48,7 +49,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
           chatId,
           userInput: prompt,
           llmType: selectedModel.name,
-          stream: false
+          stream: false,
+          temperature: temperature
         });
       } else {
         // Create new chat
@@ -56,7 +58,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
           userInput: prompt,
           llmType: selectedModel.name,
           fileUrl: '',
-          stream: false
+          stream: false,
+          temperature: temperature
         });
 
         // Store the chat ID for future messages

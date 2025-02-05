@@ -31,6 +31,7 @@ interface RunChatParams {
   stream?: boolean
   toolNames?: string[]
   history?: Array<{ [key: string]: string }>
+  temperature?: number
 }
 
 interface ResumeQueryParams {
@@ -46,6 +47,7 @@ interface ResumeChatParams {
   llmType: string
   toolNames?: string[]
   stream?: boolean
+  temperature?: number
 }
 
 interface ResumeChatApiParams {
@@ -143,7 +145,8 @@ export const createChat =
     fileUrl,
     toolNames,
     stream = true,
-    history
+    history,
+    temperature
   }: RunChatParams): Promise<Chat | ReadableStream | undefined | null> => {
     const url = `${endpoint}/chat`
     const headers = {
@@ -160,6 +163,8 @@ export const createChat =
       formData.append('tool_names', JSON.stringify(toolNames))
     }
     if (history) formData.append('history', JSON.stringify(history))
+    if (temperature !== undefined) formData.append('temperature', String(temperature))
+
     if (stream) {
       try {
         const response = await fetch(url, {
@@ -188,7 +193,8 @@ export const resumeChat =
     userInput,
     llmType,
     toolNames,
-    stream = true
+    stream = true,
+    temperature
   }: ResumeChatParams): Promise<Chat | ReadableStream | undefined | null> => {
     const url = `${endpoint}/chat/${chatId}/generate`
     const headers = { Authorization: `Bearer ${token}` }
@@ -199,6 +205,9 @@ export const resumeChat =
     }
     if (toolNames && toolNames.length > 0) {
       data['tool_names'] = JSON.stringify(toolNames)
+    }
+    if (temperature !== undefined) {
+      data['temperature'] = temperature
     }
 
     if (stream) {
