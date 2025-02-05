@@ -21,6 +21,7 @@ import { useSidebarStore } from './lib/sidebarStore';
 import { ProfileMenu } from './components/profile-menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Sidebar } from './components/Sidebar';
+import { ModelProvider } from './contexts/ModelContext';
 
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -95,8 +96,7 @@ const MainApp = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
-  const [selectedModel, setSelectedModel] = useState('Default Chat');
-  const [settingsOpen, setSettingsOpen] = useState(false); // Add state for settings drawer
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const { isOpen, activePanel, toggle } = useSidebarStore();
 
@@ -149,7 +149,6 @@ const MainApp = () => {
         {showChat ? (
           <ChatScreen 
             currentChat={currentChat}
-            selectedModel={selectedModel} 
           />
         ) : (
           <>
@@ -178,19 +177,21 @@ const MainApp = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/signin" element={<SignIn />} />
-          <Route
-            path="/*"
-            element={
-              <PrivateRoute>
-                <MainApp />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
+      <ModelProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/signin" element={<SignIn />} />
+            <Route
+              path="/*"
+              element={
+                <PrivateRoute>
+                  <MainApp />
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </ModelProvider>
     </AuthProvider>
   );
 }

@@ -5,6 +5,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useAuth } from '../contexts/AuthContext';
 import { createChat, resumeChat } from '../lib/api';
 import { Chat } from '../lib/types';
+import { useModel } from '../contexts/ModelContext';
 
 interface ChatMessage {
   text: string;
@@ -13,10 +14,9 @@ interface ChatMessage {
 
 interface ChatScreenProps {
   currentChat?: Chat;
-  selectedModel: string;
 }
 
-const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, selectedModel }) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(() => 
     // Initialize messages from currentChat if it exists
@@ -27,6 +27,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, selectedModel }) =
   );
   const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
   const { user } = useAuth();
+  const { selectedModel } = useModel();
 
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
@@ -46,17 +47,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, selectedModel }) =
         response = await resumeChat(user.token)({
           chatId,
           userInput: prompt,
-          llmType: selectedModel,
+          llmType: selectedModel.name,
           stream: false
         });
       } else {
         // Create new chat
         response = await createChat(user.token)({
           userInput: prompt,
-          llmType: selectedModel,
-          fileUrl: '', // Empty string for no file URL
+          llmType: selectedModel.name,
+          fileUrl: '',
           stream: false
-          // Don't include uploadFile if we don't have one
         });
 
         // Store the chat ID for future messages

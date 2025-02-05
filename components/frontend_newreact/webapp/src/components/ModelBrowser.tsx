@@ -21,8 +21,8 @@ import { ChatModel } from '../lib/types';
 interface ModelBrowserProps {
     open: boolean;
     onClose: () => void;
-    onSelectModel: (modelName: string) => void;
-    selectedModel: string;
+    onSelectModel: (model: ChatModel) => void;
+    selectedModel: ChatModel;
 }
 
 interface ModelResponse {
@@ -180,7 +180,7 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
                                         ))}
                                     </Box>
                                 </Box>
-                                {selectedModel === model.name ? (
+                                {selectedModel.name === model.name ? (
                                     <Box sx={{ 
                                         display: 'flex', 
                                         alignItems: 'center',
@@ -193,7 +193,7 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
                                 ) : (
                                     <Button
                                         variant="contained"
-                                        onClick={() => onSelectModel(model.name)}
+                                        onClick={() => onSelectModel(model)}
                                         sx={{
                                             backgroundColor: '#90CAF9',
                                             color: 'black',

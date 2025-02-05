@@ -2,24 +2,23 @@ import { Box, Typography, Button, Slider, Paper } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import React, { useState } from 'react';
 import ModelBrowser from './ModelBrowser';
+import { useModel } from '../contexts/ModelContext';
+import { ChatModel } from '../lib/types';
 
 interface SettingsDrawerProps {
     open: boolean;
     onClose: () => void;
-    selectedModel: string;
-    onModelChange: (modelName: string) => void;
 }
 
 const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ 
-    open, 
-    selectedModel,
-    onModelChange 
+    open
 }) => {
     const [temperature, setTemperature] = useState(1.0);
     const [modelBrowserOpen, setModelBrowserOpen] = useState(false);
+    const { selectedModel, setSelectedModel } = useModel();
 
-    const handleModelSelect = (modelName: string) => {
-        onModelChange(modelName);
+    const handleModelSelect = (model: ChatModel) => {
+        setSelectedModel(model);
         setModelBrowserOpen(false);
     };
 
@@ -58,7 +57,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                     }
                 }}
             >
-                {selectedModel}
+                {selectedModel.name}
             </Button>
 
             <Paper 
@@ -71,7 +70,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                 }}
             >
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                    Model description suspendisse ad a fusce himenaeos condimentum hendrerit vehicula faucibus nam sem malesuada vestibulum fermentum nam ultrices accumsan convallis parturient.
+                    {selectedModel.description}
                 </Typography>
             </Paper>
 
