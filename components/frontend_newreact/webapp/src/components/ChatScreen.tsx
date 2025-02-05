@@ -120,6 +120,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files[0]) {
+      console.log('File selected:', files[0].name);
       setSelectedFile(files[0]);
       const newFiles = Array.from(files).map(file => ({
         name: file.name,
@@ -173,6 +174,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
                 label={selectedFile ? selectedFile.name : importUrl}
                 onDelete={handleRemoveSelectedFile}
                 size="small"
+                variant="outlined"
               />
             </Box>
           )}
@@ -195,16 +197,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
         onClose={handleCloseUploadModal}
         aria-labelledby="upload-modal-title"
       >
-        <UploadModal
-          open={isUploadModalOpen}
-          onClose={handleCloseUploadModal}
-          uploadedFiles={uploadedFiles}
-          onFileSelect={handleFileSelect}
-          onRemoveFile={handleRemoveFile}
-          importUrl={importUrl}
-          onImportUrlChange={(url) => setImportUrl(url)}
-          onAdd={handleAddFiles}
-        />
+        <Box>
+          <UploadModal
+            open={isUploadModalOpen}
+            onClose={handleCloseUploadModal}
+            uploadedFiles={uploadedFiles}
+            onFileSelect={handleFileSelect}
+            onRemoveFile={handleRemoveFile}
+            importUrl={importUrl}
+            onImportUrlChange={(url) => setImportUrl(url)}
+            onAdd={handleAddFiles}
+          />
+        </Box>
       </Modal>
     </Box>
   );

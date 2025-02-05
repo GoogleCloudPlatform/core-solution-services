@@ -87,37 +87,53 @@
   display: flex;
   flex-direction: column;
   padding: 8px;
-}
-
-.file-chip-container {
-  margin-bottom: 8px;
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 24px !important;
 }
 
 .chat-input .MuiInputBase-root {
-  padding: 8px;
+  padding: 8px 40px 8px 8px;
+  color: #fff;
 }
 
-/* Add these new styles */
-.chat-input-container {
-  padding: 16px;
-}
-
-.chat-input {
-  display: flex;
-  flex-direction: column;
-  position: relative;
+.chat-input .MuiInputBase-root input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .chat-input .MuiIconButton-root {
   position: absolute;
   right: 8px;
-  bottom: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.chat-input .MuiInputBase-root {
-  padding-right: 40px; /* Make room for the plus button */
+.chat-input .MuiIconButton-root:hover {
+  color: #fff;
 }
 
 .file-chip-container {
-  padding: 8px 8px 0 8px;
+  margin-bottom: 8px;
+  padding: 0 8px;
+}
+
+/* Style the chip for dark background */
+.file-chip-container .MuiChip-root {
+  max-width: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.file-chip-container .MuiChip-deleteIcon {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.file-chip-container .MuiChip-deleteIcon:hover {
+  color: #fff;
+}
+
+.chat-input-container {
+  padding: 16px;
 } 
