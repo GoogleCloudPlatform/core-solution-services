@@ -37,6 +37,7 @@ from schemas.llm_schema import (ChatUpdateModel,
 from services.llm_generate import llm_chat
 from services.agents.agent_tools import chat_tools, run_chat_tools
 from utils.file_helper import process_chat_file
+from datetime import datetime
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
@@ -61,20 +62,34 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
       LLMGetTypesResponse
   """
   try:
+    model_config = get_model_config()
     if is_multimodal is True:
-      llm_types = get_model_config().get_multimodal_chat_llm_types()
+      llm_types = model_config.get_multimodal_chat_llm_types()
     elif is_multimodal is False:
-      llm_types = get_model_config().get_text_chat_llm_types()
+      llm_types = model_config.get_text_chat_llm_types()
     elif is_multimodal is None:
-      llm_types = get_model_config().get_chat_llm_types()
+      llm_types = model_config.get_chat_llm_types()
     else:
       return BadRequest("Invalid request parameter value: is_multimodal")
-    user_enabled_llms = [llm for llm in llm_types if \
-                get_model_config().is_model_enabled_for_user(llm, user_data)]
+
+    model_details = []
+    for llm in llm_types:
+      if model_config.is_model_enabled_for_user(llm, user_data):
+        config = model_config.get_model_config(llm)
+        date_added = datetime.strptime(config.get('date_added', '2000-01-01'), '%Y-%m-%d')
+        
+        model_details.append({
+          "name": llm,
+          "description": config.get('description', ''),
+          "capabilities": config.get('capabilities', []),
+          "date_added": config.get('date_added', ''),
+          "is_multi": config.get('is_multi', False)
+        })
+
     return {
       "success": True,
       "message": "Successfully retrieved chat llm types",
-      "data": user_enabled_llms
+      "data": model_details
     }
   except Exception as e:
     Logger.error(e)

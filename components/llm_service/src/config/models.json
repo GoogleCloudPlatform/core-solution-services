@@ -60,6 +60,9 @@
       "is_multi": true,
       "provider": "Vertex",
       "model_name": "gemini-1.5-flash",
+      "description": "Latest Gemini model optimized for fast responses while maintaining high quality output",
+      "capabilities": ["Chat", "Text Generation", "Code Generation"],
+      "date_added": "2024-03-15",
       "model_params": {
         "temperature": 0.2,
         "max_output_tokens": 8192,
@@ -90,13 +93,19 @@
       "is_multi": false,
       "provider": "Vertex",
       "model_name": "gemini-pro",
+      "description": "Advanced language model with strong general capabilities",
+      "capabilities": ["Chat", "Text Generation", "Analysis"],
+      "date_added": "2024-01-10",
       "context_length": 128000
     },
     "VertexAI-Gemini-Pro-Vision": {
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
-      "model_name": "gemini-pro-vision"
+      "model_name": "gemini-pro-vision",
+      "description": "Multimodal model capable of understanding both text and images",
+      "capabilities": ["Chat", "Image Analysis", "Visual Understanding"],
+      "date_added": "2024-02-01"
     },
     "VertexAI-Gemini-1.5-Pro": {
       "is_chat": true,
