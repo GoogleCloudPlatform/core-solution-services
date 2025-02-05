@@ -56,7 +56,7 @@ const Header = styled(Box, {
   alignItems: 'center',
   background: `linear-gradient(to bottom, ${theme.palette.background.default}CC, ${theme.palette.background.default}00)`,
   right: 0,
-  left: `${sidebarWidth + panelWidth}px`,
+  left: `${60 + panelWidth}px`,
   transition: 'left 0.3s ease-in-out',
 }));
 
@@ -84,7 +84,7 @@ const Main = styled(Box, {
   paddingTop: '64px',
   paddingLeft: '16px',
   paddingRight: '16px',
-  marginLeft: `${sidebarWidth + panelWidth}px`,
+  marginLeft: `${60 + panelWidth}px`,
   flexGrow: 1,
   display: "flex",
   flexDirection: "column",

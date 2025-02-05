@@ -1,5 +1,6 @@
 import { Box, Typography, Select, MenuItem, Slider, Paper } from '@mui/material';
 import React, { useState } from 'react';
+import ModelBrowser from './ModelBrowser';
 
 interface SettingsDrawerProps {
     open: boolean;
@@ -9,6 +10,7 @@ interface SettingsDrawerProps {
 const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open }) => {
     const [selectedModel, setSelectedModel] = useState('Default Chat');
     const [temperature, setTemperature] = useState(1.0);
+    const [modelBrowserOpen, setModelBrowserOpen] = useState(false);
 
     const handleModelChange = (event: any) => {
         setSelectedModel(event.target.value);
@@ -16,6 +18,11 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open }) => {
 
     const handleTemperatureChange = (event: Event, newValue: number | number[]) => {
         setTemperature(newValue as number);
+    };
+
+    const handleModelSelect = (modelName: string) => {
+        setSelectedModel(modelName);
+        setModelBrowserOpen(false);
     };
 
     if (!open) return null;
@@ -33,7 +40,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open }) => {
             
             <Select
                 value={selectedModel}
-                onChange={handleModelChange}
+                onClick={() => setModelBrowserOpen(true)}
                 fullWidth
                 sx={{
                     mb: 3,
@@ -102,6 +109,13 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open }) => {
                     }}
                 />
             </Box>
+
+            <ModelBrowser
+                open={modelBrowserOpen}
+                onClose={() => setModelBrowserOpen(false)}
+                onSelectModel={handleModelSelect}
+                selectedModel={selectedModel}
+            />
         </Box>
     );
 };
