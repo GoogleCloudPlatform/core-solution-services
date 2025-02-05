@@ -182,6 +182,8 @@ export const QUERY_ENGINE_TYPES = {
   "qe_integrated_search": "Integrated Search"
 }
 
+export const QUERY_ENGINE_DEFAULT_TYPE = "qe_llm_service"
+
 export type QueryEngine = {
   id: string
   name: string

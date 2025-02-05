@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createQueryEngine } from '../lib/api';
-import { QUERY_ENGINE_TYPES, QueryEngine } from '../lib/types';
+import { QUERY_ENGINE_TYPES, QUERY_ENGINE_DEFAULT_TYPE, QueryEngine } from '../lib/types';
 import {
   Box,
   Typography,
@@ -45,6 +45,20 @@ const StyledSlider = styled(Slider)({
   },
 });
 
+const StyledMenuItem = styled(MenuItem)({
+  backgroundColor: '#242424',
+  color: 'white',
+  '&:hover': {
+    backgroundColor: '#333',
+  },
+  '&.Mui-selected': {
+    backgroundColor: '#2a2a2a',
+    '&:hover': {
+      backgroundColor: '#333',
+    }
+  }
+});
+
 const AddSource = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -55,7 +69,7 @@ const AddSource = () => {
   const [formData, setFormData] = useState<Partial<QueryEngine>>({
     name: '',
     description: '',
-    query_engine_type: 'qe_integrated_search', // default to Integrated Search
+    query_engine_type: QUERY_ENGINE_DEFAULT_TYPE,
     doc_url: '',
     embedding_type: 'text-embedding-ada-002',
     vector_store: 'vertex_matching_engine',
@@ -206,38 +220,45 @@ const AddSource = () => {
           />
         </Box>
 
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
-            Type
-          </Typography>
-          <Select
-            fullWidth
-            value={formData.query_engine_type}
-            onChange={(e) => handleChange('query_engine_type', e.target.value)}
-            required
-            sx={{
-              backgroundColor: '#242424',
-              color: 'white',
-              '& .MuiOutlinedInput-notchedOutline': { borderColor: '#333' },
-              '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#444' },
-            }}
-          >
-            {Object.entries(QUERY_ENGINE_TYPES).map(([key, value]) => (
-              <MenuItem key={key} value={key}>{value}</MenuItem>
-            ))}
-          </Select>
-        </Box>
-
         <Button
           onClick={() => setShowAdvanced(!showAdvanced)}
           startIcon={<ExpandMoreIcon sx={{ transform: showAdvanced ? 'rotate(180deg)' : 'none' }} />}
           sx={{ color: 'white', textTransform: 'none' }}
         >
-          Show Advanced Settings
+          {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
         </Button>
 
         <Collapse in={showAdvanced}>
           <Box sx={{ mt: 3 }}>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+                Type
+              </Typography>
+              <StyledSelect
+                fullWidth
+                value={formData.query_engine_type}
+                onChange={(e) => handleChange('query_engine_type', e.target.value)}
+                required
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: '#242424',
+                      border: '1px solid #333',
+                      borderRadius: '4px',
+                      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
+                      maxHeight: '300px',
+                    }
+                  }
+                }}
+              >
+                {Object.entries(QUERY_ENGINE_TYPES).map(([key, value]) => (
+                  <StyledMenuItem key={key} value={key}>
+                    {value}{key === QUERY_ENGINE_DEFAULT_TYPE ? ' (Default)' : ''}
+                  </StyledMenuItem>
+                ))}
+              </StyledSelect>
+            </Box>
+
             <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
               <Box sx={{ flex: 1 }}>
                 <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
