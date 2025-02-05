@@ -1,15 +1,26 @@
 import { useState } from 'react';
-import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem } from '@mui/material';
+import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import UploadIcon from '@mui/icons-material/Upload';
 import { useAuth } from '../contexts/AuthContext';
 import { createChat, resumeChat } from '../lib/api';
 import { Chat } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
+import UploadModal from './UploadModal';
+import '../styles/ChatScreen.css';
 
 interface ChatMessage {
   text: string;
   isUser: boolean;
+}
+
+interface FileUpload {
+  name: string;
+  progress?: number;
+  error?: string;
 }
 
 interface ChatScreenProps {
@@ -29,6 +40,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
   const { user } = useAuth();
   const { selectedModel } = useModel();
   const [temperature, setTemperature] = useState(1.0);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([]);
+  const [importUrl, setImportUrl] = useState('');
 
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
@@ -92,6 +106,33 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
     }
   };
 
+  const handleCloseUploadModal = () => {
+    setIsUploadModalOpen(false);
+    setUploadedFiles([]);
+    setImportUrl('');
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const newFiles = Array.from(files).map(file => ({
+        name: file.name,
+        progress: 0
+      }));
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+      // TODO: Implement actual file upload logic here
+    }
+  };
+
+  const handleRemoveFile = (fileName: string) => {
+    setUploadedFiles(prev => prev.filter(file => file.name !== fileName));
+  };
+
+  const handleAddFiles = () => {
+    // TODO: Implement the actual file upload/URL import logic here
+    handleCloseUploadModal();
+  };
+
   return (
     <Box className="chat-screen">
       <Box className="chat-header">
@@ -125,11 +166,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
             fullWidth
             multiline
           />
-          <IconButton onClick={handleSubmit}>
+          <IconButton onClick={() => setIsUploadModalOpen(true)}>
             <AddIcon />
           </IconButton>
         </Paper>
       </Box>
+
+      <Modal
+        open={isUploadModalOpen}
+        onClose={handleCloseUploadModal}
+        aria-labelledby="upload-modal-title"
+      >
+        <UploadModal
+          open={isUploadModalOpen}
+          onClose={handleCloseUploadModal}
+          uploadedFiles={uploadedFiles}
+          onFileSelect={handleFileSelect}
+          onRemoveFile={handleRemoveFile}
+          importUrl={importUrl}
+          onImportUrlChange={(url) => setImportUrl(url)}
+          onAdd={handleAddFiles}
+        />
+      </Modal>
     </Box>
   );
 };
