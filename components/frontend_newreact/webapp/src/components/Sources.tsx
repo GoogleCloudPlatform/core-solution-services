@@ -60,6 +60,17 @@ const SourceDescription = styled(Typography)({
   overflow: 'hidden',
 });
 
+const EmptyState = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: theme.spacing(4),
+  color: '#888',
+  textAlign: 'center',
+  marginTop: theme.spacing(4),
+}));
+
 const Sources = () => {
   const [sources, setSources] = useState<QueryEngine[]>([]);
   const { user } = useAuth();
@@ -86,22 +97,6 @@ const Sources = () => {
     loadSources();
   }, [user]);
 
-  if (loading) {
-    return (
-      <SourcesContainer>
-        <Typography>Loading sources...</Typography>
-      </SourcesContainer>
-    );
-  }
-
-  if (error) {
-    return (
-      <SourcesContainer>
-        <Typography color="error">{error}</Typography>
-      </SourcesContainer>
-    );
-  }
-
   return (
     <SourcesContainer>
       <Typography variant="h4" sx={{ color: '#E3E3E3', mb: 2 }}>
@@ -112,37 +107,57 @@ const Sources = () => {
         Browse and manage your knowledge sources
       </Typography>
 
-      <SourcesGrid>
-        {sources.map((source) => (
-          <SourceCard key={source.id}>
-            <SourceHeader>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {source.query_engine_type.includes('vertex') ? (
-                  <CloudIcon sx={{ color: '#4C8DF6' }} />
-                ) : (
-                  <StorageIcon sx={{ color: '#4C8DF6' }} />
-                )}
-                <SourceTitle variant="h6">
-                  {source.name}
-                </SourceTitle>
-              </Box>
-              <Tooltip title="More options">
-                <IconButton size="small" sx={{ color: '#888' }}>
-                  <MoreVertIcon />
-                </IconButton>
-              </Tooltip>
-            </SourceHeader>
-            
-            <SourceType>
-              {QUERY_ENGINE_TYPES[source.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || source.query_engine_type}
-            </SourceType>
-            
-            <SourceDescription>
-              {source.description || 'No description available'}
-            </SourceDescription>
-          </SourceCard>
-        ))}
-      </SourcesGrid>
+      {loading ? (
+        <EmptyState>
+          <Typography>Loading sources...</Typography>
+        </EmptyState>
+      ) : error ? (
+        <EmptyState>
+          <Typography color="error">{error}</Typography>
+        </EmptyState>
+      ) : sources.length === 0 ? (
+        <EmptyState>
+          <StorageIcon sx={{ fontSize: 48, color: '#666', mb: 2 }} />
+          <Typography variant="h6" sx={{ color: '#888', mb: 1 }}>
+            No Knowledge Sources Available
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#666', maxWidth: 400 }}>
+            There are currently no knowledge sources configured. Knowledge sources allow you to query specific data collections.
+          </Typography>
+        </EmptyState>
+      ) : (
+        <SourcesGrid>
+          {sources.map((source) => (
+            <SourceCard key={source.id}>
+              <SourceHeader>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {source.query_engine_type.includes('vertex') ? (
+                    <CloudIcon sx={{ color: '#4C8DF6' }} />
+                  ) : (
+                    <StorageIcon sx={{ color: '#4C8DF6' }} />
+                  )}
+                  <SourceTitle variant="h6">
+                    {source.name}
+                  </SourceTitle>
+                </Box>
+                <Tooltip title="More options">
+                  <IconButton size="small" sx={{ color: '#888' }}>
+                    <MoreVertIcon />
+                  </IconButton>
+                </Tooltip>
+              </SourceHeader>
+              
+              <SourceType>
+                {QUERY_ENGINE_TYPES[source.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || source.query_engine_type}
+              </SourceType>
+              
+              <SourceDescription>
+                {source.description || 'No description available'}
+              </SourceDescription>
+            </SourceCard>
+          ))}
+        </SourcesGrid>
+      )}
     </SourcesContainer>
   );
 };
