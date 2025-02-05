@@ -22,6 +22,9 @@ import { ProfileMenu } from './components/profile-menu';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Sidebar } from './components/Sidebar';
 import { ModelProvider } from './contexts/ModelContext';
+import Sources from './components/Sources';
+import StorageIcon from '@mui/icons-material/Storage';
+import CloudIcon from '@mui/icons-material/Cloud';
 
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -97,6 +100,7 @@ const MainApp = () => {
   const [showChat, setShowChat] = useState(false);
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showSources, setShowSources] = useState(false);
 
   const { isOpen, activePanel, toggle } = useSidebarStore();
 
@@ -132,12 +136,17 @@ const MainApp = () => {
 
   const features = [
     { icon: <ChatIcon />, title: 'Chat', subtitle: 'Latest Topical Gist', action: 'Resume' },
-    { icon: <FolderIcon />, title: 'Knowledge Sources', subtitle: 'Knowledge Source Name', action: 'Query' },
+    { icon: <StorageIcon />, title: 'Knowledge Sources', subtitle: 'Browse your sources', action: 'View', onClick: () => setShowSources(true) },
   ];
 
   return (
     <MainContainer>
-      <Sidebar setShowChat={setShowChat} onSelectChat={handleSelectChat} selectedChatId={currentChat?.id} />
+      <Sidebar 
+        setShowChat={setShowChat} 
+        onSelectChat={handleSelectChat} 
+        selectedChatId={currentChat?.id}
+        setShowSources={setShowSources}
+      />
       <Header sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         <Title>
           <span className="primary">genAI</span>
@@ -150,6 +159,8 @@ const MainApp = () => {
           <ChatScreen 
             currentChat={currentChat}
           />
+        ) : showSources ? (
+          <Sources />
         ) : (
           <>
             <Typography variant="h4" className="greeting">
@@ -158,7 +169,12 @@ const MainApp = () => {
 
             <Box className="features-grid">
               {features.map((feature, index) => (
-                <Paper key={index} className="feature-card">
+                <Paper 
+                  key={index} 
+                  className="feature-card"
+                  onClick={feature.onClick}
+                  sx={{ cursor: feature.onClick ? 'pointer' : 'default' }}
+                >
                   {feature.icon}
                   <Typography variant="h6">{feature.title}</Typography>
                   <Typography variant="body2" className="subtitle">{feature.subtitle}</Typography>

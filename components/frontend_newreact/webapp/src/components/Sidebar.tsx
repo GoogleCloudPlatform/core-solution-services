@@ -33,9 +33,10 @@ const drawerWidth = 60;
 const collapsedWidth = 60;
 
 interface SidebarProps {
-    setShowChat: React.Dispatch<React.SetStateAction<boolean>>; // Define prop type
-    onSelectChat: (chat: Chat) => void;  // Add onSelectChat prop
-    selectedChatId?: string; // Add to manage highlighting of selected chat
+    setShowChat: React.Dispatch<React.SetStateAction<boolean>>;
+    onSelectChat: (chat: Chat) => void;
+    selectedChatId?: string;
+    setShowSources?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -92,7 +93,12 @@ const PanelHeader = styled(Box)(({ theme }) => ({
     alignItems: 'center',
 }));
 
-export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, selectedChatId }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+    setShowChat, 
+    onSelectChat, 
+    selectedChatId,
+    setShowSources 
+}) => {
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
 
     const handleItemClick = (item: string) => {
@@ -111,16 +117,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ setShowChat, onSelectChat, sel
     ];
 
     const bottomMenuItems = [
-        { icon: <ChatIcon />, id: 'chat' },
-        { icon: <StorageIcon />, id: 'sources' },
+        { 
+            icon: <ChatIcon />, 
+            id: 'chat',
+            onClick: () => {
+                setShowChat(true);
+                setShowSources?.(false);
+            }
+        },
+        { 
+            icon: <StorageIcon />, 
+            id: 'sources',
+            onClick: () => {
+                setShowSources?.(true);
+                setShowChat(false);
+            }
+        },
         { icon: <CloudIcon />, id: 'cloud' },
     ];
 
-    const renderMenuItem = (item: typeof mainMenuItems[0], index: number) => (
+    const renderMenuItem = (item: typeof mainMenuItems[0] | typeof bottomMenuItems[0], index: number) => (
         <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>
             <ListItemButton
                 selected={selectedItem === item.id}
-                onClick={() => handleItemClick(item.id)}
+                onClick={() => {
+                    if ('onClick' in item && item.onClick) {
+                        item.onClick();
+                    } else {
+                        handleItemClick(item.id);
+                    }
+                }}
                 sx={{
                     minHeight: 48,
                     justifyContent: 'center',
