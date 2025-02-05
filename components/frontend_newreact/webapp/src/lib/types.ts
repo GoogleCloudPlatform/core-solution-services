@@ -264,3 +264,11 @@ export type QueryEngineBuildJob = {
   job_logs: any
   metadata: any
 }
+
+export interface ChatModel {
+    name: string;
+    description: string;
+    purposes: string[];
+    isNew?: boolean;
+    isMultimodal?: boolean;
+}
