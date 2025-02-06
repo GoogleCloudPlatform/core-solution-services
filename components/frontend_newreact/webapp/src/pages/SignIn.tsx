@@ -1,13 +1,14 @@
-import { Box, Container, Paper, Typography } from '@mui/material';
 import SignInForm from '@/components/SignInForm';
 import { AppConfig } from '@/lib/auth';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from "react-i18next"
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 
 const SignIn = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (user) {
@@ -16,20 +17,29 @@ const SignIn = () => {
   }, [user, navigate]);
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <img src={AppConfig.logoPath} alt="Logo" style={{ height: 60, marginBottom: 16 }} />
-            <Typography component="h1" variant="h5">
-              Sign in to {AppConfig.siteName}
-            </Typography>
-          </Box>
-          <SignInForm authOptions={AppConfig.authProviders} />
-        </Paper>
-      </Box>
-    </Container>
-  );
-};
+    <div className="min-h-screen px-4 md:px-10">
+      <div className="flex min-h-screen max-w-6xl items-center justify-center">
+        <div className="mx-auto w-3/4 text-center md:w-1/2">
+          <div className="flex items-center justify-center">
+            <img
+              className="h-20 w-auto pr-6"
+              src={AppConfig.logoPath}
+              alt={t("app.title")}
+            />
+            <div className="text-center text-xl font-semibold">
+              {t("app.title")}
+            </div>
+          </div>
 
-export default SignIn; 
+          <div className="mb-16 mt-4">{t("app.description")}</div>
+
+          <div className="sm:px-20 md:px-10 lg:px-0 xl:px-20">
+            <SignInForm authOptions={AppConfig.authProviders} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default SignIn;
