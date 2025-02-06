@@ -17,23 +17,23 @@ const SignIn = () => {
   }, [user, navigate]);
 
   return (
-    <div className="min-h-screen px-4 md:px-10">
-      <div className="flex min-h-screen max-w-6xl items-center justify-center">
-        <div className="mx-auto w-3/4 text-center md:w-1/2">
-          <div className="flex items-center justify-center">
+    <div className="min-h-screen w-full bg-[#1a1a1a]">
+      <div className="flex min-h-screen items-center justify-center px-4 md:px-10">
+        <div className="w-full max-w-md rounded-lg bg-[#242424] p-8 shadow-lg">
+          <div className="flex flex-col items-center justify-center">
             <img
-              className="h-20 w-auto pr-6"
+              className="h-20 w-auto mb-4"
               src={AppConfig.logoPath}
               alt={t("app.title")}
             />
-            <div className="text-center text-xl font-semibold">
+            <div className="text-xl font-semibold text-white">
               {t("app.title")}
             </div>
           </div>
 
-          <div className="mb-16 mt-4">{t("app.description")}</div>
+          <div className="mt-4 mb-8 text-gray-300">{t("app.description")}</div>
 
-          <div className="sm:px-20 md:px-10 lg:px-0 xl:px-20">
+          <div className="w-full">
             <SignInForm authOptions={AppConfig.authProviders} />
           </div>
         </div>
