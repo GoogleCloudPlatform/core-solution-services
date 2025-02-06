@@ -111,10 +111,12 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
         newQueryEngine,
         {
           onSuccess: (resp?: QueryEngineBuildJob) => {
-            setAlert({
-              message: "Submitted QueryEngine Build Job: " + resp.name,
-              type: ALERT_TYPE.SUCCESS,
-            })
+            if (resp) {
+              setAlert({
+                message: "Submitted QueryEngine Build Job: " + resp.name,
+                type: ALERT_TYPE.SUCCESS,
+              })
+            }
           },
           onError: () => {
             setActiveJob(false)
