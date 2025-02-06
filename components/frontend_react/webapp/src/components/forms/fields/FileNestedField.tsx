@@ -63,6 +63,7 @@ const FileNestedField: React.FC<FileNestedFieldProps> = ({
       setFileFormat(fileFormatDefault)
     }
   }, [values[variable.name]])
+
   return (
     <>
       {fileFormat && (
