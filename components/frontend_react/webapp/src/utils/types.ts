@@ -53,6 +53,7 @@ const FIELD_TYPE = [
   "select",
   "list(string)",
   "file",
+  "file(upload)"
 ] as const
 
 const FIELD_TYPE_ENUM = z.enum(FIELD_TYPE)
@@ -64,7 +65,8 @@ export const FormVariable = z.object({
   description: z.string(),
   default: z.any().optional(),
   required: z.boolean(),
-  group: z.number(),
+  group: z.union([z.number(), z.string()]),
+  order: z.number().optional(),
   options: z.string().array().optional(),
   tooltip: z.string().optional(),
   fileLabel: z.string().optional(),
@@ -207,6 +209,7 @@ export type QueryEngine = {
   agents: string[] | null
   child_engines: string[] | null
   is_multimodal: boolean | null
+  documents: { b64: string, name: string }[] | null
 }
 
 export type QueryEngineBuildParams = {

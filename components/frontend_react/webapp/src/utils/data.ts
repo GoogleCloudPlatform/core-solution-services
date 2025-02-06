@@ -74,6 +74,17 @@ export const TEST_FORM_DATA: IFormVariable[] = [
     accept: "image/*,.pdf,.docx,.doc,.ppt,.xls",
     group: 2,
   },
+  {
+    name: "uploadFiles",
+    display: "Select Files",
+    tooltip: "Select files to upload",
+    type: "file(upload)",
+    description: "",
+    default: null,
+    required: false,
+    fileLabel: "Relevant Files",
+    group: 2
+  }
 ]
 
 export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
@@ -93,9 +104,9 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     tooltip: "Type of Query Engine. GENIE is the native type.",
     type: "select",
     description: "",
-    options: [{option: "Vertex Search", value: "qe_vertex_search"},
-              {option: "GENIE Search", value: "qe_llm_service"},
-              {option: "Integrated Search", value: "qe_integrated_search"}],
+    options: [{ option: "Vertex Search", value: "qe_vertex_search" },
+    { option: "GENIE Search", value: "qe_llm_service" },
+    { option: "Integrated Search", value: "qe_integrated_search" }],
     default: "GENIE",
     required: true,
     group: "queryengine",
@@ -124,6 +135,19 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     order: 2,
   },
   {
+    name: "uploadFiles",
+    display: "Select Files for the Query Engine",
+    tooltip: "Select files to upload",
+    type: "file(upload)",
+    description: "",
+    default: null,
+    multiple: true,
+    required: false,
+    fileLabel: "Relevant Files",
+    group: "queryengine",
+    order: 2
+  },
+  {
     name: "manifest_url",
     display: "Manifest URL",
     type: "string",
@@ -139,8 +163,8 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
     display: "Vector Store",
     type: "select",
     description: "",
-    options: [{option: "PGVector", value: "langchain_pgvector"},
-              {option: "Vertex Matching Engine", value: "matching_engine"}],
+    options: [{ option: "PGVector", value: "langchain_pgvector" },
+    { option: "Vertex Matching Engine", value: "matching_engine" }],
     default: "PGVector",
     required: true,
     group: "queryengine",
