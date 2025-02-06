@@ -233,7 +233,7 @@ const SignInForm: React.FunctionComponent<SignInFormProps> = ({
         </div>
       )}
       {authOptions.includes("google") ? renderGoogle() : <></>}
-      {/*{authOptions.includes("password") ? renderPassword() : <></>}*/}
+      {authOptions.includes("password") ? renderPassword() : <></>}
     </div>
   )
 }

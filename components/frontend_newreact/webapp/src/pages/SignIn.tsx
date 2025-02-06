@@ -33,7 +33,7 @@ const SignIn = () => {
 
           <div className="mt-4 mb-8 text-black">{t("app.description")}</div>
 
-          <div className="w-full">
+          <div className="w-full [&_label]:text-black [&_input]:text-black [&_input]:border [&_input]:border-gray-300 [&_input]:rounded-md [&_input]:p-2 [&_input]:w-full [&_.invalid-feedback]:text-red-500 [&_a]:text-blue-600">
             <SignInForm authOptions={AppConfig.authProviders} />
           </div>
         </div>
