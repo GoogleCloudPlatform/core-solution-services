@@ -1,7 +1,7 @@
 {
   "app.copyright": "All rights reserved.",
-  "app.description": "This demo showcases a solution to this industry vertical",
-  "app.title": "Cloud Solution",
+  "app.description": "",
+  "app.title": "GenAI for Public Sector",
   "actions.auth.signin-google": "Sign in with Google",
   "actions.cancel": "Cancel",
   "actions.close": "Close",
