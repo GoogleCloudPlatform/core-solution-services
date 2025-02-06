@@ -127,26 +127,28 @@ const SignInForm: React.FunctionComponent<SignInFormProps> = ({
       onClick={signInWithGoogle}
       disabled={submittingGoogle}
       className={classNames(
-        "btn border-base-300 bg-base-100 w-full shadow-lg",
+        "flex w-full items-center justify-center rounded-[4px] bg-white px-6 py-3",
+        "border border-gray-200",
+        "hover:bg-gray-50",
         submittingGoogle
-          ? "text-base-content cursor-not-allowed"
-          : "hover:border-primary hover:bg-base-100 cursor-pointer",
+          ? "cursor-not-allowed opacity-50"
+          : "cursor-pointer"
       )}
     >
       {submittingGoogle ? (
-        <div className="mr-4">
+        <div className="mr-3">
           <Loading />
         </div>
       ) : (
         <img
-          className="mr-4 h-8 w-auto"
+          className="mr-3 h-[18px] w-[18px]"
           src="/assets/images/google.png"
           alt="Google"
         />
       )}
-      <div className="text-base-content font-semibold normal-case">
-        {ts("auth.signin-google")}
-      </div>
+      <span className="text-[14px] font-medium text-[#3c4043]">
+        Sign in with Google
+      </span>
     </button>
   )
 
