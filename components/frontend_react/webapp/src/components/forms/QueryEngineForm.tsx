@@ -68,13 +68,11 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
           b64: await toBase64(document)
         })
       }
-      console.log(restValues)
     }
     const payloadData: QueryEngine | Record<string, any> = Object.assign(
       {},
       restValues,
     )
-    console.log
 
     try {
       setSubmitting(true)
