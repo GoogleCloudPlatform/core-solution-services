@@ -467,7 +467,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
 
   if query_engine_type != QE_TYPE_INTEGRATED_SEARCH:
     if documents:
-      doc_url = (await upload_uploadfiles_to_gcs(documents)).name
+      doc_url = (await upload_b64files_to_gcs(documents)).name
     # validate doc_url
     if doc_url is None or doc_url == "":
       return BadRequest("Missing or invalid payload parameters: doc_url")

@@ -63,7 +63,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
     if (queryEngineFiles?.length) {
       restValues['documents'] = []
       for (const document of queryEngineFiles) {
-        restValues['documents'].append({
+        restValues['documents'].push({
           name: document.name,
           b64: await toBase64(document)
         })

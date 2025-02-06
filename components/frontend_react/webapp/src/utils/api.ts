@@ -218,7 +218,7 @@ export const fetchEngine =
 export const createQueryEngine =
   (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngineBuildJob | undefined> => {
     const url = `${endpoint}/query/engine`
-    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+    const headers = { Authorization: `Bearer ${token}` }
     const data = {
       "query_engine": queryEngine.name,
       "query_engine_type": queryEngine.query_engine_type,
@@ -236,7 +236,6 @@ export const createQueryEngine =
       },
       "documents": queryEngine.documents
     }
-    console.log(data)
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }
 
