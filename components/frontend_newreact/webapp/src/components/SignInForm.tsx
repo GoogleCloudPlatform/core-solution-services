@@ -199,8 +199,8 @@ const SignInForm: React.FunctionComponent<SignInFormProps> = ({
           </div>
 
           <div className="flex justify-between">
-            <Link to={"/password-reset"}>
-              <a className="text-sm">Forgot your password?</a>
+            <Link to="/password-reset" className="text-sm">
+              Forgot your password?
             </Link>
 
             <button

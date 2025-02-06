@@ -26,6 +26,7 @@ import Sources from './pages/Sources';
 import StorageIcon from '@mui/icons-material/Storage';
 import CloudIcon from '@mui/icons-material/Cloud';
 import AddSource from './pages/AddSource';
+import PasswordReset from '@/pages/PasswordReset';
 
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -211,6 +212,7 @@ export default function App() {
               }
             />
             <Route path="/sources/add" element={<AddSource />} />
+            <Route path="/password-reset" element={<PasswordReset />} />
           </Routes>
         </BrowserRouter>
       </ModelProvider>
