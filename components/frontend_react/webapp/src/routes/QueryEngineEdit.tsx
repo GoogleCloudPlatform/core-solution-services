@@ -49,7 +49,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const [queryEngine, setQueryEngine] = useState<QueryEngine | null>(null)
   const [createEngineIsMultimodal, setCreateEngineIsMultimodal] = useState(false)
   const [createEngineEmbeddingOptions, setCreateEngineEmbeddingOptions] = useState<{ option: string; value: string; }[]>([])
-  const [queryEngineFiles, setQueryEngineFiles] = useState<File[] | null>(null)
+  const [queryEngineFiles, setQueryEngineFiles] = useState<FileList | null>(null)
 
   const openDeleteModal = () => {
     setIsModalOpen(true)
@@ -250,7 +250,6 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               onSubmit={onSubmit}
               onSuccess={onSuccess}
               onFailure={onFailure}
-              handleFiles={null}
               queryEngine={queryEngine}
               currentVarsData={updatedQueryEngineFormData}
             />

@@ -209,6 +209,7 @@ export type QueryEngine = {
   agents: string[] | null
   child_engines: string[] | null
   is_multimodal: boolean | null
+  documents: { b64: string, name: string }[] | null
 }
 
 export type QueryEngineBuildParams = {

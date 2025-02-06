@@ -136,7 +136,7 @@ export const QUERY_ENGINE_FORM_DATA: IFormVariable[] = [
   },
   {
     name: "uploadFiles",
-    display: "Select Files",
+    display: "Select Files for the Query Engine",
     tooltip: "Select files to upload",
     type: "file(upload)",
     description: "",

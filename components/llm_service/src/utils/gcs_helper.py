@@ -21,6 +21,7 @@ import uuid
 from pathlib import Path
 from typing import List
 from common.utils.logging_handler import Logger
+from schemas.llm_schema import FileB64
 from google.cloud import storage
 from fastapi import UploadFile
 
@@ -112,11 +113,10 @@ def create_bucket_for_file(filename: str) -> storage.Bucket:
   Logger.info(f"Bucket {bucket.name} created")
   return bucket
 
-async def upload_uploadfiles_to_gcs(files: list[UploadFile]) -> storage.Bucket:
-  """ Creates a bucket and uploads the UploadFiles into it
+async def upload_b64files_to_gcs(files: FileB64) -> storage.Bucket:
+  """ Creates a bucket and uploads the files into it
   returns a storage bucket created for upload """
   bucket = create_bucket_for_file("")
   for file in files:
-    contents = await file.read()
-    upload_file_to_gcs(bucket, file.filename, io.BytesIO(contents))
+    upload_file_to_gcs(bucket, file["name"], io.BytesIO(file["b64"]))
   return bucket

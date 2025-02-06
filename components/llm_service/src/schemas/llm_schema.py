@@ -16,6 +16,7 @@ Pydantic Model for LLM API's
 """
 from fastapi import UploadFile
 from typing import List, Optional
+from typing_extensions import TypedDict
 from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                      LLM_MULTIMODAL_GENERATE_EXAMPLE,
@@ -173,6 +174,9 @@ class LLMQueryModel(BaseModel):
       "example": QUERY_EXAMPLE
   })
 
+class FileB64(TypedDict):
+  name: str
+  b64: str
 
 class LLMQueryEngineModel(BaseModel):
   """LLM Query Engine model"""
@@ -188,7 +192,11 @@ class LLMQueryEngineModel(BaseModel):
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": QUERY_ENGINE_BUILD_EXAMPLE
   })
-  documents: Optional[list[UploadFile]] = None
+  # the documents are sent as base64 encoded strings to preserve backwards
+  # compatibility of the API, as it was not originally designed to receive
+  # files and converting to form data would break backwards compatability
+  # TODO: update to use form data
+  documents: Optional[list[FileB64]] = None
 
 class LLMQueryEngineResponse(BaseModel):
   """LLM Generate Response model"""
