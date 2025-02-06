@@ -18,9 +18,11 @@ Google Storage helper functions.
 """
 import io
 import uuid
+import base64
 from pathlib import Path
 from typing import List
 from common.utils.logging_handler import Logger
+from schemas.llm_schema import FileB64
 from google.cloud import storage
 
 Logger = Logger.get_logger(__file__)
@@ -109,4 +111,13 @@ def create_bucket_for_file(filename: str) -> storage.Bucket:
   bucket.storage_class = "STANDARD"
   bucket.create()
   Logger.info(f"Bucket {bucket.name} created")
+  return bucket
+
+async def upload_b64files_to_gcs(files: FileB64) -> storage.Bucket:
+  """ Creates a bucket and uploads the files into it
+  returns a storage bucket created for upload """
+  bucket = create_bucket_for_file("")
+  for file in files:
+    upload_file_to_gcs(bucket, file["name"],
+                       io.BytesIO(base64.b64decode(file["b64"])))
   return bucket

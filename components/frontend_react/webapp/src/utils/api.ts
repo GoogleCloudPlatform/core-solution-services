@@ -233,7 +233,8 @@ export const createQueryEngine =
         "manifest_url": queryEngine.manifest_url,
         "chunk_size": queryEngine.chunk_size,
         "is_multimodal": queryEngine.is_multimodal ? "True" : "False",
-      }
+      },
+      "documents": queryEngine.documents
     }
     return axios.post(url, data, { headers }).then(path(["data", "data"]))
   }

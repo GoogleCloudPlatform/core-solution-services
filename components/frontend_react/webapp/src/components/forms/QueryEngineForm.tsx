@@ -15,10 +15,12 @@
 import { useState, useEffect } from "react"
 import { Form, useFormik, FormikProvider } from "formik"
 import FormFields from "@/components/forms/FormFields"
+import { QueryEngine } from "@/utils/types"
 import { Link } from "react-router-dom"
 import { IFormValidationData, IFormVariable } from "@/utils/types"
 import { IQueryEngine } from "@/utils/models"
 import { formValidationSchema, initialFormikValues } from "@/utils/forms"
+import { toBase64 } from "@/utils/api"
 import * as yup from "yup"
 
 interface QueryEngineFormProps {
@@ -26,7 +28,6 @@ interface QueryEngineFormProps {
   onSubmit: Function
   onSuccess: Function
   onFailure: Function
-  handleFiles: Function
   currentVarsData: IFormVariable[]
 }
 
@@ -35,19 +36,39 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   onSubmit,
   onSuccess,
   onFailure,
-  handleFiles,
   currentVarsData,
 }) => {
   const [submitting, setSubmitting] = useState(false)
   const [qEngineInitialFormat, setQueryEngineInitialFormat] = useState({})
-
+  const [queryEngineFiles, setQueryEngineFiles] = useState<FileList | null>()
   const defaultValues = initialFormikValues(currentVarsData)
 
-  const handleSubmit = async (values: Record<string, any>) => {
-    
-    const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
-            deleted_by, id, last_modified_by, last_modified_time, ...restValues } = values
+  const handleFiles = (files: FileList | null, _: any) => {
+    setQueryEngineFiles(files)
+  }
 
+  currentVarsData = currentVarsData.map(
+    (entry) => {
+      switch (entry.name) {
+        case "doc_url":
+          return { ...entry, required: !Boolean(queryEngineFiles?.length) }
+        default:
+          return entry
+      }
+    })
+
+  const handleSubmit = async (values: Record<string, any>) => {
+    const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
+      deleted_by, id, last_modified_by, last_modified_time, ...restValues } = values
+    if (queryEngineFiles?.length) {
+      restValues['documents'] = []
+      for (const document of queryEngineFiles) {
+        restValues['documents'].push({
+          name: document.name,
+          b64: await toBase64(document)
+        })
+      }
+    }
     const payloadData: QueryEngine | Record<string, any> = Object.assign(
       {},
       restValues,
@@ -67,7 +88,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
   useEffect(() => {
     if (queryEngine && queryEngine !== null) {
       const { archived_at_timestamp, archived_by, created_by, created_time, deleted_at_timestamp,
-              deleted_by, id, last_modified_by, last_modified_time, ...restQEValues } = queryEngine
+        deleted_by, id, last_modified_by, last_modified_time, ...restQEValues } = queryEngine
 
       const qEngineInitialFormatting = Object.assign(
         {},
@@ -117,7 +138,7 @@ const QueryEngineForm: React.FunctionComponent<QueryEngineFormProps> = ({
             <Link href="#">
               <button
                 className="btn btn-outline btn-sm"
-                onClick={() => {formik.resetForm()}}
+                onClick={() => { formik.resetForm(); handleFiles(null, null) }}
               >
                 Clear
               </button>

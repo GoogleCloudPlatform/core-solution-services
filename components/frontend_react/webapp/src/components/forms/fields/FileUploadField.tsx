@@ -107,6 +107,7 @@ const FileUploadField: React.FC<IFileUploadFieldProps> = ({
         <Field
           id={variable.name}
           name={variable.name}
+          value={""}
           className="input hidden"
         />
 

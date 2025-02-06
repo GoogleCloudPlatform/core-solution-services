@@ -42,19 +42,20 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
   const params = useQueryParams()
   const id = params.get("id")
   const navigate = useNavigate()
-  
+
   const setAlert = alertStore((state) => state.setAlert)
 
   const [queryEngines, setQueryEngines] = useState<QueryEngine[]>([])
   const [queryEngine, setQueryEngine] = useState<QueryEngine | null>(null)
   const [createEngineIsMultimodal, setCreateEngineIsMultimodal] = useState(false)
   const [createEngineEmbeddingOptions, setCreateEngineEmbeddingOptions] = useState<{ option: string; value: string; }[]>([])
+  const [queryEngineFiles, setQueryEngineFiles] = useState<FileList | null>(null)
 
   const openDeleteModal = () => {
     setIsModalOpen(true)
     const modalToggle = document.getElementById('delete-queryEngine-modal')
     modalToggle.checked = true
-  }    
+  }
   const closeDeleteModal = () => {
     setIsModalOpen(false)
     const modalToggle = document.getElementById('delete-queryEngine-modal')
@@ -102,7 +103,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
             // TODO
           }
         }
-      )      
+      )
     }
     // Else, create a new queryEngine
     else {
@@ -110,10 +111,12 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
         newQueryEngine,
         {
           onSuccess: (resp?: QueryEngineBuildJob) => {
-            setAlert({
-              message: "Submitted QueryEngine Build Job: " + resp.name,
-              type: ALERT_TYPE.SUCCESS,
-            })
+            if (resp) {
+              setAlert({
+                message: "Submitted QueryEngine Build Job: " + resp.name,
+                type: ALERT_TYPE.SUCCESS,
+              })
+            }
           },
           onError: () => {
             setActiveJob(false)
@@ -147,7 +150,7 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               message: "Deleted successfully!",
               type: ALERT_TYPE.SUCCESS,
               durationMs: 4000,
-            })            
+            })
           }
           setDeleting(false)
           setActiveJob(false)
@@ -159,14 +162,14 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
             message: "Error occurred deleting",
             type: ALERT_TYPE.ERROR,
             durationMs: 4000,
-          })            
+          })
           setDeleting(false)
           setActiveJob(false)
           closeDeleteModal()
           navigate("/queryengines/admin")
         }
       }
-    )          
+    )
   }
 
   useEffect(() => {
@@ -249,7 +252,6 @@ const QueryEngineEdit: React.FC<IQueryEngineProps> = ({ token }) => {
               onSubmit={onSubmit}
               onSuccess={onSuccess}
               onFailure={onFailure}
-              handleFiles={null}
               queryEngine={queryEngine}
               currentVarsData={updatedQueryEngineFormData}
             />
