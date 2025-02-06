@@ -297,7 +297,7 @@ const AddSource = () => {
                 </Typography>
               </Box>
               <StyledSlider
-                value={formData.depth_limit}
+                value={formData.depth_limit ?? undefined}
                 onChange={handleDepthLimitChange}
                 min={1}
                 max={10}
@@ -315,7 +315,7 @@ const AddSource = () => {
                 </Typography>
               </Box>
               <StyledSlider
-                value={formData.chunk_size}
+                value={formData.chunk_size ?? undefined}
                 onChange={handleChunkSizeChange}
                 min={100}
                 max={1000}
