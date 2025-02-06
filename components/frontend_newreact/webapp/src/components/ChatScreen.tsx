@@ -1,3 +1,5 @@
+import { SourceSelector } from './SourceSelector'; // Import the component
+import { QueryEngine } from '../lib/types'; // Import the type
 import { useState } from 'react';
 import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -29,13 +31,16 @@ interface ChatScreenProps {
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
   const [prompt, setPrompt] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>(() => 
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
     // Initialize messages from currentChat if it exists
     currentChat?.history.map(h => ({
       text: h.HumanInput || h.AIOutput || '',
       isUser: !!h.HumanInput
     })) || []
   );
+
+  // #TODO use selected source for query calls when selected by user
+  const [selectedKnowledgeSource, setSelectedKnowledgeSource] = useState<QueryEngine | null>(null);
   const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
   const { user } = useAuth();
   const { selectedModel } = useModel();
@@ -44,6 +49,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
   const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([]);
   const [importUrl, setImportUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleSelectSource = (source: QueryEngine) => {
+    console.log("Selected source:", source);  // Or whatever logic you need
+    setSelectedKnowledgeSource(source); // Update the selected source
+  };
 
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
@@ -56,7 +66,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
 
     try {
       let response;
-      
+
       if (chatId) {
         // Continue existing chat
         response = await resumeChat(user.token)({
@@ -142,35 +152,39 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
   };
 
   return (
-    <Box className="chat-screen">
-      <Box className="chat-header">
-        <Typography variant="h6">
-          {currentChat?.title || 'New Chat'}
+    <Box className="chat-screen">  {/* Main container for the chat screen */}
+      <Box className="chat-header"> {/* Header section of the chat */}
+        <Typography variant="h6"> {/* Chat title */}
+          {currentChat?.title || 'New Chat'} {/* Display current chat title or "New Chat" if none */}
         </Typography>
+        <SourceSelector
+          className="knowledge-source-selector"
+          onSelectSource={handleSelectSource}  // Pass the handler function
+        />
         <Select
           value="Default Chat"
-          variant="standard"
-          IconComponent={KeyboardArrowDownIcon}
+          variant="standard"  // Style variant of the Select
+          IconComponent={KeyboardArrowDownIcon} // Custom dropdown icon
           className="chat-type-select"
         >
-          <MenuItem value="Default Chat">Default Chat</MenuItem>
+          <MenuItem value="Default Chat">Default Chat</MenuItem> {/* Single menu item */}
         </Select>
       </Box>
-      <Box className="chat-messages">
-        {messages.map((message, index) => (
-          <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}>
-            <Avatar className="message-avatar" />
-            <Typography>{message.text}</Typography>
+      <Box className="chat-messages"> {/* Container for chat messages */}
+        {messages.map((message, index) => ( // Map through messages array to render each message
+          <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}> {/* Message container with dynamic styling */}
+            <Avatar className="message-avatar" /> {/* Avatar for the message sender */}
+            <Typography>{message.text}</Typography> {/* Display message text */}
           </Box>
         ))}
       </Box>
-      <Box className="chat-input-container">
-        <Paper className="chat-input">
-          {(selectedFile || importUrl) && (
+      <Box className="chat-input-container"> {/* Container for the chat input area */}
+        <Paper className="chat-input"> {/* Paper component for styling the input area */}
+          {(selectedFile || importUrl) && ( // Conditionally render a chip if a file is selected or URL entered
             <Box className="file-chip-container">
               <Chip
-                label={selectedFile ? selectedFile.name : importUrl}
-                onDelete={handleRemoveSelectedFile}
+                label={selectedFile ? selectedFile.name : importUrl} // Display file name or URL
+                onDelete={handleRemoveSelectedFile} // Handle removal of selected file/URL
                 size="small"
                 variant="outlined"
               />
@@ -179,23 +193,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
           <InputBase
             placeholder="Enter your prompt"
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onChange={(e) => setPrompt(e.target.value)} // Update prompt state on input change
+            onKeyDown={handleKeyDown} // Handle key presses (for Enter submission)
             fullWidth
             multiline
           />
-          <IconButton onClick={() => setIsUploadModalOpen(true)}>
+          <IconButton onClick={() => setIsUploadModalOpen(true)}> {/* Button to open file upload modal */}
             <AddIcon />
           </IconButton>
         </Paper>
       </Box>
 
       <Modal
-        open={isUploadModalOpen}
-        onClose={handleCloseUploadModal}
-        aria-labelledby="upload-modal-title"
+        open={isUploadModalOpen}  // Control modal visibility
+        onClose={handleCloseUploadModal}  // Close modal handler
+        aria-labelledby="upload-modal-title" // Accessibility label for the modal
       >
-        <Box>
+        <Box> {/* Container inside the modal */}
           <UploadModal
             open={isUploadModalOpen}
             onClose={handleCloseUploadModal}
@@ -203,8 +217,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
             onFileSelect={handleFileSelect}
             onRemoveFile={handleRemoveFile}
             importUrl={importUrl}
-            onImportUrlChange={(url) => setImportUrl(url)}
-            onAdd={handleAddFiles}
+            onImportUrlChange={(url) => setImportUrl(url)} // Handle URL input change
+            onAdd={handleAddFiles} // Handler for when files are added
           />
         </Box>
       </Modal>

@@ -26,6 +26,7 @@ import Sources from './pages/Sources';
 import StorageIcon from '@mui/icons-material/Storage';
 import CloudIcon from '@mui/icons-material/Cloud';
 import AddSource from './pages/AddSource';
+import { CustomHeader } from "./components/Header";
 
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -140,28 +141,23 @@ const MainApp = () => {
   };
 
   const features = [
-    { icon: <ChatIcon />, title: 'Chat', subtitle: 'Latest Topical Gist', action: 'Resume' },
+    { icon: <ChatIcon />, title: 'Chat', subtitle: 'Latest Topical Gist', action: 'Resume', onClick: () => setShowChat(true) },
     { icon: <StorageIcon />, title: 'Knowledge Sources', subtitle: 'Browse your sources', action: 'View', onClick: () => setShowSources(true) },
   ];
 
   return (
     <MainContainer>
-      <Sidebar 
-        setShowChat={setShowChat} 
-        onSelectChat={handleSelectChat} 
+      <Sidebar
+        setShowChat={setShowChat}
+        onSelectChat={handleSelectChat}
         selectedChatId={currentChat?.id}
         setShowSources={setShowSources}
       />
-      <Header sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
-        <Title>
-          <span className="primary">genAI</span>
-          <span className="gradient">for Public Sector</span>
-        </Title>
-        <ProfileMenu />
-      </Header>
+      <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
+      </CustomHeader>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         {showChat ? (
-          <ChatScreen 
+          <ChatScreen
             currentChat={currentChat}
           />
         ) : showSources ? (
@@ -174,8 +170,8 @@ const MainApp = () => {
 
             <Box className="features-grid">
               {features.map((feature, index) => (
-                <Paper 
-                  key={index} 
+                <Paper
+                  key={index}
                   className="feature-card"
                   onClick={feature.onClick}
                   sx={{ cursor: feature.onClick ? 'pointer' : 'default' }}
