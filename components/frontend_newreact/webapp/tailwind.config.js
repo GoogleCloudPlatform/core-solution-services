@@ -8,4 +8,6 @@ export default {
     extend: {},
   },
   plugins: [],
+  // This ensures Tailwind's styles don't conflict with MUI
+  important: true,
 } 

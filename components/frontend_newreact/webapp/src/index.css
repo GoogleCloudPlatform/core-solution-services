@@ -2,9 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  padding: 0;
-  background: #1a1a1a;
-  color: white;
+@layer base {
+  html {
+    @apply h-full;
+  }
+  
+  body {
+    @apply h-full m-0 p-0 bg-[#1a1a1a] text-white;
+  }
+  
+  #root {
+    @apply h-full;
+  }
+}
+
+/* Ensure Material-UI components work with dark theme */
+@layer components {
+  .MuiInputBase-root {
+    @apply text-white;
+  }
+
+  .MuiOutlinedInput-notchedOutline {
+    @apply border-gray-600;
+  }
 } 
