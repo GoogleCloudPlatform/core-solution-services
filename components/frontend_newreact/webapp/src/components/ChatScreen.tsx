@@ -3,7 +3,6 @@ import { QueryEngine } from '../lib/types'; // Import the type
 import { useState } from 'react';
 import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import UploadIcon from '@mui/icons-material/Upload';
@@ -173,15 +172,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           <SourceSelector
             onSelectSource={handleSelectSource}
           />
-          <Box sx={{ flex: 1 }} /> {/* Spacer */}
-          <Select
-            value="Default Chat"
-            variant="standard"
-            IconComponent={KeyboardArrowDownIcon}
-            className="chat-type-select"
-          >
-            <MenuItem value="Default Chat">Default Chat</MenuItem>
-          </Select>
         </Box>
       )}
       <Box className="chat-messages"> {/* Container for chat messages */}
