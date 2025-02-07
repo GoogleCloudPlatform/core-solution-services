@@ -163,15 +163,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         <Box className="chat-header" sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
           p: 2,
         }}>
-          <Typography variant="h6" sx={{ mr: 2 }}>
-            {currentChat?.title || 'New Chat'}
-          </Typography>
-          <SourceSelector
-            onSelectSource={handleSelectSource}
-          />
+          <Box sx={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}>
+            <Typography variant="h6">
+              {currentChat?.title || 'New Chat'}
+            </Typography>
+            <SourceSelector
+              onSelectSource={handleSelectSource}
+            />
+          </Box>
         </Box>
       )}
       <Box className="chat-messages"> {/* Container for chat messages */}
