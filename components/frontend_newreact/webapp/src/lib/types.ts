@@ -268,7 +268,8 @@ export type QueryEngineBuildJob = {
 }
 
 export interface ChatModel {
-    name: string;
+    id: string;  // llm_type used in API calls
+    name: string; // Display name shown to users
     description?: string;
     purposes?: string[];
     isNew?: boolean;

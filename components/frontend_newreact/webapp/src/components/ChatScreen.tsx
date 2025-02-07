@@ -79,7 +79,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         response = await resumeChat(user.token)({
           chatId,
           userInput: prompt,
-          llmType: selectedModel.name,
+          llmType: selectedModel.id,
           stream: false,
           temperature: temperature
         });
@@ -87,7 +87,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         // Create new chat
         response = await createChat(user.token)({
           userInput: prompt,
-          llmType: selectedModel.name,
+          llmType: selectedModel.id,
           uploadFile: selectedFile || undefined,
           fileUrl: importUrl,
           stream: false,

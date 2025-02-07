@@ -69,6 +69,7 @@ interface UpdateChatParams {
 }
 
 interface ModelResponse {
+    id: string;
     name: string;
     description: string;
     capabilities: string[];
@@ -104,9 +105,10 @@ export const fetchAllChatModels =
         const isNew = daysSinceAdded <= 30;
 
         return {
+          id: model.id,
           name: model.name,
           description: model.description,
-          purposes: model.capabilities, // Map capabilities to purposes
+          purposes: model.capabilities,
           isNew: isNew,
           isMultimodal: model.is_multi
         };

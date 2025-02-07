@@ -180,7 +180,7 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
                                         ))}
                                     </Box>
                                 </Box>
-                                {selectedModel.name === model.name ? (
+                                {selectedModel.id === model.id ? (
                                     <Box sx={{ 
                                         display: 'flex', 
                                         alignItems: 'center',
