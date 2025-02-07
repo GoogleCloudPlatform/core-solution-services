@@ -94,11 +94,14 @@ body {
   padding: 2rem;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
 }
 
 .greeting {
   text-align: center;
-  margin-bottom: 2rem !important;
+  margin-bottom: 3rem !important;
+  width: 100%;
 }
 
 .hello {
@@ -116,20 +119,32 @@ body {
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-  margin-bottom: 2rem;
+  grid-template-columns: repeat(2, minmax(200px, 300px));
+  gap: 2rem;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  max-width: 800px;
+  width: 100%;
 }
 
 .feature-card {
   background-color: #242424 !important;
   color: white !important;
-  padding: 1.5rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
   border: 1px solid #333;
   border-radius: 8px !important;
+  height: 200px;
+  justify-content: space-between;
+  transition: all 0.2s ease-in-out;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .subtitle {

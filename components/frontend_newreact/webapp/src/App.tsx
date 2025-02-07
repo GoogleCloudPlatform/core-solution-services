@@ -91,13 +91,16 @@ const Main = styled(Box, {
   shouldForwardProp: (prop) => prop !== "sidebarWidth" && prop !== "panelWidth",
 })<{ sidebarWidth: number, panelWidth: number }>(({ sidebarWidth, panelWidth }) => ({
   transition: 'margin-left 0.3s ease-in-out',
-  paddingTop: '64px',
+  paddingTop: 0,
   paddingLeft: '16px',
   paddingRight: '16px',
   marginLeft: `${60 + panelWidth}px`,
   flexGrow: 1,
   display: "flex",
   flexDirection: "column",
+  justifyContent: "center",
+  alignItems: "center",
+  minHeight: "100vh",
 }));
 
 const MainApp = () => {
