@@ -162,6 +162,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     <Box className="chat-screen">
       {!hideHeader && (  // Only show header when hideHeader is false
         <Box className="chat-header">
+          <Typography variant="h6">
+            {currentChat?.title || 'New Chat'}
+          </Typography>
           <SourceSelector
             className="knowledge-source-selector"
             onSelectSource={handleSelectSource}

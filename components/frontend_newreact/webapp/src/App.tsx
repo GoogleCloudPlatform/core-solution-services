@@ -29,6 +29,11 @@ import AddSource from './pages/AddSource';
 import PasswordReset from '@/pages/PasswordReset';
 import { CustomHeader } from "./components/Header";
 
+interface HeaderProps {
+  sidebarWidth: number;
+  panelWidth: number;
+  children?: React.ReactNode;
+}
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -63,13 +68,13 @@ const Header = styled(Box, {
   zIndex: 50,
   padding: theme.spacing(2),
   display: 'flex',
-  justifyContent: 'space-between',
   alignItems: 'center',
   background: `linear-gradient(to bottom, ${theme.palette.background.default}CC, ${theme.palette.background.default}00)`,
-  right: 0,
   left: `${60 + panelWidth}px`,
+  right: 0,
   transition: 'left 0.3s ease-in-out',
   height: '64px',
+  justifyContent: 'flex-start',
 }));
 
 const Title = styled(Box)({
@@ -86,8 +91,7 @@ const Title = styled(Box)({
     background: 'linear-gradient(to right, #4C8DF6, #FF0000)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
-  },
-  marginLeft: '8px',
+  }
 });
 
 const Main = styled(Box, {
@@ -104,6 +108,7 @@ const Main = styled(Box, {
   justifyContent: "center",
   alignItems: "center",
   minHeight: "100vh",
+  marginTop: 0,
 }));
 
 const MainApp = () => {
@@ -165,8 +170,16 @@ const MainApp = () => {
         selectedChatId={currentChat?.id}
         setShowSources={setShowSources}
       />
-      <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
-      </CustomHeader>
+      {!showChat && (
+        <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
+          <Title sx={{ marginLeft: 0 }}>
+            <span className="primary">genAI</span>
+            <span>for</span>
+            <span className="gradient">Public Sector</span>
+          </Title>
+        }>
+        </CustomHeader>
+      )}
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         {showChat ? (
           <ChatScreen
@@ -207,7 +220,7 @@ const MainApp = () => {
                       className="feature-card"
                       onClick={feature.onClick}
                       sx={{ 
-                        cursor: feature.onClick ? 'pointer' : 'default',
+                        cursor: typeof feature.onClick === 'function' ? 'pointer' : 'default',
                         backgroundColor: '#1E1E1E !important',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
                         borderRadius: '8px !important',
