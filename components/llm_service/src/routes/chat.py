@@ -89,6 +89,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
           "is_multi": config.get("is_multi", False)
         })
 
+    Logger.info(f"chat models for user {model_details}")    
     return {
       "success": True,
       "message": "Successfully retrieved chat llm types",
