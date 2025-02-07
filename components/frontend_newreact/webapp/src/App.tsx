@@ -153,7 +153,7 @@ const MainApp = () => {
       />
       {(showWelcome || showSources) && (
         <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
-          <Title sx={{ marginLeft: '0' }}>
+          <Title sx={{ marginLeft: '-20px' }}>
             <span className="primary">genAI</span>
             <span>for</span>
             <span className="gradient">Public Sector</span>
@@ -167,20 +167,27 @@ const MainApp = () => {
             display: 'flex', 
             flexDirection: 'column',
             width: '100%',
-            maxWidth: '800px',
-            margin: '0 auto',
-            height: '100%',
-            position: 'relative',
+            height: 'calc(100vh - 64px)', // Subtract header height
+            overflow: 'auto',
           }}>
-            <WelcomeFeatures 
-              username={username}
-              onChatStart={() => setShowChat(true)}
-              onSourcesView={() => {
-                setShowSources(true);
-                setShowWelcome(false);
-                setShowChat(false);
-              }}
-            />
+            <Box sx={{
+              maxWidth: '800px',
+              width: '100%',
+              margin: '0 auto',
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+            }}>
+              <WelcomeFeatures 
+                username={username}
+                onChatStart={() => setShowChat(true)}
+                onSourcesView={() => {
+                  setShowSources(true);
+                  setShowWelcome(false);
+                  setShowChat(false);
+                }}
+              />
+            </Box>
           </Box>        
         )}         
         {showChat && (

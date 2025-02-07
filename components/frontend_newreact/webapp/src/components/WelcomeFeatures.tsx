@@ -42,10 +42,10 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: Welcom
       display: 'flex',
       flexDirection: 'column',
       gap: 4,
-      position: 'absolute',
-      top: '40%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+      px: 3,
     }}>
       <Typography 
         variant="h4" 
@@ -63,7 +63,6 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: Welcom
       <Box className="features-grid" sx={{
         maxWidth: '700px',
         width: '100%',
-        mx: 'auto'
       }}>
         {features.map((feature, index) => (
           <Paper 

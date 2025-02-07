@@ -104,7 +104,7 @@ body {
 
 .greeting {
   text-align: center;
-  margin-bottom: 2rem !important;
+  margin-bottom: 3rem !important;
   width: 100%;
 }
 
@@ -124,13 +124,10 @@ body {
 .features-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  gap: 1.5rem;
   justify-content: center;
   align-items: stretch;
-  margin: 0 auto;
-  max-width: 800px;
   width: 100%;
-  padding: 0 1rem;
 }
 
 .feature-card {
@@ -140,7 +137,7 @@ body {
   display: flex !important;
   flex-direction: column !important;
   gap: 0.5rem;
-  min-height: 160px !important;
+  min-height: 180px !important;
   height: auto !important;
   transition: all 0.2s ease-in-out;
 }
