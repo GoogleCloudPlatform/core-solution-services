@@ -136,8 +136,8 @@ body {
   display: flex !important;
   flex-direction: column !important;
   gap: 0.5rem;
+  min-height: 160px !important;
   height: auto !important;
-  min-height: 160px;
   transition: all 0.2s ease-in-out;
 }
 

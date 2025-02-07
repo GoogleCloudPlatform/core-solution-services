@@ -68,6 +68,7 @@ const Header = styled(Box, {
   right: 0,
   left: `${60 + panelWidth}px`,
   transition: 'left 0.3s ease-in-out',
+  height: '64px',
 }));
 
 const Title = styled(Box)({
@@ -85,6 +86,7 @@ const Title = styled(Box)({
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
   },
+  marginLeft: '8px',
 });
 
 const Main = styled(Box, {
@@ -168,11 +170,13 @@ const MainApp = () => {
         setShowSources={setShowSources}
       />
       <Header sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
-        {(showChat || showSources) ? (
-          <Box sx={{ flex: 1 }} /> // Empty flex spacer when title is hidden
-        ) : (
-          <Box /> // Empty box to maintain layout
+        {(!showChat && !showSources) && (
+          <Title>
+            <span className="primary">genAI</span>
+            <span className="gradient">for Public Sector</span>
+          </Title>
         )}
+        <Box sx={{ flex: 1 }} />
         <ProfileMenu />
       </Header>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
@@ -189,16 +193,21 @@ const MainApp = () => {
             width: '100%',
             maxWidth: '800px',
             margin: '0 auto',
-            height: '100vh',
-            pt: 8
+            height: 'calc(100vh - 64px)',
+            mt: '64px',
+            position: 'relative',
           }}>
-            <Box sx={{ flex: 1 }}>
-              <Title sx={{ mb: 4, justifyContent: 'center' }}>
-                <span className="primary">genAI</span>
-                <span className="gradient">for Public Sector</span>
-              </Title>
-              
-              <Typography variant="h4" className="greeting">
+            <Box sx={{ 
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+            }}>
+              <Typography variant="h4" className="greeting" sx={{ textAlign: 'center' }}>
                 <span className="hello">Hello, {username}</span>
               </Typography>
 
@@ -258,10 +267,12 @@ const MainApp = () => {
               </Box>
             </Box>
             
-            <ChatScreen 
-              currentChat={undefined}
-              hideHeader={true}
-            />
+            <Box sx={{ mt: 'auto' }}>
+              <ChatScreen 
+                currentChat={undefined}
+                hideHeader={true}
+              />
+            </Box>
           </Box>
         )}
       </Main>
