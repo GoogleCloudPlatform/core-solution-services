@@ -106,27 +106,19 @@ export const MainApp = () => {
             flexDirection: 'column',
             width: '100%',
             height: 'calc(100vh - 64px)',
-            overflow: 'auto',
+            justifyContent: 'center',
+            alignItems: 'center'
           }}>
-            <Box sx={{
-              maxWidth: '800px',
-              width: '100%',
-              margin: '0 auto',
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-            }}>
-              <WelcomeFeatures 
-                username={username}
-                onChatStart={() => setShowChat(true)}
-                onSourcesView={() => {
-                  setShowSources(true);
-                  setShowWelcome(false);
-                  setShowChat(false);
-                }}
-              />
-            </Box>
-          </Box>        
+            <WelcomeFeatures 
+              username={username}
+              onChatStart={() => setShowChat(true)}
+              onSourcesView={() => {
+                setShowSources(true);
+                setShowWelcome(false);
+                setShowChat(false);
+              }}
+            />
+          </Box>
         )}         
         {showChat && (
           <ChatScreen
