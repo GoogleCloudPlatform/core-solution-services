@@ -27,6 +27,7 @@ import StorageIcon from '@mui/icons-material/Storage';
 import CloudIcon from '@mui/icons-material/Cloud';
 import AddSource from './pages/AddSource';
 import PasswordReset from '@/pages/PasswordReset';
+import { CustomHeader } from "./components/Header";
 
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -147,19 +148,8 @@ const MainApp = () => {
   };
 
   const features = [
-    { 
-      icon: <ChatIcon sx={{ fontSize: 24, color: '#fff' }} />,
-      title: 'Chat', 
-      subtitle: 'Latest Topical Gist', 
-      action: 'Resume' 
-    },
-    { 
-      icon: <CloudIcon sx={{ fontSize: 24, color: '#fff' }} />,
-      title: 'Knowledge Sources', 
-      subtitle: 'Knowledge Source Name', 
-      action: 'Query', 
-      onClick: () => setShowSources(true) 
-    },
+    { icon: <ChatIcon />, title: 'Chat', subtitle: 'Latest Topical Gist', action: 'Resume', onClick: () => setShowChat(true) },
+    { icon: <StorageIcon />, title: 'Knowledge Sources', subtitle: 'Browse your sources', action: 'View', onClick: () => setShowSources(true) },
   ];
 
   const handleChatStart = () => {
@@ -169,25 +159,17 @@ const MainApp = () => {
 
   return (
     <MainContainer>
-      <Sidebar 
-        setShowChat={setShowChat} 
-        onSelectChat={handleSelectChat} 
+      <Sidebar
+        setShowChat={setShowChat}
+        onSelectChat={handleSelectChat}
         selectedChatId={currentChat?.id}
         setShowSources={setShowSources}
       />
-      <Header sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
-        {(showWelcome && !showChat && !showSources) && (
-          <Title>
-            <span className="primary">genAI</span>
-            <span className="gradient">for Public Sector</span>
-          </Title>
-        )}
-        <Box sx={{ flex: 1 }} />
-        <ProfileMenu />
-      </Header>
+      <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
+      </CustomHeader>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         {showChat ? (
-          <ChatScreen 
+          <ChatScreen
             currentChat={currentChat}
           />
         ) : showSources ? (
