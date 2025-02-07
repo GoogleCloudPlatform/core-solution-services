@@ -59,12 +59,14 @@
   },
   "models": {
     "VertexAI-Text": {
+      "name": "Vertex AI Text",
       "is_chat": false,
       "provider": "Vertex",
       "model_name": "text-bison@002",
       "description": "A powerful text generation model from Vertex AI."
     },
     "VertexAI-Chat": {
+      "name": "Vertex AI Chat",
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
@@ -85,18 +87,21 @@
       "context_length": 1000000
     },
     "VertexAI-Chat-Palm2": {
+      "name": "PaLM 2 Chat",
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "chat-bison@002",
       "description": "A chat-optimized version of PaLM 2 from Vertex AI."
     },
     "VertexAI-Chat-Palm2-V2": {
+      "name": "PaLM 2 Chat V2",
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "chat-bison@002",
       "description": "An updated version of the chat-optimized PaLM 2 from Vertex AI."
     },
     "VertexAI-Gemini-Flash": {
+      "name": "Gemini 1.5 Flash",
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
@@ -105,6 +110,7 @@
       "description": "A fast and versatile Gemini model from Vertex AI."
     },
     "VertexAI-Gemini-Pro": {
+      "name": "Gemini Pro",
       "is_chat": true,
       "is_multi": false,
       "provider": "Vertex",
@@ -119,6 +125,7 @@
       "context_length": 128000
     },
     "VertexAI-Gemini-Pro-Vision": {
+      "name": "Gemini Pro Vision",
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
@@ -132,6 +139,7 @@
       "date_added": "2024-02-01"
     },
     "VertexAI-Gemini-1.5-Pro": {
+      "name": "Gemini 1.5 Pro",
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
@@ -139,6 +147,7 @@
       "description": "A powerful and versatile Gemini 1.5 Pro model from Vertex AI."
     },
     "VertexAI-Chat-Palm2V2-Langchain": {
+      "name": "PaLM 2 Chat V2 (Langchain)",
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "chat-bison@002",
@@ -147,6 +156,7 @@
       "description": "Vertex AI's PaLM 2 chat model accessed via Langchain."
     },
     "VertexAI-Chat-Palm2-32k": {
+      "name": "PaLM 2 Chat 32K",
       "is_chat": true,
       "provider": "Vertex",
       "model_name": "chat-bison-32k",
@@ -154,6 +164,7 @@
       "description": "Vertex AI's PaLM 2 chat model with a 32k context window."
     },
     "VertexAI-Chat-Palm2-32k-Langchain": {
+      "name": "PaLM 2 Chat 32K (Langchain)",
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "chat-bison-32k",
@@ -162,6 +173,7 @@
       "description": "Vertex AI's PaLM 2 chat model with a 32k context window, accessed via Langchain."
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {
+      "name": "Gemini Pro (Langchain)",
       "is_chat": true,
       "provider": "Langchain",
       "model_name": "gemini-pro",
@@ -169,6 +181,7 @@
       "description": "Vertex AI's Gemini Pro chat model accessed via Langchain."
     },
     "Truss-Llama2-Chat": {
+      "name": "Llama 2 Chat (Truss)",
       "model_endpoint": "truss-llama2-7b-service",
       "is_chat": true,
       "provider": "Truss",
@@ -183,6 +196,7 @@
       "description": "Truss' Llama2 chat model."
     },
     "vLLM-Gemma-Chat": {
+      "name": "Gemma Chat (vLLM)",
       "model_endpoint": "vllm-gemma-service",
       "is_chat": true,
       "provider": "vLLM",
@@ -197,6 +211,7 @@
       "description": "vLLM's Gemma chat model."
     },
     "VertexAI-ModelGarden-LLAMA2-Chat": {
+      "name": "Llama 2 Chat (Model Garden)",
       "is_chat": true,
       "provider": "ModelGarden",
       "enabled": false,
@@ -205,6 +220,7 @@
       "description": "LLAMA2 chat model from Vertex AI's Model Garden."
     },
     "OpenAI-GPT4": {
+      "name": "GPT-4",
       "vendor": "OpenAI",
       "is_chat": true,
       "provider": "Langchain",
@@ -218,6 +234,7 @@
       "description": "OpenAI's most advanced language model, capable of complex reasoning and creative tasks."
     },
     "OpenAI-GPT4-latest": {
+      "name": "GPT-4 Turbo",
       "vendor": "OpenAI",
       "is_chat": true,
       "provider": "Langchain",
@@ -231,6 +248,7 @@
       "description": "The latest version of OpenAI's GPT-4 model."
     },
     "OpenAI-GPT3.5": {
+      "name": "GPT-3.5 Turbo",
       "vendor": "OpenAI",
       "is_chat": true,
       "provider": "Langchain",
@@ -244,6 +262,7 @@
       "description": "OpenAI's GPT-3.5 Turbo model."
     },
     "Cohere": {
+      "name": "Cohere Chat",
       "vendor": "Cohere",
       "is_chat": true,
       "provider": "Langchain",
@@ -254,6 +273,7 @@
   },
   "embeddings": {
     "Llama2cpp": {
+      "name": "Llama 2 Embeddings",
       "model_endpoint": "http://model-service/api/v1",
       "provider": "LLMService",
       "model_class": "LlamaCpp",
@@ -262,22 +282,26 @@
       "description": "Local Embeddings based on Llama2cpp"
     },
     "VertexAI-Embedding": {
+      "name": "Vertex AI Text Embeddings",
       "provider": "Vertex",
       "model_name": "text-embedding-004",
       "token_limit": 2000,
       "description": "Vertex AI's high-quality text embedding model."
     },
     "VertexAI-Embedding-Vision": {
+      "name": "Vertex AI Multimodal Embeddings",
       "provider": "Vertex",
       "model_name": "multimodalembedding@001",
       "is_multi": true,
       "description": "Vertex AI's multimodal embedding model for text and images."
     },
     "OpenAI-Embedding": {
+      "name": "OpenAI Embeddings",
       "provider": "Langchain",
       "description": "OpenAI's text embedding model, accessed via Langchain."
     },
     "HuggingFaceEmbeddings": {
+      "name": "Hugging Face Embeddings",
       "provider": "Langchain",
       "model_class": "HuggingFaceEmbeddings",
       "description": "Hugging Face embeddings, accessed via Langchain."

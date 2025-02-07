@@ -116,6 +116,7 @@ from config.model_config import (
     KEY_VENDOR,
     KEY_ROLE_ACCESS,
     KEY_SUB_PROVIDER,
+    KEY_NAME,
 
     # model providers
     PROVIDER_VERTEX,

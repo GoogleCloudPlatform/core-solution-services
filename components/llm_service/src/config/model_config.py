@@ -64,6 +64,7 @@ KEY_SUB_PROVIDER = "sub_provider"
 KEY_DESCRIPTION = "description"
 KEY_CAPABILITIES = "capabilities"
 KEY_DATE_ADDED = "date_added"
+KEY_NAME = "name"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -89,7 +90,8 @@ MODEL_CONFIG_KEYS = [
   KEY_SUB_PROVIDER,
   KEY_DESCRIPTION,
   KEY_CAPABILITIES,
-  KEY_DATE_ADDED
+  KEY_DATE_ADDED,
+  KEY_NAME
 ]
 
 # model providers
