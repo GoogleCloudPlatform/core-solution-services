@@ -126,8 +126,14 @@ const Sources = () => {
 
 
   return ( // Main JSX return for the component
-    <Box sx={{ p: 3, height: '100%', backgroundColor: '#1a1a1a' }}> {/* Main container */}
-
+    <Box sx={{ 
+      p: 3, 
+      height: 'calc(100vh - 64px)', // Subtract header height
+      backgroundColor: '#1a1a1a',
+      marginTop: '64px', // Add margin to account for header
+      width: '100%',
+      overflow: 'auto'
+    }}> 
       {/* Title and description */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>

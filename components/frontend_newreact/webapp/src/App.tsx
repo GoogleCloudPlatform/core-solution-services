@@ -84,8 +84,8 @@ const Main = styled(Box, {
 })<{ sidebarWidth: number, panelWidth: number }>(({ sidebarWidth, panelWidth }) => ({
   transition: 'margin-left 0.3s ease-in-out',
   paddingTop: 0,
-  paddingLeft: '16px',
-  paddingRight: '16px',
+  paddingLeft: '0',
+  paddingRight: '0',
   marginLeft: `${60 + panelWidth}px`,
   flexGrow: 1,
   display: "flex",
@@ -93,6 +93,7 @@ const Main = styled(Box, {
   height: "100vh",
   marginTop: 0,
   overflow: 'hidden',
+  position: 'relative'
 }));
 
 const MainApp = () => {
@@ -152,7 +153,7 @@ const MainApp = () => {
       />
       {!showChat && (
         <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
-          <Title sx={{ marginLeft: '-80px' }}>
+          <Title sx={{ marginLeft: '0' }}>
             <span className="primary">genAI</span>
             <span>for</span>
             <span className="gradient">Public Sector</span>
