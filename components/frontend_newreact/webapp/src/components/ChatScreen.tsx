@@ -164,6 +164,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           display: 'flex',
           alignItems: 'center',
           p: 2,
+          width: '100%',
         }}>
           <Box sx={{ 
             display: 'flex',
@@ -179,46 +180,58 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           </Box>
         </Box>
       )}
-      <Box className="chat-messages"> {/* Container for chat messages */}
-        {messages.map((message, index) => ( // Map through messages array to render each message
-          <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}> {/* Message container with dynamic styling */}
-            <Avatar className="message-avatar" /> {/* Avatar for the message sender */}
-            <Typography>{message.text}</Typography> {/* Display message text */}
-          </Box>
-        ))}
-      </Box>
-      <Box className="chat-input-container"> {/* Container for the chat input area */}
-        <Paper className="chat-input"> {/* Paper component for styling the input area */}
-          {(selectedFile || importUrl) && ( // Conditionally render a chip if a file is selected or URL entered
-            <Box className="file-chip-container">
-              <Chip
-                label={selectedFile ? selectedFile.name : importUrl} // Display file name or URL
-                onDelete={handleRemoveSelectedFile} // Handle removal of selected file/URL
-                size="small"
-                variant="outlined"
-              />
+      
+      {/* Chat content container with width constraint */}
+      <Box sx={{
+        width: '100%',
+        maxWidth: '800px',
+        margin: '0 auto',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        <Box className="chat-messages">
+          {messages.map((message, index) => (
+            <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}>
+              <Avatar className="message-avatar" />
+              <Typography>{message.text}</Typography>
             </Box>
-          )}
-          <InputBase
-            placeholder="Enter your prompt"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)} // Update prompt state on input change
-            onKeyDown={handleKeyDown} // Handle key presses (for Enter submission)
-            fullWidth
-            multiline
-          />
-          <IconButton onClick={() => setIsUploadModalOpen(true)}> {/* Button to open file upload modal */}
-            <AddIcon />
-          </IconButton>
-        </Paper>
+          ))}
+        </Box>
+        
+        <Box className="chat-input-container">
+          <Paper className="chat-input">
+            {(selectedFile || importUrl) && (
+              <Box className="file-chip-container">
+                <Chip
+                  label={selectedFile ? selectedFile.name : importUrl}
+                  onDelete={handleRemoveSelectedFile}
+                  size="small"
+                  variant="outlined"
+                />
+              </Box>
+            )}
+            <InputBase
+              placeholder="Enter your prompt"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              fullWidth
+              multiline
+            />
+            <IconButton onClick={() => setIsUploadModalOpen(true)}>
+              <AddIcon />
+            </IconButton>
+          </Paper>
+        </Box>
       </Box>
 
       <Modal
-        open={isUploadModalOpen}  // Control modal visibility
-        onClose={handleCloseUploadModal}  // Close modal handler
-        aria-labelledby="upload-modal-title" // Accessibility label for the modal
+        open={isUploadModalOpen}
+        onClose={handleCloseUploadModal}
+        aria-labelledby="upload-modal-title"
       >
-        <Box> {/* Container inside the modal */}
+        <Box>
           <UploadModal
             open={isUploadModalOpen}
             onClose={handleCloseUploadModal}
@@ -226,8 +239,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             onFileSelect={handleFileSelect}
             onRemoveFile={handleRemoveFile}
             importUrl={importUrl}
-            onImportUrlChange={(url) => setImportUrl(url)} // Handle URL input change
-            onAdd={handleAddFiles} // Handler for when files are added
+            onImportUrlChange={(url) => setImportUrl(url)}
+            onAdd={handleAddFiles}
           />
         </Box>
       </Modal>
