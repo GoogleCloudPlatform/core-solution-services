@@ -82,7 +82,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
         
         model_details.append({
           "id": llm,
-          "name": config.get('name', ""),
+          "name": config.get("name", ""),
           "description": config.get("description", ""),
           "capabilities": config.get("capabilities", []),
           "date_added": config.get("date_added", ""),

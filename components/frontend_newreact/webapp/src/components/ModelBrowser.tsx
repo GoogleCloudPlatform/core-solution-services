@@ -25,14 +25,6 @@ interface ModelBrowserProps {
     selectedModel: ChatModel;
 }
 
-interface ModelResponse {
-    name: string;
-    description: string;
-    capabilities: string[];
-    date_added: string;
-    is_multi: boolean;
-}
-
 const SearchBox = styled(Box)(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
