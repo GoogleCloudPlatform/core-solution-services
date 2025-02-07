@@ -29,6 +29,7 @@ import AddSource from './pages/AddSource';
 import PasswordReset from '@/pages/PasswordReset';
 import { CustomHeader } from "./components/Header";
 import { WelcomeFeatures } from './components/WelcomeFeatures';
+import { MainApp } from './components/Main';
 
 interface HeaderProps {
   sidebarWidth: number;
@@ -95,114 +96,6 @@ const Main = styled(Box, {
   overflow: 'hidden',
   position: 'relative'
 }));
-
-const MainApp = () => {
-  const [prompt, setPrompt] = useState('');
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [showChat, setShowChat] = useState(true);
-  const [currentChat, setCurrentChat] = useState<Chat | undefined>();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [showSources, setShowSources] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
-
-  const { isOpen, activePanel, toggle } = useSidebarStore();
-
-  const hasActivePanel = activePanel === 'history' || activePanel === 'settings';
-  const sidebarWidth = isOpen ? 150 : 52;
-  const panelWidth = hasActivePanel ? 300 : 0;
-
-  const { user } = useAuth();
-
-  const username = user?.displayName || 'User';
-  const email = user?.email || 'user@example.com';
-  const photoURL = user?.photoURL || ''; // Get photoURL
-  const initials = username
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase();
-
-  const toggleHistory = () => {
-    setHistoryOpen(!historyOpen);
-  };
-
-  const toggleSettings = () => {  // Add function to toggle settings drawer
-    setSettingsOpen(!settingsOpen);
-  };
-
-
-  const handleSelectChat = (chat: Chat) => {
-    setCurrentChat(chat);
-    setShowChat(true);
-    setHistoryOpen(false);
-  };
-
-  const handleChatStart = () => {
-    setShowWelcome(false);
-    setShowChat(true);
-  };
-
-  return (
-    <MainContainer>
-      <Sidebar
-        setShowChat={setShowChat}
-        onSelectChat={handleSelectChat}
-        selectedChatId={currentChat?.id}
-        setShowSources={setShowSources}
-        setShowWelcome={setShowWelcome}
-      />
-      {(showWelcome || showSources) && (
-        <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
-          <Title sx={{ marginLeft: '-20px' }}>
-            <span className="primary">genAI</span>
-            <span>for</span>
-            <span className="gradient">Public Sector</span>
-          </Title>
-        }>
-        </CustomHeader>
-      )}
-      <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
-        {showWelcome && (
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column',
-            width: '100%',
-            height: 'calc(100vh - 64px)', // Subtract header height
-            overflow: 'auto',
-          }}>
-            <Box sx={{
-              maxWidth: '800px',
-              width: '100%',
-              margin: '0 auto',
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-            }}>
-              <WelcomeFeatures 
-                username={username}
-                onChatStart={() => setShowChat(true)}
-                onSourcesView={() => {
-                  setShowSources(true);
-                  setShowWelcome(false);
-                  setShowChat(false);
-                }}
-              />
-            </Box>
-          </Box>        
-        )}         
-        {showChat && (
-          <ChatScreen
-            currentChat={currentChat}
-            hideHeader={!!currentChat || showWelcome}
-            isNewChat={!currentChat}
-            onChatStart={handleChatStart}
-          />
-        )}
-        {showSources && <Sources />}
-      </Main>
-    </MainContainer>
-  );
-};
 
 export default function App() {
   return (
