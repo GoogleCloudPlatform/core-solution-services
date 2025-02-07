@@ -25,9 +25,10 @@ interface FileUpload {
 
 interface ChatScreenProps {
   currentChat?: Chat;
+  hideHeader?: boolean;
 }
 
-const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false }) => {
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(() => 
     // Initialize messages from currentChat if it exists
@@ -143,20 +144,22 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat }) => {
 
   return (
     <Box className="chat-screen">
-      <Box className="chat-header">
-        <Typography variant="h6">
-          {currentChat?.title || 'New Chat'}
-        </Typography>
-        <Select
-          value="Default Chat"
-          variant="standard"
-          IconComponent={KeyboardArrowDownIcon}
-          className="chat-type-select"
-        >
-          <MenuItem value="Default Chat">Default Chat</MenuItem>
-        </Select>
-      </Box>
-      <Box className="chat-messages">
+      {!hideHeader && (
+        <Box className="chat-header">
+          <Typography variant="h6">
+            {currentChat?.title || 'New Chat'}
+          </Typography>
+          <Select
+            value="Default Chat"
+            variant="standard"
+            IconComponent={KeyboardArrowDownIcon}
+            className="chat-type-select"
+          >
+            <MenuItem value="Default Chat">Default Chat</MenuItem>
+          </Select>
+        </Box>
+      )}
+      <Box className={`chat-messages ${hideHeader ? 'welcome-messages' : ''}`}>
         {messages.map((message, index) => (
           <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}>
             <Avatar className="message-avatar" />
