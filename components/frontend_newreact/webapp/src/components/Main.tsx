@@ -23,7 +23,7 @@ const MainContainer = styled(Box)(({ theme }) => ({
 
 const Title = styled(Box)({
   fontSize: '22px',
-  fontWeight: 500,
+  fontWeight: 50,
   fontFamily: 'Google Sans',
   display: 'flex',
   alignItems: 'center',
