@@ -63,6 +63,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
   Returns:
       LLMGetTypesResponse
   """
+  Logger.info(f"Entering chat/chat_types")
   try:
     model_config = get_model_config()
     if is_multimodal is True:
@@ -89,7 +90,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
           "is_multi": config.get("is_multi", False)
         })
 
-    Logger.info(f"chat models for user {model_details}")    
+    Logger.info(f"chat models for user {model_details}")
     return {
       "success": True,
       "message": "Successfully retrieved chat llm types",
