@@ -9,11 +9,12 @@ interface ModelContextType {
 const ModelContext = createContext<ModelContextType | undefined>(undefined);
 
 const DEFAULT_MODEL: ChatModel = {
+  id: 'VertexAI-Chat',
   name: 'Gemini',
   description: 'Gemini chat model from Vertex AI',
   purposes: ['General purpose chat'],
   isNew: false,
-  isMultimodal: false
+  isMultimodal: true
 };
 
 export function ModelProvider({ children }: { children: ReactNode }) {
