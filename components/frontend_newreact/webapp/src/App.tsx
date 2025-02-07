@@ -151,7 +151,7 @@ const MainApp = () => {
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
       />
-      {!showChat && (
+      {(showWelcome || showSources) && (
         <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
           <Title sx={{ marginLeft: '0' }}>
             <span className="primary">genAI</span>
