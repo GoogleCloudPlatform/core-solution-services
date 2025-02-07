@@ -147,7 +147,7 @@ const SignInForm: React.FunctionComponent<SignInFormProps> = ({
         />
       )}
       <span className="text-[14px] font-medium text-[#3c4043]">
-        Sign in with Google
+        {ts("auth.signin-google")}
       </span>
     </button>
   )
