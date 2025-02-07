@@ -62,23 +62,6 @@ const MainContainer = styled(Box)(({ theme }) => ({
   overflow: 'hidden',
 }));
 
-const Header = styled(Box, {
-  shouldForwardProp: (prop) => prop !== "sidebarWidth" && prop !== "panelWidth",
-})<{ sidebarWidth: number, panelWidth: number }>(({ theme, sidebarWidth, panelWidth }) => ({
-  position: 'fixed',
-  zIndex: 50,
-  padding: theme.spacing(2),
-  display: 'flex',
-  alignItems: 'center',
-  background: `linear-gradient(to bottom, ${theme.palette.background.default}CC, ${theme.palette.background.default}00)`,
-  left: `${60 + panelWidth}px`,
-  right: 0,
-  transition: 'left 0.3s ease-in-out',
-  height: '64px',
-  justifyContent: 'flex-start',
-  paddingLeft: '16px',
-}));
-
 const Title = styled(Box)({
   fontSize: '22px',
   fontWeight: 500,
@@ -116,7 +99,7 @@ const Main = styled(Box, {
 const MainApp = () => {
   const [prompt, setPrompt] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(true);
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showSources, setShowSources] = useState(false);
@@ -178,13 +161,7 @@ const MainApp = () => {
         </CustomHeader>
       )}
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
-        {showChat ? (
-          <ChatScreen
-            currentChat={currentChat}
-          />
-        ) : showSources ? (
-          <Sources />
-        ) : (
+        {showWelcome && (
           <Box sx={{ 
             display: 'flex', 
             flexDirection: 'column',
@@ -195,23 +172,21 @@ const MainApp = () => {
             mt: '64px',
             position: 'relative',
           }}>
-            {showWelcome && (
-              <WelcomeFeatures 
-                username={username}
-                onChatStart={() => setShowChat(true)}
-                onSourcesView={() => setShowSources(true)}
-              />
-            )}
-            
-            <Box sx={{ mt: 'auto' }}>
-              <ChatScreen 
-                currentChat={undefined}
-                hideHeader={true}
-                onChatStart={handleChatStart}
-              />
-            </Box>
-          </Box>
+            <WelcomeFeatures 
+              username={username}
+              onChatStart={() => setShowChat(true)}
+              onSourcesView={() => setShowSources(true)}
+            />
+          </Box>        
+        )}         
+        {showChat && (
+          <ChatScreen
+            currentChat={currentChat}
+            hideHeader={true}
+            onChatStart={handleChatStart}
+          />
         )}
+        {showSources && <Sources />}
       </Main>
     </MainContainer>
   );
