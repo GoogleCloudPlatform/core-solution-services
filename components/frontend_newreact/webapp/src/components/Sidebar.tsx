@@ -134,6 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick: () => {
                 setShowSources?.(true);
                 setShowChat(false);
+                setShowWelcome(false);
             }
         },
         { icon: <CloudIcon />, id: 'cloud' },

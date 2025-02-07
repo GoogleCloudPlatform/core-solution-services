@@ -174,7 +174,11 @@ const MainApp = () => {
             <WelcomeFeatures 
               username={username}
               onChatStart={() => setShowChat(true)}
-              onSourcesView={() => setShowSources(true)}
+              onSourcesView={() => {
+                setShowSources(true);
+                setShowWelcome(false);
+                setShowChat(false);
+              }}
             />
           </Box>        
         )}         
