@@ -76,6 +76,7 @@ const Header = styled(Box, {
   transition: 'left 0.3s ease-in-out',
   height: '64px',
   justifyContent: 'flex-start',
+  paddingLeft: '16px',
 }));
 
 const Title = styled(Box)({
@@ -168,7 +169,7 @@ const MainApp = () => {
       />
       {!showChat && (
         <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
-          <Title sx={{ marginLeft: 0 }}>
+          <Title sx={{ marginLeft: '-80px' }}>
             <span className="primary">genAI</span>
             <span>for</span>
             <span className="gradient">Public Sector</span>
