@@ -26,9 +26,10 @@ interface FileUpload {
 interface ChatScreenProps {
   currentChat?: Chat;
   hideHeader?: boolean;
+  onChatStart?: () => void;
 }
 
-const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false }) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false, onChatStart }) => {
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(() => 
     // Initialize messages from currentChat if it exists
@@ -48,6 +49,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
+
+    // Call onChatStart callback when chat begins
+    if (onChatStart) {
+      onChatStart();
+    }
 
     const userMessage: ChatMessage = {
       text: prompt,

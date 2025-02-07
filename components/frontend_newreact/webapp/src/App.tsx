@@ -112,6 +112,7 @@ const MainApp = () => {
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showSources, setShowSources] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
 
   const { isOpen, activePanel, toggle } = useSidebarStore();
 
@@ -161,6 +162,11 @@ const MainApp = () => {
     },
   ];
 
+  const handleChatStart = () => {
+    setShowWelcome(false);
+    setShowChat(true);
+  };
+
   return (
     <MainContainer>
       <Sidebar 
@@ -170,7 +176,7 @@ const MainApp = () => {
         setShowSources={setShowSources}
       />
       <Header sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
-        {(!showChat && !showSources) && (
+        {(showWelcome && !showChat && !showSources) && (
           <Title>
             <span className="primary">genAI</span>
             <span className="gradient">for Public Sector</span>
@@ -197,80 +203,83 @@ const MainApp = () => {
             mt: '64px',
             position: 'relative',
           }}>
-            <Box sx={{ 
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-            }}>
-              <Typography variant="h4" className="greeting" sx={{ textAlign: 'center' }}>
-                <span className="hello">Hello, {username}</span>
-              </Typography>
+            {showWelcome && (
+              <Box sx={{ 
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+              }}>
+                <Typography variant="h4" className="greeting" sx={{ textAlign: 'center' }}>
+                  <span className="hello">Hello, {username}</span>
+                </Typography>
 
-              <Box className="features-grid">
-                {features.map((feature, index) => (
-                  <Paper 
-                    key={index} 
-                    className="feature-card"
-                    onClick={feature.onClick}
-                    sx={{ 
-                      cursor: feature.onClick ? 'pointer' : 'default',
-                      backgroundColor: '#1E1E1E !important',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      borderRadius: '8px !important',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      {feature.icon}
-                      <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 400 }}>
-                        {feature.title}
-                      </Typography>
-                    </Box>
-                    <Typography 
-                      variant="body2" 
-                      className="subtitle"
+                <Box className="features-grid">
+                  {features.map((feature, index) => (
+                    <Paper 
+                      key={index} 
+                      className="feature-card"
+                      onClick={feature.onClick}
                       sx={{ 
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        mt: 1
+                        cursor: feature.onClick ? 'pointer' : 'default',
+                        backgroundColor: '#1E1E1E !important',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '8px !important',
                       }}
                     >
-                      {feature.subtitle}
-                    </Typography>
-                    <Box 
-                      sx={{ 
-                        mt: 'auto', 
-                        pt: 2,
-                        display: 'flex',
-                        justifyContent: 'flex-start'
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          bgcolor: 'rgba(147, 176, 255, 0.16)',
-                          color: '#93B0FF',
-                          px: 2,
-                          py: 0.5,
-                          borderRadius: '16px',
-                          fontSize: '14px',
-                          fontWeight: 500
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        {feature.icon}
+                        <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 400 }}>
+                          {feature.title}
+                        </Typography>
+                      </Box>
+                      <Typography 
+                        variant="body2" 
+                        className="subtitle"
+                        sx={{ 
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          mt: 1
                         }}
                       >
-                        {feature.action}
+                        {feature.subtitle}
+                      </Typography>
+                      <Box 
+                        sx={{ 
+                          mt: 'auto', 
+                          pt: 2,
+                          display: 'flex',
+                          justifyContent: 'flex-start'
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            bgcolor: 'rgba(147, 176, 255, 0.16)',
+                            color: '#93B0FF',
+                            px: 2,
+                            py: 0.5,
+                            borderRadius: '16px',
+                            fontSize: '14px',
+                            fontWeight: 500
+                          }}
+                        >
+                          {feature.action}
+                        </Box>
                       </Box>
-                    </Box>
-                  </Paper>
-                ))}
+                    </Paper>
+                  ))}
+                </Box>
               </Box>
-            </Box>
+            )}
             
             <Box sx={{ mt: 'auto' }}>
               <ChatScreen 
                 currentChat={undefined}
                 hideHeader={true}
+                onChatStart={handleChatStart}
               />
             </Box>
           </Box>
