@@ -144,8 +144,19 @@ const MainApp = () => {
   };
 
   const features = [
-    { icon: <ChatIcon />, title: 'Chat', subtitle: 'Latest Topical Gist', action: 'Resume' },
-    { icon: <StorageIcon />, title: 'Knowledge Sources', subtitle: 'Browse your sources', action: 'View', onClick: () => setShowSources(true) },
+    { 
+      icon: <ChatIcon sx={{ fontSize: 24, color: '#fff' }} />,
+      title: 'Chat', 
+      subtitle: 'Latest Topical Gist', 
+      action: 'Resume' 
+    },
+    { 
+      icon: <CloudIcon sx={{ fontSize: 24, color: '#fff' }} />,
+      title: 'Knowledge Sources', 
+      subtitle: 'Knowledge Source Name', 
+      action: 'Query', 
+      onClick: () => setShowSources(true) 
+    },
   ];
 
   return (
@@ -182,12 +193,51 @@ const MainApp = () => {
                   key={index} 
                   className="feature-card"
                   onClick={feature.onClick}
-                  sx={{ cursor: feature.onClick ? 'pointer' : 'default' }}
+                  sx={{ 
+                    cursor: feature.onClick ? 'pointer' : 'default',
+                    backgroundColor: '#1E1E1E !important',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '8px !important',
+                  }}
                 >
-                  {feature.icon}
-                  <Typography variant="h6">{feature.title}</Typography>
-                  <Typography variant="body2" className="subtitle">{feature.subtitle}</Typography>
-                  <Typography variant="button" className="action">{feature.action}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    {feature.icon}
+                    <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 400 }}>
+                      {feature.title}
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    variant="body2" 
+                    className="subtitle"
+                    sx={{ 
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      mt: 1
+                    }}
+                  >
+                    {feature.subtitle}
+                  </Typography>
+                  <Box 
+                    sx={{ 
+                      mt: 'auto', 
+                      pt: 2,
+                      display: 'flex',
+                      justifyContent: 'flex-start'
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        bgcolor: 'rgba(147, 176, 255, 0.16)',
+                        color: '#93B0FF',
+                        px: 2,
+                        py: 0.5,
+                        borderRadius: '16px',
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    >
+                      {feature.action}
+                    </Box>
+                  </Box>
                 </Paper>
               ))}
             </Box>
