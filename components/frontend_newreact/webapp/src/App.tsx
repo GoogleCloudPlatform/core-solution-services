@@ -149,6 +149,7 @@ const MainApp = () => {
         onSelectChat={handleSelectChat}
         selectedChatId={currentChat?.id}
         setShowSources={setShowSources}
+        setShowWelcome={setShowWelcome}
       />
       {!showChat && (
         <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
