@@ -160,15 +160,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
   return (
     <Box className="chat-screen">
-      {!hideHeader && (  // Only show header when hideHeader is false
-        <Box className="chat-header">
-          <Typography variant="h6">
+      {!hideHeader && (
+        <Box className="chat-header" sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          p: 2,
+        }}>
+          <Typography variant="h6" sx={{ mr: 2 }}>
             {currentChat?.title || 'New Chat'}
           </Typography>
           <SourceSelector
-            className="knowledge-source-selector"
             onSelectSource={handleSelectSource}
           />
+          <Box sx={{ flex: 1 }} /> {/* Spacer */}
           <Select
             value="Default Chat"
             variant="standard"
