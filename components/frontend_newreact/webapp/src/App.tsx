@@ -90,10 +90,9 @@ const Main = styled(Box, {
   flexGrow: 1,
   display: "flex",
   flexDirection: "column",
-  justifyContent: "center",
-  alignItems: "center",
-  minHeight: "100vh",
+  height: "100vh",
   marginTop: 0,
+  overflow: 'hidden',
 }));
 
 const MainApp = () => {
@@ -169,8 +168,7 @@ const MainApp = () => {
             width: '100%',
             maxWidth: '800px',
             margin: '0 auto',
-            height: 'calc(100vh - 64px)',
-            mt: '64px',
+            height: '100%',
             position: 'relative',
           }}>
             <WelcomeFeatures 
@@ -183,7 +181,8 @@ const MainApp = () => {
         {showChat && (
           <ChatScreen
             currentChat={currentChat}
-            hideHeader={true}
+            hideHeader={!!currentChat || showWelcome}
+            isNewChat={!currentChat}
             onChatStart={handleChatStart}
           />
         )}

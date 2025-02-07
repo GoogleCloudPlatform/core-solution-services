@@ -30,26 +30,41 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: Welcom
       title: 'Knowledge Sources',
       subtitle: 'Browse your sources',
       action: 'View',
-      onClick: onSourcesView
+      onClick: () => {
+        onSourcesView();
+      }
     },
   ];
 
   return (
     <Box sx={{ 
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
       gap: 4,
+      position: 'absolute',
+      top: '40%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
     }}>
-      <Typography variant="h4" className="greeting" sx={{ textAlign: 'center' }}>
-        <span className="hello">Hello, {username}</span>
+      <Typography 
+        variant="h4" 
+        className="greeting" 
+        sx={{ 
+          textAlign: 'center',
+          fontSize: '32px',
+          mb: 2
+        }}
+      >
+        <span>Hello, </span>
+        <span className="hello">{username}</span>
       </Typography>
 
-      <Box className="features-grid">
+      <Box className="features-grid" sx={{
+        maxWidth: '700px',
+        width: '100%',
+        mx: 'auto'
+      }}>
         {features.map((feature, index) => (
           <Paper 
             key={index} 
@@ -60,6 +75,8 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: Welcom
               backgroundColor: '#1E1E1E !important',
               border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '8px !important',
+              p: 3,
+              minHeight: '180px'
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>

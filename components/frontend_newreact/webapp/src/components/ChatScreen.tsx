@@ -28,9 +28,10 @@ interface ChatScreenProps {
   currentChat?: Chat;
   hideHeader?: boolean;
   onChatStart?: () => void;
+  isNewChat?: boolean;
 }
 
-const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false, onChatStart }) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false, onChatStart, isNewChat = false }) => {
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     // Initialize messages from currentChat if it exists
@@ -165,6 +166,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           alignItems: 'center',
           p: 2,
           width: '100%',
+          borderBottom: '1px solid #2f2f2f',
         }}>
           <Box sx={{ 
             display: 'flex',
