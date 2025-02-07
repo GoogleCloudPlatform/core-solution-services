@@ -22,7 +22,7 @@ export const AppConfig: IAppConfig = {
   imagesPath: "/assets/images",
   theme: "light",
   authProviders: ["google", "password"],
-  authorizedDomains: [/@google\.com$/i, /@\w+\.altostrat\.com$/i],
+  authorizedDomains: [/@google\.com$/i, /@slalom\.com$/i, /@\w+\.altostrat\.com$/i],
   oAuthScopes: []
 }
 
