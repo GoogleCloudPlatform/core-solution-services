@@ -54,18 +54,34 @@ class ChatUpdateModel(BaseModel):
 class UserQueryUpdateModel(BaseModel):
   title: str
 
+class ModelDetails(BaseModel):
+    """Model for LLM details"""
+    id: str
+    name: str
+    description: str
+    capabilities: List[str]
+    date_added: str
+    is_multi: Optional[bool] = False
+
 class LLMGetTypesResponse(BaseModel):
-  """LLM Get types model"""
-  success: Optional[bool] = True
-  message: Optional[str] = "Successfully retrieved llm types"
-  data: Optional[list[str]] = []
-  model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": {
-          "success": True,
-          "message": "Successfully retrieved llm types",
-          "data": []
-      }
-  })
+    """LLM Get types model"""
+    success: Optional[bool] = True
+    message: Optional[str] = "Successfully retrieved llm types"
+    data: Optional[List[ModelDetails]] = []
+    model_config = ConfigDict(from_attributes=True, json_schema_extra={
+        "example": {
+            "success": True,
+            "message": "Successfully retrieved chat llm types",
+            "data": [{
+                "id": "VertexAI-Chat",
+                "name": "Vertex AI Chat"
+                "description": "Latest Gemini model optimized for fast responses",
+                "capabilities": ["Chat", "Text Generation"],
+                "date_added": "2024-03-15",
+                "is_multi": True
+            }]
+        }
+    })
 
 class LLMGetVectorStoreTypesResponse(BaseModel):
   """LLM Get vector store types model"""
