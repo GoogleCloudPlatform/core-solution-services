@@ -63,14 +63,15 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
                 onClick={handleClick}
                 endIcon={<ChevronDown className="h-4 w-4" />}
                 sx={{
-                    color: 'white',
+                    color: '#fff',
                     textTransform: 'none',
-                    fontSize: '1rem',
-                    padding: '6px 8px',
+                    fontSize: '0.875rem',
+                    padding: '6px 12px',
                     minWidth: '200px',
                     justifyContent: 'space-between',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.15)',
                     },
                 }}
             >
@@ -84,11 +85,12 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
                     sx: {
                         width: '250px',
                         maxHeight: '400px',
-                        backgroundColor: '#1f1f1f',
-                        border: '1px solid #2f2f2f',
+                        backgroundColor: '#2A2A2A',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '8px',
                         boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
                         '.MuiMenu-list': {
-                            padding: 0,
+                            padding: '4px',
                         },
                     },
                 }}
@@ -96,40 +98,44 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
                 {/* Selected Source with Checkmark */}
                 <MenuItem
                     sx={{
-                        backgroundColor: '#1f1f1f',
-                        borderBottom: '1px solid #2f2f2f',
-                        py: 1.5,
+                        backgroundColor: '#2A2A2A',
+                        borderRadius: '4px',
+                        py: 1,
+                        px: 1.5,
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        '&:hover': { backgroundColor: '#1f1f1f' },
+                        mb: 1,
+                        '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                     }}
                 >
                     <Typography
                         sx={{
-                            color: 'white',
+                            color: '#fff',
                             fontSize: '0.875rem',
                         }}
                     >
                         {selectedSource?.name || "Select Source"}
                     </Typography>
-                    {selectedSource && <Check className="h-4 w-4 text-white" />} {/* Conditional checkmark */}       </MenuItem>
+                    {selectedSource && <Check className="h-4 w-4 text-white" />}
+                </MenuItem>
 
                 {/* Sources Title with Search Icon */}
                 <MenuItem
                     sx={{
-                        borderBottom: '1px solid #2f2f2f',
-                        py: 1.5,
+                        py: 1,
+                        px: 1.5,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 1,
-                        '&:hover': { backgroundColor: '#1f1f1f' },
+                        borderRadius: '4px',
+                        '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                     }}
                 >
                     <Search className="h-4 w-4 text-white/70" />
                     <Typography
                         sx={{
-                            color: 'white',
+                            color: '#fff',
                             fontSize: '0.875rem',
                             fontWeight: 500,
                         }}
@@ -137,30 +143,53 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
                         Sources
                     </Typography>
                 </MenuItem>
+
                 {/* Scrollable Sources List */}
                 <Box sx={{ maxHeight: '300px', overflowY: 'auto' }}>
-                    {loading ? ( // Loading indicator
-                        <MenuItem sx={{ /* ... */ }}>
-                            <CircularProgress size={20} color="inherit" />
+                    {loading ? (
+                        <MenuItem sx={{ 
+                            justifyContent: 'center',
+                            py: 1,
+                            px: 1.5,
+                            borderRadius: '4px'
+                        }}>
+                            <CircularProgress size={20} sx={{ color: '#fff' }} />
                         </MenuItem>
-                    ) : error ? ( // Error message
-                        <MenuItem sx={{ /* ... */ }}>Error loading sources</MenuItem>
-                    ) : sources.length === 0 ? ( // "No sources found"
-                        <MenuItem sx={{ /* ... */ }}>No sources found</MenuItem>
+                    ) : error ? (
+                        <MenuItem sx={{ 
+                            color: '#fff',
+                            py: 1,
+                            px: 1.5,
+                            borderRadius: '4px'
+                        }}>
+                            Error loading sources
+                        </MenuItem>
+                    ) : sources.length === 0 ? (
+                        <MenuItem sx={{ 
+                            color: '#fff',
+                            py: 1,
+                            px: 1.5,
+                            borderRadius: '4px'
+                        }}>
+                            No sources found
+                        </MenuItem>
                     ) : (
-                        // Display sources if fetched successfully
                         sources.map((source) => (
                             <MenuItem
-                                key={source.id} // Use source ID as key
-                                onClick={() => handleSourceSelect(source)} // Pass the source object
+                                key={source.id}
+                                onClick={() => handleSourceSelect(source)}
                                 sx={{
-                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    color: '#fff',
                                     fontSize: '0.875rem',
-                                    py: 1.5,
-                                    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+                                    py: 1,
+                                    px: 1.5,
+                                    borderRadius: '4px',
+                                    '&:hover': { 
+                                        backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                    },
                                 }}
                             >
-                                {source.name} {/* Display the source name */}
+                                {source.name}
                             </MenuItem>
                         ))
                     )}
