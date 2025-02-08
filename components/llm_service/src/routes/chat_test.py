@@ -402,6 +402,9 @@ def test_create_chat_code_interpreter(create_user, create_chat, client_with_emul
   ), mock.patch(
     "routes.chat.generate_chat_summary",
     return_value="Test Chart Generation Chat"
+  ), mock.patch(
+    "services.llm_generate.llm_chat",
+    return_value="Test Chart Generation Chat"
   ):
     resp = client_with_emulator.post(url, data=generate_params)
     
@@ -414,7 +417,7 @@ def test_create_chat_code_interpreter(create_user, create_chat, client_with_emul
     
     # Check user prompt
     assert user_chat["history"][0] == {
-      "human": generate_params["prompt"]
+      CHAT_HUMAN: generate_params["prompt"]
     }, "First entry should be user prompt"
     
     # Check AI response containing code and result
@@ -425,16 +428,16 @@ def test_create_chat_code_interpreter(create_user, create_chat, client_with_emul
       "```test result```"
     )
     assert user_chat["history"][1] == {
-      "ai": expected_response
+      CHAT_AI: expected_response
     }, "Second entry should be AI response with code"
     
     # Check file entries
     assert user_chat["history"][2] == {
-      "file": "plot.png"
+      CHAT_FILE: "plot.png"
     }, "Third entry should be file name"
     
     assert user_chat["history"][3] == {
-      "file_base64": "base64encodedstring"
+      CHAT_FILE_BASE64: "base64encodedstring"
     }, "Fourth entry should be file content"
 
     # Verify the chat title was set from the summary
