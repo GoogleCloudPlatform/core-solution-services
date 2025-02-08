@@ -65,7 +65,7 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
               key={chat.id}
               onClick={() => onSelectChat(chat)}
               sx={{
-                padding: 2,
+                padding: '16px',
                 cursor: 'pointer',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
                 backgroundColor: chat.id === selectedChatId ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
@@ -76,12 +76,22 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
             >
               <Typography
                 variant="body2"
-                color="text.secondary"
-                sx={{ mb: 0.5 }}
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  fontSize: '12px',
+                  mb: '8px'
+                }}
               >
                 {formatTimestamp(chat.created_time)}
               </Typography>
-              <Typography variant="body1">
+              <Typography 
+                variant="body1"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.87)',
+                  fontSize: '14px',
+                  lineHeight: '20px'
+                }}
+              >
                 {chat.title || 'Untitled Chat'}
               </Typography>
             </Box>
