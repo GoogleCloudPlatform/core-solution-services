@@ -333,11 +333,20 @@ async def create_chat(prompt: str = Form(None),
       raise ValidationError("Either prompt or history must be provided")
 
     # Validate tool names if provided
-    try:
-      validate_tool_names(tool_names)
-    except HTTPException as e:
-      # Convert HTTPException to ValidationError to maintain consistent error handling
-      raise ValidationError(str(e.detail)) from e
+    if tool_names:
+      try:
+        tool_names = json.loads(tool_names)
+      except json.decoder.JSONDecodeError:
+        raise HTTPException(
+          status_code=422,
+          detail="Tool names must be a string representing a json formatted list"
+        )
+      # ensuring the tools provided are valid for chat
+      if invalid_tools := [tool for tool in tool_names if tool not in chat_tools]:
+        raise HTTPException(
+          status_code=422,
+          detail=f"Invalid tool names: {','.join(invalid_tools)}"
+        )
 
     user = User.find_by_email(user_data.get("email"))
 
@@ -443,6 +452,8 @@ async def create_chat(prompt: str = Form(None),
 
   except ValidationError as e:
     raise BadRequest(str(e)) from e
+  except HTTPException:
+    raise  # Let FastAPI HTTPExceptions pass through
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
