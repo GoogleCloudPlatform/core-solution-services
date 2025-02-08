@@ -16,7 +16,8 @@
   Unit tests for LLM Service endpoints
 """
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
+# pylint: disable=unused-argument,redefined-outer-name,unused-import
+# pylint: disable=unused-variable,ungrouped-imports
 import os
 import json
 import pytest
@@ -31,7 +32,9 @@ from common.models.llm import CHAT_HUMAN, CHAT_AI, CHAT_FILE, CHAT_FILE_BASE64
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
-from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+from common.testing.firestore_emulator import (
+  firestore_emulator, clean_firestore
+)
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
@@ -188,12 +191,13 @@ async def test_create_chat(create_user, client_with_emulator):
   invalid_params = {
     "llm_type": FAKE_GENERATE_PARAMS["llm_type"]
   }
-  # Don't mock llm_chat here since we expect validation to fail before reaching it
+  # Skip mocking llm_chat since validation will fail before it would be called
   resp = client_with_emulator.post(url, data=invalid_params)
   assert resp.status_code == 422, "Missing prompt and history returns 422"
   json_response = resp.json()
   assert json_response["success"] is False, "Error response indicates failure"
-  assert "prompt" in json_response["message"].lower(), "Error message mentions missing prompt"
+  error_msg = "Error message mentions missing prompt"
+  assert "prompt" in json_response["message"].lower(), error_msg
   assert json_response["data"] is None, "Error response has no data"
 
   # Verify final state
@@ -375,7 +379,11 @@ def test_invalid_tool_names_chat_generate(create_user, create_chat,
 
 
 @pytest.mark.long
-def test_create_chat_code_interpreter(create_user, create_chat, client_with_emulator):
+def test_create_chat_code_interpreter(
+    create_user,
+    create_chat,
+    client_with_emulator
+):
   """Test creating a chat with code interpreter tool"""
   url = f"{api_url}"
   generate_params = FAKE_GENERATE_PARAMS.copy()
@@ -390,7 +398,8 @@ def test_create_chat_code_interpreter(create_user, create_chat, client_with_emul
     "output_files": [
       {
         "name": "plot.png",
-        "contents": "base64encodedstring"  # In real response this would be actual base64
+        # Real response would have actual base64 data
+        "contents": "base64encodedstring"
       }
     ]
   }
@@ -444,7 +453,11 @@ def test_create_chat_code_interpreter(create_user, create_chat, client_with_emul
     assert user_chat["title"] == "Test Chart Generation Chat"
 
 @pytest.mark.long
-def test_generate_chat_code_interpreter(create_user, create_chat, client_with_emulator):
+def test_generate_chat_code_interpreter(
+    create_user,
+    create_chat,
+    client_with_emulator
+):
   """Test generating chat response with code interpreter tool"""
   chatid = CHAT_EXAMPLE["id"]
   url = f"{api_url}/{chatid}/generate"
@@ -460,6 +473,7 @@ def test_generate_chat_code_interpreter(create_user, create_chat, client_with_em
     "output_files": [
       {
         "name": "plot.png",
+        # Real response would have actual base64 data
         "contents": "base64encodedstring"
       }
     ]
@@ -551,7 +565,11 @@ def test_generate_chat_summary_not_found(create_user, client_with_emulator):
     "Error message indicates not found"
   assert json_response["data"] is None, "Error response has no data"
 
-def test_generate_chat_summary_error(create_user, create_chat, client_with_emulator):
+def test_generate_chat_summary_error(
+    create_user,
+    create_chat,
+    client_with_emulator
+):
   """Test generate_summary when summary generation fails"""
   chatid = CHAT_EXAMPLE["id"]
   url = f"{api_url}/{chatid}/generate_summary"
@@ -591,10 +609,12 @@ def test_create_chat_generates_summary(create_user, client_with_emulator):
     chat_data = json_response.get("data")
 
     # Verify chat was created with correct content
-    assert chat_data["history"][0] == \
-        {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
-    assert chat_data["history"][1] == \
-        {CHAT_AI: FAKE_GENERATE_RESPONSE}
+    assert chat_data["history"][0] == {
+      CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]
+    }
+    assert chat_data["history"][1] == {
+      CHAT_AI: FAKE_GENERATE_RESPONSE
+    }
 
     # Verify summary was generated and set as title
     assert chat_data["title"] == "Test Summary"
@@ -603,7 +623,10 @@ def test_create_chat_generates_summary(create_user, client_with_emulator):
     chat = UserChat.find_by_id(chat_data["id"])
     assert chat.title == "Test Summary"
 
-def test_create_chat_with_history_generates_summary(create_user, client_with_emulator):
+def test_create_chat_with_history_generates_summary(
+    create_user,
+    client_with_emulator
+):
   """Test that creating a chat from history generates a summary"""
   url = f"{api_url}"
 
@@ -637,7 +660,11 @@ def test_create_chat_with_history_generates_summary(create_user, client_with_emu
     chat = UserChat.find_by_id(chat_data["id"])
     assert chat.title == "Test Summary"
 
-def test_chat_generate_adds_missing_title(create_user, create_chat, client_with_emulator):
+def test_chat_generate_adds_missing_title(
+    create_user,
+    create_chat,
+    client_with_emulator
+):
   """Test that generating a chat response adds a title if missing"""
   chatid = CHAT_EXAMPLE["id"]
   url = f"{api_url}/{chatid}/generate"
@@ -664,10 +691,12 @@ def test_chat_generate_adds_missing_title(create_user, create_chat, client_with_
     chat_data = json_response.get("data")
 
     # Verify chat response was generated
-    assert chat_data["history"][-2] == \
-        {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
-    assert chat_data["history"][-1] == \
-        {CHAT_AI: FAKE_GENERATE_RESPONSE}
+    assert chat_data["history"][-2] == {
+      CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]
+    }
+    assert chat_data["history"][-1] == {
+      CHAT_AI: FAKE_GENERATE_RESPONSE
+    }
 
     # Verify summary was generated and set as title
     assert chat_data["title"] == "Test Summary"
@@ -676,7 +705,11 @@ def test_chat_generate_adds_missing_title(create_user, create_chat, client_with_
     updated_chat = UserChat.find_by_id(chatid)
     assert updated_chat.title == "Test Summary"
 
-def test_chat_generate_keeps_existing_title(create_user, create_chat, client_with_emulator):
+def test_chat_generate_keeps_existing_title(
+    create_user,
+    create_chat,
+    client_with_emulator
+):
   """Test that generating a chat response preserves existing title"""
   chatid = CHAT_EXAMPLE["id"]
   url = f"{api_url}/{chatid}/generate"
@@ -698,10 +731,12 @@ def test_chat_generate_keeps_existing_title(create_user, create_chat, client_wit
     chat_data = json_response.get("data")
 
     # Verify chat response was generated
-    assert chat_data["history"][-2] == \
-        {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
-    assert chat_data["history"][-1] == \
-        {CHAT_AI: FAKE_GENERATE_RESPONSE}
+    assert chat_data["history"][-2] == {
+      CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]
+    }
+    assert chat_data["history"][-1] == {
+      CHAT_AI: FAKE_GENERATE_RESPONSE
+    }
 
     # Verify title was preserved and summary was not generated
     assert chat_data["title"] == "Existing Title"
@@ -814,8 +849,9 @@ def test_chat_llm_multimodal_filter(client_with_emulator):
     assert json_response["success"] is True
 
     # Test details endpoint
-    resp = client_with_emulator.get(f"{base_url}/details",
-                                  params={"is_multimodal": True})
+    details_url = f"{base_url}/details"
+    params = {"is_multimodal": True}
+    resp = client_with_emulator.get(details_url, params=params)
     assert resp.status_code == 200
     json_response = resp.json()
     assert json_response["success"] is True
