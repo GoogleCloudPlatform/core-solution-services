@@ -140,7 +140,7 @@
       "model_class": "ChatVertexAI",
       "context_length": 2048,
       "description": "Vertex AI's PaLM 2 chat model accessed via Langchain.",
-      "enabled": false,
+      "enabled": false
     },
     "VertexAI-Chat-Palm2-32k": {
       "name": "PaLM 2 Chat 32K",
@@ -149,7 +149,7 @@
       "model_name": "chat-bison-32k",
       "context_length": 32000,
       "description": "Vertex AI's PaLM 2 chat model with a 32k context window.",
-      "enabled": false,
+      "enabled": false
     },
     "VertexAI-Chat-Palm2-32k-Langchain": {
       "name": "PaLM 2 Chat 32K (Langchain)",
@@ -159,7 +159,7 @@
       "model_class": "ChatVertexAI",
       "context_length": 32000,
       "description": "Vertex AI's PaLM 2 chat model with a 32k context window, accessed via Langchain.",
-      "enabled": false,
+      "enabled": false
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {
       "name": "Gemini Pro (Langchain)",
@@ -168,7 +168,7 @@
       "model_name": "gemini-pro",
       "model_class": "ChatVertexAI",
       "description": "Vertex AI's Gemini Pro chat model accessed via Langchain.",
-      "enabled": false,
+      "enabled": false
     },
     "Truss-Llama2-Chat": {
       "name": "Llama 2 Chat (Truss)",
