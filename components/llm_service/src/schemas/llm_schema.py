@@ -19,13 +19,13 @@ from typing import List, Optional
 from typing_extensions import TypedDict
 from pydantic import ConfigDict, BaseModel
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
-                                     LLM_MULTIMODAL_GENERATE_EXAMPLE,
-                                     QUERY_EXAMPLE,
-                                     QUERY_ENGINE_BUILD_EXAMPLE,
-                                     QUERY_RETRIEVE_EXAMPLE,
-                                     QUERY_ENGINE_EXAMPLE,
-                                     LLM_EMBEDDINGS_EXAMPLE,
-                                     LLM_MULTIMODAL_EMBEDDINGS_EXAMPLE)
+                                   LLM_MULTIMODAL_GENERATE_EXAMPLE,
+                                   QUERY_EXAMPLE,
+                                   QUERY_ENGINE_BUILD_EXAMPLE,
+                                   QUERY_RETRIEVE_EXAMPLE,
+                                   QUERY_ENGINE_EXAMPLE,
+                                   LLM_EMBEDDINGS_EXAMPLE,
+                                   LLM_MULTIMODAL_EMBEDDINGS_EXAMPLE)
 
 class ChatModel(BaseModel):
   id: Optional[str] = None
@@ -42,13 +42,13 @@ class ChatUpdateModel(BaseModel):
   title: Optional[str] = None
   history: Optional[List[dict]] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": {
-          "title": "Updated Chat Title",
-          "history": [
-              {"human": "What is machine learning?"},
-              {"ai": "Machine learning is a branch of ai..."}
-          ]
-      }
+    "example": {
+      "title": "Updated Chat Title",
+      "history": [
+        {"human": "What is machine learning?"},
+        {"ai": "Machine learning is a branch of ai..."}
+      ]
+    }
   })
 
 class UserQueryUpdateModel(BaseModel):
@@ -124,50 +124,48 @@ class LLMGetQueryEnginesResponse(BaseModel):
   })
 
 class LLMGenerateModel(BaseModel):
-  """LLM Generate request model"""
+  """Model for LLM generation request"""
   prompt: str
   llm_type: Optional[str] = None
   stream: Optional[bool] = False
-  # a url to a bucket or file in a bucket
-  chat_file_url: Optional[str] = None
-  # the chat file in base64 encoding and it's name are included instead of
-  # using UploadFile because HTTP protocols can't support both the form
-  # field for the file and regular json parameters for the path parametrs
-  # https://fastapi.tiangolo.com/tutorial/request-forms/#about-form-fields
   chat_file_b64: Optional[str] = None
   chat_file_b64_name: Optional[str] = None
-  # a json encoded list of strings
-  tool_names: Optional[str] = None
+  chat_file_url: Optional[str] = None
+  tool_names: Optional[List[str]] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": LLM_GENERATE_EXAMPLE
+    "example": LLM_GENERATE_EXAMPLE
   })
 
 class LLMMultimodalGenerateModel(BaseModel):
-  """LLM Multi Generate request model"""
+  """Model for LLM multimodal generation request"""
   prompt: str
-  user_file_b64: str
-  user_file_name: str
   llm_type: Optional[str] = None
+  stream: Optional[bool] = False
+  chat_file_b64: Optional[str] = None
+  chat_file_b64_name: Optional[str] = None
+  chat_file_url: Optional[str] = None
+  tool_names: Optional[List[str]] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": LLM_MULTIMODAL_GENERATE_EXAMPLE
+    "example": LLM_MULTIMODAL_GENERATE_EXAMPLE
   })
 
 class LLMEmbeddingsModel(BaseModel):
-  """LLM Embeddings request model"""
+  """Model for LLM embeddings request"""
   text: str
-  embedding_type: Optional[str] = None
+  llm_type: Optional[str] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": LLM_EMBEDDINGS_EXAMPLE
+    "example": LLM_EMBEDDINGS_EXAMPLE
   })
 
 class LLMMultimodalEmbeddingsModel(BaseModel):
-  """LLM Multimodal Embeddings request model"""
+  """Model for LLM multimodal embeddings request"""
   text: str
-  user_file_b64: str
-  user_file_name: str
-  embedding_type: Optional[str] = None
+  llm_type: Optional[str] = None
+  chat_file_b64: Optional[str] = None
+  chat_file_b64_name: Optional[str] = None
+  chat_file_url: Optional[str] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": LLM_MULTIMODAL_EMBEDDINGS_EXAMPLE
+    "example": LLM_MULTIMODAL_EMBEDDINGS_EXAMPLE
   })
 
 class LLMChatModel(BaseModel):
@@ -328,11 +326,11 @@ class LLMUserChatResponse(BaseModel):
   message: Optional[str] = "Successfully created chat"
   data: Optional[dict] = {}
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": {
-          "success": True,
-          "message": "Successfully created chat",
-          "data": None
-      }
+    "example": {
+      "success": True,
+      "message": "Successfully created chat",
+      "data": None
+    }
   })
 
 class LLMUserAllChatsResponse(BaseModel):
@@ -341,9 +339,9 @@ class LLMUserAllChatsResponse(BaseModel):
   success: Optional[bool] = True
   message: Optional[str] = "Successfully retrieved user chats"
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": {
-          "success": True,
-          "message": "Successfully retrieved chats",
-          "data": None
-      }
+    "example": {
+      "success": True,
+      "message": "Successfully retrieved chats",
+      "data": None
+    }
   })
