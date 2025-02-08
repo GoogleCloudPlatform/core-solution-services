@@ -686,39 +686,39 @@ async def user_chat_generate(chat_id: str, request: Request):
     name="Generate chat summary and update title",
     response_model=LLMUserChatResponse)
 async def generate_chat_summary_route(chat_id: str):
-    """
-    Generate a summary of the chat using the default summary model and 
-    update the chat title with that summary.
+  """
+  Generate a summary of the chat using the default summary model and 
+  update the chat title with that summary.
 
-    Args:
-        chat_id: ID of the chat to summarize
+  Args:
+      chat_id: ID of the chat to summarize
 
-    Returns:
-        LLMUserChatResponse with the updated chat data
-    """
-    try:
-        # Get the chat
-        user_chat = UserChat.find_by_id(chat_id)
-        if user_chat is None:
-            raise ResourceNotFoundException(f"Chat {chat_id} not found")
+  Returns:
+      LLMUserChatResponse with the updated chat data
+  """
+  try:
+    # Get the chat
+    user_chat = UserChat.find_by_id(chat_id)
+    if user_chat is None:
+      raise ResourceNotFoundException(f"Chat {chat_id} not found")
 
-        # Generate summary and update title
-        summary = await generate_chat_summary(user_chat)
-        user_chat.title = summary
-        user_chat.save()
+    # Generate summary and update title
+    summary = await generate_chat_summary(user_chat)
+    user_chat.title = summary
+    user_chat.save()
 
-        chat_data = user_chat.get_fields(reformat_datetime=True)
-        chat_data["id"] = user_chat.id
+    chat_data = user_chat.get_fields(reformat_datetime=True)
+    chat_data["id"] = user_chat.id
 
-        return {
-            "success": True,
-            "message": "Successfully generated summary and updated chat title",
-            "data": chat_data
-        }
+    return {
+      "success": True,
+      "message": "Successfully generated summary and updated chat title",
+      "data": chat_data
+    }
 
-    except ResourceNotFoundException as e:
-        raise ResourceNotFound(str(e)) from e
-    except Exception as e:
-        Logger.error(e)
-        Logger.error(traceback.print_exc())
-        raise InternalServerError(str(e)) from e
+  except ResourceNotFoundException as e:
+    raise ResourceNotFound(str(e)) from e
+  except Exception as e:
+    Logger.error(e)
+    Logger.error(traceback.print_exc())
+    raise InternalServerError(str(e)) from e
