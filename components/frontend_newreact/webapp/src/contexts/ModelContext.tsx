@@ -12,7 +12,7 @@ interface ModelContextType {
 const ModelContext = createContext<ModelContextType | undefined>(undefined);
 
 // Default model ID that matches what's returned by the API
-const DEFAULT_MODEL_ID = 'chat-bison';
+const DEFAULT_MODEL_ID = 'VertexAI-Chat';
 
 // Temporary model used during loading
 const LOADING_MODEL: ChatModel = {
