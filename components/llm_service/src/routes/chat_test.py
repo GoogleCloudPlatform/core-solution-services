@@ -484,7 +484,7 @@ def test_generate_chat_code_interpreter(create_user, create_chat, client_with_em
     
     # Check user prompt
     assert new_entries[0] == {
-      "human": generate_params["prompt"]
+      CHAT_HUMAN: generate_params["prompt"]
     }, "First new entry should be user prompt"
     
     # Check AI response containing code and result
@@ -495,16 +495,16 @@ def test_generate_chat_code_interpreter(create_user, create_chat, client_with_em
       "```test result```"
     )
     assert new_entries[1] == {
-      "ai": expected_response
+      CHAT_AI: expected_response
     }, "Second new entry should be AI response with code"
     
     # Check file entries
     assert new_entries[2] == {
-      "file": "plot.png"
+      CHAT_FILE: "plot.png"
     }, "Third new entry should be file name"
     
     assert new_entries[3] == {
-      "file_base64": "base64encodedstring"
+      CHAT_FILE_BASE64: "base64encodedstring"
     }, "Fourth new entry should be file content"
 
     # If this was a new chat with no title, verify the title was set
