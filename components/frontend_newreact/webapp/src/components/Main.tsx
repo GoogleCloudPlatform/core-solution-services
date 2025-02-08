@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Box, styled } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import { useModel } from '../contexts/ModelContext';
 import { Chat } from '../lib/types';
 import { useSidebarStore } from '../lib/sidebarStore';
 import ChatScreen from './ChatScreen';
@@ -63,6 +64,7 @@ export const MainApp = () => {
 
   const { isOpen, activePanel } = useSidebarStore();
   const { user } = useAuth();
+  const { selectedModel } = useModel();
 
   const hasActivePanel = activePanel === 'history' || activePanel === 'settings';
   const sidebarWidth = isOpen ? 150 : 52;
@@ -83,9 +85,28 @@ export const MainApp = () => {
   };
 
   const handleNewChat = () => {
-    setCurrentChat(undefined);
-    setShowWelcome(false);
+    // Create a new empty chat object
+    const newChat: Chat = {
+      id: undefined,  // undefined for new chat
+      title: 'New Chat',
+      created_time: new Date().toISOString(),
+      created_by: user?.uid || '',
+      last_modified_time: new Date().toISOString(),
+      last_modified_by: user?.uid || '',
+      archived_at_timestamp: null,
+      archived_by: '',
+      deleted_at_timestamp: null,
+      deleted_by: '',
+      prompt: '',
+      llm_type: selectedModel.id,
+      user_id: user?.uid || '',
+      agent_name: null,
+      history: []
+    };
+    
+    setCurrentChat(newChat);
     setShowChat(true);
+    setShowWelcome(false);
     setShowSources(false);
   };
 
@@ -133,7 +154,7 @@ export const MainApp = () => {
         {showChat && (
           <ChatScreen
             currentChat={currentChat}
-            hideHeader={!!currentChat || showWelcome}
+            hideHeader={showWelcome}
             isNewChat={!currentChat}
             onChatStart={handleChatStart}
           />
