@@ -33,11 +33,11 @@ const drawerWidth = 60;
 const collapsedWidth = 60;
 
 interface SidebarProps {
-    setShowChat: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowChat: (show: boolean) => void;
     onSelectChat: (chat: Chat) => void;
     selectedChatId?: string;
-    setShowSources?: React.Dispatch<React.SetStateAction<boolean>>;
-    setShowWelcome: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowSources: (show: boolean) => void;
+    setShowWelcome: (show: boolean) => void;
     onNewChat: () => void;
 }
 
@@ -95,14 +95,14 @@ const PanelHeader = styled(Box)(({ theme }) => ({
     alignItems: 'center',
 }));
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
+export const Sidebar = ({ 
     setShowChat, 
-    onSelectChat, 
+    onSelectChat,
     selectedChatId,
     setShowSources,
     setShowWelcome,
-    onNewChat 
-}) => {
+    onNewChat
+}: SidebarProps) => {
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
 
     const handleItemClick = (item: string) => {
