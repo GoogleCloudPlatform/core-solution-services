@@ -298,7 +298,7 @@ def test_get_llm_details_error_handling(client_with_emulator):
   url = f"{api_url}/details"
 
   def mock_get_llm_types_error():
-    raise Exception("Test error")
+    raise RuntimeError("Test error")
 
   with mock.patch("config.model_config.ModelConfig.get_llm_types",
                  side_effect=mock_get_llm_types_error):
