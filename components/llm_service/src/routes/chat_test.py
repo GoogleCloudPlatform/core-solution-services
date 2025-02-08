@@ -472,6 +472,9 @@ def test_generate_chat_code_interpreter(create_user, create_chat, client_with_em
   ), mock.patch(
     "routes.chat.generate_chat_summary",
     return_value="Test Chart Generation Chat"
+  ), mock.patch(
+    "services.llm_generate.llm_chat",
+    return_value="Test Chart Generation Chat"
   ):
     resp = client_with_emulator.post(url, json=generate_params)
     
@@ -513,24 +516,28 @@ def test_generate_chat_code_interpreter(create_user, create_chat, client_with_em
       assert user_chat["title"] == "Test Chart Generation Chat"
 
 def test_generate_chat_summary(create_user, create_chat, client_with_emulator):
-    """Test the generate_summary endpoint"""
-    chatid = CHAT_EXAMPLE["id"]
-    url = f"{api_url}/{chatid}/generate_summary"
+  """Test the generate_summary endpoint"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate_summary"
 
-    # Test successful summary generation
-    with mock.patch(
-            "services.llm_generate.generate_chat_summary",
-            return_value="Test Summary"):
-        resp = client_with_emulator.post(url)
-        
-        assert resp.status_code == 200
-        json_response = resp.json()
-        assert json_response["success"] is True
-        assert json_response["data"]["title"] == "Test Summary"
+  # Test successful summary generation
+  with mock.patch(
+      "services.llm_generate.generate_chat_summary",
+      return_value="Test Summary"
+  ), mock.patch(
+      "services.llm_generate.llm_chat",
+      return_value="Test Summary"
+  ):
+    resp = client_with_emulator.post(url)
+    
+    assert resp.status_code == 200
+    json_response = resp.json()
+    assert json_response["success"] is True
+    assert json_response["data"]["title"] == "Test Summary"
 
-        # Verify the chat was updated in the database
-        updated_chat = UserChat.find_by_id(chatid)
-        assert updated_chat.title == "Test Summary"
+    # Verify the chat was updated in the database
+    updated_chat = UserChat.find_by_id(chatid)
+    assert updated_chat.title == "Test Summary"
 
 def test_generate_chat_summary_not_found(create_user, client_with_emulator):
     """Test generate_summary with non-existent chat"""
@@ -560,62 +567,72 @@ def test_generate_chat_summary_error(create_user, create_chat, client_with_emula
         assert json_response["data"] is None, "Error response has no data"
 
 def test_create_chat_generates_summary(create_user, client_with_emulator):
-    """Test that creating a new chat generates a summary"""
-    url = f"{api_url}"
+  """Test that creating a new chat generates a summary"""
+  url = f"{api_url}"
 
-    # Test regular chat creation with summary generation
-    with mock.patch("routes.chat.llm_chat",
-                   return_value=FAKE_GENERATE_RESPONSE), \
-         mock.patch("services.llm_generate.generate_chat_summary",
-                   return_value="Test Summary"):
-        
-        resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS)
+  # Test regular chat creation with summary generation
+  with mock.patch(
+      "routes.chat.llm_chat",
+      return_value=FAKE_GENERATE_RESPONSE
+  ), mock.patch(
+      "services.llm_generate.generate_chat_summary",
+      return_value="Test Summary"
+  ), mock.patch(
+      "services.llm_generate.llm_chat",
+      return_value="Test Summary"
+  ):
+    resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS)
 
-        json_response = resp.json()
-        assert resp.status_code == 200
-        chat_data = json_response.get("data")
-        
-        # Verify chat was created with correct content
-        assert chat_data["history"][0] == \
-            {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
-        assert chat_data["history"][1] == \
-            {CHAT_AI: FAKE_GENERATE_RESPONSE}
-        
-        # Verify summary was generated and set as title
-        assert chat_data["title"] == "Test Summary"
+    json_response = resp.json()
+    assert resp.status_code == 200
+    chat_data = json_response.get("data")
+    
+    # Verify chat was created with correct content
+    assert chat_data["history"][0] == \
+        {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
+    assert chat_data["history"][1] == \
+        {CHAT_AI: FAKE_GENERATE_RESPONSE}
+    
+    # Verify summary was generated and set as title
+    assert chat_data["title"] == "Test Summary"
 
-        # Verify chat was saved to database with summary
-        chat = UserChat.find_by_id(chat_data["id"])
-        assert chat.title == "Test Summary"
+    # Verify chat was saved to database with summary
+    chat = UserChat.find_by_id(chat_data["id"])
+    assert chat.title == "Test Summary"
 
 def test_create_chat_with_history_generates_summary(create_user, client_with_emulator):
-    """Test that creating a chat from history generates a summary"""
-    url = f"{api_url}"
+  """Test that creating a chat from history generates a summary"""
+  url = f"{api_url}"
+  
+  history_params = {
+    **FAKE_GENERATE_PARAMS,
+    "history": '[{"human": "test prompt"}, {"ai": "test response"}]'
+  }
+
+  with mock.patch(
+      "services.llm_generate.generate_chat_summary",
+      return_value="Test Summary"
+  ), mock.patch(
+      "services.llm_generate.llm_chat",
+      return_value="Test Summary"
+  ):
+    resp = client_with_emulator.post(url, data=history_params)
     
-    history_params = {
-        **FAKE_GENERATE_PARAMS,
-        "history": '[{"human": "test prompt"}, {"ai": "test response"}]'
-    }
+    json_response = resp.json()
+    assert resp.status_code == 200
+    chat_data = json_response.get("data")
+    
+    # Verify history was preserved
+    assert len(chat_data["history"]) == 2
+    assert chat_data["history"][0] == {"human": "test prompt"}
+    assert chat_data["history"][1] == {"ai": "test response"}
+    
+    # Verify summary was generated and set as title
+    assert chat_data["title"] == "Test Summary"
 
-    with mock.patch("services.llm_generate.generate_chat_summary",
-                   return_value="Test Summary"):
-        resp = client_with_emulator.post(url, data=history_params)
-        
-        json_response = resp.json()
-        assert resp.status_code == 200
-        chat_data = json_response.get("data")
-        
-        # Verify history was preserved
-        assert len(chat_data["history"]) == 2
-        assert chat_data["history"][0] == {"human": "test prompt"}
-        assert chat_data["history"][1] == {"ai": "test response"}
-        
-        # Verify summary was generated and set as title
-        assert chat_data["title"] == "Test Summary"
-
-        # Verify chat was saved to database with summary
-        chat = UserChat.find_by_id(chat_data["id"])
-        assert chat.title == "Test Summary"
+    # Verify chat was saved to database with summary
+    chat = UserChat.find_by_id(chat_data["id"])
+    assert chat.title == "Test Summary"
 
 def test_chat_generate_adds_missing_title(create_user, create_chat, client_with_emulator):
   """Test that generating a chat response adds a title if missing"""
@@ -627,11 +644,16 @@ def test_chat_generate_adds_missing_title(create_user, create_chat, client_with_
   chat.title = ""
   chat.save()
 
-  with mock.patch("routes.chat.llm_chat",
-                 return_value=FAKE_GENERATE_RESPONSE), \
-       mock.patch("services.llm_generate.generate_chat_summary",
-                 return_value="Test Summary"):
-    
+  with mock.patch(
+      "routes.chat.llm_chat",
+      return_value=FAKE_GENERATE_RESPONSE
+  ), mock.patch(
+      "services.llm_generate.generate_chat_summary",
+      return_value="Test Summary"
+  ), mock.patch(
+      "services.llm_generate.llm_chat",
+      return_value="Test Summary"
+  ):
     resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
 
     json_response = resp.json()
