@@ -20,7 +20,7 @@ import json
 import base64
 import io
 from typing import Union, Annotated, Optional
-from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
 from common.models.llm import CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64, CHAT_FILE_TYPE
@@ -491,134 +491,136 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
 
 @router.post(
     "/{chat_id}/generate")
-async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
-  """
-  Continue chat based on context of user chat
+async def user_chat_generate(chat_id: str, request: Request):
+    """
+    Continue chat based on context of user chat
 
-  Args:
-    gen_config: Input config dictionary,
-      including prompt(str), llm_type(str) type for model,
-      and stream(bool) for streaming mode
+    Args:
+      chat_id: ID of the chat to continue
+      request: FastAPI Request object containing the request body
 
-  Returns:
-    LLMUserChatResponse or StreamingResponse
-  """
-  response_files = None
-  tool_names = gen_config.tool_names
-  
-  try:
-    # Validate tool names if provided
+    Returns:
+      LLMUserChatResponse or StreamingResponse
+    """
+    # Parse the raw request body
+    body = await request.json()
+    tool_names = body.get("tool_names")
+
+    # Validate tool names first
     try:
-      validate_tool_names(tool_names)
+        validate_tool_names(tool_names)
     except HTTPException as e:
-      # Re-raise the HTTPException directly to preserve the status code and detail
-      raise e
+        # Re-raise standard FastAPI HTTPException (includes "detail")
+        raise e
 
-    # process chat file(s): upload to GCS and determine mime type
-    chat_file_bytes = None
-    chat_files = None
-    chat_file = None
-    if gen_config.chat_file_b64 and gen_config.chat_file_b64_name:
-      content = base64.b64decode(gen_config.chat_file_b64)
-      chat_file = UploadFile(io.BytesIO(content),
-                            filename=gen_config.chat_file_b64_name,
-                            size=len(content))
-    chat_file_url = gen_config.chat_file_url
-    if chat_file is not None or chat_file_url is not None:
-      chat_files = await process_chat_file(chat_file, chat_file_url)
-
-    genconfig_dict = {**gen_config.model_dump()}
-    Logger.info(f"Generating new chat response for chat_id={chat_id},"
-                f"genconfig_dict={genconfig_dict}")
-
-    prompt = genconfig_dict.get("prompt")
-    if prompt is None or prompt == "":
-      return BadRequest("Missing or invalid payload parameters")
-
-    # fetch user chat
-    user_chat = UserChat.find_by_id(chat_id)
-    if user_chat is None:
-      raise ResourceNotFoundException(f"Chat {chat_id} not found ")
-
-    # Check if chat needs a title
-    if not user_chat.title or user_chat.title.strip() == "":
-      # Generate and set chat title
-      summary = await generate_chat_summary(user_chat)
-      user_chat.title = summary
-      user_chat.save()
-
-    if (chat_file_bytes
-        and (mime_type := validate_multimodal_file_type(chat_file.filename))):
-      user_chat.update_history(custom_entry={
-        CHAT_FILE_BASE64: chat_file_bytes,
-        CHAT_FILE_TYPE: mime_type
-      })
-    if chat_files:
-      for cur_chat_file in chat_files:
-        user_chat.update_history(custom_entry={
-          CHAT_FILE_URL: cur_chat_file.gcs_path,
-          CHAT_FILE_TYPE: cur_chat_file.mime_type
-        })
-
-    # set llm type for chat
-    llm_type = genconfig_dict.get("llm_type", None)
-    if llm_type is None:
-      llm_type = user_chat.llm_type or DEFAULT_CHAT_LLM_TYPE
-
-    # get streaming mode
-    stream = genconfig_dict.get("stream", False)
+    # Now that tool_names is validated, parse the rest with Pydantic
+    gen_config = LLMGenerateModel(**body)
+    response_files = None
 
     try:
-      if tool_names:
-        response, response_files = run_chat_tools(prompt)
-      # Otherwise generate text from prompt if no tools
-      else:
-        response = await llm_chat(prompt,
-                              llm_type,
-                              user_chat=user_chat,
-                              chat_files=chat_files,
-                              chat_file_bytes=chat_file_bytes,
-                              stream=stream)
-        if stream:
-          # Return streaming response
-          return StreamingResponse(
-            response,
-            media_type="text/event-stream"
-          )
+        # process chat file(s): upload to GCS and determine mime type
+        chat_file_bytes = None
+        chat_files = None
+        chat_file = None
+        if gen_config.chat_file_b64 and gen_config.chat_file_b64_name:
+            content = base64.b64decode(gen_config.chat_file_b64)
+            chat_file = UploadFile(io.BytesIO(content),
+                                  filename=gen_config.chat_file_b64_name,
+                                  size=len(content))
+        chat_file_url = gen_config.chat_file_url
+        if chat_file is not None or chat_file_url is not None:
+            chat_files = await process_chat_file(chat_file, chat_file_url)
 
-      # save chat history
-      user_chat.update_history(prompt, response)
-      if response_files:
-        for file in response_files:
-          user_chat.update_history(custom_entry={
-            CHAT_FILE: file["name"]
-          })
-          user_chat.update_history(custom_entry={
-            CHAT_FILE_BASE64: file["contents"],
-            CHAT_FILE_TYPE: "image/png"
-          })
+        genconfig_dict = {**gen_config.model_dump()}
+        Logger.info(f"Generating new chat response for chat_id={chat_id},"
+                    f"genconfig_dict={genconfig_dict}")
 
-      chat_data = user_chat.get_fields(reformat_datetime=True)
-      chat_data["id"] = user_chat.id
+        prompt = genconfig_dict.get("prompt")
+        if prompt is None or prompt == "":
+            return BadRequest("Missing or invalid payload parameters")
 
-      return {
-        "success": True,
-        "message": "Successfully generated text",
-        "data": chat_data
-      }
+        # fetch user chat
+        user_chat = UserChat.find_by_id(chat_id)
+        if user_chat is None:
+            raise ResourceNotFoundException(f"Chat {chat_id} not found ")
+
+        # Check if chat needs a title
+        if not user_chat.title or user_chat.title.strip() == "":
+            # Generate and set chat title
+            summary = await generate_chat_summary(user_chat)
+            user_chat.title = summary
+            user_chat.save()
+
+        if (chat_file_bytes
+            and (mime_type := validate_multimodal_file_type(chat_file.filename))):
+            user_chat.update_history(custom_entry={
+                CHAT_FILE_BASE64: chat_file_bytes,
+                CHAT_FILE_TYPE: mime_type
+            })
+        if chat_files:
+            for cur_chat_file in chat_files:
+                user_chat.update_history(custom_entry={
+                    CHAT_FILE_URL: cur_chat_file.gcs_path,
+                    CHAT_FILE_TYPE: cur_chat_file.mime_type
+                })
+
+        # set llm type for chat
+        llm_type = genconfig_dict.get("llm_type", None)
+        if llm_type is None:
+            llm_type = user_chat.llm_type or DEFAULT_CHAT_LLM_TYPE
+
+        # get streaming mode
+        stream = genconfig_dict.get("stream", False)
+
+        try:
+            if tool_names:
+                response, response_files = run_chat_tools(prompt)
+            # Otherwise generate text from prompt if no tools
+            else:
+                response = await llm_chat(prompt,
+                                      llm_type,
+                                      user_chat=user_chat,
+                                      chat_files=chat_files,
+                                      chat_file_bytes=chat_file_bytes,
+                                      stream=stream)
+                if stream:
+                    # Return streaming response
+                    return StreamingResponse(
+                        response,
+                        media_type="text/event-stream"
+                    )
+
+            # save chat history
+            user_chat.update_history(prompt, response)
+            if response_files:
+                for file in response_files:
+                    user_chat.update_history(custom_entry={
+                        CHAT_FILE: file["name"]
+                    })
+                    user_chat.update_history(custom_entry={
+                        CHAT_FILE_BASE64: file["contents"],
+                        CHAT_FILE_TYPE: "image/png"
+                    })
+
+            chat_data = user_chat.get_fields(reformat_datetime=True)
+            chat_data["id"] = user_chat.id
+
+            return {
+                "success": True,
+                "message": "Successfully generated text",
+                "data": chat_data
+            }
+        except Exception as e:
+            Logger.error(e)
+            Logger.error(traceback.print_exc())
+            raise InternalServerError(str(e)) from e
+
+    except ValidationError as e:
+        raise BadRequest(str(e)) from e
     except Exception as e:
-      Logger.error(e)
-      Logger.error(traceback.print_exc())
-      raise InternalServerError(str(e)) from e
-
-  except ValidationError as e:
-    raise BadRequest(str(e)) from e
-  except HTTPException:
-    raise  # Let FastAPI HTTPExceptions pass through
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+        Logger.error(e)
+        Logger.error(traceback.print_exc())
+        raise InternalServerError(str(e)) from e
 
 
 @router.post(
