@@ -395,10 +395,13 @@ def test_create_chat_code_interpreter(create_user, create_chat, client_with_emul
     ]
   }
 
-  # Mock the code interpreter tool
+  # Mock both the code interpreter tool and summary generation
   with mock.patch(
     "services.agents.agent_tools.vertex_code_interpreter_tool",
     return_value=mock_tool_response
+  ), mock.patch(
+    "routes.chat.generate_chat_summary",
+    return_value="Test Chart Generation Chat"
   ):
     resp = client_with_emulator.post(url, data=generate_params)
     
@@ -434,6 +437,9 @@ def test_create_chat_code_interpreter(create_user, create_chat, client_with_emul
       "file_base64": "base64encodedstring"
     }, "Fourth entry should be file content"
 
+    # Verify the chat title was set from the summary
+    assert user_chat["title"] == "Test Chart Generation Chat"
+
 @pytest.mark.long 
 def test_generate_chat_code_interpreter(create_user, create_chat, client_with_emulator):
   """Test generating chat response with code interpreter tool"""
@@ -456,10 +462,13 @@ def test_generate_chat_code_interpreter(create_user, create_chat, client_with_em
     ]
   }
 
-  # Mock the code interpreter tool
+  # Mock both the code interpreter tool and summary generation
   with mock.patch(
     "services.agents.agent_tools.vertex_code_interpreter_tool",
     return_value=mock_tool_response
+  ), mock.patch(
+    "routes.chat.generate_chat_summary",
+    return_value="Test Chart Generation Chat"
   ):
     resp = client_with_emulator.post(url, json=generate_params)
     
@@ -494,6 +503,11 @@ def test_generate_chat_code_interpreter(create_user, create_chat, client_with_em
     assert new_entries[3] == {
       "file_base64": "base64encodedstring"
     }, "Fourth new entry should be file content"
+
+    # If this was a new chat with no title, verify the title was set
+    chat = UserChat.find_by_id(chatid)
+    if not chat.title:
+      assert user_chat["title"] == "Test Chart Generation Chat"
 
 def test_generate_chat_summary(create_user, create_chat, client_with_emulator):
     """Test the generate_summary endpoint"""
