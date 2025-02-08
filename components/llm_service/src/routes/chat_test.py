@@ -708,3 +708,118 @@ def test_chat_generate_keeps_existing_title(create_user, create_chat, client_wit
     # Verify chat in database still has original title
     updated_chat = UserChat.find_by_id(chatid)
     assert updated_chat.title == "Existing Title"
+
+def test_get_chat_llm_list(client_with_emulator):
+  """Test getting basic chat LLM list"""
+  url = f"{api_url}/chat_types"
+  
+  # Mock is_model_enabled_for_user to control which models are returned
+  def mock_is_model_enabled_for_user(model_id, user_data):
+    return True
+
+  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                 side_effect=mock_is_model_enabled_for_user):
+    
+    # Test getting all models
+    resp = client_with_emulator.get(url)
+    assert resp.status_code == 200, "Status 200"
+    json_response = resp.json()
+    assert json_response["success"] is True
+    assert len(json_response["data"]) > 0
+    
+    # Verify response contains only model IDs
+    for model in json_response["data"]:
+      assert isinstance(model, str), "Model entries should be strings (IDs)"
+
+def test_get_chat_llm_details(client_with_emulator):
+  """Test getting detailed chat LLM information"""
+  url = f"{api_url}/chat_types/details"
+  
+  # Mock the model config to return test data
+  test_model_config = {
+    "name": "Test Chat Model",
+    "description": "A test chat model",
+    "capabilities": ["chat"],
+    "date_added": "2024-01-01",
+    "is_multi": False,
+    "model_params": {
+      "temperature": 0.7,
+      "max_tokens": 1000
+    }
+  }
+  
+  test_provider_config = {
+    "model_params": {
+      "temperature": 0.5,  # This should be overridden by model config
+      "top_p": 0.9  # This should be preserved
+    }
+  }
+
+  def mock_get_model_config(model_id):
+    return test_model_config
+
+  def mock_get_model_provider_config(model_id):
+    return "test_provider", test_provider_config
+
+  def mock_is_model_enabled_for_user(model_id, user_data):
+    return True
+
+  with mock.patch("config.model_config.ModelConfig.get_model_config",
+                 side_effect=mock_get_model_config), \
+       mock.patch("config.model_config.ModelConfig.get_model_provider_config",
+                 side_effect=mock_get_model_provider_config), \
+       mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                 side_effect=mock_is_model_enabled_for_user):
+    
+    # Test getting all models
+    resp = client_with_emulator.get(url)
+    assert resp.status_code == 200, "Status 200"
+    json_response = resp.json()
+    assert json_response["success"] is True
+    assert len(json_response["data"]) > 0
+    
+    # Verify model details structure
+    model = json_response["data"][0]
+    assert "id" in model
+    assert model["name"] == test_model_config["name"]
+    assert model["description"] == test_model_config["description"]
+    assert model["capabilities"] == test_model_config["capabilities"]
+    assert model["date_added"] == test_model_config["date_added"]
+    assert model["is_multi"] == test_model_config["is_multi"]
+    
+    # Verify merged model parameters
+    assert "model_params" in model
+    assert model["model_params"]["temperature"] == 0.7  # From model config
+    assert model["model_params"]["top_p"] == 0.9  # From provider config
+    assert model["model_params"]["max_tokens"] == 1000  # From model config
+
+def test_chat_llm_multimodal_filter(client_with_emulator):
+  """Test multimodal filtering for both chat LLM endpoints"""
+  base_url = f"{api_url}/chat_types"
+  
+  # Test basic list endpoint
+  resp = client_with_emulator.get(base_url, params={"is_multimodal": True})
+  assert resp.status_code == 200
+  json_response = resp.json()
+  assert json_response["success"] is True
+  
+  # Test details endpoint
+  resp = client_with_emulator.get(f"{base_url}/details", 
+                                 params={"is_multimodal": True})
+  assert resp.status_code == 200
+  json_response = resp.json()
+  assert json_response["success"] is True
+  assert all(model["is_multi"] for model in json_response["data"])
+
+def test_chat_llm_invalid_multimodal(client_with_emulator):
+  """Test invalid multimodal parameter handling for both chat LLM endpoints"""
+  base_url = f"{api_url}/chat_types"
+  
+  # Test basic list endpoint
+  resp = client_with_emulator.get(base_url, params={"is_multimodal": "invalid"})
+  assert resp.status_code == 400
+  
+  # Test details endpoint
+  resp = client_with_emulator.get(f"{base_url}/details", 
+                                 params={"is_multimodal": "invalid"})
+  assert resp.status_code == 400

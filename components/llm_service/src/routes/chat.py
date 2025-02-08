@@ -52,18 +52,61 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
                     is_multimodal: Optional[bool] = None):
   """
   Get available Chat LLMs, optionally filter by
+  multimodal capabilities. Returns basic model information.
+
+  Args:
+    is_multimodal: `bool`
+      Optional: If True, only multimodal LLM types are returned.
+        If False, only non-multimodal LLM types are returned.
+        If None, all LLM types are returned.
+
+  Returns:
+      LLMGetTypesResponse with basic model information
+  """
+  Logger.info("Entering chat/chat_types")
+  try:
+    model_config = get_model_config()
+    if is_multimodal is True:
+      llm_types = model_config.get_multimodal_chat_llm_types()
+    elif is_multimodal is False:
+      llm_types = model_config.get_text_chat_llm_types()
+    elif is_multimodal is None:
+      llm_types = model_config.get_chat_llm_types()
+    else:
+      return BadRequest("Invalid request parameter value: is_multimodal")
+
+    user_enabled_llms = [llm for llm in llm_types if \
+                model_config.is_model_enabled_for_user(llm, user_data)]
+    return {
+      "success": True,
+      "message": "Successfully retrieved chat llm types",
+      "data": user_enabled_llms
+    }
+  except Exception as e:
+    Logger.error(e)
+    Logger.error(traceback.print_exc())
+    raise InternalServerError(str(e)) from e
+
+@router.get(
+    "/chat_types/details",
+    name="Get detailed Chat LLM information",
+    response_model=LLMGetTypesResponse)
+def get_chat_llm_details(user_data: dict = Depends(validate_token),
+                      is_multimodal: Optional[bool] = None):
+  """
+  Get available Chat LLMs with detailed information, optionally filter by
   multimodal capabilities
 
   Args:
     is_multimodal: `bool`
-      Optional: If True, only multimodal embedding types are returned.
-        If False, only non-multimodal embedding types are returned.
-        If None, all embedding types are returned.
+      Optional: If True, only multimodal LLM types are returned.
+        If False, only non-multimodal LLM types are returned.
+        If None, all LLM types are returned.
 
   Returns:
-      LLMGetTypesResponse
+      LLMGetTypesResponse with detailed model information
   """
-  Logger.info(f"Entering chat/chat_types")
+  Logger.info("Entering chat/chat_types/details")
   try:
     model_config = get_model_config()
     if is_multimodal is True:
@@ -79,7 +122,8 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
     for llm in llm_types:
       if model_config.is_model_enabled_for_user(llm, user_data):
         config = model_config.get_model_config(llm)
-        date_added = datetime.strptime(config.get("date_added", "2000-01-01"), "%Y-%m-%d")
+        date_added = datetime.strptime(config.get("date_added", "2000-01-01"), 
+                                     "%Y-%m-%d")
         
         # Get model parameters from config
         model_params = config.get("model_params", {})
@@ -99,20 +143,19 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
           "capabilities": config.get("capabilities", []),
           "date_added": config.get("date_added", ""),
           "is_multi": config.get("is_multi", False),
-          "model_params": model_params  # Add model parameters to response
+          "model_params": model_params
         })
 
-    Logger.info(f"chat models for user {model_details}")
+    Logger.info(f"Chat LLM models for user {model_details}")
     return {
       "success": True,
-      "message": "Successfully retrieved chat llm types",
+      "message": "Successfully retrieved chat llm details",
       "data": model_details
     }
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
-
 
 @router.get(
     "",
