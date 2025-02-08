@@ -88,7 +88,7 @@ const endpoint = envOrFail(
 
 export const fetchAllChatModels =
   (token: string, isMultimodal?: boolean) => async (): Promise<ChatModel[] | undefined> => {
-    let url = `${endpoint}/chat/chat_types`
+    let url = `${endpoint}/chat/chat_types/details`
     if (isMultimodal !== undefined) {
       url += `?is_multimodal=${isMultimodal}`
     }
