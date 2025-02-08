@@ -361,3 +361,46 @@ def test_generate_chat_code_interpreter(create_user, create_chat,
   assert len(user_chat["history"]) == len(CHAT_EXAMPLE["history"]) + 4
   assert CHAT_FILE in user_chat["history"][-2], "No generated file name found"
   assert CHAT_FILE_BASE64 in user_chat["history"][-1], "File conetent not found"
+
+def test_generate_chat_summary(create_user, create_chat, client_with_emulator):
+    """Test the generate_summary endpoint"""
+    chatid = CHAT_EXAMPLE["id"]
+    url = f"{api_url}/{chatid}/generate_summary"
+
+    # Test successful summary generation
+    with mock.patch(
+            "services.llm_generate.generate_chat_summary",
+            return_value="Test Summary"):
+        resp = client_with_emulator.post(url)
+        
+        assert resp.status_code == 200
+        json_response = resp.json()
+        assert json_response["success"] is True
+        assert json_response["data"]["title"] == "Test Summary"
+
+        # Verify the chat was updated in the database
+        updated_chat = UserChat.find_by_id(chatid)
+        assert updated_chat.title == "Test Summary"
+
+def test_generate_chat_summary_not_found(create_user, client_with_emulator):
+    """Test generate_summary with non-existent chat"""
+    url = f"{api_url}/non-existent-id/generate_summary"
+    
+    resp = client_with_emulator.post(url)
+    assert resp.status_code == 404
+    json_response = resp.json()
+    assert "not found" in json_response["detail"]
+
+def test_generate_chat_summary_error(create_user, create_chat, client_with_emulator):
+    """Test generate_summary when summary generation fails"""
+    chatid = CHAT_EXAMPLE["id"]
+    url = f"{api_url}/{chatid}/generate_summary"
+
+    with mock.patch(
+            "services.llm_generate.generate_chat_summary",
+            side_effect=Exception("Summary generation failed")):
+        resp = client_with_emulator.post(url)
+        
+        assert resp.status_code == 500
+        json_response = resp.json()
+        assert "Summary generation failed" in json_response["detail"]
