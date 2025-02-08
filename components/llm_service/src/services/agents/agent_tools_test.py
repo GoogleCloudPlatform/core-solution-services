@@ -50,8 +50,9 @@ def mock_post_method():
 def test_agent_tool_decorator():
   """Test that the agent_tool decorator properly registers tools"""
   
-  @agent_tool(description="This is a test tool")
+  @agent_tool()
   def test_tool_with_description():
+    """This is a test tool"""
     return "test result"
     
   @agent_tool()
