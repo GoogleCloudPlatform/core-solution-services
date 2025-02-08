@@ -343,15 +343,14 @@ def test_invalid_tool_names_chat(client_with_emulator):
   resp = client_with_emulator.post(url, data=create_generate_params)
   assert resp.status_code == 422
   json_response = resp.json()
-  assert "detail" in json_response, str(json_response)
-  assert "json formatted list" in json_response["detail"]
+  assert "json formatted list" in json_response["message"], json_response
   # testing with a tool that does not exist
   create_generate_params["tool_names"] = json.dumps(
     ["nonexistent_tool", "tool2"])
   resp = client_with_emulator.post(url, data=create_generate_params)
   assert resp.status_code == 422
   json_response = resp.json()
-  assert "nonexistent_tool" in json_response["detail"]
+  assert "nonexistent_tool" in json_response["message"], json_response
 
 def test_invalid_tool_names_chat_generate(create_user, create_chat,
                                           client_with_emulator):
@@ -363,15 +362,17 @@ def test_invalid_tool_names_chat_generate(create_user, create_chat,
   generate_params["tool_names"] = "(invalid_tool,)"
   resp = client_with_emulator.post(url, json=generate_params)
   assert resp.status_code == 422
+
   json_response = resp.json()
-  assert "json formatted list" in json_response["detail"]
+  assert "json formatted list" in json_response["message"], json_response
   # testing with a tool that does not exist
   generate_params["tool_names"] = json.dumps(
     ["nonexistent_tool", "tool2"])
   resp = client_with_emulator.post(url, json=generate_params)
   assert resp.status_code == 422
+
   json_response = resp.json()
-  assert "nonexistent_tool" in json_response["detail"]
+  assert "nonexistent_tool" in json_response["message"], json_response
 
 @pytest.mark.long
 def test_create_chat_code_interpreter(create_user, create_chat,
