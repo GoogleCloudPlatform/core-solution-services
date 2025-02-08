@@ -30,7 +30,7 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
 from common.utils.logging_handler import Logger
-from config import ERROR_RESPONSES, DEFAULT_CHAT_LLM_TYPE, get_model_config
+from config import ERROR_RESPONSES, DEFAULT_CHAT_LLM_TYPE, get_model_config, DEFAULT_CHAT_SUMMARY_MODEL
 from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
                                 LLMUserChatResponse,
@@ -579,3 +579,73 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
     Logger.error(e)
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
+
+
+@router.post(
+    "/{chat_id}/generate_summary",
+    name="Generate chat summary and update title",
+    response_model=LLMUserChatResponse)
+async def generate_chat_summary(chat_id: str):
+    """
+    Generate a summary of the chat using the default summary model and 
+    update the chat title with that summary.
+
+    Args:
+        chat_id: ID of the chat to summarize
+
+    Returns:
+        LLMUserChatResponse with the updated chat data
+    """
+    try:
+        # Get the chat
+        user_chat = UserChat.find_by_id(chat_id)
+        if user_chat is None:
+            raise ResourceNotFoundException(f"Chat {chat_id} not found")
+
+        # Build prompt from chat history
+        history_text = []
+        for entry in user_chat.history:
+            if UserChat.is_human(entry):
+                history_text.append(f"Human: {UserChat.entry_content(entry)}")
+            elif UserChat.is_ai(entry):
+                history_text.append(f"Assistant: {UserChat.entry_content(entry)}")
+        
+        chat_text = "\n".join(history_text)
+        
+        summary_prompt = (
+            "Please generate a brief, informative title (maximum 100 characters) "
+            "that captures the main topic or purpose of this conversation. "
+            "Respond with only the title text.\n\n"
+            f"Conversation:\n{chat_text}"
+        )
+
+        # Generate summary using the default summary model
+        summary = await llm_chat(
+            prompt=summary_prompt,
+            llm_type=DEFAULT_CHAT_SUMMARY_MODEL
+        )
+
+        # Clean up summary - remove quotes and limit length
+        summary = summary.strip('" \n').strip("' \n")
+        if len(summary) > 100:
+            summary = summary[:97] + "..."
+
+        # Update chat title
+        user_chat.title = summary
+        user_chat.save()
+
+        chat_data = user_chat.get_fields(reformat_datetime=True)
+        chat_data["id"] = user_chat.id
+
+        return {
+            "success": True,
+            "message": "Successfully generated summary and updated chat title",
+            "data": chat_data
+        }
+
+    except ResourceNotFoundException as e:
+        raise ResourceNotFound(str(e)) from e
+    except Exception as e:
+        Logger.error(e)
+        Logger.error(traceback.print_exc())
+        raise InternalServerError(str(e)) from e
