@@ -19,7 +19,7 @@ import traceback
 import json
 import base64
 import io
-from typing import Union, Annotated, Optional
+from typing import Optional
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
@@ -30,7 +30,7 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
 from common.utils.logging_handler import Logger
-from config import ERROR_RESPONSES, DEFAULT_CHAT_LLM_TYPE, get_model_config, DEFAULT_CHAT_SUMMARY_MODEL
+from config import ERROR_RESPONSES, DEFAULT_CHAT_LLM_TYPE, get_model_config
 from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
                                 LLMUserChatResponse,
@@ -123,14 +123,12 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
     for llm in llm_types:
       if model_config.is_model_enabled_for_user(llm, user_data):
         config = model_config.get_model_config(llm)
-        date_added = datetime.strptime(config.get("date_added", "2000-01-01"),
-                                     "%Y-%m-%d")
 
         # Get model parameters from config
         model_params = config.get("model_params", {})
 
         # Get provider parameters and merge with model params
-        provider_id, provider_config = model_config.get_model_provider_config(llm)
+        _, provider_config = model_config.get_model_provider_config(llm)
         if provider_config and "model_params" in provider_config:
           # Provider params are the base, model params override them
           merged_params = provider_config["model_params"].copy()
@@ -553,11 +551,11 @@ async def user_chat_generate(chat_id: str, request: Request):
   if isinstance(tool_names, str):
     try:
       body["tool_names"] = json.loads(tool_names)
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError as exc:
       raise HTTPException(
         status_code=422,
-        detail="Tool names must be a string representing a json formatted list"
-      ) from e
+        detail=("Tool names must be a string representing a json formatted list")
+      ) from exc
 
   # Validate tool names if present
   if body.get("tool_names"):
@@ -572,7 +570,7 @@ async def user_chat_generate(chat_id: str, request: Request):
   try:
     gen_config = LLMGenerateModel(**body)
   except ValidationError as e:
-    raise HTTPException(status_code=422, detail=str(e))
+    raise HTTPException(status_code=422, detail=str(e)) from e
 
   response_files = None
 
