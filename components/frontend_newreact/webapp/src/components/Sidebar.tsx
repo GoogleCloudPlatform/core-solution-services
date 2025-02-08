@@ -38,6 +38,7 @@ interface SidebarProps {
     selectedChatId?: string;
     setShowSources?: React.Dispatch<React.SetStateAction<boolean>>;
     setShowWelcome: React.Dispatch<React.SetStateAction<boolean>>;
+    onNewChat: () => void;
 }
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -99,7 +100,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onSelectChat, 
     selectedChatId,
     setShowSources,
-    setShowWelcome 
+    setShowWelcome,
+    onNewChat 
 }) => {
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
 
@@ -196,6 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </IconButton>
                     <IconButton
                         onClick={() => {
+                            onNewChat();
                             setShowChat(true);
                             setShowWelcome(false);
                         }}

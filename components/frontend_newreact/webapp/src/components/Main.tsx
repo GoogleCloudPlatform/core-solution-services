@@ -80,6 +80,13 @@ export const MainApp = () => {
     setShowChat(true);
   };
 
+  const handleNewChat = () => {
+    setCurrentChat(undefined);
+    setShowWelcome(false);
+    setShowChat(true);
+    setShowSources(false);
+  };
+
   return (
     <MainContainer>
       <Sidebar
@@ -88,6 +95,7 @@ export const MainApp = () => {
         selectedChatId={currentChat?.id}
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
+        onNewChat={handleNewChat}
       />
       {(showWelcome || showSources) && (
         <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
