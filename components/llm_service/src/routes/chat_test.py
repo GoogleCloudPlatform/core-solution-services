@@ -556,15 +556,16 @@ def test_generate_chat_summary_error(create_user, create_chat, client_with_emula
     url = f"{api_url}/{chatid}/generate_summary"
 
     with mock.patch(
-            "services.llm_generate.generate_chat_summary",
-            side_effect=Exception("Summary generation failed")):
+        "routes.chat.generate_chat_summary",
+        side_effect=Exception("Summary generation failed")
+    ):
         resp = client_with_emulator.post(url)
-        
-        assert resp.status_code == 500, "Failed summary generation returns 500"
-        json_response = resp.json()
-        assert json_response["success"] is False, "Error response indicates failure"
-        assert "summary generation failed" in json_response["message"].lower(), "Error message describes failure"
-        assert json_response["data"] is None, "Error response has no data"
+
+    assert resp.status_code == 500, "Failed summary generation returns 500"
+    json_response = resp.json()
+    assert json_response["success"] is False, "Error response indicates failure"
+    assert "summary generation failed" in json_response["message"].lower(), "Error message describes failure"
+    assert json_response["data"] is None, "Error response has no data"
 
 def test_create_chat_generates_summary(create_user, client_with_emulator):
   """Test that creating a new chat generates a summary"""
