@@ -86,20 +86,6 @@
       },
       "context_length": 1000000
     },
-    "VertexAI-Chat-Palm2": {
-      "name": "PaLM 2 Chat",
-      "is_chat": true,
-      "provider": "Vertex",
-      "model_name": "chat-bison@002",
-      "description": "A chat-optimized version of PaLM 2 from Vertex AI."
-    },
-    "VertexAI-Chat-Palm2-V2": {
-      "name": "PaLM 2 Chat V2",
-      "is_chat": true,
-      "provider": "Vertex",
-      "model_name": "chat-bison@002",
-      "description": "An updated version of the chat-optimized PaLM 2 from Vertex AI."
-    },
     "VertexAI-Gemini-Flash": {
       "name": "Gemini 1.5 Flash",
       "is_chat": true,
@@ -153,7 +139,8 @@
       "model_name": "chat-bison@002",
       "model_class": "ChatVertexAI",
       "context_length": 2048,
-      "description": "Vertex AI's PaLM 2 chat model accessed via Langchain."
+      "description": "Vertex AI's PaLM 2 chat model accessed via Langchain.",
+      "enabled": false,
     },
     "VertexAI-Chat-Palm2-32k": {
       "name": "PaLM 2 Chat 32K",
@@ -161,7 +148,8 @@
       "provider": "Vertex",
       "model_name": "chat-bison-32k",
       "context_length": 32000,
-      "description": "Vertex AI's PaLM 2 chat model with a 32k context window."
+      "description": "Vertex AI's PaLM 2 chat model with a 32k context window.",
+      "enabled": false,
     },
     "VertexAI-Chat-Palm2-32k-Langchain": {
       "name": "PaLM 2 Chat 32K (Langchain)",
@@ -170,7 +158,8 @@
       "model_name": "chat-bison-32k",
       "model_class": "ChatVertexAI",
       "context_length": 32000,
-      "description": "Vertex AI's PaLM 2 chat model with a 32k context window, accessed via Langchain."
+      "description": "Vertex AI's PaLM 2 chat model with a 32k context window, accessed via Langchain.",
+      "enabled": false,
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {
       "name": "Gemini Pro (Langchain)",
@@ -178,7 +167,8 @@
       "provider": "Langchain",
       "model_name": "gemini-pro",
       "model_class": "ChatVertexAI",
-      "description": "Vertex AI's Gemini Pro chat model accessed via Langchain."
+      "description": "Vertex AI's Gemini Pro chat model accessed via Langchain.",
+      "enabled": false,
     },
     "Truss-Llama2-Chat": {
       "name": "Llama 2 Chat (Truss)",
