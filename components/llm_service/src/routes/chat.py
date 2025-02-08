@@ -81,13 +81,25 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
         config = model_config.get_model_config(llm)
         date_added = datetime.strptime(config.get("date_added", "2000-01-01"), "%Y-%m-%d")
         
+        # Get model parameters from config
+        model_params = config.get("model_params", {})
+        
+        # Get provider parameters and merge with model params
+        provider_id, provider_config = model_config.get_model_provider_config(llm)
+        if provider_config and "model_params" in provider_config:
+          # Provider params are the base, model params override them
+          merged_params = provider_config["model_params"].copy()
+          merged_params.update(model_params)
+          model_params = merged_params
+
         model_details.append({
           "id": llm,
           "name": config.get("name", ""),
           "description": config.get("description", ""),
           "capabilities": config.get("capabilities", []),
           "date_added": config.get("date_added", ""),
-          "is_multi": config.get("is_multi", False)
+          "is_multi": config.get("is_multi", False),
+          "model_params": model_params  # Add model parameters to response
         })
 
     Logger.info(f"chat models for user {model_details}")

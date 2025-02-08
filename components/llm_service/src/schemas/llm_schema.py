@@ -62,6 +62,7 @@ class ModelDetails(BaseModel):
     capabilities: List[str]
     date_added: str
     is_multi: Optional[bool] = False
+    model_params: Optional[dict] = None
 
 class LLMGetTypesResponse(BaseModel):
     """LLM Get types model"""
