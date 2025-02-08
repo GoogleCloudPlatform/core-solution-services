@@ -695,41 +695,41 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   return response
 
 async def generate_chat_summary(user_chat: UserChat) -> str:
-    """
-    Generate a summary/title for a chat using the default summary model.
+  """
+  Generate a summary/title for a chat using the default summary model.
 
-    Args:
-        user_chat: UserChat object containing the chat history to summarize
+  Args:
+    user_chat: UserChat object containing the chat history to summarize
 
-    Returns:
-        str: Generated summary text, cleaned and truncated to max 100 chars
-    """
-    # Build prompt from chat history
-    history_text = []
-    for entry in user_chat.history:
-        if UserChat.is_human(entry):
-            history_text.append(f"Human: {UserChat.entry_content(entry)}")
-        elif UserChat.is_ai(entry):
-            history_text.append(f"Assistant: {UserChat.entry_content(entry)}")
-    
-    chat_text = "\n".join(history_text)
-    
-    summary_prompt = (
-        "Please generate a brief, informative title (maximum 100 characters) "
-        "that captures the main topic or purpose of this conversation. "
-        "Respond with only the title text.\n\n"
-        f"Conversation:\n{chat_text}"
-    )
+  Returns:
+    str: Generated summary text, cleaned and truncated to max 100 chars
+  """
+  # Build prompt from chat history
+  history_text = []
+  for entry in user_chat.history:
+    if UserChat.is_human(entry):
+      history_text.append(f"Human: {UserChat.entry_content(entry)}")
+    elif UserChat.is_ai(entry):
+      history_text.append(f"Assistant: {UserChat.entry_content(entry)}")
+  
+  chat_text = "\n".join(history_text)
+  
+  summary_prompt = (
+    "Please generate a brief, informative title (maximum 100 characters) "
+    "that captures the main topic or purpose of this conversation. "
+    "Respond with only the title text.\n\n"
+    f"Conversation:\n{chat_text}"
+  )
 
-    # Generate summary using the default summary model
-    summary = await llm_chat(
-        prompt=summary_prompt,
-        llm_type=DEFAULT_CHAT_SUMMARY_MODEL
-    )
+  # Generate summary using the default summary model
+  summary = await llm_chat(
+    prompt=summary_prompt,
+    llm_type=DEFAULT_CHAT_SUMMARY_MODEL
+  )
 
-    # Clean up summary - remove quotes and limit length
-    summary = summary.strip('" \n').strip("' \n")
-    if len(summary) > 100:
-        summary = summary[:97] + "..."
+  # Clean up summary - remove quotes and limit length
+  summary = summary.strip('" \n').strip("' \n")
+  if len(summary) > 100:
+    summary = summary[:97] + "..."
 
-    return summary
+  return summary
