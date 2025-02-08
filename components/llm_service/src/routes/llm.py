@@ -116,12 +116,12 @@ def get_llm_details(user_data: dict = Depends(validate_token),
     for llm in llm_types:
       if model_config.is_model_enabled_for_user(llm, user_data):
         config = model_config.get_model_config(llm)
-        date_added = datetime.strptime(config.get("date_added", "2000-01-01"), 
+        date_added = datetime.strptime(config.get("date_added", "2000-01-01"),
                                      "%Y-%m-%d")
-        
+
         # Get model parameters from config
         model_params = config.get("model_params", {})
-        
+
         # Get provider parameters and merge with model params
         provider_id, provider_config = model_config.get_model_provider_config(llm)
         if provider_config and "model_params" in provider_config:

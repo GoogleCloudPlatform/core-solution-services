@@ -28,9 +28,9 @@ os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
 os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 os.environ["VLLM_GEMMA_ENDPOINT"] = "fake-endpoint"
 
-from services.llm_generate import (llm_generate, llm_chat, 
+from services.llm_generate import (llm_generate, llm_chat,
                                  llm_generate_multimodal,
-                                 llm_vllm_service_predict, 
+                                 llm_vllm_service_predict,
                                  generate_chat_summary)
 from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
@@ -301,12 +301,12 @@ async def test_generate_chat_summary(clean_firestore, test_chat):
     with mock.patch(
             "services.llm_generate.llm_chat",
             return_value="Discussion about Machine Learning Basics") as mock_llm_chat:
-        
+
         summary = await generate_chat_summary(test_chat)
-        
+
         # Verify the summary is returned correctly
         assert summary == "Discussion about Machine Learning Basics"
-        
+
         # Verify llm_chat was called with correct prompt
         mock_llm_chat.assert_called_once()
         prompt_arg = mock_llm_chat.call_args[1]["prompt"]
@@ -328,9 +328,9 @@ async def test_generate_chat_summary_long_response(clean_firestore, test_chat):
     with mock.patch(
             "services.llm_generate.llm_chat",
             return_value=long_response):
-        
+
         summary = await generate_chat_summary(test_chat)
-        
+
         # Verify the summary is truncated correctly
         assert len(summary) == 100
         assert summary.endswith("...")
@@ -349,8 +349,8 @@ async def test_generate_chat_summary_strips_quotes(clean_firestore, test_chat):
     with mock.patch(
             "services.llm_generate.llm_chat",
             return_value=quoted_response):
-        
+
         summary = await generate_chat_summary(test_chat)
-        
+
         # Verify quotes are stripped
         assert summary == "Machine Learning Discussion"

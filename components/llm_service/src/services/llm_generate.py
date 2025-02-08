@@ -711,9 +711,9 @@ async def generate_chat_summary(user_chat: UserChat) -> str:
       history_text.append(f"Human: {UserChat.entry_content(entry)}")
     elif UserChat.is_ai(entry):
       history_text.append(f"Assistant: {UserChat.entry_content(entry)}")
-  
+
   chat_text = "\n".join(history_text)
-  
+
   summary_prompt = (
     "Please generate a brief, informative title (maximum 100 characters) "
     "that captures the main topic or purpose of this conversation. "

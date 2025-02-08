@@ -49,17 +49,17 @@ def mock_post_method():
 
 def test_agent_tool_decorator():
   """Test that the agent_tool decorator properly registers tools"""
-  
+
   @agent_tool()
   def test_tool_with_description():
     """This is a test tool"""
     return "test result"
-    
+
   @agent_tool()
   def test_tool_with_docstring():
     """This is a test tool with a docstring"""
     return "test result"
-    
+
   assert "test_tool_with_description" in agent_tool_registry
   assert "test_tool_with_docstring" in agent_tool_registry
   assert callable(agent_tool_registry["test_tool_with_description"])
@@ -100,15 +100,15 @@ def test_gmail_tool(mock_post_method):
     "result": "Email sent", 
     "recipient": "test@example.com"
   }
-  
+
   input_dict = {
     "recipients": ["test@example.com"],
     "subject": "Test Subject",
     "message": "Test Message"
   }
-  
+
   result = gmail_tool(input_dict)
-  
+
   assert "gmail_tool" in result
   assert "test@example.com" in result
   mock_post_method.assert_called_once()
@@ -120,14 +120,14 @@ def test_docs_tool(mock_post_method):
     "message": "Please send your pay stub"
   }
   mock_post_method.return_value.json.return_value = mock_response
-  
+
   input_dict = {
     "recipients": ["test@example.com"],
     "content": "Test content"
   }
-  
+
   result = docs_tool(input_dict)
-  
+
   assert result["subject"] == mock_response["subject"]
   assert result["message"] == mock_response["message"]
   mock_post_method.assert_called_once()
@@ -135,16 +135,16 @@ def test_docs_tool(mock_post_method):
 def test_google_sheets_tool(mock_post_method):
   """Test the Google Sheets tool"""
   mock_post_method.return_value.json.return_value = MOCK_SHEET_RESPONSE
-  
+
   input_dict = {
     "name": "Test Sheet",
     "columns": ["Col1", "Col2"],
     "rows": [["data1", "data2"]],
     "user_email": "test@example.com"
   }
-  
+
   result = google_sheets_tool(input_dict)
-  
+
   assert result["sheet_url"] == MOCK_SHEET_RESPONSE["sheet_url"]
   assert result["sheet_id"] == MOCK_SHEET_RESPONSE["sheet_id"]
   mock_post_method.assert_called_once()
@@ -159,9 +159,9 @@ def test_run_chat_tools_success(mock_vertex_tool):
     "output_files": [{"name": "test.png", "contents": "base64content"}]
   }
   mock_vertex_tool.return_value = mock_response
-  
+
   response, files = run_chat_tools("Test prompt")
-  
+
   assert "Code generated" in response
   assert "Hello" in response
   assert files == mock_response["output_files"]
@@ -177,9 +177,9 @@ def test_run_chat_tools_error(mock_vertex_tool):
     "output_files": None
   }
   mock_vertex_tool.return_value = mock_response
-  
+
   response, files = run_chat_tools("Test prompt")
-  
+
   assert response == "Test error occurred"
   assert files is None
   mock_vertex_tool.assert_called_once_with("Test prompt")

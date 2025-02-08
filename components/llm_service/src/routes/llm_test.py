@@ -209,7 +209,7 @@ def test_llm_generate_multimodal(client_with_emulator):
 def test_get_llm_details(client_with_emulator):
   """Test getting detailed LLM information"""
   url = f"{api_url}/details"
-  
+
   # Mock the model config to return test data
   test_model_config = {
     "name": "Test Model",
@@ -222,7 +222,7 @@ def test_get_llm_details(client_with_emulator):
       "max_tokens": 1000
     }
   }
-  
+
   test_provider_config = {
     "model_params": {
       "temperature": 0.5,  # This should be overridden by model config
@@ -245,14 +245,14 @@ def test_get_llm_details(client_with_emulator):
                  side_effect=mock_get_model_provider_config), \
        mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
                  side_effect=mock_is_model_enabled_for_user):
-    
+
     # Test getting all models
     resp = client_with_emulator.get(url)
     assert resp.status_code == 200, "Status 200"
     json_response = resp.json()
     assert json_response["success"] is True
     assert len(json_response["data"]) > 0
-    
+
     # Verify model details structure
     model = json_response["data"][0]
     assert "id" in model
@@ -261,7 +261,7 @@ def test_get_llm_details(client_with_emulator):
     assert model["capabilities"] == test_model_config["capabilities"]
     assert model["date_added"] == test_model_config["date_added"]
     assert model["is_multi"] == test_model_config["is_multi"]
-    
+
     # Verify merged model parameters
     assert "model_params" in model
     assert model["model_params"]["temperature"] == 0.7  # From model config
@@ -271,7 +271,7 @@ def test_get_llm_details(client_with_emulator):
 def test_get_llm_details_multimodal_filter(client_with_emulator):
   """Test filtering LLM details by multimodal capability"""
   url = f"{api_url}/details"
-  
+
   def mock_is_model_enabled_for_user(model_id, user_data):
     return True
 
@@ -296,7 +296,7 @@ def test_get_llm_details_multimodal_filter(client_with_emulator):
 def test_get_llm_details_error_handling(client_with_emulator):
   """Test error handling in get_llm_details"""
   url = f"{api_url}/details"
-  
+
   def mock_get_llm_types_error():
     raise Exception("Test error")
 
