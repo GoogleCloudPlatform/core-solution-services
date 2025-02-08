@@ -93,15 +93,17 @@ def test_ruleset_execute_tool(mock_post_method):
 def test_gmail_tool(mock_post_method):
   """Test the Gmail tool"""
   mock_post_method.return_value.json.return_value = {
-    "result": "Email sent",
+    "result": "Email sent", 
     "recipient": "test@example.com"
   }
   
-  result = gmail_tool(
-    recipients=["test@example.com"],
-    subject="Test Subject",
-    message="Test Message"
-  )
+  input_dict = {
+    "recipients": ["test@example.com"],
+    "subject": "Test Subject",
+    "message": "Test Message"
+  }
+  
+  result = gmail_tool(input_dict)
   
   assert "gmail_tool" in result
   assert "test@example.com" in result
@@ -115,10 +117,12 @@ def test_docs_tool(mock_post_method):
   }
   mock_post_method.return_value.json.return_value = mock_response
   
-  result = docs_tool(
-    recipients=["test@example.com"],
-    content="Test content"
-  )
+  input_dict = {
+    "recipients": ["test@example.com"],
+    "content": "Test content"
+  }
+  
+  result = docs_tool(input_dict)
   
   assert result["subject"] == mock_response["subject"]
   assert result["message"] == mock_response["message"]
@@ -129,10 +133,10 @@ def test_google_sheets_tool(mock_post_method):
   mock_post_method.return_value.json.return_value = MOCK_SHEET_RESPONSE
   
   result = google_sheets_tool(
-    name="Test Sheet",
-    columns=["Col1", "Col2"],
-    rows=[["data1", "data2"]],
-    user_email="test@example.com"
+    "Test Sheet",           # name
+    ["Col1", "Col2"],      # columns
+    [["data1", "data2"]],  # rows
+    "test@example.com"     # user_email
   )
   
   assert result["sheet_url"] == MOCK_SHEET_RESPONSE["sheet_url"]
