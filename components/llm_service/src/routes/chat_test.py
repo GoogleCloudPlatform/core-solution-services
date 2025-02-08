@@ -713,8 +713,10 @@ def test_get_chat_llm_list(client_with_emulator):
   """Test getting basic chat LLM list"""
   url = f"{api_url}/chat_types"
   
-  # Mock is_model_enabled_for_user to control which models are returned
+  removed_model = "VertexAI-Gemini-Pro"
   def mock_is_model_enabled_for_user(model_id, user_data):
+    if model_id == removed_model:
+      return False
     return True
 
   with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
@@ -730,6 +732,7 @@ def test_get_chat_llm_list(client_with_emulator):
     # Verify response contains only model IDs
     for model in json_response["data"]:
       assert isinstance(model, str), "Model entries should be strings (IDs)"
+      assert model != removed_model, "Disabled model should not be included"
 
 def test_get_chat_llm_details(client_with_emulator):
   """Test getting detailed chat LLM information"""
@@ -795,31 +798,41 @@ def test_get_chat_llm_details(client_with_emulator):
 
 def test_chat_llm_multimodal_filter(client_with_emulator):
   """Test multimodal filtering for both chat LLM endpoints"""
-  base_url = f"{api_url}/chat_types/details"
+  base_url = f"{api_url}/chat_types"
   
-  # Test basic list endpoint
-  resp = client_with_emulator.get(base_url, params={"is_multimodal": True})
-  assert resp.status_code == 200
-  json_response = resp.json()
-  assert json_response["success"] is True
+  def mock_is_model_enabled_for_user(model_id, user_data):
+    return True
   
-  # Test details endpoint
-  resp = client_with_emulator.get(f"{base_url}/details", 
-                                 params={"is_multimodal": True})
-  assert resp.status_code == 200
-  json_response = resp.json()
-  assert json_response["success"] is True
-  assert all(model["is_multi"] for model in json_response["data"])
+  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                 side_effect=mock_is_model_enabled_for_user):
+    # Test basic list endpoint
+    resp = client_with_emulator.get(base_url, params={"is_multimodal": True})
+    assert resp.status_code == 200
+    json_response = resp.json()
+    assert json_response["success"] is True
+    
+    # Test details endpoint
+    resp = client_with_emulator.get(f"{base_url}/details", 
+                                  params={"is_multimodal": True})
+    assert resp.status_code == 200
+    json_response = resp.json()
+    assert json_response["success"] is True
+    assert all(model["is_multi"] for model in json_response["data"])
 
 def test_chat_llm_invalid_multimodal(client_with_emulator):
   """Test invalid multimodal parameter handling for both chat LLM endpoints"""
-  base_url = f"{api_url}/chat_types/details"
+  base_url = f"{api_url}/chat_types"
   
-  # Test basic list endpoint
-  resp = client_with_emulator.get(base_url, params={"is_multimodal": "invalid"})
-  assert resp.status_code == 400
+  def mock_is_model_enabled_for_user(model_id, user_data):
+    return True
   
-  # Test details endpoint
-  resp = client_with_emulator.get(f"{base_url}/details", 
-                                 params={"is_multimodal": "invalid"})
-  assert resp.status_code == 400
+  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                 side_effect=mock_is_model_enabled_for_user):
+    # Test basic list endpoint
+    resp = client_with_emulator.get(base_url, params={"is_multimodal": "invalid"})
+    assert resp.status_code == 400
+    
+    # Test details endpoint
+    resp = client_with_emulator.get(f"{base_url}/details", 
+                                  params={"is_multimodal": "invalid"})
+    assert resp.status_code == 400
