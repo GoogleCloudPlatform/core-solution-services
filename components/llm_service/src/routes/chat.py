@@ -36,7 +36,7 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMUserChatResponse,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse)
-from services.llm_generate import llm_chat
+from services.llm_generate import llm_chat, generate_chat_summary
 from services.agents.agent_tools import chat_tools, run_chat_tools
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
 from datetime import datetime
@@ -585,7 +585,7 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
     "/{chat_id}/generate_summary",
     name="Generate chat summary and update title",
     response_model=LLMUserChatResponse)
-async def generate_chat_summary(chat_id: str):
+async def generate_chat_summary_route(chat_id: str):
     """
     Generate a summary of the chat using the default summary model and 
     update the chat title with that summary.
@@ -602,35 +602,8 @@ async def generate_chat_summary(chat_id: str):
         if user_chat is None:
             raise ResourceNotFoundException(f"Chat {chat_id} not found")
 
-        # Build prompt from chat history
-        history_text = []
-        for entry in user_chat.history:
-            if UserChat.is_human(entry):
-                history_text.append(f"Human: {UserChat.entry_content(entry)}")
-            elif UserChat.is_ai(entry):
-                history_text.append(f"Assistant: {UserChat.entry_content(entry)}")
-        
-        chat_text = "\n".join(history_text)
-        
-        summary_prompt = (
-            "Please generate a brief, informative title (maximum 100 characters) "
-            "that captures the main topic or purpose of this conversation. "
-            "Respond with only the title text.\n\n"
-            f"Conversation:\n{chat_text}"
-        )
-
-        # Generate summary using the default summary model
-        summary = await llm_chat(
-            prompt=summary_prompt,
-            llm_type=DEFAULT_CHAT_SUMMARY_MODEL
-        )
-
-        # Clean up summary - remove quotes and limit length
-        summary = summary.strip('" \n').strip("' \n")
-        if len(summary) > 100:
-            summary = summary[:97] + "..."
-
-        # Update chat title
+        # Generate summary and update title
+        summary = await generate_chat_summary(user_chat)
         user_chat.title = summary
         user_chat.save()
 
