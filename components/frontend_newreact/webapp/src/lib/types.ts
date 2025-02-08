@@ -159,21 +159,21 @@ export type Query = {
 }
 
 export type Chat = {
-  archived_at_timestamp: string | null
-  archived_by: string
-  created_by: string
-  created_time: string
-  deleted_at_timestamp: string | null
-  deleted_by: string
-  id: string
-  last_modified_by: string
-  last_modified_time: string
-  prompt: string
-  llm_type: string | null
-  title: string
-  user_id: string
-  agent_name: string | null
-  history: ChatContents[]
+  id: string | undefined;  // Allow undefined for new chats
+  archived_at_timestamp: string | null;
+  archived_by: string;
+  created_by: string;
+  created_time: string;
+  deleted_at_timestamp: string | null;
+  deleted_by: string;
+  last_modified_by: string;
+  last_modified_time: string;
+  prompt: string;
+  llm_type: string | null;
+  title: string;
+  user_id: string;
+  agent_name: string | null;
+  history: ChatContents[];
 }
 
 export const QUERY_ENGINE_TYPES = {
