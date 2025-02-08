@@ -49,6 +49,11 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
     return `${Math.floor(diffInSeconds / 31536000)}y ago`;
   };
 
+  const handleChatClick = (chat: Chat) => {
+    console.log('Chat clicked:', chat);
+    onSelectChat(chat);
+  };
+
   return (
     <Box className="history-drawer">
       <Box className="history-content" sx={{
@@ -63,7 +68,7 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
           chats.map((chat) => (
             <Box
               key={chat.id}
-              onClick={() => onSelectChat(chat)}
+              onClick={() => handleChatClick(chat)}
               sx={{
                 padding: '16px',
                 cursor: 'pointer',
