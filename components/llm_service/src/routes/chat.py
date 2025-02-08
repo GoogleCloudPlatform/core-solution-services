@@ -511,8 +511,8 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
     try:
       validate_tool_names(tool_names)
     except HTTPException as e:
-      # Convert HTTPException to ValidationError to maintain consistent error handling
-      raise ValidationError(str(e.detail)) from e
+      # Re-raise the HTTPException directly to preserve the status code and detail
+      raise e
 
     # process chat file(s): upload to GCS and determine mime type
     chat_file_bytes = None
@@ -613,6 +613,8 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
 
   except ValidationError as e:
     raise BadRequest(str(e)) from e
+  except HTTPException:
+    raise  # Let FastAPI HTTPExceptions pass through
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())

@@ -373,38 +373,127 @@ def test_invalid_tool_names_chat_generate(create_user, create_chat,
   json_response = resp.json()
   assert "nonexistent_tool" in json_response["detail"]
 
-@pytest.mark.long
-def test_create_chat_code_interpreter(create_user, create_chat,
-                                      client_with_emulator):
-  url = f"{api_url}"
-  generate_params = FAKE_GENERATE_PARAMS.copy()
-  # testing with a non-list input strng
-  generate_params["tool_names"] = '["vertex_code_interpreter_tool"]'
-  generate_params["prompt"] = "give me a pie chart of continents by land area"
-  resp = client_with_emulator.post(url, data=generate_params)
-  assert resp.status_code == 200
-  json_response = resp.json()
-  user_chat = json_response["data"]
-  assert len(user_chat["history"]) == 4, "user has unexpected number of entries"
-  assert CHAT_FILE in user_chat["history"][2], "No generated file name found"
-  assert CHAT_FILE_BASE64 in user_chat["history"][3], "File conetent not found"
 
 @pytest.mark.long
-def test_generate_chat_code_interpreter(create_user, create_chat,
-                                      client_with_emulator):
+def test_create_chat_code_interpreter(create_user, create_chat, client_with_emulator):
+  """Test creating a chat with code interpreter tool"""
+  url = f"{api_url}"
+  generate_params = FAKE_GENERATE_PARAMS.copy()
+  generate_params["tool_names"] = '["vertex_code_interpreter_tool"]'
+  generate_params["prompt"] = "give me a pie chart of continents by land area"
+
+  # Mock response from code interpreter tool
+  mock_tool_response = {
+    "generated_code": "print('test code')",
+    "execution_result": "test result",
+    "execution_error": None,
+    "output_files": [
+      {
+        "name": "plot.png",
+        "contents": "base64encodedstring"  # In real response this would be actual base64
+      }
+    ]
+  }
+
+  # Mock the code interpreter tool
+  with mock.patch(
+    "services.agents.agent_tools.vertex_code_interpreter_tool",
+    return_value=mock_tool_response
+  ):
+    resp = client_with_emulator.post(url, data=generate_params)
+    
+    assert resp.status_code == 200
+    json_response = resp.json()
+    user_chat = json_response["data"]
+    
+    # Verify chat history structure
+    assert len(user_chat["history"]) == 4, "Chat should have 4 history entries"
+    
+    # Check user prompt
+    assert user_chat["history"][0] == {
+      "human": generate_params["prompt"]
+    }, "First entry should be user prompt"
+    
+    # Check AI response containing code and result
+    expected_response = (
+      "Code generated\n\n"
+      "```print('test code')```"
+      "Execution result from the code: "
+      "```test result```"
+    )
+    assert user_chat["history"][1] == {
+      "ai": expected_response
+    }, "Second entry should be AI response with code"
+    
+    # Check file entries
+    assert user_chat["history"][2] == {
+      "file": "plot.png"
+    }, "Third entry should be file name"
+    
+    assert user_chat["history"][3] == {
+      "file_base64": "base64encodedstring"
+    }, "Fourth entry should be file content"
+
+@pytest.mark.long 
+def test_generate_chat_code_interpreter(create_user, create_chat, client_with_emulator):
+  """Test generating chat response with code interpreter tool"""
   chatid = CHAT_EXAMPLE["id"]
   url = f"{api_url}/{chatid}/generate"
   generate_params = FAKE_GENERATE_PARAMS.copy()
-  # testing with a non-list input strng
   generate_params["tool_names"] = '["vertex_code_interpreter_tool"]'
   generate_params["prompt"] = "give me a pie chart of continents by land area"
-  resp = client_with_emulator.post(url, json=generate_params)
-  assert resp.status_code == 200
-  json_response = resp.json()
-  user_chat = json_response["data"]
-  assert len(user_chat["history"]) == len(CHAT_EXAMPLE["history"]) + 4
-  assert CHAT_FILE in user_chat["history"][-2], "No generated file name found"
-  assert CHAT_FILE_BASE64 in user_chat["history"][-1], "File conetent not found"
+
+  # Mock response from code interpreter tool
+  mock_tool_response = {
+    "generated_code": "print('test code')",
+    "execution_result": "test result", 
+    "execution_error": None,
+    "output_files": [
+      {
+        "name": "plot.png",
+        "contents": "base64encodedstring"
+      }
+    ]
+  }
+
+  # Mock the code interpreter tool
+  with mock.patch(
+    "services.agents.agent_tools.vertex_code_interpreter_tool",
+    return_value=mock_tool_response
+  ):
+    resp = client_with_emulator.post(url, json=generate_params)
+    
+    assert resp.status_code == 200
+    json_response = resp.json()
+    user_chat = json_response["data"]
+    
+    # Get the new entries (last 4 entries in history)
+    new_entries = user_chat["history"][-4:]
+    
+    # Check user prompt
+    assert new_entries[0] == {
+      "human": generate_params["prompt"]
+    }, "First new entry should be user prompt"
+    
+    # Check AI response containing code and result
+    expected_response = (
+      "Code generated\n\n"
+      "```print('test code')```"
+      "Execution result from the code: "
+      "```test result```"
+    )
+    assert new_entries[1] == {
+      "ai": expected_response
+    }, "Second new entry should be AI response with code"
+    
+    # Check file entries
+    assert new_entries[2] == {
+      "file": "plot.png"
+    }, "Third new entry should be file name"
+    
+    assert new_entries[3] == {
+      "file_base64": "base64encodedstring"
+    }, "Fourth new entry should be file content"
 
 def test_generate_chat_summary(create_user, create_chat, client_with_emulator):
     """Test the generate_summary endpoint"""
