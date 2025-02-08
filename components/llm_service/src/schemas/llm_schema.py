@@ -159,9 +159,9 @@ class LLMMultimodalGenerateModel(BaseModel):
   prompt: str
   llm_type: Optional[str] = None
   stream: Optional[bool] = False
-  chat_file_b64: Optional[str] = None
-  chat_file_b64_name: Optional[str] = None
-  chat_file_url: Optional[str] = None
+  user_file_b64: Optional[str] = None
+  user_file_name: Optional[str] = None
+  user_file_url: Optional[str] = None
   tool_names: Optional[List[str]] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
     "example": LLM_MULTIMODAL_GENERATE_EXAMPLE
@@ -179,9 +179,9 @@ class LLMMultimodalEmbeddingsModel(BaseModel):
   """Model for LLM multimodal embeddings request"""
   text: str
   llm_type: Optional[str] = None
-  chat_file_b64: Optional[str] = None
-  chat_file_b64_name: Optional[str] = None
-  chat_file_url: Optional[str] = None
+  user_file_b64: Optional[str] = None
+  user_file_name: Optional[str] = None
+  user_file_url: Optional[str] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
     "example": LLM_MULTIMODAL_EMBEDDINGS_EXAMPLE
   })
