@@ -15,7 +15,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
 }) => {
     const [temperature, setTemperature] = useState(1.0);
     const [modelBrowserOpen, setModelBrowserOpen] = useState(false);
-    const { selectedModel, setSelectedModel } = useModel();
+    const { selectedModel, setSelectedModel, loading } = useModel();
 
     const handleModelSelect = (model: ChatModel) => {
         setSelectedModel(model);
@@ -43,6 +43,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                 onClick={() => setModelBrowserOpen(true)}
                 fullWidth
                 endIcon={<KeyboardArrowDownIcon />}
+                disabled={loading}
                 sx={{
                     mb: 3,
                     backgroundColor: '#242424',
@@ -57,7 +58,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                     }
                 }}
             >
-                {selectedModel.name}
+                {loading ? 'Loading...' : selectedModel.name}
             </Button>
 
             <Paper 
