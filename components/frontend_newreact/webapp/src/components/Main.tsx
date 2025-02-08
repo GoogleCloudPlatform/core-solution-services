@@ -73,6 +73,8 @@ export const MainApp = () => {
   const handleSelectChat = (chat: Chat) => {
     setCurrentChat(chat);
     setShowChat(true);
+    setShowWelcome(false);
+    setShowSources(false);
   };
 
   const handleChatStart = () => {
