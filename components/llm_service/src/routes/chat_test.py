@@ -335,8 +335,7 @@ def test_chat_generate(create_user, create_chat, client_with_emulator):
   chat_data = json_response.get("data")
   assert chat_data["title"] == "Existing Title", \
     "Existing title preserved"
-  mock_summary.assert_not_called(), \
-    "Summary not generated for existing title"
+  assert not mock_summary.called, "Summary not generated for existing title"
 
 def test_invalid_tool_names_chat(client_with_emulator):
   """Verify that llm tool name validation catches invalid cases"""
@@ -740,7 +739,7 @@ def test_chat_generate_keeps_existing_title(
 
     # Verify title was preserved and summary was not generated
     assert chat_data["title"] == "Existing Title"
-    mock_summary.assert_not_called()
+    assert not mock_summary.called, "Summary not generated for existing title"
 
     # Verify chat in database still has original title
     updated_chat = UserChat.find_by_id(chatid)

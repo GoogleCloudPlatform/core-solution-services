@@ -1,8 +1,6 @@
 """This is a collection of tests for the tools available to AI agents"""
 import pytest
 from unittest import mock
-import json
-from typing import Dict, List
 
 from services.agents.agent_tools import (
   agent_tool_registry,

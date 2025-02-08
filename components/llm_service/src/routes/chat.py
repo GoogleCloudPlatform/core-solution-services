@@ -40,7 +40,6 @@ from schemas.llm_schema import (ChatUpdateModel,
 from services.llm_generate import llm_chat, generate_chat_summary
 from services.agents.agent_tools import chat_tools, run_chat_tools
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
-from datetime import datetime
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
@@ -554,7 +553,7 @@ async def user_chat_generate(chat_id: str, request: Request):
     except json.JSONDecodeError as exc:
       raise HTTPException(
         status_code=422,
-        detail=("Tool names must be a string representing a json formatted list")
+        detail="Tool names must be a string representing a json formatted list"
       ) from exc
 
   # Validate tool names if present
