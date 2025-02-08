@@ -132,12 +132,14 @@ def test_google_sheets_tool(mock_post_method):
   """Test the Google Sheets tool"""
   mock_post_method.return_value.json.return_value = MOCK_SHEET_RESPONSE
   
-  result = google_sheets_tool(
-    "Test Sheet",           # name
-    ["Col1", "Col2"],      # columns
-    [["data1", "data2"]],  # rows
-    "test@example.com"     # user_email
-  )
+  input_dict = {
+    "name": "Test Sheet",
+    "columns": ["Col1", "Col2"],
+    "rows": [["data1", "data2"]],
+    "user_email": "test@example.com"
+  }
+  
+  result = google_sheets_tool(input_dict)
   
   assert result["sheet_url"] == MOCK_SHEET_RESPONSE["sheet_url"]
   assert result["sheet_id"] == MOCK_SHEET_RESPONSE["sheet_id"]
