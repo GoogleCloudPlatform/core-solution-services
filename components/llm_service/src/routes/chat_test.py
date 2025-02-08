@@ -464,70 +464,70 @@ def test_create_chat_with_history_generates_summary(create_user, client_with_emu
         assert chat.title == "Test Summary"
 
 def test_chat_generate_adds_missing_title(create_user, create_chat, client_with_emulator):
-    """Test that generating a chat response adds a title if missing"""
-    chatid = CHAT_EXAMPLE["id"]
-    url = f"{api_url}/{chatid}/generate"
+  """Test that generating a chat response adds a title if missing"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate"
 
-    # First remove the title
-    chat = UserChat.find_by_id(chatid)
-    chat.title = ""
-    chat.save()
+  # First remove the title
+  chat = UserChat.find_by_id(chatid)
+  chat.title = ""
+  chat.save()
 
-    with mock.patch("routes.chat.llm_chat",
-                   return_value=FAKE_GENERATE_RESPONSE), \
-         mock.patch("services.llm_generate.generate_chat_summary",
-                   return_value="Test Summary"):
-        
-        resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+  with mock.patch("routes.chat.llm_chat",
+                 return_value=FAKE_GENERATE_RESPONSE), \
+       mock.patch("services.llm_generate.generate_chat_summary",
+                 return_value="Test Summary"):
+    
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
 
-        json_response = resp.json()
-        assert resp.status_code == 200
-        chat_data = json_response.get("data")
-        
-        # Verify chat response was generated
-        assert chat_data["history"][-2] == \
-            {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
-        assert chat_data["history"][-1] == \
-            {CHAT_AI: FAKE_GENERATE_RESPONSE}
-        
-        # Verify summary was generated and set as title
-        assert chat_data["title"] == "Test Summary"
+    json_response = resp.json()
+    assert resp.status_code == 200
+    chat_data = json_response.get("data")
+    
+    # Verify chat response was generated
+    assert chat_data["history"][-2] == \
+        {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
+    assert chat_data["history"][-1] == \
+        {CHAT_AI: FAKE_GENERATE_RESPONSE}
+    
+    # Verify summary was generated and set as title
+    assert chat_data["title"] == "Test Summary"
 
-        # Verify chat was saved to database with summary
-        updated_chat = UserChat.find_by_id(chatid)
-        assert updated_chat.title == "Test Summary"
+    # Verify chat was saved to database with summary
+    updated_chat = UserChat.find_by_id(chatid)
+    assert updated_chat.title == "Test Summary"
 
 def test_chat_generate_keeps_existing_title(create_user, create_chat, client_with_emulator):
-    """Test that generating a chat response preserves existing title"""
-    chatid = CHAT_EXAMPLE["id"]
-    url = f"{api_url}/{chatid}/generate"
+  """Test that generating a chat response preserves existing title"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate"
 
-    # Set an existing title
-    chat = UserChat.find_by_id(chatid)
-    chat.title = "Existing Title"
-    chat.save()
+  # Set an existing title
+  chat = UserChat.find_by_id(chatid)
+  chat.title = "Existing Title"
+  chat.save()
 
-    with mock.patch("routes.chat.llm_chat",
-                   return_value=FAKE_GENERATE_RESPONSE), \
-         mock.patch("services.llm_generate.generate_chat_summary",
-                   return_value="Test Summary") as mock_summary:
-        
-        resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+  with mock.patch("routes.chat.llm_chat",
+                 return_value=FAKE_GENERATE_RESPONSE), \
+       mock.patch("services.llm_generate.generate_chat_summary",
+                 return_value="Test Summary") as mock_summary:
+    
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
 
-        json_response = resp.json()
-        assert resp.status_code == 200
-        chat_data = json_response.get("data")
-        
-        # Verify chat response was generated
-        assert chat_data["history"][-2] == \
-            {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
-        assert chat_data["history"][-1] == \
-            {CHAT_AI: FAKE_GENERATE_RESPONSE}
-        
-        # Verify title was preserved and summary was not generated
-        assert chat_data["title"] == "Existing Title"
-        mock_summary.assert_not_called()
+    json_response = resp.json()
+    assert resp.status_code == 200
+    chat_data = json_response.get("data")
+    
+    # Verify chat response was generated
+    assert chat_data["history"][-2] == \
+        {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
+    assert chat_data["history"][-1] == \
+        {CHAT_AI: FAKE_GENERATE_RESPONSE}
+    
+    # Verify title was preserved and summary was not generated
+    assert chat_data["title"] == "Existing Title"
+    mock_summary.assert_not_called()
 
-        # Verify chat in database still has original title
-        updated_chat = UserChat.find_by_id(chatid)
-        assert updated_chat.title == "Existing Title"
+    # Verify chat in database still has original title
+    updated_chat = UserChat.find_by_id(chatid)
+    assert updated_chat.title == "Existing Title"
