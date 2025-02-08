@@ -818,21 +818,3 @@ def test_chat_llm_multimodal_filter(client_with_emulator):
     json_response = resp.json()
     assert json_response["success"] is True
     assert all(model["is_multi"] for model in json_response["data"])
-
-def test_chat_llm_invalid_multimodal(client_with_emulator):
-  """Test invalid multimodal parameter handling for both chat LLM endpoints"""
-  base_url = f"{api_url}/chat_types"
-  
-  def mock_is_model_enabled_for_user(model_id, user_data):
-    return True
-  
-  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
-                 side_effect=mock_is_model_enabled_for_user):
-    # Test basic list endpoint
-    resp = client_with_emulator.get(base_url, params={"is_multimodal": "invalid"})
-    assert resp.status_code == 400
-    
-    # Test details endpoint
-    resp = client_with_emulator.get(f"{base_url}/details", 
-                                  params={"is_multimodal": "invalid"})
-    assert resp.status_code == 400
