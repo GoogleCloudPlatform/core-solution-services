@@ -86,8 +86,11 @@ def test_ruleset_input_tool(mock_get_method):
 
 def test_ruleset_execute_tool(mock_post_method):
   """Test the ruleset execute tool"""
-  test_inputs = {"income": 50000}
-  result = ruleset_execute_tool("test_ruleset", test_inputs)
+  input_str = json.dumps({
+    "ruleset_name": "test_ruleset",
+    "rule_inputs": {"income": 50000}
+  })
+  result = ruleset_execute_tool(input_str)
   assert result == MOCK_RULESET_RESULT
   mock_post_method.assert_called_once()
 
