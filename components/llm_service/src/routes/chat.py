@@ -35,7 +35,8 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
                                 LLMUserChatResponse,
                                 LLMUserAllChatsResponse,
-                                LLMGetTypesResponse)
+                                LLMGetTypesResponse,
+                                LLMGetDetailsResponse)
 from services.llm_generate import llm_chat, generate_chat_summary
 from services.agents.agent_tools import chat_tools, run_chat_tools
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
@@ -90,7 +91,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
 @router.get(
     "/chat_types/details",
     name="Get detailed Chat LLM information",
-    response_model=LLMGetTypesResponse)
+    response_model=LLMGetDetailsResponse)
 def get_chat_llm_details(user_data: dict = Depends(validate_token),
                       is_multimodal: Optional[bool] = None):
   """
@@ -104,7 +105,7 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
         If None, all LLM types are returned.
 
   Returns:
-      LLMGetTypesResponse with detailed model information
+      LLMGetDetailsResponse with detailed model information
   """
   Logger.info("Entering chat/chat_types/details")
   try:

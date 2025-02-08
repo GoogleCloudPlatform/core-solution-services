@@ -35,7 +35,8 @@ from schemas.llm_schema import (LLMGenerateModel,
                                 LLMEmbeddingsResponse,
                                 LLMMultimodalEmbeddingsResponse,
                                 LLMEmbeddingsModel,
-                                LLMMultimodalEmbeddingsModel)
+                                LLMMultimodalEmbeddingsModel,
+                                LLMGetDetailsResponse)
 from services.llm_generate import llm_generate, llm_generate_multimodal
 from services.embeddings import get_embeddings, get_multimodal_embeddings
 from utils.file_helper import validate_multimodal_file_type
@@ -295,7 +296,7 @@ async def generate_multimodal(gen_config: LLMMultimodalGenerateModel):
 @router.get(
     "/details",
     name="Get LLM details",
-    response_model=LLMGetTypesResponse)
+    response_model=LLMGetDetailsResponse)
 def get_llm_details(user_data: dict = Depends(validate_token),
                    is_multimodal: Optional[bool] = None):
   """
@@ -309,7 +310,7 @@ def get_llm_details(user_data: dict = Depends(validate_token),
         If None, all LLM types are returned.
 
   Returns:
-      LLMGetTypesResponse with detailed model information
+      LLMGetDetailsResponse with detailed model information
   """
   Logger.info("Entering llm/details")
   try:

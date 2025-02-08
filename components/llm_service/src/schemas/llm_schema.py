@@ -65,21 +65,39 @@ class ModelDetails(BaseModel):
     model_params: Optional[dict] = None
 
 class LLMGetTypesResponse(BaseModel):
-    """LLM Get types model"""
+    """Response model for LLM type lists"""
     success: Optional[bool] = True
     message: Optional[str] = "Successfully retrieved llm types"
+    data: Optional[List[str]] = []
+    model_config = ConfigDict(from_attributes=True, json_schema_extra={
+        "example": {
+            "success": True,
+            "message": "Successfully retrieved llm types",
+            "data": ["VertexAI-Chat", "OpenAI-GPT4", "Anthropic-Claude"]
+        }
+    })
+
+class LLMGetDetailsResponse(BaseModel):
+    """Response model for detailed LLM information"""
+    success: Optional[bool] = True
+    message: Optional[str] = "Successfully retrieved llm details"
     data: Optional[List[ModelDetails]] = []
     model_config = ConfigDict(from_attributes=True, json_schema_extra={
         "example": {
             "success": True,
-            "message": "Successfully retrieved chat llm types",
+            "message": "Successfully retrieved llm details",
             "data": [{
                 "id": "VertexAI-Chat",
                 "name": "Vertex AI Chat",
                 "description": "Latest Gemini model optimized for fast responses",
                 "capabilities": ["Chat", "Text Generation"],
                 "date_added": "2024-03-15",
-                "is_multi": True
+                "is_multi": True,
+                "model_params": {
+                    "temperature": 0.7,
+                    "max_tokens": 1000,
+                    "top_p": 0.9
+                }
             }]
         }
     })
