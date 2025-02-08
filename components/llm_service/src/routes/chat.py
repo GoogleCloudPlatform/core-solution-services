@@ -505,15 +505,31 @@ async def user_chat_generate(chat_id: str, request: Request):
   body = await request.json()
   tool_names = body.get("tool_names")
 
-  # Validate tool names first
-  try:
-    validate_tool_names(tool_names)
-  except HTTPException as e:
-    # Re-raise standard FastAPI HTTPException (includes "detail")
-    raise e
+  # Parse tool_names if it's a string
+  if isinstance(tool_names, str):
+    try:
+      body["tool_names"] = json.loads(tool_names)
+    except json.JSONDecodeError as e:
+      raise HTTPException(
+        status_code=422,
+        detail="Tool names must be a string representing a json formatted list"
+      ) from e
 
-  # Now that tool_names is validated, parse the rest with Pydantic
-  gen_config = LLMGenerateModel(**body)
+  # Validate tool names if present
+  if body.get("tool_names"):
+    if invalid_tools := [tool for tool in body["tool_names"] 
+                        if tool not in chat_tools]:
+      raise HTTPException(
+        status_code=422,
+        detail=f"Invalid tool names: {','.join(invalid_tools)}"
+      )
+
+  # Now that tool_names is validated and converted, parse with Pydantic
+  try:
+    gen_config = LLMGenerateModel(**body)
+  except ValidationError as e:
+    raise HTTPException(status_code=422, detail=str(e))
+
   response_files = None
 
   try:
