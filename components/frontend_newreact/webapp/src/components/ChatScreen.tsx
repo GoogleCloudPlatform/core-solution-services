@@ -1,13 +1,13 @@
 import { SourceSelector } from './SourceSelector'; // Import the component
 import { QueryEngine } from '../lib/types'; // Import the type
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal, Chip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import UploadIcon from '@mui/icons-material/Upload';
 import { useAuth } from '../contexts/AuthContext';
-import { createChat, resumeChat } from '../lib/api';
+import { createChat, resumeChat, fetchChat } from '../lib/api';
 import { Chat } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
 import UploadModal from './UploadModal';
@@ -33,18 +33,42 @@ interface ChatScreenProps {
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false, onChatStart, isNewChat = false }) => {
   const [prompt, setPrompt] = useState('');
+  const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
-    // Initialize messages from currentChat if it exists
-    currentChat?.history.map(h => ({
+    currentChat?.history?.map(h => ({
       text: h.HumanInput || h.AIOutput || '',
       isUser: !!h.HumanInput
     })) || []
   );
 
+  const { user } = useAuth();
+
+  // Add effect to fetch full chat details when currentChat changes
+  useEffect(() => {
+    const loadChat = async () => {
+      if (currentChat?.id && user) {
+        try {
+          const fullChat = await fetchChat(user.token, currentChat.id)();
+          if (fullChat) {
+            setMessages(
+              fullChat.history.map(h => ({
+                text: h.HumanInput || h.AIOutput || '',
+                isUser: !!h.HumanInput
+              }))
+            );
+            setChatId(fullChat.id);
+          }
+        } catch (error) {
+          console.error('Error loading chat:', error);
+        }
+      }
+    };
+
+    loadChat();
+  }, [currentChat?.id, user]);
+
   // #TODO use selected source for query calls when selected by user
   const [selectedKnowledgeSource, setSelectedKnowledgeSource] = useState<QueryEngine | null>(null);
-  const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
-  const { user } = useAuth();
   const { selectedModel } = useModel();
   const [temperature, setTemperature] = useState(1.0);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
