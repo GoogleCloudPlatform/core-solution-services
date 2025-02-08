@@ -338,25 +338,20 @@ def test_invalid_tool_names_chat(client_with_emulator):
   """Verify that llm tool name validation catches invalid cases"""
   url = f"{api_url}"
   create_generate_params = FAKE_GENERATE_PARAMS.copy()
-  
   # testing with a non-list input string
   create_generate_params["tool_names"] = "(invalid_tool)"
   resp = client_with_emulator.post(url, data=create_generate_params)
-  assert resp.status_code == 422, "Invalid tool names format returns 422"
+  assert resp.status_code == 422
   json_response = resp.json()
-  assert json_response["success"] is False, "Error response indicates failure"
-  assert "json formatted list" in json_response["message"].lower(), "Error message mentions json format"
-  assert json_response["data"] is None, "Error response has no data"
-
+  assert "detail" in json_response, str(json_response)
+  assert "json formatted list" in json_response["detail"]
   # testing with a tool that does not exist
   create_generate_params["tool_names"] = json.dumps(
     ["nonexistent_tool", "tool2"])
   resp = client_with_emulator.post(url, data=create_generate_params)
-  assert resp.status_code == 422, "Invalid tool name returns 422"
+  assert resp.status_code == 422
   json_response = resp.json()
-  assert json_response["success"] is False, "Error response indicates failure"
-  assert "nonexistent_tool" in json_response["message"], "Error message mentions invalid tool"
-  assert json_response["data"] is None, "Error response has no data"
+  assert "nonexistent_tool" in json_response["detail"]
 
 def test_invalid_tool_names_chat_generate(create_user, create_chat,
                                           client_with_emulator):
@@ -367,21 +362,16 @@ def test_invalid_tool_names_chat_generate(create_user, create_chat,
   # testing with a non-list input string
   generate_params["tool_names"] = "(invalid_tool,)"
   resp = client_with_emulator.post(url, json=generate_params)
-  assert resp.status_code == 422, "Invalid tool names format returns 422"
+  assert resp.status_code == 422
   json_response = resp.json()
-  assert json_response["success"] is False, "Error response indicates failure"
-  assert "json formatted list" in json_response["message"].lower(), "Error message mentions json format"
-  assert json_response["data"] is None, "Error response has no data"
-
+  assert "json formatted list" in json_response["detail"]
   # testing with a tool that does not exist
   generate_params["tool_names"] = json.dumps(
     ["nonexistent_tool", "tool2"])
   resp = client_with_emulator.post(url, json=generate_params)
-  assert resp.status_code == 422, "Invalid tool name returns 422"
+  assert resp.status_code == 422
   json_response = resp.json()
-  assert json_response["success"] is False, "Error response indicates failure"
-  assert "nonexistent_tool" in json_response["message"], "Error message mentions invalid tool"
-  assert json_response["data"] is None, "Error response has no data"
+  assert "nonexistent_tool" in json_response["detail"]
 
 @pytest.mark.long
 def test_create_chat_code_interpreter(create_user, create_chat,
