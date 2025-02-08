@@ -105,7 +105,7 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
             <DialogContent>
                 <SearchBox>
                     <InputBase
-                        placeholder="Search for models like \"image generation models\""
+                        placeholder='Search for models like "image generation models"'
                         sx={{ 
                             flex: 1,
                             color: 'white',
