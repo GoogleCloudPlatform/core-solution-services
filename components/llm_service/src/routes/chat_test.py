@@ -540,32 +540,34 @@ def test_generate_chat_summary(create_user, create_chat, client_with_emulator):
     assert updated_chat.title == "Test Summary"
 
 def test_generate_chat_summary_not_found(create_user, client_with_emulator):
-    """Test generate_summary with non-existent chat"""
-    url = f"{api_url}/non-existent-id/generate_summary"
+  """Test generate_summary with non-existent chat"""
+  url = f"{api_url}/non-existent-id/generate_summary"
 
-    resp = client_with_emulator.post(url)
-    assert resp.status_code == 404, "Non-existent chat returns 404"
-    json_response = resp.json()
-    assert json_response["success"] is False, "Error response indicates failure"
-    assert "not found" in json_response["message"].lower(), "Error message indicates not found"
-    assert json_response["data"] is None, "Error response has no data"
+  resp = client_with_emulator.post(url)
+  assert resp.status_code == 404, "Non-existent chat returns 404"
+  json_response = resp.json()
+  assert json_response["success"] is False, "Error response indicates failure"
+  assert "not found" in json_response["message"].lower(), \
+    "Error message indicates not found"
+  assert json_response["data"] is None, "Error response has no data"
 
 def test_generate_chat_summary_error(create_user, create_chat, client_with_emulator):
-    """Test generate_summary when summary generation fails"""
-    chatid = CHAT_EXAMPLE["id"]
-    url = f"{api_url}/{chatid}/generate_summary"
+  """Test generate_summary when summary generation fails"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate_summary"
 
-    with mock.patch(
-        "routes.chat.generate_chat_summary",
-        side_effect=Exception("Summary generation failed")
-    ):
-        resp = client_with_emulator.post(url)
+  with mock.patch(
+      "routes.chat.generate_chat_summary",
+      side_effect=Exception("Summary generation failed")
+  ):
+    resp = client_with_emulator.post(url)
 
-    assert resp.status_code == 500, "Failed summary generation returns 500"
-    json_response = resp.json()
-    assert json_response["success"] is False, "Error response indicates failure"
-    assert "summary generation failed" in json_response["message"].lower(), "Error message describes failure"
-    assert json_response["data"] is None, "Error response has no data"
+  assert resp.status_code == 500, "Failed summary generation returns 500"
+  json_response = resp.json()
+  assert json_response["success"] is False, "Error response indicates failure"
+  assert "summary generation failed" in json_response["message"].lower(), \
+    "Error message describes failure"
+  assert json_response["data"] is None, "Error response has no data"
 
 def test_create_chat_generates_summary(create_user, client_with_emulator):
   """Test that creating a new chat generates a summary"""
