@@ -302,41 +302,32 @@ def validate_tool_names(tool_names: Optional[str]):
 
 @router.post(
     "",
-    name="Create new chat", deprecated=True)
-async def create_user_chat(
-     prompt: Annotated[str, Form()],
-     llm_type: Annotated[str, Form()] = None,
-     chat_file_url: Annotated[str, Form()] = None,
-     chat_file: Union[UploadFile, None] = None,
-     tool_names: Annotated[str, Form()] = None,
-     stream: Annotated[bool, Form()] = False,
-     history: Annotated[str, Form()] = None,
-     user_data: dict = Depends(validate_token)):
-  """
-  Create new chat for authenticated user.  
-                           
-  Takes input payload as a multipart form.
+    name="Create new chat",
+    response_model=LLMUserChatResponse)
+async def create_chat(prompt: str = Form(None),
+                     llm_type: str = Form(None),
+                     stream: bool = Form(False),
+                     history: str = Form(None),
+                     chat_file: UploadFile = None,
+                     chat_file_url: str = Form(None),
+                     tool_names: str = Form(None),
+                     user_data: dict = Depends(validate_token)):
+  """Create new chat for authenticated user
 
   Args:
-      prompt(str): prompt to initiate chat
-      llm_type(str): llm model id
-      chat_file(UploadFile): file upload for chat context
-      chat_file_url(str): file url for chat context
-      tool_names(list[str]): list of tool names to be used, as a serialized 
-        string due to fastapi limitations
-      stream(bool): whether to stream the response
-      history(str): optional chat history to create chat from previous
-                           streaming response
+      prompt: the text prompt to pass to the LLM
+      llm_type: the type of LLM to use
+      stream: whether to stream the response
+      history: optional JSON string containing chat history
+      chat_file: optional file to include in chat context
+      chat_file_url: optional URL to file to include in chat context
+      tool_names: optional JSON string containing list of tool names
+      user_data: dict containing user information from auth token
 
   Returns:
-      LLMUserChatResponse or StreamingResponse
+      LLMUserChatResponse
   """
-  Logger.info("Creating new chat using"
-              f" prompt={prompt} llm_type={llm_type}"
-              f" chat_file={chat_file} chat_file_url={chat_file_url}"
-              f" tools={tool_names} stream={stream} history={history}")
-  # a file that could be returned as part of the response as base64 contents
-  response_files: list[str] = None
+  response_files = None
   validate_tool_names(tool_names)
 
   # process chat file(s): upload to GCS and determine mime type
@@ -374,6 +365,11 @@ async def create_user_chat(
         user_chat.update_history(custom_entry={
           f"{CHAT_FILE_URL}": chat_file_url
         })
+      user_chat.save()
+
+      # Generate and set chat title
+      summary = await generate_chat_summary(user_chat)
+      user_chat.title = summary
       user_chat.save()
 
       chat_data = user_chat.get_fields(reformat_datetime=True)
@@ -421,6 +417,11 @@ async def create_user_chat(
         user_chat.update_history(custom_entry={
           f"{CHAT_FILE_BASE64}": file["contents"]
         })
+    user_chat.save()
+
+    # Generate and set chat title
+    summary = await generate_chat_summary(user_chat)
+    user_chat.title = summary
     user_chat.save()
 
     chat_data = user_chat.get_fields(reformat_datetime=True)

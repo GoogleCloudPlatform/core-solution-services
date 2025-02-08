@@ -404,3 +404,61 @@ def test_generate_chat_summary_error(create_user, create_chat, client_with_emula
         assert resp.status_code == 500
         json_response = resp.json()
         assert "Summary generation failed" in json_response["detail"]
+
+def test_create_chat_generates_summary(create_user, client_with_emulator):
+    """Test that creating a new chat generates a summary"""
+    url = f"{api_url}"
+
+    # Test regular chat creation with summary generation
+    with mock.patch("routes.chat.llm_chat",
+                   return_value=FAKE_GENERATE_RESPONSE), \
+         mock.patch("services.llm_generate.generate_chat_summary",
+                   return_value="Test Summary"):
+        
+        resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS)
+
+        json_response = resp.json()
+        assert resp.status_code == 200
+        chat_data = json_response.get("data")
+        
+        # Verify chat was created with correct content
+        assert chat_data["history"][0] == \
+            {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}
+        assert chat_data["history"][1] == \
+            {CHAT_AI: FAKE_GENERATE_RESPONSE}
+        
+        # Verify summary was generated and set as title
+        assert chat_data["title"] == "Test Summary"
+
+        # Verify chat was saved to database with summary
+        chat = UserChat.find_by_id(chat_data["id"])
+        assert chat.title == "Test Summary"
+
+def test_create_chat_with_history_generates_summary(create_user, client_with_emulator):
+    """Test that creating a chat from history generates a summary"""
+    url = f"{api_url}"
+    
+    history_params = {
+        **FAKE_GENERATE_PARAMS,
+        "history": '[{"human": "test prompt"}, {"ai": "test response"}]'
+    }
+
+    with mock.patch("services.llm_generate.generate_chat_summary",
+                   return_value="Test Summary"):
+        resp = client_with_emulator.post(url, data=history_params)
+        
+        json_response = resp.json()
+        assert resp.status_code == 200
+        chat_data = json_response.get("data")
+        
+        # Verify history was preserved
+        assert len(chat_data["history"]) == 2
+        assert chat_data["history"][0] == {"human": "test prompt"}
+        assert chat_data["history"][1] == {"ai": "test response"}
+        
+        # Verify summary was generated and set as title
+        assert chat_data["title"] == "Test Summary"
+
+        # Verify chat was saved to database with summary
+        chat = UserChat.find_by_id(chat_data["id"])
+        assert chat.title == "Test Summary"
