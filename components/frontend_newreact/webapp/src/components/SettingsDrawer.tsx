@@ -1,6 +1,6 @@
 import { Box, Typography, Button, Slider, Paper } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ModelBrowser from './ModelBrowser';
 import { useModel } from '../contexts/ModelContext';
 import { ChatModel } from '../lib/types';
@@ -13,17 +13,36 @@ interface SettingsDrawerProps {
 const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ 
     open
 }) => {
-    const [temperature, setTemperature] = useState(1.0);
+    const [temperature, setTemperature] = useState(0.2);
     const [modelBrowserOpen, setModelBrowserOpen] = useState(false);
     const { selectedModel, setSelectedModel, loading } = useModel();
+
+    useEffect(() => {
+        if (selectedModel?.modelParams?.temperature !== undefined) {
+            setTemperature(selectedModel.modelParams.temperature);
+        }
+    }, [selectedModel]);
 
     const handleModelSelect = (model: ChatModel) => {
         setSelectedModel(model);
         setModelBrowserOpen(false);
+        if (model.modelParams?.temperature !== undefined) {
+            setTemperature(model.modelParams.temperature);
+        }
     };
 
     const handleTemperatureChange = (event: Event, newValue: number | number[]) => {
         setTemperature(newValue as number);
+        if (selectedModel) {
+            const updatedModel = {
+                ...selectedModel,
+                modelParams: {
+                    ...selectedModel.modelParams,
+                    temperature: newValue as number
+                }
+            };
+            setSelectedModel(updatedModel);
+        }
     };
 
     if (!open) return null;
@@ -95,6 +114,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                     min={0}
                     max={2}
                     step={0.1}
+                    disabled={selectedModel?.modelParams?.temperature === undefined}
                     sx={{
                         color: '#4a90e2',
                         '& .MuiSlider-rail': {
@@ -108,6 +128,11 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                         }
                     }}
                 />
+                {selectedModel?.modelParams?.temperature === undefined && (
+                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                        Temperature control not available for this model
+                    </Typography>
+                )}
             </Box>
 
             <ModelBrowser

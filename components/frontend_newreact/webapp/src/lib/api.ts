@@ -75,6 +75,10 @@ interface ModelResponse {
     capabilities: string[];
     date_added: string;
     is_multi: boolean;
+    model_params?: {
+        temperature?: number;
+        [key: string]: any;
+    };
 }
 
 const endpoint = envOrFail(
@@ -110,7 +114,8 @@ export const fetchAllChatModels =
           description: model.description,
           purposes: model.capabilities,
           isNew: isNew,
-          isMultimodal: model.is_multi
+          isMultimodal: model.is_multi,
+          modelParams: model.model_params
         };
       });
 

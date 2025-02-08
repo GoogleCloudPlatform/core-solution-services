@@ -274,4 +274,8 @@ export interface ChatModel {
     purposes?: string[];
     isNew?: boolean;
     isMultimodal?: boolean;
+    modelParams?: {
+        temperature?: number;
+        [key: string]: any;
+    };
 }
