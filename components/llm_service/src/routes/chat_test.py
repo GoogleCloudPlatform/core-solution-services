@@ -192,8 +192,9 @@ async def test_create_chat(create_user, client_with_emulator):
   resp = client_with_emulator.post(url, data=invalid_params)
   assert resp.status_code == 422, "Missing prompt and history returns 422"
   json_response = resp.json()
-  assert "detail" in json_response, "Error response includes detail"
-  assert "prompt" in json_response["detail"].lower(), "Error mentions missing prompt"
+  assert json_response["success"] is False, "Error response indicates failure"
+  assert "prompt" in json_response["message"].lower(), "Error message mentions missing prompt"
+  assert json_response["data"] is None, "Error response has no data"
 
   # Verify final state
   user_chats = UserChat.find_by_user(USER_EXAMPLE["user_id"])
@@ -361,16 +362,21 @@ def test_invalid_tool_names_chat_generate(create_user, create_chat,
   # testing with a non-list input string
   generate_params["tool_names"] = "(invalid_tool,)"
   resp = client_with_emulator.post(url, json=generate_params)
-  assert resp.status_code == 422
+  assert resp.status_code == 422, "Invalid tool names format returns 422"
   json_response = resp.json()
-  assert "json formatted list" in json_response["detail"]
+  assert json_response["success"] is False, "Error response indicates failure"
+  assert "json formatted list" in json_response["message"].lower(), "Error message mentions json format"
+  assert json_response["data"] is None, "Error response has no data"
+
   # testing with a tool that does not exist
   generate_params["tool_names"] = json.dumps(
     ["nonexistent_tool", "tool2"])
   resp = client_with_emulator.post(url, json=generate_params)
-  assert resp.status_code == 422
+  assert resp.status_code == 422, "Invalid tool name returns 422"
   json_response = resp.json()
-  assert "nonexistent_tool" in json_response["detail"]
+  assert json_response["success"] is False, "Error response indicates failure"
+  assert "nonexistent_tool" in json_response["message"], "Error message mentions invalid tool"
+  assert json_response["data"] is None, "Error response has no data"
 
 @pytest.mark.long
 def test_create_chat_code_interpreter(create_user, create_chat,
@@ -430,9 +436,11 @@ def test_generate_chat_summary_not_found(create_user, client_with_emulator):
     url = f"{api_url}/non-existent-id/generate_summary"
     
     resp = client_with_emulator.post(url)
-    assert resp.status_code == 404
+    assert resp.status_code == 404, "Non-existent chat returns 404"
     json_response = resp.json()
-    assert "not found" in json_response["detail"]
+    assert json_response["success"] is False, "Error response indicates failure"
+    assert "not found" in json_response["message"].lower(), "Error message indicates not found"
+    assert json_response["data"] is None, "Error response has no data"
 
 def test_generate_chat_summary_error(create_user, create_chat, client_with_emulator):
     """Test generate_summary when summary generation fails"""
@@ -444,9 +452,11 @@ def test_generate_chat_summary_error(create_user, create_chat, client_with_emula
             side_effect=Exception("Summary generation failed")):
         resp = client_with_emulator.post(url)
         
-        assert resp.status_code == 500
+        assert resp.status_code == 500, "Failed summary generation returns 500"
         json_response = resp.json()
-        assert "Summary generation failed" in json_response["detail"]
+        assert json_response["success"] is False, "Error response indicates failure"
+        assert "summary generation failed" in json_response["message"].lower(), "Error message describes failure"
+        assert json_response["data"] is None, "Error response has no data"
 
 def test_create_chat_generates_summary(create_user, client_with_emulator):
     """Test that creating a new chat generates a summary"""

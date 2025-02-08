@@ -327,23 +327,26 @@ async def create_chat(prompt: str = Form(None),
   Returns:
       LLMUserChatResponse
   """
-  response_files = None
-  validate_tool_names(tool_names)
-
-  # process chat file(s): upload to GCS and determine mime type
-  chat_file_bytes = None
-  chat_files = None
-  if chat_file is not None or chat_file_url is not None:
-    chat_files = await process_chat_file(chat_file, chat_file_url)
-
-  # only read chat file bytes if for some reason we can't
-  # upload the file(s) to GCS
-  if not chat_files and chat_file is not None:
-    await chat_file.seek(0)
-    chat_file_bytes = await chat_file.read()
-
   try:
+    # Validate required parameters first
+    if not prompt and not history:
+      raise ValidationError("Either prompt or history must be provided")
+
+    # Validate tool names if provided
+    validate_tool_names(tool_names)
+
     user = User.find_by_email(user_data.get("email"))
+
+    # Process chat file(s): upload to GCS and determine mime type
+    chat_file_bytes = None
+    chat_files = None
+    if chat_file is not None or chat_file_url is not None:
+      chat_files = await process_chat_file(chat_file, chat_file_url)
+
+    # Only read chat file bytes if we can't upload the file(s) to GCS
+    if not chat_files and chat_file is not None:
+      await chat_file.seek(0)
+      chat_file_bytes = await chat_file.read()
 
     # If history is provided, parse the JSON string into a list
     if history:
@@ -355,7 +358,7 @@ async def create_chat(prompt: str = Form(None),
         raise ValidationError(f"Invalid JSON in history: {str(e)}") from e
 
       user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                           prompt=prompt)
+                         prompt=prompt)
       user_chat.history = history_list  # Use the parsed list
       if chat_file:
         user_chat.update_history(custom_entry={
@@ -381,9 +384,10 @@ async def create_chat(prompt: str = Form(None),
           "data": chat_data
       }
 
+    # Handle prompt-based chat creation
+    response_files = None
     if tool_names:
       response, response_files = run_chat_tools(prompt)
-    # Otherwise generate text from prompt if no tools
     else:
       response = await llm_chat(prompt,
                             llm_type,
@@ -397,9 +401,9 @@ async def create_chat(prompt: str = Form(None),
             media_type="text/event-stream"
         )
 
-    # create new chat for user
+    # Create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                         prompt=prompt)
+                       prompt=prompt)
     user_chat.history = UserChat.get_history_entry(prompt, response)
     if chat_file:
       user_chat.update_history(custom_entry={
@@ -432,6 +436,7 @@ async def create_chat(prompt: str = Form(None),
         "message": "Successfully created chat",
         "data": chat_data
     }
+
   except ValidationError as e:
     raise BadRequest(str(e)) from e
   except Exception as e:
