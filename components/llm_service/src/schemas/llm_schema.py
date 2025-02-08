@@ -74,7 +74,7 @@ class LLMGetTypesResponse(BaseModel):
             "message": "Successfully retrieved chat llm types",
             "data": [{
                 "id": "VertexAI-Chat",
-                "name": "Vertex AI Chat"
+                "name": "Vertex AI Chat",
                 "description": "Latest Gemini model optimized for fast responses",
                 "capabilities": ["Chat", "Text Generation"],
                 "date_added": "2024-03-15",
