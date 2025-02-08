@@ -795,7 +795,7 @@ def test_get_chat_llm_details(client_with_emulator):
 
 def test_chat_llm_multimodal_filter(client_with_emulator):
   """Test multimodal filtering for both chat LLM endpoints"""
-  base_url = f"{api_url}/chat_types"
+  base_url = f"{api_url}/chat_types/details"
   
   # Test basic list endpoint
   resp = client_with_emulator.get(base_url, params={"is_multimodal": True})
@@ -813,7 +813,7 @@ def test_chat_llm_multimodal_filter(client_with_emulator):
 
 def test_chat_llm_invalid_multimodal(client_with_emulator):
   """Test invalid multimodal parameter handling for both chat LLM endpoints"""
-  base_url = f"{api_url}/chat_types"
+  base_url = f"{api_url}/chat_types/details"
   
   # Test basic list endpoint
   resp = client_with_emulator.get(base_url, params={"is_multimodal": "invalid"})
