@@ -108,11 +108,11 @@ class LLMGetVectorStoreTypesResponse(BaseModel):
   message: Optional[str] = "Successfully retrieved vector store types"
   data: Optional[list[str]] = []
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": {
-          "success": True,
-          "message": "Successfully retrieved vector store types",
-          "data": []
-      }
+    "example": {
+      "success": True,
+      "message": "Successfully retrieved vector store types",
+      "data": []
+    }
   })
 
 class LLMGetEmbeddingTypesResponse(BaseModel):
@@ -121,11 +121,11 @@ class LLMGetEmbeddingTypesResponse(BaseModel):
   message: Optional[str] = "Successfully retrieved embedding types"
   data: Optional[list[str]] = []
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
-      "example": {
-          "success": True,
-          "message": "Successfully retrieved embedding types",
-          "data": []
-      }
+    "example": {
+      "success": True,
+      "message": "Successfully retrieved embedding types",
+      "data": []
+    }
   })
 
 class LLMGetQueryEnginesResponse(BaseModel):
