@@ -332,9 +332,10 @@ def validate_tool_names(tool_names: Optional[str]):
     try:
       tool_names = json.loads(tool_names)
     except json.decoder.JSONDecodeError as e:
-      raise HTTPException(status_code=422,
-                          detail=("Tool names must be a string representing a"
-                          " json formatted list")) from e
+      raise HTTPException(
+          status_code=422,
+          detail=("Tool names must be a string representing a "
+                 "json formatted list"))
     # ensuring the tools provided are valid for chat
     if invalid_tools := [tool for tool in tool_names if tool not in chat_tools]:
       failure_message = f"Invalid tool names: {','.join(invalid_tools)}"
@@ -380,10 +381,12 @@ async def create_chat(prompt: str = Form(None),
       except json.decoder.JSONDecodeError:
         raise HTTPException(
           status_code=422,
-          detail="Tool names must be a string representing a json formatted list"
+          detail=("Tool names must be a string representing a "
+                 "json formatted list")
         )
       # ensuring the tools provided are valid for chat
-      if invalid_tools := [tool for tool in tool_names if tool not in chat_tools]:
+      if invalid_tools := \
+          [tool for tool in tool_names if tool not in chat_tools]:
         raise HTTPException(
           status_code=422,
           detail=f"Invalid tool names: {','.join(invalid_tools)}"

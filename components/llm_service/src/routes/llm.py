@@ -18,7 +18,6 @@
 from typing import Optional
 from base64 import b64decode
 from fastapi import APIRouter, Depends
-from datetime import datetime
 import traceback
 
 from common.utils.logging_handler import Logger

@@ -2,6 +2,8 @@
 import pytest
 from unittest import mock
 
+# pylint: disable =   redefined-outer-name
+
 from services.agents.agent_tools import (
   agent_tool_registry,
   agent_tool,
