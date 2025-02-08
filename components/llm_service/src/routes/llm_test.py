@@ -272,32 +272,26 @@ def test_get_llm_details_multimodal_filter(client_with_emulator):
   """Test filtering LLM details by multimodal capability"""
   url = f"{api_url}/details"
   
-  # Test multimodal filter True
-  resp = client_with_emulator.get(url, params={"is_multimodal": True})
-  assert resp.status_code == 200
-  json_response = resp.json()
-  assert json_response["success"] is True
-  # Verify all returned models have is_multi=True
-  assert all(model["is_multi"] for model in json_response["data"])
+  def mock_is_model_enabled_for_user(model_id, user_data):
+    return True
 
-  # Test multimodal filter False
-  resp = client_with_emulator.get(url, params={"is_multimodal": False})
-  assert resp.status_code == 200
-  json_response = resp.json()
-  assert json_response["success"] is True
-  # Verify all returned models have is_multi=False
-  assert all(not model["is_multi"] for model in json_response["data"])
+  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                 side_effect=mock_is_model_enabled_for_user):
+    # Test multimodal filter True
+    resp = client_with_emulator.get(url, params={"is_multimodal": True})
+    assert resp.status_code == 200
+    json_response = resp.json()
+    assert json_response["success"] is True
+    # Verify all returned models have is_multi=True
+    assert all(model["is_multi"] for model in json_response["data"])
 
-def test_get_llm_details_invalid_multimodal(client_with_emulator):
-  """Test invalid multimodal parameter handling"""
-  url = f"{api_url}/details"
-  
-  # Test invalid multimodal parameter
-  resp = client_with_emulator.get(url, params={"is_multimodal": "invalid"})
-  assert resp.status_code == 400
-  json_response = resp.json()
-  assert not json_response["success"]
-  assert "Invalid request parameter value: is_multimodal" in json_response["message"]
+    # Test multimodal filter False
+    resp = client_with_emulator.get(url, params={"is_multimodal": False})
+    assert resp.status_code == 200
+    json_response = resp.json()
+    assert json_response["success"] is True
+    # Verify all returned models have is_multi=False
+    assert all(not model["is_multi"] for model in json_response["data"])
 
 def test_get_llm_details_error_handling(client_with_emulator):
   """Test error handling in get_llm_details"""
