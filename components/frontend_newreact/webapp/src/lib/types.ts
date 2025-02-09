@@ -330,8 +330,3 @@ export interface GenerateChatRequest {
   query_filter?: Record<string, any>;
 }
 
-export interface APIFunctions {
-  // ... existing types ...
-  createChat: (params: CreateChatRequest) => Promise<APIResponse<Chat>>;
-  generateChatResponse: (chatId: string, params: GenerateChatRequest) => Promise<APIResponse<Chat>>;
-}
