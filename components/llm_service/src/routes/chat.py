@@ -456,32 +456,37 @@ async def create_chat(prompt: str = Form(None),
     response_files = None
     query_result = None
     query_references = None
+    context_files = chat_files or []  # Initialize with any uploaded files
     
     if tool_names:
       response, response_files = run_chat_tools(prompt)
     else:
       if query_engine:
         # Generate query response if query engine specified
-        query_result, query_references = await query_generate(
+        query_references, query_content_files = await query_generate_for_chat(
           user.id,
           prompt,
           query_engine,
           user_data,
-          llm_type,
-          None,  # No existing user query
           rank_sentences=False,
           query_filter=json.loads(query_filter) if query_filter else None
         )
+        
+        # Add query content files to context files
+        if query_content_files:
+          context_files.extend(query_content_files)
+          
+        # Add reference text to prompt
         query_refs_str = QueryReference.reference_list_str(query_references)
         prompt += "\n\n" + \
-          "A search of the {query_engine.name} Source produced these references: {query_refs_str}"
-      else:
-        # Normal chat response
-        response = await llm_chat(prompt,
-                              llm_type,
-                              chat_files=chat_files,
-                              chat_file_bytes=chat_file_bytes,
-                              stream=stream)
+          f"A search of the {query_engine.name} Source produced these references: {query_refs_str}"
+
+      # Normal chat response with combined context files
+      response = await llm_chat(prompt,
+                            llm_type,
+                            chat_files=context_files,
+                            chat_file_bytes=chat_file_bytes,
+                            stream=stream)
       
       if stream:
         # Return streaming response
@@ -509,10 +514,10 @@ async def create_chat(prompt: str = Form(None),
     if response_files:
       for file in response_files:
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE}": file["name"]
+          CHAT_FILE: file["name"]
         })
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE_BASE64}": file["contents"]
+          CHAT_FILE_BASE64: file["contents"]
         })
         
     # New: Add query engine results to history
@@ -681,36 +686,40 @@ async def user_chat_generate(chat_id: str, request: Request):
     try:
       query_result = None
       query_references = None
+      context_files = chat_files or []  # Initialize with any uploaded files
       
       if tool_names:
         response, response_files = run_chat_tools(prompt)
       else:
-        # New: Handle query engine if specified
         if query_engine_id:
           query_engine = QueryEngine.find_by_id(query_engine_id)
           if not query_engine:
             raise ResourceNotFoundException(
               f"Query engine {query_engine_id} not found")
             
-          query_result, query_references = await query_generate(
+          query_references, query_content_files = await query_generate_for_chat(
             user_chat.user_id,
             prompt, 
             query_engine,
             None,  # No user data needed
-            llm_type,
-            None,  # No existing user query
             rank_sentences=False,
             query_filter=query_filter
           )
+
+          # Add query content files to context files
+          if query_content_files:
+            context_files.extend(query_content_files)
+            
+          # Add reference text to prompt
           query_refs_str = QueryReference.reference_list_str(query_references)
           prompt += "\n\n" + \
-            "A search of the {query_engine.name} Source produced these references: {query_refs_str}"
+            f"A search of the {query_engine.name} Source produced these references: {query_refs_str}"
 
-        # Normal chat response
+        # Normal chat response with combined context files
         response = await llm_chat(prompt,
                               llm_type,
                               user_chat=user_chat,
-                              chat_files=chat_files,
+                              chat_files=context_files,
                               chat_file_bytes=chat_file_bytes,
                               stream=stream)
                                 
