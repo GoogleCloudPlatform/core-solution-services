@@ -638,7 +638,9 @@ async def test_query_generate_for_chat(mock_get_vector_store, mock_get_embedding
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
 async def test_query_generate_for_chat_with_filter(mock_get_vector_store, 
                                                  mock_get_embeddings,
-                                                 create_engine, create_user):
+                                                 create_engine, create_user,
+                                                 create_query_docs,
+                                                 create_query_doc_chunks):
   """Test query generation for chat with filter"""
   mock_get_embeddings.return_value = [True, True, True, True], [0,1,2,3]
   mock_get_vector_store.return_value = FakeVectorStore()
@@ -669,7 +671,9 @@ async def test_query_generate_for_chat_with_filter(mock_get_vector_store,
 @mock.patch("services.query.query_service.vector_store_from_query_engine") 
 async def test_query_generate_for_chat_auth_filter(mock_get_vector_store,
                                                  mock_get_embeddings,
-                                                 create_engine, create_user):
+                                                 create_engine, create_user,
+                                                 create_query_docs,
+                                                 create_query_doc_chunks):
   """Test query generation applies auth filter"""
   mock_get_embeddings.return_value = [True, True, True, True], [0,1,2,3]
   mock_get_vector_store.return_value = FakeVectorStore()
