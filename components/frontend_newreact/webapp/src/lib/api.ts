@@ -32,6 +32,8 @@ interface RunChatParams {
   toolNames?: string[]
   history?: Array<{ [key: string]: string }>
   temperature?: number
+  queryEngineId?: string
+  queryFilter?: Record<string, any>
 }
 
 interface ResumeQueryParams {
@@ -48,6 +50,8 @@ interface ResumeChatParams {
   toolNames?: string[]
   stream?: boolean
   temperature?: number
+  queryEngineId?: string
+  queryFilter?: Record<string, any>
 }
 
 interface ResumeChatApiParams {
@@ -56,6 +60,8 @@ interface ResumeChatApiParams {
   stream: boolean;
   tool_names?: string;
   temperature?: number;
+  query_engine_id?: string;
+  query_filter?: Record<string, any>;
 }
 
 interface JobStatusResponse {
@@ -154,7 +160,9 @@ export const createChat =
     toolNames,
     stream = true,
     history,
-    temperature
+    temperature,
+    queryEngineId,
+    queryFilter
   }: RunChatParams): Promise<Chat | ReadableStream | undefined | null> => {
     const url = `${endpoint}/chat`
     const headers = {
@@ -172,6 +180,8 @@ export const createChat =
     }
     if (history) formData.append('history', JSON.stringify(history))
     if (temperature !== undefined) formData.append('temperature', String(temperature))
+    if (queryEngineId) formData.append('query_engine_id', queryEngineId)
+    if (queryFilter) formData.append('query_filter', JSON.stringify(queryFilter))
 
     if (stream) {
       try {
@@ -202,7 +212,9 @@ export const resumeChat =
     llmType,
     toolNames,
     stream = true,
-    temperature
+    temperature,
+    queryEngineId,
+    queryFilter
   }: ResumeChatParams): Promise<Chat | ReadableStream | undefined | null> => {
     const url = `${endpoint}/chat/${chatId}/generate`
     const headers = { Authorization: `Bearer ${token}` }
@@ -216,6 +228,12 @@ export const resumeChat =
     }
     if (temperature !== undefined) {
       data['temperature'] = temperature
+    }
+    if (queryEngineId) {
+      data['query_engine_id'] = queryEngineId
+    }
+    if (queryFilter) {
+      data['query_filter'] = queryFilter
     }
 
     if (stream) {
