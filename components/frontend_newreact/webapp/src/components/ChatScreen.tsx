@@ -222,9 +222,26 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       }}>
         <Box className="chat-messages">
           {messages.map((message, index) => (
-            <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}>
-              <Avatar className="message-avatar" />
-              <Typography>{message.text}</Typography>
+            <Box 
+              key={index} 
+              className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
+              sx={{
+                backgroundColor: message.isUser ? '#343541' : 'transparent',
+                borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
+                padding: '0.75rem 1rem',
+                marginBottom: '1rem',
+                alignSelf: message.isUser ? 'flex-end' : 'flex-start',
+                maxWidth: '70%',
+              }}
+            >
+              {message.isUser ? (
+                <Typography sx={{ color: '#fff' }}>{message.text}</Typography>
+              ) : (
+                <>
+                  <Avatar className="message-avatar" />
+                  <Typography>{message.text}</Typography>
+                </>
+              )}
             </Box>
           ))}
         </Box>
