@@ -158,22 +158,48 @@ export type Query = {
   user_query_id?: string
 }
 
-export type Chat = {
-  id: string | undefined;  // Allow undefined for new chats
+export interface QueryReference {
+  chunk_id: string;
+  document_url: string;
+  document_text: string;
+  modality: string;
+  chunk_url?: string;
+  page?: number;
+  timestamp_start?: number;
+  timestamp_stop?: number;
+}
+
+export interface ChatHistoryEntry {
+  HumanInput?: string;
+  AIOutput?: string;
+  UploadedFile?: string;
+  FileURL?: string;
+  FileContentsBase64?: string;
+  FileType?: string;
+  Source?: {
+    id: string;
+    name: string;
+    type: string;
+  };
+  QueryReferences?: QueryReference[];
+}
+
+export interface Chat {
+  id?: string;
+  title: string;
+  created_time: string;
+  created_by: string;
+  last_modified_time: string;
+  last_modified_by: string;
   archived_at_timestamp: string | null;
   archived_by: string;
-  created_by: string;
-  created_time: string;
   deleted_at_timestamp: string | null;
   deleted_by: string;
-  last_modified_by: string;
-  last_modified_time: string;
   prompt: string;
-  llm_type: string | null;
-  title: string;
+  llm_type: string;
   user_id: string;
   agent_name: string | null;
-  history: ChatContents[];
+  history: ChatHistoryEntry[];
 }
 
 export const QUERY_ENGINE_TYPES = {
@@ -278,4 +304,34 @@ export interface ChatModel {
         temperature?: number;
         [key: string]: any;
     };
+}
+
+export interface CreateChatRequest {
+  prompt: string;
+  llm_type?: string;
+  stream?: boolean;
+  history?: string;
+  chat_file?: File;
+  chat_file_url?: string;
+  tool_names?: string;
+  query_engine_id?: string;
+  query_filter?: string;
+}
+
+export interface GenerateChatRequest {
+  prompt: string;
+  llm_type?: string;
+  stream?: boolean;
+  chat_file_b64?: string;
+  chat_file_b64_name?: string;
+  chat_file_url?: string;
+  tool_names?: string[];
+  query_engine_id?: string;
+  query_filter?: Record<string, any>;
+}
+
+export interface APIFunctions {
+  // ... existing types ...
+  createChat: (params: CreateChatRequest) => Promise<APIResponse<Chat>>;
+  generateChatResponse: (chatId: string, params: GenerateChatRequest) => Promise<APIResponse<Chat>>;
 }
