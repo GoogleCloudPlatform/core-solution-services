@@ -68,7 +68,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
   }, [currentChat?.id, user]);
 
   // #TODO use selected source for query calls when selected by user
-  const [selectedKnowledgeSource, setSelectedKnowledgeSource] = useState<QueryEngine | null>(null);
+  const [selectedSource, setSelectedSource] = useState<QueryEngine | null>(null);
   const { selectedModel } = useModel();
   const [temperature, setTemperature] = useState(1.0);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -78,7 +78,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
   const handleSelectSource = (source: QueryEngine) => {
     console.log("Selected source:", source);  // Or whatever logic you need
-    setSelectedKnowledgeSource(source); // Update the selected source
+    setSelectedSource(source); // Update the selected source
   };
 
   const handleSubmit = async () => {
@@ -98,24 +98,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     try {
       let response;
 
+      // Common parameters for both create and resume chat
+      const chatParams = {
+        userInput: prompt,
+        llmType: selectedModel.id,
+        stream: false,
+        temperature: temperature,
+        // Include the selected query engine ID if one is selected
+        queryEngineId: selectedSource?.id
+      };
+
       if (chatId) {
         // Continue existing chat
         response = await resumeChat(user.token)({
           chatId,
-          userInput: prompt,
-          llmType: selectedModel.id,
-          stream: false,
-          temperature: temperature
+          ...chatParams
         });
       } else {
         // Create new chat
         response = await createChat(user.token)({
-          userInput: prompt,
-          llmType: selectedModel.id,
+          ...chatParams,
           uploadFile: selectedFile || undefined,
           fileUrl: importUrl,
-          stream: false,
-          temperature: temperature
         });
 
         if (response && 'id' in response) {
