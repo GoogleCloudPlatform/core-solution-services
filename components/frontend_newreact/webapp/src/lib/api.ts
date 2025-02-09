@@ -69,16 +69,16 @@ interface UpdateChatParams {
 }
 
 interface ModelResponse {
-    id: string;
-    name: string;
-    description: string;
-    capabilities: string[];
-    date_added: string;
-    is_multi: boolean;
-    model_params?: {
-        temperature?: number;
-        [key: string]: any;
-    };
+  id: string;
+  name: string;
+  description: string;
+  capabilities: string[];
+  date_added: string;
+  is_multi: boolean;
+  model_params?: {
+    temperature?: number;
+    [key: string]: any;
+  };
 }
 
 const endpoint = envOrFail(
@@ -93,11 +93,11 @@ export const fetchAllChatModels =
       url += `?is_multimodal=${isMultimodal}`
     }
     const headers = { Authorization: `Bearer ${token}` }
-    
+
     try {
       const response = await axios.get(url, { headers });
       const modelDetails: ModelResponse[] = response.data.data;
-      
+
       if (!modelDetails) return undefined;
 
       // Transform backend model details into ChatModel objects
@@ -194,6 +194,41 @@ export const createChat =
 
     return axios.post(url, formData, { headers }).then(path(["data", "data"]))
   }
+
+export const fetchLatestChat = (token: string) => async (): Promise<Chat | null | undefined> => {
+  try {
+    const url = `${endpoint}/chat`; // Use the new endpoint
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const response = await axios.get(url, { headers });
+    const chatList = response.data.data; // Assuming your API returns data in a "data" field
+
+
+    if (!chatList || chatList.length === 0) {
+      return null; // Return null if no chats exist
+    }
+
+
+    // Sort the chat list by last_modified_time in descending order (newest first)
+    const sortedChatList = [...chatList].sort((a, b) => (
+      new Date(b.last_modified_time).getTime() - new Date(a.last_modified_time).getTime()
+    ));
+
+    const latestChatId = sortedChatList[0].id; // Get the ID of the latest chat
+
+
+    if (!latestChatId) {
+      return null; // Return null if the latest chat has no ID (shouldn't happen, but good to check)
+    }
+
+    // Fetch the latest chat details using the ID
+    return fetchChat(token, latestChatId)();
+
+  } catch (error) {
+    console.error("Error fetching latest chat:", error);
+    return null; // Return null if there's an error
+  }
+};
 
 export const resumeChat =
   (token: string) => async ({

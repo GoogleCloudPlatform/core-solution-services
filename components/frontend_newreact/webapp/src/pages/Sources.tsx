@@ -13,7 +13,8 @@ import {  // Import Material-UI components for building the UI
   Select,
   MenuItem,
   Checkbox,
-  FormControl
+  FormControl,
+  Icon
 } from '@mui/material';
 import { styled } from '@mui/material/styles'; // Import styling utilities from Material-UI
 import { QueryEngine, QUERY_ENGINE_TYPES } from '../lib/types'; // Import types for query engines
@@ -26,6 +27,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import SyncIcon from '@mui/icons-material/Sync';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useNavigate } from 'react-router-dom'; // Import navigation hook
+import { ChevronLeft, ChevronRight, FirstPage, LastPage } from '@mui/icons-material';
 
 
 // Styled components for table cells and rows using Material-UI's styling solution
@@ -124,16 +126,20 @@ const Sources = () => {
     }
   };
 
+  const onClickFirstPage = () => { }
+  const onClickPreviousPage = () => { }
+  const onClickNextPage = () => { }
+  const onClickLastPage = () => { }
 
   return ( // Main JSX return for the component
-    <Box sx={{ 
-      p: 3, 
+    <Box sx={{
+      p: 3,
       height: 'calc(100vh - 64px)', // Subtract header height
       backgroundColor: '#1a1a1a',
       marginTop: '64px', // Add margin to account for header
       width: '100%',
       overflow: 'auto'
-    }}> 
+    }}>
       {/* Title and description */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
@@ -212,6 +218,18 @@ const Sources = () => {
             <MenuItem value={10}>10</MenuItem>
           </StyledSelect>
           <Typography sx={{ color: 'white' }}>1-3 of 3</Typography>
+          <IconButton sx={{ color: 'white' }} onClick={onClickFirstPage}>
+            <FirstPage />
+          </IconButton>
+          <IconButton sx={{ color: 'white' }} onClick={onClickPreviousPage}>
+            <ChevronLeft />
+          </IconButton>
+          <IconButton sx={{ color: 'white' }} onClick={onClickNextPage}>
+            <ChevronRight />
+          </IconButton>
+          <IconButton sx={{ color: 'white' }} onClick={onClickLastPage}>
+            <LastPage />
+          </IconButton>
         </Box>
       </Box>
 

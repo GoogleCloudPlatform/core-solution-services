@@ -37,7 +37,7 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: Welcom
   ];
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
@@ -47,10 +47,10 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: Welcom
       alignItems: 'center',
       px: 3,
     }}>
-      <Typography 
-        variant="h4" 
-        className="greeting" 
-        sx={{ 
+      <Typography
+        variant="h4"
+        className="greeting"
+        sx={{
           textAlign: 'center',
           fontSize: '32px',
           mb: 2
@@ -65,11 +65,11 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: Welcom
         width: '100%',
       }}>
         {features.map((feature, index) => (
-          <Paper 
-            key={index} 
+          <Paper
+            key={index}
             className="feature-card"
             onClick={feature.onClick}
-            sx={{ 
+            sx={{
               cursor: 'pointer',
               backgroundColor: '#1E1E1E !important',
               border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -84,19 +84,19 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: Welcom
                 {feature.title}
               </Typography>
             </Box>
-            <Typography 
-              variant="body2" 
+            <Typography
+              variant="body2"
               className="subtitle"
-              sx={{ 
+              sx={{
                 color: 'rgba(255, 255, 255, 0.7)',
                 mt: 1
               }}
             >
               {feature.subtitle}
             </Typography>
-            <Box 
-              sx={{ 
-                mt: 'auto', 
+            <Box
+              sx={{
+                mt: 'auto',
                 pt: 2,
                 display: 'flex',
                 justifyContent: 'flex-start'

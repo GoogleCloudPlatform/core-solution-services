@@ -41,7 +41,6 @@ const Title = styled(Box)({
 });
 
 export function CustomHeader({ sidebarWidth, panelWidth, title, rightContent }: HeaderProps) {
-    // Mock logout function
 
     return (
         <HeaderContainer sidebarWidth={sidebarWidth} panelWidth={panelWidth}>

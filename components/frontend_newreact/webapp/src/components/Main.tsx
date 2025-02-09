@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Box, styled } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { Chat } from '../lib/types';
+import { Chat, Query } from '../lib/types';
 import { useSidebarStore } from '../lib/sidebarStore';
 import ChatScreen from './ChatScreen';
 import Sources from '../pages/Sources';
 import { CustomHeader } from "./Header";
 import { WelcomeFeatures } from './WelcomeFeatures';
 import { Sidebar } from './Sidebar';
+import { fetchLatestChat, resumeChat } from '@/lib/api';
 
 const MainContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -58,6 +59,7 @@ const Main = styled(Box, {
 
 export const MainApp = () => {
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
+  const [currentQuery, setCurrentQuery] = useState<Query | undefined>();
   const [showChat, setShowChat] = useState(true);
   const [showSources, setShowSources] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
@@ -74,6 +76,13 @@ export const MainApp = () => {
 
   const handleSelectChat = (chat: Chat) => {
     setCurrentChat(chat);
+    setShowChat(true);
+    setShowWelcome(false);
+    setShowSources(false);
+  };
+
+  const handleSelectQuery = (query: Query) => {
+    setCurrentQuery(query);
     setShowChat(true);
     setShowWelcome(false);
     setShowSources(false);
@@ -103,7 +112,7 @@ export const MainApp = () => {
       agent_name: null,
       history: []
     };
-    
+
     setCurrentChat(newChat);
     setShowChat(true);
     setShowWelcome(false);
@@ -116,6 +125,8 @@ export const MainApp = () => {
         setShowChat={setShowChat}
         onSelectChat={handleSelectChat}
         selectedChatId={currentChat?.id}
+        onSelectQuery={handleSelectQuery}
+        selectedQueryId={currentQuery?.id}
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
         onNewChat={handleNewChat}
@@ -132,17 +143,39 @@ export const MainApp = () => {
       )}
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
         {showWelcome && (
-          <Box sx={{ 
-            display: 'flex', 
+          <Box sx={{
+            display: 'flex',
             flexDirection: 'column',
             width: '100%',
             height: 'calc(100vh - 64px)',
             justifyContent: 'center',
             alignItems: 'center'
           }}>
-            <WelcomeFeatures 
+            <WelcomeFeatures
               username={username}
-              onChatStart={() => setShowChat(true)}
+              onChatStart={() => {
+                setShowChat(true)
+
+                if (!user?.token) {
+                  return;
+                }
+
+                fetchLatestChat(user.token)().then(chat => {
+                  if (chat) {
+                    // console.log(chat)
+                    setCurrentChat(chat);
+                    handleChatStart();
+                  }
+                })
+
+                // resumeChat(user.token)({
+                //   chatId,
+                //   userInput: prompt,
+                //   llmType: selectedModel.id,
+                //   stream: false,
+                //   temperature: temperature
+                // });
+              }}
               onSourcesView={() => {
                 setShowSources(true);
                 setShowWelcome(false);
@@ -150,7 +183,7 @@ export const MainApp = () => {
               }}
             />
           </Box>
-        )}         
+        )}
         {showChat && (
           <ChatScreen
             currentChat={currentChat}

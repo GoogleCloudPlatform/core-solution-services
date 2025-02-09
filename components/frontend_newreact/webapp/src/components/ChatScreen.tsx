@@ -81,6 +81,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     setSelectedKnowledgeSource(source); // Update the selected source
   };
 
+
+
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
 
@@ -192,7 +194,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           width: '100%',
           borderBottom: '1px solid #2f2f2f',
         }}>
-          <Box sx={{ 
+          <Box sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 2,
@@ -206,7 +208,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           </Box>
         </Box>
       )}
-      
+
       {/* Chat content container with width constraint */}
       <Box sx={{
         width: '100%',
@@ -224,7 +226,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             </Box>
           ))}
         </Box>
-        
+
         <Box className="chat-input-container">
           <Paper className="chat-input">
             {(selectedFile || importUrl) && (
