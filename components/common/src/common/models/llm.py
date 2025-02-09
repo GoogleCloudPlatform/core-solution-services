@@ -14,9 +14,13 @@
 """
 Models for LLM generation and chat
 """
-from typing import List
+from typing import List, Optional, TYPE_CHECKING
 from fireo.fields import TextField, ListField, IDField
 from common.models import BaseModel
+
+# Use TYPE_CHECKING to avoid circular imports
+if TYPE_CHECKING:
+  from common.models.llm_query import QueryEngine, QueryResult, QueryReference
 
 # constants used as tags for chat history
 CHAT_HUMAN = "HumanInput"
@@ -80,9 +84,9 @@ class UserChat(BaseModel):
                      prompt: str=None,
                      response: str=None,
                      custom_entry: dict=None,
-                     query_engine: QueryEngine=None,
-                     query_result: QueryResult=None,
-                     query_references: List[QueryReference]=None):
+                     query_engine: Optional['QueryEngine']=None,
+                     query_result: Optional['QueryResult']=None,
+                     query_references: Optional[List['QueryReference']]=None):
     """ Update history with query and response """
 
     if not self.history:

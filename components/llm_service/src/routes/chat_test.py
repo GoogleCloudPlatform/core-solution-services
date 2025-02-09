@@ -26,8 +26,8 @@ from fastapi.testclient import TestClient
 from unittest import mock
 from testing.test_config import API_URL, TESTING_FOLDER_PATH
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
-                                     USER_EXAMPLE)
-from common.models import UserChat, User
+                                     USER_EXAMPLE, QUERY_ENGINE_EXAMPLE)
+from common.models import UserChat, User, QueryEngine, QueryReference
 from common.models.llm import CHAT_HUMAN, CHAT_AI, CHAT_FILE, CHAT_FILE_BASE64
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
@@ -101,6 +101,15 @@ def create_chat(client_with_emulator):
   chat_dict = CHAT_EXAMPLE
   chat = UserChat.from_dict(chat_dict)
   chat.save()
+
+
+@pytest.fixture
+def create_engine(firestore_emulator, clean_firestore):
+  """Create a test query engine"""
+  query_engine_dict = QUERY_ENGINE_EXAMPLE
+  q_engine = QueryEngine.from_dict(query_engine_dict)
+  q_engine.save()
+  return q_engine
 
 
 def test_get_chats(create_user, create_chat, client_with_emulator):
@@ -863,9 +872,10 @@ async def test_create_chat_with_query_engine(create_user, create_engine, client_
   """Test creating a new chat with query engine"""
   url = f"{api_url}"
 
-  # Test parameters
+  # Test parameters as form data
   test_params = {
-    **FAKE_GENERATE_PARAMS,
+    "prompt": FAKE_GENERATE_PARAMS["prompt"],
+    "llm_type": FAKE_GENERATE_PARAMS["llm_type"],
     "query_engine_id": create_engine.id,
     "query_filter": json.dumps({"key": "value"})
   }
@@ -914,9 +924,10 @@ async def test_chat_generate_with_query_engine(create_user, create_chat, create_
   chatid = CHAT_EXAMPLE["id"]
   url = f"{api_url}/{chatid}/generate"
 
-  # Test parameters
+  # Test parameters as JSON
   test_params = {
-    **FAKE_GENERATE_PARAMS,
+    "prompt": FAKE_GENERATE_PARAMS["prompt"],
+    "llm_type": FAKE_GENERATE_PARAMS["llm_type"],
     "query_engine_id": create_engine.id,
     "query_filter": {"key": "value"}
   }
