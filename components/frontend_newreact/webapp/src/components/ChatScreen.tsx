@@ -232,13 +232,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                 marginBottom: '1rem',
                 alignSelf: message.isUser ? 'flex-end' : 'flex-start',
                 maxWidth: '70%',
+                display: 'flex',
+                flexDirection: message.isUser ? 'row-reverse' : 'row',
+                alignItems: 'flex-start',
+                gap: '0.5rem',
               }}
             >
               {message.isUser ? (
-                <Typography sx={{ color: '#fff' }}>{message.text}</Typography>
+                <Typography sx={{ color: '#fff', textAlign: 'right' }}>{message.text}</Typography>
               ) : (
                 <>
-                  <Avatar className="message-avatar" />
+                  <Avatar 
+                    src="/assets/images/gemini-icon.png" 
+                    className="message-avatar"
+                    sx={{ backgroundColor: 'transparent' }}
+                  />                    
                   <Typography>{message.text}</Typography>
                 </>
               )}
