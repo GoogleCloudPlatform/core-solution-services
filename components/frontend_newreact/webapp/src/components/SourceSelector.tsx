@@ -8,9 +8,10 @@ import { QueryEngine } from '../lib/types';  // Import your types
 interface SourceSelectorProps {
     className?: string;
     onSelectSource: (source: QueryEngine) => void; // Add onSelectSource prop
+    disabled?: boolean;
 }
 
-export function SourceSelector({ className, onSelectSource }: SourceSelectorProps) {
+export function SourceSelector({ className, onSelectSource, disabled = false }: SourceSelectorProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedSource, setSelectedSource] = useState<QueryEngine | null>(null);  // Store the selected source object
     const open = Boolean(anchorEl);
@@ -20,7 +21,9 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
     const [error, setError] = useState<string | null>(null); // Error state
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
+        if (!disabled) {
+            setAnchorEl(event.currentTarget);
+        }
     };
 
     const handleClose = () => {
@@ -33,18 +36,19 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
         handleClose();
     };
 
-
     useEffect(() => {  // Fetch sources when component mounts and user is logged in
         const loadSources = async () => {
             if (!user?.token) return; // Do nothing if no user or token
 
             try {
+                setLoading(true);
+                setError(null);
                 const fetchedSources = await fetchAllEngines(user.token)();
                 if (fetchedSources) {
                     setSources(fetchedSources);
                 }
             } catch (err) {
-                setError("Error fetching sources");
+                setError("Failed to load sources");
                 console.error(err);
             } finally {
                 setLoading(false);
@@ -54,14 +58,12 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
         loadSources();
     }, [user]);
 
-
-
-
     return (
         <Box className={className}>
             <Button
                 onClick={handleClick}
                 endIcon={<ChevronDown className="h-4 w-4" />}
+                disabled={disabled || loading}
                 sx={{
                     color: '#fff',
                     textTransform: 'none',
@@ -71,11 +73,19 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
                     justifyContent: 'space-between',
                     backgroundColor: 'rgba(255, 255, 255, 0.1)',
                     '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                        backgroundColor: disabled ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.15)',
                     },
+                    '&.Mui-disabled': {
+                        color: 'rgba(255, 255, 255, 0.5)',
+                    }
                 }}
             >
-                {selectedSource ? selectedSource.name : "Select Source"}
+                {loading ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CircularProgress size={16} sx={{ color: 'inherit' }} />
+                        <span>Loading sources...</span>
+                    </Box>
+                ) : selectedSource ? selectedSource.name : "Select Source"}
             </Button>
             <Menu
                 anchorEl={anchorEl}
@@ -96,29 +106,31 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
                 }}
             >
                 {/* Selected Source with Checkmark */}
-                <MenuItem
-                    sx={{
-                        backgroundColor: '#2A2A2A',
-                        borderRadius: '4px',
-                        py: 1,
-                        px: 1.5,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 1,
-                        '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-                    }}
-                >
-                    <Typography
+                {selectedSource && (
+                    <MenuItem
                         sx={{
-                            color: '#fff',
-                            fontSize: '0.875rem',
+                            backgroundColor: '#2A2A2A',
+                            borderRadius: '4px',
+                            py: 1,
+                            px: 1.5,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mb: 1,
+                            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                         }}
                     >
-                        {selectedSource?.name || "Select Source"}
-                    </Typography>
-                    {selectedSource && <Check className="h-4 w-4 text-white" />}
-                </MenuItem>
+                        <Typography
+                            sx={{
+                                color: '#fff',
+                                fontSize: '0.875rem',
+                            }}
+                        >
+                            {selectedSource.name}
+                        </Typography>
+                        <Check className="h-4 w-4 text-white" />
+                    </MenuItem>
+                )}
 
                 {/* Sources Title with Search Icon */}
                 <MenuItem
@@ -144,56 +156,66 @@ export function SourceSelector({ className, onSelectSource }: SourceSelectorProp
                     </Typography>
                 </MenuItem>
 
-                {/* Scrollable Sources List */}
-                <Box sx={{ maxHeight: '300px', overflowY: 'auto' }}>
-                    {loading ? (
-                        <MenuItem sx={{ 
+                {/* Error State */}
+                {error && (
+                    <MenuItem
+                        sx={{
+                            color: '#ff6b6b',
+                            py: 1,
+                            px: 1.5,
+                            borderRadius: '4px',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        {error}
+                    </MenuItem>
+                )}
+
+                {/* Loading State */}
+                {loading && (
+                    <MenuItem
+                        sx={{
                             justifyContent: 'center',
                             py: 1,
                             px: 1.5,
-                            borderRadius: '4px'
-                        }}>
-                            <CircularProgress size={20} sx={{ color: '#fff' }} />
-                        </MenuItem>
-                    ) : error ? (
-                        <MenuItem sx={{ 
+                            borderRadius: '4px',
+                        }}
+                    >
+                        <CircularProgress size={20} sx={{ color: '#fff' }} />
+                    </MenuItem>
+                )}
+
+                {/* Sources List */}
+                {!loading && !error && sources.length === 0 && (
+                    <MenuItem
+                        sx={{
                             color: '#fff',
                             py: 1,
                             px: 1.5,
-                            borderRadius: '4px'
-                        }}>
-                            Error loading sources
-                        </MenuItem>
-                    ) : sources.length === 0 ? (
-                        <MenuItem sx={{ 
+                            borderRadius: '4px',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        No sources available
+                    </MenuItem>
+                )}
+
+                {!loading && !error && sources.map((source) => (
+                    <MenuItem
+                        key={source.id}
+                        onClick={() => handleSourceSelect(source)}
+                        sx={{
                             color: '#fff',
+                            fontSize: '0.875rem',
                             py: 1,
                             px: 1.5,
-                            borderRadius: '4px'
-                        }}>
-                            No sources found
-                        </MenuItem>
-                    ) : (
-                        sources.map((source) => (
-                            <MenuItem
-                                key={source.id}
-                                onClick={() => handleSourceSelect(source)}
-                                sx={{
-                                    color: '#fff',
-                                    fontSize: '0.875rem',
-                                    py: 1,
-                                    px: 1.5,
-                                    borderRadius: '4px',
-                                    '&:hover': { 
-                                        backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                                    },
-                                }}
-                            >
-                                {source.name}
-                            </MenuItem>
-                        ))
-                    )}
-                </Box>
+                            borderRadius: '4px',
+                            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+                        }}
+                    >
+                        {source.name}
+                    </MenuItem>
+                ))}
             </Menu>
         </Box>
     );
