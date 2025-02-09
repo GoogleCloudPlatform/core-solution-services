@@ -257,9 +257,7 @@ async def query_generate_for_chat(
   authz_filter = create_authz_filter(user_data)
   Logger.info(f"query_generate_for_chat authz_filter = {authz_filter}")
 
-  if query_filter is not None:
-    query_filter = json.loads(query_filter)
-  else:
+  if query_filter is None:
     query_filter = {}
 
   if authz_filter:
