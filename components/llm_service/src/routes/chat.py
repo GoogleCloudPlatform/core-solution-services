@@ -39,7 +39,7 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGetDetailsResponse)
 from services.llm_generate import llm_chat, generate_chat_summary
 from services.agents.agent_tools import chat_tools, run_chat_tools
-from services.query.query_service import query_generate, retrieve_references
+from services.query.query_service import query_generate_for_chat, retrieve_references
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
 
 Logger = Logger.get_logger(__file__)
