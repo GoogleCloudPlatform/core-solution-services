@@ -12,6 +12,10 @@ import { Chat } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
 import UploadModal from './UploadModal';
 import '../styles/ChatScreen.css';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import type { CodeProps } from 'react-markdown/lib/ast-to-react';
 
 interface ChatMessage {
   text: string;
@@ -257,7 +261,64 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                     className="message-avatar"
                     sx={{ backgroundColor: 'transparent' }}
                   />                    
-                  <Typography>{message.text}</Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <ReactMarkdown
+                      components={{
+                        code: ({ className, children, ...props }: CodeProps) => {
+                          const match = /language-(\w+)/.exec(className || '');
+                          const language = match ? match[1] : '';
+                          const isInline = !match;
+                          
+                          return isInline ? (
+                            <code className={className} {...props}>
+                              {children}
+                            </code>
+                          ) : (
+                            <SyntaxHighlighter
+                              {...props}
+                              style={oneDark as any} // Type assertion to fix style error
+                              language={language}
+                              PreTag="div"
+                            >
+                              {String(children).replace(/\n$/, '')}
+                            </SyntaxHighlighter>
+                          );
+                        },
+                        p: ({children}) => (
+                          <Typography component="p" sx={{ mb: 1 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        h1: ({children}) => (
+                          <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        h2: ({children}) => (
+                          <Typography variant="h6" sx={{ mb: 2, mt: 2 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        ul: ({children}) => (
+                          <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                            {children}
+                          </Box>
+                        ),
+                        ol: ({children}) => (
+                          <Box component="ol" sx={{ pl: 2, mb: 2 }}>
+                            {children}
+                          </Box>
+                        ),
+                        li: ({children}) => (
+                          <Box component="li" sx={{ mb: 1 }}>
+                            {children}
+                          </Box>
+                        ),
+                      }}
+                    >
+                      {message.text}
+                    </ReactMarkdown>
+                  </Box>
                 </>
               )}
             </Box>
