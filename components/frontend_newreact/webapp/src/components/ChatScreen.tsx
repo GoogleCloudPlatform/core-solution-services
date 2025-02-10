@@ -12,6 +12,10 @@ import { Chat } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
 import UploadModal from './UploadModal';
 import '../styles/ChatScreen.css';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 
 interface ChatMessage {
   text: string;
@@ -61,6 +65,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         } catch (error) {
           console.error('Error loading chat:', error);
         }
+      } else {
+        // Reset messages when there's no current chat or it's a new chat
+        setMessages([]);
+        setChatId(undefined);
       }
     };
 
@@ -68,7 +76,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
   }, [currentChat?.id, user]);
 
   // #TODO use selected source for query calls when selected by user
-  const [selectedKnowledgeSource, setSelectedKnowledgeSource] = useState<QueryEngine | null>(null);
+  const [selectedSource, setSelectedSource] = useState<QueryEngine | null>(null);
   const { selectedModel } = useModel();
   const [temperature, setTemperature] = useState(1.0);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -78,7 +86,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
   const handleSelectSource = (source: QueryEngine) => {
     console.log("Selected source:", source);  // Or whatever logic you need
-    setSelectedKnowledgeSource(source); // Update the selected source
+    setSelectedSource(source); // Update the selected source
   };
 
 
@@ -100,24 +108,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     try {
       let response;
 
+      // Common parameters for both create and resume chat
+      const chatParams = {
+        userInput: prompt,
+        llmType: selectedModel.id,
+        stream: false,
+        temperature: temperature,
+        // Include the selected query engine ID if one is selected
+        queryEngineId: selectedSource?.id
+      };
+
       if (chatId) {
         // Continue existing chat
         response = await resumeChat(user.token)({
           chatId,
-          userInput: prompt,
-          llmType: selectedModel.id,
-          stream: false,
-          temperature: temperature
+          ...chatParams
         });
       } else {
         // Create new chat
         response = await createChat(user.token)({
-          userInput: prompt,
-          llmType: selectedModel.id,
+          ...chatParams,
           uploadFile: selectedFile || undefined,
           fileUrl: importUrl,
-          stream: false,
-          temperature: temperature
         });
 
         if (response && 'id' in response) {
@@ -193,6 +205,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           p: 2,
           width: '100%',
           borderBottom: '1px solid #2f2f2f',
+          flexShrink: 0,
         }}>
           <Box sx={{
             display: 'flex',
@@ -209,7 +222,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         </Box>
       )}
 
-      {/* Chat content container with width constraint */}
       <Box sx={{
         width: '100%',
         maxWidth: '800px',
@@ -217,17 +229,112 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        flexGrow: 1,
+        minHeight: 0,
       }}>
-        <Box className="chat-messages">
+        <Box className="chat-messages" sx={{
+          flexGrow: 1,
+          overflowY: 'auto',
+          minHeight: 0,
+        }}>
           {messages.map((message, index) => (
-            <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}>
-              <Avatar className="message-avatar" />
-              <Typography>{message.text}</Typography>
+            <Box 
+              key={index} 
+              className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
+              sx={{
+                backgroundColor: message.isUser ? '#343541' : 'transparent',
+                borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
+                padding: '0.75rem 1rem',
+                marginBottom: '1rem',
+                alignSelf: message.isUser ? 'flex-end' : 'flex-start',
+                maxWidth: '70%',
+                display: 'flex',
+                flexDirection: message.isUser ? 'row-reverse' : 'row',
+                alignItems: 'flex-start',
+                gap: '0.5rem',
+              }}
+            >
+              {message.isUser ? (
+                <Typography sx={{ color: '#fff', textAlign: 'right' }}>{message.text}</Typography>
+              ) : (
+                <>
+                  <Avatar 
+                    src="/assets/images/gemini-icon.png" 
+                    className="message-avatar"
+                    sx={{ backgroundColor: 'transparent' }}
+                  />                    
+                  <Box sx={{ flex: 1 }}>
+                    <ReactMarkdown
+                      components={{
+                        code({ node, className, children }) {
+                          const match = /language-(\w+)/.exec(className || '');
+                          const language = match ? match[1] : '';
+                          
+                          if (!match) {
+                            return (
+                              <code className={className}>
+                                {children}
+                              </code>
+                            );
+                          }
+
+                          return (
+                            <SyntaxHighlighter
+                              style={oneDark}
+                              language={language}
+                              PreTag="div"
+                            >
+                              {String(children).replace(/\n$/, '')}
+                            </SyntaxHighlighter>
+                          );
+                        },
+                        p: ({children}) => (
+                          <Typography component="p" sx={{ mb: 1 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        h1: ({children}) => (
+                          <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        h2: ({children}) => (
+                          <Typography variant="h6" sx={{ mb: 2, mt: 2 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        ul: ({children}) => (
+                          <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                            {children}
+                          </Box>
+                        ),
+                        ol: ({children}) => (
+                          <Box component="ol" sx={{ pl: 2, mb: 2 }}>
+                            {children}
+                          </Box>
+                        ),
+                        li: ({children}) => (
+                          <Box component="li" sx={{ mb: 1 }}>
+                            {children}
+                          </Box>
+                        ),
+                      }}
+                    >
+                      {message.text}
+                    </ReactMarkdown>
+                  </Box>
+                </>
+              )}
             </Box>
           ))}
         </Box>
-
-        <Box className="chat-input-container">
+        
+        <Box className="chat-input-container" sx={{
+          p: 2,
+          flexShrink: 0,
+          position: 'sticky',
+          bottom: 0
+        }}>
           <Paper className="chat-input">
             {(selectedFile || importUrl) && (
               <Box className="file-chip-container">

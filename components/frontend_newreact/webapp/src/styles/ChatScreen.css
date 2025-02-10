@@ -160,6 +160,7 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
+  overflow: hidden;
 }
 
 .welcome-messages {
@@ -171,11 +172,20 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+  min-height: 0;
 }
 
 .chat-input-container {
   padding: 16px;
-  margin-top: auto;
+  background-color: #1a1a1a;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* Add a padding bottom to the last message to ensure space above input */
+.chat-messages .message:last-child {
+  margin-bottom: 16px;
 }
 
 /* Update existing styles */
@@ -183,4 +193,59 @@
   padding: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background-color: rgba(32, 33, 35, 1);
+}
+
+/* Add these styles for markdown content */
+.chat-messages pre {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: #282c34;
+  overflow-x: auto;
+}
+
+.chat-messages code {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+  border-radius: 0.3em;
+  background-color: rgba(40, 44, 52, 0.5);
+}
+
+.chat-messages pre code {
+  padding: 0;
+  background-color: transparent;
+}
+
+.chat-messages a {
+  color: #93B0FF;
+  text-decoration: none;
+}
+
+.chat-messages a:hover {
+  text-decoration: underline;
+}
+
+.chat-messages blockquote {
+  border-left: 4px solid #4a4a4a;
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chat-messages table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  width: 100%;
+}
+
+.chat-messages th,
+.chat-messages td {
+  border: 1px solid #4a4a4a;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.chat-messages th {
+  background-color: #343541;
 } 

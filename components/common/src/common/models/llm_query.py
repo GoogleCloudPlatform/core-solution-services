@@ -214,6 +214,43 @@ class QueryReference(BaseModel):
   linked_ids = ListField(
     IDField(), required=False, default=None)  # All modalities
 
+  @classmethod
+  def reference_list_str(cls, references: List['QueryReference']) -> str:
+    """
+    Convert a list of references into a readable string format.
+    
+    Args:
+        references: List of QueryReference objects
+        
+    Returns:
+        String containing formatted reference information
+    """
+    if not references:
+      return "No references found."
+      
+    ref_strings = []
+    for ref in references:
+      # Start with document URL
+      ref_str = f"\n- From {ref.document_url}"
+      
+      # Add page number if available
+      if ref.page is not None:
+        ref_str += f" (page {ref.page})"
+        
+      # Add timestamps for video/audio
+      if ref.timestamp_start is not None:
+        ref_str += f" (timestamp {ref.timestamp_start}-{ref.timestamp_stop})"
+        
+      # Add the full text content if available
+      if ref.document_text:
+        # Clean text but keep full content
+        text = ref.document_text.strip().replace("\n", " ")
+        ref_str += f": {text}"
+        
+      ref_strings.append(ref_str)
+      
+    return "\n".join(ref_strings)
+
   def __repr__(self) -> str:
     """
     Log-friendly string representation of a QueryReference

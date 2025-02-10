@@ -26,15 +26,19 @@ from fastapi.testclient import TestClient
 from unittest import mock
 from testing.test_config import API_URL, TESTING_FOLDER_PATH
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
-                                     USER_EXAMPLE)
-from common.models import UserChat, User
-from common.models.llm import CHAT_HUMAN, CHAT_AI, CHAT_FILE, CHAT_FILE_BASE64
+                                     USER_EXAMPLE, QUERY_ENGINE_EXAMPLE)
+from common.models import UserChat, User, QueryEngine, QueryReference
+from common.models.llm import (CHAT_HUMAN, CHAT_AI, CHAT_FILE, CHAT_FILE_BASE64,
+                             CHAT_SOURCE, CHAT_QUERY_RESULT,
+                             CHAT_QUERY_REFERENCES)
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
 from common.testing.firestore_emulator import (
   firestore_emulator, clean_firestore
 )
+from services.query.query_service import query_generate_for_chat
+from services.query.data_source import DataSourceFile
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
@@ -99,6 +103,15 @@ def create_chat(client_with_emulator):
   chat_dict = CHAT_EXAMPLE
   chat = UserChat.from_dict(chat_dict)
   chat.save()
+
+
+@pytest.fixture
+def create_engine(firestore_emulator, clean_firestore):
+  """Create a test query engine"""
+  query_engine_dict = QUERY_ENGINE_EXAMPLE
+  q_engine = QueryEngine.from_dict(query_engine_dict)
+  q_engine.save()
+  return q_engine
 
 
 def test_get_chats(create_user, create_chat, client_with_emulator):
@@ -855,3 +868,108 @@ def test_chat_llm_multimodal_filter(client_with_emulator):
     json_response = resp.json()
     assert json_response["success"] is True
     assert all(model["is_multi"] for model in json_response["data"])
+
+@pytest.mark.asyncio
+async def test_create_chat_with_query_engine(create_user,
+                                             create_engine,
+                                             client_with_emulator):
+  """Test creating a new chat with query engine"""
+  url = f"{api_url}"
+
+  # Test parameters as form data
+  test_params = {
+    "prompt": FAKE_GENERATE_PARAMS["prompt"],
+    "llm_type": FAKE_GENERATE_PARAMS["llm_type"],
+    "query_engine_id": create_engine.id,
+    "query_filter": json.dumps({"key": "value"})
+  }
+
+  # Mock query results
+  mock_references = [
+    QueryReference(
+      query_engine_id=create_engine.id,
+      query_engine=create_engine.name,
+      document_id="doc1",
+      document_url="http://test.com/doc1",
+      document_text="Test reference text",
+      modality="text",
+      chunk_id="chunk1"
+    )
+  ]
+  mock_content_files = [
+    DataSourceFile(
+      gcs_path="gs://bucket/image1.jpg",
+      mime_type="image/jpeg"
+    )
+  ]
+
+  with mock.patch("routes.chat.query_generate_for_chat",
+                 return_value=(mock_references, mock_content_files)), \
+       mock.patch("routes.chat.llm_chat",
+                 return_value=FAKE_GENERATE_RESPONSE), \
+       mock.patch("routes.chat.generate_chat_summary",
+                 return_value="Test Summary"):
+    resp = client_with_emulator.post(url, data=test_params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  chat_data = json_response.get("data")
+
+  # Verify chat history includes query engine and references
+  history = chat_data["history"]
+  assert any(CHAT_SOURCE in entry for entry in history), \
+    "Chat history includes source"
+  assert any(CHAT_QUERY_REFERENCES in entry for entry in history), \
+    "Chat history includes references"
+
+@pytest.mark.asyncio
+async def test_chat_generate_with_query_engine(create_user, create_chat,
+                                               create_engine,
+                                               client_with_emulator):
+  """Test generating chat response with query engine"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate"
+
+  # Test parameters as JSON
+  test_params = {
+    "prompt": FAKE_GENERATE_PARAMS["prompt"],
+    "llm_type": FAKE_GENERATE_PARAMS["llm_type"],
+    "query_engine_id": create_engine.id,
+    "query_filter": {"key": "value"}
+  }
+
+  # Mock query results
+  mock_references = [
+    QueryReference(
+      query_engine_id=create_engine.id,
+      query_engine=create_engine.name,
+      document_id="doc1",
+      document_url="http://test.com/doc1",
+      document_text="Test reference text",
+      modality="text",
+      chunk_id="chunk1"
+    )
+  ]
+  mock_content_files = [
+    DataSourceFile(
+      gcs_path="gs://bucket/image1.jpg",
+      mime_type="image/jpeg"
+    )
+  ]
+
+  with mock.patch("routes.chat.query_generate_for_chat",
+                 return_value=(mock_references, mock_content_files)), \
+       mock.patch("routes.chat.llm_chat",
+                 return_value=FAKE_GENERATE_RESPONSE):
+    resp = client_with_emulator.post(url, json=test_params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  chat_data = json_response.get("data")
+
+  # Verify chat history includes query engine and references
+  history = chat_data["history"]
+  assert any(CHAT_SOURCE in entry for entry in history), \
+    "Chat history includes source"
+  assert any(CHAT_QUERY_REFERENCES in entry for entry in history), \
+    "Chat history includes references"
