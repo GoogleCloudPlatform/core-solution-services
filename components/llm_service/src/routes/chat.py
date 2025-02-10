@@ -403,7 +403,8 @@ async def create_chat(prompt: str = Form(None),
     if query_engine_id:
       query_engine = QueryEngine.find_by_id(query_engine_id)
       if not query_engine:
-        raise ResourceNotFoundException(f"Query engine {query_engine_id} not found")
+        raise ResourceNotFoundException(
+            f"Query engine {query_engine_id} not found")
 
     # Process chat file(s): upload to GCS and determine mime type
     chat_file_bytes = None
