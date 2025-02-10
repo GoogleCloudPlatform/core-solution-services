@@ -61,6 +61,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         } catch (error) {
           console.error('Error loading chat:', error);
         }
+      } else {
+        // Reset messages when there's no current chat or it's a new chat
+        setMessages([]);
+        setChatId(undefined);
       }
     };
 
