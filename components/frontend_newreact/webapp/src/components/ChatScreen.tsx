@@ -15,7 +15,7 @@ import '../styles/ChatScreen.css';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import type { CodeProps } from 'react-markdown/lib/ast-to-react';
+import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 
 interface ChatMessage {
   text: string;
@@ -264,19 +264,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                   <Box sx={{ flex: 1 }}>
                     <ReactMarkdown
                       components={{
-                        code: ({ className, children, ...props }: CodeProps) => {
+                        code({ node, className, children }) {
                           const match = /language-(\w+)/.exec(className || '');
                           const language = match ? match[1] : '';
-                          const isInline = !match;
                           
-                          return isInline ? (
-                            <code className={className} {...props}>
-                              {children}
-                            </code>
-                          ) : (
+                          if (!match) {
+                            return (
+                              <code className={className}>
+                                {children}
+                              </code>
+                            );
+                          }
+
+                          return (
                             <SyntaxHighlighter
-                              {...props}
-                              style={oneDark as any} // Type assertion to fix style error
+                              style={oneDark}
                               language={language}
                               PreTag="div"
                             >
