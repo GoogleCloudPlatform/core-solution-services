@@ -160,6 +160,7 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
+  overflow: hidden;
 }
 
 .welcome-messages {
@@ -171,11 +172,20 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+  min-height: 0;
 }
 
 .chat-input-container {
   padding: 16px;
-  margin-top: auto;
+  background-color: #1a1a1a;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* Add a padding bottom to the last message to ensure space above input */
+.chat-messages .message:last-child {
+  margin-bottom: 16px;
 }
 
 /* Update existing styles */

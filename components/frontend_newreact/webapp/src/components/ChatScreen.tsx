@@ -199,6 +199,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           p: 2,
           width: '100%',
           borderBottom: '1px solid #2f2f2f',
+          flexShrink: 0,
         }}>
           <Box sx={{ 
             display: 'flex',
@@ -215,7 +216,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         </Box>
       )}
       
-      {/* Chat content container with width constraint */}
       <Box sx={{
         width: '100%',
         maxWidth: '800px',
@@ -223,8 +223,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        flexGrow: 1,
+        minHeight: 0,
       }}>
-        <Box className="chat-messages">
+        <Box className="chat-messages" sx={{
+          flexGrow: 1,
+          overflowY: 'auto',
+          minHeight: 0,
+        }}>
           {messages.map((message, index) => (
             <Box 
               key={index} 
@@ -258,7 +264,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           ))}
         </Box>
         
-        <Box className="chat-input-container">
+        <Box className="chat-input-container" sx={{
+          p: 2,
+          flexShrink: 0,
+          position: 'sticky',
+          bottom: 0
+        }}>
           <Paper className="chat-input">
             {(selectedFile || importUrl) && (
               <Box className="file-chip-container">
