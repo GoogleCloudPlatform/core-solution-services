@@ -215,7 +215,7 @@ class QueryReference(BaseModel):
     IDField(), required=False, default=None)  # All modalities
 
   @classmethod
-  def reference_list_str(cls, references: List['QueryReference']) -> str:
+  def reference_list_str(cls, references: List["QueryReference"]) -> str:
     """
     Convert a list of references into a readable string format.
     

@@ -84,9 +84,9 @@ class UserChat(BaseModel):
                      prompt: str=None,
                      response: str=None,
                      custom_entry: dict=None,
-                     query_engine: Optional['QueryEngine']=None,
-                     query_result: Optional['QueryResult']=None,
-                     query_references: Optional[List['QueryReference']]=None):
+                     query_engine: Optional["QueryEngine"]=None,
+                     query_result: Optional["QueryResult"]=None,
+                     query_references: Optional[List["QueryReference"]]=None):
     """ Update history with query and response """
 
     if not self.history:
