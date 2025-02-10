@@ -112,7 +112,7 @@ class UserChat(BaseModel):
 
     if query_result:
       self.history.append({CHAT_QUERY_RESULT: query_result.response})
-      
+
     if query_references:
       reference_data = []
       for ref in query_references:
@@ -130,7 +130,7 @@ class UserChat(BaseModel):
           ref_data["timestamp_start"] = ref.timestamp_start
           ref_data["timestamp_stop"] = ref.timestamp_stop
         reference_data.append(ref_data)
-      
+
       self.history.append({CHAT_QUERY_REFERENCES: reference_data})
 
     self.save(merge=True)
