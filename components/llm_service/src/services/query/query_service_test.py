@@ -634,9 +634,9 @@ async def test_query_generate_for_chat(mock_get_vector_store, mock_get_embedding
       assert content_files_by_url[ref.chunk_url].mime_type is not None
 
 @pytest.mark.asyncio
-@mock.patch("services.query.query_service.embeddings.get_embeddings") 
+@mock.patch("services.query.query_service.embeddings.get_embeddings")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
-async def test_query_generate_for_chat_with_filter(mock_get_vector_store, 
+async def test_query_generate_for_chat_with_filter(mock_get_vector_store,
                                                  mock_get_embeddings,
                                                  create_engine, create_user,
                                                  create_query_docs,
@@ -647,7 +647,7 @@ async def test_query_generate_for_chat_with_filter(mock_get_vector_store,
 
   prompt = QUERY_EXAMPLE["prompt"]
   test_filter = {"key": "value"}
-  
+
   # Mock to verify filter is passed through
   mock_vector_store = FakeVectorStore()
   mock_get_vector_store.return_value = mock_vector_store
@@ -656,7 +656,7 @@ async def test_query_generate_for_chat_with_filter(mock_get_vector_store,
 
   query_references, _ = await query_generate_for_chat(
     create_user.id,
-    prompt, 
+    prompt,
     create_engine,
     query_filter=test_filter
   )
@@ -668,7 +668,7 @@ async def test_query_generate_for_chat_with_filter(mock_get_vector_store,
 
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.embeddings.get_embeddings")
-@mock.patch("services.query.query_service.vector_store_from_query_engine") 
+@mock.patch("services.query.query_service.vector_store_from_query_engine")
 async def test_query_generate_for_chat_auth_filter(mock_get_vector_store,
                                                  mock_get_embeddings,
                                                  create_engine, create_user,
@@ -681,7 +681,7 @@ async def test_query_generate_for_chat_auth_filter(mock_get_vector_store,
   prompt = QUERY_EXAMPLE["prompt"]
   test_filter = {"key": "value"}
   test_auth = {"auth": "filter"}
-  
+
   # Mock to verify filters are merged
   mock_vector_store = FakeVectorStore()
   mock_get_vector_store.return_value = mock_vector_store
@@ -693,7 +693,7 @@ async def test_query_generate_for_chat_auth_filter(mock_get_vector_store,
     query_references, _ = await query_generate_for_chat(
       create_user.id,
       prompt,
-      create_engine, 
+      create_engine,
       user_data={"some": "data"},
       query_filter=test_filter
     )

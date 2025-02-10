@@ -457,7 +457,7 @@ async def create_chat(prompt: str = Form(None),
     query_result = None
     query_references = None
     context_files = chat_files or []  # Initialize with any uploaded files
-    
+
     if tool_names:
       response, response_files = run_chat_tools(prompt)
     else:
@@ -471,11 +471,11 @@ async def create_chat(prompt: str = Form(None),
           rank_sentences=False,
           query_filter=json.loads(query_filter) if query_filter else None
         )
-        
+
         # Add query content files to context files
         if query_content_files:
           context_files.extend(query_content_files)
-          
+
         # Add reference text to prompt
         query_refs_str = QueryReference.reference_list_str(query_references)
         prompt += "\n\n" + \
@@ -487,7 +487,7 @@ async def create_chat(prompt: str = Form(None),
                             chat_files=context_files,
                             chat_file_bytes=chat_file_bytes,
                             stream=stream)
-      
+
       if stream:
         # Return streaming response
         return StreamingResponse(
@@ -498,10 +498,10 @@ async def create_chat(prompt: str = Form(None),
     # Create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
                        prompt=prompt)
-    
+
     # Update history with all components
     user_chat.history = UserChat.get_history_entry(prompt, response)
-    
+
     if chat_file:
       user_chat.update_history(custom_entry={
         f"{CHAT_FILE}": chat_file.filename
@@ -510,7 +510,7 @@ async def create_chat(prompt: str = Form(None),
       user_chat.update_history(custom_entry={
         f"{CHAT_FILE_URL}": chat_file_url
       })
-      
+
     if response_files:
       for file in response_files:
         user_chat.update_history(custom_entry={
@@ -519,7 +519,7 @@ async def create_chat(prompt: str = Form(None),
         user_chat.update_history(custom_entry={
           CHAT_FILE_BASE64: file["contents"]
         })
-        
+
     # New: Add query engine results to history
     if query_engine:
       user_chat.update_history(
@@ -527,7 +527,7 @@ async def create_chat(prompt: str = Form(None),
         query_result=query_result,
         query_references=query_references
       )
-        
+
     user_chat.save()
 
     # Generate and set chat title
@@ -687,7 +687,7 @@ async def user_chat_generate(chat_id: str, request: Request):
       query_result = None
       query_references = None
       context_files = chat_files or []  # Initialize with any uploaded files
-      
+
       if tool_names:
         response, response_files = run_chat_tools(prompt)
       else:
@@ -696,10 +696,10 @@ async def user_chat_generate(chat_id: str, request: Request):
           if not query_engine:
             raise ResourceNotFoundException(
               f"Query engine {query_engine_id} not found")
-            
+
           query_references, query_content_files = await query_generate_for_chat(
             user_chat.user_id,
-            prompt, 
+            prompt,
             query_engine,
             None,  # No user data needed
             rank_sentences=False,
@@ -709,7 +709,7 @@ async def user_chat_generate(chat_id: str, request: Request):
           # Add query content files to context files
           if query_content_files:
             context_files.extend(query_content_files)
-            
+
           # Add reference text to prompt
           query_refs_str = QueryReference.reference_list_str(query_references)
           prompt += "\n\n" + \
@@ -722,7 +722,7 @@ async def user_chat_generate(chat_id: str, request: Request):
                               chat_files=context_files,
                               chat_file_bytes=chat_file_bytes,
                               stream=stream)
-                                
+
         if stream:
           # Return streaming response
           return StreamingResponse(
@@ -732,7 +732,7 @@ async def user_chat_generate(chat_id: str, request: Request):
 
       # save chat history
       user_chat.update_history(prompt=prompt, response=response)
-      
+
       # New: Add query results to history if present
       if query_engine_id:
         user_chat.update_history(
@@ -740,7 +740,7 @@ async def user_chat_generate(chat_id: str, request: Request):
           query_result=query_result,
           query_references=query_references
         )
-        
+
       if response_files:
         for file in response_files:
           user_chat.update_history(custom_entry={
