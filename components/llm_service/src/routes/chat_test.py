@@ -29,7 +29,8 @@ from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
                                      USER_EXAMPLE, QUERY_ENGINE_EXAMPLE)
 from common.models import UserChat, User, QueryEngine, QueryReference
 from common.models.llm import (CHAT_HUMAN, CHAT_AI, CHAT_FILE, CHAT_FILE_BASE64,
-                             CHAT_SOURCE, CHAT_QUERY_RESULT, CHAT_QUERY_REFERENCES)
+                             CHAT_SOURCE, CHAT_QUERY_RESULT,
+                             CHAT_QUERY_REFERENCES)
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
@@ -869,7 +870,9 @@ def test_chat_llm_multimodal_filter(client_with_emulator):
     assert all(model["is_multi"] for model in json_response["data"])
 
 @pytest.mark.asyncio
-async def test_create_chat_with_query_engine(create_user, create_engine, client_with_emulator):
+async def test_create_chat_with_query_engine(create_user,
+                                             create_engine,
+                                             client_with_emulator):
   """Test creating a new chat with query engine"""
   url = f"{api_url}"
 
@@ -920,7 +923,9 @@ async def test_create_chat_with_query_engine(create_user, create_engine, client_
     "Chat history includes references"
 
 @pytest.mark.asyncio
-async def test_chat_generate_with_query_engine(create_user, create_chat, create_engine, client_with_emulator):
+async def test_chat_generate_with_query_engine(create_user, create_chat,
+                                               create_engine,
+                                               client_with_emulator):
   """Test generating chat response with query engine"""
   chatid = CHAT_EXAMPLE["id"]
   url = f"{api_url}/{chatid}/generate"

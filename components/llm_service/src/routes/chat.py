@@ -22,8 +22,9 @@ import io
 from typing import Optional
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from common.models import User, UserChat, QueryEngine, QueryResult, QueryReference
-from common.models.llm import CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64, CHAT_FILE_TYPE, CHAT_SOURCE, CHAT_QUERY_RESULT, CHAT_QUERY_REFERENCES
+from common.models import User, UserChat, QueryEngine, QueryReference
+from common.models.llm import (CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64,
+                               CHAT_FILE_TYPE)
 from common.utils.auth_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
@@ -39,7 +40,7 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGetDetailsResponse)
 from services.llm_generate import llm_chat, generate_chat_summary
 from services.agents.agent_tools import chat_tools, run_chat_tools
-from services.query.query_service import query_generate_for_chat, retrieve_references
+from services.query.query_service import query_generate_for_chat
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
 
 Logger = Logger.get_logger(__file__)
@@ -480,7 +481,8 @@ async def create_chat(prompt: str = Form(None),
         # Add reference text to prompt
         query_refs_str = QueryReference.reference_list_str(query_references)
         prompt += "\n\n" + \
-          f"A search of the {query_engine.name} Source produced these references: {query_refs_str}"
+          f"A search of the {query_engine.name} Source produced " \
+          f"these references: {query_refs_str}"
 
       # Normal chat response with combined context files
       response = await llm_chat(prompt,
@@ -714,7 +716,8 @@ async def user_chat_generate(chat_id: str, request: Request):
           # Add reference text to prompt
           query_refs_str = QueryReference.reference_list_str(query_references)
           prompt += "\n\n" + \
-            f"A search of the {query_engine.name} Source produced these references: {query_refs_str}"
+              f"A search of the {query_engine.name} Source produced " \
+              f"these references: {query_refs_str}"
 
         # Normal chat response with combined context files
         response = await llm_chat(prompt,

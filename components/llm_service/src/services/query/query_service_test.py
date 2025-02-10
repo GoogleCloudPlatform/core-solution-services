@@ -604,8 +604,10 @@ async def test_process_documents_textonly(mock_get_datasource, create_engine):
 @pytest.mark.asyncio
 @mock.patch("services.query.query_service.embeddings.get_embeddings")
 @mock.patch("services.query.query_service.vector_store_from_query_engine")
-async def test_query_generate_for_chat(mock_get_vector_store, mock_get_embeddings,
-                                     create_engine, create_user, create_query_docs,
+async def test_query_generate_for_chat(mock_get_vector_store,
+                                     mock_get_embeddings,
+                                     create_engine, create_user,
+                                     create_query_docs,
                                      create_query_doc_chunks):
   """Test query generation for chat context"""
   # Mock embeddings and vector store
@@ -654,7 +656,7 @@ async def test_query_generate_for_chat_with_filter(mock_get_vector_store,
   mock_similarity_search = mock.Mock(return_value=[0,1,2])
   mock_vector_store.similarity_search = mock_similarity_search
 
-  query_references, _ = await query_generate_for_chat(
+  await query_generate_for_chat(
     create_user.id,
     prompt,
     create_engine,
@@ -690,7 +692,7 @@ async def test_query_generate_for_chat_auth_filter(mock_get_vector_store,
 
   with mock.patch("services.query.query_service.create_authz_filter",
                  return_value=test_auth):
-    query_references, _ = await query_generate_for_chat(
+    await query_generate_for_chat(
       create_user.id,
       prompt,
       create_engine,
