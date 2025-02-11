@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, styled } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { Chat, Query } from '../lib/types';
+import { Chat } from '../lib/types';
 import { useSidebarStore } from '../lib/sidebarStore';
 import ChatScreen from './ChatScreen';
 import Sources from '../pages/Sources';
@@ -59,7 +59,6 @@ const Main = styled(Box, {
 
 export const MainApp = () => {
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
-  const [currentQuery, setCurrentQuery] = useState<Query | undefined>();
   const [showChat, setShowChat] = useState(true);
   const [showSources, setShowSources] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
@@ -76,13 +75,6 @@ export const MainApp = () => {
 
   const handleSelectChat = (chat: Chat) => {
     setCurrentChat(chat);
-    setShowChat(true);
-    setShowWelcome(false);
-    setShowSources(false);
-  };
-
-  const handleSelectQuery = (query: Query) => {
-    setCurrentQuery(query);
     setShowChat(true);
     setShowWelcome(false);
     setShowSources(false);
@@ -125,8 +117,6 @@ export const MainApp = () => {
         setShowChat={setShowChat}
         onSelectChat={handleSelectChat}
         selectedChatId={currentChat?.id}
-        onSelectQuery={handleSelectQuery}
-        selectedQueryId={currentQuery?.id}
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
         onNewChat={handleNewChat}
