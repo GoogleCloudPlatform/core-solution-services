@@ -24,7 +24,7 @@ Highlighted features:
 
 ## Releases
 
-Consult the [CHANGELOG](./CHANGELOG.md) for release information.  The current stable release of Core Solution Services is `v0.3.2`
+Consult the [CHANGELOG](./CHANGELOG.md) for release information.  The current stable release of Core Solution Services is `v0.4.0`
 
 ## Quickstart (for GENIE)
 
