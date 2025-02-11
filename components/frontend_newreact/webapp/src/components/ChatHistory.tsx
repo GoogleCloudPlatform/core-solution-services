@@ -2,21 +2,18 @@ import { useState, useEffect } from 'react';
 import { Box, Typography, IconButton, CircularProgress } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchChatHistory, fetchQuery, fetchQueryHistory } from '../lib/api';
-import { Chat, Query } from '../lib/types';
+import { fetchChatHistory } from '../lib/api';
+import { Chat } from '../lib/types';
 
 interface ChatHistoryProps {
   onClose: () => void;
   onSelectChat: (chat: Chat) => void;
   selectedChatId?: string;
-  onSelectQuery: (query: Query) => void;
-  selectedQueryId?: string;
   isOpen: boolean;
 }
 
-const ChatHistory = ({ onClose, onSelectChat, selectedChatId, onSelectQuery, selectedQueryId, isOpen }: ChatHistoryProps) => {
+const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHistoryProps) => {
   const [chats, setChats] = useState<Chat[]>([]);
-  const [queries, setQueries] = useState<Query[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -26,17 +23,12 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, onSelectQuery, sel
     const loadHistory = async () => {
       setLoading(true);
       try {
-        Promise.all([fetchChatHistory(user.token)().then(res => {
-          if (res) {
-            setChats(res);
-          }
-        }), fetchQueryHistory(user.token)().then((res) => {
-          if (res) {
-            setQueries(res);
-          }
-        })]);
+        const chatHistory = await fetchChatHistory(user.token)();
+        if (chatHistory) {
+          setChats(chatHistory);
+        }
       } catch (error) {
-        console.error('Error loading chat and query history:', error);
+        console.error('Error loading chat history:', error);
       } finally {
         setLoading(false);
       }
@@ -60,11 +52,6 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, onSelectQuery, sel
   const handleChatClick = (chat: Chat) => {
     console.log('Chat clicked:', chat);
     onSelectChat(chat);
-  };
-
-  const handleQueryClick = (query: Query) => {
-    console.log('Query clicked:', query);
-    onSelectQuery(query);
   };
 
   return (
@@ -112,42 +99,6 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, onSelectQuery, sel
                   }}
                 >
                   {chat.title || 'Untitled Chat'}
-                </Typography>
-              </Box>
-            ))}
-            {queries.map((query) => (
-              <Box
-                key={query.id}
-                onClick={() => handleQueryClick(query)}
-                sx={{
-                  padding: '16px',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                  backgroundColor: query.id === selectedQueryId ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)'
-                  }
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    fontSize: '12px',
-                    mb: '8px'
-                  }}
-                >
-                  {formatTimestamp(query.created_time)}
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: 'rgba(255, 255, 255, 0.87)',
-                    fontSize: '14px',
-                    lineHeight: '20px'
-                  }}
-                >
-                  {query.title || 'Untitled Chat'}
                 </Typography>
               </Box>
             ))}
