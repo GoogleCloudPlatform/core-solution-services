@@ -26,7 +26,7 @@ import Divider from '@mui/material/Divider';
 import ChatHistory from './ChatHistory';
 import ChatScreen from './ChatScreen';
 import { useSidebarStore } from '@/lib/sidebarStore';
-import { Chat, Query } from '../lib/types'; // Make sure you import the Chat type
+import { Chat } from '../lib/types';
 import SettingsDrawer from './SettingsDrawer';
 
 const drawerWidth = 60;
@@ -36,8 +36,6 @@ interface SidebarProps {
     setShowChat: (show: boolean) => void;
     onSelectChat: (chat: Chat) => void;
     selectedChatId?: string;
-    onSelectQuery: (query: Query) => void;
-    selectedQueryId?: string;
     setShowSources: (show: boolean) => void;
     setShowWelcome: (show: boolean) => void;
     onNewChat: () => void;
@@ -101,8 +99,6 @@ export const Sidebar = ({
     setShowChat,
     onSelectChat,
     selectedChatId,
-    onSelectQuery,
-    selectedQueryId,
     setShowSources,
     setShowWelcome,
     onNewChat
@@ -291,14 +287,11 @@ export const Sidebar = ({
                         <MenuIcon />
                     </IconButton>
                 </PanelHeader>
-                {/* Render ChatHistory here, inside the SidePanel */}
-                {activePanel === 'history' && ( // Conditionally render
+                {activePanel === 'history' && (
                     <ChatHistory
-                        onClose={() => setActivePanel(null)} // Close panel when ChatHistory closes
-                        onSelectChat={onSelectChat}  // Pass the prop
+                        onClose={() => setActivePanel(null)}
+                        onSelectChat={onSelectChat}
                         selectedChatId={selectedChatId}
-                        onSelectQuery={onSelectQuery}  // Pass the prop
-                        selectedQueryId={selectedQueryId}
                         isOpen={activePanel === 'history'}
                     />
                 )}
