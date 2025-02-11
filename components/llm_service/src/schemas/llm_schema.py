@@ -203,6 +203,7 @@ class LLMQueryModel(BaseModel):
   run_as_batch_job: Optional[str] = None
   rank_sentences: Optional[str] = None
   query_filter: Optional[str] = None
+  chat_mode: Optional[bool] = False
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
       "example": QUERY_EXAMPLE
   })
