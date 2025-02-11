@@ -75,7 +75,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     loadChat();
   }, [currentChat?.id, user]);
 
-  // #TODO use selected source for query calls when selected by user
   const [selectedSource, setSelectedSource] = useState<QueryEngine | null>(null);
   const { selectedModel } = useModel();
   const [temperature, setTemperature] = useState(1.0);
@@ -120,7 +119,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           ...chatParams,
           queryEngineId: selectedSource?.id
         });
-        
+
         // Only assign if it's a Chat object
         if (chatResponse && !isReadableStream(chatResponse)) {
           response = chatResponse;
@@ -259,8 +258,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           minHeight: 0,
         }}>
           {messages.map((message, index) => (
-            <Box 
-              key={index} 
+            <Box
+              key={index}
               className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
               sx={{
                 backgroundColor: message.isUser ? '#343541' : 'transparent',
@@ -279,18 +278,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                 <Typography sx={{ color: '#fff', textAlign: 'right' }}>{message.text}</Typography>
               ) : (
                 <>
-                  <Avatar 
-                    src="/assets/images/gemini-icon.png" 
+                  <Avatar
+                    src="/assets/images/gemini-icon.png"
                     className="message-avatar"
                     sx={{ backgroundColor: 'transparent' }}
-                  />                    
+                  />
                   <Box sx={{ flex: 1 }}>
                     <ReactMarkdown
                       components={{
                         code({ node, className, children }) {
                           const match = /language-(\w+)/.exec(className || '');
                           const language = match ? match[1] : '';
-                          
+
                           if (!match) {
                             return (
                               <code className={className}>
@@ -309,32 +308,32 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                             </SyntaxHighlighter>
                           );
                         },
-                        p: ({children}) => (
+                        p: ({ children }) => (
                           <Typography component="p" sx={{ mb: 1 }}>
                             {children}
                           </Typography>
                         ),
-                        h1: ({children}) => (
+                        h1: ({ children }) => (
                           <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
                             {children}
                           </Typography>
                         ),
-                        h2: ({children}) => (
+                        h2: ({ children }) => (
                           <Typography variant="h6" sx={{ mb: 2, mt: 2 }}>
                             {children}
                           </Typography>
                         ),
-                        ul: ({children}) => (
+                        ul: ({ children }) => (
                           <Box component="ul" sx={{ pl: 2, mb: 2 }}>
                             {children}
                           </Box>
                         ),
-                        ol: ({children}) => (
+                        ol: ({ children }) => (
                           <Box component="ol" sx={{ pl: 2, mb: 2 }}>
                             {children}
                           </Box>
                         ),
-                        li: ({children}) => (
+                        li: ({ children }) => (
                           <Box component="li" sx={{ mb: 1 }}>
                             {children}
                           </Box>
@@ -349,7 +348,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             </Box>
           ))}
         </Box>
-        
+
         <Box className="chat-input-container" sx={{
           p: 2,
           flexShrink: 0,
@@ -410,9 +409,9 @@ const isReadableStream = (value: any): value is ReadableStream => {
 };
 
 const isChat = (value: any): value is Chat => {
-  return value && 
-    typeof value === 'object' && 
-    'id' in value && 
+  return value &&
+    typeof value === 'object' &&
+    'id' in value &&
     'history' in value;
 };
 
