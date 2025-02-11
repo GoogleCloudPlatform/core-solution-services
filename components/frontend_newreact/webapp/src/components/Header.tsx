@@ -1,5 +1,6 @@
 import { Box, styled } from "@mui/material";
 import { ProfileMenu } from "@/components/profile-menu";
+import * as React from 'react';
 
 interface HeaderProps {
     sidebarWidth: number;
@@ -7,6 +8,7 @@ interface HeaderProps {
     title?: React.ReactNode;
     rightContent?: React.ReactNode;
 }
+
 
 const HeaderContainer = styled(Box, {
     shouldForwardProp: (prop) => prop !== "sidebarWidth" && prop !== "panelWidth",
@@ -40,11 +42,11 @@ const Title = styled(Box)({
     },
 });
 
-export function CustomHeader({ sidebarWidth, panelWidth, title, rightContent }: HeaderProps) {
+export const CustomHeader = React.forwardRef<HTMLDivElement, HeaderProps>(({ sidebarWidth, panelWidth, title, rightContent }, ref) => {  // Correct destructuring of props and ref
 
     return (
-        <HeaderContainer sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
-            {title || (
+        <HeaderContainer sidebarWidth={sidebarWidth} panelWidth={panelWidth} ref={ref}> {/* Pass ref to HeaderContainer */}
+            {title ? title : (
                 <Title>
                     <span className="primary">genAI</span>
                     <span className="gradient">for Public Sector</span>
@@ -55,5 +57,5 @@ export function CustomHeader({ sidebarWidth, panelWidth, title, rightContent }: 
             )}
         </HeaderContainer>
     );
-}
+});
 

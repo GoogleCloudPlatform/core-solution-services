@@ -14,9 +14,10 @@ interface WelcomeFeaturesProps {
   username: string;
   onChatStart: () => void;
   onSourcesView: () => void;
+  headerHeight: number;
 }
 
-export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: WelcomeFeaturesProps) => {
+export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHeight }: WelcomeFeaturesProps) => {
   const features: Feature[] = [
     {
       icon: <ChatIcon />,
@@ -42,8 +43,8 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView }: Welcom
       display: 'flex',
       flexDirection: 'column',
       gap: 4,
-      height: '100%',
       justifyContent: 'center',
+      height: `calc(100vh - ${headerHeight}px)`,
       alignItems: 'center',
       px: 3,
     }}>

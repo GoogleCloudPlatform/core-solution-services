@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Box, styled } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
@@ -10,6 +10,7 @@ import { CustomHeader } from "./Header";
 import { WelcomeFeatures } from './WelcomeFeatures';
 import { Sidebar } from './Sidebar';
 import { fetchLatestChat, resumeChat } from '@/lib/api';
+
 
 const MainContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -73,6 +74,24 @@ export const MainApp = () => {
 
   const username = user?.displayName || 'User';
 
+  const headerRef = useRef<HTMLDivElement>(null); // Ref for the header
+  const [headerHeight, setHeaderHeight] = useState(0); // State for header's height
+
+  useEffect(() => {  // Get header height after component renders
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        setHeaderHeight(headerRef.current.clientHeight); // Use clientHeight or offsetHeight
+      }
+    };
+
+    updateHeaderHeight(); // Call initially
+
+    window.addEventListener('resize', updateHeaderHeight); // Update on resize
+
+    return () => window.removeEventListener('resize', updateHeaderHeight); // Cleanup
+  }, []);
+
+
   const handleSelectChat = (chat: Chat) => {
     setCurrentChat(chat);
     setShowChat(true);
@@ -122,7 +141,7 @@ export const MainApp = () => {
         onNewChat={handleNewChat}
       />
       {(showWelcome || showSources) && (
-        <CustomHeader sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
+        <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
           <Title sx={{ marginLeft: '-20px' }}>
             <span className="primary">genAI</span>
             <span>for</span>
@@ -143,6 +162,7 @@ export const MainApp = () => {
           }}>
             <WelcomeFeatures
               username={username}
+              headerHeight={headerHeight}
               onChatStart={() => {
                 setShowChat(true)
 
