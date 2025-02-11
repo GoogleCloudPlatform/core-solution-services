@@ -92,7 +92,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
 
-    // Call onChatStart callback when chat begins
     if (onChatStart) {
       onChatStart();
     }
@@ -116,34 +115,48 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
       if (chatId) {
         // Continue existing chat
-        response = await resumeChat(user.token)({
+        const chatResponse = await resumeChat(user.token)({
           chatId,
           ...chatParams,
           queryEngineId: selectedSource?.id
         });
+        
+        // Only assign if it's a Chat object
+        if (chatResponse && !isReadableStream(chatResponse)) {
+          response = chatResponse;
+        }
+
       } else if (selectedSource) {
         // Create new chat via query endpoint
-        response = await createQuery(user.token)({
+        const queryResponse = await createQuery(user.token)({
           engine: selectedSource.id,
           userInput: prompt,
           llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
-        }) as Chat; // Assert response is Chat since chatMode=true
-        
-        if (response?.id) {
-          setChatId(response.id);
+        });
+
+        // Type guard to ensure we have a Chat object
+        if (isChat(queryResponse)) {
+          response = queryResponse;
         }
+
       } else {
         // Create new regular chat
-        response = await createChat(user.token)({
+        const chatResponse = await createChat(user.token)({
           ...chatParams,
           uploadFile: selectedFile || undefined,
           fileUrl: importUrl,
         });
 
-        if (response?.id) {
-          setChatId(response.id);
+        // Only assign if it's a Chat object
+        if (chatResponse && !isReadableStream(chatResponse)) {
+          response = chatResponse;
         }
+      }
+
+      // Only proceed if we got a valid Chat object
+      if (response?.id) {
+        setChatId(response.id);
       }
 
       // Handle chat response
@@ -389,6 +402,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       </Modal>
     </Box>
   );
+};
+
+// Helper functions to check response types
+const isReadableStream = (value: any): value is ReadableStream => {
+  return value instanceof ReadableStream;
+};
+
+const isChat = (value: any): value is Chat => {
+  return value && 
+    typeof value === 'object' && 
+    'id' in value && 
+    'history' in value;
 };
 
 export default ChatScreen; 
