@@ -46,11 +46,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
   );
 
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   // Add effect to fetch full chat details when currentChat changes
   useEffect(() => {
     const loadChat = async () => {
       if (currentChat?.id && user) {
+        setIsLoading(true);
         try {
           const fullChat = await fetchChat(user.token, currentChat.id)();
           if (fullChat) {
@@ -64,6 +66,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           }
         } catch (error) {
           console.error('Error loading chat:', error);
+        } finally {
+          setIsLoading(false);
         }
       } else {
         // Reset messages when there's no current chat or it's a new chat
@@ -101,6 +105,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       isUser: true
     };
     setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
 
     try {
       let response: Chat | undefined;
@@ -176,6 +181,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         isUser: false
       };
       setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -348,6 +355,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
               )}
             </Box>
           ))}
+          {isLoading && (
+            <div className="gemini-loader">
+              <div className="sparkle"></div>
+              <div className="line"></div>
+            </div>
+          )}
         </Box>
         
         <Box className="chat-input-container" sx={{

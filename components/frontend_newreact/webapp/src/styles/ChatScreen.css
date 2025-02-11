@@ -248,4 +248,42 @@
 
 .chat-messages th {
   background-color: #343541;
+}
+
+/* Add these new styles for the loader */
+.gemini-loader {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  margin: 20px auto;
+}
+
+.sparkle {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(to bottom, #d1a0e0, #e995a8);
+  transform: rotate(45deg);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.line {
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  width: 20px;
+  height: 10px;
+  border-radius: 50% 50% 0 0;
+  border-bottom: none;
+  border: 3px solid #d1a0e0;
+  animation: rotateLine 1.5s linear infinite;
+}
+
+@keyframes rotateLine {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 } 
