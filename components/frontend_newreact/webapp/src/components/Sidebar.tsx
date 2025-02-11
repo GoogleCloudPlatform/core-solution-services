@@ -20,7 +20,6 @@ import HistoryIcon from '@mui/icons-material/History';
 import TuneIcon from '@mui/icons-material/Tune';
 import ChatIcon from '@mui/icons-material/Chat';
 import StorageIcon from '@mui/icons-material/Storage';
-import CloudIcon from '@mui/icons-material/Cloud';
 // import { ModelSelector } from "@/components/settings/model-selector";
 import Divider from '@mui/material/Divider';
 import ChatHistory from './ChatHistory';
@@ -28,6 +27,11 @@ import ChatScreen from './ChatScreen';
 import { useSidebarStore } from '@/lib/sidebarStore';
 import { Chat } from '../lib/types';
 import SettingsDrawer from './SettingsDrawer';
+import CloudIcon from '../assets/cloud.svg'; // Import your SVG
+import ChatInterfaceIcon from '../assets/chat-icon.svg'; // Import your SVG
+import SourceIcon from '../assets/source-icon.svg'; // Import your SVG
+import HistoryCustomIcon from '../assets/history-icon.svg';
+import SettingsCustomIcon from '../assets/settings-icon.svg';
 
 const drawerWidth = 60;
 const collapsedWidth = 60;
@@ -116,13 +120,19 @@ export const Sidebar = ({
     };
 
     const mainMenuItems = [
-        { icon: <HistoryIcon />, id: 'history' },
-        { icon: <TuneIcon />, id: 'settings' },
+        {
+            icon: <img src={HistoryCustomIcon} style={{ width: '24px', height: '24px' }} />,
+            id: 'history'
+        },
+        {
+            icon: <img src={SettingsCustomIcon} style={{ width: '24px', height: '24px' }} />,
+            id: 'settings'
+        },
     ];
 
     const bottomMenuItems = [
         {
-            icon: <ChatIcon />,
+            icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'chat',
             onClick: () => {
                 setShowChat(true);
@@ -131,7 +141,7 @@ export const Sidebar = ({
             }
         },
         {
-            icon: <StorageIcon />,
+            icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'sources',
             onClick: () => {
                 setShowSources?.(true);
@@ -139,7 +149,10 @@ export const Sidebar = ({
                 setShowWelcome(false);
             }
         },
-        { icon: <CloudIcon />, id: 'cloud' },
+        {
+            icon: <img src={CloudIcon} style={{ width: '24px', height: '24px' }} />,
+            id: 'cloud'
+        },
     ];
 
     const renderMenuItem = (item: typeof mainMenuItems[0] | typeof bottomMenuItems[0], index: number) => (
