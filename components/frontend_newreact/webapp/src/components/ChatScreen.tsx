@@ -7,7 +7,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import UploadIcon from '@mui/icons-material/Upload';
 import { useAuth } from '../contexts/AuthContext';
-import { createChat, resumeChat, fetchChat } from '../lib/api';
+import { createChat, resumeChat, fetchChat, createQuery } from '../lib/api';
 import { Chat } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
 import UploadModal from './UploadModal';
@@ -89,8 +89,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     setSelectedSource(source); // Update the selected source
   };
 
-
-
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
 
@@ -106,39 +104,50 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      let response;
+      let response: Chat | undefined;
 
-      // Common parameters for both create and resume chat
+      // Common parameters
       const chatParams = {
         userInput: prompt,
         llmType: selectedModel.id,
         stream: false,
-        temperature: temperature,
-        // Include the selected query engine ID if one is selected
-        queryEngineId: selectedSource?.id
+        temperature: temperature
       };
 
       if (chatId) {
         // Continue existing chat
         response = await resumeChat(user.token)({
           chatId,
-          ...chatParams
+          ...chatParams,
+          queryEngineId: selectedSource?.id
         });
+      } else if (selectedSource) {
+        // Create new chat via query endpoint
+        response = await createQuery(user.token)({
+          engine: selectedSource.id,
+          userInput: prompt,
+          llmType: selectedModel.id,
+          chatMode: true  // Always true - we always want a Chat back
+        }) as Chat; // Assert response is Chat since chatMode=true
+        
+        if (response?.id) {
+          setChatId(response.id);
+        }
       } else {
-        // Create new chat
+        // Create new regular chat
         response = await createChat(user.token)({
           ...chatParams,
           uploadFile: selectedFile || undefined,
           fileUrl: importUrl,
         });
 
-        if (response && 'id' in response) {
+        if (response?.id) {
           setChatId(response.id);
         }
       }
 
-      // Add AI response to chat
-      if (response && 'history' in response) {
+      // Handle chat response
+      if (response?.history) {
         const aiMessage: ChatMessage = {
           text: response.history[response.history.length - 1]?.AIOutput || 'No response',
           isUser: false
@@ -149,7 +158,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       setPrompt('');
     } catch (error) {
       console.error('Error in chat:', error);
-      // Add error message to chat
       const errorMessage: ChatMessage = {
         text: 'An error occurred while processing your request.',
         isUser: false

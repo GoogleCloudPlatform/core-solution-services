@@ -21,6 +21,7 @@ interface RunQueryParams {
   engine: string
   userInput: string
   llmType: string
+  chatMode?: boolean
 }
 
 interface RunChatParams {
@@ -41,6 +42,7 @@ interface ResumeQueryParams {
   userInput: string
   llmType: string
   stream: boolean
+  chatMode?: boolean
 }
 
 interface ResumeChatParams {
@@ -376,38 +378,59 @@ export const createQuery =
     engine,
     userInput,
     llmType,
-  }: RunQueryParams): Promise<Query | undefined> => {
+    chatMode = false
+  }: RunQueryParams): Promise<Query | Chat | undefined> => {
     const url = `${endpoint}/query/engine/${engine}`
     const headers = { Authorization: `Bearer ${token}` }
     const data = {
       prompt: userInput,
       llm_type: llmType,
+      chat_mode: chatMode
     }
-    return axios.post(url, data, { headers }).then(path(["data", "data", "user_query_id"]))
+    const response = await axios.post(url, data, { headers })
+    const responseData = response.data.data
+
+    // Return Chat object if chat_mode is true and chat data exists
+    if (chatMode && responseData.user_chat) {
+      return responseData.user_chat
+    }
+    
+    // Otherwise return Query ID
+    return responseData.user_query_id
   }
 
 export const resumeQuery =
   (token: string) => async ({
     queryId,
     userInput,
-    llmType,
-    stream = false
-  }: ResumeQueryParams): Promise<Query | undefined> => {
+    llmType, 
+    stream = false,
+    chatMode = false
+  }: ResumeQueryParams): Promise<Query | Chat | undefined> => {
     const url = `${endpoint}/query/${queryId}`
     const headers = { Authorization: `Bearer ${token}` }
     const data = {
       prompt: userInput,
       llm_type: llmType,
       sentence_references: false,
-      stream
+      stream,
+      chat_mode: chatMode
     }
 
     try {
-      const response = await axios.post(url, data, { headers });
-      return path(["data", "data", "user_query_id"], response);
+      const response = await axios.post(url, data, { headers })
+      const responseData = response.data.data
+      
+      // Return Chat object if chat_mode is true and chat data exists
+      if (chatMode && responseData.user_chat) {
+        return responseData.user_chat
+      }
+
+      // Otherwise return Query ID
+      return responseData.user_query_id
     } catch (error) {
-      console.error('Error in resumeQuery:', error);
-      throw error;
+      console.error('Error in resumeQuery:', error)
+      throw error
     }
   }
 
