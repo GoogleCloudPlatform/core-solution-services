@@ -77,6 +77,21 @@ export const MainApp = () => {
   const headerRef = useRef<HTMLDivElement>(null); // Ref for the header
   const [headerHeight, setHeaderHeight] = useState(0); // State for header's height
 
+  useEffect(() => {
+    const fetchLatest = async () => { // Function to fetch and set latest chat
+      if (user?.token && showChat && !currentChat) { // Only fetch if in chat mode, logged in, and no current chat selected
+        const chat = await fetchLatestChat(user.token)();
+        if (chat) {
+          setCurrentChat(chat);
+        } else {
+          handleNewChat(); // or appropriate action when there's no latest chat
+        }
+      }
+    };
+    fetchLatest(); // Call the function
+  }, [user, showChat]); // Add showChat to the dependency array
+
+
   useEffect(() => {  // Get header height after component renders
     const updateHeaderHeight = () => {
       if (headerRef.current) {
@@ -164,27 +179,7 @@ export const MainApp = () => {
               username={username}
               headerHeight={headerHeight}
               onChatStart={() => {
-                setShowChat(true)
-
-                if (!user?.token) {
-                  return;
-                }
-
-                fetchLatestChat(user.token)().then(chat => {
-                  if (chat) {
-                    // console.log(chat)
-                    setCurrentChat(chat);
-                    handleChatStart();
-                  }
-                })
-
-                // resumeChat(user.token)({
-                //   chatId,
-                //   userInput: prompt,
-                //   llmType: selectedModel.id,
-                //   stream: false,
-                //   temperature: temperature
-                // });
+                handleChatStart();
               }}
               onSourcesView={() => {
                 setShowSources(true);
