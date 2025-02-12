@@ -48,7 +48,7 @@ export const CustomHeader = React.forwardRef<HTMLDivElement, HeaderProps>(({ sid
         <HeaderContainer sidebarWidth={sidebarWidth} panelWidth={panelWidth} ref={ref}> {/* Pass ref to HeaderContainer */}
             {title ? title : (
                 <Title>
-                    <span className="primary">genAI</span>
+                    <span className="primary">GenAI</span>
                     <span className="gradient">for Public Sector</span>
                 </Title>
             )}

@@ -143,7 +143,7 @@ export const MainApp = () => {
       {(showWelcome || showSources) && (
         <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
           <Title sx={{ marginLeft: '0px' }}>
-            <span className="primary">genAI</span>
+            <span className="primary">GenAI</span>
             <span>for</span>
             <span className="gradient">Public Sector</span>
           </Title>
