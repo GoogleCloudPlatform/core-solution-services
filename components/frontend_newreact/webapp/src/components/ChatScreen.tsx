@@ -16,6 +16,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
+import { LoadingSpinner } from "@/components/LoadingSpinner"
 
 interface ChatMessage {
   text: string;
@@ -355,10 +356,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             </Box>
           ))}
           {isLoading && (
-            <div className="gemini-loader">
-              <div className="sparkle"></div>
-              <div className="line"></div>
-            </div>
+            <LoadingSpinner/>
           )}
         </Box>
 
