@@ -33,7 +33,7 @@ import SourceIcon from '../assets/source-icon.svg'; // Import your SVG
 import HistoryCustomIcon from '../assets/history-icon.svg';
 import SettingsCustomIcon from '../assets/settings-icon.svg';
 
-const drawerWidth = 60;
+const drawerWidth = 150;
 const collapsedWidth = 60;
 
 interface SidebarProps {
@@ -57,17 +57,21 @@ const DrawerHeader = styled('div')(({ theme }) => ({
 const StyledDrawer = styled(Drawer, {
     shouldForwardProp: (prop) => prop !== "isOpen",
 })<{ isOpen: boolean }>(({ theme, isOpen }) => ({
-    width: drawerWidth,
+    width: isOpen ? drawerWidth : collapsedWidth,
     flexShrink: 0,
     whiteSpace: 'nowrap',
     boxSizing: 'border-box',
     '& .MuiDrawer-paper': {
-        width: drawerWidth,
+        width: isOpen ? drawerWidth : collapsedWidth,
         boxSizing: 'border-box',
         backgroundColor: '#1f1f1f',
         borderRight: '1px solid #2f2f2f',
         color: 'rgba(255, 255, 255, 0.9)',
         overflowX: 'hidden',
+        transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
     },
 }));
 
@@ -75,13 +79,13 @@ const SidePanel = styled(Box, {
     shouldForwardProp: (prop) => prop !== "isOpen" && prop !== "drawerIsOpen",
 })<{ isOpen: boolean, drawerIsOpen: boolean }>(({ theme, isOpen, drawerIsOpen }) => ({
     position: 'fixed',
-    left: drawerWidth,
+    left: drawerIsOpen ? drawerWidth : collapsedWidth,
     top: 0,
     height: '100vh',
     width: 300,
     backgroundColor: '#1f1f1f',
     borderRight: '1px solid #2f2f2f',
-    transition: theme.transitions.create(['transform'], {
+    transition: theme.transitions.create(['left', 'transform'], {
         easing: theme.transitions.easing.sharp,
         duration: theme.transitions.duration.enteringScreen,
     }),
@@ -121,10 +125,12 @@ export const Sidebar = ({
 
     const mainMenuItems = [
         {
+            text: 'History',
             icon: <img src={HistoryCustomIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'history'
         },
         {
+            text: 'Settings',
             icon: <img src={SettingsCustomIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'settings'
         },
@@ -132,6 +138,7 @@ export const Sidebar = ({
 
     const bottomMenuItems = [
         {
+            text: 'Chat',
             icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'chat',
             onClick: () => {
@@ -141,6 +148,7 @@ export const Sidebar = ({
             }
         },
         {
+            text: 'Sources',
             icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'sources',
             onClick: () => {
@@ -168,7 +176,7 @@ export const Sidebar = ({
                 }}
                 sx={{
                     minHeight: 48,
-                    justifyContent: 'center',
+                    justifyContent: isOpen ? 'initial' : 'center',
                     px: 2.5,
                     '&.Mui-selected': {
                         backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -181,12 +189,24 @@ export const Sidebar = ({
                 <ListItemIcon
                     sx={{
                         minWidth: 0,
+                        mr: isOpen ? 2 : 'auto',
                         justifyContent: 'center',
                         color: 'rgba(255, 255, 255, 0.7)',
                     }}
                 >
                     {item.icon}
                 </ListItemIcon>
+                <ListItemText
+                    primary={item.text}
+                    sx={{
+                        opacity: isOpen ? 1 : 0,
+                        transition: 'opacity 0.2s',
+                        '& .MuiTypography-root': {
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            fontSize: '0.875rem',
+                        },
+                    }}
+                />
             </ListItemButton>
         </ListItem>
     );
