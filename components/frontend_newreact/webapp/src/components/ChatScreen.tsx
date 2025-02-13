@@ -1,7 +1,7 @@
 import { SourceSelector } from './SourceSelector'; // Import the component
 import { QueryEngine } from '../lib/types'; // Import the type
 import { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal, Chip } from '@mui/material';
+import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal, Chip, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -17,6 +17,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { LoadingSpinner } from "@/components/LoadingSpinner"
+import DocumentModal from './DocumentModal';
 
 interface ChatMessage {
   text: string;
@@ -45,6 +46,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       isUser: !!h.HumanInput
     })) || []
   );
+  const [showDocumentViewer, setShowDocumentViewer] = useState(false)
 
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -356,7 +358,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             </Box>
           ))}
           {isLoading && (
-            <LoadingSpinner/>
+            <LoadingSpinner />
           )}
         </Box>
 
@@ -368,14 +370,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         }}>
           <Paper className="chat-input">
             {(selectedFile || importUrl) && (
-              <Box className="file-chip-container">
-                <Chip
-                  label={selectedFile ? selectedFile.name : importUrl}
-                  onDelete={handleRemoveSelectedFile}
-                  size="small"
-                  variant="outlined"
-                />
-              </Box>
+              <>
+                <Box className="file-chip-container">
+                  <Button onClick={() => setShowDocumentViewer(true)}>
+                    <Chip
+                      label={selectedFile ? selectedFile.name : importUrl}
+                      onDelete={handleRemoveSelectedFile}
+                      size="small"
+                      variant="outlined"
+                    />
+                  </Button>
+                </Box>
+                <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
+              </>
             )}
             <InputBase
               placeholder="Enter your prompt"

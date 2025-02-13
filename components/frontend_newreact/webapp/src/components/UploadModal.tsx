@@ -3,7 +3,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import UploadIcon from '@mui/icons-material/Upload';
 
-interface FileUpload {
+export interface FileUpload {
   name: string;
   progress?: number;
   error?: string;
