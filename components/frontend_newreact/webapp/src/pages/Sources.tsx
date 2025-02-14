@@ -14,12 +14,14 @@ import {  // Import Material-UI components for building the UI
   MenuItem,
   Checkbox,
   FormControl,
-  Icon
+  Icon,
+  Menu,
+  ListItemIcon
 } from '@mui/material';
 import { styled } from '@mui/material/styles'; // Import styling utilities from Material-UI
 import { QueryEngine, QUERY_ENGINE_TYPES } from '../lib/types'; // Import types for query engines
 import { useAuth } from '../contexts/AuthContext'; // Import authentication context
-import { fetchAllEngines } from '../lib/api'; // Import API function for fetching engines
+import { deleteQueryEngine, fetchAllEngines } from '../lib/api'; // Import API function for fetching engines
 import AddIcon from '@mui/icons-material/Add'; // Import icons from Material-UI
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -28,6 +30,12 @@ import SyncIcon from '@mui/icons-material/Sync';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useNavigate } from 'react-router-dom'; // Import navigation hook
 import { ChevronLeft, ChevronRight, FirstPage, LastPage } from '@mui/icons-material';
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from "@mui/material";
+
 
 
 // Styled components for table cells and rows using Material-UI's styling solution
@@ -72,28 +80,73 @@ const Sources = () => {
   const [selectedSources, setSelectedSources] = useState<string[]>([]); // State for tracking selected sources
   const [typeFilter, setTypeFilter] = useState('all'); // State for the type filter
   const [jobStatusFilter, setJobStatusFilter] = useState('all'); // State for the job status filter
+  // const [jobStatus, setJobStatus] = useState('); // State for the job status filter
   const [rowsPerPage, setRowsPerPage] = useState(3); // Rows per page state (not used for actual pagination yet)
   const navigate = useNavigate(); // For navigation
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [selectedSource, setSelectedSource] = useState<null | string>(null);
 
-  useEffect(() => { // useEffect hook to fetch sources when the component mounts or user changes
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>, sourceId: string) => {
+    setMenuAnchor(event.currentTarget);
+    setSelectedSource(sourceId);
+  };
+  
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
+    setSelectedSource(null);
+  };
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+const handleDeleteClick = (sourceId: string) => {
+  setSelectedSource(sourceId); // Store only the source ID
+  setDeleteDialogOpen(true); // Open confirmation dialog
+};
+
+const confirmDeleteSource = async () => {
+  if (!user?.token || !selectedSource) return;
+
+  try {
+    const success = await deleteQueryEngine(user.token)({ id: selectedSource } as QueryEngine);
+    if (success) {
+      setSources((prevSources) => prevSources.filter((s) => s.id !== selectedSource)); // ✅ Remove deleted source
+      console.log(`Deleted source: ${selectedSource}`);
+    } else {
+      console.error("Failed to delete source");
+    }
+  } catch (err) {
+    console.error("Error deleting source:", err);
+  } finally {
+    setDeleteDialogOpen(false); // Close the dialog
+    setSelectedSource(null); // Clear selected source
+  }
+};
+
+  
+  
+  useEffect(() => {
     const loadSources = async () => {
-      if (!user?.token) return; // Return early if user or token is not available
-
+      if (!user?.token) return;
+  
       try {
-        const engines = await fetchAllEngines(user.token)(); // Fetch all engines using the API call
+        const engines = await fetchAllEngines(user.token)();
+        console.log("Fetched sources:", engines); // Debugging
+  
         if (engines) {
-          setSources(engines); // Set the sources state with the fetched engines
+          setSources(engines);
         }
       } catch (err) {
-        setError('Failed to load sources'); // Set error message if fetching fails
-        console.error('Error loading sources:', err); // Log the error to the console
+        setError("Failed to load sources");
+        console.error("Error loading sources:", err);
       } finally {
-        setLoading(false); // Set loading to false after fetching, regardless of success or failure
+        setLoading(false);
       }
     };
-
-    loadSources(); // Call the loadSources function
-  }, [user]); // Run the effect whenever the user changes
+  
+    loadSources();
+  }, [user]); // Dependency array
+  
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => { // Handler for "Select All" checkbox
     if (event.target.checked) {  // If checked, select all sources
@@ -144,9 +197,9 @@ const Sources = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h5" sx={{ color: 'white', mb: 1 }}>Sources</Typography>
-          <Typography variant="body2" sx={{ color: '#888' }}>
+          {/* <Typography variant="body2" sx={{ color: '#888' }}>
             Brief description of what Sources means and how they're used
-          </Typography>
+          </Typography> */}
         </Box>
         {/* Add source button */}
         <Button
@@ -165,46 +218,83 @@ const Sources = () => {
       </Box>
 
       {/* Filtering Options  */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <FormControl size="small"> {/* Type filter dropdown */}
-          <StyledSelect
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as string)}
-            IconComponent={KeyboardArrowDownIcon}
-            displayEmpty
-          >
-            <MenuItem value="all">Type</MenuItem>
-            {Object.entries(QUERY_ENGINE_TYPES).map(([key, value]) => (  // Map through types to create menu items
-              <MenuItem key={key} value={key}>{value}</MenuItem>
-            ))}
-          </StyledSelect>
-        </FormControl>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          {/* Type Filter */}
+          <Box>
+            <Typography variant="body2" sx={{ color: "white", mb: 0.5 }}>
+              Type
+            </Typography>
+            <FormControl size="small">
+              <StyledSelect
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as string)}
+                IconComponent={KeyboardArrowDownIcon}
+                displayEmpty
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: "#242424",
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="all">All</MenuItem>
+                {Object.entries(QUERY_ENGINE_TYPES).map(([key, value]) => (
+                  <MenuItem key={key} value={key}>{value}</MenuItem>
+                ))}
+              </StyledSelect>
+            </FormControl>
+          </Box>
 
-        <FormControl size="small"> {/* Job status filter dropdown */}
-          <StyledSelect
-            value={jobStatusFilter}
-            onChange={(e) => setJobStatusFilter(e.target.value as string)}
-            IconComponent={KeyboardArrowDownIcon}
-            displayEmpty
-          >
-            <MenuItem value="all">Job Status</MenuItem>
-            <MenuItem value="success">Success</MenuItem>
-            <MenuItem value="failed">Failed</MenuItem>
-            <MenuItem value="active">Active</MenuItem>
-          </StyledSelect>
-        </FormControl>
+          {/* Job Status Filter */}
+          <Box>
+            <Typography variant="body2" sx={{ color: "white", mb: 0.5 }}>
+              Job Status
+            </Typography>
+            <FormControl size="small">
+              <StyledSelect
+                value={jobStatusFilter || "Job Status"}
+                onChange={(e) => setJobStatusFilter(e.target.value as string)}
+                IconComponent={KeyboardArrowDownIcon}
+                displayEmpty
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: "#242424",
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="success">Success</MenuItem>
+                <MenuItem value="failed">Failed</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+              </StyledSelect>
+            </FormControl>
+          </Box>
 
-
-        <FormControl size="small"> {/* Created date filter dropdown (currently placeholder) */}
-          <StyledSelect
-            value="created"
-            IconComponent={KeyboardArrowDownIcon}
-            displayEmpty
-          >
-            <MenuItem value="created">Created</MenuItem>
-          </StyledSelect>
-        </FormControl>
-
+          {/* Created Date Filter */}
+          <Box>
+            <Typography variant="body2" sx={{ color: "white", mb: 0.5 }}>
+              Created Date
+            </Typography>
+            <FormControl size="small">
+              <StyledSelect
+                value="created"
+                IconComponent={KeyboardArrowDownIcon}
+                displayEmpty
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: "#242424",
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="created">Created</MenuItem>
+              </StyledSelect>
+            </FormControl>
+          </Box>
         {/* Rows per page and count (currently not functional) */}
         <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography sx={{ color: 'white' }}>Rows per page</Typography>
@@ -212,6 +302,13 @@ const Sources = () => {
             value={rowsPerPage}
             onChange={(e) => setRowsPerPage(Number(e.target.value))}
             IconComponent={KeyboardArrowDownIcon}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  backgroundColor: "#242424",
+                },
+              },
+            }}
           >
             <MenuItem value={3}>3</MenuItem>
             <MenuItem value={5}>5</MenuItem>
@@ -250,42 +347,118 @@ const Sources = () => {
               <StyledTableCell>Job Status</StyledTableCell>
               <StyledTableCell>Type</StyledTableCell>
               <StyledTableCell>Created</StyledTableCell>
-              <StyledTableCell align="right"></StyledTableCell> {/* Placeholder for actions/menu */}
+              <StyledTableCell align="left"></StyledTableCell> {/* Placeholder for actions/menu */}
 
             </TableRow>
           </TableHead>
-          <TableBody> {/* Table body */}
-            {sources.map((source) => (  // Map over sources to create rows
-              <StyledTableRow key={source.id}>
-                <StyledTableCell padding="checkbox"> {/* Checkbox for individual selection */}
-                  <Checkbox
-                    checked={selectedSources.includes(source.id)}
-                    onChange={() => handleSelectSource(source.id)}
-                    sx={{ color: 'white' }}
+          <TableBody>
+              {sources
+                .filter((source) => {
+                  // Apply job status filtering
+                  const jobStatusMatches =
+                    jobStatusFilter === "all" || jobStatusFilter === "success" || jobStatusFilter === "failed" || jobStatusFilter === "active";
+            
+                  // Apply type filtering
+                  const typeMatches =
+                    typeFilter === "all" ||
+                    QUERY_ENGINE_TYPES[source.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] === typeFilter;
+            
+                  return jobStatusMatches && typeMatches; // Ensure both filters apply
+                })
+              .map((source) => (
+                <StyledTableRow key={source.id}>
+                  <StyledTableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedSources.includes(source.id)}
+                      onChange={() => handleSelectSource(source.id)}
+                      sx={{ color: 'white' }}
+                    />
+                  </StyledTableCell>
+                  <StyledTableCell>{source.name}</StyledTableCell>
+                  <StyledTableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {getStatusIcon('Success')}
+                      Success
+                      {/* {getStatusIcon(source.status)} */}
+                      {/* {source.status} */}
+                    </Box>
+                  </StyledTableCell>
+                  <StyledTableCell>
+                    {QUERY_ENGINE_TYPES[source.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] ||
+                      source.query_engine_type}
+                  </StyledTableCell>
+                  <StyledTableCell>{new Date(source.created_time).toLocaleDateString()}</StyledTableCell>
+                  
+                  {/* Three-dot menu */}
+                    <StyledTableCell align="left">
+                      <IconButton
+                        size="small"
+                        sx={{ color: "white" }}
+                        onClick={(e) => handleMenuOpen(e, source.id)}
+                      >
+                        <MoreVertIcon />
+                      </IconButton>
 
-                  />
-                </StyledTableCell>
-                <StyledTableCell>{source.name}</StyledTableCell> {/* Data cells */}
-                <StyledTableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {getStatusIcon('Success')} {/* Get the status icon based on 'success' state */}
-                    Success {/* Currently hardcoded to success */}
-                  </Box>
-                </StyledTableCell>
-                <StyledTableCell>
-                  {QUERY_ENGINE_TYPES[source.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || source.query_engine_type}  {/* Display query engine type */}
-                </StyledTableCell>
-                <StyledTableCell>{new Date(source.created_time).toLocaleDateString()}</StyledTableCell> {/* Format and display the date */}
+                      {/* Dropdown Menu */}
+                      <Menu
+                        anchorEl={menuAnchor}
+                        open={Boolean(menuAnchor) && selectedSource === source.id}
+                        onClose={handleMenuClose}
+                        PaperProps={{
+                          sx: {
+                            backgroundColor: "#242424",
+                            color: "white",
+                          },
+                        }}
+                      >
+                        <MenuItem onClick={() => console.log("Copy Job Status", typeFilter)}>
+                          <ListItemIcon>
+                            <ContentCopyIcon sx={{ color: "white" }} />
+                          </ListItemIcon>
+                          Copy Job Status
+                        </MenuItem>
+                        <MenuItem onClick={() => console.log("View Source", source.id)}>
+                          <ListItemIcon>
+                            <VisibilityIcon sx={{ color: "white" }} />
+                          </ListItemIcon>
+                          View Source
+                        </MenuItem>
+                        <MenuItem onClick={() => console.log("Edit Source", source.id)}>
+                          <ListItemIcon>
+                            <EditIcon sx={{ color: "white" }} />
+                          </ListItemIcon>
+                          Edit Source
+                        </MenuItem>
+                        <MenuItem onClick={() => handleDeleteClick(source.id)}>
+                          <ListItemIcon>
+                            <DeleteIcon sx={{ color: "red" }} />
+                          </ListItemIcon>
+                          Delete Source
+                        </MenuItem>
 
-                <StyledTableCell align="right">
-                  <IconButton size="small" sx={{ color: 'white' }}> {/* More options menu (currently placeholder) */}
-                    <MoreVertIcon />
-                  </IconButton>
-                </StyledTableCell>
-              </StyledTableRow>
-            ))}
+                      </Menu>
+                    </StyledTableCell>
+                </StyledTableRow>
+              ))}
           </TableBody>
         </Table>
+        {/* 🔹 Delete Confirmation Dialog - Add This Here */}
+    <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <DialogTitle>Confirm Deletion</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          Are you sure you want to delete this source? This action cannot be undone.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
+          Cancel
+        </Button>
+        <Button onClick={confirmDeleteSource} color="error">
+          Confirm
+        </Button>
+      </DialogActions>
+    </Dialog>
       </TableContainer>
     </Box>
   );

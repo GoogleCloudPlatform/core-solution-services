@@ -67,7 +67,7 @@ interface ResumeChatApiParams {
 }
 
 interface JobStatusResponse {
-  status: "succeeded" | "failed" | "active"
+  status: "success" | "failed" | "active"
 }
 
 interface UpdateChatParams {
@@ -321,6 +321,7 @@ export const fetchQueryHistory =
 export const fetchAllEngines =
   (token: string) => (): Promise<QueryEngine[] | undefined> => {
     const url = `${endpoint}/query`
+    
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
@@ -333,28 +334,45 @@ export const fetchEngine =
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
 
+
 export const createQueryEngine =
   (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngineBuildJob | undefined> => {
-    const url = `${endpoint}/query/engine`
-    const headers = { Authorization: `Bearer ${token}` }
+    const url = `${endpoint}/query/engine`;
+    const headers = { Authorization: `Bearer ${token}` };
+
     const data = {
-      "query_engine": queryEngine.name,
-      "query_engine_type": queryEngine.query_engine_type,
-      "doc_url": queryEngine.doc_url,
-      "embedding_type": queryEngine.embedding_type,
-      "vector_store": queryEngine.vector_store,
-      "description": queryEngine.description,
-      "params": {
-        "depth_limit": queryEngine.depth_limit,
-        "agents": queryEngine.agents,
-        "associated_engines": queryEngine.child_engines,
-        "manifest_url": queryEngine.manifest_url,
-        "chunk_size": queryEngine.chunk_size,
-        "is_multimodal": queryEngine.is_multimodal ? "True" : "False",
-      }
+      query_engine: queryEngine.name,
+      query_engine_type: queryEngine.query_engine_type,
+      doc_url: queryEngine.doc_url,
+      embedding_type: queryEngine.embedding_type,
+      vector_store: queryEngine.vector_store,
+      description: queryEngine.description,
+      params: {
+        depth_limit: queryEngine.depth_limit,
+        agents: queryEngine.agents,
+        associated_engines: queryEngine.child_engines,
+        manifest_url: queryEngine.manifest_url,
+        chunk_size: queryEngine.chunk_size,
+        is_multimodal: queryEngine.is_multimodal ? "True" : "False",
+      },
+    };
+
+    try {
+      console.log("Making API request to:", url);
+      console.log("Request headers:", headers);
+      console.log("Request payload:", data);
+
+      const response = await axios.post(url, data, { headers });
+
+      console.log("API response:", response.data); // Debugging API response
+
+      return response.data?.data; // Ensure correct parsing
+    } catch (error: any) {
+      console.error("API call failed:", error.response ? error.response.data : error.message);
+      throw new Error(error.response?.data?.message || "Failed to create query engine");
     }
-    return axios.post(url, data, { headers }).then(path(["data", "data"]))
-  }
+  };
+
 
 export const updateQueryEngine =
   (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngine | undefined> => {

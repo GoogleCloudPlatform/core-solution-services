@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { createQueryEngine } from '../lib/api';
+import { createQueryEngine, fetchAllEngines } from '../lib/api';
 import { QUERY_ENGINE_TYPES, QUERY_ENGINE_DEFAULT_TYPE, QueryEngine } from '../lib/types';
 import {
   Box,
@@ -18,6 +18,8 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ClearIcon from '@mui/icons-material/Clear';
 import styled from '@emotion/styled';
+import InfoIcon from '@mui/icons-material/Info';
+import Tooltip from '@mui/material/Tooltip';
 
 const StyledSelect = styled(Select)({
   backgroundColor: '#242424',
@@ -65,6 +67,8 @@ const AddSource = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [sources, setSources] = useState<QueryEngine[]>([]);
+
 
   const [formData, setFormData] = useState<Partial<QueryEngine>>({
     name: '',
@@ -72,8 +76,8 @@ const AddSource = () => {
     query_engine_type: QUERY_ENGINE_DEFAULT_TYPE,
     doc_url: '',
     embedding_type: 'text-embedding-ada-002',
-    vector_store: 'vertex_matching_engine',
-    depth_limit: 100,
+    vector_store: 'langchain_pgvector',
+    depth_limit: 0,
     chunk_size: 500,
     is_multimodal: false,
   });
@@ -84,24 +88,43 @@ const AddSource = () => {
       [field]: value
     }));
   };
-
   const handleSubmit = async () => {
-    if (!user?.token) return;
-
+    if (!user?.token) {
+      console.error("User token is missing.");
+      return;
+    }
+  
     setLoading(true);
     setError(null);
-
+  
     try {
+      console.log("Submitting form data:", formData); // Log the form data before submission
       const response = await createQueryEngine(user.token)(formData as QueryEngine);
+  
       if (response) {
-        navigate('/sources');
+        console.log("Source created successfully:", response);
+  
+        // Refetch the sources after successful creation
+        const engines = await fetchAllEngines(user.token)();
+        if (engines) {
+          setSources(engines);  // Update the state with the latest sources
+          console.log("Sources refetched after creation:", engines);
+        }
+  
+        navigate('/sources');  // Navigate to sources page
+      } else {
+        console.error("API call did not return a response.");
+        setError("Failed to create source.");
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to create source');
+      console.error("Error creating source:", err);
+      setError(err.message || "Failed to create source.");
     } finally {
       setLoading(false);
     }
   };
+  
+  
 
   const handleDepthLimitChange = (_event: Event, newValue: number | number[]) => {
     handleChange('depth_limit', newValue as number);
@@ -164,6 +187,9 @@ const AddSource = () => {
           <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
             Name
           </Typography>
+          <Tooltip title="Provide a unique name for the query engine.">
+            <InfoIcon sx={{ color: '#888', fontSize: '14px', cursor: 'pointer', ml: 0.5 }} />
+          </Tooltip>
           <TextField
             fullWidth
             placeholder="Input"
@@ -175,7 +201,7 @@ const AddSource = () => {
             InputProps={{
               endAdornment: formData.name && (
                 <IconButton size="small" onClick={() => handleChange('name', '')}>
-                  <ClearIcon fontSize="small" />
+                  <ClearIcon fontSize="small" sx={{ color: "white" }} />
                 </IconButton>
               )
             }}
@@ -194,18 +220,27 @@ const AddSource = () => {
           <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
             Data URL
           </Typography>
+          <Tooltip title="Enter a valid URL starting with https://, http://, or gs://">
+            <InfoIcon sx={{ color: '#888', fontSize: '16px', cursor: 'pointer' }} />
+          </Tooltip>
           <TextField
             fullWidth
             placeholder="Input"
             value={formData.doc_url}
             onChange={(e) => handleChange('doc_url', e.target.value)}
             required
-            error={!formData.doc_url}
-            helperText={!formData.doc_url && "Required"}
+            error={!formData.doc_url || !/^https?:\/\/|^gs:\/\//.test(formData.doc_url)}
+            helperText={
+              !formData.doc_url
+                ? "Required"
+                : !/^https?:\/\/|^gs:\/\//.test(formData.doc_url)
+                ? "Invalid URL. Must start with https://, http://, or gs://"
+                : ""
+            }
             InputProps={{
               endAdornment: formData.doc_url && (
                 <IconButton size="small" onClick={() => handleChange('doc_url', '')}>
-                  <ClearIcon fontSize="small" />
+                  <ClearIcon fontSize="small" sx={{ color: "white" }} />
                 </IconButton>
               )
             }}
@@ -218,7 +253,31 @@ const AddSource = () => {
               }
             }}
           />
+
         </Box>
+
+            {formData.doc_url && /^https?:\/\/|^gs:\/\//.test(formData.doc_url) && (
+              <Box sx={{ mb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="caption" sx={{ color: '#888' }}>
+                    Depth Limit
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'white' }}>
+                    {formData.depth_limit}
+                  </Typography>
+                </Box>
+                <StyledSlider
+                  value={formData.depth_limit ?? undefined}
+                  onChange={handleDepthLimitChange}
+                  min={0}
+                  max={4}
+                  step={1}
+                  marks
+                  sx={{ mb: 4 }}
+                />
+              </Box>
+            )}
+
 
         <Button
           onClick={() => setShowAdvanced(!showAdvanced)}
@@ -230,10 +289,13 @@ const AddSource = () => {
 
         <Collapse in={showAdvanced}>
           <Box sx={{ mt: 3 }}>
-            <Box sx={{ mb: 4 }}>
+          <Box sx={{ mb: 4 }}>
               <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
                 Type
               </Typography>
+              <Tooltip title="Select the type of query engine you want to use.">
+                <InfoIcon sx={{ color: '#888', fontSize: '16px', cursor: 'pointer' }} />
+              </Tooltip>
               <StyledSelect
                 fullWidth
                 value={formData.query_engine_type}
@@ -268,8 +330,16 @@ const AddSource = () => {
                   fullWidth
                   value={formData.vector_store}
                   onChange={(e) => handleChange('vector_store', e.target.value)}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        backgroundColor: "#242424", // Background for dropdown menu
+                      },
+                    },
+                  }}
                 >
-                  <MenuItem value="vertex_matching_engine">Vertex Matching Engine</MenuItem>
+                  <MenuItem value="matching_engine">Vertex Matching Engine</MenuItem>
+                  <MenuItem value="langchain_pgvector">PG Vector</MenuItem>
                 </StyledSelect>
               </Box>
 
@@ -288,24 +358,6 @@ const AddSource = () => {
             </Box>
 
             <Box sx={{ mb: 3 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="caption" sx={{ color: '#888' }}>
-                  Depth Limit
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'white' }}>
-                  {formData.depth_limit}
-                </Typography>
-              </Box>
-              <StyledSlider
-                value={formData.depth_limit ?? undefined}
-                onChange={handleDepthLimitChange}
-                min={1}
-                max={10}
-                step={1}
-                marks
-                sx={{ mb: 4 }}
-              />
-
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                 <Typography variant="caption" sx={{ color: '#888' }}>
                   Chunk Size
@@ -336,7 +388,7 @@ const AddSource = () => {
                 InputProps={{
                   endAdornment: formData.agents?.length ? (
                     <IconButton size="small" onClick={() => handleChange('agents', [])}>
-                      <ClearIcon fontSize="small" />
+                      <ClearIcon fontSize="small" sx={{ color: "white" }}/>
                     </IconButton>
                   ) : null
                 }}
@@ -363,7 +415,7 @@ const AddSource = () => {
                 InputProps={{
                   endAdornment: formData.child_engines?.length ? (
                     <IconButton size="small" onClick={() => handleChange('child_engines', [])}>
-                      <ClearIcon fontSize="small" />
+                      <ClearIcon fontSize="small" sx={{ color: "white" }}/>
                     </IconButton>
                   ) : null
                 }}
