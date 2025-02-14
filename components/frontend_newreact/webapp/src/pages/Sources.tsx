@@ -356,7 +356,7 @@ const confirmDeleteSource = async () => {
                 .filter((source) => {
                   // Apply job status filtering
                   const jobStatusMatches =
-                    jobStatusFilter === "all" || jobStatusFilter === "success" || jobStatusFilter === "failed" || jobStatusFilter === "active";
+                    jobStatusFilter === "all" || jobStatusFilter === "success";
             
                   // Apply type filtering
                   const typeMatches =
