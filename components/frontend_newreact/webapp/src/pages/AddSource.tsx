@@ -93,24 +93,24 @@ const AddSource = () => {
       console.error("User token is missing.");
       return;
     }
-  
+
     setLoading(true);
     setError(null);
-  
+
     try {
       console.log("Submitting form data:", formData); // Log the form data before submission
       const response = await createQueryEngine(user.token)(formData as QueryEngine);
-  
+
       if (response) {
         console.log("Source created successfully:", response);
-  
+
         // Refetch the sources after successful creation
         const engines = await fetchAllEngines(user.token)();
         if (engines) {
           setSources(engines);  // Update the state with the latest sources
           console.log("Sources refetched after creation:", engines);
         }
-  
+
         navigate('/sources');  // Navigate to sources page
       } else {
         console.error("API call did not return a response.");
@@ -123,8 +123,8 @@ const AddSource = () => {
       setLoading(false);
     }
   };
-  
-  
+
+
 
   const handleDepthLimitChange = (_event: Event, newValue: number | number[]) => {
     handleChange('depth_limit', newValue as number);
@@ -135,13 +135,13 @@ const AddSource = () => {
   };
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       height: '100vh',
       backgroundColor: '#1a1a1a',
       color: 'white'
     }}>
       {/* Header */}
-      <Box sx={{ 
+      <Box sx={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -149,8 +149,8 @@ const AddSource = () => {
         borderBottom: '1px solid #333'
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography 
-            component="span" 
+          <Typography
+            component="span"
             sx={{ color: '#888', cursor: 'pointer' }}
             onClick={() => navigate('/sources')}
           >
@@ -171,7 +171,7 @@ const AddSource = () => {
             variant="contained"
             onClick={handleSubmit}
             disabled={loading}
-            sx={{ 
+            sx={{
               backgroundColor: '#4a90e2',
               '&:hover': { backgroundColor: '#357abd' }
             }}
@@ -234,8 +234,8 @@ const AddSource = () => {
               !formData.doc_url
                 ? "Required"
                 : !/^https?:\/\/|^gs:\/\//.test(formData.doc_url)
-                ? "Invalid URL. Must start with https://, http://, or gs://"
-                : ""
+                  ? "Invalid URL. Must start with https://, http://, or gs://"
+                  : ""
             }
             InputProps={{
               endAdornment: formData.doc_url && (
@@ -256,27 +256,27 @@ const AddSource = () => {
 
         </Box>
 
-            {formData.doc_url && /^https?:\/\/|^gs:\/\//.test(formData.doc_url) && (
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography variant="caption" sx={{ color: '#888' }}>
-                    Depth Limit
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'white' }}>
-                    {formData.depth_limit}
-                  </Typography>
-                </Box>
-                <StyledSlider
-                  value={formData.depth_limit ?? undefined}
-                  onChange={handleDepthLimitChange}
-                  min={0}
-                  max={4}
-                  step={1}
-                  marks
-                  sx={{ mb: 4 }}
-                />
-              </Box>
-            )}
+        {formData.doc_url && /^https?:\/\/|^gs:\/\//.test(formData.doc_url) && (
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="caption" sx={{ color: '#888' }}>
+                Depth Limit
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'white' }}>
+                {formData.depth_limit}
+              </Typography>
+            </Box>
+            <StyledSlider
+              value={formData.depth_limit ?? undefined}
+              onChange={handleDepthLimitChange}
+              min={0}
+              max={4}
+              step={1}
+              marks
+              sx={{ mb: 4 }}
+            />
+          </Box>
+        )}
 
 
         <Button
@@ -289,7 +289,7 @@ const AddSource = () => {
 
         <Collapse in={showAdvanced}>
           <Box sx={{ mt: 3 }}>
-          <Box sx={{ mb: 4 }}>
+            <Box sx={{ mb: 4 }}>
               <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
                 Type
               </Typography>
@@ -352,7 +352,7 @@ const AddSource = () => {
                   value={formData.embedding_type}
                   onChange={(e) => handleChange('embedding_type', e.target.value)}
                 >
-                  <MenuItem value="text-embedding-ada-002">text-embedding-ada-002</MenuItem>
+                  <MenuItem value="VertexAI-Embedding">text-embedding-ada-002</MenuItem>
                 </StyledSelect>
               </Box>
             </Box>
@@ -388,7 +388,7 @@ const AddSource = () => {
                 InputProps={{
                   endAdornment: formData.agents?.length ? (
                     <IconButton size="small" onClick={() => handleChange('agents', [])}>
-                      <ClearIcon fontSize="small" sx={{ color: "white" }}/>
+                      <ClearIcon fontSize="small" sx={{ color: "white" }} />
                     </IconButton>
                   ) : null
                 }}
@@ -415,7 +415,7 @@ const AddSource = () => {
                 InputProps={{
                   endAdornment: formData.child_engines?.length ? (
                     <IconButton size="small" onClick={() => handleChange('child_engines', [])}>
-                      <ClearIcon fontSize="small" sx={{ color: "white" }}/>
+                      <ClearIcon fontSize="small" sx={{ color: "white" }} />
                     </IconButton>
                   ) : null
                 }}

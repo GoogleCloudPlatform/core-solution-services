@@ -5,7 +5,7 @@
   transform: translate(-50%, -50%);
   width: 90%;
   max-width: 600px;
-  background-color: #fff;
+  background-color: #333537;
   border-radius: 8px;
   padding: 24px;
   outline: none;
@@ -283,7 +283,8 @@
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
-} 
+}

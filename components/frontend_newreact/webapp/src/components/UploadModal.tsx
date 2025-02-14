@@ -1,7 +1,7 @@
 import { Box, Typography, IconButton, Button, TextField, Divider } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
-import UploadIcon from '@mui/icons-material/Upload';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 
 export interface FileUpload {
   name: string;
@@ -48,7 +48,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
           onChange={onFileSelect}
         />
         <label htmlFor="file-upload" className="upload-drop-zone">
-          <UploadIcon />
+          <FileUploadIcon />
           <Typography>
             Drag & drop or <span className="choose-file-text">choose a file</span> to upload
           </Typography>
@@ -84,6 +84,27 @@ const UploadModal: React.FC<UploadModalProps> = ({
           onChange={(e) => onImportUrlChange(e.target.value)}
           variant="outlined"
           size="small"
+          sx={{
+            '& .MuiOutlinedInput-root': { // Target outlined variant styles
+              '& fieldset': { // Target the outline/border
+                borderColor: 'rgba(255, 255, 255, 0.23)', // Example border color
+              },
+              '&:hover fieldset': {
+                borderColor: 'rgba(255, 255, 255, 0.46)', // Example hover color
+              },
+              '&.Mui-focused fieldset': { // Focused state
+                borderColor: 'rgba(255, 255, 255, 0.69)', // Adjust color
+              },
+
+
+            },
+            // You can also set label color here if needed:
+            '& .MuiInputLabel-outlined': {
+              color: 'rgba(255, 255, 255, 0.54)', // Or 'white', or any color
+            },
+            input: { color: 'white' } // Important
+          }}
+
         />
       </Box>
 
