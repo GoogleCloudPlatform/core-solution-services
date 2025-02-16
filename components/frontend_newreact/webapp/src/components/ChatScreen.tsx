@@ -22,6 +22,7 @@ import DocumentModal from './DocumentModal';
 interface ChatMessage {
   text: string;
   isUser: boolean;
+  uploadedFile?: string;
 }
 
 interface FileUpload {
@@ -104,7 +105,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
     const userMessage: ChatMessage = {
       text: prompt,
-      isUser: true
+      isUser: true,
+      uploadedFile: selectedFile?.name,
     };
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
@@ -117,7 +119,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         userInput: prompt,
         llmType: selectedModel.id,
         stream: false,
-        temperature: temperature
+        temperature: temperature,
+        uploadFile: selectedFile || undefined,
+        fileUrl: importUrl
       };
 
       if (chatId) {
@@ -166,15 +170,45 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         setChatId(response.id);
       }
 
-      // Handle chat response
       if (response?.history) {
-        const aiMessage: ChatMessage = {
-          text: response.history[response.history.length - 1]?.AIOutput || 'No response',
-          isUser: false
-        };
-        setMessages(prev => [...prev, aiMessage]);
+        let newMessages: ChatMessage[] = [];
+        for (let i = 0; i < response.history.length; i++) {
+          const historyItem = response.history[i];
+          if (historyItem.HumanInput) { // User message WITH possible file
+            let uploadedFile: string | undefined; // Get uploadedFile
+
+            if (i + 2 < response.history.length) {
+              if (response.history[i + 2].UploadedFile) {
+                uploadedFile = response.history[i + 2].UploadedFile;
+              }
+            }
+
+            newMessages = [...newMessages, {
+              text: historyItem.HumanInput,
+              isUser: true,
+              uploadedFile: uploadedFile, // Assign uploadedFile here
+            }]
+          } else if (historyItem.AIOutput) { // AI message
+            newMessages = [...newMessages, {
+              text: historyItem.AIOutput,
+              isUser: false,
+              // No uploadedFile for AI messages
+            }]
+          } else if (historyItem.UploadedFile) {
+            continue;
+          } else {
+            newMessages = [...newMessages, { text: '', isUser: false }]
+          }
+        }
+
+        setMessages(newMessages);
+      } else {
+        // Handle the case where there's no history in the response (e.g., an error occurred)
+        console.error("API response does not contain 'history' property:", response)
       }
 
+      setSelectedFile(null); // Reset file
+      setImportUrl('');      // Reset URL
       setPrompt('');
     } catch (error) {
       console.error('Error in chat:', error);
@@ -226,6 +260,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     setImportUrl('');
   };
 
+  //console.log({ messages })
+
   return (
     <Box className="chat-screen">
       {!hideHeader && (
@@ -268,94 +304,125 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           minHeight: 0,
         }}>
           {messages.map((message, index) => (
-            <Box
-              key={index}
-              className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
-              sx={{
-                backgroundColor: message.isUser ? '#343541' : 'transparent',
-                borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
-                padding: '0.75rem 1rem',
-                marginBottom: '1rem',
-                alignSelf: message.isUser ? 'flex-end' : 'flex-start',
+            <>
+              <Box
+                key={index}
+                className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
+                sx={{
+                  backgroundColor: message.isUser ? '#343541' : 'transparent',
+                  borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
+                  padding: '0.75rem 1rem',
+                  marginBottom: '1rem',
+                  alignSelf: message.isUser ? 'flex-end' : 'flex-start',
+                  maxWidth: '70%',
+                  display: 'flex',
+                  flexDirection: message.isUser ? 'row-reverse' : 'row',
+                  alignItems: 'flex-start',
+                  gap: '0.5rem',
+                }}
+              >
+                {message.isUser ? (
+                  <Typography sx={{ color: '#fff', textAlign: 'right' }}>{message.text}</Typography>
+                ) : (
+                  <>
+                    <Avatar
+                      src="/assets/images/gemini-icon.png"
+                      className="message-avatar"
+                      sx={{ backgroundColor: 'transparent' }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <ReactMarkdown
+                        components={{
+                          code({ node, className, children }) {
+                            const match = /language-(\w+)/.exec(className || '');
+                            const language = match ? match[1] : '';
+
+                            if (!match) {
+                              return (
+                                <code className={className}>
+                                  {children}
+                                </code>
+                              );
+                            }
+
+                            return (
+                              <SyntaxHighlighter
+                                style={oneDark}
+                                language={language}
+                                PreTag="div"
+                              >
+                                {String(children).replace(/\n$/, '')}
+                              </SyntaxHighlighter>
+                            );
+                          },
+                          p: ({ children }) => (
+                            <Typography component="p" sx={{ mb: 1 }}>
+                              {children}
+                            </Typography>
+                          ),
+                          h1: ({ children }) => (
+                            <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
+                              {children}
+                            </Typography>
+                          ),
+                          h2: ({ children }) => (
+                            <Typography variant="h6" sx={{ mb: 2, mt: 2 }}>
+                              {children}
+                            </Typography>
+                          ),
+                          ul: ({ children }) => (
+                            <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                              {children}
+                            </Box>
+                          ),
+                          ol: ({ children }) => (
+                            <Box component="ol" sx={{ pl: 2, mb: 2 }}>
+                              {children}
+                            </Box>
+                          ),
+                          li: ({ children }) => (
+                            <Box component="li" sx={{ mb: 1 }}>
+                              {children}
+                            </Box>
+                          ),
+                        }}
+                      >
+                        {message.text}
+                      </ReactMarkdown>
+                    </Box>
+                  </>
+                )}
+                <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
+              </Box>
+              <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`} sx={{
+                alignSelf: 'flex-end',
                 maxWidth: '70%',
                 display: 'flex',
-                flexDirection: message.isUser ? 'row-reverse' : 'row',
+                flexDirection: 'row-reverse',
                 alignItems: 'flex-start',
-                gap: '0.5rem',
-              }}
-            >
-              {message.isUser ? (
-                <Typography sx={{ color: '#fff', textAlign: 'right' }}>{message.text}</Typography>
-              ) : (
-                <>
-                  <Avatar
-                    src="/assets/images/gemini-icon.png"
-                    className="message-avatar"
-                    sx={{ backgroundColor: 'transparent' }}
-                  />
-                  <Box sx={{ flex: 1 }}>
-                    <ReactMarkdown
-                      components={{
-                        code({ node, className, children }) {
-                          const match = /language-(\w+)/.exec(className || '');
-                          const language = match ? match[1] : '';
+              }}>
+                {/* ... existing JSX (Avatar, Typography for message.text) */}
 
-                          if (!match) {
-                            return (
-                              <code className={className}>
-                                {children}
-                              </code>
-                            );
-                          }
-
-                          return (
-                            <SyntaxHighlighter
-                              style={oneDark}
-                              language={language}
-                              PreTag="div"
-                            >
-                              {String(children).replace(/\n$/, '')}
-                            </SyntaxHighlighter>
-                          );
-                        },
-                        p: ({ children }) => (
-                          <Typography component="p" sx={{ mb: 1 }}>
-                            {children}
-                          </Typography>
-                        ),
-                        h1: ({ children }) => (
-                          <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
-                            {children}
-                          </Typography>
-                        ),
-                        h2: ({ children }) => (
-                          <Typography variant="h6" sx={{ mb: 2, mt: 2 }}>
-                            {children}
-                          </Typography>
-                        ),
-                        ul: ({ children }) => (
-                          <Box component="ul" sx={{ pl: 2, mb: 2 }}>
-                            {children}
-                          </Box>
-                        ),
-                        ol: ({ children }) => (
-                          <Box component="ol" sx={{ pl: 2, mb: 2 }}>
-                            {children}
-                          </Box>
-                        ),
-                        li: ({ children }) => (
-                          <Box component="li" sx={{ mb: 1 }}>
-                            {children}
-                          </Box>
-                        ),
-                      }}
-                    >
-                      {message.text}
-                    </ReactMarkdown>
+                {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
+                {message.isUser && message.uploadedFile && ( //  Only render if uploadedFile is present
+                  <Box className="file-chip-container" sx={{
+                    alignSelf: 'flex-end',
+                    display: 'flex',
+                    flexDirection: 'row-reverse',
+                    alignItems: 'flex-start',
+                  }}>
+                    <Button onClick={() => setShowDocumentViewer(true)}>
+                      <Chip
+                        label={message.uploadedFile}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </Button>
+                    {/* <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} /> */}
                   </Box>
-                </>
-              )}
-            </Box>
+                )}
+              </Box>
+            </>
           ))}
           {isLoading && (
             <LoadingSpinner />

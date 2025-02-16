@@ -220,6 +220,7 @@ body {
 
 .user-message .message-avatar {
   background-color: #e57373 !important;
+  align-self: flex-end;
 }
 
 .chat-input-container {
@@ -296,70 +297,70 @@ body {
 
 /* Add these new styles */
 .MuiSelect-select {
-    color: white !important;
+  color: white !important;
 }
 
 .MuiMenuItem-root {
-    color: white !important;
+  color: white !important;
 }
 
 .MuiSlider-root {
-    color: #4a90e2 !important;
+  color: #4a90e2 !important;
 }
 
 .MuiSlider-rail {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .MuiSlider-track {
-    background-color: #4a90e2 !important;
+  background-color: #4a90e2 !important;
 }
 
 .MuiSlider-thumb {
-    background-color: #4a90e2 !important;
+  background-color: #4a90e2 !important;
 }
 
 .settings-panel {
-    background-color: #1f1f1f;
-    color: white;
-    height: 100%;
-    overflow-y: auto;
+  background-color: #1f1f1f;
+  color: white;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .model-description {
-    background-color: #242424;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    padding: 16px;
-    margin: 16px 0;
-    color: rgba(255, 255, 255, 0.7);
+  background-color: #242424;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 16px;
+  margin: 16px 0;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* Update existing sidebar styles */
 .sidebar-icon-button {
-    color: rgba(255, 255, 255, 0.7) !important;
-    margin: 4px 0 !important;
-    padding: 12px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  margin: 4px 0 !important;
+  padding: 12px !important;
 }
 
 .sidebar-add-button {
-    background-color: #000 !important;
-    color: white !important;
-    border-radius: 50% !important;
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    margin: 8px 0 !important;
+  background-color: #000 !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  margin: 8px 0 !important;
 }
 
 .sidebar-add-button:hover {
-    background-color: rgba(0, 0, 0, 0.9) !important;
+  background-color: rgba(0, 0, 0, 0.9) !important;
 }
 
 /* Update drawer styles */
 .MuiDrawer-paper {
-    background-color: #1f1f1f !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background-color: #1f1f1f !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Add these styles to the existing App.css file */
