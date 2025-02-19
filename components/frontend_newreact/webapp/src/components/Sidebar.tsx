@@ -32,6 +32,8 @@ import ChatInterfaceIcon from '../assets/chat-icon.svg'; // Import your SVG
 import SourceIcon from '../assets/source-icon.svg'; // Import your SVG
 import HistoryCustomIcon from '../assets/history-icon.svg';
 import SettingsCustomIcon from '../assets/settings-icon.svg';
+import Tooltip from '@mui/material/Tooltip';
+
 
 const drawerWidth = 150;
 const collapsedWidth = 60;
@@ -126,11 +128,13 @@ export const Sidebar = ({
     const mainMenuItems = [
         {
             text: 'History',
+            tooltip: 'History',
             icon: <img src={HistoryCustomIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'history'
         },
         {
             text: 'Settings',
+            tooltip: 'Settings',
             icon: <img src={SettingsCustomIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'settings'
         },
@@ -138,7 +142,8 @@ export const Sidebar = ({
 
     const bottomMenuItems = [
         {
-            text: 'Chat',
+            text: 'Resume Chat',
+            tooltip: 'Resume Chat',
             icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'chat',
             onClick: () => {
@@ -149,6 +154,7 @@ export const Sidebar = ({
         },
         {
             text: 'Sources',
+            tooltip: 'Sources',
             icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} />,
             id: 'sources',
             onClick: () => {
@@ -164,51 +170,57 @@ export const Sidebar = ({
     ];
 
     const renderMenuItem = (item: typeof mainMenuItems[0] | typeof bottomMenuItems[0], index: number) => (
-        <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>
-            <ListItemButton
-                selected={selectedItem === item.id}
-                onClick={() => {
-                    if ('onClick' in item && item.onClick) {
-                        item.onClick();
-                    } else {
-                        handleItemClick(item.id);
-                    }
-                }}
-                sx={{
-                    minHeight: 48,
-                    justifyContent: isOpen ? 'initial' : 'center',
-                    px: 2.5,
-                    '&.Mui-selected': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                    },
-                    '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                    },
-                }}
-            >
-                <ListItemIcon
-                    sx={{
-                        minWidth: 0,
-                        mr: isOpen ? 2 : 'auto',
-                        justifyContent: 'center',
-                        color: 'rgba(255, 255, 255, 0.7)',
+        <Tooltip
+            title={item.tooltip}
+            placement="right"
+            arrow
+        >
+            <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>
+                <ListItemButton
+                    selected={selectedItem === item.id}
+                    onClick={() => {
+                        if ('onClick' in item && item.onClick) {
+                            item.onClick();
+                        } else {
+                            handleItemClick(item.id);
+                        }
                     }}
-                >
-                    {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                    primary={item.text}
                     sx={{
-                        opacity: isOpen ? 1 : 0,
-                        transition: 'opacity 0.2s',
-                        '& .MuiTypography-root': {
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            fontSize: '0.875rem',
+                        minHeight: 48,
+                        justifyContent: isOpen ? 'initial' : 'center',
+                        px: 2.5,
+                        '&.Mui-selected': {
+                            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                        },
+                        '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.06)',
                         },
                     }}
-                />
-            </ListItemButton>
-        </ListItem>
+                >
+                    <ListItemIcon
+                        sx={{
+                            minWidth: 0,
+                            mr: isOpen ? 2 : 'auto',
+                            justifyContent: 'center',
+                            color: 'rgba(255, 255, 255, 0.7)',
+                        }}
+                    >
+                        {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                        primary={item.text}
+                        sx={{
+                            opacity: isOpen ? 1 : 0,
+                            transition: 'opacity 0.2s',
+                            '& .MuiTypography-root': {
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                fontSize: '0.875rem',
+                            },
+                        }}
+                    />
+                </ListItemButton>
+            </ListItem>
+        </Tooltip>
     );
 
     return (
@@ -218,35 +230,47 @@ export const Sidebar = ({
                 isOpen={isOpen}
             >
                 <DrawerHeader>
-                    <IconButton
-                        onClick={toggle}
-                        sx={{
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            '&:hover': {
-                                backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                            },
-                        }}
+                    < Tooltip
+                        title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+                        placement='right'
+                        arrow
                     >
-                        <MenuIcon />
-                    </IconButton>
-                    <IconButton
-                        onClick={() => {
-                            onNewChat();
-                            setShowChat(true);
-                            setShowWelcome(false);
-                        }}
-                        sx={{
-                            bgcolor: '#000',
-                            borderRadius: '50%',
-                            width: 36,
-                            height: 36,
-                            '&:hover': {
-                                bgcolor: 'rgba(0, 0, 0, 0.9)',
-                            },
-                        }}
+                        <IconButton
+                            onClick={toggle}
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                                },
+                            }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                    </Tooltip>
+                    < Tooltip
+                        title='New Chat'
+                        placement='right'
+                        arrow
                     >
-                        <AddIcon sx={{ color: 'white', fontSize: 20 }} />
-                    </IconButton>
+                        <IconButton
+                            onClick={() => {
+                                onNewChat();
+                                setShowChat(true);
+                                setShowWelcome(false);
+                            }}
+                            sx={{
+                                bgcolor: '#000',
+                                borderRadius: '50%',
+                                width: 36,
+                                height: 36,
+                                '&:hover': {
+                                    bgcolor: 'rgba(0, 0, 0, 0.9)',
+                                },
+                            }}
+                        >
+                            <AddIcon sx={{ color: 'white', fontSize: 20 }} />
+                        </IconButton>
+                    </Tooltip>
                 </DrawerHeader>
 
                 <List sx={{ mt: 1 }}>
