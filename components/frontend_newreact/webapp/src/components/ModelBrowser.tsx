@@ -1,11 +1,11 @@
-import { 
-    Dialog, 
-    DialogTitle, 
-    DialogContent, 
-    IconButton, 
-    InputBase, 
-    Box, 
-    Typography, 
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    IconButton,
+    InputBase,
+    Box,
+    Typography,
     Chip,
     Button,
     styled
@@ -42,21 +42,22 @@ const ModelCard = styled(Box)(({ theme }) => ({
     },
 }));
 
-const ModelBrowser: React.FC<ModelBrowserProps> = ({ 
-    open, 
-    onClose, 
+const ModelBrowser: React.FC<ModelBrowserProps> = ({
+    open,
+    onClose,
     onSelectModel,
-    selectedModel 
+    selectedModel
 }) => {
     const [models, setModels] = useState<ChatModel[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { user } = useAuth();
+    const [searchQuery, setSearchQuery] = useState(''); // State to hold the search query
 
     useEffect(() => {
         const loadModels = async () => {
             if (!user) return;
-            
+
             try {
                 setLoading(true);
                 const chatModels = await fetchAllChatModels(user.token)();
@@ -76,9 +77,19 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
         }
     }, [open, user]);
 
+    // Filter models based on searchQuery
+    const filteredModels = models.filter(model => {
+        const searchText = searchQuery.toLowerCase();
+        return (
+            model.name.toLowerCase().includes(searchText) ||
+            (model.description && model.description.toLowerCase().includes(searchText))
+        );
+    });
+
+
     return (
-        <Dialog 
-            open={open} 
+        <Dialog
+            open={open}
             onClose={onClose}
             maxWidth="md"
             fullWidth
@@ -90,8 +101,8 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
                 }
             }}
         >
-            <DialogTitle sx={{ 
-                display: 'flex', 
+            <DialogTitle sx={{
+                display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 p: 3,
@@ -106,13 +117,14 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
                 <SearchBox>
                     <InputBase
                         placeholder='Search for models like "image generation models"'
-                        sx={{ 
+                        sx={{
                             flex: 1,
                             color: 'white',
                             '& input::placeholder': {
                                 color: 'rgba(255, 255, 255, 0.5)',
                             }
                         }}
+                        onChange={(e) => setSearchQuery(e.target.value)} // Update searchQuery on input change
                     />
                     <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
                 </SearchBox>
@@ -126,10 +138,10 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
                         <Typography>{error}</Typography>
                     </Box>
                 ) : (
-                    models.map((model, index) => (
+                    filteredModels.map((model, index) => ( // Use filteredModels here
                         <ModelCard key={index}>
-                            <Box sx={{ 
-                                display: 'flex', 
+                            <Box sx={{
+                                display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'flex-start',
                                 mb: 1
@@ -138,20 +150,20 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                                         <Typography variant="h6">{model.name}</Typography>
                                         {model.isNew && (
-                                            <Chip 
-                                                label="New" 
+                                            <Chip
+                                                label="New"
                                                 size="small"
-                                                sx={{ 
+                                                sx={{
                                                     backgroundColor: '#E57373',
                                                     color: 'white',
                                                     height: 20,
                                                     fontSize: '0.75rem'
-                                                }} 
+                                                }}
                                             />
                                         )}
                                     </Box>
-                                    <Typography 
-                                        variant="body2" 
+                                    <Typography
+                                        variant="body2"
                                         sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}
                                     >
                                         {model.description || 'No description available'}
@@ -173,11 +185,11 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
                                     </Box>
                                 </Box>
                                 {selectedModel.id === model.id ? (
-                                    <Box sx={{ 
-                                        display: 'flex', 
+                                    <Box sx={{
+                                        display: 'flex',
                                         alignItems: 'center',
                                         color: '#90CAF9',
-                                        gap: 0.5 
+                                        gap: 0.5
                                     }}>
                                         <CheckIcon fontSize="small" />
                                         <Typography variant="button">Selected</Typography>
@@ -206,4 +218,4 @@ const ModelBrowser: React.FC<ModelBrowserProps> = ({
     );
 };
 
-export default ModelBrowser; 
+export default ModelBrowser;
