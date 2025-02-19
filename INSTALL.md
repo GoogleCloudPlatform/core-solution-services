@@ -57,7 +57,7 @@ cd core-solution-services
 Checkout the release tag for the desired release.
 
 ```
-git checkout v0.3.2
+git checkout v0.4.0
 ```
 
 ### Verify your Python version and create a virtual env
@@ -137,7 +137,7 @@ Checkout the release tag for the desired release.
 
 ```
 cd core-solution-services
-git checkout v0.3.2
+git checkout v0.4.0
 ```
 
 Configure the repository:
