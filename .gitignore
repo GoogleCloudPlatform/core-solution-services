@@ -46,3 +46,5 @@ node_modules
 components/frontend_react/webapp/.env.production
 components/frontend_react/webapp/.env.development
 components/frontend_newreact/webapp/.env.development
+
+.idx
