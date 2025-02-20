@@ -359,7 +359,7 @@ body {
 
 /* Update drawer styles */
 .MuiDrawer-paper {
-  background-color: #1f1f1f !important;
+  background-color: #333537 !important;
   border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 

@@ -129,13 +129,13 @@ export const Sidebar = ({
         {
             text: 'History',
             tooltip: 'History',
-            icon: <img src={HistoryCustomIcon} style={{ width: '24px', height: '24px' }} />,
+            icon: <img src={HistoryCustomIcon} className="" style={{ width: '14px', height: '14px' }} />,
             id: 'history'
         },
         {
             text: 'Settings',
             tooltip: 'Settings',
-            icon: <img src={SettingsCustomIcon} style={{ width: '24px', height: '24px' }} />,
+            icon: <img src={SettingsCustomIcon} style={{ width: '14px', height: '14px' }} />,
             id: 'settings'
         },
     ];
@@ -144,7 +144,7 @@ export const Sidebar = ({
         {
             text: 'Resume Chat',
             tooltip: 'Resume Chat',
-            icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} />,
+            icon: <img src={ChatInterfaceIcon} style={{ width: '14px', height: '14px' }} />,
             id: 'chat',
             onClick: () => {
                 setShowChat(true);
@@ -155,7 +155,7 @@ export const Sidebar = ({
         {
             text: 'Sources',
             tooltip: 'Sources',
-            icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} />,
+            icon: <img src={SourceIcon} style={{ width: '14px', height: '14px' }} />,
             id: 'sources',
             onClick: () => {
                 setShowSources?.(true);
@@ -164,7 +164,7 @@ export const Sidebar = ({
             }
         },
         {
-            icon: <img src={CloudIcon} style={{ width: '24px', height: '24px' }} />,
+            icon: <img src={CloudIcon} style={{ width: '14px', height: '14px' }} />,
             id: 'cloud'
         },
     ];
