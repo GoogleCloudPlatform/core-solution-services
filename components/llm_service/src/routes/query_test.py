@@ -264,10 +264,9 @@ def test_update_query_engine(create_engine, client_with_emulator):
   qe_id = QUERY_ENGINE_EXAMPLE["id"]
   url = f"{api_url}/engine/{qe_id}"
   new_query_engine_fields = {
-    "query_engine": QUERY_ENGINE_EXAMPLE["name"],
+    "name": QUERY_ENGINE_EXAMPLE["name"],
     "description": "New Engine Description",
-    "read_access_group": "2024:11:40:190:203:B1",
-    "doc_url": "",
+    "read_access_group": "2024:11:40:190:203:B1"
   }
   resp = client_with_emulator.put(url, json=new_query_engine_fields)
   json_response = resp.json()

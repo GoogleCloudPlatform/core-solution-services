@@ -22,6 +22,7 @@ from schemas.schema_examples import (LLM_GENERATE_EXAMPLE,
                                    LLM_MULTIMODAL_GENERATE_EXAMPLE,
                                    QUERY_EXAMPLE,
                                    QUERY_ENGINE_BUILD_EXAMPLE,
+                                   QUERY_ENGINE_UPDATE_EXAMPLE,
                                    QUERY_RETRIEVE_EXAMPLE,
                                    QUERY_ENGINE_EXAMPLE,
                                    LLM_EMBEDDINGS_EXAMPLE,
@@ -211,6 +212,16 @@ class LLMQueryModel(BaseModel):
 class FileB64(TypedDict):
   name: str
   b64: str
+
+class LLMQueryEngineUpdateModel(BaseModel):
+  """LLM Query Engine update model"""
+  name: str
+  description: str
+  read_access_group: Optional[str] = None
+  llm_type: Optional[str] = None
+  model_config = ConfigDict(from_attributes=True, json_schema_extra={
+      "example": QUERY_ENGINE_UPDATE_EXAMPLE
+  })
 
 class LLMQueryEngineModel(BaseModel):
   """LLM Query Engine model"""

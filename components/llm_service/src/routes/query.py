@@ -45,7 +45,8 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryEngineURLResponse,
                                 LLMQueryEngineResponse,
                                 LLMQueryResponse,
-                                LLMGetVectorStoreTypesResponse)
+                                LLMGetVectorStoreTypesResponse,
+                                LLMQueryEngineUpdateModel)
 from services.query.query_service import (query_generate,
                                           delete_engine, update_user_query)
 from services.llm_generate import generate_chat_summary
@@ -365,7 +366,7 @@ def delete_query(query_id: str, hard_delete: bool = True):
   "/engine/{query_engine_id}",
   name="Update a query engine")
 def update_query_engine(query_engine_id: str,
-                        data_config: LLMQueryEngineModel):
+                        data_config: LLMQueryEngineUpdateModel):
   """
   Update a query engine. It only supports updating description
   and read access group.
@@ -388,8 +389,11 @@ def update_query_engine(query_engine_id: str,
 
   try:
     Logger.info(f"Updating q_engine=[{q_engine.name}]")
-    q_engine.description = data_dict["description"]
-    q_engine.read_access_group = data_dict["read_access_group"]
+    read_access_group = data_dict.get("read_access_group", None)
+    if read_access_group:
+      q_engine.read_access_group = read_access_group
+    q_engine.name = data_dict["name"]
+    q_engine.description = data_dict.get("description", None)
     q_engine.save()
     Logger.info(f"Successfully updated q_engine=[{q_engine.name}]")
 
