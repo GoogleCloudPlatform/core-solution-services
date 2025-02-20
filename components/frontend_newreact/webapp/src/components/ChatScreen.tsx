@@ -8,7 +8,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import UploadIcon from '@mui/icons-material/Upload';
 import { useAuth } from '../contexts/AuthContext';
 import { createChat, resumeChat, fetchChat, createQuery } from '../lib/api';
-import { Chat } from '../lib/types';
+import { Chat, QueryReference } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
 import UploadModal from './UploadModal';
 import '../styles/ChatScreen.css';
@@ -23,6 +23,7 @@ interface ChatMessage {
   text: string;
   isUser: boolean;
   uploadedFile?: string;
+  references?: QueryReference[];
 }
 
 interface FileUpload {
@@ -37,6 +38,56 @@ interface ChatScreenProps {
   onChatStart?: () => void;
   isNewChat?: boolean;
 }
+
+const ReferenceChip: React.FC<{ reference: QueryReference }> = ({ reference }) => {
+  const [showDetails, setShowDetails] = useState(false);
+
+  return (
+    <Box sx={{ mb: 1 }}>
+      <Button 
+        onClick={() => setShowDetails(!showDetails)}
+        sx={{ 
+          textTransform: 'none',
+          p: 1,
+          borderRadius: 1,
+          border: '1px solid #4a4a4a',
+          display: 'flex',
+          alignItems: 'center',
+          width: '100%',
+          justifyContent: 'flex-start',
+          color: 'text.primary',
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.05)'
+          }
+        }}
+      >
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          width: '100%'
+        }}>
+          <Typography variant="body2" sx={{ mb: 0.5 }}>
+            {reference.document_url.split('/').pop()}
+          </Typography>
+          {showDetails && (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: 'text.secondary',
+                whiteSpace: 'pre-wrap',
+                width: '100%',
+                textAlign: 'left'
+              }}
+            >
+              {reference.document_text}
+            </Typography>
+          )}
+        </Box>
+      </Button>
+    </Box>
+  );
+};
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false, onChatStart, isNewChat = false }) => {
   const [prompt, setPrompt] = useState('');
@@ -174,8 +225,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         let newMessages: ChatMessage[] = [];
         for (let i = 0; i < response.history.length; i++) {
           const historyItem = response.history[i];
-          if (historyItem.HumanInput) { // User message WITH possible file
-            let uploadedFile: string | undefined; // Get uploadedFile
+          if (historyItem.HumanInput) {
+            let uploadedFile: string | undefined;
 
             if (i + 2 < response.history.length) {
               if (response.history[i + 2].UploadedFile) {
@@ -186,18 +237,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             newMessages = [...newMessages, {
               text: historyItem.HumanInput,
               isUser: true,
-              uploadedFile: uploadedFile, // Assign uploadedFile here
-            }]
-          } else if (historyItem.AIOutput) { // AI message
+              uploadedFile: uploadedFile,
+            }];
+          } else if (historyItem.AIOutput) {
             newMessages = [...newMessages, {
               text: historyItem.AIOutput,
               isUser: false,
-              // No uploadedFile for AI messages
-            }]
+              references: historyItem.QueryReferences || [],
+            }];
           } else if (historyItem.UploadedFile) {
             continue;
-          } else {
-            newMessages = [...newMessages, { text: '', isUser: false }]
           }
         }
 
@@ -304,15 +353,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           minHeight: 0,
         }}>
           {messages.map((message, index) => (
-            <>
+            <Box key={index}>
               <Box
-                key={index}
                 className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
                 sx={{
                   backgroundColor: message.isUser ? '#343541' : 'transparent',
                   borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
                   padding: '0.75rem 1rem',
-                  marginBottom: '1rem',
+                  marginBottom: '0.5rem',
                   alignSelf: message.isUser ? 'flex-end' : 'flex-start',
                   maxWidth: '70%',
                   display: 'flex',
@@ -322,7 +370,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                 }}
               >
                 {message.isUser ? (
-                  <Typography sx={{ color: '#fff', textAlign: 'right' }}>{message.text}</Typography>
+                  <Typography sx={{ color: '#fff', textAlign: 'right' }}>
+                    {message.text}
+                  </Typography>
                 ) : (
                   <>
                     <Avatar
@@ -389,6 +439,22 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                       >
                         {message.text}
                       </ReactMarkdown>
+                      
+                      {/* Add references display */}
+                      {!message.isUser && message.references && message.references.length > 0 && (
+                        <Box sx={{ 
+                          mt: 2, 
+                          pt: 2, 
+                          borderTop: '1px solid #4a4a4a'
+                        }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                            References:
+                          </Typography>
+                          {message.references.map((reference, idx) => (
+                            <ReferenceChip key={idx} reference={reference} />
+                          ))}
+                        </Box>
+                      )}
                     </Box>
                   </>
                 )}
@@ -422,7 +488,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                   </Box>
                 )}
               </Box>
-            </>
+            </Box>
           ))}
           {isLoading && (
             <LoadingSpinner />
