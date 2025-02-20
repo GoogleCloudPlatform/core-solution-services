@@ -43,7 +43,8 @@ from config import (get_model_config, get_provider_models,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
                     DEFAULT_LLM_TYPE, DEFAULT_MULTIMODAL_LLM_TYPE,
-                    KEY_SUB_PROVIDER, SUB_PROVIDER_OPENAPI)
+                    KEY_SUB_PROVIDER, SUB_PROVIDER_OPENAPI,
+                    DEFAULT_CHAT_SUMMARY_MODEL)
 from services.langchain_service import langchain_llm_generate
 from services.query.data_source import DataSourceFile
 from utils.errors import ContextWindowExceededException
@@ -692,3 +693,43 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   response = response.text
 
   return response
+
+async def generate_chat_summary(user_chat: UserChat) -> str:
+  """
+  Generate a summary/title for a chat using the default summary model.
+
+  Args:
+    user_chat: UserChat object containing the chat history to summarize
+
+  Returns:
+    str: Generated summary text, cleaned and truncated to max 100 chars
+  """
+  # Build prompt from chat history
+  history_text = []
+  for entry in user_chat.history:
+    if UserChat.is_human(entry):
+      history_text.append(f"Human: {UserChat.entry_content(entry)}")
+    elif UserChat.is_ai(entry):
+      history_text.append(f"Assistant: {UserChat.entry_content(entry)}")
+
+  chat_text = "\n".join(history_text)
+
+  summary_prompt = (
+    "Please generate a brief, informative title (maximum 100 characters) "
+    "that captures the main topic or purpose of this conversation. "
+    "Respond with only the title text.\n\n"
+    f"Conversation:\n{chat_text}"
+  )
+
+  # Generate summary using the default summary model
+  summary = await llm_chat(
+    prompt=summary_prompt,
+    llm_type=DEFAULT_CHAT_SUMMARY_MODEL
+  )
+
+  # Clean up summary - remove quotes and limit length
+  summary = summary.strip('" \n').strip("' \n")
+  if len(summary) > 100:
+    summary = summary[:97] + "..."
+
+  return summary

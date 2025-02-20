@@ -38,13 +38,14 @@ from schemas.schema_examples import (QUERY_EXAMPLE,
                                      QUERY_REFERENCE_EXAMPLE_1)
 from common.models import (UserQuery, QueryResult, QueryEngine,
                            User, QueryDocument, QueryDocumentChunk,
-                           QueryReference)
+                           QueryReference, UserChat)
 from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
 from common.utils.errors import ResourceNotFoundException
 from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+from services.llm_generate import generate_chat_summary
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
@@ -98,6 +99,7 @@ FAKE_GENERATE_RESPONSE = "test generation"
 
 FAKE_QUERY_PARAMS = QUERY_EXAMPLE
 
+FAKE_CHAT_SUMMARY = "Test chat summary"
 
 @pytest.fixture
 def client_with_emulator(clean_firestore, scope="module"):
@@ -167,6 +169,21 @@ def create_query_doc_chunks(client_with_emulator):
   qdoc_chunk2.save()
   qdoc_chunk3 = QueryDocumentChunk.from_dict(QUERY_DOCUMENT_CHUNK_EXAMPLE_3)
   qdoc_chunk3.save()
+
+
+@pytest.fixture
+def create_user_chat(client_with_emulator):
+  """Create a test user chat"""
+  chat_dict = {
+    "id": "fake-chat-id",
+    "user_id": USER_EXAMPLE["id"],
+    "llm_type": DEFAULT_QUERY_CHAT_MODEL,
+    "title": "Test Chat",
+    "history": []
+  }
+  chat = UserChat.from_dict(chat_dict)
+  chat.save()
+  return chat
 
 
 def test_get_query_engine_list(create_engine, client_with_emulator):
@@ -456,3 +473,96 @@ def test_get_queries(create_user, create_user_query, client_with_emulator):
   assert resp.status_code == 200, "Status 200"
   saved_ids = [i.get("id") for i in json_response.get("data")]
   assert USER_QUERY_EXAMPLE["id"] in saved_ids, "all data not retrieved"
+
+@mock.patch("routes.query.generate_chat_summary")
+def test_query_with_chat_mode(mock_generate_summary,
+                             create_user,
+                             create_engine,
+                             create_query_result,
+                             create_query_reference,
+                             client_with_emulator):
+  """Test query endpoint with chat_mode enabled"""
+  mock_generate_summary.return_value = FAKE_CHAT_SUMMARY
+
+  q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
+  url = f"{api_url}/engine/{q_engine_id}"
+
+  # Add chat_mode to query params
+  query_params = FAKE_QUERY_PARAMS.copy()
+  query_params["chat_mode"] = True
+
+  query_result = QueryResult.find_by_id(QUERY_RESULT_EXAMPLE["id"])
+  fake_query_response = (query_result, [create_query_reference])
+
+  with mock.patch("routes.query.query_generate",
+                  return_value=fake_query_response):
+    resp = client_with_emulator.post(url, json=query_params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+
+  query_data = json_response.get("data")
+
+  # Verify query result and references
+  assert query_data["query_result"]["id"] == QUERY_RESULT_EXAMPLE.get("id"), \
+    "returned query result"
+  test_query_ref_fields = create_query_reference.get_fields(remove_meta=True)
+  QueryReference.remove_field_meta(query_data["query_references"][0])
+  assert query_data["query_references"] == [test_query_ref_fields], \
+    "returned query references"
+
+  # Verify chat was created
+  assert "user_chat_id" in query_data, "chat id returned"
+  assert "user_chat" in query_data, "chat data returned"
+
+  chat_data = query_data["user_chat"]
+  assert chat_data["user_id"] == USER_EXAMPLE["id"], "chat has correct user"
+  assert chat_data["llm_type"] == query_params.get("llm_type", None), \
+    "chat has correct llm type"
+  assert chat_data["title"] == FAKE_CHAT_SUMMARY, "chat has summary as title"
+
+  # Verify chat history
+  assert len(chat_data["history"]) > 0, "chat has history entries"
+
+  # Verify chat exists in database
+  chat = UserChat.find_by_id(query_data["user_chat_id"])
+  assert chat is not None, "chat was saved to database"
+  assert chat.title == FAKE_CHAT_SUMMARY, "chat title was saved"
+  assert len(chat.history) > 0, "chat history was saved"
+
+def test_query_without_chat_mode(create_user,
+                                create_engine,
+                                create_query_result,
+                                create_query_reference,
+                                client_with_emulator):
+  """Test query endpoint with chat_mode disabled"""
+  q_engine_id = QUERY_ENGINE_EXAMPLE["id"]
+  url = f"{api_url}/engine/{q_engine_id}"
+
+  # Explicitly disable chat mode
+  query_params = FAKE_QUERY_PARAMS.copy()
+  query_params["chat_mode"] = False
+
+  query_result = QueryResult.find_by_id(QUERY_RESULT_EXAMPLE["id"])
+  fake_query_response = (query_result, [create_query_reference])
+
+  with mock.patch("routes.query.query_generate",
+                  return_value=fake_query_response):
+    resp = client_with_emulator.post(url, json=query_params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+
+  query_data = json_response.get("data")
+
+  # Verify no chat data returned
+  assert "user_chat_id" not in query_data, "no chat id returned"
+  assert "user_chat" not in query_data, "no chat data returned"
+
+  # Verify normal query data returned
+  assert query_data["query_result"]["id"] == QUERY_RESULT_EXAMPLE.get("id"), \
+    "returned query result"
+  test_query_ref_fields = create_query_reference.get_fields(remove_meta=True)
+  QueryReference.remove_field_meta(query_data["query_references"][0])
+  assert query_data["query_references"] == [test_query_ref_fields], \
+    "returned query references"

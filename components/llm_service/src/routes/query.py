@@ -19,7 +19,7 @@ import traceback
 from fastapi import APIRouter, Depends
 
 from common.models import (QueryEngine,
-                           User, UserQuery, QueryDocument)
+                           User, UserQuery, QueryDocument, UserChat)
 from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
@@ -48,6 +48,7 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMGetVectorStoreTypesResponse)
 from services.query.query_service import (query_generate,
                                           delete_engine, update_user_query)
+from services.llm_generate import generate_chat_summary
 from utils.gcs_helper import upload_b64files_to_gcs
 
 Logger = Logger.get_logger(__file__)
@@ -569,6 +570,9 @@ async def query(query_engine_id: str,
   query_filter = genconfig_dict.get("query_filter")
   Logger.info(f"query_filter = {query_filter}")
 
+  chat_mode = genconfig_dict.get("chat_mode", False)
+  Logger.info(f"chat_mode = {chat_mode}")
+
   # get the User GENIE stores
   user = User.find_by_email(user_data.get("email"))
 
@@ -576,6 +580,7 @@ async def query(query_engine_id: str,
   Logger.info(f"run_as_batch_job = {run_as_batch_job}")
 
   user_query = None
+  user_chat = None
   if run_as_batch_job:
     # create user query object to hold the query state
     user_query = UserQuery(user_id=user.user_id,
@@ -643,16 +648,44 @@ async def query(query_engine_id: str,
                           query_references, None,
                           query_filter)
 
+    # Create UserChat if chat_mode is enabled
+    if chat_mode:
+      user_chat = UserChat(user_id=user.id,
+                          llm_type=llm_type,
+                          prompt=prompt)
+      user_chat.history = UserChat.get_history_entry(prompt,
+                                                     query_result.response)
+
+      # Add query engine results to chat history
+      user_chat.update_history(
+        query_engine=q_engine,
+        query_result=query_result,
+        query_references=query_references
+      )
+
+      user_chat.save()
+
+      # Generate and set chat title
+      summary = await generate_chat_summary(user_chat)
+      user_chat.title = summary
+      user_chat.save()
+
     query_result_dict = query_result.get_fields(reformat_datetime=True)
+
+    response_data = {
+      "user_query_id": user_query.id,
+      "query_result": query_result_dict,
+      "query_references": query_reference_dicts
+    }
+
+    if chat_mode and user_chat:
+      response_data["user_chat_id"] = user_chat.id
+      response_data["user_chat"] = user_chat.get_fields(reformat_datetime=True)
 
     return {
         "success": True,
         "message": "Successfully generated text",
-        "data": {
-            "user_query_id": user_query.id,
-            "query_result": query_result_dict,
-            "query_references": query_reference_dicts
-        }
+        "data": response_data
     }
   except Exception as e:
     Logger.error(e)

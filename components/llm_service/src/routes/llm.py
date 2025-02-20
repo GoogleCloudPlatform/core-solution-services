@@ -18,6 +18,7 @@
 from typing import Optional
 from base64 import b64decode
 from fastapi import APIRouter, Depends
+import traceback
 
 from common.utils.logging_handler import Logger
 from common.utils.errors import (PayloadTooLargeError)
@@ -33,7 +34,8 @@ from schemas.llm_schema import (LLMGenerateModel,
                                 LLMEmbeddingsResponse,
                                 LLMMultimodalEmbeddingsResponse,
                                 LLMEmbeddingsModel,
-                                LLMMultimodalEmbeddingsModel)
+                                LLMMultimodalEmbeddingsModel,
+                                LLMGetDetailsResponse)
 from services.llm_generate import llm_generate, llm_generate_multimodal
 from services.embeddings import get_embeddings, get_multimodal_embeddings
 from utils.file_helper import validate_multimodal_file_type
@@ -78,6 +80,73 @@ def get_llm_list(user_data: dict = Depends(validate_token),
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
+@router.get(
+    "/details",
+    name="Get LLM details",
+    response_model=LLMGetDetailsResponse)
+def get_llm_details(user_data: dict = Depends(validate_token),
+                   is_multimodal: Optional[bool] = None):
+  """
+  Get available LLMs with detailed information, optionally filter by
+  multimodal capabilities
+
+  Args:
+    is_multimodal: `bool`
+      Optional: If True, only multimodal LLM types are returned.
+        If False, only non-multimodal LLM types are returned.
+        If None, all LLM types are returned.
+
+  Returns:
+      LLMGetDetailsResponse with detailed model information
+  """
+  Logger.info("Entering llm/details")
+  try:
+    model_config = get_model_config()
+    if is_multimodal is True:
+      llm_types = model_config.get_multimodal_llm_types()
+    elif is_multimodal is False:
+      llm_types = model_config.get_text_llm_types()
+    elif is_multimodal is None:
+      llm_types = model_config.get_llm_types()
+    else:
+      return BadRequest("Invalid request parameter value: is_multimodal")
+
+    model_details = []
+    for llm in llm_types:
+      if model_config.is_model_enabled_for_user(llm, user_data):
+        config = model_config.get_model_config(llm)
+
+        # Get model parameters from config
+        model_params = config.get("model_params", {})
+
+        # Get provider parameters and merge with model params
+        _, provider_config = model_config.get_model_provider_config(llm)
+        if provider_config and "model_params" in provider_config:
+          # Provider params are the base, model params override them
+          merged_params = provider_config["model_params"].copy()
+          merged_params.update(model_params)
+          model_params = merged_params
+
+        model_details.append({
+          "id": llm,
+          "name": config.get("name", ""),
+          "description": config.get("description", ""),
+          "capabilities": config.get("capabilities", []),
+          "date_added": config.get("date_added", ""),
+          "is_multi": config.get("is_multi", False),
+          "model_params": model_params
+        })
+
+    Logger.info(f"LLM models for user {model_details}")
+    return {
+      "success": True,
+      "message": "Successfully retrieved llm details",
+      "data": model_details
+    }
+  except Exception as e:
+    Logger.error(e)
+    Logger.error(traceback.print_exc())
+    raise InternalServerError(str(e)) from e
 
 @router.get(
     "/embedding_types",
@@ -289,3 +358,4 @@ async def generate_multimodal(gen_config: LLMMultimodalGenerateModel):
     }
   except Exception as e:
     raise InternalServerError(str(e)) from e
+

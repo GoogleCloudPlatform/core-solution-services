@@ -19,11 +19,12 @@ import traceback
 import json
 import base64
 import io
-from typing import Union, Annotated, Optional
-from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from common.models import User, UserChat
-from common.models.llm import CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64, CHAT_FILE_TYPE
+from common.models import User, UserChat, QueryEngine, QueryReference
+from common.models.llm import (CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64,
+                               CHAT_FILE_TYPE)
 from common.utils.auth_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError)
@@ -35,9 +36,11 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
                                 LLMUserChatResponse,
                                 LLMUserAllChatsResponse,
-                                LLMGetTypesResponse)
-from services.llm_generate import llm_chat
+                                LLMGetTypesResponse,
+                                LLMGetDetailsResponse)
+from services.llm_generate import llm_chat, generate_chat_summary
 from services.agents.agent_tools import chat_tools, run_chat_tools
+from services.query.query_service import query_generate_for_chat
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
 
 Logger = Logger.get_logger(__file__)
@@ -48,31 +51,34 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
 def get_chat_llm_list(user_data: dict = Depends(validate_token),
-                      is_multimodal: Optional[bool] = None):
+                    is_multimodal: Optional[bool] = None):
   """
   Get available Chat LLMs, optionally filter by
-  multimodal capabilities
+  multimodal capabilities. Returns basic model information.
 
   Args:
     is_multimodal: `bool`
-      Optional: If True, only multimodal embedding types are returned.
-        If False, only non-multimodal embedding types are returned.
-        If None, all embedding types are returned.
+      Optional: If True, only multimodal LLM types are returned.
+        If False, only non-multimodal LLM types are returned.
+        If None, all LLM types are returned.
 
   Returns:
-      LLMGetTypesResponse
+      LLMGetTypesResponse with basic model information
   """
+  Logger.info("Entering chat/chat_types")
   try:
+    model_config = get_model_config()
     if is_multimodal is True:
-      llm_types = get_model_config().get_multimodal_chat_llm_types()
+      llm_types = model_config.get_multimodal_chat_llm_types()
     elif is_multimodal is False:
-      llm_types = get_model_config().get_text_chat_llm_types()
+      llm_types = model_config.get_text_chat_llm_types()
     elif is_multimodal is None:
-      llm_types = get_model_config().get_chat_llm_types()
+      llm_types = model_config.get_chat_llm_types()
     else:
       return BadRequest("Invalid request parameter value: is_multimodal")
+
     user_enabled_llms = [llm for llm in llm_types if \
-                get_model_config().is_model_enabled_for_user(llm, user_data)]
+                model_config.is_model_enabled_for_user(llm, user_data)]
     return {
       "success": True,
       "message": "Successfully retrieved chat llm types",
@@ -83,15 +89,82 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
 
+@router.get(
+    "/chat_types/details",
+    name="Get detailed Chat LLM information",
+    response_model=LLMGetDetailsResponse)
+def get_chat_llm_details(user_data: dict = Depends(validate_token),
+                      is_multimodal: Optional[bool] = None):
+  """
+  Get available Chat LLMs with detailed information, optionally filter by
+  multimodal capabilities
+
+  Args:
+    is_multimodal: `bool`
+      Optional: If True, only multimodal LLM types are returned.
+        If False, only non-multimodal LLM types are returned.
+        If None, all LLM types are returned.
+
+  Returns:
+      LLMGetDetailsResponse with detailed model information
+  """
+  Logger.info("Entering chat/chat_types/details")
+  try:
+    model_config = get_model_config()
+    if is_multimodal is True:
+      llm_types = model_config.get_multimodal_chat_llm_types()
+    elif is_multimodal is False:
+      llm_types = model_config.get_text_chat_llm_types()
+    elif is_multimodal is None:
+      llm_types = model_config.get_chat_llm_types()
+    else:
+      return BadRequest("Invalid request parameter value: is_multimodal")
+
+    model_details = []
+    for llm in llm_types:
+      if model_config.is_model_enabled_for_user(llm, user_data):
+        config = model_config.get_model_config(llm)
+
+        # Get model parameters from config
+        model_params = config.get("model_params", {})
+
+        # Get provider parameters and merge with model params
+        _, provider_config = model_config.get_model_provider_config(llm)
+        if provider_config and "model_params" in provider_config:
+          # Provider params are the base, model params override them
+          merged_params = provider_config["model_params"].copy()
+          merged_params.update(model_params)
+          model_params = merged_params
+
+        model_details.append({
+          "id": llm,
+          "name": config.get("name", ""),
+          "description": config.get("description", ""),
+          "capabilities": config.get("capabilities", []),
+          "date_added": config.get("date_added", ""),
+          "is_multi": config.get("is_multi", False),
+          "model_params": model_params
+        })
+
+    Logger.info(f"Chat LLM models for user {model_details}")
+    return {
+      "success": True,
+      "message": "Successfully retrieved chat llm details",
+      "data": model_details
+    }
+  except Exception as e:
+    Logger.error(e)
+    Logger.error(traceback.print_exc())
+    raise InternalServerError(str(e)) from e
 
 @router.get(
     "",
     name="Get all user chats",
     response_model=LLMUserAllChatsResponse)
 def get_chat_list(skip: int = 0, limit: int = 20,
-                  with_all_history: bool = False,
-                  with_first_history: bool = False,
-                  user_data: dict = Depends(validate_token)):
+                with_all_history: bool = False,
+                with_first_history: bool = False,
+                user_data: dict = Depends(validate_token)):
   """
   Get user chats for authenticated user.  Chat data does not include
   chat history to slim payload.  To retrieve chat history use the
@@ -260,10 +333,11 @@ def validate_tool_names(tool_names: Optional[str]):
   # ensuring the tool names provided were properly formatted
     try:
       tool_names = json.loads(tool_names)
-    except json.decoder.JSONDecodeError as e:
-      raise HTTPException(status_code=422,
-                          detail=("Tool names must be a string representing a"
-                          " json formatted list")) from e
+    except json.decoder.JSONDecodeError as exc:
+      raise HTTPException(
+          status_code=422,
+          detail=("Tool names must be a string representing a "
+                 "json formatted list")) from exc
     # ensuring the tools provided are valid for chat
     if invalid_tools := [tool for tool in tool_names if tool not in chat_tools]:
       failure_message = f"Invalid tool names: {','.join(invalid_tools)}"
@@ -272,57 +346,77 @@ def validate_tool_names(tool_names: Optional[str]):
 
 @router.post(
     "",
-    name="Create new chat", deprecated=True)
-async def create_user_chat(
-     prompt: Annotated[str, Form()],
-     llm_type: Annotated[str, Form()] = None,
-     chat_file_url: Annotated[str, Form()] = None,
-     chat_file: Union[UploadFile, None] = None,
-     tool_names: Annotated[str, Form()] = None,
-     stream: Annotated[bool, Form()] = False,
-     history: Annotated[str, Form()] = None,
-     user_data: dict = Depends(validate_token)):
-  """
-  Create new chat for authenticated user.  
-                           
-  Takes input payload as a multipart form.
+    name="Create new chat",
+    response_model=LLMUserChatResponse)
+async def create_chat(prompt: str = Form(None),
+                     llm_type: str = Form(None),
+                     stream: bool = Form(False),
+                     history: str = Form(None),
+                     chat_file: UploadFile = None,
+                     chat_file_url: str = Form(None),
+                     tool_names: str = Form(None),
+                     query_engine_id: str = Form(None),
+                     query_filter: str = Form(None),
+                     user_data: dict = Depends(validate_token)):
+  """Create new chat for authenticated user
 
   Args:
-      prompt(str): prompt to initiate chat
-      llm_type(str): llm model id
-      chat_file(UploadFile): file upload for chat context
-      chat_file_url(str): file url for chat context
-      tool_names(list[str]): list of tool names to be used, as a serialized 
-        string due to fastapi limitations
-      stream(bool): whether to stream the response
-      history(str): optional chat history to create chat from previous
-                           streaming response
+      prompt: the text prompt to pass to the LLM
+      llm_type: the type of LLM to use
+      stream: whether to stream the response
+      history: optional JSON string containing chat history
+      chat_file: optional file to include in chat context
+      chat_file_url: optional URL to file to include in chat context
+      tool_names: optional JSON string containing list of tool names
+      query_engine_id: optional ID of the query engine to use
+      query_filter: optional JSON string containing query filter
+      user_data: dict containing user information from auth token
 
   Returns:
-      LLMUserChatResponse or StreamingResponse
+      LLMUserChatResponse
   """
-  Logger.info("Creating new chat using"
-              f" prompt={prompt} llm_type={llm_type}"
-              f" chat_file={chat_file} chat_file_url={chat_file_url}"
-              f" tools={tool_names} stream={stream} history={history}")
-  # a file that could be returned as part of the response as base64 contents
-  response_files: list[str] = None
-  validate_tool_names(tool_names)
-
-  # process chat file(s): upload to GCS and determine mime type
-  chat_file_bytes = None
-  chat_files = None
-  if chat_file is not None or chat_file_url is not None:
-    chat_files = await process_chat_file(chat_file, chat_file_url)
-
-  # only read chat file bytes if for some reason we can't
-  # upload the file(s) to GCS
-  if not chat_files and chat_file is not None:
-    await chat_file.seek(0)
-    chat_file_bytes = await chat_file.read()
-
   try:
+    # Validate required parameters first
+    if not prompt and not history:
+      raise ValidationError("Either prompt or history must be provided")
+
+    # Validate tool names if provided
+    if tool_names:
+      try:
+        tool_names = json.loads(tool_names)
+      except json.decoder.JSONDecodeError as exc:
+        raise HTTPException(
+          status_code=422,
+          detail=("Tool names must be a string representing a "
+                 "json formatted list")) from exc
+      # ensuring the tools provided are valid for chat
+      if invalid_tools := \
+          [tool for tool in tool_names if tool not in chat_tools]:
+        raise HTTPException(
+          status_code=422,
+          detail=f"Invalid tool names: {','.join(invalid_tools)}"
+        )
+
     user = User.find_by_email(user_data.get("email"))
+
+    # New: Handle query engine if specified
+    query_engine = None
+    if query_engine_id:
+      query_engine = QueryEngine.find_by_id(query_engine_id)
+      if not query_engine:
+        raise ResourceNotFoundException(
+            f"Query engine {query_engine_id} not found")
+
+    # Process chat file(s): upload to GCS and determine mime type
+    chat_file_bytes = None
+    chat_files = None
+    if chat_file is not None or chat_file_url is not None:
+      chat_files = await process_chat_file(chat_file, chat_file_url)
+
+    # Only read chat file bytes if we can't upload the file(s) to GCS
+    if not chat_files and chat_file is not None:
+      await chat_file.seek(0)
+      chat_file_bytes = await chat_file.read()
 
     # If history is provided, parse the JSON string into a list
     if history:
@@ -334,7 +428,7 @@ async def create_user_chat(
         raise ValidationError(f"Invalid JSON in history: {str(e)}") from e
 
       user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                           prompt=prompt)
+                         prompt=prompt)
       user_chat.history = history_list  # Use the parsed list
       if chat_file:
         user_chat.update_history(custom_entry={
@@ -346,6 +440,11 @@ async def create_user_chat(
         })
       user_chat.save()
 
+      # Generate and set chat title
+      summary = await generate_chat_summary(user_chat)
+      user_chat.title = summary
+      user_chat.save()
+
       chat_data = user_chat.get_fields(reformat_datetime=True)
       chat_data["id"] = user_chat.id
 
@@ -355,15 +454,43 @@ async def create_user_chat(
           "data": chat_data
       }
 
+    # Handle prompt-based chat creation
+    response_files = None
+    query_result = None
+    query_references = None
+    context_files = chat_files or []  # Initialize with any uploaded files
+
     if tool_names:
       response, response_files = run_chat_tools(prompt)
-    # Otherwise generate text from prompt if no tools
     else:
+      if query_engine:
+        # Generate query response if query engine specified
+        query_references, query_content_files = await query_generate_for_chat(
+          user.id,
+          prompt,
+          query_engine,
+          user_data,
+          rank_sentences=False,
+          query_filter=json.loads(query_filter) if query_filter else None
+        )
+
+        # Add query content files to context files
+        if query_content_files:
+          context_files.extend(query_content_files)
+
+        # Add reference text to prompt
+        query_refs_str = QueryReference.reference_list_str(query_references)
+        prompt += "\n\n" + \
+          f"A search of the {query_engine.name} Source produced " \
+          f"these references: {query_refs_str}"
+
+      # Normal chat response with combined context files
       response = await llm_chat(prompt,
                             llm_type,
-                            chat_files=chat_files,
+                            chat_files=context_files,
                             chat_file_bytes=chat_file_bytes,
                             stream=stream)
+
       if stream:
         # Return streaming response
         return StreamingResponse(
@@ -371,10 +498,13 @@ async def create_user_chat(
             media_type="text/event-stream"
         )
 
-    # create new chat for user
+    # Create new chat for user
     user_chat = UserChat(user_id=user.user_id, llm_type=llm_type,
-                         prompt=prompt)
+                       prompt=prompt)
+
+    # Update history with all components
     user_chat.history = UserChat.get_history_entry(prompt, response)
+
     if chat_file:
       user_chat.update_history(custom_entry={
         f"{CHAT_FILE}": chat_file.filename
@@ -383,14 +513,29 @@ async def create_user_chat(
       user_chat.update_history(custom_entry={
         f"{CHAT_FILE_URL}": chat_file_url
       })
+
     if response_files:
       for file in response_files:
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE}": file["name"]
+          CHAT_FILE: file["name"]
         })
         user_chat.update_history(custom_entry={
-          f"{CHAT_FILE_BASE64}": file["contents"]
+          CHAT_FILE_BASE64: file["contents"]
         })
+
+    # New: Add query engine results to history
+    if query_engine:
+      user_chat.update_history(
+        query_engine=query_engine,
+        query_result=query_result,
+        query_references=query_references
+      )
+
+    user_chat.save()
+
+    # Generate and set chat title
+    summary = await generate_chat_summary(user_chat)
+    user_chat.title = summary
     user_chat.save()
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
@@ -401,8 +546,11 @@ async def create_user_chat(
         "message": "Successfully created chat",
         "data": chat_data
     }
+
   except ValidationError as e:
     raise BadRequest(str(e)) from e
+  except HTTPException:
+    raise  # Let FastAPI HTTPExceptions pass through
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
@@ -440,111 +588,230 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
 
 @router.post(
     "/{chat_id}/generate")
-async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
+async def user_chat_generate(chat_id: str, request: Request):
   """
   Continue chat based on context of user chat
 
   Args:
-      gen_config: Input config dictionary,
-        including prompt(str), llm_type(str) type for model,
-        and stream(bool) for streaming mode
+    chat_id: ID of the chat to continue
+    request: FastAPI Request object containing the request body
 
   Returns:
-      LLMUserChatResponse or StreamingResponse
+    LLMUserChatResponse or StreamingResponse
   """
+  body = await request.json()
+  tool_names = body.get("tool_names")
+  query_engine_id = body.get("query_engine_id")
+  query_filter = body.get("query_filter")
+
+  # Parse tool_names if it's a string
+  if isinstance(tool_names, str):
+    try:
+      body["tool_names"] = json.loads(tool_names)
+    except json.JSONDecodeError as exc:
+      raise HTTPException(
+        status_code=422,
+        detail="Tool names must be a string representing a json formatted list"
+      ) from exc
+
+  # Validate tool names if present
+  if body.get("tool_names"):
+    if invalid_tools := [tool for tool in body["tool_names"]
+                        if tool not in chat_tools]:
+      raise HTTPException(
+        status_code=422,
+        detail=f"Invalid tool names: {','.join(invalid_tools)}"
+      )
+
+  # Now that tool_names is validated and converted, parse with Pydantic
+  try:
+    gen_config = LLMGenerateModel(**body)
+  except ValidationError as e:
+    raise HTTPException(status_code=422, detail=str(e)) from e
+
   response_files = None
-  tool_names = gen_config.tool_names
-  validate_tool_names(tool_names)
-
-  # process chat file(s): upload to GCS and determine mime type
-  chat_file_bytes = None
-  chat_files = None
-  chat_file = None
-  if gen_config.chat_file_b64 and gen_config.chat_file_b64_name:
-    content = base64.b64decode(gen_config.chat_file_b64)
-    chat_file = UploadFile(io.BytesIO(content),
-                          filename=gen_config.chat_file_b64_name,
-                          size=len(content))
-  chat_file_url = gen_config.chat_file_url
-  if chat_file is not None or chat_file_url is not None:
-    chat_files = await process_chat_file(chat_file, chat_file_url)
-  # only read chat file bytes if for some reason we can't
-  # upload the file(s) to GCS
-  if not chat_files and chat_file is not None:
-    await chat_file.seek(0)
-    chat_file_bytes = await chat_file.read()
-
-  genconfig_dict = {**gen_config.model_dump()}
-  Logger.info(f"Generating new chat response for chat_id={chat_id},"
-              f"genconfig_dict={genconfig_dict}")
-
-  prompt = genconfig_dict.get("prompt")
-  if prompt is None or prompt == "":
-    return BadRequest("Missing or invalid payload parameters")
-
-  # fetch user chat
-  user_chat = UserChat.find_by_id(chat_id)
-  if user_chat is None:
-    raise ResourceNotFoundException(f"Chat {chat_id} not found ")
-  if (chat_file_bytes
-      and (mime_type := validate_multimodal_file_type(chat_file.filename))):
-    user_chat.update_history(custom_entry={
-      CHAT_FILE_BASE64: chat_file_bytes,
-      CHAT_FILE_TYPE: mime_type
-    })
-  if chat_files:
-    for cur_chat_file in chat_files:
-      user_chat.update_history(custom_entry={
-        CHAT_FILE_URL: cur_chat_file.gcs_path,
-        CHAT_FILE_TYPE: cur_chat_file.mime_type
-      })
-
-  # set llm type for chat
-  llm_type = genconfig_dict.get("llm_type", None)
-  if llm_type is None:
-    llm_type = user_chat.llm_type or DEFAULT_CHAT_LLM_TYPE
-
-  # get streaming mode
-  stream = genconfig_dict.get("stream", False)
 
   try:
-    if tool_names:
-      response, response_files = run_chat_tools(prompt)
-    # Otherwise generate text from prompt if no tools
-    else:
-      response = await llm_chat(prompt,
-                            llm_type,
-                            user_chat=user_chat,
-                            chat_files=chat_files,
-                            chat_file_bytes=chat_file_bytes,
-                            stream=stream)
-      if stream:
-        # Return streaming response
-        return StreamingResponse(
+    # process chat file(s): upload to GCS and determine mime type
+    chat_file_bytes = None
+    chat_files = None
+    chat_file = None
+    if gen_config.chat_file_b64 and gen_config.chat_file_b64_name:
+      content = base64.b64decode(gen_config.chat_file_b64)
+      chat_file = UploadFile(io.BytesIO(content),
+                            filename=gen_config.chat_file_b64_name,
+                            size=len(content))
+    chat_file_url = gen_config.chat_file_url
+    if chat_file is not None or chat_file_url is not None:
+      chat_files = await process_chat_file(chat_file, chat_file_url)
+
+    genconfig_dict = {**gen_config.model_dump()}
+    Logger.info(f"Generating new chat response for chat_id={chat_id},"
+                f"genconfig_dict={genconfig_dict}")
+
+    prompt = genconfig_dict.get("prompt")
+    if prompt is None or prompt == "":
+      return BadRequest("Missing or invalid payload parameters")
+
+    # fetch user chat
+    user_chat = UserChat.find_by_id(chat_id)
+    if user_chat is None:
+      raise ResourceNotFoundException(f"Chat {chat_id} not found ")
+
+    # Check if chat needs a title
+    if not user_chat.title or user_chat.title.strip() == "":
+      # Generate and set chat title
+      summary = await generate_chat_summary(user_chat)
+      user_chat.title = summary
+      user_chat.save()
+
+    if (chat_file_bytes
+        and (mime_type := validate_multimodal_file_type(chat_file.filename))):
+      user_chat.update_history(custom_entry={
+        CHAT_FILE_BASE64: chat_file_bytes,
+        CHAT_FILE_TYPE: mime_type
+      })
+    if chat_files:
+      for cur_chat_file in chat_files:
+        user_chat.update_history(custom_entry={
+          CHAT_FILE_URL: cur_chat_file.gcs_path,
+          CHAT_FILE_TYPE: cur_chat_file.mime_type
+        })
+
+    # set llm type for chat
+    llm_type = genconfig_dict.get("llm_type", None)
+    if llm_type is None:
+      llm_type = user_chat.llm_type or DEFAULT_CHAT_LLM_TYPE
+
+    # get streaming mode
+    stream = genconfig_dict.get("stream", False)
+
+    try:
+      query_result = None
+      query_references = None
+      context_files = chat_files or []  # Initialize with any uploaded files
+
+      if tool_names:
+        response, response_files = run_chat_tools(prompt)
+      else:
+        if query_engine_id:
+          query_engine = QueryEngine.find_by_id(query_engine_id)
+          if not query_engine:
+            raise ResourceNotFoundException(
+              f"Query engine {query_engine_id} not found")
+
+          query_references, query_content_files = await query_generate_for_chat(
+            user_chat.user_id,
+            prompt,
+            query_engine,
+            None,  # No user data needed
+            rank_sentences=False,
+            query_filter=query_filter
+          )
+
+          # Add query content files to context files
+          if query_content_files:
+            context_files.extend(query_content_files)
+
+          # Add reference text to prompt
+          query_refs_str = QueryReference.reference_list_str(query_references)
+          prompt += "\n\n" + \
+              f"A search of the {query_engine.name} Source produced " \
+              f"these references: {query_refs_str}"
+
+        # Normal chat response with combined context files
+        response = await llm_chat(prompt,
+                              llm_type,
+                              user_chat=user_chat,
+                              chat_files=context_files,
+                              chat_file_bytes=chat_file_bytes,
+                              stream=stream)
+
+        if stream:
+          # Return streaming response
+          return StreamingResponse(
             response,
             media_type="text/event-stream"
+          )
+
+      # save chat history
+      user_chat.update_history(prompt=prompt, response=response)
+
+      # New: Add query results to history if present
+      if query_engine_id:
+        user_chat.update_history(
+          query_engine=query_engine,
+          query_result=query_result,
+          query_references=query_references
         )
 
-    # save chat history
-    user_chat.update_history(prompt, response)
-    if response_files:
-      for file in response_files:
-        user_chat.update_history(custom_entry={
-          CHAT_FILE: file["name"]
-        })
-        user_chat.update_history(custom_entry={
-          CHAT_FILE_BASE64: file["contents"],
-          CHAT_FILE_TYPE: "image/png"
-        })
+      if response_files:
+        for file in response_files:
+          user_chat.update_history(custom_entry={
+            CHAT_FILE: file["name"]
+          })
+          user_chat.update_history(custom_entry={
+            CHAT_FILE_BASE64: file["contents"]
+          })
+
+      chat_data = user_chat.get_fields(reformat_datetime=True)
+      chat_data["id"] = user_chat.id
+
+      return {
+        "success": True,
+        "message": "Successfully generated text",
+        "data": chat_data
+      }
+    except Exception as e:
+      Logger.error(e)
+      Logger.error(traceback.print_exc())
+      raise InternalServerError(str(e)) from e
+
+  except ValidationError as e:
+    raise BadRequest(str(e)) from e
+  except Exception as e:
+    Logger.error(e)
+    Logger.error(traceback.print_exc())
+    raise InternalServerError(str(e)) from e
+
+
+@router.post(
+    "/{chat_id}/generate_summary",
+    name="Generate chat summary and update title",
+    response_model=LLMUserChatResponse)
+async def generate_chat_summary_route(chat_id: str):
+  """
+  Generate a summary of the chat using the default summary model and 
+  update the chat title with that summary.
+
+  Args:
+      chat_id: ID of the chat to summarize
+
+  Returns:
+      LLMUserChatResponse with the updated chat data
+  """
+  try:
+    # Get the chat
+    user_chat = UserChat.find_by_id(chat_id)
+    if user_chat is None:
+      raise ResourceNotFoundException(f"Chat {chat_id} not found")
+
+    # Generate summary and update title
+    summary = await generate_chat_summary(user_chat)
+    user_chat.title = summary
+    user_chat.save()
 
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
 
     return {
-        "success": True,
-        "message": "Successfully generated text",
-        "data": chat_data
+      "success": True,
+      "message": "Successfully generated summary and updated chat title",
+      "data": chat_data
     }
+
+  except ResourceNotFoundException as e:
+    raise ResourceNotFound(str(e)) from e
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
