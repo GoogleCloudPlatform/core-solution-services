@@ -18,7 +18,7 @@ const ReferenceChip: React.FC<{ reference: QueryReference }> = ({ reference }) =
           alignItems: 'center',
           width: '100%',
           justifyContent: 'flex-start',
-          color: 'text.primary',
+          color: '#fff',
           '&:hover': {
             backgroundColor: 'rgba(255, 255, 255, 0.05)'
           }
@@ -37,7 +37,7 @@ const ReferenceChip: React.FC<{ reference: QueryReference }> = ({ reference }) =
             <Typography 
               variant="body2" 
               sx={{ 
-                color: 'text.secondary',
+                color: '#fff',
                 whiteSpace: 'pre-wrap',
                 width: '100%',
                 textAlign: 'left'

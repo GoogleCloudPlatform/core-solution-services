@@ -405,7 +405,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                           pt: 2, 
                           borderTop: '1px solid #4a4a4a'
                         }}>
-                          <Typography variant="subtitle2" sx={{ mb: 1, color: 'text.secondary' }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1 }}>
                             References:
                           </Typography>
                           {message.references.map((reference, idx) => (
