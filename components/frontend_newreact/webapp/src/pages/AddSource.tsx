@@ -61,7 +61,7 @@ const StyledMenuItem = styled(MenuItem)({
   }
 });
 
-const AddSource = () => {
+const AddSource = ({ onCancel }: { onCancel: () => void }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -94,24 +94,26 @@ const AddSource = () => {
       return;
     }
 
+    if (!formData.name || !formData.doc_url) {
+      setError("Please fill in all required fields.");
+      return;
+  }
     setLoading(true);
     setError(null);
 
     try {
-      console.log("Submitting form data:", formData); // Log the form data before submission
       const response = await createQueryEngine(user.token)(formData as QueryEngine);
 
       if (response) {
-        console.log("Source created successfully:", response);
-
-        // Refetch the sources after successful creation
+        // Refetch the sources after successful creation (Important!)
         const engines = await fetchAllEngines(user.token)();
         if (engines) {
-          setSources(engines);  // Update the state with the latest sources
-          console.log("Sources refetched after creation:", engines);
+          console.log("Sources refetched after creation:", engines); 
+        } else {
+          console.error("Failed to refetch sources after creation.");
         }
+        onCancel(); // Call onCancel to trigger state update in Main.tsx
 
-        navigate('/sources');  // Navigate to sources page
       } else {
         console.error("API call did not return a response.");
         setError("Failed to create source.");
@@ -121,10 +123,9 @@ const AddSource = () => {
       setError(err.message || "Failed to create source.");
     } finally {
       setLoading(false);
+      onCancel(); // Call onCancel to go back to Sources view
     }
   };
-
-
 
   const handleDepthLimitChange = (_event: Event, newValue: number | number[]) => {
     handleChange('depth_limit', newValue as number);
@@ -149,23 +150,23 @@ const AddSource = () => {
         borderBottom: '1px solid #333'
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography
-            component="span"
-            sx={{ color: '#888', cursor: 'pointer' }}
-            onClick={() => navigate('/sources')}
-          >
-            Sources
-          </Typography>
-          <NavigateNextIcon sx={{ color: '#888' }} />
-          <Typography>Add New</Typography>
-        </Box>
+    <Typography
+        component="span"
+        sx={{ color: '#888', cursor: 'pointer' }}
+        onClick={onCancel}
+    >
+        Sources
+    </Typography>
+    <NavigateNextIcon sx={{ color: '#888' }} />
+    <Typography>Add New</Typography>
+      </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
-            variant="text"
-            onClick={() => navigate('/sources')}
-            sx={{ color: 'white' }}
-          >
-            Cancel
+          variant="text"
+          onClick={onCancel}  //  Use the onCancel prop directly
+          sx={{ color: 'white' }}
+        >
+          Cancel
           </Button>
           <Button
             variant="contained"

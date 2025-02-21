@@ -10,6 +10,8 @@ import { CustomHeader } from "./Header";
 import { WelcomeFeatures } from './WelcomeFeatures';
 import { Sidebar } from './Sidebar';
 import { fetchLatestChat, resumeChat } from '@/lib/api';
+import AddSource from '@/pages/AddSource';
+import UpdateSource from '../pages/UpdateSource';
 
 const MainContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -60,8 +62,11 @@ const Main = styled(Box, {
 export const MainApp = () => {
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
   const [showChat, setShowChat] = useState(false);
-  const [showSources, setShowSources] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [showSources, setShowSources] = useState(false);
+  const [showAddSource, setShowAddSource] = useState(false);
+  const [showEditSource, setShowEditSource] = useState(false);
+  const [editSourceId, setEditSourceId] = useState<string | null>(null);
 
   const { isOpen, activePanel } = useSidebarStore();
   const { user } = useAuth();
@@ -91,18 +96,16 @@ export const MainApp = () => {
   }, [user, showChat]); // Add showChat to the dependency array
 
 
-  useEffect(() => {  // Get header height after component renders
+  useEffect(() => {
     const updateHeaderHeight = () => {
       if (headerRef.current) {
-        setHeaderHeight(headerRef.current.clientHeight); // Use clientHeight or offsetHeight
+        setHeaderHeight(headerRef.current.clientHeight);  // Make sure to use clientHeight
       }
     };
-
-    updateHeaderHeight(); // Call initially
-
-    window.addEventListener('resize', updateHeaderHeight); // Update on resize
-
-    return () => window.removeEventListener('resize', updateHeaderHeight); // Cleanup
+  
+    updateHeaderHeight();
+    window.addEventListener('resize', updateHeaderHeight);
+    return () => window.removeEventListener('resize', updateHeaderHeight);
   }, []);
 
 
@@ -118,6 +121,14 @@ export const MainApp = () => {
     setShowChat(true);
     setShowSources(false);
   };
+
+  const handleEditClick = (sourceId: string) => {
+    setEditSourceId(sourceId);
+    setShowEditSource(true);
+    setShowSources(false); // Hide Sources list when editing
+    setShowWelcome(false);
+    setShowChat(false);
+};
 
   const handleNewChat = () => {
     // Create a new empty chat object
@@ -155,17 +166,15 @@ export const MainApp = () => {
         setShowWelcome={setShowWelcome}
         onNewChat={handleNewChat}
       />
-      {(showWelcome || showSources) && (
         <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
-          <Title sx={{ marginLeft: '0px' }}>
+          <Title >
             <span className="primary">GenAI</span>
             <span>for</span>
             <span className="gradient">Public Sector</span>
           </Title>
-        }>
+        } >
         </CustomHeader>
-      )}
-      <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth}>
+      <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth} sx={{ paddingTop: `${headerHeight}px` }}>
         {showWelcome && (
           <Box sx={{
             display: 'flex',
@@ -189,15 +198,24 @@ export const MainApp = () => {
             />
           </Box>
         )}
-        {showSources ? (
-          <Sources />
-        ) : (
+        {showChat && (
           <ChatScreen
             currentChat={currentChat}
             hideHeader={showWelcome}
             isNewChat={!currentChat}
-            onChatStart={handleChatStart}
+            onChatStart={() => {
+              handleChatStart();
+            }}
           />
+        )}
+        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} /> }
+        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} /> }
+        {showEditSource && (
+            <UpdateSource
+                sourceId={editSourceId!} // Pass the sourceId
+                onCancel={() => {setShowEditSource(false); setShowSources(true);}} // Hide UpdateSource and show Sources
+                onSave={() => { /* handle save logic here */ setShowEditSource(false); setShowSources(true); }}
+            />
         )}
       </Main>
     </MainContainer>

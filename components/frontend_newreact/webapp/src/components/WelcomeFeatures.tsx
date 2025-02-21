@@ -44,9 +44,11 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
       flexDirection: 'column',
       gap: 4,
       justifyContent: 'center',
-      height: `calc(100vh - ${headerHeight + 16}px)`,
       alignItems: 'center',
       px: 3,
+      flexGrow: 1,  // Takes up available space but allows input box to stay
+      minHeight: `calc(100vh - ${headerHeight + 150}px)`,  // Leaves room for input
+      overflowY: 'auto', // Ensures scrolling if needed
     }}>
       <Typography
         variant="h4"
