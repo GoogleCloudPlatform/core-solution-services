@@ -264,9 +264,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       // TODO: Make api call for error handling
       const newFiles = Array.from(files).map(file => ({
         name: file.name,
-
-        // Simulating error remove when not testing
-        error: 'simulated error',
+        // Simulating error comment when not testing
+        // error: 'simulated error',
         progress: 0
       }));
       setUploadedFiles(prev => [...prev, ...newFiles]);

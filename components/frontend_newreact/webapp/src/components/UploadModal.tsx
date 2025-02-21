@@ -38,25 +38,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
   showError,
   setShowError
 }) => {
-
-  // useEffect(() => { // UseEffect to control temporary error display
-  //   let timers: Record<string, ReturnType<typeof setTimeout>> = {};// Store timers
-
-  //   uploadedFiles.forEach(file => {
-  //     if (file.error && !showError[file.name]) {
-  //       setShowError(prev => ({ ...prev, [file.name]: true })); // Show error for the file
-
-  //       timers[file.name] = setTimeout(() => { // Add set timeout to hide error message after 3 seconds
-  //         setShowError(prev => ({ ...prev, [file.name]: false }));
-  //       }, 3000); // 3000ms = 3 seconds
-  //     }
-  //   })
-
-  //   // Cleanup function to clear timeouts when component unmounts or uploadedFiles changes
-  //   return () => {
-  //     Object.values(timers).forEach(timer => clearTimeout(timer));
-  //   };
-  // }, [uploadedFiles, showError]);
   useEffect(() => {
     console.log({ showError })
   }, [showError])
