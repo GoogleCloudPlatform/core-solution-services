@@ -10,7 +10,7 @@ import { CustomHeader } from "./Header";
 import { WelcomeFeatures } from './WelcomeFeatures';
 import { Sidebar } from './Sidebar';
 import { fetchLatestChat, resumeChat } from '@/lib/api';
-
+import { DEFAULT_MODEL_ID } from "@/contexts/ModelContext"
 
 const MainContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -134,7 +134,7 @@ export const MainApp = () => {
       deleted_at_timestamp: null,
       deleted_by: '',
       prompt: '',
-      llm_type: selectedModel.id,
+      llm_type: selectedModel?.id || DEFAULT_MODEL_ID,
       user_id: user?.uid || '',
       agent_name: null,
       history: []

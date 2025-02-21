@@ -11,7 +11,7 @@ interface ModelContextType {
 
 const ModelContext = createContext<ModelContextType | undefined>(undefined);
 
-const DEFAULT_MODEL_ID = 'VertexAI-Chat';
+export const DEFAULT_MODEL_ID = 'VertexAI-Chat';
 
 export function ModelProvider({ children }: { children: ReactNode }) {
     const [selectedModel, setSelectedModel] = useState<ChatModel | null>(null);
