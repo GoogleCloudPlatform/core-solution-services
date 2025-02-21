@@ -171,28 +171,36 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
       if (response?.history) {
         let newMessages: ChatMessage[] = [];
+        
         for (let i = 0; i < response.history.length; i++) {
           const historyItem = response.history[i];
           if (historyItem.HumanInput) {
             let uploadedFile: string | undefined;
 
             if (i + 2 < response.history.length) {
-              if (response.history[i + 2].UploadedFile) {
-                uploadedFile = response.history[i + 2].UploadedFile;
+              if (response.history[i + 2].uploadedFile) {
+                uploadedFile = response.history[i + 2].uploadedFile;
               }
-            }
-
-            newMessages = [...newMessages, {
-              text: historyItem.HumanInput,
-              isUser: true,
-              uploadedFile: uploadedFile,
-            }];
+            }            
+            newMessages.push(
+              {
+                text: historyItem.HumanInput,
+                isUser: true,
+                uploadedFile: uploadedFile
+              })
           } else if (historyItem.AIOutput) {
-            newMessages = [...newMessages, {
-              text: historyItem.AIOutput,
-              isUser: false,
-              references: historyItem.QueryReferences || [],
-            }];
+            newMessages.push(
+              {
+                text: historyItem.AIOutput,
+                isUser: false,
+              })
+          } else if (historyItem.QueryReferences) {
+            newMessages.push(
+              {
+                text: "",
+                isUser: false,
+                references: historyItem.QueryReferences
+              })
           } else if (historyItem.UploadedFile) {
             continue;
           }
