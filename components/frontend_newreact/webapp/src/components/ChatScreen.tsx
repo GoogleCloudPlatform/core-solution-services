@@ -18,6 +18,10 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 import DocumentModal from './DocumentModal';
+import { Snackbar } from '@mui/material'; // Import Snackbar for notifications
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Tooltip from '@mui/material/Tooltip';
+
 
 interface ChatMessage {
   text: string;
@@ -51,6 +55,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  const [showSnackbar, setShowSnackbar] = useState(false);  // State for Snackbar
+
+  const handleCopyClick = (text: string) => {
+    navigator.clipboard.writeText(text)  // Use navigator.clipboard API
+      .then(() => {
+        setShowSnackbar(true);  // Show Snackbar on success
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+        // Optionally, show an error message to the user
+      });
+  };
+
+  const handleSnackbarClose = () => {
+    setShowSnackbar(false);
+  };
 
   // Add effect to fetch full chat details when currentChat changes
   useEffect(() => {
@@ -90,6 +111,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
   const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([]);
   const [importUrl, setImportUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showError, setShowError] = useState<Record<string, boolean>>({}); // State to track error visibility for each file
 
   const handleSelectSource = (source: QueryEngine) => {
     console.log("Selected source:", source);  // Or whatever logic you need
@@ -239,8 +261,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     if (files && files[0]) {
       console.log('File selected:', files[0].name);
       setSelectedFile(files[0]);
+      // TODO: Make api call for error handling
       const newFiles = Array.from(files).map(file => ({
         name: file.name,
+
+        // Simulating error remove when not testing
+        error: 'simulated error',
         progress: 0
       }));
       setUploadedFiles(prev => [...prev, ...newFiles]);
@@ -249,6 +275,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
   const handleRemoveFile = (fileName: string) => {
     setUploadedFiles(prev => prev.filter(file => file.name !== fileName));
+
+    // Add this line to clear the corresponding error message in UploadModal:
+    setShowError?.((prevErrors) => {   // Use optional chaining in case setShowError isn't immediately available
+      const newErrors = { ...prevErrors };
+      delete newErrors[fileName];  // Remove the error for the deleted file
+      return newErrors;
+    });
   };
 
   const handleAddFiles = () => {
@@ -394,13 +427,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                 )}
                 <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
               </Box>
-              <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`} sx={{
-                alignSelf: 'flex-end',
-                maxWidth: '70%',
-                display: 'flex',
-                flexDirection: 'row-reverse',
-                alignItems: 'flex-start',
-              }}>
+              <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
+                onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Call handleCopyClick with message text
+
+                sx={{
+                  alignSelf: 'flex-end',
+                  maxWidth: '70%',
+                  display: 'flex',
+                  flexDirection: 'row-reverse',
+                  alignItems: 'flex-start',
+                }}>
                 {/* ... existing JSX (Avatar, Typography for message.text) */}
 
                 {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
@@ -421,6 +457,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                     {/* <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} /> */}
                   </Box>
                 )}
+
+                {!message.isUser && <ContentCopyIcon sx={{ marginRight: 'auto', cursor: 'pointer' }} />} {/* Add copy icon for AI messages */}
+                {/* Conditionally render Tooltip with ContentCopyIcon on hover ONLY for AI messages */}
+
+
+                <Snackbar // Snackbar for notification
+                  open={showSnackbar}
+                  autoHideDuration={2000} // Adjust duration as needed
+                  onClose={handleSnackbarClose}
+                  message="Copied to clipboard!"
+                  anchorOrigin={{ vertical: 'top', horizontal: 'center' }} // Adjust position as needed
+                />
               </Box>
             </>
           ))}
@@ -481,6 +529,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             importUrl={importUrl}
             onImportUrlChange={(url) => setImportUrl(url)}
             onAdd={handleAddFiles}
+            setUploadedFiles={setUploadedFiles} // 
+            showError={showError}
+            setShowError={setShowError}
           />
         </Box>
       </Modal>

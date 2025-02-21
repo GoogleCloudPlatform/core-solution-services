@@ -141,7 +141,7 @@ export const MainApp = () => {
 
     setCurrentChat(newChat);
     setShowChat(true);
-    setShowWelcome(false);
+    setShowWelcome(true);
     setShowSources(false);
   };
 
