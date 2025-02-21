@@ -8,7 +8,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import UploadIcon from '@mui/icons-material/Upload';
 import { useAuth } from '../contexts/AuthContext';
 import { createChat, resumeChat, fetchChat, createQuery } from '../lib/api';
-import { Chat } from '../lib/types';
+import { Chat, QueryReference } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
 import UploadModal from './UploadModal';
 import '../styles/ChatScreen.css';
@@ -18,11 +18,16 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 import DocumentModal from './DocumentModal';
+import { Snackbar } from '@mui/material'; // Import Snackbar for notifications
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Tooltip from '@mui/material/Tooltip';
+import ReferenceChip from "@/components/ReferenceChip"
 
 interface ChatMessage {
   text: string;
   isUser: boolean;
   uploadedFile?: string;
+  references?: QueryReference[];
 }
 
 interface FileUpload {
@@ -51,6 +56,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  const [showSnackbar, setShowSnackbar] = useState(false);  // State for Snackbar
+
+  const handleCopyClick = (text: string) => {
+    navigator.clipboard.writeText(text)  // Use navigator.clipboard API
+      .then(() => {
+        setShowSnackbar(true);  // Show Snackbar on success
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+        // Optionally, show an error message to the user
+      });
+  };
+
+  const handleSnackbarClose = () => {
+    setShowSnackbar(false);
+  };
 
   // Add effect to fetch full chat details when currentChat changes
   useEffect(() => {
@@ -90,6 +112,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
   const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([]);
   const [importUrl, setImportUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showError, setShowError] = useState<Record<string, boolean>>({}); // State to track error visibility for each file
 
   const handleSelectSource = (source: QueryEngine) => {
     console.log("Selected source:", source);  // Or whatever logic you need
@@ -129,7 +152,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         const chatResponse = await resumeChat(user.token)({
           chatId,
           ...chatParams,
-          queryEngineId: selectedSource?.id
+          queryEngineId: selectedSource?.id || undefined
         });
 
         // Only assign if it's a Chat object
@@ -145,12 +168,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
         });
-
-        // Type guard to ensure we have a Chat object
-        if (isChat(queryResponse)) {
-          response = queryResponse;
-        }
-
+        response = queryResponse
       } else {
         // Create new regular chat
         const chatResponse = await createChat(user.token)({
@@ -165,6 +183,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         }
       }
 
+      console.log("api response", response)
+
       // Only proceed if we got a valid Chat object
       if (response?.id) {
         setChatId(response.id);
@@ -172,34 +192,42 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
       if (response?.history) {
         let newMessages: ChatMessage[] = [];
+        
         for (let i = 0; i < response.history.length; i++) {
           const historyItem = response.history[i];
-          if (historyItem.HumanInput) { // User message WITH possible file
-            let uploadedFile: string | undefined; // Get uploadedFile
+          if (historyItem.HumanInput) {
+            let uploadedFile: string | undefined;
 
             if (i + 2 < response.history.length) {
               if (response.history[i + 2].UploadedFile) {
                 uploadedFile = response.history[i + 2].UploadedFile;
               }
-            }
-
-            newMessages = [...newMessages, {
-              text: historyItem.HumanInput,
-              isUser: true,
-              uploadedFile: uploadedFile, // Assign uploadedFile here
-            }]
-          } else if (historyItem.AIOutput) { // AI message
-            newMessages = [...newMessages, {
-              text: historyItem.AIOutput,
-              isUser: false,
-              // No uploadedFile for AI messages
-            }]
+            }            
+            newMessages.push(
+              {
+                text: historyItem.HumanInput,
+                isUser: true,
+                uploadedFile: uploadedFile
+              })
+          } else if (historyItem.AIOutput) {
+            newMessages.push(
+              {
+                text: historyItem.AIOutput,
+                isUser: false,
+              })
+          } else if (historyItem.QueryReferences) {
+            newMessages.push(
+              {
+                text: "",
+                isUser: false,
+                references: historyItem.QueryReferences
+              })
           } else if (historyItem.UploadedFile) {
             continue;
-          } else {
-            newMessages = [...newMessages, { text: '', isUser: false }]
           }
         }
+
+        console.log("new messages", newMessages)
 
         setMessages(newMessages);
       } else {
@@ -239,8 +267,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     if (files && files[0]) {
       console.log('File selected:', files[0].name);
       setSelectedFile(files[0]);
+      // TODO: Make api call for error handling
       const newFiles = Array.from(files).map(file => ({
         name: file.name,
+        // Simulating error comment when not testing
+        // error: 'simulated error',
         progress: 0
       }));
       setUploadedFiles(prev => [...prev, ...newFiles]);
@@ -249,6 +280,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
   const handleRemoveFile = (fileName: string) => {
     setUploadedFiles(prev => prev.filter(file => file.name !== fileName));
+
+    // Add this line to clear the corresponding error message in UploadModal:
+    setShowError?.((prevErrors) => {   // Use optional chaining in case setShowError isn't immediately available
+      const newErrors = { ...prevErrors };
+      delete newErrors[fileName];  // Remove the error for the deleted file
+      return newErrors;
+    });
   };
 
   const handleAddFiles = () => {
@@ -304,15 +342,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           minHeight: 0,
         }}>
           {messages.map((message, index) => (
-            <>
+            <Box key={index}>
               <Box
-                key={index}
                 className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
                 sx={{
                   backgroundColor: message.isUser ? '#343541' : 'transparent',
                   borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
                   padding: '0.75rem 1rem',
-                  marginBottom: '1rem',
+                  marginBottom: '0.5rem',
                   alignSelf: message.isUser ? 'flex-end' : 'flex-start',
                   maxWidth: '70%',
                   display: 'flex',
@@ -322,7 +359,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                 }}
               >
                 {message.isUser ? (
-                  <Typography sx={{ color: '#fff', textAlign: 'right' }}>{message.text}</Typography>
+                  <Typography sx={{ color: '#fff', textAlign: 'right' }}>
+                    {message.text}
+                  </Typography>
                 ) : (
                   <>
                     <Avatar
@@ -389,18 +428,37 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                       >
                         {message.text}
                       </ReactMarkdown>
+                      
+                      {/* Add references display */}
+                      {!message.isUser && message.references && message.references.length > 0 && (
+                        <Box sx={{ 
+                          mt: 2, 
+                          pt: 2, 
+                          borderTop: '1px solid #4a4a4a'
+                        }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                            References:
+                          </Typography>
+                          {message.references.map((reference, idx) => (
+                            <ReferenceChip key={idx} reference={reference} />
+                          ))}
+                        </Box>
+                      )}
                     </Box>
                   </>
                 )}
                 <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
               </Box>
-              <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`} sx={{
-                alignSelf: 'flex-end',
-                maxWidth: '70%',
-                display: 'flex',
-                flexDirection: 'row-reverse',
-                alignItems: 'flex-start',
-              }}>
+              <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
+                onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Call handleCopyClick with message text
+
+                sx={{
+                  alignSelf: 'flex-end',
+                  maxWidth: '70%',
+                  display: 'flex',
+                  flexDirection: 'row-reverse',
+                  alignItems: 'flex-start',
+                }}>
                 {/* ... existing JSX (Avatar, Typography for message.text) */}
 
                 {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
@@ -421,8 +479,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                     {/* <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} /> */}
                   </Box>
                 )}
+
+                {!message.isUser && <ContentCopyIcon sx={{ marginRight: 'auto', cursor: 'pointer' }} />} {/* Add copy icon for AI messages */}
+                {/* Conditionally render Tooltip with ContentCopyIcon on hover ONLY for AI messages */}
+
+
+                <Snackbar // Snackbar for notification
+                  open={showSnackbar}
+                  autoHideDuration={2000} // Adjust duration as needed
+                  onClose={handleSnackbarClose}
+                  message="Copied to clipboard!"
+                  anchorOrigin={{ vertical: 'top', horizontal: 'center' }} // Adjust position as needed
+                />
               </Box>
-            </>
+            </Box>
           ))}
           {isLoading && (
             <LoadingSpinner />
@@ -481,6 +551,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             importUrl={importUrl}
             onImportUrlChange={(url) => setImportUrl(url)}
             onAdd={handleAddFiles}
+            setUploadedFiles={setUploadedFiles} // 
+            showError={showError}
+            setShowError={setShowError}
           />
         </Box>
       </Modal>
@@ -491,13 +564,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 // Helper functions to check response types
 const isReadableStream = (value: any): value is ReadableStream => {
   return value instanceof ReadableStream;
-};
-
-const isChat = (value: any): value is Chat => {
-  return value &&
-    typeof value === 'object' &&
-    'id' in value &&
-    'history' in value;
 };
 
 export default ChatScreen; 

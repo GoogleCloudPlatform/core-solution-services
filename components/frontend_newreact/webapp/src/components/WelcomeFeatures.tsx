@@ -29,8 +29,8 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
     {
       icon: <StorageIcon />,
       title: 'Knowledge Sources',
-      subtitle: 'Browse your sources',
-      action: 'View',
+      subtitle: 'Knowledge Source Name',
+      action: 'Query',
       onClick: () => {
         onSourcesView();
       }
@@ -59,8 +59,7 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
           mb: 2
         }}
       >
-        <span>Hello, </span>
-        <span className="hello">{username}</span>
+        <span className="font-poppins bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">Hello, {username}</span>
       </Typography>
 
       <Box className="features-grid" sx={{

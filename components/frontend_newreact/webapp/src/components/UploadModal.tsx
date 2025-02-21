@@ -2,6 +2,8 @@ import { Box, Typography, IconButton, Button, TextField, Divider } from '@mui/ma
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
+import { useState, useEffect } from 'react';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 export interface FileUpload {
   name: string;
@@ -18,6 +20,10 @@ interface UploadModalProps {
   importUrl: string;
   onImportUrlChange: (url: string) => void;
   onAdd: () => void;
+  // ... existing props
+  setUploadedFiles: React.Dispatch<React.SetStateAction<FileUpload[]>>; // Make sure this exists
+  showError: Record<string, boolean>;                                    // Add showError
+  setShowError: React.Dispatch<React.SetStateAction<Record<string, boolean>>>; // Add setShowError
 }
 
 const UploadModal: React.FC<UploadModalProps> = ({
@@ -29,7 +35,13 @@ const UploadModal: React.FC<UploadModalProps> = ({
   importUrl,
   onImportUrlChange,
   onAdd,
+  showError,
+  setShowError
 }) => {
+  useEffect(() => {
+    console.log({ showError })
+  }, [showError])
+
   return (
     <Box className="upload-modal">
       <Box className="upload-modal-header">
@@ -56,21 +68,29 @@ const UploadModal: React.FC<UploadModalProps> = ({
       </Box>
 
       {uploadedFiles.map((file) => (
-        <Box key={file.name} className="uploaded-file">
-          <Box className="file-info">
-            <Typography>{file.name}</Typography>
-            {file.error ? (
-              <Typography color="error">There was an issue uploading {file.name}</Typography>
-            ) : (
+        <Box key={file.name} >
+
+          <Box className="uploaded-file">
+            <Box className="file-info">
+              <Typography>{file.name}</Typography>
               <Box className="upload-progress">
                 <Box className="progress-bar" style={{ width: `${file.progress}%` }} />
               </Box>
-            )}
+              {/* Conditional error message display */}
+
+            </Box>
+            <IconButton onClick={() => onRemoveFile(file.name)} size="small">
+              <DeleteIcon />
+            </IconButton>
           </Box>
-          <IconButton onClick={() => onRemoveFile(file.name)} size="small">
-            <DeleteIcon />
-          </IconButton>
+          {file.error ? (
+            <Box sx={{ backgroundColor: "#F2B8B5", display: "flex", flexDirection: "row", justifyContent: "flex-start", alignItems: "center", padding: "8px", marginTop: "16px", borderRadius: "4px" }}>
+              <DescriptionIcon sx={{ color: "#601410", marginRight: "8px" }} />
+              <Typography sx={{ color: "#601410" }}>There was an issue uploading {file.name}</Typography>
+            </Box>
+          ) : null}
         </Box>
+
       ))}
 
       <Divider sx={{ my: 2 }}>or</Divider>

@@ -4,63 +4,75 @@ import { fetchAllChatModels } from '../lib/api';
 import { useAuth } from './AuthContext';
 
 interface ModelContextType {
-  selectedModel: ChatModel;
-  setSelectedModel: (model: ChatModel) => void;
-  loading: boolean;
+    selectedModel: ChatModel;
+    setSelectedModel: (model: ChatModel) => void;
+    loading: boolean;
 }
 
 const ModelContext = createContext<ModelContextType | undefined>(undefined);
 
-// Default model ID that matches what's returned by the API
 const DEFAULT_MODEL_ID = 'VertexAI-Chat';
 
-// Temporary model used during loading
-const LOADING_MODEL: ChatModel = {
+export const DEFAULT_CHAT_MODEL: ChatModel = {
   id: DEFAULT_MODEL_ID,
-  name: 'Loading...',
-  description: 'Loading model details...',
-  purposes: [],
-  isNew: false,
-  isMultimodal: false
-};
+  name: "Default Vertex Model"
+}
 
 export function ModelProvider({ children }: { children: ReactNode }) {
-  const [selectedModel, setSelectedModel] = useState<ChatModel>(LOADING_MODEL);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+    const [selectedModel, setSelectedModel] = useState<ChatModel>(DEFAULT_CHAT_MODEL);
+    const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
-  useEffect(() => {
-    const initializeModel = async () => {
-      if (!user) return;
+    useEffect(() => {
+        const initializeModel = async () => {
+            if (!user) return;
 
-      try {
-        const models = await fetchAllChatModels(user.token)();
-        if (models && models.length > 0) {
-          // Find the default model by ID, or fall back to first available model
-          const defaultModel = models.find(m => m.id === DEFAULT_MODEL_ID) || models[0];
-          setSelectedModel(defaultModel);
-        }
-      } catch (error) {
-        console.error('Error loading initial model:', error);
-      } finally {
-        setLoading(false);
-      }
+            setLoading(true);
+
+            try {
+                const models = await fetchAllChatModels(user.token)();
+                if (models && models.length > 0) {
+                    const storedModelId = localStorage.getItem('selectedModelId');
+                    let initialModel = null;
+
+                    if (storedModelId) {
+                        initialModel = models.find(m => m.id === storedModelId);
+                    }
+
+                    if (!initialModel) {
+                        initialModel = models.find(m => m.id === DEFAULT_MODEL_ID) || models[0];
+                    }
+                    setSelectedModel(initialModel);
+                } else {
+                    setSelectedModel(DEFAULT_CHAT_MODEL);
+                }
+            } catch (error) {
+                console.error('ModelContext Error loading initial model:', error);
+                setSelectedModel(DEFAULT_CHAT_MODEL);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeModel();
+    }, [user]);
+
+    const handleSetSelectedModel = (model: ChatModel) => {
+        setSelectedModel(model);
+        localStorage.setItem('selectedModelId', model.id);
     };
 
-    initializeModel();
-  }, [user]);
-
-  return (
-    <ModelContext.Provider value={{ selectedModel, setSelectedModel, loading }}>
-      {children}
-    </ModelContext.Provider>
-  );
+    return (
+        <ModelContext.Provider value={{ selectedModel, setSelectedModel: handleSetSelectedModel, loading }}>
+            {children}
+        </ModelContext.Provider>
+    );
 }
 
 export function useModel() {
-  const context = useContext(ModelContext);
-  if (context === undefined) {
-    throw new Error('useModel must be used within a ModelProvider');
-  }
-  return context;
-} 
+    const context = useContext(ModelContext);
+    if (context === undefined) {
+        throw new Error('useModel must be used within a ModelProvider');
+    }
+    return context;
+}

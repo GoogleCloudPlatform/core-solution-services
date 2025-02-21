@@ -13,7 +13,6 @@ import { fetchLatestChat, resumeChat } from '@/lib/api';
 import AddSource from '@/pages/AddSource';
 import UpdateSource from '../pages/UpdateSource';
 
-
 const MainContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
   backgroundColor: theme.palette.background.default,
@@ -153,7 +152,7 @@ export const MainApp = () => {
 
     setCurrentChat(newChat);
     setShowChat(true);
-    setShowWelcome(false);
+    setShowWelcome(true);
     setShowSources(false);
   };
 
