@@ -396,8 +396,8 @@ export const createQuery =
     engine,
     userInput,
     llmType,
-    chatMode = false
-  }: RunQueryParams): Promise<Query | Chat | undefined> => {
+    chatMode = true
+  }: RunQueryParams): Promise<Chat | undefined> => {
     const url = `${endpoint}/query/engine/${engine}`
     const headers = { Authorization: `Bearer ${token}` }
     const data = {
@@ -408,13 +408,13 @@ export const createQuery =
     const response = await axios.post(url, data, { headers })
     const responseData = response.data.data
 
-    // Return Chat object if chat_mode is true and chat data exists
-    if (chatMode && responseData.user_chat) {
+    // Return Chat object if chat data exists
+    if (responseData.user_chat) {
       return responseData.user_chat
     }
     
-    // Otherwise return Query ID
-    return responseData.user_query_id
+    // Otherwise return undefined
+    return undefined
   }
 
 export const resumeQuery =

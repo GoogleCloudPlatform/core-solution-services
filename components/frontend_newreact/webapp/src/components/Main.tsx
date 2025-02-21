@@ -11,7 +11,6 @@ import { WelcomeFeatures } from './WelcomeFeatures';
 import { Sidebar } from './Sidebar';
 import { fetchLatestChat, resumeChat } from '@/lib/api';
 
-
 const MainContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
   backgroundColor: theme.palette.background.default,
@@ -60,7 +59,7 @@ const Main = styled(Box, {
 
 export const MainApp = () => {
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(false);
   const [showSources, setShowSources] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
 
@@ -117,6 +116,7 @@ export const MainApp = () => {
   const handleChatStart = () => {
     setShowWelcome(false);
     setShowChat(true);
+    setShowSources(false);
   };
 
   const handleNewChat = () => {
@@ -189,7 +189,9 @@ export const MainApp = () => {
             />
           </Box>
         )}
-        {showChat && (
+        {showSources ? (
+          <Sources />
+        ) : (
           <ChatScreen
             currentChat={currentChat}
             hideHeader={showWelcome}
@@ -197,7 +199,6 @@ export const MainApp = () => {
             onChatStart={handleChatStart}
           />
         )}
-        {showSources && <Sources />}
       </Main>
     </MainContainer>
   );
