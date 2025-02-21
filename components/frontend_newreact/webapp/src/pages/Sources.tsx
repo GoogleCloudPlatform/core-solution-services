@@ -9,6 +9,7 @@ import {  // Import Material-UI components for building the UI
   TableHead,
   TableRow,
   IconButton,
+  Tooltip,
   Button,
   Select,
   MenuItem,
@@ -16,12 +17,14 @@ import {  // Import Material-UI components for building the UI
   FormControl,
   Icon,
   Menu,
-  ListItemIcon
+  ListItemIcon,
+  SelectChangeEvent
 } from '@mui/material';
 import { styled } from '@mui/material/styles'; // Import styling utilities from Material-UI
 import { QueryEngine, QUERY_ENGINE_TYPES } from '../lib/types'; // Import types for query engines
 import { useAuth } from '../contexts/AuthContext'; // Import authentication context
-import { deleteQueryEngine, fetchAllEngines } from '../lib/api'; // Import API function for fetching engines
+import { deleteQueryEngine, fetchAllEngines, getEngineJobStatus } from '../lib/api'; // Import API function for fetching engine
+import { jobsEndpoint } from '../lib/api'
 import AddIcon from '@mui/icons-material/Add'; // Import icons from Material-UI
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -34,7 +37,8 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, List, ListItem, ListItemText} from "@mui/material";
+import axios from 'axios';
 
 
 
@@ -48,6 +52,11 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
     fontWeight: 500, // Font weight for header text
   }
 }));
+
+interface SourcesProps {
+  onAddSourceClick: () => void;
+  onEditSourceClick: (sourceId: string) => void;
+}
 
 const StyledTableRow = styled(TableRow)({ // Styles for table rows
   '&:hover': {
@@ -72,8 +81,8 @@ const StyledSelect = styled(Select)({ // Styles for select dropdowns
   },
 });
 
-const Sources = () => {
-  const [sources, setSources] = useState<QueryEngine[]>([]); // State for storing the list of sources
+const Sources = ({ onAddSourceClick, onEditSourceClick }: SourcesProps) => {
+  const [sources, setSources] = useState<QueryEngineWithStatus[]>([]);// State for storing the list of sources
   const { user } = useAuth(); // Get the authenticated user from context
   const [loading, setLoading] = useState(true); // Loading state
   const [error, setError] = useState<string | null>(null); // Error state
@@ -81,10 +90,12 @@ const Sources = () => {
   const [typeFilter, setTypeFilter] = useState('all'); // State for the type filter
   const [jobStatusFilter, setJobStatusFilter] = useState('all'); // State for the job status filter
   // const [jobStatus, setJobStatus] = useState('); // State for the job status filter
-  const [rowsPerPage, setRowsPerPage] = useState(3); // Rows per page state (not used for actual pagination yet)
   const navigate = useNavigate(); // For navigation
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedSource, setSelectedSource] = useState<null | string>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sourcesToDelete, setSourcesToDelete] = useState<string[]>([]);
+  const [updateSourceId, setUpdateSourceId] = useState<string | null>(null);
 
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>, sourceId: string) => {
@@ -97,56 +108,175 @@ const Sources = () => {
     setSelectedSource(null);
   };
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-const handleDeleteClick = (sourceId: string) => {
-  setSelectedSource(sourceId); // Store only the source ID
-  setDeleteDialogOpen(true); // Open confirmation dialog
+  const handleEditClick = (sourceId: string) => {
+    onEditSourceClick(sourceId); // Call the onEditSourceClick prop
+    handleMenuClose(); // Close the menu after clicking
 };
 
-const confirmDeleteSource = async () => {
-  if (!user?.token || !selectedSource) return;
-
-  try {
-    const success = await deleteQueryEngine(user.token)({ id: selectedSource } as QueryEngine);
-    if (success) {
-      setSources((prevSources) => prevSources.filter((s) => s.id !== selectedSource)); // ✅ Remove deleted source
-      console.log(`Deleted source: ${selectedSource}`);
+  const handleDeleteClick = (sourceId: string) => {
+    if (selectedSources.includes(sourceId)) {
+        setSourcesToDelete([...selectedSources]); // Bulk delete from checkbox selection
     } else {
-      console.error("Failed to delete source");
+        setSourcesToDelete([sourceId]); // Single delete from menu
     }
-  } catch (err) {
-    console.error("Error deleting source:", err);
-  } finally {
-    setDeleteDialogOpen(false); // Close the dialog
-    setSelectedSource(null); // Clear selected source
-  }
-};
+    setDeleteDialogOpen(true);
+  };
 
-  
-  
-  useEffect(() => {
-    const loadSources = async () => {
-      if (!user?.token) return;
-  
-      try {
-        const engines = await fetchAllEngines(user.token)();
-        console.log("Fetched sources:", engines); // Debugging
-  
-        if (engines) {
-          setSources(engines);
+  const handleBulkDeleteClick = () => {
+    setSourcesToDelete([...selectedSources]); // Set sources to delete
+    setDeleteDialogOpen(true);                  // Open the dialog
+  };
+
+  const confirmDeleteSources = async () => {
+    if (!user?.token) return;
+
+    try {
+
+      const deletePromises = sourcesToDelete.map(async (sourceId) => {
+        const success = await deleteQueryEngine(user.token)({ id: sourceId } as QueryEngine);
+        if (!success) {
+          console.error(`Failed to delete source: ${sourceId}`);
         }
-      } catch (err) {
-        setError("Failed to load sources");
-        console.error("Error loading sources:", err);
-      } finally {
-        setLoading(false);
+        return success; // Return true if success, false if failed
+      });
+  
+      const results = await Promise.all(deletePromises); // Wait for all deletions
+      const allSuccessful = results.every(result => result); // Check if all were successful
+
+
+      if (allSuccessful) {
+        setSources((prevSources) => prevSources.filter((s) => !sourcesToDelete.includes(s.id))); // Remove deleted sources
+        setSelectedSources([]);
+        console.log(`Deleted sources: ${sourcesToDelete.join(", ")}`);
+      } else {
+          console.error("Some sources could not be deleted.");
       }
-    };
-  
-    loadSources();
-  }, [user]); // Dependency array
-  
+    } catch (err) {
+      console.error("Error deleting sources:", err);
+    } finally {
+      setDeleteDialogOpen(false);
+      setSourcesToDelete([]);
+      setSelectedSource(null);
+    }
+  };
+
+interface QueryEngineWithStatus extends QueryEngine {
+  status: "active" | "success" | "failed" | "unknown";
+}
+
+interface JobStatusResponse {
+  name: string;
+  status: "active" | "succeeded" | "failed";
+  input_data: {
+    query_engine: string;
+  };
+}
+
+useEffect(() => {
+  if (!user?.token) return;
+
+  let pollIntervalId: number | null = null;
+
+  /**
+   * Fetch all query engines and initialize them with "unknown" status.
+   */
+  const loadSources = async () => {
+    try {
+      const engines = await fetchAllEngines(user.token)();
+      console.log("Fetched sources:", engines);
+
+      if (engines) {
+        setSources((prevSources) =>
+          engines.map((engine) => {
+            const existingSource = prevSources.find((s) => s.id === engine.id);
+            return {
+              ...engine,
+              status: existingSource?.status ?? "unknown",
+            };
+          })
+        );
+      }
+    } catch (error) {
+      setError("Failed to load sources");
+      console.error("Error loading sources:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Fetch job statuses and update sources.
+   */
+  const updateJobStatuses = async () => {
+    let jobRunning = false;
+
+    try {
+      // Fetch all job statuses in one API call
+      const response = await axios.get<{ data: JobStatusResponse[] }>(
+        `${jobsEndpoint}/jobs/query_engine_build`,
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+
+      const jobsData = response.data.data; // Ensure correct data extraction
+      console.log("Fetched job statuses:", jobsData);
+
+      setSources((prevSources) =>
+        prevSources.map((source) => {
+          // Find the job for this engine using the correct ID field
+          const job = jobsData.find(
+            (j: JobStatusResponse) => j.input_data.query_engine === source.name
+          );
+
+          if (job) {
+            jobRunning = job.status === "active"; // If any job is still running, continue polling
+            return {
+              ...source,
+              status:
+                job.status === "succeeded"
+                  ? "success"
+                  : job.status === "failed"
+                  ? "failed"
+                  : job.status, // Preserve existing statuses
+            };
+          } else {
+            console.warn(`No job found for ${source.name} (${source.id}).`);
+            return { ...source, status: "failed" }; // Mark missing jobs as "failed"
+          }
+        })
+      );
+
+      // Stop polling if no jobs are running
+      if (!jobRunning && pollIntervalId !== null) {
+        clearInterval(pollIntervalId);
+        pollIntervalId = null;
+      }
+    } catch (error) {
+      console.error("Error updating job statuses:", error);
+    }
+  };
+
+  /**
+   * Starts polling job statuses every second.
+   */
+  const startPolling = () => {
+    if (!pollIntervalId) {
+      pollIntervalId = window.setInterval(updateJobStatuses, 1000);
+    }
+  };
+
+  loadSources().then(startPolling);
+
+  return () => {
+    if (pollIntervalId !== null) {
+      clearInterval(pollIntervalId);
+      pollIntervalId = null;
+    }
+  };
+}, [user]); // Dependency: Only runs when user changes
+
+
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => { // Handler for "Select All" checkbox
     if (event.target.checked) {  // If checked, select all sources
@@ -166,23 +296,43 @@ const confirmDeleteSource = async () => {
     });
   };
 
-  const getStatusIcon = (status: string) => { // Helper function to determine status icon
+  const getStatusIcon = (status: string | undefined) => {
     switch (status) {
-      case 'Success':
-        return <CheckCircleIcon sx={{ color: '#4CAF50' }} />; // Green icon for success
-      case 'Failed':
-        return <ErrorIcon sx={{ color: '#f44336' }} />;     // Red icon for failure
-      case 'Active':
-        return <SyncIcon sx={{ color: '#2196F3' }} />;       // Blue icon for active
-      default:
-        return null;  // No icon for other statuses
+      case 'success':
+        return <CheckCircleIcon sx={{ color: '#4CAF50' }} />;
+      case 'failed':
+        return <ErrorIcon sx={{ color: '#f44336' }} />;
+      case 'active':
+        return <SyncIcon sx={{ color: '#2196F3' }} />;
+      default: // Handle "unknown" and undefined
+        return null; 
     }
   };
 
-  const onClickFirstPage = () => { }
-  const onClickPreviousPage = () => { }
-  const onClickNextPage = () => { }
-  const onClickLastPage = () => { }
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(3); // Default value
+
+  const totalRows = sources.length;
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+  // Get paginated data
+  const paginatedSources = sources.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  // Page navigation handlers
+  const onClickFirstPage = () => setCurrentPage(1);
+  const onClickPreviousPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const onClickNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const onClickLastPage = () => setCurrentPage(totalPages);
+
+  // Handle change in rows per page
+  const handleRowsPerPageChange = (event: SelectChangeEvent<unknown>) => {
+    setRowsPerPage(Number(event.target.value)); // Explicitly cast value to number
+    setCurrentPage(1); // Reset to first page when rows per page changes
+  };
+
 
   return ( // Main JSX return for the component
     <Box sx={{
@@ -205,7 +355,7 @@ const confirmDeleteSource = async () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => navigate('/sources/add')} // Navigate to add source page
+          onClick={onAddSourceClick} // Call the prop function passed from Main.tsx
           sx={{
             backgroundColor: '#4a90e2',
             '&:hover': { backgroundColor: '#357abd' },
@@ -217,8 +367,20 @@ const confirmDeleteSource = async () => {
         </Button>
       </Box>
 
-      {/* Filtering Options  */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+      {/* Filtering/Bulk Delete Options */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        {selectedSources.length > 0 ? ( // Conditionally render bulk delete button
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleBulkDeleteClick}
+            sx={{ borderRadius: '20px', textTransform: 'none' }}
+          >
+            Delete
+          </Button>
+        ): (
+          <>
           {/* Type Filter */}
           <Box>
             <Typography variant="body2" sx={{ color: "white", mb: 0.5 }}>
@@ -295,39 +457,38 @@ const confirmDeleteSource = async () => {
               </StyledSelect>
             </FormControl>
           </Box>
-        {/* Rows per page and count (currently not functional) */}
-        <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography sx={{ color: 'white' }}>Rows per page</Typography>
-          <StyledSelect
-            value={rowsPerPage}
-            onChange={(e) => setRowsPerPage(Number(e.target.value))}
-            IconComponent={KeyboardArrowDownIcon}
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  backgroundColor: "#242424",
-                },
-              },
-            }}
-          >
-            <MenuItem value={3}>3</MenuItem>
-            <MenuItem value={5}>5</MenuItem>
-            <MenuItem value={10}>10</MenuItem>
-          </StyledSelect>
-          <Typography sx={{ color: 'white' }}>1-3 of 3</Typography>
-          <IconButton sx={{ color: 'white' }} onClick={onClickFirstPage}>
-            <FirstPage />
-          </IconButton>
-          <IconButton sx={{ color: 'white' }} onClick={onClickPreviousPage}>
-            <ChevronLeft />
-          </IconButton>
-          <IconButton sx={{ color: 'white' }} onClick={onClickNextPage}>
-            <ChevronRight />
-          </IconButton>
-          <IconButton sx={{ color: 'white' }} onClick={onClickLastPage}>
-            <LastPage />
-          </IconButton>
-        </Box>
+          </>
+        )}
+
+        {/* Pagination Controls */}
+          <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography sx={{ color: 'white' }}>Rows per page</Typography>
+            <StyledSelect
+              value={rowsPerPage}
+              onChange={handleRowsPerPageChange}
+              IconComponent={KeyboardArrowDownIcon}
+              MenuProps={{ PaperProps: { sx: { backgroundColor: "#242424" } } }}
+            >
+              <MenuItem value={3}>3</MenuItem>
+              <MenuItem value={5}>5</MenuItem>
+              <MenuItem value={10}>10</MenuItem>
+            </StyledSelect>
+            <Typography sx={{ color: 'white' }}>
+              {`${(currentPage - 1) * rowsPerPage + 1} - ${Math.min(currentPage * rowsPerPage, totalRows)} of ${totalRows}`}
+            </Typography>
+            <IconButton sx={{ color: 'white' }} onClick={onClickFirstPage} disabled={currentPage === 1}>
+              <FirstPage />
+            </IconButton>
+            <IconButton sx={{ color: 'white' }} onClick={onClickPreviousPage} disabled={currentPage === 1}>
+              <ChevronLeft />
+            </IconButton>
+            <IconButton sx={{ color: 'white' }} onClick={onClickNextPage} disabled={currentPage === totalPages}>
+              <ChevronRight />
+            </IconButton>
+            <IconButton sx={{ color: 'white' }} onClick={onClickLastPage} disabled={currentPage === totalPages}>
+              <LastPage />
+            </IconButton>
+          </Box>
       </Box>
 
       {/* Table to display Sources */}
@@ -352,19 +513,13 @@ const confirmDeleteSource = async () => {
             </TableRow>
           </TableHead>
           <TableBody>
-              {sources
-                .filter((source) => {
-                  // Apply job status filtering
-                  const jobStatusMatches =
-                    jobStatusFilter === "all" || jobStatusFilter === "success";
+            {sources
+              .filter((source) =>
+                (jobStatusFilter === "all" || source.status === jobStatusFilter) &&
+                (typeFilter === "all" || source.query_engine_type === typeFilter)
+            )
             
-                  // Apply type filtering
-                  const typeMatches =
-                    typeFilter === "all" ||
-                    QUERY_ENGINE_TYPES[source.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] === typeFilter;
-            
-                  return jobStatusMatches && typeMatches; // Ensure both filters apply
-                })
+              .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage) // ⬅️ Pagination applied here
               .map((source) => (
                 <StyledTableRow key={source.id}>
                   <StyledTableCell padding="checkbox">
@@ -377,10 +532,8 @@ const confirmDeleteSource = async () => {
                   <StyledTableCell>{source.name}</StyledTableCell>
                   <StyledTableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {getStatusIcon('Success')}
-                      Success
-                      {/* {getStatusIcon(source.status)} */}
-                      {/* {source.status} */}
+                      {getStatusIcon(source.status)}
+                      {source.status ?? "unknown"} {/* Display text as well (handle undefined) */}
                     </Box>
                   </StyledTableCell>
                   <StyledTableCell>
@@ -410,25 +563,36 @@ const confirmDeleteSource = async () => {
                             color: "white",
                           },
                         }}
+                        anchorOrigin={{
+                          vertical: "top",
+                          horizontal: "right",
+                        }}
+                        transformOrigin={{
+                          vertical: "top",
+                          horizontal: "right",
+                        }}
                       >
-                        <MenuItem onClick={() => console.log("Copy Job Status", typeFilter)}>
-                          <ListItemIcon>
-                            <ContentCopyIcon sx={{ color: "white" }} />
-                          </ListItemIcon>
-                          Copy Job Status
-                        </MenuItem>
-                        <MenuItem onClick={() => console.log("View Source", source.id)}>
+                        <MenuItem
+                          onClick={() => {
+                            const docUrl = source?.doc_url ?? undefined; // Convert null to undefined
+                            if (docUrl) {
+                              window.open(docUrl, "_blank");
+                            } else {
+                              console.warn("No valid document URL available.");
+                            }
+                          }}
+                        >
                           <ListItemIcon>
                             <VisibilityIcon sx={{ color: "white" }} />
                           </ListItemIcon>
                           View Source
                         </MenuItem>
-                        <MenuItem onClick={() => console.log("Edit Source", source.id)}>
+                        <MenuItem onClick={() => handleEditClick(source.id)}> {/* Call handleEditClick */}
                           <ListItemIcon>
-                            <EditIcon sx={{ color: "white" }} />
+                              <EditIcon sx={{ color: "white" }} />
                           </ListItemIcon>
                           Edit Source
-                        </MenuItem>
+                      </MenuItem>
                         <MenuItem onClick={() => handleDeleteClick(source.id)}>
                           <ListItemIcon>
                             <DeleteIcon sx={{ color: "red" }} />
@@ -443,24 +607,34 @@ const confirmDeleteSource = async () => {
           </TableBody>
         </Table>
         {/* 🔹 Delete Confirmation Dialog - Add This Here */}
-    <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-      <DialogTitle>Confirm Deletion</DialogTitle>
-      <DialogContent>
-        <DialogContentText>
-          Are you sure you want to delete this source? This action cannot be undone.
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
-          Cancel
-        </Button>
-        <Button onClick={confirmDeleteSource} color="error">
-          Confirm
-        </Button>
-      </DialogActions>
-    </Dialog>
-      </TableContainer>
-    </Box>
+        <Dialog open={deleteDialogOpen} onClose={() => {setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null);}}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete the following source(s)? This action cannot be undone.
+          </DialogContentText>
+          <List>
+            {sourcesToDelete.map((sourceId) => {
+              const sourceName = sources.find(s => s.id === sourceId)?.name || sourceId;
+              return (
+                <ListItem key={sourceId}>
+                  <ListItemText primary={sourceName} />
+                </ListItem>
+              );
+            })}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null);}} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={confirmDeleteSources} color="error">
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+        </TableContainer>
+      </Box>
   );
 };
 

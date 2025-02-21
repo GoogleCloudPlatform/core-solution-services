@@ -67,7 +67,7 @@ interface ResumeChatApiParams {
 }
 
 interface JobStatusResponse {
-  status: "success" | "failed" | "active"
+  status: "succeeded" | "failed" | "active"
 }
 
 interface UpdateChatParams {
@@ -92,6 +92,11 @@ interface ModelResponse {
 const endpoint = envOrFail(
   "VITE_PUBLIC_API_ENDPOINT",
   import.meta.env.VITE_PUBLIC_API_ENDPOINT,
+)
+
+export const jobsEndpoint = envOrFail(
+  "VITE_PUBLIC_API_JOBS_ENDPOINT",
+  import.meta.env.VITE_PUBLIC_API_JOBS_ENDPOINT,
 )
 
 export const fetchAllChatModels =
@@ -326,10 +331,25 @@ export const fetchAllEngines =
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
 
+  export const fetchAllEngineJobs =
+  (token: string) => (): Promise<QueryEngineBuildJob[] | undefined> => {
+    const url = `${jobsEndpoint}/jobs/query_engine_build`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+  }
+
 export const fetchEngine =
   (token: string, engineId: string | null) => (): Promise<QueryEngine | undefined | null> => {
     if (!engineId) return Promise.resolve(null)
     const url = `${endpoint}/query/engine/${engineId}`
+    const headers = { Authorization: `Bearer ${token}` }
+    return axios.get(url, { headers }).then(path(["data", "data"]))
+  }
+
+export const getEngineJobStatus =
+  async (jobId: string, token: string): Promise<JobStatusResponse | undefined> => {
+    if (!token) return Promise.resolve(undefined)
+    const url = `${jobsEndpoint}/jobs/query_engine_build/${jobId}`
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }

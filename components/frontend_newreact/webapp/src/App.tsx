@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './App.css';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import SignIn from './pages/SignIn';
 import { useAuth } from './contexts/AuthContext';
@@ -23,6 +23,16 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const MainAppLayout = () => {
+  return (
+    <>
+      <MainApp />  {/* This now includes all main app views */}
+      <Outlet /> {/* This is crucial for nested routes */}
+    </>
+  );
+}
+
+
 export default function App() {
   return (
     <AuthProvider>
@@ -30,16 +40,8 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/signin" element={<SignIn />} />
-            <Route
-              path="/*"
-              element={
-                <PrivateRoute>
-                  <MainApp />
-                </PrivateRoute>
-              }
-            />
-            <Route path="/sources/add" element={<AddSource />} />
-            <Route path="/password-reset" element={<PasswordReset />} />
+            <Route path="/" element={<PrivateRoute> <MainAppLayout /> </PrivateRoute>} /> {/* Main App Route */}
+            <Route path="/password-reset" element={<PasswordReset />} />  
           </Routes>
         </BrowserRouter>
       </ModelProvider>
