@@ -18,6 +18,7 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 import DocumentModal from './DocumentModal';
+import ReferenceChip from "@/components/ReferenceChip"
 
 interface ChatMessage {
   text: string;
@@ -38,56 +39,6 @@ interface ChatScreenProps {
   onChatStart?: () => void;
   isNewChat?: boolean;
 }
-
-const ReferenceChip: React.FC<{ reference: QueryReference }> = ({ reference }) => {
-  const [showDetails, setShowDetails] = useState(false);
-
-  return (
-    <Box sx={{ mb: 1 }}>
-      <Button 
-        onClick={() => setShowDetails(!showDetails)}
-        sx={{ 
-          textTransform: 'none',
-          p: 1,
-          borderRadius: 1,
-          border: '1px solid #4a4a4a',
-          display: 'flex',
-          alignItems: 'center',
-          width: '100%',
-          justifyContent: 'flex-start',
-          color: 'text.primary',
-          '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.05)'
-          }
-        }}
-      >
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          width: '100%'
-        }}>
-          <Typography variant="body2" sx={{ mb: 0.5 }}>
-            {reference.document_url.split('/').pop()}
-          </Typography>
-          {showDetails && (
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                color: 'text.secondary',
-                whiteSpace: 'pre-wrap',
-                width: '100%',
-                textAlign: 'left'
-              }}
-            >
-              {reference.document_text}
-            </Typography>
-          )}
-        </Box>
-      </Button>
-    </Box>
-  );
-};
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false, onChatStart, isNewChat = false }) => {
   const [prompt, setPrompt] = useState('');
