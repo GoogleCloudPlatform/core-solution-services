@@ -147,12 +147,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
         });
-
-        // Type guard to ensure we have a Chat object
-        if (isChat(queryResponse)) {
-          response = queryResponse;
-        }
-
+        response = queryResponse
       } else {
         // Create new regular chat
         const chatResponse = await createChat(user.token)({
@@ -166,6 +161,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           response = chatResponse;
         }
       }
+
+      console.log("api response", response)
 
       // Only proceed if we got a valid Chat object
       if (response?.id) {
@@ -200,6 +197,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             continue;
           }
         }
+
+        console.log("new messages", newMessages)
 
         setMessages(newMessages);
       } else {
@@ -508,13 +507,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 // Helper functions to check response types
 const isReadableStream = (value: any): value is ReadableStream => {
   return value instanceof ReadableStream;
-};
-
-const isChat = (value: any): value is Chat => {
-  return value &&
-    typeof value === 'object' &&
-    'id' in value &&
-    'history' in value;
 };
 
 export default ChatScreen; 
