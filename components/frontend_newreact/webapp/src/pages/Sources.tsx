@@ -196,7 +196,7 @@ const confirmDeleteSource = async () => {
       {/* Title and description */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h5" sx={{ color: 'white', mb: 1 }}>Sources</Typography>
+          <Typography variant="h5" sx={{ color: 'white', mb: 1 }} className="font-poppins">Sources</Typography>
           {/* <Typography variant="body2" sx={{ color: '#888' }}>
             Brief description of what Sources means and how they're used
           </Typography> */}
@@ -206,12 +206,7 @@ const confirmDeleteSource = async () => {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => navigate('/sources/add')} // Navigate to add source page
-          sx={{
-            backgroundColor: '#4a90e2',
-            '&:hover': { backgroundColor: '#357abd' },
-            borderRadius: '20px',
-            textTransform: 'none'
-          }}
+          className="font-poppins capitalize p-3 rounded-3xl bg-blue-300 text-blue-900"
         >
           Add Source
         </Button>
