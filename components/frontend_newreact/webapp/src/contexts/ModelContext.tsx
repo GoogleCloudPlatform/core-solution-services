@@ -4,17 +4,22 @@ import { fetchAllChatModels } from '../lib/api';
 import { useAuth } from './AuthContext';
 
 interface ModelContextType {
-    selectedModel: ChatModel | null;
+    selectedModel: ChatModel;
     setSelectedModel: (model: ChatModel) => void;
     loading: boolean;
 }
 
 const ModelContext = createContext<ModelContextType | undefined>(undefined);
 
-export const DEFAULT_MODEL_ID = 'VertexAI-Chat';
+const DEFAULT_MODEL_ID = 'VertexAI-Chat';
+
+export const DEFAULT_CHAT_MODEL: ChatModel = {
+  id: DEFAULT_MODEL_ID,
+  name: "Default Vertex Model"
+}
 
 export function ModelProvider({ children }: { children: ReactNode }) {
-    const [selectedModel, setSelectedModel] = useState<ChatModel | null>(null);
+    const [selectedModel, setSelectedModel] = useState<ChatModel>(DEFAULT_CHAT_MODEL);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
 
@@ -39,11 +44,11 @@ export function ModelProvider({ children }: { children: ReactNode }) {
                     }
                     setSelectedModel(initialModel);
                 } else {
-                    setSelectedModel(null);
+                    setSelectedModel(DEFAULT_CHAT_MODEL);
                 }
             } catch (error) {
                 console.error('ModelContext Error loading initial model:', error);
-                setSelectedModel(null);
+                setSelectedModel(DEFAULT_CHAT_MODEL);
             } finally {
                 setLoading(false);
             }

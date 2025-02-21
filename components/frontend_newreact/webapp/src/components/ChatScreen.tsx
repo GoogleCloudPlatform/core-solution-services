@@ -19,7 +19,6 @@ import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 import DocumentModal from './DocumentModal';
 import ReferenceChip from "@/components/ReferenceChip"
-import { DEFAULT_MODEL_ID } from "@/contexts/ModelContext"
 
 interface ChatMessage {
   text: string;
@@ -120,7 +119,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       // Common parameters
       const chatParams = {
         userInput: prompt,
-        llmType: selectedModel?.id || DEFAULT_MODEL_ID,
+        llmType: selectedModel.id,
         stream: false,
         temperature: temperature,
         uploadFile: selectedFile || undefined,
@@ -145,7 +144,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         const queryResponse = await createQuery(user.token)({
           engine: selectedSource.id,
           userInput: prompt,
-          llmType: selectedModel?.id || DEFAULT_MODEL_ID,
+          llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
         });
         response = queryResponse
