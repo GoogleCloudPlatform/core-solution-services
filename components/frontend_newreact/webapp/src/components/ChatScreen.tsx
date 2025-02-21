@@ -178,8 +178,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             let uploadedFile: string | undefined;
 
             if (i + 2 < response.history.length) {
-              if (response.history[i + 2].uploadedFile) {
-                uploadedFile = response.history[i + 2].uploadedFile;
+              if (response.history[i + 2].UploadedFile) {
+                uploadedFile = response.history[i + 2].UploadedFile;
               }
             }            
             newMessages.push(
