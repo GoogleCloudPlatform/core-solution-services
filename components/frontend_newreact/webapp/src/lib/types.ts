@@ -156,6 +156,7 @@ export type Query = {
   query_result?: QueryResponse
   query_references?: QueryReferences[]
   user_query_id?: string
+  user_chat?: Chat
 }
 
 export interface QueryReference {

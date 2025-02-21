@@ -8,7 +8,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import UploadIcon from '@mui/icons-material/Upload';
 import { useAuth } from '../contexts/AuthContext';
 import { createChat, resumeChat, fetchChat, createQuery } from '../lib/api';
-import { Chat } from '../lib/types';
+import { Chat, QueryReference } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
 import UploadModal from './UploadModal';
 import '../styles/ChatScreen.css';
@@ -18,11 +18,13 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 import DocumentModal from './DocumentModal';
+import ReferenceChip from "@/components/ReferenceChip"
 
 interface ChatMessage {
   text: string;
   isUser: boolean;
   uploadedFile?: string;
+  references?: QueryReference[];
 }
 
 interface FileUpload {
@@ -145,12 +147,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
         });
-
-        // Type guard to ensure we have a Chat object
-        if (isChat(queryResponse)) {
-          response = queryResponse;
-        }
-
+        response = queryResponse
       } else {
         // Create new regular chat
         const chatResponse = await createChat(user.token)({
@@ -165,6 +162,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         }
       }
 
+      console.log("api response", response)
+
       // Only proceed if we got a valid Chat object
       if (response?.id) {
         setChatId(response.id);
@@ -172,34 +171,42 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
       if (response?.history) {
         let newMessages: ChatMessage[] = [];
+        
         for (let i = 0; i < response.history.length; i++) {
           const historyItem = response.history[i];
-          if (historyItem.HumanInput) { // User message WITH possible file
-            let uploadedFile: string | undefined; // Get uploadedFile
+          if (historyItem.HumanInput) {
+            let uploadedFile: string | undefined;
 
             if (i + 2 < response.history.length) {
-              if (response.history[i + 2].UploadedFile) {
-                uploadedFile = response.history[i + 2].UploadedFile;
+              if (response.history[i + 2].uploadedFile) {
+                uploadedFile = response.history[i + 2].uploadedFile;
               }
-            }
-
-            newMessages = [...newMessages, {
-              text: historyItem.HumanInput,
-              isUser: true,
-              uploadedFile: uploadedFile, // Assign uploadedFile here
-            }]
-          } else if (historyItem.AIOutput) { // AI message
-            newMessages = [...newMessages, {
-              text: historyItem.AIOutput,
-              isUser: false,
-              // No uploadedFile for AI messages
-            }]
+            }            
+            newMessages.push(
+              {
+                text: historyItem.HumanInput,
+                isUser: true,
+                uploadedFile: uploadedFile
+              })
+          } else if (historyItem.AIOutput) {
+            newMessages.push(
+              {
+                text: historyItem.AIOutput,
+                isUser: false,
+              })
+          } else if (historyItem.QueryReferences) {
+            newMessages.push(
+              {
+                text: "",
+                isUser: false,
+                references: historyItem.QueryReferences
+              })
           } else if (historyItem.UploadedFile) {
             continue;
-          } else {
-            newMessages = [...newMessages, { text: '', isUser: false }]
           }
         }
+
+        console.log("new messages", newMessages)
 
         setMessages(newMessages);
       } else {
@@ -304,15 +311,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           minHeight: 0,
         }}>
           {messages.map((message, index) => (
-            <>
+            <Box key={index}>
               <Box
-                key={index}
                 className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
                 sx={{
                   backgroundColor: message.isUser ? '#343541' : 'transparent',
                   borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
                   padding: '0.75rem 1rem',
-                  marginBottom: '1rem',
+                  marginBottom: '0.5rem',
                   alignSelf: message.isUser ? 'flex-end' : 'flex-start',
                   maxWidth: '70%',
                   display: 'flex',
@@ -322,7 +328,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                 }}
               >
                 {message.isUser ? (
-                  <Typography sx={{ color: '#fff', textAlign: 'right' }}>{message.text}</Typography>
+                  <Typography sx={{ color: '#fff', textAlign: 'right' }}>
+                    {message.text}
+                  </Typography>
                 ) : (
                   <>
                     <Avatar
@@ -389,6 +397,22 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                       >
                         {message.text}
                       </ReactMarkdown>
+                      
+                      {/* Add references display */}
+                      {!message.isUser && message.references && message.references.length > 0 && (
+                        <Box sx={{ 
+                          mt: 2, 
+                          pt: 2, 
+                          borderTop: '1px solid #4a4a4a'
+                        }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                            References:
+                          </Typography>
+                          {message.references.map((reference, idx) => (
+                            <ReferenceChip key={idx} reference={reference} />
+                          ))}
+                        </Box>
+                      )}
                     </Box>
                   </>
                 )}
@@ -422,7 +446,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                   </Box>
                 )}
               </Box>
-            </>
+            </Box>
           ))}
           {isLoading && (
             <LoadingSpinner />
@@ -491,13 +515,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 // Helper functions to check response types
 const isReadableStream = (value: any): value is ReadableStream => {
   return value instanceof ReadableStream;
-};
-
-const isChat = (value: any): value is Chat => {
-  return value &&
-    typeof value === 'object' &&
-    'id' in value &&
-    'history' in value;
 };
 
 export default ChatScreen; 
