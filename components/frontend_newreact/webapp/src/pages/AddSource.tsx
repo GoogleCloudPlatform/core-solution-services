@@ -78,7 +78,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
     embedding_type: 'text-embedding-ada-002',
     vector_store: 'langchain_pgvector',
     depth_limit: 0,
-    chunk_size: 500,
+    chunk_size: 100,
     is_multimodal: false,
   });
 
@@ -138,7 +138,9 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
   return (
     <Box sx={{
       height: '100vh',
-      backgroundColor: '#1a1a1a',
+      overflow: 'auto', // Add this to make the whole page scrollable
+      backgroundColor: '#1a1a1a',      
+      marginTop: '64px',
       color: 'white'
     }}>
       {/* Header */}
@@ -195,16 +197,47 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
             fullWidth
             placeholder="Input"
             value={formData.name}
-            onChange={(e) => handleChange('name', e.target.value)}
+            onChange={(e) => { if(e.target.value.length <= 50) {handleChange('name', e.target.value)} }}
             required
             error={!formData.name}
-            helperText={!formData.name && "Required"}
+            helperText={!formData.name ? "Required" : null}
             InputProps={{
               endAdornment: formData.name && (
                 <IconButton size="small" onClick={() => handleChange('name', '')}>
                   <ClearIcon fontSize="small" sx={{ color: "white" }} />
                 </IconButton>
               )
+            }}
+            sx={{
+                '& .MuiOutlinedInput-root': { backgroundColor: '#242424', color: 'white', '& fieldset': { borderColor: '#333' }, '&:hover fieldset': { borderColor: '#444' } }
+              }}
+              />
+              <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>Name of the Query Engine (can include spaces). {formData.name?.length || 0}/50 characters left.</Typography>
+        </Box>
+
+        {/* Add Description Field Here */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+            Description
+          </Typography>
+          <Tooltip title="A brief description of this source.">
+            <InfoIcon sx={{ color: '#888', fontSize: '14px', cursor: 'pointer', ml: 0.5 }} />
+          </Tooltip>
+          <TextField
+            fullWidth
+            placeholder="Enter a brief description"
+            value={formData.description}
+            onChange={(e) => {
+              if (e.target.value.length <= 75) {
+                handleChange('description', e.target.value);
+              }
+            }}
+            InputProps={{
+              endAdornment: (
+                <Typography sx={{ color: '#888', mr: 1 }}>
+                  {formData.description?.length || 0}/75
+                </Typography>
+              ),
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
@@ -215,6 +248,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
               }
             }}
           />
+          <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>A brief description of this source.</Typography>
         </Box>
 
         <Box sx={{ mb: 4 }}>
@@ -352,6 +386,13 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                   fullWidth
                   value={formData.embedding_type}
                   onChange={(e) => handleChange('embedding_type', e.target.value)}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        backgroundColor: "#242424", // Background for dropdown menu
+                      },
+                    },
+                  }}
                 >
                   <MenuItem value="VertexAI-Embedding">text-embedding-ada-002</MenuItem>
                 </StyledSelect>
@@ -368,7 +409,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                 </Typography>
               </Box>
               <StyledSlider
-                value={formData.chunk_size ?? undefined}
+                value={typeof formData.chunk_size === 'number' ? formData.chunk_size : 100}
                 onChange={handleChunkSizeChange}
                 min={100}
                 max={1000}
