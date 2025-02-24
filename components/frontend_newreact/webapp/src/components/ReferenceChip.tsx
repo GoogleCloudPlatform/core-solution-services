@@ -1,15 +1,35 @@
 import { useState } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, IconButton, Tooltip } from '@mui/material';
 import { QueryReference } from '../lib/types';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
-const ReferenceChip: React.FC<{ reference: QueryReference }> = ({ reference }) => {
+interface ReferenceChipProps {
+  reference: QueryReference;
+  onCopy?: (text: string, references?: QueryReference[]) => void;
+}
+
+const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference, onCopy }) => {
+
   const [showDetails, setShowDetails] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [iconClicked, setIconClicked] = useState(false);
+
+  const handleCopy = () => {
+    if (onCopy) {
+      onCopy(reference.document_text, [reference]);
+      setTooltipOpen(true);
+      setIconClicked(true);
+      setTimeout(() => {
+        setIconClicked(false);
+      }, 200);
+    }
+  };
 
   return (
     <Box sx={{ mb: 1 }}>
-      <Button 
+      <Button
         onClick={() => setShowDetails(!showDetails)}
-        sx={{ 
+        sx={{
           textTransform: 'none',
           p: 1,
           borderRadius: 1,
@@ -24,8 +44,8 @@ const ReferenceChip: React.FC<{ reference: QueryReference }> = ({ reference }) =
           }
         }}
       >
-        <Box sx={{ 
-          display: 'flex', 
+        <Box sx={{
+          display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
           width: '100%'
@@ -34,9 +54,9 @@ const ReferenceChip: React.FC<{ reference: QueryReference }> = ({ reference }) =
             {reference.document_url.split('/').pop()}
           </Typography>
           {showDetails && (
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 color: '#fff',
                 whiteSpace: 'pre-wrap',
                 width: '100%',
@@ -48,6 +68,35 @@ const ReferenceChip: React.FC<{ reference: QueryReference }> = ({ reference }) =
           )}
         </Box>
       </Button>
+      {onCopy && (
+        <Tooltip
+          open={tooltipOpen}
+          onClose={() => setTooltipOpen(false)}
+          title="Copied!"
+          placement="top"
+          leaveDelay={200}
+        >
+          <IconButton
+            sx={{
+              position: 'absolute',
+              left: -4,
+              top: -4,
+              backgroundColor: iconClicked ? '#2979ff' : 'transparent',
+              borderRadius: '50%',
+              transition: 'background-color 0.2s ease',
+              padding: '4px',
+              '&:hover': {
+                backgroundColor: '#e3f2fd',
+              },
+            }}
+            onClick={handleCopy}
+          >
+            <ContentCopyIcon
+              sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }}
+            />
+          </IconButton>
+        </Tooltip>
+      )}
     </Box>
   );
 };

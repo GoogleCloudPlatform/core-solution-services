@@ -141,7 +141,7 @@ export const MainApp = () => {
 
     setCurrentChat(newChat);
     setShowChat(true);
-    setShowWelcome(true);
+    setShowWelcome(false);
     setShowSources(false);
   };
 
@@ -154,6 +154,7 @@ export const MainApp = () => {
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
         onNewChat={handleNewChat}
+        currentChat={currentChat}
       />
       {(showWelcome || showSources) && (
         <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={

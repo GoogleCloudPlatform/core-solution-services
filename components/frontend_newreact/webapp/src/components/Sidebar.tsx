@@ -45,6 +45,7 @@ interface SidebarProps {
     setShowSources: (show: boolean) => void;
     setShowWelcome: (show: boolean) => void;
     onNewChat: () => void;
+    currentChat: Chat | undefined;
 }
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -111,7 +112,8 @@ export const Sidebar = ({
     selectedChatId,
     setShowSources,
     setShowWelcome,
-    onNewChat
+    onNewChat,
+    currentChat
 }: SidebarProps) => {
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
 
@@ -124,6 +126,31 @@ export const Sidebar = ({
             setActivePanel(item as 'history' | 'settings');
         }
     };
+
+    const handleNewChatClick = () => {
+        //onNewChat();
+        setShowChat(true);
+        setShowWelcome(false);
+        // clear the current chat for proper loading
+        onSelectChat({
+            id: undefined,  // undefined for new chat
+            title: 'New Chat',
+            created_time: new Date().toISOString(),
+            created_by: '',
+            last_modified_time: new Date().toISOString(),
+            last_modified_by: '',
+            archived_at_timestamp: null,
+            archived_by: '',
+            deleted_at_timestamp: null,
+            deleted_by: '',
+            prompt: '',
+            llm_type: '',
+            user_id: '',
+            agent_name: null,
+            history: []
+        });
+        console.log('click')
+    }
 
     const mainMenuItems = [
         {
@@ -254,9 +281,7 @@ export const Sidebar = ({
                     >
                         <IconButton
                             onClick={() => {
-                                onNewChat();
-                                setShowChat(true);
-                                setShowWelcome(false);
+                                handleNewChatClick();
                             }}
                             sx={{
                                 bgcolor: '#000',
