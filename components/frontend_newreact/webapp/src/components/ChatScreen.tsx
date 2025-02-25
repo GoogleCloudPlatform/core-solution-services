@@ -29,6 +29,7 @@ interface ChatMessage {
   isUser: boolean;
   uploadedFile?: string;
   references?: QueryReference[];
+  fileUrl?: string // Add fileUrl property
 }
 
 interface FileUpload {
@@ -51,7 +52,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     currentChat?.history?.map(h => ({
       text: h.HumanInput || h.AIOutput || '',
       isUser: !!h.HumanInput,
-      references: h.QueryReferences || []
+      references: h.QueryReferences || [],
+      fileUrl: h.UploadedFile || ''
     })) || []
   );
   const [showDocumentViewer, setShowDocumentViewer] = useState(false)
@@ -78,9 +80,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const handleSnackbarClose = () => {
-    setShowSnackbar(false);
-  };
 
   // Add effect to fetch full chat details when currentChat changes
   useEffect(() => {
@@ -135,17 +134,27 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       onChatStart();
     }
 
+    let uploadedFileName = selectedFile?.name;
+    if (importUrl) {
+      uploadedFileName = importUrl.split('/').pop()
+      if (importUrl.startsWith("gs://")) {
+        uploadedFileName = importUrl.replace("gs://", "").split("/").pop()
+      }
+    }
+
+
     const userMessage: ChatMessage = {
       text: prompt,
       isUser: true,
       uploadedFile: selectedFile?.name,
+      fileUrl: importUrl
     };
     setMessages(prev => [...prev, userMessage]);
     setPrompt('');
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
-    
+
 
     setIsLoading(true);
 
@@ -212,17 +221,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           const historyItem = response.history[i];
           if (historyItem.HumanInput) {
             let uploadedFile: string | undefined;
+            let fileUrl: string | undefined;
 
             if (i + 2 < response.history.length) {
               if (response.history[i + 2].UploadedFile) {
                 uploadedFile = response.history[i + 2].UploadedFile;
+              } else if (response.history[i + 2].FileURL) {
+                fileUrl = response.history[i + 2].FileURL;
               }
             }
             newMessages.push(
               {
                 text: historyItem.HumanInput,
                 isUser: true,
-                uploadedFile: uploadedFile
+                uploadedFile: uploadedFile,
+                fileUrl: fileUrl
               })
           } else if (historyItem.AIOutput) {
             newMessages.push(
@@ -239,8 +252,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
               })
           } else if (historyItem.UploadedFile) {
             continue;
+          } else if (historyItem.FileURL) {
+            continue;
           }
         }
+
 
         console.log("new messages", newMessages)
 
