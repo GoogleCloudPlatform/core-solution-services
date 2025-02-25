@@ -13,6 +13,7 @@ const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference, onCopy }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const [iconClicked, setIconClicked] = useState(false);
+  const [showCopyIcon, setShowCopyIcon] = useState(false);
 
   const handleCopy = () => {
     if (onCopy) {
@@ -21,12 +22,16 @@ const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference, onCopy }) => {
       setIconClicked(true);
       setTimeout(() => {
         setIconClicked(false);
+        setTooltipOpen(false);
       }, 200);
     }
   };
 
   return (
-    <Box sx={{ mb: 1 }}>
+    <Box sx={{ mb: 1, position: 'relative' }}
+      onMouseEnter={() => setShowCopyIcon(true)}
+      onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}
+    >
       <Button
         onClick={() => setShowDetails(!showDetails)}
         sx={{
@@ -68,7 +73,7 @@ const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference, onCopy }) => {
           )}
         </Box>
       </Button>
-      {onCopy && (
+      {onCopy && showCopyIcon && (
         <Tooltip
           open={tooltipOpen}
           onClose={() => setTooltipOpen(false)}

@@ -61,15 +61,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
   const [tooltipOpen, setTooltipOpen] = useState(false);   // State for tooltip
   const [iconClicked, setIconClicked] = useState(false);    // State for click effect
 
-  const handleCopyClick = (text: string, references?: QueryReference[]) => {
-    let textToCopy = text;
-
-    if (references && references.length > 0) {
-      textToCopy += "\n\nReferences:\n";
-      textToCopy += references.map(ref => `- ${ref.document_url.split('/').pop()}: ${ref.document_text}`).join('\n');
-    }
-
-    navigator.clipboard.writeText(textToCopy)
+  const handleCopyClick = (text: string) => {
+    navigator.clipboard.writeText(text)
       .then(() => {
         setTooltipOpen(true);
         setIconClicked(true);
@@ -81,7 +74,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         console.error('Failed to copy: ', err);
       });
   };
-
   // Add effect to fetch full chat details when currentChat changes
   useEffect(() => {
     const loadChat = async () => {
@@ -93,7 +85,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
             setMessages(
               fullChat.history.map(h => ({
                 text: h.HumanInput || h.AIOutput || '',
-                isUser: !!h.HumanInput
+                isUser: !!h.HumanInput,
+                references: h.QueryReferences || []
               }))
             );
             setChatId(fullChat.id);
@@ -348,12 +341,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           flexGrow: 1,
           overflowY: 'auto',
           minHeight: 0,
+          mx: 2
         }}>
           {messages.map((message, index) => (
             <Box key={index}
               onMouseEnter={() => setShowCopyIcon(true)}  // Show icon on hover
               onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}  // Hide icon and close tooltip when mouse leaves
-              onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text, message.references); }} // Removed inline onMouseEnter/Leave
+              onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Removed inline onMouseEnter/Leave
               sx={{
                 // other styles
                 position: 'relative', // Needed for Tooltip positioning
@@ -370,7 +364,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                   padding: '0.75rem 1rem',
                   marginBottom: '0.5rem',
                   alignSelf: message.isUser ? 'flex-end' : 'flex-start',
-                  maxWidth: '70%',
+                  maxWidth: '100%',
                   display: 'flex',
                   flexDirection: message.isUser ? 'row-reverse' : 'row',
                   alignItems: 'flex-start',
@@ -458,7 +452,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                             References:
                           </Typography>
                           {message.references.map((reference, idx) => (
-                            <ReferenceChip key={idx} reference={reference} />
+                            <ReferenceChip key={idx} reference={reference} onCopy={handleCopyClick} />
                           ))}
                         </Box>
                       )}
@@ -468,11 +462,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                 <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
               </Box>
               <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
-                onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text, message.references); }} // Call handleCopyClick with message text
+                onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Call handleCopyClick with message text
 
                 sx={{
                   alignSelf: 'flex-end',
-                  maxWidth: '70%',
+                  maxWidth: '100%',
                   display: 'flex',
                   flexDirection: 'row-reverse',
                   alignItems: 'flex-start',
@@ -498,7 +492,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                   </Box>
                 )}
 
-                {showCopyIcon && !message.isUser && (
+                {showCopyIcon && !message.isUser && !message.references && (
                   <Tooltip
                     open={tooltipOpen}
                     onClose={() => setTooltipOpen(false)}
