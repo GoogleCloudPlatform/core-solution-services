@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createQueryEngine, fetchAllEngines } from '../lib/api';
@@ -13,6 +13,7 @@ import {
   IconButton,
   Collapse,
   Slider,
+  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, List, ListItem, ListItemText
 } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -20,6 +21,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import styled from '@emotion/styled';
 import InfoIcon from '@mui/icons-material/Info';
 import Tooltip from '@mui/material/Tooltip';
+import CloseIcon from '@mui/icons-material/Close';
 
 const StyledSelect = styled(Select)({
   backgroundColor: '#242424',
@@ -27,6 +29,8 @@ const StyledSelect = styled(Select)({
   '& .MuiOutlinedInput-notchedOutline': { borderColor: '#333' },
   '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#444' },
 });
+
+const STYLED_WHITE= 'white';
 
 const StyledSlider = styled(Slider)({
   color: '#4a90e2',
@@ -68,6 +72,8 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [sources, setSources] = useState<QueryEngine[]>([]);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
 
   const [formData, setFormData] = useState<Partial<QueryEngine>>({
@@ -97,9 +103,20 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
     if (!formData.name || !formData.doc_url) {
       setError("Please fill in all required fields.");
       return;
-  }
-    setLoading(true);
+    }
+    // Open confirmation modal without starting the API request
+    setIsConfirmationModalOpen(true);
     setError(null);
+};
+
+  const handleConfirmSubmit = async () => {
+    if (!user || !user.token) {
+      console.error("User token is missing.");
+      setError("User authentication required.");
+      return;
+  }
+    setIsSubmitted(true);
+    setLoading(true);
 
     try {
       const response = await createQueryEngine(user.token)(formData as QueryEngine);
@@ -123,9 +140,14 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
       setError(err.message || "Failed to create source.");
     } finally {
       setLoading(false);
-      onCancel(); // Call onCancel to go back to Sources view
+      setIsConfirmationModalOpen(false);
     }
+    setIsConfirmationModalOpen(true);
   };
+
+  const handleConfirmationModalClose = () => {
+    setIsConfirmationModalOpen(false);
+};
 
   const handleDepthLimitChange = (_event: Event, newValue: number | number[]) => {
     handleChange('depth_limit', newValue as number);
@@ -136,6 +158,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
   };
 
   return (
+    <>
     <Box sx={{
       height: '100vh',
       overflow: 'auto', // Add this to make the whole page scrollable
@@ -480,7 +503,64 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
           </Typography>
         )}
       </Box>
+      <Dialog open={isConfirmationModalOpen} onClose={handleConfirmationModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
+              <DialogTitle sx={{color: STYLED_WHITE}}>Add New Source</DialogTitle>
+              <IconButton
+                onClick={handleConfirmationModalClose}
+                sx={{ position: 'absolute', top: 8, right: 8 }}
+                  >
+                    <CloseIcon sx={{ color: STYLED_WHITE }}/>
+                </IconButton>
+              <DialogContent sx={{pt: 0}}>
+              <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+                    Source Name:
+                </Typography>
+                  <Typography variant="h6" sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE }, borderBottom: '1px solid #888' }}>
+                      {formData.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block',  }}>Description:</Typography>
+                  <Typography sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}>
+                      {formData.description}
+                  </Typography>
+                  <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1 }}>
+                      <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>These settings are not editable after adding this source</Typography>
+                  </Box>
+                  <List sx={{color: STYLED_WHITE}}>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Data URL:" secondary={formData?.doc_url} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                      </ListItem>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Type:" secondary={QUERY_ENGINE_TYPES[formData?.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || formData?.query_engine_type} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                      </ListItem>
+                      <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText primary="Vector Store:" secondary={formData?.vector_store === 'langchain_pgvector' ? 'PG Vector' : 'Vertex Matching Engine'} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText primary="Embedding Type:" secondary={formData?.embedding_type === 'text-embedding-ada-002' ? "text-embedding-ada-002" : "VertexAI-Embedding"} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                          </Box>
+                      </ListItem>
+                      <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText primary="Depth Limit:" secondary={formData?.depth_limit?.toString()} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText primary="Chunk Size:" secondary={formData?.chunk_size?.toString()} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                          </Box>
+                      </ListItem>
+                  </List>
+              </DialogContent>
+              <DialogActions>
+                   <Button onClick={() => {handleConfirmationModalClose(); setIsConfirmationModalOpen(false); }} sx={{color: "#A8C7FA"}} >
+                         Continue Editing
+                  </Button>
+                  <Button onClick={handleConfirmSubmit} color="primary" variant="contained" sx={{borderRadius: '20px', textTransform: 'none', backgroundColor: '#A8C7FA', color: '#062E6F' }}>
+                      Add New Source
+                  </Button>
+              </DialogActions>
+          </Dialog>
     </Box>
+    </>
   );
 };
 
