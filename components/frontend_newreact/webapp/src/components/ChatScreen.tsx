@@ -22,6 +22,7 @@ import { Snackbar } from '@mui/material'; // Import Snackbar for notifications
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import Tooltip from '@mui/material/Tooltip';
 import ReferenceChip from "@/components/ReferenceChip"
+import { useRef } from 'react';
 
 interface ChatMessage {
   text: string;
@@ -74,6 +75,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         console.error('Failed to copy: ', err);
       });
   };
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSnackbarClose = () => {
+    setShowSnackbar(false);
+  };
+
   // Add effect to fetch full chat details when currentChat changes
   useEffect(() => {
     const loadChat = async () => {
@@ -133,6 +141,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       uploadedFile: selectedFile?.name,
     };
     setMessages(prev => [...prev, userMessage]);
+    setPrompt('');
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    
+
     setIsLoading(true);
 
     try {
@@ -340,7 +354,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         <Box className="chat-messages" sx={{
           flexGrow: 1,
           overflowY: 'auto',
-          minHeight: 0,
+          minHeight: '100%',
           mx: 2
         }}>
           {messages.map((message, index) => (
@@ -356,20 +370,22 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
             >
               <Box
-                className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
-
+                className={message.isUser ? 'user-message' : 'assistant-message'}
                 sx={{
                   backgroundColor: message.isUser ? '#343541' : 'transparent',
                   borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
                   padding: '0.75rem 1rem',
                   marginBottom: '0.5rem',
                   alignSelf: message.isUser ? 'flex-end' : 'flex-start',
+                  textAlign: message.isUser ? 'right' : 'left',
+                  maxWidth: '70%',
                   maxWidth: '100%',
                   display: 'flex',
                   flexDirection: message.isUser ? 'row-reverse' : 'row',
                   alignItems: 'flex-start',
                   gap: '0.5rem',
                 }}
+                ref={index === messages.length - 1 && message.isUser ? messagesEndRef : null} // Attach reference to the last user messsage
               >
                 {message.isUser ? (
                   <Typography sx={{ color: '#fff', textAlign: 'right' }}>
