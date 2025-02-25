@@ -378,7 +378,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                   marginBottom: '0.5rem',
                   alignSelf: message.isUser ? 'flex-end' : 'flex-start',
                   textAlign: message.isUser ? 'right' : 'left',
-                  maxWidth: '70%',
                   maxWidth: '100%',
                   display: 'flex',
                   flexDirection: message.isUser ? 'row-reverse' : 'row',
