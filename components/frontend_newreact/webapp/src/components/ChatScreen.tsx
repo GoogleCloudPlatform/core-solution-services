@@ -53,7 +53,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
       text: h.HumanInput || h.AIOutput || '',
       isUser: !!h.HumanInput,
       references: h.QueryReferences || [],
-      fileUrl: h.UploadedFile || ''
+      uploadedFile: h.UploadedFile || '',
+      fileUrl: h.FileURL || ''
     })) || []
   );
   const [showDocumentViewer, setShowDocumentViewer] = useState(false)
