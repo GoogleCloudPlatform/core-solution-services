@@ -1,24 +1,31 @@
-import { useState, useEffect } from 'react'; // Import useEffect
+import { useState, useEffect } from 'react';
 import { Box, Button, Menu, MenuItem, Typography, CircularProgress } from '@mui/material';
 import { ChevronDown, Search, Check } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth
-import { fetchAllEngines } from '../lib/api';  // Import your API call
-import { QueryEngine } from '../lib/types';  // Import your types
+import { useAuth } from '../contexts/AuthContext';
+import { fetchAllEngines } from '../lib/api';
+import { QueryEngine } from '../lib/types';
 
 interface SourceSelectorProps {
     className?: string;
-    onSelectSource: (source: QueryEngine) => void; // Add onSelectSource prop
+    onSelectSource: (source: QueryEngine) => void;
     disabled?: boolean;
 }
 
+const defaultChatSource: QueryEngine = {
+    id: 'default-chat',
+    name: 'Default Chat',
+    description: 'Default chat without specific source', // Optional description
+    query: async () => { return null; } // Dummy query function as it's a default chat
+};
+
 export function SourceSelector({ className, onSelectSource, disabled = false }: SourceSelectorProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const [selectedSource, setSelectedSource] = useState<QueryEngine | null>(null);  // Store the selected source object
+    const [selectedSource, setSelectedSource] = useState<QueryEngine | null>(defaultChatSource);
     const open = Boolean(anchorEl);
     const { user } = useAuth();
-    const [sources, setSources] = useState<QueryEngine[]>([]); // State to store fetched sources
-    const [loading, setLoading] = useState(true); // Loading state
-    const [error, setError] = useState<string | null>(null); // Error state
+    const [sources, setSources] = useState<QueryEngine[]>([defaultChatSource]); // Initialize with Default Chat
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         if (!disabled) {
@@ -36,17 +43,19 @@ export function SourceSelector({ className, onSelectSource, disabled = false }: 
         handleClose();
     };
 
-    useEffect(() => {  // Fetch sources when component mounts and user is logged in
+    useEffect(() => {
         const loadSources = async () => {
-            if (!user?.token) return; // Do nothing if no user or token
+            if (!user?.token) return;
 
             try {
                 setLoading(true);
                 setError(null);
                 const fetchedSources = await fetchAllEngines(user.token)();
+                let allSources = [defaultChatSource]; // Start with Default Chat
                 if (fetchedSources) {
-                    setSources(fetchedSources);
+                    allSources = [defaultChatSource, ...fetchedSources]; // Prepend Default Chat
                 }
+                setSources(allSources);
             } catch (err) {
                 setError("Failed to load sources");
                 console.error(err);
@@ -85,7 +94,7 @@ export function SourceSelector({ className, onSelectSource, disabled = false }: 
                         <CircularProgress size={16} sx={{ color: 'inherit' }} />
                         <span>Loading sources...</span>
                     </Box>
-                ) : selectedSource ? selectedSource.name : "Select Source"}
+                ) : selectedSource?.id == defaultChatSource.id ? "Select Source" : selectedSource ? selectedSource.name : "Select Source"}
             </Button>
             <Menu
                 anchorEl={anchorEl}
@@ -119,6 +128,7 @@ export function SourceSelector({ className, onSelectSource, disabled = false }: 
                             mb: 1,
                             '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
                         }}
+                        onClick={() => handleSourceSelect(defaultChatSource)} // Allow re-selecting Default Chat
                     >
                         <Typography
                             sx={{
@@ -134,6 +144,7 @@ export function SourceSelector({ className, onSelectSource, disabled = false }: 
 
                 {/* Sources Title with Search Icon */}
                 <MenuItem
+                    disabled
                     sx={{
                         py: 1,
                         px: 1.5,
@@ -186,7 +197,7 @@ export function SourceSelector({ className, onSelectSource, disabled = false }: 
                 )}
 
                 {/* Sources List */}
-                {!loading && !error && sources.length === 0 && (
+                {!loading && !error && sources.length === 1 && sources[0] === defaultChatSource && ( // Condition for "No sources available" to be more precise
                     <MenuItem
                         sx={{
                             color: '#fff',
@@ -201,20 +212,22 @@ export function SourceSelector({ className, onSelectSource, disabled = false }: 
                 )}
 
                 {!loading && !error && sources.map((source) => (
-                    <MenuItem
-                        key={source.id}
-                        onClick={() => handleSourceSelect(source)}
-                        sx={{
-                            color: '#fff',
-                            fontSize: '0.875rem',
-                            py: 1,
-                            px: 1.5,
-                            borderRadius: '4px',
-                            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-                        }}
-                    >
-                        {source.name}
-                    </MenuItem>
+                    source.id !== selectedSource?.id && ( // Exclude selected source from the list
+                        <MenuItem
+                            key={source.id}
+                            onClick={() => handleSourceSelect(source)}
+                            sx={{
+                                color: '#fff',
+                                fontSize: '0.875rem',
+                                py: 1,
+                                px: 1.5,
+                                borderRadius: '4px',
+                                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+                            }}
+                        >
+                            {source.name}
+                        </MenuItem>
+                    )
                 ))}
             </Menu>
         </Box>
