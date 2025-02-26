@@ -235,6 +235,7 @@ export type QueryEngine = {
   endpoint: string | null
   doc_url: string | null
   manifest_url: string | null
+  query: (query: string) => Promise<any>;
   // TODO: The params field is used by the ORM object for storing
   // a map of possible keys and values, which is not reflected in the
   // current QueryEngine interface
