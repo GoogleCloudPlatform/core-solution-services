@@ -226,7 +226,7 @@ export const MainApp = () => {
           />
         )}
       </Main>
-      </MainContainer>
+    </MainContainer>
   );
 };
 
