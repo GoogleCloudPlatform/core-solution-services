@@ -394,15 +394,38 @@ export const createQueryEngine =
   };
 
 
-export const updateQueryEngine =
+  export const updateQueryEngine =
   (token: string) => async (queryEngine: QueryEngine): Promise<QueryEngine | undefined> => {
-    const url = `${endpoint}/query/engine/${queryEngine.id}`
-    const headers = { Authorization: `Bearer ${token}` }
-    const data = {
-      "description": queryEngine.description,
+    if (!queryEngine.id) {
+        console.error("Missing queryEngine ID:", queryEngine);
+        return;
     }
-    return axios.put(url, data, { headers }).then(path(["data", "data"]))
-  }
+
+    const url = `${endpoint}/query/engine/${queryEngine.id}`;
+    const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const data = {
+      name: queryEngine.name, 
+      description: queryEngine.description || "", 
+    };
+
+    console.log("Sending API Request:", JSON.stringify(data));
+
+    try {
+        const response = await axios.put(url, data, { headers });
+        return response.data;
+    } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+            console.error("Axios error updating source:", error.response?.data || error.message);
+        } else if (error instanceof Error) {
+            console.error("Unexpected error updating source:", error.message);
+        } else {
+            console.error("Unknown error updating source:", error);
+        }
+        throw error;
+    }
+};
+
+
 
 export const deleteQueryEngine =
   (token: string) => async (queryEngine: QueryEngine): Promise<boolean | undefined> => {
