@@ -505,7 +505,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                 {/* ... existing JSX (Avatar, Typography for message.text) */}
 
                 {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
-                {message.isUser && message.uploadedFile && ( //  Only render if uploadedFile is present
+                {(message.isUser && (message.uploadedFile || message.fileUrl)) && (
                   <Box className="file-chip-container" sx={{
                     alignSelf: 'flex-end',
                     display: 'flex',
@@ -514,14 +514,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                   }}>
                     <Button onClick={() => setShowDocumentViewer(true)}>
                       <Chip
-                        label={message.uploadedFile}
+                        label={message.uploadedFile || message.fileUrl}
                         size="small"
                         variant="outlined"
                       />
                     </Button>
-                    {/* <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} /> */}
                   </Box>
                 )}
+
 
                 {showCopyIcon && !message.isUser && !message.references && (
                   <Tooltip
