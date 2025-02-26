@@ -58,6 +58,7 @@ export function ProfileMenu({ }: ProfileMenuProps) {
             <Avatar
                 onClick={handleClick}
                 src={userPhotoURL || undefined}
+                alt="Profile icon"
                 sx={{
                     width: 32,
                     height: 32,

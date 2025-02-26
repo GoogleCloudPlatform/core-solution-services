@@ -22,14 +22,16 @@ interface WelcomeFeaturesProps {
 export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHeight }: WelcomeFeaturesProps) => {
   const features: Feature[] = [
     {
-      icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} />,
+      icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} alt="Chat icon"/>,
       title: 'Chat',
       subtitle: 'Latest Topical Gist',
       action: 'Resume',
-      onClick: onChatStart
+      onClick: ()=> {
+        onChatStart();
+      }   
     },
     {
-      icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} />,
+      icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} alt="Knowledge source icon"/>,
       title: 'Knowledge Sources',
       subtitle: 'Knowledge Source Name',
       action: 'Query',
