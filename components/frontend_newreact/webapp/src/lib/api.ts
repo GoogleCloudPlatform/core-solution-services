@@ -489,15 +489,3 @@ export const updateChat =
     }
     return axios.put(url, data, { headers }).then(path(["data", "data"]))
   }
-
-// taken from stackoverflow.com/questions/36280818
-export const toBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => {
-    const result = reader.result
-    if (result === null || result instanceof ArrayBuffer) reject()
-    else { resolve(result.split(',')[1]) }
-  }
-  reader.onerror = reject;
-});
