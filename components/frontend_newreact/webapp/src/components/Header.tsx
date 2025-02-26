@@ -1,5 +1,5 @@
 import { Box, styled } from "@mui/material";
-import { ProfileMenu } from "@/components/profile-menu";
+import { ProfileMenu } from "@/components/ProfileMenu";
 import * as React from 'react';
 
 interface HeaderProps {

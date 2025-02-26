@@ -1,4 +1,4 @@
-import { Avatar, Menu, MenuItem } from '@mui/material';
+import { Avatar, Menu, MenuItem, Box, IconButton } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -54,21 +54,30 @@ export function ProfileMenu({ }: ProfileMenuProps) {
     }
 
     return (
-        <>
-            <Avatar
+        <Box>
+            <IconButton
                 onClick={handleClick}
-                src={userPhotoURL || undefined}
-                sx={{
-                    width: 32,
-                    height: 32,
-                    cursor: 'pointer',
-                    bgcolor: 'rgba(0, 0, 0, 0.2)',
-                    color: 'white',
-                    fontSize: '0.875rem'
-                }}
+                size="small"
+                aria-controls={open ? 'account-menu' : undefined}
+                aria-haspopup="true"
+                aria-expanded={open ? 'true' : undefined}
+                tabIndex={0}
             >
-                {initials}
-            </Avatar>
+                <Avatar
+                    onClick={handleClick}
+                    src={userPhotoURL || undefined}
+                    sx={{
+                        width: 32,
+                        height: 32,
+                        cursor: 'pointer',
+                        bgcolor: 'rgba(0, 0, 0, 0.2)',
+                        color: 'white',
+                        fontSize: '0.875rem'
+                    }}
+                >
+                    {initials}
+                </Avatar>
+            </IconButton>
             <Menu
                 anchorEl={anchorEl}
                 open={open}
@@ -118,6 +127,6 @@ export function ProfileMenu({ }: ProfileMenuProps) {
                     <span>Log Out</span>
                 </MenuItem>
             </Menu>
-        </>
+        </Box>
     );
 }
