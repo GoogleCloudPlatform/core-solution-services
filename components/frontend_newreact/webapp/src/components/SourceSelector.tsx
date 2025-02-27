@@ -14,8 +14,35 @@ interface SourceSelectorProps {
 const defaultChatSource: QueryEngine = {
     id: 'default-chat',
     name: 'Default Chat',
-    description: 'Default chat without specific source', // Optional description
-    query: async () => { return null; } // Dummy query function as it's a default chat
+    description: 'Default chat without specific source',
+    archived_at_timestamp: null,
+    archived_by: '',
+    created_by: '', 
+    created_time: new Date().toISOString(), 
+    deleted_at_timestamp: null,
+    deleted_by: '',
+    last_modified_by: '', 
+    last_modified_time: new Date().toISOString(),
+    llm_type: null,
+    parent_engine_id: '', 
+    user_id: 'default-user', 
+    query_engine_type: 'default_chat_type', 
+    embedding_type: 'default', 
+    vector_store: null,
+    is_public: false,
+    index_id: null,
+    index_name: null,
+    endpoint: null,
+    doc_url: null,
+    manifest_url: null,
+    params: {
+        is_multimodal: 'false', 
+    },
+    depth_limit: 3, 
+    chunk_size: 1024,
+    agents: [], 
+    child_engines: [], 
+    is_multimodal: false, 
 };
 
 export function SourceSelector({ className, onSelectSource, disabled = false }: SourceSelectorProps) {
