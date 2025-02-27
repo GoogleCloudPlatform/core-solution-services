@@ -326,12 +326,12 @@ export const fetchQueryHistory =
 export const fetchAllEngines =
   (token: string) => (): Promise<QueryEngine[] | undefined> => {
     const url = `${endpoint}/query`
-    
+
     const headers = { Authorization: `Bearer ${token}` }
     return axios.get(url, { headers }).then(path(["data", "data"]))
   }
 
-  export const fetchAllEngineJobs =
+export const fetchAllEngineJobs =
   (token: string) => (): Promise<QueryEngineBuildJob[] | undefined> => {
     const url = `${jobsEndpoint}/jobs/query_engine_build`
     const headers = { Authorization: `Bearer ${token}` }
@@ -455,7 +455,7 @@ export const createQuery =
     if (responseData.user_chat) {
       return responseData.user_chat
     }
-    
+
     // Otherwise return undefined
     return undefined
   }
@@ -464,7 +464,7 @@ export const resumeQuery =
   (token: string) => async ({
     queryId,
     userInput,
-    llmType, 
+    llmType,
     stream = false,
     chatMode = false
   }: ResumeQueryParams): Promise<Query | Chat | undefined> => {
@@ -481,7 +481,7 @@ export const resumeQuery =
     try {
       const response = await axios.post(url, data, { headers })
       const responseData = response.data.data
-      
+
       // Return Chat object if chat_mode is true and chat data exists
       if (chatMode && responseData.user_chat) {
         return responseData.user_chat
@@ -512,4 +512,3 @@ export const updateChat =
     }
     return axios.put(url, data, { headers }).then(path(["data", "data"]))
   }
-

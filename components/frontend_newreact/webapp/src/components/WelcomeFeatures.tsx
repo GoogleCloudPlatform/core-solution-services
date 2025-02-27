@@ -1,6 +1,8 @@
 import { Box, Paper, Typography } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import StorageIcon from '@mui/icons-material/Storage';
+import ChatInterfaceIcon from '../assets/chat-icon.svg'; // Import your SVG
+import SourceIcon from '../assets/source-icon.svg'; // Import your SVG
 
 interface Feature {
   icon: React.ReactNode;
@@ -20,14 +22,14 @@ interface WelcomeFeaturesProps {
 export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHeight }: WelcomeFeaturesProps) => {
   const features: Feature[] = [
     {
-      icon: <ChatIcon />,
+      icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} />,
       title: 'Chat',
       subtitle: 'Latest Topical Gist',
       action: 'Resume',
       onClick: onChatStart
     },
     {
-      icon: <StorageIcon />,
+      icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} />,
       title: 'Knowledge Sources',
       subtitle: 'Knowledge Source Name',
       action: 'Query',
@@ -106,8 +108,8 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
             >
               <Box
                 sx={{
-                  bgcolor: 'rgba(147, 176, 255, 0.16)',
-                  color: '#93B0FF',
+                  bgcolor: '#A8C7FA',
+                  color: '#062E6F',
                   px: 2,
                   py: 0.5,
                   borderRadius: '16px',

@@ -37,6 +37,7 @@ import Tooltip from '@mui/material/Tooltip';
 
 const drawerWidth = 150;
 const collapsedWidth = 60;
+const CLOUD_ITEM_ID = 'cloud';
 
 interface SidebarProps {
     setShowChat: (show: boolean) => void;
@@ -47,6 +48,7 @@ interface SidebarProps {
     onNewChat: () => void;
     setShowAddSource: (value: boolean) => void;
     setShowEditSource: (value: boolean) => void;
+    currentChat: Chat | undefined;
 }
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -116,6 +118,7 @@ export const Sidebar = ({
     onNewChat,
     setShowAddSource,
     setShowEditSource,
+    currentChat
 }: SidebarProps) => {
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
 
@@ -128,6 +131,31 @@ export const Sidebar = ({
             setActivePanel(item as 'history' | 'settings');
         }
     };
+
+    const handleNewChatClick = () => {
+        //onNewChat();
+        setShowChat(true);
+        setShowWelcome(false);
+        // clear the current chat for proper loading
+        onSelectChat({
+            id: undefined,  // undefined for new chat
+            title: 'New Chat',
+            created_time: new Date().toISOString(),
+            created_by: '',
+            last_modified_time: new Date().toISOString(),
+            last_modified_by: '',
+            archived_at_timestamp: null,
+            archived_by: '',
+            deleted_at_timestamp: null,
+            deleted_by: '',
+            prompt: '',
+            llm_type: '',
+            user_id: '',
+            agent_name: null,
+            history: []
+        });
+        console.log('click')
+    }
 
     const mainMenuItems = [
         {
@@ -171,7 +199,7 @@ export const Sidebar = ({
         },
         {
             icon: <img src={CloudIcon} style={{ width: '14px', height: '14px' }} />,
-            id: 'cloud'
+            id: CLOUD_ITEM_ID,
         },
     ];
 
@@ -184,13 +212,14 @@ export const Sidebar = ({
             <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>
                 <ListItemButton
                     selected={selectedItem === item.id}
-                    onClick={() => {
+                    onClick={item.id === CLOUD_ITEM_ID ? undefined : () => {
                         if ('onClick' in item && item.onClick) {
                             item.onClick();
                         } else {
                             handleItemClick(item.id);
                         }
                     }}
+                    tabIndex={item.id === CLOUD_ITEM_ID ? -1 : 0}
                     sx={{
                         minHeight: 48,
                         justifyContent: isOpen ? 'initial' : 'center',
@@ -201,6 +230,8 @@ export const Sidebar = ({
                         '&:hover': {
                             backgroundColor: 'rgba(255, 255, 255, 0.06)',
                         },
+                        pointerEvents: item.id === CLOUD_ITEM_ID ? 'none' : 'auto',
+                        userSelect: item.id === CLOUD_ITEM_ID ? 'none' : 'auto',
                     }}
                 >
                     <ListItemIcon
@@ -260,9 +291,7 @@ export const Sidebar = ({
                     >
                         <IconButton
                             onClick={() => {
-                                onNewChat();
-                                setShowChat(true);
-                                setShowWelcome(false);
+                                handleNewChatClick();
                             }}
                             sx={{
                                 bgcolor: '#000',
