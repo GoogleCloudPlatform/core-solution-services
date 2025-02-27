@@ -10,7 +10,7 @@ interface SettingsDrawerProps {
     onClose: () => void;
 }
 
-const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ 
+const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
     open
 }) => {
     const [temperature, setTemperature] = useState(0.2);
@@ -48,16 +48,16 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
     if (!open) return null;
 
     return (
-        <Box sx={{ 
-            p: 3, 
-            height: '100%', 
+        <Box sx={{
+            p: 3,
+            height: '100%',
             color: 'white',
             backgroundColor: '#1f1f1f',
         }}>
             <Typography variant="subtitle1" sx={{ mb: 2 }}>
                 Model
             </Typography>
-            
+
             <Button
                 onClick={() => setModelBrowserOpen(true)}
                 fullWidth
@@ -74,16 +74,20 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                     '&:hover': {
                         backgroundColor: '#2a2a2a',
                         border: '1px solid rgba(255, 255, 255, 0.2)',
-                    }
+                    },
+                    '&:focus-visible': {
+                        boxShadow: '0 0 0 2px #64b5f6',
+                        border: '1px solid #64b5f6',
+                    },
                 }}
             >
                 {loading ? 'Loading...' : selectedModel.name}
             </Button>
 
-            <Paper 
-                sx={{ 
-                    p: 2, 
-                    mb: 3, 
+            <Paper
+                sx={{
+                    p: 2,
+                    mb: 3,
                     backgroundColor: '#242424',
                     color: 'rgba(255, 255, 255, 0.7)',
                     border: '1px solid rgba(255, 255, 255, 0.1)'
@@ -95,11 +99,11 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
             </Paper>
 
             <Box sx={{ mb: 2 }}>
-                <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    mb: 2 
+                    mb: 2
                 }}>
                     <Typography variant="subtitle1">
                         Temperature
@@ -115,8 +119,20 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                     max={2}
                     step={0.1}
                     disabled={selectedModel?.modelParams?.temperature === undefined}
+                    tabIndex={0} // Make the Slider itself focusable
+                    slotProps={{
+                        thumb: {
+                            "aria-label": 'Temperature',
+                            "aria-valuemin": 0,
+                            "aria-valuemax": 2,
+                            "aria-valuenow": temperature,
+                        }
+                    }}
                     sx={{
                         color: '#4a90e2',
+                        '&:focus-visible': {
+                            outline: 'none', // Remove default outline
+                        },
                         '& .MuiSlider-rail': {
                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
                         },
@@ -125,6 +141,11 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                         },
                         '& .MuiSlider-thumb': {
                             backgroundColor: '#4a90e2',
+                            '&:hover, &:focus-visible': {
+                                boxShadow: '0 0 0 4px #64b5f6',
+                                outline: 'none',
+                            },
+
                         }
                     }}
                 />

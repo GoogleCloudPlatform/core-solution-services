@@ -1,9 +1,8 @@
-import { Avatar, Menu, MenuItem, Box, IconButton } from '@mui/material';
+import { Avatar, Menu, Box, IconButton, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
 import { getAuth } from "firebase/auth";
 
 interface ProfileMenuProps {
@@ -16,6 +15,10 @@ export function ProfileMenu({ }: ProfileMenuProps) {
     const navigate = useNavigate();
     const { user } = useAuth(); // Get user and signOut from context
     const auth = getAuth();
+    const avatarRef = useRef<HTMLButtonElement>(null);
+    const logoutRef = useRef<HTMLDivElement>(null);
+
+
 
 
     useEffect(() => {
@@ -53,6 +56,25 @@ export function ProfileMenu({ }: ProfileMenuProps) {
         handleClose();
     }
 
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Tab' && avatarRef.current && avatarRef.current === document.activeElement) {
+                avatarRef.current.style.boxShadow = '0 0 0 2px #4a90e2';
+                avatarRef.current.style.border = '1px solid #4a90e2';
+            } else if (avatarRef.current) {
+                avatarRef.current.style.boxShadow = '';
+                avatarRef.current.style.border = '';
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
+
+
     return (
         <Box>
             <IconButton
@@ -62,6 +84,13 @@ export function ProfileMenu({ }: ProfileMenuProps) {
                 aria-haspopup="true"
                 aria-expanded={open ? 'true' : undefined}
                 tabIndex={0}
+                ref={avatarRef}
+                sx={{
+                    '&:focus-visible': {
+                        boxShadow: '0 0 0 2px #4a90e2', /* Add focus-visible styles */
+                        border: '1px solid #4a90e2',
+                    },
+                }}
             >
                 <Avatar
                     onClick={handleClick}
@@ -82,6 +111,7 @@ export function ProfileMenu({ }: ProfileMenuProps) {
                 anchorEl={anchorEl}
                 open={open}
                 onClose={handleClose}
+                tabIndex={0}
                 onClick={handleClose}
                 PaperProps={{
                     sx: {
@@ -101,31 +131,51 @@ export function ProfileMenu({ }: ProfileMenuProps) {
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-                <div style={{ padding: '8px 16px' }}>
-                    <div style={{
+                <Box sx={{ padding: '8px 16px' }}>
+                    <Box sx={{
                         fontSize: '0.875rem',
                         fontWeight: 500,
                         color: 'white',
-                    }}
-                    >
+                    }}>
                         {displayName}
-                    </div>
-                    <div style={{
+                    </Box>
+                    <Box sx={{
                         fontSize: '0.75rem',
                         color: 'rgba(255, 255, 255, 0.7)',
-                    }}
-                    >
+                    }}>
                         {userEmail}
-                    </div>
-                </div>
-                <MenuItem onClick={handleLogout} sx={{
-                    display: 'flex',
-                    gap: 1,
-                    mt: 1,
-                }}>
-                    <LogoutIcon sx={{ fontSize: 16 }} />
-                    <span>Log Out</span>
-                </MenuItem>
+                    </Box>
+                </Box>
+                <ListItemButton
+                    onClick={handleLogout}
+                    ref={logoutRef}
+                    sx={{
+                        display: "flex",
+                        gap: 1,
+                        mt: 1,
+                        padding: "8px 16px",
+                        "&:focus-visible": {
+                            boxShadow: "0 0 0 2px #4a90e2",
+                            border: "1px solid #4a90e2",
+                            borderRadius: "4px",
+                        },
+                    }}
+                    autoFocus
+
+                >
+                    <ListItemIcon sx={{ minWidth: 0, mr: 1 }}>
+                        <LogoutIcon sx={{ fontSize: 16, color: "rgba(255, 255, 255, 0.9)" }} />
+                    </ListItemIcon>
+                    <ListItemText
+                        primary="Log Out"
+                        primaryTypographyProps={{
+                            sx: {
+                                fontSize: "0.875rem",
+                                color: "rgba(255, 255, 255, 0.9)",
+                            },
+                        }}
+                    />
+                </ListItemButton>
             </Menu>
         </Box>
     );

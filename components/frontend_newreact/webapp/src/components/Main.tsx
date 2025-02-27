@@ -68,6 +68,7 @@ export const MainApp = () => {
   const [showEditSource, setShowEditSource] = useState(false);
   const [editSourceId, setEditSourceId] = useState<string | null>(null);
   const [chatScreenKey, setChatScreenKey] = useState(0); // **NEW: Key for ChatScreen**
+  const [headerClicked, setHeaderClicked] = useState(false); // New state variable
 
 
   const { isOpen, activePanel } = useSidebarStore();
@@ -97,6 +98,14 @@ export const MainApp = () => {
     fetchLatest(); // Call the function
   }, [user, showChat]); // Add showChat to the dependency array
 
+  useEffect(() => {
+    if (headerClicked) {
+      setShowWelcome(true);
+      setShowChat(false);
+      setCurrentChat(undefined);
+      setHeaderClicked(false);
+    }
+  }, [headerClicked]);
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -109,6 +118,11 @@ export const MainApp = () => {
     window.addEventListener('resize', updateHeaderHeight);
     return () => window.removeEventListener('resize', updateHeaderHeight);
   }, []);
+
+  const handleHeaderClick = () => {
+    setHeaderClicked(true); // Update the state when the header is clicked
+  };
+
 
 
   const handleSelectChat = (chat: Chat) => {
@@ -173,12 +187,11 @@ export const MainApp = () => {
         onNewChat={handleNewChat}
         currentChat={currentChat}
       />
-      <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
-        <Title >
-          <span className="primary">GenAI</span>
-          <span>for</span>
-          <span className="gradient">Public Sector</span>
-        </Title>
+      <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} onTitleClick={handleHeaderClick} title={<Title >
+        <span className="primary">GenAI</span>
+        <span>for</span>
+        <span className="gradient">Public Sector</span>
+      </Title>
       } >
       </CustomHeader>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth} sx={{ paddingTop: `${headerHeight}px` }}>
