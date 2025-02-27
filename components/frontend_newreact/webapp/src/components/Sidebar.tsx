@@ -37,6 +37,7 @@ import Tooltip from '@mui/material/Tooltip';
 
 const drawerWidth = 150;
 const collapsedWidth = 60;
+const CLOUD_ITEM_ID = 'cloud';
 
 interface SidebarProps {
     setShowChat: (show: boolean) => void;
@@ -192,7 +193,7 @@ export const Sidebar = ({
         },
         {
             icon: <img src={CloudIcon} style={{ width: '14px', height: '14px' }} />,
-            id: 'cloud'
+            id: CLOUD_ITEM_ID,
         },
     ];
 
@@ -205,13 +206,14 @@ export const Sidebar = ({
             <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>
                 <ListItemButton
                     selected={selectedItem === item.id}
-                    onClick={() => {
+                    onClick={item.id === CLOUD_ITEM_ID ? undefined : () => {
                         if ('onClick' in item && item.onClick) {
                             item.onClick();
                         } else {
                             handleItemClick(item.id);
                         }
                     }}
+                    tabIndex={item.id === CLOUD_ITEM_ID ? -1 : 0}
                     sx={{
                         minHeight: 48,
                         justifyContent: isOpen ? 'initial' : 'center',
@@ -222,6 +224,8 @@ export const Sidebar = ({
                         '&:hover': {
                             backgroundColor: 'rgba(255, 255, 255, 0.06)',
                         },
+                        pointerEvents: item.id === CLOUD_ITEM_ID ? 'none' : 'auto',
+                        userSelect: item.id === CLOUD_ITEM_ID ? 'none' : 'auto',
                     }}
                 >
                     <ListItemIcon
