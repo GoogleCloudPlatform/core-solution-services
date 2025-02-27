@@ -45,6 +45,8 @@ interface SidebarProps {
     setShowSources: (show: boolean) => void;
     setShowWelcome: (show: boolean) => void;
     onNewChat: () => void;
+    setShowAddSource: (value: boolean) => void;
+    setShowEditSource: (value: boolean) => void;
 }
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -111,7 +113,9 @@ export const Sidebar = ({
     selectedChatId,
     setShowSources,
     setShowWelcome,
-    onNewChat
+    onNewChat,
+    setShowAddSource,
+    setShowEditSource,
 }: SidebarProps) => {
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
 
@@ -149,7 +153,9 @@ export const Sidebar = ({
             onClick: () => {
                 setShowChat(true);
                 setShowWelcome(false);
-                setShowSources?.(false);
+                setShowSources(false);
+                setShowAddSource(false);  
+                setShowEditSource(false);
             }
         },
         {
