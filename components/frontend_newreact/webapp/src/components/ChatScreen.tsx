@@ -185,7 +185,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
           response = chatResponse;
         }
 
-      } else if (selectedSource) {
+      } else if (selectedSource && selectedSource.id != "default-chat") {
         // Create new chat via query endpoint
         const queryResponse = await createQuery(user.token)({
           engine: selectedSource.id,

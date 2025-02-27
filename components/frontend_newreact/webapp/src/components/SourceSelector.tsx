@@ -11,6 +11,7 @@ interface SourceSelectorProps {
     disabled?: boolean;
 }
 
+//Dummy source for Default-Chat to add to sources array 
 const defaultChatSource: QueryEngine = {
     id: 'default-chat',
     name: 'Default Chat',
