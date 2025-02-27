@@ -18,7 +18,8 @@ import {  // Import Material-UI components for building the UI
   Icon,
   Menu,
   ListItemIcon,
-  SelectChangeEvent
+  SelectChangeEvent,
+  ListSubheader
 } from '@mui/material';
 import { styled } from '@mui/material/styles'; // Import styling utilities from Material-UI
 import { QueryEngine, QUERY_ENGINE_TYPES } from '../lib/types'; // Import types for query engines
@@ -242,8 +243,6 @@ useEffect(() => {
         setSources(
           engines.map((engine) => ({
             ...engine,
-            depth_limit: engine.depth_limit ?? 0,
-            chunk_size: engine.chunk_size ?? 100,
             status: "unknown",
           }))
         );
@@ -542,17 +541,45 @@ useEffect(() => {
             <Typography sx={{ color: 'white' }}>
               {`${(currentPage - 1) * rowsPerPage + 1} - ${Math.min(currentPage * rowsPerPage, totalRows)} of ${totalRows}`}
             </Typography>
-            <IconButton sx={{ color: 'white' }} onClick={onClickFirstPage} disabled={currentPage === 1}>
-              <FirstPage />
+            <IconButton 
+                sx={{ 
+                  color: '#C4C7C5', 
+                  '&.Mui-disabled': { color: '#333' } 
+                }} 
+                onClick={onClickFirstPage} 
+                disabled={currentPage === 1}
+              >
+                <FirstPage />
             </IconButton>
-            <IconButton sx={{ color: 'white' }} onClick={onClickPreviousPage} disabled={currentPage === 1}>
-              <ChevronLeft />
+            <IconButton 
+                sx={{ 
+                  color: '#C4C7C5', 
+                  '&.Mui-disabled': { color: '#333' } 
+                }} 
+                onClick={onClickPreviousPage} 
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft />
             </IconButton>
-            <IconButton sx={{ color: 'white' }} onClick={onClickNextPage} disabled={currentPage === totalPages}>
-              <ChevronRight />
+            <IconButton 
+                sx={{ 
+                  color: '#C4C7C5', 
+                  '&.Mui-disabled': { color: '#333' } 
+                }} 
+                onClick={onClickNextPage} 
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight />
             </IconButton>
-            <IconButton sx={{ color: 'white' }} onClick={onClickLastPage} disabled={currentPage === totalPages}>
-              <LastPage />
+            <IconButton 
+                sx={{ 
+                  color: '#C4C7C5', 
+                  '&.Mui-disabled': { color: '#333' } 
+                }} 
+                onClick={onClickLastPage} 
+                disabled={currentPage === totalPages}
+              >
+                <LastPage />
             </IconButton>
           </Box>
       </Box>
@@ -773,7 +800,7 @@ useEffect(() => {
               <DialogContent>
                 <List sx={{ color: STYLED_WHITE }}>
                         <ListItem sx={{borderBottom: '1px solid #888'}}>
-                        <ListItemText primary="Name:" secondary={sourceToView?.name}  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                            <ListItemText primary="Name:" secondary={sourceToView?.name}  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
                         </ListItem>
                         <ListItem sx={{borderBottom: '1px solid #888'}}>
                             <ListItemText primary="Data URL:" secondary={sourceToView?.doc_url} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
@@ -794,14 +821,14 @@ useEffect(() => {
                             <Box sx={{ flex: 1 }}>
                                 <ListItemText 
                                     primary="Depth Limit:" 
-                                    secondary={sourceToView ? sourceToView.depth_limit?.toString() : "N/A"} 
+                                    secondary={sourceToView ? sourceToView.params?.depth_limit?.toString() : "N/A"} 
                                     sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
                                 />
                             </Box>
                             <Box sx={{ flex: 1 }}>
                                 <ListItemText 
                                     primary="Chunk Size:" 
-                                    secondary={sourceToView ? sourceToView.chunk_size?.toString() : "N/A"} 
+                                    secondary={sourceToView ? sourceToView.params?.chunk_size?.toString() : "N/A"} 
                                     sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
                                 />
                             </Box>

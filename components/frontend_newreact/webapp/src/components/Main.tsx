@@ -84,19 +84,23 @@ export const MainApp = () => {
   const [headerHeight, setHeaderHeight] = useState(0); // State for header's height
 
   useEffect(() => {
-    const fetchLatest = async () => { // Function to fetch and set latest chat
-      if (user?.token && showChat && !currentChat) { // Only fetch if in chat mode, logged in, and no current chat selected
+    const fetchLatest = async () => {
+      if (user?.token && showChat && !currentChat) {
         const chat = await fetchLatestChat(user.token)();
         if (chat) {
-          setCurrentChat(chat);
+          // setCurrentChat(chat);
+          setShowWelcome(false);
+          setShowSources(false);
+          setShowAddSource(false);  
+          setShowEditSource(false);
+          setCurrentChat(undefined);
         } else {
-          handleNewChat(); // or appropriate action when there's no latest chat
+          handleNewChat();
         }
       }
     };
-    fetchLatest(); // Call the function
-  }, [user, showChat]); // Add showChat to the dependency array
-
+    fetchLatest();
+  }, [user, showChat]);
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -116,15 +120,31 @@ export const MainApp = () => {
     setShowChat(true);
     setShowWelcome(false);
     setShowSources(false);
+    setShowAddSource(false);  // Hide Add Source
+    setShowEditSource(false); // Hide Edit Source
     if (chat.id === undefined) { // **Check for new chat**
       setChatScreenKey(prevKey => prevKey + 1); // **Increment key for new chat**
     }
   };
 
+  const handleAddSourceClick = () => {
+  console.log("Opening Add Source");
+  setShowAddSource(true);
+  setShowSources(false);
+  setShowWelcome(false);
+  setShowChat(false);
+  setCurrentChat(undefined);
+  setEditSourceId(null);
+  setShowEditSource(false);
+};
+
   const handleChatStart = () => {
     setShowWelcome(false);
     setShowChat(true);
     setShowSources(false);
+    setShowAddSource(false);  // Ensure Add Source is hidden
+    setShowEditSource(false); // Ensure Edit Source is hidden
+    setCurrentChat(undefined);
   };
 
   const handleEditClick = (sourceId: string) => {
@@ -159,6 +179,9 @@ export const MainApp = () => {
     setShowChat(true);
     setShowWelcome(false);
     setShowSources(false);
+    setShowAddSource(false);  // Ensure Add Source is hidden
+    setShowEditSource(false); // Ensure Edit Source is hidden
+    setCurrentChat(undefined);
     setChatScreenKey(prevKey => prevKey + 1); // **Increment key also when handleNewChat is called directly**
   };
 
@@ -166,11 +189,17 @@ export const MainApp = () => {
     <MainContainer>
       <Sidebar
         setShowChat={setShowChat}
-        onSelectChat={handleSelectChat}
+        onSelectChat={(chat) => {
+          handleSelectChat(chat);
+          setShowAddSource(false);  // Hide Add Source when selecting a chat
+          setShowEditSource(false); // Hide Edit Source when selecting a chat
+        }}
         selectedChatId={currentChat?.id}
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
         onNewChat={handleNewChat}
+        setShowAddSource={setShowAddSource}
+        setShowEditSource={setShowEditSource}
         currentChat={currentChat}
       />
       <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
@@ -216,15 +245,8 @@ export const MainApp = () => {
             }}
           />
         )}
-        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} />}
-        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} />}
-        {showEditSource && (
-          <UpdateSource
-            sourceId={editSourceId!} // Pass the sourceId
-            onCancel={() => { setShowEditSource(false); setShowSources(true); }} // Hide UpdateSource and show Sources
-            onSave={() => { /* handle save logic here */ setShowEditSource(false); setShowSources(true); }}
-          />
-        )}
+        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} /> }
+        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} /> }
       </Main>
     </MainContainer>
   );
