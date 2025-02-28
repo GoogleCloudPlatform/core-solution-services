@@ -198,9 +198,9 @@ export const MainApp = () => {
     setChatScreenKey(prevKey => prevKey + 1); // **Increment key also when handleNewChat is called directly**
   };
 
-  /*const handleResumeChat = () => {
+  const handleResumeChat = () => {
     setCurrentChat(latestChat)
-  }*/
+  }
 
   return (
     <MainContainer>
@@ -215,7 +215,7 @@ export const MainApp = () => {
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
         onNewChat={handleNewChat}
-        //onResumeChat{handleResumeChat}
+        onResumeChat={handleResumeChat}
         setShowAddSource={setShowAddSource}
         setShowEditSource={setShowEditSource}
         currentChat={currentChat}
@@ -249,7 +249,7 @@ export const MainApp = () => {
               setShowSources={setShowSources}
               setShowWelcome={setShowWelcome}
               onNewChat={handleNewChat}
-             // onResumeChat={handleResumeChat}
+              onResumeChat={handleResumeChat}
               setShowAddSource={setShowAddSource}
               setShowEditSource={setShowEditSource}
               onChatStart={() => {
