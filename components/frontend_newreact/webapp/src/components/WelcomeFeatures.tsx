@@ -91,14 +91,6 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
             className="feature-card"
             tabIndex={0}
             sx={{
-              role: 'button',
-              tabIndex: 0,
-              onKeyDown: (event: React.KeyboardEvent) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  feature.onClick();
-                }
-              },
               cursor: 'pointer',
               backgroundColor: '#1E1E1E !important',
               border: '1px solid rgba(255, 255, 255, 0.12)',
