@@ -61,8 +61,7 @@ const Main = styled(Box, {
 
 export const MainApp = () => {
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
-  const [latestChat, setLatestChat] = useState<Chat | undefined>();
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [showSources, setShowSources] = useState(false);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -70,6 +69,8 @@ export const MainApp = () => {
   const [editSourceId, setEditSourceId] = useState<string | null>(null);
   const [chatScreenKey, setChatScreenKey] = useState(0); // **NEW: Key for ChatScreen**
   const [headerClicked, setHeaderClicked] = useState(false); // New state variable
+
+
 
   const { isOpen, activePanel } = useSidebarStore();
   const { user } = useAuth();
@@ -93,7 +94,7 @@ export const MainApp = () => {
           // setCurrentChat(chat);
           //setShowWelcome(false);
           //setShowSources(false);
-          //setShowAddSource(false);  
+         //setShowAddSource(false);  
           //setShowEditSource(false);
           //setCurrentChat(undefined);
         } else {
@@ -101,8 +102,7 @@ export const MainApp = () => {
         }
       }
     };
-
-    fetchLatest(); // Call the function
+    fetchLatest();
   }, [user]);
 
   useEffect(() => {
@@ -114,7 +114,6 @@ export const MainApp = () => {
       setShowSources(false);
     }
   }, [headerClicked]);
-
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -145,15 +144,15 @@ export const MainApp = () => {
   };
 
   const handleAddSourceClick = () => {
-    console.log("Opening Add Source");
-    setShowAddSource(true);
-    setShowSources(false);
-    setShowWelcome(false);
-    setShowChat(false);
-    setCurrentChat(undefined);
-    setEditSourceId(null);
-    setShowEditSource(false);
-  };
+  console.log("Opening Add Source");
+  setShowAddSource(true);
+  setShowSources(false);
+  setShowWelcome(false);
+  setShowChat(false);
+  setCurrentChat(undefined);
+  setEditSourceId(null);
+  setShowEditSource(false);
+};
 
   const handleChatStart = () => {
     console.log("In handleChatStart")
@@ -162,7 +161,7 @@ export const MainApp = () => {
     setShowSources(false);
     setShowAddSource(false);  // Ensure Add Source is hidden
     setShowEditSource(false); // Ensure Edit Source is hidden
-    //setCurrentChat(undefined);
+    setCurrentChat(undefined);
   };
 
   const handleEditClick = (sourceId: string) => {
@@ -203,9 +202,9 @@ export const MainApp = () => {
     setChatScreenKey(prevKey => prevKey + 1); // **Increment key also when handleNewChat is called directly**
   };
 
-  const handleResumeChat = () => {
+  /*const handleResumeChat = () => {
     setCurrentChat(latestChat)
-  }
+  }*/
 
   return (
     <MainContainer>
@@ -220,22 +219,23 @@ export const MainApp = () => {
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
         onNewChat={handleNewChat}
-        onResumeChat={handleResumeChat}
+        //onResumeChat{handleResumeChat}
         setShowAddSource={setShowAddSource}
         setShowEditSource={setShowEditSource}
         currentChat={currentChat}
       />
-      <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} onTitleClick={handleHeaderClick} title={<Title >
-        <span className="primary">GenAI</span>
-        <span>for</span>
-        <span className="gradient">Public Sector</span>
-      </Title>
+      <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} onTitleClick={handleHeaderClick} title={
+        <Title >
+          <span className="primary">GenAI</span>
+          <span>for</span>
+          <span className="gradient">Public Sector</span>
+        </Title>
       } >
       </CustomHeader>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth} sx={{ paddingTop: `${headerHeight}px` }}>
         {showWelcome && (
           <Box sx={{
-            display: showWelcome ? 'flex' : 'none', // Conditionally show WelcomeFeatures
+            display: 'flex',
             flexDirection: 'column',
             width: '100%',
             height: 'calc(100vh - 64px)',
@@ -253,7 +253,7 @@ export const MainApp = () => {
               setShowSources={setShowSources}
               setShowWelcome={setShowWelcome}
               onNewChat={handleNewChat}
-              onResumeChat={handleResumeChat}
+             // onResumeChat={handleResumeChat}
               setShowAddSource={setShowAddSource}
               setShowEditSource={setShowEditSource}
               onChatStart={() => {
@@ -269,18 +269,25 @@ export const MainApp = () => {
         )}
         {showChat && (
           <ChatScreen
-            key={chatScreenKey}
+            key={chatScreenKey} // **NEW: Pass key prop to ChatScreen**
             currentChat={currentChat}
             hideHeader={showWelcome || !currentChat} //Always show header
             isNewChat={!currentChat}
             onChatStart={() => {
               handleChatStart();
             }}
-            showWelcome={showWelcome} //Pass show welcome
+            showWelcome={showWelcome} // pass show Welcome
           />
         )}
-        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} />}
-        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} />}
+        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} /> }
+        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} /> }
+        {showEditSource && (
+          <UpdateSource
+            sourceId={editSourceId!} // Pass the sourceId
+            onCancel={() => { setShowEditSource(false); setShowSources(true); }} // Hide UpdateSource and show Sources
+            onSave={() => { /* handle save logic here */ setShowEditSource(false); setShowSources(true); }}
+          />
+        )}
       </Main>
     </MainContainer>
   );
