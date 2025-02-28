@@ -109,41 +109,44 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
     setError(null);
 };
 
-  const handleConfirmSubmit = async () => {
-    if (!user || !user.token) {
-      console.error("User token is missing.");
-      setError("User authentication required.");
-      return;
+const handleConfirmSubmit = async () => {
+  if (!user || !user.token) {
+    console.error("User token is missing.");
+    setError("User authentication required.");
+    return;
   }
-    setIsSubmitted(true);
-    setLoading(true);
+  
+  setIsSubmitted(true);
+  setLoading(true);
 
-    try {
-      const response = await createQueryEngine(user.token)(formData as QueryEngine);
+  try {
+    const response = await createQueryEngine(user.token)(formData as QueryEngine);
 
-      if (response) {
-        // Refetch the sources after successful creation (Important!)
-        const engines = await fetchAllEngines(user.token)();
-        if (engines) {
-          console.log("Sources refetched after creation:", engines); 
-        } else {
-          console.error("Failed to refetch sources after creation.");
-        }
-        onCancel(); // Call onCancel to trigger state update in Main.tsx
-
+    if (response) {
+      // **Immediately refetch sources after successful creation**
+      const updatedEngines = await fetchAllEngines(user.token)();
+      
+      if (updatedEngines) {
+        console.log("Sources refetched after creation:", updatedEngines);
+        setSources(updatedEngines); // Update the sources state directly
       } else {
-        console.error("API call did not return a response.");
-        setError("Failed to create source.");
+        console.error("Failed to refetch sources after creation.");
       }
-    } catch (err: any) {
-      console.error("Error creating source:", err);
-      setError(err.message || "Failed to create source.");
-    } finally {
-      setLoading(false);
-      setIsConfirmationModalOpen(false);
+
+      onCancel(); // Call onCancel to trigger state update in Main.tsx
+    } else {
+      console.error("API call did not return a response.");
+      setError("Failed to create source.");
     }
-    setIsConfirmationModalOpen(true);
-  };
+  } catch (err: any) {
+    console.error("Error creating source:", err);
+    setError(err.message || "Failed to create source.");
+  } finally {
+    setLoading(false);
+    setIsConfirmationModalOpen(false);
+  }
+};
+
 
   const handleConfirmationModalClose = () => {
     setIsConfirmationModalOpen(false);
@@ -314,7 +317,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
 
         </Box>
 
-        {formData.doc_url && /^https?:\/\/|^gs:\/\//.test(formData.doc_url) && (
+        {formData.doc_url && /^https?:\/\//.test(formData.doc_url.replace(/^gs:\/\//, '')) && (
           <Box sx={{ mb: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="caption" sx={{ color: '#888' }}>
