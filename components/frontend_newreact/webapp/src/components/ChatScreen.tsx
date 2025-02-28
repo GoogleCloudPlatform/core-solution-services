@@ -1,4 +1,4 @@
-                                              import { SourceSelector } from './SourceSelector'; // Import the component
+import { SourceSelector } from './SourceSelector'; // Import the component
 import { QueryEngine } from '../lib/types'; // Import the type
 import { useState, useEffect } from 'react';
 import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal, Chip, Button } from '@mui/material';
@@ -116,7 +116,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
     };
 
     loadChat();
-  }, [currentChat?.id, user]);
+  }, [currentChat?.id, user, showWelcome]);
 
   const [selectedSource, setSelectedSource] = useState<QueryEngine | null>(null);
   const { selectedModel } = useModel();
@@ -641,4 +641,4 @@ const isReadableStream = (value: any): value is ReadableStream => {
   return value instanceof ReadableStream;
 };
 
-export default ChatScreen; 
+export default ChatScreen;
