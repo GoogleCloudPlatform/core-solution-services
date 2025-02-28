@@ -262,7 +262,7 @@ export const Sidebar = ({
     );
 
     return (
-        <Box sx={{ display: 'flex' }} aria-label="navigation sidebar">
+        <Box sx={{ display: 'flex' }} >  <nav aria-label="sidebar navigation">
             <StyledDrawer
                 variant="permanent"
                 isOpen={isOpen}
@@ -272,6 +272,7 @@ export const Sidebar = ({
                         title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
                         placement='right'
                         arrow
+                        
                     >
                         <IconButton
                             aria-label="Collapse or Expand Sidebar"
@@ -318,23 +319,25 @@ export const Sidebar = ({
                 <List sx={{ mt: 'auto', mb: 2 }}>
                     {bottomMenuItems.map(renderMenuItem)}
                 </List>
-            </StyledDrawer>
+            </StyledDrawer></nav>
 
             {/* Settings Panel */}
             <SidePanel
                 isOpen={activePanel === 'settings'}
                 drawerIsOpen={isOpen}
             >
-                <PanelHeader>
-                    <Box sx={{ typography: 'subtitle2', color: 'rgba(255, 255, 255, 0.9)' }}>
-                        Settings
-                    </Box>
-                    <IconButton
-                        aria-label="Close Settings Panel"
-                        onClick={() => {
-                            setActivePanel(null);
-                            setSelectedItem(null);
-                        }}
+            <header>
+                <PanelHeader>                    
+                        <Box sx={{ typography: 'subtitle2', color: 'rgba(255, 255, 255, 0.9)' }}>
+                            Settings
+                        </Box>
+                        <IconButton
+                            aria-label="Close Settings Panel"
+                            onClick={() => {
+                                setActivePanel(null);
+                                setSelectedItem(null);
+                            }}
+                        
                         sx={{
                             color: 'rgba(255, 255, 255, 0.7)',
                             '&:hover': {
@@ -344,7 +347,8 @@ export const Sidebar = ({
                     >
                         <MenuIcon />
                     </IconButton>
-                </PanelHeader>
+                </PanelHeader> 
+                </header>
                 <Box sx={{
                     height: 'calc(100% - 56px)', // Subtract header height
                     overflow: 'auto'
