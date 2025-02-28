@@ -91,19 +91,15 @@ export const MainApp = () => {
         const chat = await fetchLatestChat(user.token)();
         if (chat) {
           setLatestChat(chat);
-          // setCurrentChat(chat);
-          //setShowWelcome(false);
-          //setShowSources(false);
-         //setShowAddSource(false);  
-          //setShowEditSource(false);
-          //setCurrentChat(undefined);
+          setShowWelcome(false);
         } else {
-          handleNewChat();
+          setShowWelcome(true); // Fix: set showWelcome to true when no latest chat is found.
         }
       }
     };
-    fetchLatest();
-  }, [user]);
+
+    fetchLatest(); // Call the function
+  }, [user, showChat, currentChat]);
 
   useEffect(() => {
     if (headerClicked) {
