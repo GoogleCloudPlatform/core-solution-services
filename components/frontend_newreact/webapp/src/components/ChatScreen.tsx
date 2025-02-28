@@ -43,10 +43,12 @@ interface ChatScreenProps {
   hideHeader?: boolean;
   onChatStart?: () => void;
   isNewChat?: boolean;
+  showWelcome: boolean;
 }
 
-const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false, onChatStart, isNewChat = false }) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false, onChatStart, isNewChat = false, showWelcome = true }) => {
   const [prompt, setPrompt] = useState('');
+  console.log({ currentChat })
   const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     currentChat?.history?.map(h => ({
@@ -80,12 +82,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
   };
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
 
   // Add effect to fetch full chat details when currentChat changes
   useEffect(() => {
     const loadChat = async () => {
-      if (currentChat?.id && user) {
+      if (currentChat?.id && user && !showWelcome) {
         setIsLoading(true);
         try {
           const fullChat = await fetchChat(user.token, currentChat.id)();
@@ -97,6 +100,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
                 references: h.QueryReferences || []
               }))
             );
+            console.log("Setting 1")
             setChatId(fullChat.id);
           }
         } catch (error) {
@@ -212,6 +216,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
 
       // Only proceed if we got a valid Chat object
       if (response?.id) {
+        console.log("Setting 2")
         setChatId(response.id);
       }
 
@@ -331,6 +336,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
   };
 
   //console.log({ messages })
+  console.log({ hideHeader, showWelcome })
+  console.log({ messages })
 
   return (
     <Box className="chat-screen">
@@ -367,205 +374,212 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ currentChat, hideHeader = false
         flexDirection: 'column',
         flexGrow: 1,
         minHeight: 0,
+        justifyContent: 'flex-end'
       }}>
-        <Box className="chat-messages" sx={{
-          flexGrow: 1,
-          overflowY: 'auto',
-          minHeight: '100%',
-          mx: 2
-        }}>
-          {messages.map((message, index) => (
-            <Box key={index}
-              onMouseEnter={() => setShowCopyIcon(true)}  // Show icon on hover
-              onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}  // Hide icon and close tooltip when mouse leaves
-              onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Removed inline onMouseEnter/Leave
-              sx={{
-                // other styles
-                position: 'relative', // Needed for Tooltip positioning
-                marginRight: 'auto'
-              }}
+        {!showWelcome && (
+          <Box className="chat-messages" sx={{
+            flexGrow: 1,
+            // overflowY: 'auto',
+            // minHeight: '100vh',
+            mx: 2
+          }}>
+            {messages.map((message, index) => {
+              console.log({ message, index })
+              return (
+                <Box key={index}
+                  onMouseEnter={() => setShowCopyIcon(true)}  // Show icon on hover
+                  onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}  // Hide icon and close tooltip when mouse leaves
+                  onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Removed inline onMouseEnter/Leave
+                  sx={{
+                    // other styles
+                    position: 'relative', // Needed for Tooltip positioning
+                    marginRight: 'auto'
+                  }}
 
-            >
-              <Box
-                className={message.isUser ? 'user-message' : 'assistant-message'}
-                sx={{
-                  backgroundColor: message.isUser ? '#343541' : 'transparent',
-                  borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
-                  padding: '0.75rem 1rem',
-                  marginBottom: '0.5rem',
-                  alignSelf: message.isUser ? 'flex-end' : 'flex-start',
-                  textAlign: message.isUser ? 'right' : 'left',
-                  maxWidth: '100%',
-                  display: 'flex',
-                  flexDirection: message.isUser ? 'row-reverse' : 'row',
-                  alignItems: 'flex-start',
-                  gap: '0.5rem',
-                }}
-                ref={index === messages.length - 1 && message.isUser ? messagesEndRef : null} // Attach reference to the last user messsage
-              >
-                {message.isUser ? (
-                  <Typography sx={{ color: '#fff', textAlign: 'right' }}>
-                    {message.text}
-                  </Typography>
-                ) : (
-                  <>
-                    <Avatar
-                      src="/assets/images/gemini-icon.png"
-                      className="message-avatar"
-                    />
-                    <Box sx={{ flex: 1 }}>
-                      <ReactMarkdown
-                        components={{
-                          code({ node, className, children }) {
-                            const match = /language-(\w+)/.exec(className || '');
-                            const language = match ? match[1] : '';
+                >
+                  <Box
+                    className={message.isUser ? 'user-message' : 'assistant-message'}
+                    sx={{
+                      backgroundColor: message.isUser ? '#343541' : 'transparent',
+                      borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
+                      padding: '0.75rem 1rem',
+                      marginBottom: '0.5rem',
+                      alignSelf: message.isUser ? 'flex-end' : 'flex-start',
+                      textAlign: message.isUser ? 'right' : 'left',
+                      maxWidth: '100%',
+                      display: 'flex',
+                      flexDirection: message.isUser ? 'row-reverse' : 'row',
+                      alignItems: 'flex-start',
+                      gap: '0.5rem',
+                    }}
+                  // ref={index === messages.length - 1 && message.isUser ? messagesEndRef : null} // Attach reference to the last user messsage
+                  >
+                    {message.isUser ? (
+                      <Typography sx={{ color: '#fff', textAlign: 'right' }}>
+                        {message.text}
+                      </Typography>
+                    ) : (
+                      <>
+                        <Avatar
+                          src="/assets/images/gemini-icon.png"
+                          className="message-avatar"
+                        />
+                        <Box sx={{ flex: 1 }}>
+                          <ReactMarkdown
+                            components={{
+                              code({ node, className, children }) {
+                                const match = /language-(\w+)/.exec(className || '');
+                                const language = match ? match[1] : '';
 
-                            if (!match) {
-                              return (
-                                <code className={className}>
+                                if (!match) {
+                                  return (
+                                    <code className={className}>
+                                      {children}
+                                    </code>
+                                  );
+                                }
+
+                                return (
+                                  <SyntaxHighlighter
+                                    style={oneDark}
+                                    language={language}
+                                    PreTag="div"
+                                  >
+                                    {String(children).replace(/\n$/, '')}
+                                  </SyntaxHighlighter>
+                                );
+                              },
+                              p: ({ children }) => (
+                                <Typography component="p" sx={{ mb: 1 }}>
                                   {children}
-                                </code>
-                              );
+                                </Typography>
+                              ),
+                              h1: ({ children }) => (
+                                <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
+                                  {children}
+                                </Typography>
+                              ),
+                              h2: ({ children }) => (
+                                <Typography variant="h6" sx={{ mb: 2, mt: 2 }}>
+                                  {children}
+                                </Typography>
+                              ),
+                              ul: ({ children }) => (
+                                <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+                                  {children}
+                                </Box>
+                              ),
+                              ol: ({ children }) => (
+                                <Box component="ol" sx={{ pl: 2, mb: 2 }}>
+                                  {children}
+                                </Box>
+                              ),
+                              li: ({ children }) => (
+                                <Box component="li" sx={{ mb: 1 }}>
+                                  {children}
+                                </Box>
+                              ),
+                            }}
+                          >
+                            {message.text}
+                          </ReactMarkdown>
+
+                          {/* Add references display */}
+                          {!message.isUser && message.references && message.references.length > 0 && (
+                            <Box sx={{
+                              mt: 2,
+                              pt: 2,
+                              borderTop: '1px solid #4a4a4a'
+                            }}>
+                              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                                References:
+                              </Typography>
+                              {message.references.map((reference, idx) => (
+                                <ReferenceChip key={idx} reference={reference} onCopy={handleCopyClick} />
+                              ))}
+                            </Box>
+                          )}
+                        </Box>
+                      </>
+                    )}
+                    <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
+                  </Box>
+                  <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
+                    onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Call handleCopyClick with message text
+
+                    sx={{
+                      alignSelf: 'flex-end',
+                      maxWidth: '100%',
+                      display: 'flex',
+                      flexDirection: 'row-reverse',
+                      alignItems: 'flex-start',
+                    }}>
+                    {/* ... existing JSX (Avatar, Typography for message.text) */}
+
+                    {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
+                    {(message.isUser && (message.uploadedFile || message.fileUrl)) && (
+                      <Box className="file-chip-container" sx={{
+                        alignSelf: 'flex-end',
+                        display: 'flex',
+                        flexDirection: 'row-reverse',
+                        alignItems: 'flex-start',
+                      }}>
+                        <Button onClick={() => setShowDocumentViewer(true)}>
+                          <Chip
+                            label={message.uploadedFile || message.fileUrl}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </Button>
+                      </Box>
+                    )}
+
+
+                    {showCopyIcon && !message.isUser && !message.references && (
+                      <Tooltip
+                        open={tooltipOpen}
+                        onClose={() => setTooltipOpen(false)}
+                        title="Copied!"
+                        placement="top"
+                        leaveDelay={200} // Adjust as needed
+                      >
+                        <IconButton
+                          sx={{
+                            position: 'absolute',
+                            left: -4,
+                            bottom: -4,
+                            backgroundColor: iconClicked ? '#2979ff' : 'transparent', // Blue background on click
+                            borderRadius: '50%', // Make it circular
+                            transition: 'background-color 0.2s ease', // Smooth transition
+                            padding: '4px',
+                            "&:hover": {
+                              backgroundColor: '#e3f2fd' // light blue on hover
                             }
 
-                            return (
-                              <SyntaxHighlighter
-                                style={oneDark}
-                                language={language}
-                                PreTag="div"
-                              >
-                                {String(children).replace(/\n$/, '')}
-                              </SyntaxHighlighter>
-                            );
-                          },
-                          p: ({ children }) => (
-                            <Typography component="p" sx={{ mb: 1 }}>
-                              {children}
-                            </Typography>
-                          ),
-                          h1: ({ children }) => (
-                            <Typography variant="h5" sx={{ mb: 2, mt: 2 }}>
-                              {children}
-                            </Typography>
-                          ),
-                          h2: ({ children }) => (
-                            <Typography variant="h6" sx={{ mb: 2, mt: 2 }}>
-                              {children}
-                            </Typography>
-                          ),
-                          ul: ({ children }) => (
-                            <Box component="ul" sx={{ pl: 2, mb: 2 }}>
-                              {children}
-                            </Box>
-                          ),
-                          ol: ({ children }) => (
-                            <Box component="ol" sx={{ pl: 2, mb: 2 }}>
-                              {children}
-                            </Box>
-                          ),
-                          li: ({ children }) => (
-                            <Box component="li" sx={{ mb: 1 }}>
-                              {children}
-                            </Box>
-                          ),
-                        }}
-                      >
-                        {message.text}
-                      </ReactMarkdown>
+                          }}
+                        >
+                          <ContentCopyIcon sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }} />
+                        </IconButton>
 
-                      {/* Add references display */}
-                      {!message.isUser && message.references && message.references.length > 0 && (
-                        <Box sx={{
-                          mt: 2,
-                          pt: 2,
-                          borderTop: '1px solid #4a4a4a'
-                        }}>
-                          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                            References:
-                          </Typography>
-                          {message.references.map((reference, idx) => (
-                            <ReferenceChip key={idx} reference={reference} onCopy={handleCopyClick} />
-                          ))}
-                        </Box>
-                      )}
-                    </Box>
-                  </>
-                )}
-                <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
-              </Box>
-              <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
-                onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Call handleCopyClick with message text
-
-                sx={{
-                  alignSelf: 'flex-end',
-                  maxWidth: '100%',
-                  display: 'flex',
-                  flexDirection: 'row-reverse',
-                  alignItems: 'flex-start',
-                }}>
-                {/* ... existing JSX (Avatar, Typography for message.text) */}
-
-                {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
-                {(message.isUser && (message.uploadedFile || message.fileUrl)) && (
-                  <Box className="file-chip-container" sx={{
-                    alignSelf: 'flex-end',
-                    display: 'flex',
-                    flexDirection: 'row-reverse',
-                    alignItems: 'flex-start',
-                  }}>
-                    <Button onClick={() => setShowDocumentViewer(true)}>
-                      <Chip
-                        label={message.uploadedFile || message.fileUrl}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </Button>
+                      </Tooltip>
+                    )}
                   </Box>
-                )}
+                </Box>
+              )
+            })}
+            {isLoading && (
+              <LoadingSpinner />
+            )}
+          </Box>
+        )}
 
-
-                {showCopyIcon && !message.isUser && !message.references && (
-                  <Tooltip
-                    open={tooltipOpen}
-                    onClose={() => setTooltipOpen(false)}
-                    title="Copied!"
-                    placement="top"
-                    leaveDelay={200} // Adjust as needed
-                  >
-                    <IconButton
-                      sx={{
-                        position: 'absolute',
-                        left: -4,
-                        bottom: -4,
-                        backgroundColor: iconClicked ? '#2979ff' : 'transparent', // Blue background on click
-                        borderRadius: '50%', // Make it circular
-                        transition: 'background-color 0.2s ease', // Smooth transition
-                        padding: '4px',
-                        "&:hover": {
-                          backgroundColor: '#e3f2fd' // light blue on hover
-                        }
-
-                      }}
-                    >
-                      <ContentCopyIcon sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }} />
-                    </IconButton>
-
-                  </Tooltip>
-                )}
-              </Box>
-            </Box>
-          ))}
-          {isLoading && (
-            <LoadingSpinner />
-          )}
-        </Box>
-
-        <Box className="chat-input-container" sx={{
+        <Box className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`} sx={{
           p: 2,
           flexShrink: 0,
           position: 'sticky',
           bottom: 0
         }}>
+
           <Paper className="chat-input">
             {(selectedFile || importUrl) && (
               <>
