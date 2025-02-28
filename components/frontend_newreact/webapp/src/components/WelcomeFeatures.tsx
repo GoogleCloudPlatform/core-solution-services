@@ -1,4 +1,4 @@
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Typography, ListItemButton } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import StorageIcon from '@mui/icons-material/Storage';
 import ChatInterfaceIcon from '../assets/chat-icon.svg'; // Import your SVG
@@ -112,12 +112,22 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
             >
               {feature.subtitle}
             </Typography>
-            <Box
+            <ListItemButton
+              onClick={feature.onClick}
+              tabIndex={0} // Set tabIndex to 0 to make only this tabable
               sx={{
                 mt: 'auto',
                 pt: 2,
-                display: 'flex',
-                justifyContent: 'flex-start'
+                justifyContent: 'flex-start',
+                "&:focus-visible": {
+                  boxShadow: '0 0 0 2px #64b5f6',
+                  border: '1px solid #64b5f6',
+                  borderRadius: '16px',
+                  outline: 'none'
+                },
+                "&:hover": {
+                  backgroundColor: 'transparent',// remove default background
+                }
               }}
             >
               <Box
@@ -128,12 +138,12 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
                   py: 0.5,
                   borderRadius: '16px',
                   fontSize: '14px',
-                  fontWeight: 500
+                  fontWeight: 500,
                 }}
               >
                 {feature.action}
               </Box>
-            </Box>
+            </ListItemButton>
           </Paper>
         ))}
       </Box>
