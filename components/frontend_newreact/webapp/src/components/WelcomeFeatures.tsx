@@ -86,7 +86,7 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               {feature.icon}
-              <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 400 }}>
+              <Typography variant="h1" sx={{ fontSize: '16px', fontWeight: 400 }}>
                 {feature.title}
               </Typography>
             </Box>

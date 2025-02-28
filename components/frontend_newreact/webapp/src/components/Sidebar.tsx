@@ -52,7 +52,7 @@ interface SidebarProps {
 }
 
 const DrawerHeader = styled('div')(({ theme }) => ({
-    display: 'flex',
+    display: 'flex', 
     flexDirection: 'column',
     alignItems: 'center',
     padding: theme.spacing(1),
@@ -235,7 +235,8 @@ export const Sidebar = ({
                     }}
                 >
                     <ListItemIcon
-                        sx={{
+                        sx=
+                        {{
                             minWidth: 0,
                             mr: isOpen ? 2 : 'auto',
                             justifyContent: 'center',
