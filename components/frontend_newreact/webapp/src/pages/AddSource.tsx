@@ -115,7 +115,6 @@ const handleConfirmSubmit = async () => {
     setError("User authentication required.");
     return;
   }
-  
   setIsSubmitted(true);
   setLoading(true);
 
@@ -123,17 +122,15 @@ const handleConfirmSubmit = async () => {
     const response = await createQueryEngine(user.token)(formData as QueryEngine);
 
     if (response) {
-      // **Immediately refetch sources after successful creation**
-      const updatedEngines = await fetchAllEngines(user.token)();
-      
-      if (updatedEngines) {
-        console.log("Sources refetched after creation:", updatedEngines);
-        setSources(updatedEngines); // Update the sources state directly
+        // Refetch the sources after successful creation (Important!)
+        const engines = await fetchAllEngines(user.token)();
+        if (engines) {
+          console.log("Sources refetched after creation:", engines); 
       } else {
         console.error("Failed to refetch sources after creation.");
       }
-
       onCancel(); // Call onCancel to trigger state update in Main.tsx
+
     } else {
       console.error("API call did not return a response.");
       setError("Failed to create source.");
@@ -145,8 +142,8 @@ const handleConfirmSubmit = async () => {
     setLoading(false);
     setIsConfirmationModalOpen(false);
   }
+    setIsConfirmationModalOpen(true);
 };
-
 
   const handleConfirmationModalClose = () => {
     setIsConfirmationModalOpen(false);
