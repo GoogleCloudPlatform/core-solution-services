@@ -262,7 +262,7 @@ export const Sidebar = ({
     );
 
     return (
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex' }} aria-label="navigation sidebar">
             <StyledDrawer
                 variant="permanent"
                 isOpen={isOpen}
@@ -274,6 +274,7 @@ export const Sidebar = ({
                         arrow
                     >
                         <IconButton
+                            aria-label="Collapse or Expand Sidebar"
                             onClick={toggle}
                             sx={{
                                 color: 'rgba(255, 255, 255, 0.7)',
@@ -291,6 +292,7 @@ export const Sidebar = ({
                         arrow
                     >
                         <IconButton
+                            aria-label="New Chat"
                             onClick={() => {
                                 handleNewChatClick();
                             }}
@@ -328,6 +330,7 @@ export const Sidebar = ({
                         Settings
                     </Box>
                     <IconButton
+                        aria-label="Close Settings Panel"
                         onClick={() => {
                             setActivePanel(null);
                             setSelectedItem(null);
@@ -366,6 +369,7 @@ export const Sidebar = ({
                         History
                     </Box>
                     <IconButton
+                        aria-label="Close History Panel"
                         onClick={() => {
                             setActivePanel(null);
                             setSelectedItem(null);
