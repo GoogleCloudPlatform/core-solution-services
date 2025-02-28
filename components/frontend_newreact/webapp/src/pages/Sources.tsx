@@ -24,7 +24,7 @@ import {  // Import Material-UI components for building the UI
 import { styled } from '@mui/material/styles'; // Import styling utilities from Material-UI
 import { QueryEngine, QUERY_ENGINE_TYPES } from '../lib/types'; // Import types for query engines
 import { useAuth } from '../contexts/AuthContext'; // Import authentication context
-import { deleteQueryEngine, fetchAllEngines, getEngineJobStatus, updateQueryEngine } from '../lib/api'; // Import API function for fetching engine
+import { deleteQueryEngine, fetchAllEngines, fetchAllEngineJobs, getEngineJobStatus, updateQueryEngine } from '../lib/api';
 import { jobsEndpoint } from '../lib/api'
 import AddIcon from '@mui/icons-material/Add'; // Import icons from Material-UI
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -236,16 +236,84 @@ useEffect(() => {
    */
   const loadSources = async () => {
     try {
-      const engines = await fetchAllEngines(user.token)();
+      setLoading(true);
+      setError(null);
+      
+      // Fetch both existing engines and build jobs
+      const [engines, buildJobs] = await Promise.all([
+        fetchAllEngines(user.token)(),
+        fetchAllEngineJobs(user.token)()
+      ]);
+      
       console.log("Fetched sources:", engines);
+      console.log("Fetched build jobs:", buildJobs);
 
+      let combinedSources: QueryEngineWithStatus[] = [];
+      
+      // Add existing engines with "success" status
       if (engines) {
-        setSources(
-          engines.map((engine) => ({
-            ...engine,
-            status: "unknown",
-          }))
+        combinedSources = engines.map((engine) => ({
+          ...engine,
+          status: "success", // Existing engines are considered successful
+        }));
+      }
+      
+      // Add active build jobs that aren't already in the engines list
+      if (buildJobs) {
+        const activeJobs = buildJobs.filter(job => 
+          job.status === "active" && 
+          (!engines || !engines.some(engine => engine.name === job.input_data.query_engine))
         );
+        
+        // Convert build jobs to QueryEngine format and add to sources
+        activeJobs.forEach(job => {
+          // Create a temporary QueryEngine object from the job data
+          const tempEngine: QueryEngineWithStatus = {
+            id: job.id, // Use job ID temporarily
+            name: job.input_data.query_engine,
+            description: job.input_data.description || "",
+            query_engine_type: job.input_data.query_engine_type,
+            doc_url: job.input_data.doc_url,
+            embedding_type: job.input_data.embedding_type,
+            vector_store: job.input_data.vector_store,
+            created_time: job.created_time,
+            created_by: job.created_by,
+            last_modified_time: job.last_modified_time,
+            last_modified_by: job.last_modified_by,
+            archived_at_timestamp: null,
+            archived_by: "",
+            deleted_at_timestamp: null,
+            deleted_by: "",
+            llm_type: null,
+            parent_engine_id: "",
+            user_id: job.input_data.user_id,
+            is_public: false,
+            index_id: null,
+            index_name: null,
+            endpoint: null,
+            manifest_url: job.input_data.params?.manifest_url || null,
+            params: {
+              is_multimodal: "false",
+              ...job.input_data.params
+            },
+            depth_limit: parseInt(job.input_data.params?.depth_limit || "3"),
+            chunk_size: parseInt(job.input_data.params?.chunk_size || "1024"),
+            agents: job.input_data.params?.agents ? JSON.parse(job.input_data.params.agents) : [],
+            child_engines: job.input_data.params?.associated_engines ? JSON.parse(job.input_data.params.associated_engines) : [],
+            is_multimodal: job.input_data.params?.is_multimodal === "True",
+            status: "active" // Mark as active since it's a build job
+          };
+          
+          combinedSources.push(tempEngine);
+        });
+      }
+      
+      setSources(combinedSources);
+      
+      // If there are active jobs, start polling
+      const hasActiveJobs = buildJobs && buildJobs.some(job => job.status === "active");
+      if (hasActiveJobs) {
+        startPolling();
       }
     } catch (error) {
       setError("Failed to load sources");
@@ -273,15 +341,27 @@ useEffect(() => {
       const jobsData = response.data.data; // Ensure correct data extraction
       console.log("Fetched job statuses:", jobsData);
 
+      // Check if any jobs have completed
+      const completedJobs = jobsData.filter(job => 
+        job.status === "succeeded" && 
+        sources.some(source => source.name === job.input_data.query_engine && source.status === "active")
+      );
+      
+      // If any jobs completed, refresh the entire source list
+      if (completedJobs.length > 0) {
+        loadSources();
+        return;
+      }
+
       setSources((prevSources) =>
         prevSources.map((source) => {
-          // Find the job for this engine using the correct ID field
+          // Find the job for this engine
           const job = jobsData.find(
             (j: JobStatusResponse) => j.input_data.query_engine === source.name
           );
 
           if (job) {
-            jobRunning = job.status === "active"; // If any job is still running, continue polling
+            jobRunning = job.status === "active" || jobRunning; // If any job is still running, continue polling
             return {
               ...source,
               status:
@@ -289,12 +369,16 @@ useEffect(() => {
                   ? "success"
                   : job.status === "failed"
                   ? "failed"
-                  : job.status, // Preserve existing statuses
+                  : "active", // Map API status to our status
             };
-          } else {
-            console.warn(`No job found for ${source.name} (${source.id}).`);
-            return { ...source, status: "failed" }; // Mark missing jobs as "failed"
           }
+          
+          // If no job found but source was previously active, check if it's now in engines list
+          if (source.status === "active") {
+            return { ...source, status: "unknown" };
+          }
+          
+          return source; // Keep existing status
         })
       );
 
@@ -317,7 +401,7 @@ useEffect(() => {
     }
   };
 
-  loadSources().then(startPolling);
+  loadSources();
 
   return () => {
     if (pollIntervalId !== null) {
