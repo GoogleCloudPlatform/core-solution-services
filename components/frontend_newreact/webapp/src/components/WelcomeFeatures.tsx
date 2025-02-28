@@ -29,8 +29,8 @@ interface WelcomeFeaturesProps {
 export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHeight, setShowChat, setShowSources, setShowWelcome, onNewChat, onResumeChat, setShowAddSource, setShowEditSource }: WelcomeFeaturesProps) => {
   const features: Feature[] = [
     {
-      icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} />,
-      title: 'Chat',
+      icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} alt="Chat icon"/>,
+      title: 'Chat', 
       subtitle: 'Latest Topical Gist',
       action: 'Resume',
       onClick: () => {
@@ -42,8 +42,8 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
         setShowEditSource(false);
       }
     },
-    {
-      icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} />,
+    { 
+      icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} alt="Knowledge source icon"/>,
       title: 'Knowledge Sources',
       subtitle: 'Knowledge Source Name',
       action: 'Query',
@@ -66,18 +66,20 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
       minHeight: `calc(100vh - ${headerHeight + 150}px)`,  // Leaves room for input
       overflowY: 'auto', // Ensures scrolling if needed
     }}>
-      <Typography
-        variant="h4"
-        className="greeting"
-        sx={{
-          textAlign: 'center',
-          fontSize: '32px',
-          mb: 2
-        }}
-      >
-        <span className="font-poppins bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">Hello, {username}</span>
-      </Typography>
-
+      <main>
+          <Typography
+            variant="h4"
+            className="greeting"
+            sx={{
+              textAlign: 'center',
+              fontSize: '32px',
+              mb: 2
+            }}
+          >
+            <span className="font-poppins bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">Hello, {username}</span>
+          </Typography>
+      </main>
+      
       <Box className="features-grid" sx={{
         maxWidth: '700px',
         width: '100%',
@@ -88,6 +90,15 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
             className="feature-card"
             onClick={feature.onClick}
             sx={{
+              role: 'button',
+              tabIndex: 0,
+              onKeyDown: (event: React.KeyboardEvent) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  feature.onClick();
+                }
+              },
+
               cursor: 'pointer',
               backgroundColor: '#1E1E1E !important',
               border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -98,7 +109,7 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               {feature.icon}
-              <Typography variant="h6" sx={{ fontSize: '16px', fontWeight: 400 }}>
+              <Typography variant="h4" sx={{ fontSize: '16px', fontWeight: 400 }}>
                 {feature.title}
               </Typography>
             </Box>

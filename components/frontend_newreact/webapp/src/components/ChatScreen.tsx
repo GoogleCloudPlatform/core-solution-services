@@ -1,4 +1,4 @@
-import { SourceSelector } from './SourceSelector'; // Import the component
+                                              import { SourceSelector } from './SourceSelector'; // Import the component
 import { QueryEngine } from '../lib/types'; // Import the type
 import { useState, useEffect } from 'react';
 import { Box, Typography, IconButton, Paper, InputBase, Avatar, Select, MenuItem, Modal, Chip, Button } from '@mui/material';
