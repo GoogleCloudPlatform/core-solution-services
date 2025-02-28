@@ -654,7 +654,7 @@ async def query(query_engine_id: str,
 
     # Create UserChat if chat_mode is enabled
     if chat_mode:
-      user_chat = UserChat(user_id=user.id,
+      user_chat = UserChat(user_id=user.user_id,
                           llm_type=llm_type,
                           prompt=prompt)
       user_chat.history = UserChat.get_history_entry(prompt,
