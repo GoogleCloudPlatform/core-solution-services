@@ -45,6 +45,7 @@ interface SidebarProps {
     setShowSources: (show: boolean) => void;
     setShowWelcome: (show: boolean) => void;
     onNewChat: () => void;
+    onResumeChat: () => void;
     currentChat: Chat | undefined;
 }
 
@@ -113,6 +114,7 @@ export const Sidebar = ({
     setShowSources,
     setShowWelcome,
     onNewChat,
+    onResumeChat,
     currentChat
 }: SidebarProps) => {
     const { isOpen, activePanel, selectedItem, toggle, setActivePanel, setSelectedItem } = useSidebarStore();
@@ -177,6 +179,7 @@ export const Sidebar = ({
                 setShowChat(true);
                 setShowWelcome(false);
                 setShowSources?.(false);
+                onResumeChat();
             }
         },
         {

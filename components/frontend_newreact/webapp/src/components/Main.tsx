@@ -61,7 +61,8 @@ const Main = styled(Box, {
 
 export const MainApp = () => {
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
-  const [showChat, setShowChat] = useState(false);
+  const [latestChat, setLatestChat] = useState<Chat | undefined>();
+  const [showChat, setShowChat] = useState(true);
   const [showWelcome, setShowWelcome] = useState(true);
   const [showSources, setShowSources] = useState(false);
   const [showAddSource, setShowAddSource] = useState(false);
@@ -69,7 +70,6 @@ export const MainApp = () => {
   const [editSourceId, setEditSourceId] = useState<string | null>(null);
   const [chatScreenKey, setChatScreenKey] = useState(0); // **NEW: Key for ChatScreen**
   const [headerClicked, setHeaderClicked] = useState(false); // New state variable
-
 
   const { isOpen, activePanel } = useSidebarStore();
   const { user } = useAuth();
@@ -89,21 +89,22 @@ export const MainApp = () => {
       if (user?.token && showChat && !currentChat) { // Only fetch if in chat mode, logged in, and no current chat selected
         const chat = await fetchLatestChat(user.token)();
         if (chat) {
-          setCurrentChat(chat);
+          setLatestChat(chat);
         } else {
           handleNewChat(); // or appropriate action when there's no latest chat
         }
       }
     };
     fetchLatest(); // Call the function
-  }, [user, showChat]); // Add showChat to the dependency array
+  }, [user]); // Add showChat to the dependency array
 
   useEffect(() => {
     if (headerClicked) {
       setShowWelcome(true);
-      setShowChat(false);
+      setShowChat(true);
       setCurrentChat(undefined);
       setHeaderClicked(false);
+      setShowSources(false);
     }
   }, [headerClicked]);
 
@@ -123,8 +124,6 @@ export const MainApp = () => {
     setHeaderClicked(true); // Update the state when the header is clicked
   };
 
-
-
   const handleSelectChat = (chat: Chat) => {
     setCurrentChat(chat);
     setShowChat(true);
@@ -136,9 +135,11 @@ export const MainApp = () => {
   };
 
   const handleChatStart = () => {
+    console.log("In handleChatStart")
     setShowWelcome(false);
     setShowChat(true);
     setShowSources(false);
+    setCurrentChat(undefined);
   };
 
   const handleEditClick = (sourceId: string) => {
@@ -176,6 +177,10 @@ export const MainApp = () => {
     setChatScreenKey(prevKey => prevKey + 1); // **Increment key also when handleNewChat is called directly**
   };
 
+  const handleResumeChat = () => {
+    setCurrentChat(latestChat)
+  }
+
   return (
     <MainContainer>
       <Sidebar
@@ -185,6 +190,7 @@ export const MainApp = () => {
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
         onNewChat={handleNewChat}
+        onResumeChat={handleResumeChat}
         currentChat={currentChat}
       />
       <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} onTitleClick={handleHeaderClick} title={<Title >
@@ -197,12 +203,16 @@ export const MainApp = () => {
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth} sx={{ paddingTop: `${headerHeight}px` }}>
         {showWelcome && (
           <Box sx={{
-            display: 'flex',
+            display: showWelcome ? 'flex' : 'none', // Conditionally show WelcomeFeatures
             flexDirection: 'column',
             width: '100%',
             height: 'calc(100vh - 64px)',
             justifyContent: 'center',
-            alignItems: 'center'
+            alignItems: 'center',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            zIndex: 10,
           }}>
             <WelcomeFeatures
               username={username}
@@ -220,13 +230,14 @@ export const MainApp = () => {
         )}
         {showChat && (
           <ChatScreen
-            key={chatScreenKey} // **NEW: Pass key prop to ChatScreen**
+            key={chatScreenKey}
             currentChat={currentChat}
-            hideHeader={showWelcome}
+            hideHeader={showWelcome || !currentChat} //Always show header
             isNewChat={!currentChat}
             onChatStart={() => {
               handleChatStart();
             }}
+            showWelcome={showWelcome} //Pass show welcome
           />
         )}
         {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} />}
