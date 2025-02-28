@@ -243,6 +243,13 @@ body {
   color: white;
 }
 
+.chat-input-container.welcome-mode {
+  position: relative;
+  /* Make it relative */
+  bottom: auto;
+  /* Allow it to position normally */
+}
+
 .signin-container {
   min-height: 100vh;
   display: flex;

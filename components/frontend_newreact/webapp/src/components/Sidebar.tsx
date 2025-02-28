@@ -46,6 +46,7 @@ interface SidebarProps {
     setShowSources: (show: boolean) => void;
     setShowWelcome: (show: boolean) => void;
     onNewChat: () => void;
+    onResumeChat: () => void;
     setShowAddSource: (value: boolean) => void;
     setShowEditSource: (value: boolean) => void;
     currentChat: Chat | undefined;
@@ -116,6 +117,7 @@ export const Sidebar = ({
     setShowSources,
     setShowWelcome,
     onNewChat,
+    onResumeChat,
     setShowAddSource,
     setShowEditSource,
     currentChat
@@ -181,7 +183,8 @@ export const Sidebar = ({
             onClick: () => {
                 setShowChat(true);
                 setShowWelcome(false);
-                setShowSources(false);
+                setShowSources?.(false);
+                onResumeChat();
                 setShowAddSource(false);  
                 setShowEditSource(false);
             }

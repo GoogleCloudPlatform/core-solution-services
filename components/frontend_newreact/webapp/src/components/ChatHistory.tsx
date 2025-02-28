@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, CircularProgress } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { useState, useEffect, useRef } from 'react';
+import { Box, Typography, IconButton, CircularProgress, ListItemButton } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchChatHistory } from '../lib/api';
 import { Chat } from '../lib/types';
@@ -16,6 +15,8 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const chatRefs = useRef<(HTMLDivElement | null)[]>([]);
+
 
   useEffect(() => {
     if (!isOpen || !user) return;
@@ -54,6 +55,12 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
     onSelectChat(chat);
   };
 
+  useEffect(() => {
+    // Initialize chatRefs to an array of nulls with the correct length
+    chatRefs.current = Array(chats.length).fill(null);
+  }, [chats]);
+
+
   return (
     <Box className="history-drawer">
       <Box className="history-content" sx={{
@@ -66,10 +73,11 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
           </Box>
         ) : (
           <>
-            {chats.map((chat) => (
-              <Box
+            {chats.map((chat, index) => (
+              <ListItemButton
                 key={chat.id}
                 onClick={() => handleChatClick(chat)}
+                ref={ref => chatRefs.current[index] = ref} // Corrected type here
                 sx={{
                   padding: '16px',
                   cursor: 'pointer',
@@ -77,30 +85,38 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
                   backgroundColor: chat.id === selectedChatId ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.05)'
-                  }
+                  },
+                  '&:focus-visible': {
+                    boxShadow: '0 0 0 2px #4a90e2',
+                    border: '1px solid #4a90e2',
+                    borderRadius: '4px'
+                  },
+                  display: 'block'//Added to make the tabbing visible
                 }}
               >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    fontSize: '12px',
-                    mb: '8px'
-                  }}
-                >
-                  {formatTimestamp(chat.created_time)}
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: 'rgba(255, 255, 255, 0.87)',
-                    fontSize: '14px',
-                    lineHeight: '20px'
-                  }}
-                >
-                  {chat.title || 'Untitled Chat'}
-                </Typography>
-              </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', textAlign: 'left', width: '100%' }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'rgba(255, 255, 255, 0.5)',
+                      fontSize: '12px',
+                      mb: '8px'
+                    }}
+                  >
+                    {formatTimestamp(chat.created_time)}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      color: 'rgba(255, 255, 255, 0.87)',
+                      fontSize: '14px',
+                      lineHeight: '20px'
+                    }}
+                  >
+                    {chat.title || 'Untitled Chat'}
+                  </Typography>
+                </Box>
+              </ListItemButton>
             ))}
           </>
         )}

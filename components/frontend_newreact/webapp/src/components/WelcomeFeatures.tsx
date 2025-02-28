@@ -1,4 +1,4 @@
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Typography, ListItemButton } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import StorageIcon from '@mui/icons-material/Storage';
 import ChatInterfaceIcon from '../assets/chat-icon.svg'; // Import your SVG
@@ -17,18 +17,30 @@ interface WelcomeFeaturesProps {
   onChatStart: () => void;
   onSourcesView: () => void;
   headerHeight: number;
+  setShowChat: (show: boolean) => void;
+  setShowSources: (show: boolean) => void;
+  setShowWelcome: (show: boolean) => void;
+  onNewChat: () => void;
+  onResumeChat: () => void;
+  setShowAddSource: (value: boolean) => void;
+  setShowEditSource: (value: boolean) => void;
 }
 
-export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHeight }: WelcomeFeaturesProps) => {
+export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHeight, setShowChat, setShowSources, setShowWelcome, onNewChat, onResumeChat, setShowAddSource, setShowEditSource }: WelcomeFeaturesProps) => {
   const features: Feature[] = [
     {
       icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} alt="Chat icon"/>,
       title: 'Chat', 
       subtitle: 'Latest Topical Gist',
       action: 'Resume',
-      onClick: ()=> {
-        onChatStart();
-      }   
+      onClick: () => {
+        setShowChat(true);
+        setShowWelcome(false);
+        setShowSources?.(false);
+        onResumeChat();
+        setShowAddSource(false);
+        setShowEditSource(false);
+      }
     },
     { 
       icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} alt="Knowledge source icon"/>,
@@ -111,12 +123,22 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
             >
               {feature.subtitle}
             </Typography>
-            <Box
+            <ListItemButton
+              onClick={feature.onClick}
+              tabIndex={0} // Set tabIndex to 0 to make only this tabable
               sx={{
                 mt: 'auto',
                 pt: 2,
-                display: 'flex',
-                justifyContent: 'flex-start'
+                justifyContent: 'flex-start',
+                "&:focus-visible": {
+                  boxShadow: '0 0 0 2px #64b5f6',
+                  border: '1px solid #64b5f6',
+                  borderRadius: '16px',
+                  outline: 'none'
+                },
+                "&:hover": {
+                  backgroundColor: 'transparent',// remove default background
+                }
               }}
             >
               <Box
@@ -127,12 +149,12 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
                   py: 0.5,
                   borderRadius: '16px',
                   fontSize: '14px',
-                  fontWeight: 500
+                  fontWeight: 500,
                 }}
               >
                 {feature.action}
               </Box>
-            </Box>
+            </ListItemButton>
           </Paper>
         ))}
       </Box>
