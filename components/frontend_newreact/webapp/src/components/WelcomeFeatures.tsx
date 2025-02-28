@@ -17,16 +17,30 @@ interface WelcomeFeaturesProps {
   onChatStart: () => void;
   onSourcesView: () => void;
   headerHeight: number;
+  setShowChat: (show: boolean) => void;
+  setShowSources: (show: boolean) => void;
+  setShowWelcome: (show: boolean) => void;
+  onNewChat: () => void;
+  onResumeChat: () => void;
+  setShowAddSource: (value: boolean) => void;
+  setShowEditSource: (value: boolean) => void;
 }
 
-export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHeight }: WelcomeFeaturesProps) => {
+export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHeight, setShowChat, setShowSources, setShowWelcome, onNewChat, onResumeChat, setShowAddSource, setShowEditSource }: WelcomeFeaturesProps) => {
   const features: Feature[] = [
     {
       icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} />,
       title: 'Chat',
       subtitle: 'Latest Topical Gist',
       action: 'Resume',
-      onClick: onChatStart
+      onClick: () => {
+        setShowChat(true);
+        setShowWelcome(false);
+        setShowSources?.(false);
+        onResumeChat();
+        setShowAddSource(false);
+        setShowEditSource(false);
+      }
     },
     {
       icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} />,
