@@ -103,7 +103,7 @@ export const MainApp = () => {
     };
 
     fetchLatest(); // Call the function
-  }, [user]); 
+  }, [user]);
 
   useEffect(() => {
     if (headerClicked) {
@@ -145,15 +145,15 @@ export const MainApp = () => {
   };
 
   const handleAddSourceClick = () => {
-  console.log("Opening Add Source");
-  setShowAddSource(true);
-  setShowSources(false);
-  setShowWelcome(false);
-  setShowChat(false);
-  setCurrentChat(undefined);
-  setEditSourceId(null);
-  setShowEditSource(false);
-};
+    console.log("Opening Add Source");
+    setShowAddSource(true);
+    setShowSources(false);
+    setShowWelcome(false);
+    setShowChat(false);
+    setCurrentChat(undefined);
+    setEditSourceId(null);
+    setShowEditSource(false);
+  };
 
   const handleChatStart = () => {
     console.log("In handleChatStart")
@@ -249,6 +249,13 @@ export const MainApp = () => {
             <WelcomeFeatures
               username={username}
               headerHeight={headerHeight}
+              setShowChat={setShowChat}
+              setShowSources={setShowSources}
+              setShowWelcome={setShowWelcome}
+              onNewChat={handleNewChat}
+              onResumeChat={handleResumeChat}
+              setShowAddSource={setShowAddSource}
+              setShowEditSource={setShowEditSource}
               onChatStart={() => {
                 handleChatStart();
               }}
@@ -272,8 +279,8 @@ export const MainApp = () => {
             showWelcome={showWelcome} //Pass show welcome
           />
         )}
-        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} /> }
-        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} /> }
+        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} />}
+        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} />}
       </Main>
     </MainContainer>
   );
