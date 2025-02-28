@@ -46,13 +46,14 @@ interface SidebarProps {
     setShowSources: (show: boolean) => void;
     setShowWelcome: (show: boolean) => void;
     onNewChat: () => void;
+    onResumeChat: () => void;
     setShowAddSource: (value: boolean) => void;
     setShowEditSource: (value: boolean) => void;
     currentChat: Chat | undefined;
 }
 
 const DrawerHeader = styled('div')(({ theme }) => ({
-    display: 'flex',
+    display: 'flex', 
     flexDirection: 'column',
     alignItems: 'center',
     padding: theme.spacing(1),
@@ -116,6 +117,7 @@ export const Sidebar = ({
     setShowSources,
     setShowWelcome,
     onNewChat,
+    onResumeChat,
     setShowAddSource,
     setShowEditSource,
     currentChat
@@ -161,13 +163,13 @@ export const Sidebar = ({
         {
             text: 'History',
             tooltip: 'History',
-            icon: <img src={HistoryCustomIcon} className="" style={{ width: '14px', height: '14px' }} />,
+            icon: <img src={HistoryCustomIcon} className="" style={{ width: '14px', height: '14px' }} alt= "History icon" />,
             id: 'history'
         },
         {
             text: 'Settings',
             tooltip: 'Settings',
-            icon: <img src={SettingsCustomIcon} style={{ width: '14px', height: '14px' }} />,
+            icon: <img src={SettingsCustomIcon} style={{ width: '14px', height: '14px' }} alt= "Settings icon"/>,
             id: 'settings'
         },
     ];
@@ -176,12 +178,13 @@ export const Sidebar = ({
         {
             text: 'Resume Chat',
             tooltip: 'Resume Chat',
-            icon: <img src={ChatInterfaceIcon} style={{ width: '14px', height: '14px' }} />,
+            icon: <img src={ChatInterfaceIcon} style={{ width: '14px', height: '14px' }} alt="Resume Chat icon"/>,
             id: 'chat',
             onClick: () => {
                 setShowChat(true);
                 setShowWelcome(false);
-                setShowSources(false);
+                setShowSources?.(false);
+                onResumeChat();
                 setShowAddSource(false);  
                 setShowEditSource(false);
             }
@@ -189,7 +192,7 @@ export const Sidebar = ({
         {
             text: 'Sources',
             tooltip: 'Sources',
-            icon: <img src={SourceIcon} style={{ width: '14px', height: '14px' }} />,
+            icon: <img src={SourceIcon} style={{ width: '14px', height: '14px' }} alt="Source icon" />,
             id: 'sources',
             onClick: () => {
                 setShowSources?.(true);
@@ -198,7 +201,7 @@ export const Sidebar = ({
             }
         },
         {
-            icon: <img src={CloudIcon} style={{ width: '14px', height: '14px' }} />,
+            icon: <img src={CloudIcon} style={{ width: '14px', height: '14px' }} alt="Google cloud icon" />,
             id: CLOUD_ITEM_ID,
         },
     ];
@@ -235,7 +238,8 @@ export const Sidebar = ({
                     }}
                 >
                     <ListItemIcon
-                        sx={{
+                        sx=
+                        {{
                             minWidth: 0,
                             mr: isOpen ? 2 : 'auto',
                             justifyContent: 'center',
@@ -261,7 +265,7 @@ export const Sidebar = ({
     );
 
     return (
-        <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex' }} >  <nav aria-label="sidebar navigation">
             <StyledDrawer
                 variant="permanent"
                 isOpen={isOpen}
@@ -271,8 +275,10 @@ export const Sidebar = ({
                         title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
                         placement='right'
                         arrow
+                        
                     >
                         <IconButton
+                            aria-label="Collapse or Expand Sidebar"
                             onClick={toggle}
                             sx={{
                                 color: 'rgba(255, 255, 255, 0.7)',
@@ -290,6 +296,7 @@ export const Sidebar = ({
                         arrow
                     >
                         <IconButton
+                            aria-label="New Chat"
                             onClick={() => {
                                 handleNewChatClick();
                             }}
@@ -315,22 +322,25 @@ export const Sidebar = ({
                 <List sx={{ mt: 'auto', mb: 2 }}>
                     {bottomMenuItems.map(renderMenuItem)}
                 </List>
-            </StyledDrawer>
+            </StyledDrawer></nav>
 
             {/* Settings Panel */}
             <SidePanel
                 isOpen={activePanel === 'settings'}
                 drawerIsOpen={isOpen}
             >
-                <PanelHeader>
-                    <Box sx={{ typography: 'subtitle2', color: 'rgba(255, 255, 255, 0.9)' }}>
-                        Settings
-                    </Box>
-                    <IconButton
-                        onClick={() => {
-                            setActivePanel(null);
-                            setSelectedItem(null);
-                        }}
+            <header>
+                <PanelHeader>                    
+                        <Box sx={{ typography: 'subtitle2', color: 'rgba(255, 255, 255, 0.9)' }}>
+                            Settings
+                        </Box>
+                        <IconButton
+                            aria-label="Close Settings Panel"
+                            onClick={() => {
+                                setActivePanel(null);
+                                setSelectedItem(null);
+                            }}
+                        
                         sx={{
                             color: 'rgba(255, 255, 255, 0.7)',
                             '&:hover': {
@@ -340,7 +350,8 @@ export const Sidebar = ({
                     >
                         <MenuIcon />
                     </IconButton>
-                </PanelHeader>
+                </PanelHeader> 
+                </header>
                 <Box sx={{
                     height: 'calc(100% - 56px)', // Subtract header height
                     overflow: 'auto'
@@ -365,6 +376,7 @@ export const Sidebar = ({
                         History
                     </Box>
                     <IconButton
+                        aria-label="Close History Panel"
                         onClick={() => {
                             setActivePanel(null);
                             setSelectedItem(null);

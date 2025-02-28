@@ -61,14 +61,15 @@ const Main = styled(Box, {
 
 export const MainApp = () => {
   const [currentChat, setCurrentChat] = useState<Chat | undefined>();
-  const [showChat, setShowChat] = useState(false);
+  const [latestChat, setLatestChat] = useState<Chat | undefined>();
+  const [showChat, setShowChat] = useState(true);
   const [showWelcome, setShowWelcome] = useState(true);
   const [showSources, setShowSources] = useState(false);
   const [showAddSource, setShowAddSource] = useState(false);
   const [showEditSource, setShowEditSource] = useState(false);
   const [editSourceId, setEditSourceId] = useState<string | null>(null);
   const [chatScreenKey, setChatScreenKey] = useState(0); // **NEW: Key for ChatScreen**
-
+  const [headerClicked, setHeaderClicked] = useState(false); // New state variable
 
   const { isOpen, activePanel } = useSidebarStore();
   const { user } = useAuth();
@@ -88,19 +89,32 @@ export const MainApp = () => {
       if (user?.token && showChat && !currentChat) {
         const chat = await fetchLatestChat(user.token)();
         if (chat) {
+          setLatestChat(chat);
           // setCurrentChat(chat);
-          setShowWelcome(false);
-          setShowSources(false);
-          setShowAddSource(false);  
-          setShowEditSource(false);
-          setCurrentChat(undefined);
+          //setShowWelcome(false);
+          //setShowSources(false);
+          //setShowAddSource(false);  
+          //setShowEditSource(false);
+          //setCurrentChat(undefined);
         } else {
           handleNewChat();
         }
       }
     };
-    fetchLatest();
-  }, [user, showChat]);
+
+    fetchLatest(); // Call the function
+  }, [user]);
+
+  useEffect(() => {
+    if (headerClicked) {
+      setShowWelcome(true);
+      setShowChat(true);
+      setCurrentChat(undefined);
+      setHeaderClicked(false);
+      setShowSources(false);
+    }
+  }, [headerClicked]);
+
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -114,6 +128,9 @@ export const MainApp = () => {
     return () => window.removeEventListener('resize', updateHeaderHeight);
   }, []);
 
+  const handleHeaderClick = () => {
+    setHeaderClicked(true); // Update the state when the header is clicked
+  };
 
   const handleSelectChat = (chat: Chat) => {
     setCurrentChat(chat);
@@ -128,23 +145,24 @@ export const MainApp = () => {
   };
 
   const handleAddSourceClick = () => {
-  console.log("Opening Add Source");
-  setShowAddSource(true);
-  setShowSources(false);
-  setShowWelcome(false);
-  setShowChat(false);
-  setCurrentChat(undefined);
-  setEditSourceId(null);
-  setShowEditSource(false);
-};
+    console.log("Opening Add Source");
+    setShowAddSource(true);
+    setShowSources(false);
+    setShowWelcome(false);
+    setShowChat(false);
+    setCurrentChat(undefined);
+    setEditSourceId(null);
+    setShowEditSource(false);
+  };
 
   const handleChatStart = () => {
+    console.log("In handleChatStart")
     setShowWelcome(false);
     setShowChat(true);
     setShowSources(false);
     setShowAddSource(false);  // Ensure Add Source is hidden
     setShowEditSource(false); // Ensure Edit Source is hidden
-    setCurrentChat(undefined);
+    //setCurrentChat(undefined);
   };
 
   const handleEditClick = (sourceId: string) => {
@@ -185,6 +203,10 @@ export const MainApp = () => {
     setChatScreenKey(prevKey => prevKey + 1); // **Increment key also when handleNewChat is called directly**
   };
 
+  const handleResumeChat = () => {
+    setCurrentChat(latestChat)
+  }
+
   return (
     <MainContainer>
       <Sidebar
@@ -198,31 +220,42 @@ export const MainApp = () => {
         setShowSources={setShowSources}
         setShowWelcome={setShowWelcome}
         onNewChat={handleNewChat}
+        onResumeChat={handleResumeChat}
         setShowAddSource={setShowAddSource}
         setShowEditSource={setShowEditSource}
         currentChat={currentChat}
       />
-      <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} title={
-        <Title >
-          <span className="primary">GenAI</span>
-          <span>for</span>
-          <span className="gradient">Public Sector</span>
-        </Title>
+      <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} onTitleClick={handleHeaderClick} title={<Title >
+        <span className="primary">GenAI</span>
+        <span>for</span>
+        <span className="gradient">Public Sector</span>
+      </Title>
       } >
       </CustomHeader>
       <Main sidebarWidth={sidebarWidth} panelWidth={panelWidth} sx={{ paddingTop: `${headerHeight}px` }}>
         {showWelcome && (
           <Box sx={{
-            display: 'flex',
+            display: showWelcome ? 'flex' : 'none', // Conditionally show WelcomeFeatures
             flexDirection: 'column',
             width: '100%',
             height: 'calc(100vh - 64px)',
             justifyContent: 'center',
-            alignItems: 'center'
+            alignItems: 'center',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            zIndex: 10,
           }}>
             <WelcomeFeatures
               username={username}
               headerHeight={headerHeight}
+              setShowChat={setShowChat}
+              setShowSources={setShowSources}
+              setShowWelcome={setShowWelcome}
+              onNewChat={handleNewChat}
+              onResumeChat={handleResumeChat}
+              setShowAddSource={setShowAddSource}
+              setShowEditSource={setShowEditSource}
               onChatStart={() => {
                 handleChatStart();
               }}
@@ -236,13 +269,14 @@ export const MainApp = () => {
         )}
         {showChat && (
           <ChatScreen
-            key={chatScreenKey} // **NEW: Pass key prop to ChatScreen**
+            key={chatScreenKey}
             currentChat={currentChat}
-            hideHeader={showWelcome}
+            hideHeader={showWelcome || !currentChat} //Always show header
             isNewChat={!currentChat}
             onChatStart={() => {
               handleChatStart();
             }}
+            showWelcome={showWelcome} //Pass show welcome
           />
         )}
         {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} /> }

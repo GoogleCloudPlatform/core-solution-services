@@ -1,12 +1,14 @@
 import { Box, styled } from "@mui/material";
-import { ProfileMenu } from "@/components/profile-menu";
+import { ProfileMenu } from "@/components/ProfileMenu";
 import * as React from 'react';
+import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
     sidebarWidth: number;
     panelWidth: number;
     title?: React.ReactNode;
     rightContent?: React.ReactNode;
+    onTitleClick?: () => void; // Add a prop for the title click handler
 }
 
 
@@ -23,6 +25,7 @@ const HeaderContainer = styled(Box, {
     right: 0,
     left: `${sidebarWidth + panelWidth}px`,
     transition: 'left 0.3s ease-in-out',
+    cursor: 'pointer'//Added the pointer
 }));
 
 const Title = styled(Box)({
@@ -42,20 +45,28 @@ const Title = styled(Box)({
     },
 });
 
-export const CustomHeader = React.forwardRef<HTMLDivElement, HeaderProps>(({ sidebarWidth, panelWidth, title, rightContent }, ref) => {  // Correct destructuring of props and ref
+export const CustomHeader = React.forwardRef<HTMLDivElement, HeaderProps>(({ sidebarWidth, panelWidth, title, rightContent, onTitleClick }, ref) => {  // Correct destructuring of props and ref
+    const navigate = useNavigate();
+
+    const handleTitleClick = () => {
+        if (onTitleClick) {
+            onTitleClick();
+        }
+    };
 
     return (
         <HeaderContainer sidebarWidth={sidebarWidth} panelWidth={panelWidth} ref={ref}> {/* Pass ref to HeaderContainer */}
-            {title ? title : (
-                <Title>
-                    <span className="primary">GenAI</span>
-                    <span className="gradient">for Public Sector</span>
-                </Title>
-            )}
+            <Box onClick={handleTitleClick}>{/*Make Title clickable*/}
+                {title ? title : (
+                    <Title>
+                        <span className="primary">GenAI</span>
+                        <span className="gradient">for Public Sector</span>
+                    </Title>
+                )}
+            </Box>
             {rightContent || (
                 <ProfileMenu />
             )}
         </HeaderContainer>
     );
 });
-
