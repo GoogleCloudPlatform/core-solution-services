@@ -386,6 +386,9 @@ useEffect(() => {
       if (!jobRunning && pollIntervalId !== null) {
         clearInterval(pollIntervalId);
         pollIntervalId = null;
+      } else if (jobRunning) {
+        // Ensure we're still polling if jobs are running
+        startPolling();
       }
     } catch (error) {
       console.error("Error updating job statuses:", error);
@@ -397,16 +400,26 @@ useEffect(() => {
    */
   const startPolling = () => {
     if (!pollIntervalId) {
+      // Clear any existing interval first to prevent duplicates
+      if (pollIntervalId !== null) {
+        clearInterval(pollIntervalId);
+      }
       pollIntervalId = window.setInterval(updateJobStatuses, 1000);
+      console.log("Started polling for job status updates");
     }
   };
 
+  // Initial load of sources
   loadSources();
+
+  // Set up polling immediately to check for any active jobs
+  startPolling();
 
   return () => {
     if (pollIntervalId !== null) {
       clearInterval(pollIntervalId);
       pollIntervalId = null;
+      console.log("Stopped polling for job status updates");
     }
   };
 }, [user]);
