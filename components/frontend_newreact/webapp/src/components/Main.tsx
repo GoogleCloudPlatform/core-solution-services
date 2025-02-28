@@ -279,8 +279,15 @@ export const MainApp = () => {
             showWelcome={showWelcome} //Pass show welcome
           />
         )}
-        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} />}
-        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} />}
+        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} /> }
+        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} /> }
+        {showEditSource && (
+          <UpdateSource
+            sourceId={editSourceId!} // Pass the sourceId
+            onCancel={() => { setShowEditSource(false); setShowSources(true); }} // Hide UpdateSource and show Sources
+            onSave={() => { /* handle save logic here */ setShowEditSource(false); setShowSources(true); }}
+          />
+        )}
       </Main>
     </MainContainer>
   );
