@@ -85,10 +85,11 @@ def get_llm_list(user_data: dict = Depends(validate_token),
     name="Get LLM details",
     response_model=LLMGetDetailsResponse)
 def get_llm_details(user_data: dict = Depends(validate_token),
-                   is_multimodal: Optional[bool] = None):
+                   is_multimodal: Optional[bool] = None,
+                   is_embedding: Optional[bool] = None):
   """
   Get available LLMs with detailed information, optionally filter by
-  multimodal capabilities
+  multimodal capabilities or embedding types
 
   Args:
     is_multimodal: `bool`
@@ -96,20 +97,31 @@ def get_llm_details(user_data: dict = Depends(validate_token),
         If False, only non-multimodal LLM types are returned.
         If None, all LLM types are returned.
 
+    is_embedding: `bool`
+      Optional: If True, only embedding LLM types are returned.
+        If False or None, only non-embedding LLM types are returned.
+
   Returns:
       LLMGetDetailsResponse with detailed model information
   """
-  Logger.info("Entering llm/details")
+  Logger.info("Entering llm/details"
+              f" is_multimodal:[{is_multimodal}]"
+              f" is_embedding:[{is_embedding}]")
   try:
     model_config = get_model_config()
-    if is_multimodal is True:
+
+    if is_embedding is True and is_multimodal is True:
+      llm_types = model_config.get_multimodal_embedding_types()
+    elif is_embedding is True and is_multimodal is False:
+      llm_types = model_config.get_text_embedding_types()
+    elif is_embedding is True and is_multimodal is None:
+      llm_types = model_config.get_embedding_types()
+    elif is_multimodal is True:
       llm_types = model_config.get_multimodal_llm_types()
     elif is_multimodal is False:
       llm_types = model_config.get_text_llm_types()
     elif is_multimodal is None:
       llm_types = model_config.get_llm_types()
-    else:
-      return BadRequest("Invalid request parameter value: is_multimodal")
 
     model_details = []
     for llm in llm_types:
