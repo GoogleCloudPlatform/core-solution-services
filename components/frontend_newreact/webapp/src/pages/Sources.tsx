@@ -230,9 +230,10 @@ useEffect(() => {
   if (!user?.token) return;
 
   let pollIntervalId: number | null = null;
+  let refreshIntervalId: number | null = null;
 
   /**
-   * Fetch all query engines and initialize them with "unknown" status.
+   * Fetch all query engines and initialize them with status.
    */
   const loadSources = async () => {
     try {
@@ -343,12 +344,13 @@ useEffect(() => {
 
       // Check if any jobs have completed
       const completedJobs = jobsData.filter(job => 
-        job.status === "succeeded" && 
+        (job.status === "succeeded" || job.status === "failed") && 
         sources.some(source => source.name === job.input_data.query_engine && source.status === "active")
       );
       
       // If any jobs completed, refresh the entire source list
       if (completedJobs.length > 0) {
+        console.log("Jobs completed, refreshing source list:", completedJobs);
         loadSources();
         return;
       }
@@ -384,11 +386,11 @@ useEffect(() => {
 
       // Stop polling if no jobs are running
       if (!jobRunning && pollIntervalId !== null) {
+        console.log("No active jobs, stopping job status polling");
         clearInterval(pollIntervalId);
         pollIntervalId = null;
       } else if (jobRunning) {
-        // Ensure we're still polling if jobs are running
-        startPolling();
+        console.log("Jobs still running, continuing to poll");
       }
     } catch (error) {
       console.error("Error updating job statuses:", error);
@@ -409,17 +411,45 @@ useEffect(() => {
     }
   };
 
+  /**
+   * Start periodic refresh of all sources
+   * This ensures we catch new sources created by other users
+   * and completed jobs that might have been missed
+   */
+  const startPeriodicRefresh = () => {
+    if (!refreshIntervalId) {
+      // Clear any existing interval first
+      if (refreshIntervalId !== null) {
+        clearInterval(refreshIntervalId);
+      }
+      // Refresh every 10 seconds
+      refreshIntervalId = window.setInterval(() => {
+        console.log("Performing periodic refresh of all sources");
+        loadSources();
+      }, 10000); // 10 seconds
+      console.log("Started periodic refresh of all sources");
+    }
+  };
+
   // Initial load of sources
   loadSources();
 
   // Set up polling immediately to check for any active jobs
   startPolling();
+  
+  // Start periodic refresh to catch new sources and completed jobs
+  startPeriodicRefresh();
 
   return () => {
+    // Clean up all intervals when component unmounts
     if (pollIntervalId !== null) {
       clearInterval(pollIntervalId);
-      pollIntervalId = null;
       console.log("Stopped polling for job status updates");
+    }
+    
+    if (refreshIntervalId !== null) {
+      clearInterval(refreshIntervalId);
+      console.log("Stopped periodic refresh of all sources");
     }
   };
 }, [user]);
