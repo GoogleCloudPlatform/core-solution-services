@@ -39,6 +39,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, List, ListItem, ListItemText, TextField } from "@mui/material";
 import axios from 'axios';
 import ClearIcon from '@mui/icons-material/Clear';
+import SourcesTable from '../components/SourcesTable';
 
 
 const STYLED_WHITE= 'white';
@@ -705,264 +706,198 @@ useEffect(() => {
       </Box>
 
       {/* Table to display Sources */}
-      <TableContainer sx={{ backgroundColor: 'transparent' }}>
-        <Table>
-          <TableHead> {/* Table header */}
-            <TableRow>
-              <StyledTableCell padding="checkbox"> {/* Checkbox for selecting all */}
-                <Checkbox
-                  checked={selectedSources.length === sources.length && sources.length > 0} // Check if all sources are selected
-                  indeterminate={selectedSources.length > 0 && selectedSources.length < sources.length} // Show indeterminate state if some are selected
-                  onChange={handleSelectAll} // Handle select all
-                  sx={{ color: 'white' }}
-                />
-              </StyledTableCell>
-              <StyledTableCell>Name</StyledTableCell> {/* Header cells */}
-              <StyledTableCell>Description</StyledTableCell> {/* New Description Column */}
-              <StyledTableCell>Job Status</StyledTableCell>
-              <StyledTableCell>Type</StyledTableCell>
-              <StyledTableCell>Created</StyledTableCell>
-              <StyledTableCell align="right"></StyledTableCell> {/* Placeholder for actions/menu */}
+      <SourcesTable 
+        sources={sources}
+        selectedSources={selectedSources}
+        onSelectAll={handleSelectAll}
+        onSelectSource={handleSelectSource}
+        onEditClick={handleEditClick}
+        onViewClick={handleViewClick} 
+        onDeleteClick={handleDeleteClick}
+        typeFilter={typeFilter}
+        jobStatusFilter={jobStatusFilter}
+        currentPage={currentPage}
+        rowsPerPage={rowsPerPage}
+      />
 
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sources
-              .filter((source) =>
-                (jobStatusFilter === "all" || source.status === jobStatusFilter) &&
-                (typeFilter === "all" || source.query_engine_type === typeFilter)
-            )
-            
-              .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage) // ⬅️ Pagination applied here
-              .map((source) => (
-                <StyledTableRow key={source.id}>
-                  <StyledTableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedSources.includes(source.id)}
-                      onChange={() => handleSelectSource(source.id)}
-                      sx={{ color: 'white' }}
-                    />
-                  </StyledTableCell>
-                  <StyledTableCell>{source.name}</StyledTableCell>
-                  <StyledTableCell>{source.description}</StyledTableCell> {/* Description */}
-                  <StyledTableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {getStatusIcon(source.status)}
-                      {source.status ?? "unknown"} {/* Display text as well (handle undefined) */}
-                    </Box>
-                  </StyledTableCell>
-                  <StyledTableCell>
-                    {QUERY_ENGINE_TYPES[source.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] ||
-                      source.query_engine_type}
-                  </StyledTableCell>
-                  <StyledTableCell>{new Date(source.created_time).toLocaleDateString()}</StyledTableCell>
-                  
-                  {/* Three-dot menu */}
-                  <StyledTableCell align="left">
-                    <Tooltip title="Edit Source">
-                      <IconButton onClick={() => handleEditClick(source.id)}>
-                      <EditNote sx={{ color: "white" }} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="View Source">
-                      <IconButton
-                        onClick={() => {                            
-                            handleViewClick(source.id);
-                        }
-                      }
-                      >
-                        <Info sx={{ color: "white" }} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Source">
-                      <IconButton onClick={() => handleDeleteClick(source.id)}>
-                        <DeleteIcon sx={{ color: "red" }} />
-                      </IconButton>
-                    </Tooltip>
-                  </StyledTableCell>
-                </StyledTableRow>
-              ))}
-          </TableBody>
-        </Table>
-        {/* 🔹 Delete Confirmation Dialog - Add This Here */}
-        <Dialog open={deleteDialogOpen} onClose={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} PaperProps={{ sx: { backgroundColor: '#333537' } }}>
-          <DialogTitle sx={{color: STYLED_WHITE}}>Confirm Deletion</DialogTitle>
-            <DialogContent>
-              <DialogContentText sx={{ color: 'white' }}>
-                Are you sure you want to delete the following source(s)? This action cannot be undone.
-              </DialogContentText>
-            {sourcesToDelete.length === 1 && (
-                <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1 }}>
-                  <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>Source Name:</Typography>
-                  <Typography sx={{ color: 'white' }}>{sources.find((s) => s.id === sourcesToDelete[0])?.name}</Typography>
-                </Box>
-              )}
-                          {sourcesToDelete.length > 1 && (
-                          <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1, }}>
-                            <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>Source Names:</Typography>
-                              <List sx={{color: STYLED_WHITE}}>
-                              {sourcesToDelete.map((sourceId) => {
-                                const sourceName = sources.find(s => s.id === sourceId)?.name || sourceId;
-                                return (
-                                <ListItem key={sourceId} sx={{borderBottom: '1px solid #888'}}>
-                                    <ListItemText primary={sourceName} />
-                                </ListItem>
-                                )}
-                              )}
-                            </List>
-                          </Box>
-                        )};
-
-            {sourcesToDelete.length > 1 && <List sx={{color: STYLED_WHITE}}>
-          </List>
-            }</DialogContent>
-        <DialogActions>
-          <Button onClick={() => {setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null);}} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={confirmDeleteSources} color="error" startIcon={<DeleteIcon />} variant="contained" sx={{ backgroundColor: '#F2B8B5', borderRadius: '20px', textTransform: 'none', color: '#601410' }}>
-              Delete Source
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog open={isEditModalOpen} onClose={handleEditModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
-          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Edit Source
-              <IconButton onClick={handleEditModalClose}>
-                  <Close />
-              </IconButton>
-          </DialogTitle>
+      {/* 🔹 Delete Confirmation Dialog - Add This Here */}
+      <Dialog open={deleteDialogOpen} onClose={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} PaperProps={{ sx: { backgroundColor: '#333537' } }}>
+        <DialogTitle sx={{color: STYLED_WHITE}}>Confirm Deletion</DialogTitle>
           <DialogContent>
-              <Box sx={{mb: 4}}>
-                  <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>
-                      Name
-                  </Typography>
-                  <TextField
-                      fullWidth
-                      placeholder="Input"
-                      value={editedName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        if (e.target.value.length <= 50) {
-                          handleNameChange(e);
-                        }
-                      }}                      
-                      required
-                      error={!editedName}
-                      helperText={!editedName && "Required"}
-                      InputProps={{
-                          endAdornment: editedName && (
-                              <IconButton size="small" onClick={() => setEditedName('')}>
-                                  <ClearIcon fontSize="small" sx={{color: "white"}}/>
-                              </IconButton>
-                          )
-                      }}
-                      sx={{
-                          '& .MuiOutlinedInput-root': {
-                              backgroundColor: '#242424',
-                              color: 'white',
-                              '& fieldset': {borderColor: '#333'},
-                              '&:hover fieldset': {borderColor: '#444'},
-                          }
-                      }}
-                  />
+            <DialogContentText sx={{ color: 'white' }}>
+              Are you sure you want to delete the following source(s)? This action cannot be undone.
+            </DialogContentText>
+          {sourcesToDelete.length === 1 && (
+              <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1 }}>
+                <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>Source Name:</Typography>
+                <Typography sx={{ color: 'white' }}>{sources.find((s) => s.id === sourcesToDelete[0])?.name}</Typography>
               </Box>
-              <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>Name of the Query Engine (can include spaces). {editedName?.length || 0}/50 characters left.</Typography>
+            )}
+                    {sourcesToDelete.length > 1 && (
+                    <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1, }}>
+                      <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>Source Names:</Typography>
+                        <List sx={{color: STYLED_WHITE}}>
+                        {sourcesToDelete.map((sourceId) => {
+                          const sourceName = sources.find(s => s.id === sourceId)?.name || sourceId;
+                          return (
+                          <ListItem key={sourceId} sx={{borderBottom: '1px solid #888'}}>
+                              <ListItemText primary={sourceName} />
+                          </ListItem>
+                          )}
+                        )}
+                      </List>
+                    </Box>
+                  )};
 
-              {/* Add Description Field Here */}
-              <Box sx={{mb: 4}}>
-                  <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>
-                      Description
-                  </Typography>
-                  <TextField
-                      fullWidth
-                      placeholder="Enter a brief description"
-                      value={editedDescription}
-                      onChange={(e) => {
-                          if (e.target.value.length <= 75) {
-                              setEditedDescription(e.target.value);
-                          }
-                      }}
-                      InputProps={{
-                          endAdornment: (
-                              <Typography sx={{color: '#888', mr: 1}}>
-                                  {editedDescription?.length || 0}/75
-                              </Typography>
-                          ),
-                      }}
-                      sx={{
-                          '& .MuiOutlinedInput-root': {
-                              backgroundColor: '#242424',
-                              color: 'white',
-                              '& fieldset': {borderColor: '#333'},
-                              '&:hover fieldset': {borderColor: '#444'},
-                          }
-                      }}
-                  />
-              </Box>
-              <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>A brief description of this source.</Typography>
-          </DialogContent>
-          <DialogActions>
-              <Button onClick={handleEditModalClose} color="primary">
-                  Cancel
-              </Button>
-              <Button onClick={handleSaveEdit} color="primary">
-                  Save
-              </Button>
-          </DialogActions>
-      </Dialog>
-      <Dialog open={isViewModalOpen} onClose={handleViewModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
-        Source Info
-        <IconButton onClick={handleViewModalClose}>
-            <Close sx={{color: STYLED_WHITE}} />
+          {sourcesToDelete.length > 1 && <List sx={{color: STYLED_WHITE}}>
+        </List>
+          }</DialogContent>
+      <DialogActions>
+        <Button onClick={() => {setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null);}} color="primary">
+          Cancel
+        </Button>
+        <Button onClick={confirmDeleteSources} color="error" startIcon={<DeleteIcon />} variant="contained" sx={{ backgroundColor: '#F2B8B5', borderRadius: '20px', textTransform: 'none', color: '#601410' }}>
+            Delete Source
+        </Button>
+      </DialogActions>
+    </Dialog>
+    <Dialog open={isEditModalOpen} onClose={handleEditModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Edit Source
+            <IconButton onClick={handleEditModalClose}>
+                <Close />
             </IconButton>
-            </DialogTitle>
-              <DialogContent>
-                <List sx={{ color: STYLED_WHITE }}>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Name:" secondary={sourceToView?.name}  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
-                        </ListItem>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Data URL:" secondary={sourceToView?.doc_url} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                            <IconButton onClick={() => navigator.clipboard.writeText(sourceToView?.doc_url || '')}><ContentCopyIcon sx={{ color: STYLED_WHITE }} /></IconButton>
-                        </ListItem>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Type:" secondary={QUERY_ENGINE_TYPES[sourceToView?.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || sourceToView?.query_engine_type} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                        </ListItem>
-                        <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
-                            <Box sx={{ flex: 1 }}>
-                                <ListItemText primary="Vector Store:" secondary={sourceToView?.vector_store === 'langchain_pgvector' ? 'PG Vector' : 'Vertex Matching Engine'} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                            </Box>
-                            <Box sx={{ flex: 1 }}>
-                                <ListItemText primary="Embedding Type:" secondary={sourceToView?.embedding_type === 'text-embedding-ada-002' ? "text-embedding-ada-002" : "VertexAI-Embedding"} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                            </Box>
-                        </ListItem>
-                        <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
-                            <Box sx={{ flex: 1 }}>
-                                <ListItemText 
-                                    primary="Depth Limit:" 
-                                    secondary={sourceToView ? sourceToView.params?.depth_limit?.toString() : "N/A"} 
-                                    sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
-                                />
-                            </Box>
-                            <Box sx={{ flex: 1 }}>
-                                <ListItemText 
-                                    primary="Chunk Size:" 
-                                    secondary={sourceToView ? sourceToView.params?.chunk_size?.toString() : "N/A"} 
-                                    sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
-                                />
-                            </Box>
-                        </ListItem>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Agents:" secondary={sourceToView?.agents?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                        </ListItem>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Child Engines:" secondary={sourceToView?.child_engines?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
-                        </ListItem>
-                        </List>
-                    </DialogContent>
-                </Dialog>
-              </TableContainer>
+        </DialogTitle>
+        <DialogContent>
+            <Box sx={{mb: 4}}>
+                <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>
+                    Name
+                </Typography>
+                <TextField
+                    fullWidth
+                    placeholder="Input"
+                    value={editedName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      if (e.target.value.length <= 50) {
+                        handleNameChange(e);
+                      }
+                    }}                      
+                    required
+                    error={!editedName}
+                    helperText={!editedName && "Required"}
+                    InputProps={{
+                        endAdornment: editedName && (
+                            <IconButton size="small" onClick={() => setEditedName('')}>
+                                <ClearIcon fontSize="small" sx={{color: "white"}}/>
+                            </IconButton>
+                        )
+                    }}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            backgroundColor: '#242424',
+                            color: 'white',
+                            '& fieldset': {borderColor: '#333'},
+                            '&:hover fieldset': {borderColor: '#444'},
+                        }
+                    }}
+                />
+            </Box>
+            <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>Name of the Query Engine (can include spaces). {editedName?.length || 0}/50 characters left.</Typography>
+
+            {/* Add Description Field Here */}
+            <Box sx={{mb: 4}}>
+                <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>
+                    Description
+                </Typography>
+                <TextField
+                    fullWidth
+                    placeholder="Enter a brief description"
+                    value={editedDescription}
+                    onChange={(e) => {
+                        if (e.target.value.length <= 75) {
+                            setEditedDescription(e.target.value);
+                        }
+                    }}
+                    InputProps={{
+                        endAdornment: (
+                            <Typography sx={{color: '#888', mr: 1}}>
+                                {editedDescription?.length || 0}/75
+                            </Typography>
+                        ),
+                    }}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            backgroundColor: '#242424',
+                            color: 'white',
+                            '& fieldset': {borderColor: '#333'},
+                            '&:hover fieldset': {borderColor: '#444'},
+                        }
+                    }}
+                />
+            </Box>
+            <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>A brief description of this source.</Typography>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={handleEditModalClose} color="primary">
+                Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} color="primary">
+                Save
+            </Button>
+        </DialogActions>
+    </Dialog>
+    <Dialog open={isViewModalOpen} onClose={handleViewModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
+      Source Info
+      <IconButton onClick={handleViewModalClose}>
+          <Close sx={{color: STYLED_WHITE}} />
+          </IconButton>
+          </DialogTitle>
+            <DialogContent>
+              <List sx={{ color: STYLED_WHITE }}>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Name:" secondary={sourceToView?.name}  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                      </ListItem>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Data URL:" secondary={sourceToView?.doc_url} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                          <IconButton onClick={() => navigator.clipboard.writeText(sourceToView?.doc_url || '')}><ContentCopyIcon sx={{ color: STYLED_WHITE }} /></IconButton>
+                      </ListItem>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Type:" secondary={QUERY_ENGINE_TYPES[sourceToView?.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || sourceToView?.query_engine_type} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                      </ListItem>
+                      <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText primary="Vector Store:" secondary={sourceToView?.vector_store === 'langchain_pgvector' ? 'PG Vector' : 'Vertex Matching Engine'} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText primary="Embedding Type:" secondary={sourceToView?.embedding_type === 'text-embedding-ada-002' ? "text-embedding-ada-002" : "VertexAI-Embedding"} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                          </Box>
+                      </ListItem>
+                      <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText 
+                                  primary="Depth Limit:" 
+                                  secondary={sourceToView ? sourceToView.params?.depth_limit?.toString() : "N/A"} 
+                                  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
+                              />
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText 
+                                  primary="Chunk Size:" 
+                                  secondary={sourceToView ? sourceToView.params?.chunk_size?.toString() : "N/A"} 
+                                  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
+                              />
+                          </Box>
+                      </ListItem>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Agents:" secondary={sourceToView?.agents?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                      </ListItem>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Child Engines:" secondary={sourceToView?.child_engines?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                      </ListItem>
+                      </List>
+                  </DialogContent>
+              </Dialog>
             </Box>
   );
 };
