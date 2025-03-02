@@ -264,10 +264,9 @@ def test_update_query_engine(create_engine, client_with_emulator):
   qe_id = QUERY_ENGINE_EXAMPLE["id"]
   url = f"{api_url}/engine/{qe_id}"
   new_query_engine_fields = {
-    "query_engine": QUERY_ENGINE_EXAMPLE["name"],
+    "name": QUERY_ENGINE_EXAMPLE["name"],
     "description": "New Engine Description",
-    "read_access_group": "2024:11:40:190:203:B1",
-    "doc_url": "",
+    "read_access_group": "2024:11:40:190:203:B1"
   }
   resp = client_with_emulator.put(url, json=new_query_engine_fields)
   json_response = resp.json()
@@ -516,7 +515,7 @@ def test_query_with_chat_mode(mock_generate_summary,
   assert "user_chat" in query_data, "chat data returned"
 
   chat_data = query_data["user_chat"]
-  assert chat_data["user_id"] == USER_EXAMPLE["id"], "chat has correct user"
+  assert chat_data["user_id"] == FAKE_USER_DATA["user_id"], "chat has correct user"
   assert chat_data["llm_type"] == query_params.get("llm_type", None), \
     "chat has correct llm type"
   assert chat_data["title"] == FAKE_CHAT_SUMMARY, "chat has summary as title"

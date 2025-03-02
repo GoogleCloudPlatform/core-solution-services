@@ -14,6 +14,9 @@ from common.utils.kf_job_app import (kube_create_job,
 from common.utils.logging_handler import Logger
 from services.query.data_source import DataSource, DataSourceFile
 from config import PROJECT_ID
+from utils.html_helper import (html_trim_tags,
+                               html_to_text,
+                               html_to_sentence_list)
 
 Logger = Logger.get_logger(__file__)
 
@@ -137,6 +140,23 @@ class WebDataSourceJob(DataSource):
         local_path = os.path.join(temp_dir, doc["Filename"])
         blob.download_to_filename(local_path)
 
+        # clean html in local file
+        if "text/html" in doc["ContentType"]:
+          # First read the file
+          with open(local_path, "r", encoding="utf-8") as f:
+            html_text = f.read()
+
+          # Clean the content
+          clean_content = html_trim_tags(html_text)
+
+          # Write back to the file
+          with open(local_path, "w", encoding="utf-8") as f:
+            f.write(clean_content)
+
+          Logger.info(f"Cleaned HTML for {doc['Filename']} "
+                     f"len [{len(html_text)}] "
+                     f"cleaned [{len(clean_content)}]")
+
         doc_file = DataSourceFile(
             doc_name=doc["Filename"],
             src_url=doc["URL"],
@@ -148,3 +168,12 @@ class WebDataSourceJob(DataSource):
 
     Logger.info(f"Webscraper job completed with {len(doc_files)} files")
     return doc_files
+
+  @classmethod
+  def text_to_sentence_list(cls, text: str) -> List[str]:
+    return html_to_sentence_list(text)
+
+  @classmethod
+  def clean_text(cls, text: str) -> List[str]:
+    html_text = html_to_text(text)
+    return super().clean_text(html_text)

@@ -96,7 +96,7 @@ QUERY_ENGINE_EXAMPLE = {
 }
 
 QUERY_ENGINE_BUILD_EXAMPLE = {
-  "name": "query-engine-build-or-update-test",
+  "name": "query-engine-build-test",
   "query_engine": "qe_llm_service",
   "doc_url": "gs-for-cloud-storage-bucket",
   "embedding_type": "VertexAI-Embedding-Vision",
@@ -106,6 +106,12 @@ QUERY_ENGINE_BUILD_EXAMPLE = {
       "depth_limit": "0",
       "is_multimodal": "True",
       }
+  }
+
+QUERY_ENGINE_UPDATE_EXAMPLE = {
+  "name": "query-engine-update-test",
+  "description": "sample description",
+  "read_access_groups": "testgroup1,testgroup2"
   }
 
 QUERY_RESULT_EXAMPLE = {
