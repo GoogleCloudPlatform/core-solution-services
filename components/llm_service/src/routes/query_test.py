@@ -515,7 +515,8 @@ def test_query_with_chat_mode(mock_generate_summary,
   assert "user_chat" in query_data, "chat data returned"
 
   chat_data = query_data["user_chat"]
-  assert chat_data["user_id"] == FAKE_USER_DATA["user_id"], "chat has correct user"
+  assert chat_data["user_id"] == FAKE_USER_DATA["user_id"], \
+    "chat has correct user"
   assert chat_data["llm_type"] == query_params.get("llm_type", None), \
     "chat has correct llm type"
   assert chat_data["title"] == FAKE_CHAT_SUMMARY, "chat has summary as title"

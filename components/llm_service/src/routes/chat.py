@@ -22,7 +22,7 @@ import io
 from typing import Optional
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from common.models import User, UserChat, QueryEngine, QueryReference
+from common.models import User, UserChat
 from common.models.llm import (CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64,
                                CHAT_FILE_TYPE)
 from common.utils.auth_service import validate_token
@@ -443,8 +443,6 @@ async def create_chat(prompt: str = Form(None),
 
     # Handle prompt-based chat creation
     response_files = None
-    query_result = None
-    query_references = None
     context_files = chat_files or []  # Initialize with any uploaded files
 
     if tool_names:
@@ -643,8 +641,6 @@ async def user_chat_generate(chat_id: str, request: Request):
     stream = genconfig_dict.get("stream", False)
 
     try:
-      query_result = None
-      query_references = None
       context_files = chat_files or []  # Initialize with any uploaded files
 
       if tool_names:
