@@ -56,7 +56,7 @@ DEFAULT_CHUNK_SIZE = 250
 
 # datasource param keys
 CHUNKING_CLASS_PARAM = "chunking_class"
-CHUNK_SIZE_PARAM = "chuck_size"
+CHUNK_SIZE_PARAM = "chunk_size"
 
 class DataSourceFile():
   """ object storing meta data about a data source file """
