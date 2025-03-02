@@ -12,7 +12,14 @@ import {
   Typography,
   styled
 } from '@mui/material';
-import { EditNote, Info, DeleteIcon } from '@mui/icons-material';
+import { 
+  EditNote, 
+  Info, 
+  Delete as DeleteIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Sync as SyncIcon 
+} from '@mui/icons-material';
 import { QueryEngine, QUERY_ENGINE_TYPES } from '../lib/types';
 
 // Styled components
