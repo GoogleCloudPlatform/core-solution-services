@@ -91,7 +91,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
     embedding_type: 'VertexAI-Embedding',
     vector_store: 'langchain_pgvector',
     depth_limit: 0,
-    chunk_size: 100,
+    chunk_size: 500,
     is_multimodal: false,
   });
 
@@ -469,7 +469,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                   </Typography>
                 </Box>
                 <StyledSlider
-                  value={typeof formData.chunk_size === 'number' ? formData.chunk_size : 100}
+                  value={typeof formData.chunk_size === 'number' ? formData.chunk_size : 500}
                   onChange={handleChunkSizeChange}
                   min={100}
                   max={1000}
