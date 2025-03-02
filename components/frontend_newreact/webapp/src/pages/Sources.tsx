@@ -247,12 +247,21 @@ useEffect(() => {
 
       let combinedSources: QueryEngineWithStatus[] = [];
       
-      // Add existing engines with "success" status
+      // First process existing engines
       if (engines) {
-        combinedSources = engines.map((engine) => ({
-          ...engine,
-          status: "success", // Existing engines are considered successful
-        }));
+        combinedSources = engines.map((engine) => {
+          // Check if there's an active build job for this engine
+          const activeJob = buildJobs?.find(job => 
+            job.status === "active" && 
+            job.input_data.query_engine === engine.name
+          );
+
+          return {
+            ...engine,
+            // If there's an active job, status should be "active", otherwise "success"
+            status: activeJob ? "active" : "success",
+          };
+        });
       }
       
       // Add active build jobs that aren't already in the engines list
@@ -298,7 +307,7 @@ useEffect(() => {
             agents: job.input_data.params?.agents ? JSON.parse(job.input_data.params.agents) : [],
             child_engines: job.input_data.params?.associated_engines ? JSON.parse(job.input_data.params.associated_engines) : [],
             is_multimodal: job.input_data.params?.is_multimodal === "True",
-            status: "active" // Mark as active since it's a build job
+            status: "active"  // Always set active jobs as "active"
           };
           
           combinedSources.push(tempEngine);
@@ -336,7 +345,7 @@ useEffect(() => {
         }
       );
 
-      const jobsData = response.data.data; // Ensure correct data extraction
+      const jobsData = response.data.data;
       console.log("Fetched job statuses:", jobsData);
 
       // Check if any jobs have completed
@@ -360,21 +369,25 @@ useEffect(() => {
           );
 
           if (job) {
-            jobRunning = job.status === "active" || jobRunning; // If any job is still running, continue polling
+            jobRunning = job.status === "active" || jobRunning;
+            
+            // If job is active, always show as active
+            if (job.status === "active") {
+              return {
+                ...source,
+                status: "active"
+              };
+            }
+            
             return {
               ...source,
-              status:
-                job.status === "succeeded"
-                  ? "success"
-                  : job.status === "failed"
-                  ? "failed"
-                  : "active", // Map API status to our status
-            };
+              status: job.status === "succeeded" ? "success" : "failed"
+            };            
           }
           
-          // If no job found but source was previously active, check if it's now in engines list
+          // If no job found but source was previously active, keep as active
           if (source.status === "active") {
-            return { ...source, status: "unknown" };
+            return source;
           }
           
           return source; // Keep existing status
