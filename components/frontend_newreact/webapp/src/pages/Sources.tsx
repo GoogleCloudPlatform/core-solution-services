@@ -3,9 +3,7 @@ import {  // Import Material-UI components for building the UI
   Box,
   Typography,
   Table,
-  TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   IconButton,
@@ -17,17 +15,14 @@ import {  // Import Material-UI components for building the UI
   FormControl,
   Icon,
   Menu,
-  ListItemIcon,
   SelectChangeEvent,
-  ListSubheader
 } from '@mui/material';
 import { styled } from '@mui/material/styles'; // Import styling utilities from Material-UI
 import { QueryEngine, QUERY_ENGINE_TYPES } from '../lib/types'; // Import types for query engines
 import { useAuth } from '../contexts/AuthContext'; // Import authentication context
-import { deleteQueryEngine, fetchAllEngines, fetchAllEngineJobs, getEngineJobStatus, updateQueryEngine } from '../lib/api';
+import { deleteQueryEngine, fetchAllEngines, fetchAllEngineJobs, updateQueryEngine } from '../lib/api';
 import { jobsEndpoint } from '../lib/api'
 import AddIcon from '@mui/icons-material/Add'; // Import icons from Material-UI
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -528,9 +523,6 @@ useEffect(() => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h5" sx={{ color: 'white', mb: 1 }} className="font-poppins">Sources</Typography>
-          {/* <Typography variant="body2" sx={{ color: '#888' }}>
-            Brief description of what Sources means and how they're used
-          </Typography> */}
         </Box>
         {/* Add source button */}
         <Button
