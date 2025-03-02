@@ -40,7 +40,6 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGetDetailsResponse)
 from services.llm_generate import llm_chat, generate_chat_summary
 from services.agents.agent_tools import chat_tools, run_chat_tools
-from services.query.query_service import query_generate_for_chat
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
 
 Logger = Logger.get_logger(__file__)
@@ -355,8 +354,6 @@ async def create_chat(prompt: str = Form(None),
                      chat_file: UploadFile = None,
                      chat_file_url: str = Form(None),
                      tool_names: str = Form(None),
-                     query_engine_id: str = Form(None),
-                     query_filter: str = Form(None),
                      user_data: dict = Depends(validate_token)):
   """Create new chat for authenticated user
 
@@ -368,8 +365,6 @@ async def create_chat(prompt: str = Form(None),
       chat_file: optional file to include in chat context
       chat_file_url: optional URL to file to include in chat context
       tool_names: optional JSON string containing list of tool names
-      query_engine_id: optional ID of the query engine to use
-      query_filter: optional JSON string containing query filter
       user_data: dict containing user information from auth token
 
   Returns:
@@ -398,14 +393,6 @@ async def create_chat(prompt: str = Form(None),
         )
 
     user = User.find_by_email(user_data.get("email"))
-
-    # New: Handle query engine if specified
-    query_engine = None
-    if query_engine_id:
-      query_engine = QueryEngine.find_by_id(query_engine_id)
-      if not query_engine:
-        raise ResourceNotFoundException(
-            f"Query engine {query_engine_id} not found")
 
     # Process chat file(s): upload to GCS and determine mime type
     chat_file_bytes = None
@@ -463,27 +450,6 @@ async def create_chat(prompt: str = Form(None),
     if tool_names:
       response, response_files = run_chat_tools(prompt)
     else:
-      if query_engine:
-        # Generate query response if query engine specified
-        query_references, query_content_files = await query_generate_for_chat(
-          user.id,
-          prompt,
-          query_engine,
-          user_data,
-          rank_sentences=False,
-          query_filter=json.loads(query_filter) if query_filter else None
-        )
-
-        # Add query content files to context files
-        if query_content_files:
-          context_files.extend(query_content_files)
-
-        # Add reference text to prompt
-        query_refs_str = QueryReference.reference_list_str(query_references)
-        prompt += "\n\n" + \
-          f"A search of the {query_engine.name} Source produced " \
-          f"these references: {query_refs_str}"
-
       # Normal chat response with combined context files
       response = await llm_chat(prompt,
                             llm_type,
@@ -522,14 +488,6 @@ async def create_chat(prompt: str = Form(None),
         user_chat.update_history(custom_entry={
           CHAT_FILE_BASE64: file["contents"]
         })
-
-    # New: Add query engine results to history
-    if query_engine:
-      user_chat.update_history(
-        query_engine=query_engine,
-        query_result=query_result,
-        query_references=query_references
-      )
 
     user_chat.save()
 
@@ -601,8 +559,6 @@ async def user_chat_generate(chat_id: str, request: Request):
   """
   body = await request.json()
   tool_names = body.get("tool_names")
-  query_engine_id = body.get("query_engine_id")
-  query_filter = body.get("query_filter")
 
   # Parse tool_names if it's a string
   if isinstance(tool_names, str):
@@ -694,31 +650,6 @@ async def user_chat_generate(chat_id: str, request: Request):
       if tool_names:
         response, response_files = run_chat_tools(prompt)
       else:
-        if query_engine_id:
-          query_engine = QueryEngine.find_by_id(query_engine_id)
-          if not query_engine:
-            raise ResourceNotFoundException(
-              f"Query engine {query_engine_id} not found")
-
-          query_references, query_content_files = await query_generate_for_chat(
-            user_chat.user_id,
-            prompt,
-            query_engine,
-            None,  # No user data needed
-            rank_sentences=False,
-            query_filter=query_filter
-          )
-
-          # Add query content files to context files
-          if query_content_files:
-            context_files.extend(query_content_files)
-
-          # Add reference text to prompt
-          query_refs_str = QueryReference.reference_list_str(query_references)
-          prompt += "\n\n" + \
-              f"A search of the {query_engine.name} Source produced " \
-              f"these references: {query_refs_str}"
-
         # Normal chat response with combined context files
         response = await llm_chat(prompt,
                               llm_type,
@@ -736,14 +667,6 @@ async def user_chat_generate(chat_id: str, request: Request):
 
       # save chat history
       user_chat.update_history(prompt=prompt, response=response)
-
-      # New: Add query results to history if present
-      if query_engine_id:
-        user_chat.update_history(
-          query_engine=query_engine,
-          query_result=query_result,
-          query_references=query_references
-        )
 
       if response_files:
         for file in response_files:
