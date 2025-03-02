@@ -314,6 +314,7 @@ useEffect(() => {
       // If there are active jobs, start polling
       const hasActiveJobs = buildJobs && buildJobs.some(job => job.status === "active");
       if (hasActiveJobs) {
+        console.log("Starting polling")
         startPolling();
       }
     } catch (error) {
@@ -384,14 +385,6 @@ useEffect(() => {
         })
       );
 
-      // Stop polling if no jobs are running
-      if (!jobRunning && pollIntervalId !== null) {
-        console.log("No active jobs, stopping job status polling");
-        clearInterval(pollIntervalId);
-        pollIntervalId = null;
-      } else if (jobRunning) {
-        console.log("Jobs still running, continuing to poll");
-      }
     } catch (error) {
       console.error("Error updating job statuses:", error);
     }
@@ -406,7 +399,7 @@ useEffect(() => {
       if (pollIntervalId !== null) {
         clearInterval(pollIntervalId);
       }
-      pollIntervalId = window.setInterval(updateJobStatuses, 1000);
+      pollIntervalId = window.setInterval(updateJobStatuses, 5000);
       console.log("Started polling for job status updates");
     }
   };
@@ -969,8 +962,8 @@ useEffect(() => {
                         </List>
                     </DialogContent>
                 </Dialog>
-                  </TableContainer>
-                </Box>
+              </TableContainer>
+            </Box>
   );
 };
 
