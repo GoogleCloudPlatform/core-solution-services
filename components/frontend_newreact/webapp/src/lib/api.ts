@@ -512,3 +512,43 @@ export const updateChat =
     }
     return axios.put(url, data, { headers }).then(path(["data", "data"]))
   }
+
+export const fetchEmbeddingModels =
+  (token: string, isMultimodal?: boolean) => async (): Promise<ChatModel[] | undefined> => {
+    let url = `${endpoint}/llm/details?is_embedding=True`
+    if (isMultimodal !== undefined) {
+      url += `&is_multimodal=${isMultimodal}`
+    }
+    const headers = { Authorization: `Bearer ${token}` }
+
+    try {
+      const response = await axios.get(url, { headers });
+      const modelDetails: ModelResponse[] = response.data.data;
+
+      if (!modelDetails) return undefined;
+
+      // Transform backend model details into ChatModel objects
+      const embeddingModels: ChatModel[] = modelDetails.map((model: ModelResponse) => {
+        // Calculate if model is new (added in last 30 days)
+        const dateAdded = new Date(model.date_added);
+        const now = new Date();
+        const daysSinceAdded = Math.floor((now.getTime() - dateAdded.getTime()) / (1000 * 60 * 60 * 24));
+        const isNew = daysSinceAdded <= 30;
+
+        return {
+          id: model.id,
+          name: model.name,
+          description: model.description,
+          purposes: model.capabilities,
+          isNew: isNew,
+          isMultimodal: model.is_multi,
+          modelParams: model.model_params
+        };
+      });
+
+      return embeddingModels;
+    } catch (error) {
+      console.error('Error fetching embedding models:', error);
+      throw error;
+    }
+  };

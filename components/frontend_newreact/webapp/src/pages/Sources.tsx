@@ -3,9 +3,7 @@ import {  // Import Material-UI components for building the UI
   Box,
   Typography,
   Table,
-  TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   IconButton,
@@ -17,17 +15,14 @@ import {  // Import Material-UI components for building the UI
   FormControl,
   Icon,
   Menu,
-  ListItemIcon,
   SelectChangeEvent,
-  ListSubheader
 } from '@mui/material';
 import { styled } from '@mui/material/styles'; // Import styling utilities from Material-UI
 import { QueryEngine, QUERY_ENGINE_TYPES } from '../lib/types'; // Import types for query engines
 import { useAuth } from '../contexts/AuthContext'; // Import authentication context
-import { deleteQueryEngine, fetchAllEngines, getEngineJobStatus, updateQueryEngine } from '../lib/api'; // Import API function for fetching engine
+import { deleteQueryEngine, fetchAllEngines, fetchAllEngineJobs, updateQueryEngine } from '../lib/api';
 import { jobsEndpoint } from '../lib/api'
 import AddIcon from '@mui/icons-material/Add'; // Import icons from Material-UI
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -39,6 +34,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, List, ListItem, ListItemText, TextField } from "@mui/material";
 import axios from 'axios';
 import ClearIcon from '@mui/icons-material/Clear';
+import SourcesTable from '../components/SourcesTable';
 
 
 const STYLED_WHITE= 'white';
@@ -230,22 +226,101 @@ useEffect(() => {
   if (!user?.token) return;
 
   let pollIntervalId: number | null = null;
+  let refreshIntervalId: number | null = null;
 
   /**
-   * Fetch all query engines and initialize them with "unknown" status.
+   * Fetch all query engines and initialize them with status.
    */
   const loadSources = async () => {
     try {
-      const engines = await fetchAllEngines(user.token)();
+      setLoading(true);
+      setError(null);
+      
+      // Fetch both existing engines and build jobs
+      const [engines, buildJobs] = await Promise.all([
+        fetchAllEngines(user.token)(),
+        fetchAllEngineJobs(user.token)()
+      ]);
+      
       console.log("Fetched sources:", engines);
+      console.log("Fetched build jobs:", buildJobs);
 
+      let combinedSources: QueryEngineWithStatus[] = [];
+      
+      // First process existing engines
       if (engines) {
-        setSources(
-          engines.map((engine) => ({
+        combinedSources = engines.map((engine) => {
+          // Check if there's an active build job for this engine
+          const activeJob = buildJobs?.find(job => 
+            job.status === "active" && 
+            job.input_data.query_engine === engine.name
+          );
+
+          return {
             ...engine,
-            status: "unknown",
-          }))
+            // If there's an active job, status should be "active", otherwise "success"
+            status: activeJob ? "active" : "success",
+          };
+        });
+      }
+      
+      // Add active build jobs that aren't already in the engines list
+      if (buildJobs) {
+        const activeJobs = buildJobs.filter(job => 
+          job.status === "active" && 
+          (!engines || !engines.some(engine => engine.name === job.input_data.query_engine))
         );
+        
+        // Convert build jobs to QueryEngine format and add to sources
+        activeJobs.forEach(job => {
+          // Create a temporary QueryEngine object from the job data
+          const tempEngine: QueryEngineWithStatus = {
+            id: job.id, // Use job ID temporarily
+            name: job.input_data.query_engine,
+            description: job.input_data.description || "",
+            query_engine_type: job.input_data.query_engine_type,
+            doc_url: job.input_data.doc_url,
+            embedding_type: job.input_data.embedding_type,
+            vector_store: job.input_data.vector_store,
+            created_time: job.created_time,
+            created_by: job.created_by,
+            last_modified_time: job.last_modified_time,
+            last_modified_by: job.last_modified_by,
+            archived_at_timestamp: null,
+            archived_by: "",
+            deleted_at_timestamp: null,
+            deleted_by: "",
+            llm_type: null,
+            parent_engine_id: "",
+            user_id: job.input_data.user_id,
+            is_public: false,
+            index_id: null,
+            index_name: null,
+            endpoint: null,
+            manifest_url: job.input_data.params?.manifest_url || null,
+            params: {
+              is_multimodal: "false",
+              ...job.input_data.params
+            },
+            depth_limit: parseInt(job.input_data.params?.depth_limit || "3"),
+            chunk_size: parseInt(job.input_data.params?.chunk_size || "1024"),
+            agents: job.input_data.params?.agents ? JSON.parse(job.input_data.params.agents) : [],
+            child_engines: job.input_data.params?.associated_engines ? JSON.parse(job.input_data.params.associated_engines) : [],
+            is_multimodal: job.input_data.params?.is_multimodal === "True",
+            status: "active"  // Always set active jobs as "active"
+          };
+          
+          combinedSources.push(tempEngine);
+        });
+      }
+      
+      setSources(combinedSources);
+      
+      // If there are active jobs, start polling
+      const hasActiveJobs = buildJobs && buildJobs.some(job => job.status === "active");
+      if (hasActiveJobs) {
+        console.log("Starting polling")
+        startPolling();
       }
     } catch (error) {
       setError("Failed to load sources");
@@ -270,39 +345,55 @@ useEffect(() => {
         }
       );
 
-      const jobsData = response.data.data; // Ensure correct data extraction
+      const jobsData = response.data.data;
       console.log("Fetched job statuses:", jobsData);
+
+      // Check if any jobs have completed
+      const completedJobs = jobsData.filter(job => 
+        (job.status === "succeeded" || job.status === "failed") && 
+        sources.some(source => source.name === job.input_data.query_engine && source.status === "active")
+      );
+      
+      // If any jobs completed, refresh the entire source list
+      if (completedJobs.length > 0) {
+        console.log("Jobs completed, refreshing source list:", completedJobs);
+        loadSources();
+        return;
+      }
 
       setSources((prevSources) =>
         prevSources.map((source) => {
-          // Find the job for this engine using the correct ID field
+          // Find the job for this engine
           const job = jobsData.find(
             (j: JobStatusResponse) => j.input_data.query_engine === source.name
           );
 
           if (job) {
-            jobRunning = job.status === "active"; // If any job is still running, continue polling
+            jobRunning = job.status === "active" || jobRunning;
+            
+            // If job is active, always show as active
+            if (job.status === "active") {
+              return {
+                ...source,
+                status: "active"
+              };
+            }
+            
             return {
               ...source,
-              status:
-                job.status === "succeeded"
-                  ? "success"
-                  : job.status === "failed"
-                  ? "failed"
-                  : job.status, // Preserve existing statuses
-            };
-          } else {
-            console.warn(`No job found for ${source.name} (${source.id}).`);
-            return { ...source, status: "failed" }; // Mark missing jobs as "failed"
+              status: job.status === "succeeded" ? "success" : "failed"
+            };            
           }
+          
+          // If no job found but source was previously active, keep as active
+          if (source.status === "active") {
+            return source;
+          }
+          
+          return source; // Keep existing status
         })
       );
 
-      // Stop polling if no jobs are running
-      if (!jobRunning && pollIntervalId !== null) {
-        clearInterval(pollIntervalId);
-        pollIntervalId = null;
-      }
     } catch (error) {
       console.error("Error updating job statuses:", error);
     }
@@ -313,16 +404,54 @@ useEffect(() => {
    */
   const startPolling = () => {
     if (!pollIntervalId) {
-      pollIntervalId = window.setInterval(updateJobStatuses, 1000);
+      // Clear any existing interval first to prevent duplicates
+      if (pollIntervalId !== null) {
+        clearInterval(pollIntervalId);
+      }
+      pollIntervalId = window.setInterval(updateJobStatuses, 5000);
+      console.log("Started polling for job status updates");
     }
   };
 
-  loadSources().then(startPolling);
+  /**
+   * Start periodic refresh of all sources
+   * This ensures we catch new sources created by other users
+   * and completed jobs that might have been missed
+   */
+  const startPeriodicRefresh = () => {
+    if (!refreshIntervalId) {
+      // Clear any existing interval first
+      if (refreshIntervalId !== null) {
+        clearInterval(refreshIntervalId);
+      }
+      // Refresh every 10 seconds
+      refreshIntervalId = window.setInterval(() => {
+        console.log("Performing periodic refresh of all sources");
+        loadSources();
+      }, 10000); // 10 seconds
+      console.log("Started periodic refresh of all sources");
+    }
+  };
+
+  // Initial load of sources
+  loadSources();
+
+  // Set up polling immediately to check for any active jobs
+  startPolling();
+  
+  // Start periodic refresh to catch new sources and completed jobs
+  startPeriodicRefresh();
 
   return () => {
+    // Clean up all intervals when component unmounts
     if (pollIntervalId !== null) {
       clearInterval(pollIntervalId);
-      pollIntervalId = null;
+      console.log("Stopped polling for job status updates");
+    }
+    
+    if (refreshIntervalId !== null) {
+      clearInterval(refreshIntervalId);
+      console.log("Stopped periodic refresh of all sources");
     }
   };
 }, [user]);
@@ -407,9 +536,6 @@ useEffect(() => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h5" sx={{ color: 'white', mb: 1 }} className="font-poppins">Sources</Typography>
-          {/* <Typography variant="body2" sx={{ color: '#888' }}>
-            Brief description of what Sources means and how they're used
-          </Typography> */}
         </Box>
         {/* Add source button */}
         <Button
@@ -585,124 +711,144 @@ useEffect(() => {
       </Box>
 
       {/* Table to display Sources */}
-      <TableContainer sx={{ backgroundColor: 'transparent' }}>
-        <Table>
-          <TableHead> {/* Table header */}
-            <TableRow>
-              <StyledTableCell padding="checkbox"> {/* Checkbox for selecting all */}
-                <Checkbox
-                  checked={selectedSources.length === sources.length && sources.length > 0} // Check if all sources are selected
-                  indeterminate={selectedSources.length > 0 && selectedSources.length < sources.length} // Show indeterminate state if some are selected
-                  onChange={handleSelectAll} // Handle select all
-                  sx={{ color: 'white' }}
-                />
-              </StyledTableCell>
-              <StyledTableCell>Name</StyledTableCell> {/* Header cells */}
-              <StyledTableCell>Description</StyledTableCell> {/* New Description Column */}
-              <StyledTableCell>Job Status</StyledTableCell>
-              <StyledTableCell>Type</StyledTableCell>
-              <StyledTableCell>Created</StyledTableCell>
-              <StyledTableCell align="right"></StyledTableCell> {/* Placeholder for actions/menu */}
+      <SourcesTable 
+        sources={sources}
+        selectedSources={selectedSources}
+        onSelectAll={handleSelectAll}
+        onSelectSource={handleSelectSource}
+        onEditClick={handleEditClick}
+        onViewClick={handleViewClick} 
+        onDeleteClick={handleDeleteClick}
+        typeFilter={typeFilter}
+        jobStatusFilter={jobStatusFilter}
+        currentPage={currentPage}
+        rowsPerPage={rowsPerPage}
+      />
 
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sources
-              .filter((source) =>
-                (jobStatusFilter === "all" || source.status === jobStatusFilter) &&
-                (typeFilter === "all" || source.query_engine_type === typeFilter)
-            )
-            
-              .slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage) // ⬅️ Pagination applied here
-              .map((source) => (
-                <StyledTableRow key={source.id}>
-                  <StyledTableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedSources.includes(source.id)}
-                      onChange={() => handleSelectSource(source.id)}
-                      sx={{ color: 'white' }}
-                    />
-                  </StyledTableCell>
-                  <StyledTableCell>{source.name}</StyledTableCell>
-                  <StyledTableCell>{source.description}</StyledTableCell> {/* Description */}
-                  <StyledTableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {getStatusIcon(source.status)}
-                      {source.status ?? "unknown"} {/* Display text as well (handle undefined) */}
+      {/* 🔹 Delete Confirmation Dialog - Add This Here */}
+      <Dialog open={deleteDialogOpen} onClose={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} PaperProps={{ sx: { backgroundColor: '#333537' } }}>
+        <DialogTitle sx={{color: STYLED_WHITE}}>Confirm Deletion</DialogTitle>
+          <DialogContent>
+            <DialogContentText sx={{ color: 'white' }}>
+              Are you sure you want to delete the following source(s)? This action cannot be undone.
+            </DialogContentText>
+          {sourcesToDelete.length === 1 && (
+              <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1 }}>
+                <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>Source Name:</Typography>
+                <Typography sx={{ color: 'white' }}>{sources.find((s) => s.id === sourcesToDelete[0])?.name}</Typography>
+              </Box>
+            )}
+                    {sourcesToDelete.length > 1 && (
+                    <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1, }}>
+                      <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>Source Names:</Typography>
+                        <List sx={{color: STYLED_WHITE}}>
+                        {sourcesToDelete.map((sourceId) => {
+                          const sourceName = sources.find(s => s.id === sourceId)?.name || sourceId;
+                          return (
+                          <ListItem key={sourceId} sx={{borderBottom: '1px solid #888'}}>
+                              <ListItemText primary={sourceName} />
+                          </ListItem>
+                          )}
+                        )}
+                      </List>
                     </Box>
-                  </StyledTableCell>
-                  <StyledTableCell>
-                    {QUERY_ENGINE_TYPES[source.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] ||
-                      source.query_engine_type}
-                  </StyledTableCell>
-                  <StyledTableCell>{new Date(source.created_time).toLocaleDateString()}</StyledTableCell>
-                  
-                  {/* Three-dot menu */}
-                  <StyledTableCell align="left">
-                    <Tooltip title="Edit Source">
-                      <IconButton onClick={() => handleEditClick(source.id)}>
-                      <EditNote sx={{ color: "white" }} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="View Source">
-                      <IconButton
-                        onClick={() => {                            
-                            handleViewClick(source.id);
-                        }
-                      }
-                      >
-                        <Info sx={{ color: "white" }} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Source">
-                      <IconButton onClick={() => handleDeleteClick(source.id)}>
-                        <DeleteIcon sx={{ color: "red" }} />
-                      </IconButton>
-                    </Tooltip>
-                  </StyledTableCell>
-                </StyledTableRow>
-              ))}
-          </TableBody>
-        </Table>
-        {/* 🔹 Delete Confirmation Dialog - Add This Here */}
-        <Dialog open={deleteDialogOpen} onClose={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} PaperProps={{ sx: { backgroundColor: '#333537' } }}>
-          <DialogTitle sx={{color: STYLED_WHITE}}>Confirm Deletion</DialogTitle>
-            <DialogContent>
-              <DialogContentText sx={{ color: 'white' }}>
-                Are you sure you want to delete the following source(s)? This action cannot be undone.
-              </DialogContentText>
-            {sourcesToDelete.length === 1 && (
-                <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1 }}>
-                  <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>Source Name:</Typography>
-                  <Typography sx={{ color: 'white' }}>{sources.find((s) => s.id === sourcesToDelete[0])?.name}</Typography>
-                </Box>
-              )}
-                          {sourcesToDelete.length > 1 && (
-                          <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1, }}>
-                            <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>Source Names:</Typography>
-                              <List sx={{color: STYLED_WHITE}}>
-                              {sourcesToDelete.map((sourceId) => {
-                                const sourceName = sources.find(s => s.id === sourceId)?.name || sourceId;
-                                return (
-                                <ListItem key={sourceId} sx={{borderBottom: '1px solid #888'}}>
-                                    <ListItemText primary={sourceName} />
-                                </ListItem>
-                                )}
-                              )}
-                            </List>
-                          </Box>
-                        )};
+                  )};
 
-            {sourcesToDelete.length > 1 && <List sx={{color: STYLED_WHITE}}>
-          </List>
-            }</DialogContent>
+          {sourcesToDelete.length > 1 && <List sx={{color: STYLED_WHITE}}>
+        </List>
+          }</DialogContent>
+      <DialogActions>
+        <Button onClick={() => {setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null);}} color="primary">
+          Cancel
+        </Button>
+        <Button onClick={confirmDeleteSources} color="error" startIcon={<DeleteIcon />} variant="contained" sx={{ backgroundColor: '#F2B8B5', borderRadius: '20px', textTransform: 'none', color: '#601410' }}>
+            Delete Source
+        </Button>
+      </DialogActions>
+    </Dialog>
+    <Dialog open={isEditModalOpen} onClose={handleEditModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            Edit Source
+            <IconButton onClick={handleEditModalClose}>
+                <Close />
+            </IconButton>
+        </DialogTitle>
+        <DialogContent>
+            <Box sx={{mb: 4}}>
+                <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>
+                    Name
+                </Typography>
+                <TextField
+                    fullWidth
+                    placeholder="Input"
+                    value={editedName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      if (e.target.value.length <= 50) {
+                        handleNameChange(e);
+                      }
+                    }}                      
+                    required
+                    error={!editedName}
+                    helperText={!editedName && "Required"}
+                    InputProps={{
+                        endAdornment: editedName && (
+                            <IconButton size="small" onClick={() => setEditedName('')}>
+                                <ClearIcon fontSize="small" sx={{color: "white"}}/>
+                            </IconButton>
+                        )
+                    }}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            backgroundColor: '#242424',
+                            color: 'white',
+                            '& fieldset': {borderColor: '#333'},
+                            '&:hover fieldset': {borderColor: '#444'},
+                        }
+                    }}
+                />
+            </Box>
+            <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>Name of the Query Engine (can include spaces). {editedName?.length || 0}/50 characters left.</Typography>
+
+            {/* Add Description Field Here */}
+            <Box sx={{mb: 4}}>
+                <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>
+                    Description
+                </Typography>
+                <TextField
+                    fullWidth
+                    placeholder="Enter a brief description"
+                    value={editedDescription}
+                    onChange={(e) => {
+                        if (e.target.value.length <= 75) {
+                            setEditedDescription(e.target.value);
+                        }
+                    }}
+                    InputProps={{
+                        endAdornment: (
+                            <Typography sx={{color: '#888', mr: 1}}>
+                                {editedDescription?.length || 0}/75
+                            </Typography>
+                        ),
+                    }}
+                    sx={{
+                        '& .MuiOutlinedInput-root': {
+                            backgroundColor: '#242424',
+                            color: 'white',
+                            '& fieldset': {borderColor: '#333'},
+                            '&:hover fieldset': {borderColor: '#444'},
+                        }
+                    }}
+                />
+            </Box>
+            <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>A brief description of this source.</Typography>
+        </DialogContent>
         <DialogActions>
-          <Button onClick={() => {setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null);}} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={confirmDeleteSources} color="error" startIcon={<DeleteIcon />} variant="contained" sx={{ backgroundColor: '#F2B8B5', borderRadius: '20px', textTransform: 'none', color: '#601410' }}>
-              Delete Source
-          </Button>
+            <Button onClick={handleEditModalClose} color="primary">
+                Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} color="primary">
+                Save
+            </Button>
         </DialogActions>
       </Dialog>
       <Dialog open={isEditModalOpen} onClose={handleEditModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
@@ -712,138 +858,52 @@ useEffect(() => {
                   <Close />
               </IconButton>
           </DialogTitle>
-          <DialogContent>
-              <Box sx={{mb: 4}}>
-                  <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>
-                      Name
-                  </Typography>
-                  <TextField
-                      fullWidth
-                      placeholder="Input"
-                      value={editedName}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        if (e.target.value.length <= 50) {
-                          handleNameChange(e);
-                        }
-                      }}                      
-                      required
-                      error={!editedName}
-                      helperText={!editedName && "Required"}
-                      InputProps={{
-                          endAdornment: editedName && (
-                              <IconButton size="small" onClick={() => setEditedName('')}>
-                                  <ClearIcon fontSize="small" sx={{color: "white"}}/>
-                              </IconButton>
-                          )
-                      }}
-                      sx={{
-                          '& .MuiOutlinedInput-root': {
-                              backgroundColor: '#242424',
-                              color: 'white',
-                              '& fieldset': {borderColor: '#333'},
-                              '&:hover fieldset': {borderColor: '#444'},
-                          }
-                      }}
-                  />
-              </Box>
-              <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>Name of the Query Engine (can include spaces). {editedName?.length || 0}/50 characters left.</Typography>
-
-              {/* Add Description Field Here */}
-              <Box sx={{mb: 4}}>
-                  <Typography variant="caption" sx={{color: '#888', mb: 1, display: 'block'}}>
-                      Description
-                  </Typography>
-                  <TextField
-                      fullWidth
-                      placeholder="Enter a brief description"
-                      value={editedDescription}
-                      onChange={(e) => {
-                          if (e.target.value.length <= 75) {
-                              setEditedDescription(e.target.value);
-                          }
-                      }}
-                      InputProps={{
-                          endAdornment: (
-                              <Typography sx={{color: '#888', mr: 1}}>
-                                  {editedDescription?.length || 0}/75
-                              </Typography>
-                          ),
-                      }}
-                      sx={{
-                          '& .MuiOutlinedInput-root': {
-                              backgroundColor: '#242424',
-                              color: 'white',
-                              '& fieldset': {borderColor: '#333'},
-                              '&:hover fieldset': {borderColor: '#444'},
-                          }
-                      }}
-                  />
-              </Box>
-              <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>A brief description of this source.</Typography>
-          </DialogContent>
-          <DialogActions>
-              <Button onClick={handleEditModalClose} color="primary">
-                  Cancel
-              </Button>
-              <Button onClick={handleSaveEdit} color="primary">
-                  Save
-              </Button>
-          </DialogActions>
-      </Dialog>
-      <Dialog open={isViewModalOpen} onClose={handleViewModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
-        Source Info
-        <IconButton onClick={handleViewModalClose}>
-            <Close sx={{color: STYLED_WHITE}} />
-            </IconButton>
-            </DialogTitle>
-              <DialogContent>
-                <List sx={{ color: STYLED_WHITE }}>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Name:" secondary={sourceToView?.name}  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
-                        </ListItem>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Data URL:" secondary={sourceToView?.doc_url} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                            <IconButton onClick={() => navigator.clipboard.writeText(sourceToView?.doc_url || '')}><ContentCopyIcon sx={{ color: STYLED_WHITE }} /></IconButton>
-                        </ListItem>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Type:" secondary={QUERY_ENGINE_TYPES[sourceToView?.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || sourceToView?.query_engine_type} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                        </ListItem>
-                        <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
-                            <Box sx={{ flex: 1 }}>
-                                <ListItemText primary="Vector Store:" secondary={sourceToView?.vector_store === 'langchain_pgvector' ? 'PG Vector' : 'Vertex Matching Engine'} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                            </Box>
-                            <Box sx={{ flex: 1 }}>
-                                <ListItemText primary="Embedding Type:" secondary={sourceToView?.embedding_type === 'text-embedding-ada-002' ? "text-embedding-ada-002" : "VertexAI-Embedding"} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                            </Box>
-                        </ListItem>
-                        <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
-                            <Box sx={{ flex: 1 }}>
-                                <ListItemText 
-                                    primary="Depth Limit:" 
-                                    secondary={sourceToView ? sourceToView.params?.depth_limit?.toString() : "N/A"} 
-                                    sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
-                                />
-                            </Box>
-                            <Box sx={{ flex: 1 }}>
-                                <ListItemText 
-                                    primary="Chunk Size:" 
-                                    secondary={sourceToView ? sourceToView.params?.chunk_size?.toString() : "N/A"} 
-                                    sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
-                                />
-                            </Box>
-                        </ListItem>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Agents:" secondary={sourceToView?.agents?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                        </ListItem>
-                        <ListItem sx={{borderBottom: '1px solid #888'}}>
-                            <ListItemText primary="Child Engines:" secondary={sourceToView?.child_engines?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
-                        </ListItem>
-                        </List>
-                    </DialogContent>
-                </Dialog>
-                  </TableContainer>
-                </Box>
+            <DialogContent>
+              <List sx={{ color: STYLED_WHITE }}>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Name:" secondary={sourceToView?.name}  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                      </ListItem>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Data URL:" secondary={sourceToView?.doc_url} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                          <IconButton onClick={() => navigator.clipboard.writeText(sourceToView?.doc_url || '')}><ContentCopyIcon sx={{ color: STYLED_WHITE }} /></IconButton>
+                      </ListItem>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Type:" secondary={QUERY_ENGINE_TYPES[sourceToView?.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || sourceToView?.query_engine_type} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                      </ListItem>
+                      <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText primary="Vector Store:" secondary={sourceToView?.vector_store === 'langchain_pgvector' ? 'PG Vector' : 'Vertex Matching Engine'} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText primary="Embedding Type:" secondary={sourceToView?.embedding_type === 'text-embedding-ada-002' ? "text-embedding-ada-002" : "VertexAI-Embedding"} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                          </Box>
+                      </ListItem>
+                      <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText 
+                                  primary="Depth Limit:" 
+                                  secondary={sourceToView ? sourceToView.params?.depth_limit?.toString() : "N/A"} 
+                                  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
+                              />
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                              <ListItemText 
+                                  primary="Chunk Size:" 
+                                  secondary={sourceToView ? sourceToView.params?.chunk_size?.toString() : "N/A"} 
+                                  sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
+                              />
+                          </Box>
+                      </ListItem>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Agents:" secondary={sourceToView?.agents?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                      </ListItem>
+                      <ListItem sx={{borderBottom: '1px solid #888'}}>
+                          <ListItemText primary="Child Engines:" secondary={sourceToView?.child_engines?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}/>
+                      </ListItem>
+                      </List>
+                  </DialogContent>
+              </Dialog>
+            </Box>
   );
 };
 

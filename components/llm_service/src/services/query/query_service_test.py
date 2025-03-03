@@ -55,8 +55,7 @@ from services.query.query_service import (query_generate,
                                           query_engine_build,
                                           process_documents,
                                           build_doc_index,
-                                          retrieve_references,
-                                          query_generate_for_chat)
+                                          retrieve_references)
 from services.query.vector_store import VectorStore
 from services.query.data_source import DataSource, DataSourceFile
 
@@ -600,107 +599,3 @@ async def test_process_documents_textonly(mock_get_datasource, create_engine):
   assert {doc.doc_url for doc in docs_processed} == \
          {DSF1.src_url, DSF2.src_url}
   assert set(docs_not_processed) == {DSF3.src_url}
-
-@pytest.mark.asyncio
-@mock.patch("services.query.query_service.embeddings.get_embeddings")
-@mock.patch("services.query.query_service.vector_store_from_query_engine")
-async def test_query_generate_for_chat(mock_get_vector_store,
-                                     mock_get_embeddings,
-                                     create_engine, create_user,
-                                     create_query_docs,
-                                     create_query_doc_chunks):
-  """Test query generation for chat context"""
-  # Mock embeddings and vector store
-  mock_get_embeddings.return_value = [True, True, True, True], [0,1,2,3]
-  mock_get_vector_store.return_value = FakeVectorStore()
-
-  prompt = QUERY_EXAMPLE["prompt"]
-  query_references, content_files = await query_generate_for_chat(
-    create_user.id,
-    prompt,
-    create_engine,
-    rank_sentences=False
-  )
-
-  # Verify references were retrieved
-  assert len(query_references) == len(create_query_doc_chunks)
-  assert query_references[0].chunk_id == create_query_doc_chunks[0].id
-  assert query_references[1].chunk_id == create_query_doc_chunks[1].id
-  assert query_references[2].chunk_id == create_query_doc_chunks[2].id
-
-  # Verify content files were extracted from non-text references
-  content_files_by_url = {f.gcs_path: f for f in content_files}
-  for ref in query_references:
-    if ref.modality != "text" and ref.chunk_url:
-      assert ref.chunk_url in content_files_by_url
-      assert content_files_by_url[ref.chunk_url].mime_type is not None
-
-@pytest.mark.asyncio
-@mock.patch("services.query.query_service.embeddings.get_embeddings")
-@mock.patch("services.query.query_service.vector_store_from_query_engine")
-async def test_query_generate_for_chat_with_filter(mock_get_vector_store,
-                                                 mock_get_embeddings,
-                                                 create_engine, create_user,
-                                                 create_query_docs,
-                                                 create_query_doc_chunks):
-  """Test query generation for chat with filter"""
-  mock_get_embeddings.return_value = [True, True, True, True], [0,1,2,3]
-  mock_get_vector_store.return_value = FakeVectorStore()
-
-  prompt = QUERY_EXAMPLE["prompt"]
-  test_filter = {"key": "value"}
-
-  # Mock to verify filter is passed through
-  mock_vector_store = FakeVectorStore()
-  mock_get_vector_store.return_value = mock_vector_store
-  mock_similarity_search = mock.Mock(return_value=[0,1,2])
-  mock_vector_store.similarity_search = mock_similarity_search
-
-  await query_generate_for_chat(
-    create_user.id,
-    prompt,
-    create_engine,
-    query_filter=test_filter
-  )
-
-  # Verify filter was passed to similarity search
-  mock_similarity_search.assert_called_once()
-  _, _, passed_filter = mock_similarity_search.call_args[0]
-  assert passed_filter == test_filter
-
-@pytest.mark.asyncio
-@mock.patch("services.query.query_service.embeddings.get_embeddings")
-@mock.patch("services.query.query_service.vector_store_from_query_engine")
-async def test_query_generate_for_chat_auth_filter(mock_get_vector_store,
-                                                 mock_get_embeddings,
-                                                 create_engine, create_user,
-                                                 create_query_docs,
-                                                 create_query_doc_chunks):
-  """Test query generation applies auth filter"""
-  mock_get_embeddings.return_value = [True, True, True, True], [0,1,2,3]
-  mock_get_vector_store.return_value = FakeVectorStore()
-
-  prompt = QUERY_EXAMPLE["prompt"]
-  test_filter = {"key": "value"}
-  test_auth = {"auth": "filter"}
-
-  # Mock to verify filters are merged
-  mock_vector_store = FakeVectorStore()
-  mock_get_vector_store.return_value = mock_vector_store
-  mock_similarity_search = mock.Mock(return_value=[0,1,2])
-  mock_vector_store.similarity_search = mock_similarity_search
-
-  with mock.patch("services.query.query_service.create_authz_filter",
-                 return_value=test_auth):
-    await query_generate_for_chat(
-      create_user.id,
-      prompt,
-      create_engine,
-      user_data={"some": "data"},
-      query_filter=test_filter
-    )
-
-  # Verify filters were merged
-  mock_similarity_search.assert_called_once()
-  _, _, passed_filter = mock_similarity_search.call_args[0]
-  assert passed_filter == {**test_filter, **test_auth}

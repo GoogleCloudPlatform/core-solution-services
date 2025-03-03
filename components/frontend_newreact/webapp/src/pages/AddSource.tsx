@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { createQueryEngine, fetchAllEngines } from '../lib/api';
-import { QUERY_ENGINE_TYPES, QUERY_ENGINE_DEFAULT_TYPE, QueryEngine } from '../lib/types';
+import { createQueryEngine, fetchAllEngines, fetchEmbeddingModels } from '../lib/api';
+import { QUERY_ENGINE_TYPES, QUERY_ENGINE_DEFAULT_TYPE, QueryEngine, ChatModel } from '../lib/types';
 import {
   Avatar,
   Menu,
@@ -80,6 +80,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
   const [sources, setSources] = useState<QueryEngine[]>([]);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [embeddingModels, setEmbeddingModels] = useState<ChatModel[]>([]);
 
 
   const [formData, setFormData] = useState<Partial<QueryEngine>>({
@@ -87,12 +88,34 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
     description: '',
     query_engine_type: QUERY_ENGINE_DEFAULT_TYPE,
     doc_url: '',
-    embedding_type: 'text-embedding-ada-002',
+    embedding_type: 'VertexAI-Embedding',
     vector_store: 'langchain_pgvector',
     depth_limit: 0,
-    chunk_size: 100,
+    chunk_size: 500,
     is_multimodal: false,
   });
+
+  // Fetch embedding models when component mounts
+  useEffect(() => {
+    const loadEmbeddingModels = async () => {
+      if (user?.token) {
+        try {
+          const models = await fetchEmbeddingModels(user.token)();
+          if (models && models.length > 0) {
+            setEmbeddingModels(models);
+            // Set default embedding type to the first model's id if available
+            if (models[0]?.id) {
+              handleChange('embedding_type', models[0].id);
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching embedding models:", err);
+        }
+      }
+    };
+    
+    loadEmbeddingModels();
+  }, [user?.token]);
 
   const handleChange = (field: keyof QueryEngine, value: any) => {
     setFormData(prev => ({
@@ -427,7 +450,15 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                       },
                     }}
                   >
-                    <MenuItem value="VertexAI-Embedding">text-embedding-ada-002</MenuItem>
+                    {embeddingModels.length > 0 ? (
+                      embeddingModels.map((model) => (
+                        <MenuItem key={model.id} value={model.id}>
+                          {model.name}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem value="VertexAI-Embedding">Vertex AI Text Embeddings</MenuItem>
+                    )}
                   </StyledSelect>
                 </Box>
               </Box>
@@ -442,7 +473,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                   </Typography>
                 </Box>
                 <StyledSlider
-                  value={typeof formData.chunk_size === 'number' ? formData.chunk_size : 100}
+                  value={typeof formData.chunk_size === 'number' ? formData.chunk_size : 500}
                   onChange={handleChunkSizeChange}
                   min={100}
                   max={1000}
@@ -547,7 +578,14 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                   <ListItemText primary="Vector Store:" secondary={formData?.vector_store === 'langchain_pgvector' ? 'PG Vector' : 'Vertex Matching Engine'} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <ListItemText primary="Embedding Type:" secondary={formData?.embedding_type === 'text-embedding-ada-002' ? "text-embedding-ada-002" : "VertexAI-Embedding"} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                  <ListItemText 
+                    primary="Embedding Type:" 
+                    secondary={
+                      embeddingModels.find(model => model.id === formData?.embedding_type)?.name || 
+                      formData?.embedding_type
+                    } 
+                    sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
+                  />
                 </Box>
               </ListItem>
               <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
