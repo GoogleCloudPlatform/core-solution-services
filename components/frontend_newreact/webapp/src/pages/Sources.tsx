@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'; // Import necessary hooks for state management and side effects
+import { useCallback, useEffect, useState } from 'react'; // Import necessary hooks for state management and side effects
 import {  // Import Material-UI components for building the UI
   Box,
   Typography,
@@ -655,57 +655,57 @@ useEffect(() => {
           <Box sx={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography sx={{ color: 'white' }}>Rows per page</Typography>
             <StyledSelect
-              value={rowsPerPage}
+              value={totalRows === 0 ? 10 : rowsPerPage}  // Reset to 10 if no rows exist
               onChange={handleRowsPerPageChange}
               IconComponent={KeyboardArrowDownIcon}
               MenuProps={{ PaperProps: { sx: { backgroundColor: "#242424" } } }}
+              disabled={totalRows === 0} // Disable dropdown when no rows exist
             >
               <MenuItem value={10}>10</MenuItem>
               <MenuItem value={20}>20</MenuItem>
               <MenuItem value={50}>50</MenuItem>
             </StyledSelect>
+
             <Typography sx={{ color: 'white' }}>
-              {`${(currentPage - 1) * rowsPerPage + 1} - ${Math.min(currentPage * rowsPerPage, totalRows)} of ${totalRows}`}
+              {totalRows === 0
+                ? "0 of 0"
+                : `${(currentPage - 1) * rowsPerPage + 1} - ${Math.min(currentPage * rowsPerPage, totalRows)} of ${totalRows}`}
             </Typography>
-            <IconButton 
-                sx={{ 
-                  color: '#C4C7C5', 
-                  '&.Mui-disabled': { color: '#333' } 
-                }} 
-                onClick={onClickFirstPage} 
-                disabled={currentPage === 1}
-              >
-                <FirstPage />
+
+            {/* First Page Button */}
+            <IconButton
+              sx={{ color: '#C4C7C5', '&.Mui-disabled': { color: '#333' } }}
+              onClick={onClickFirstPage}
+              disabled={currentPage === 1 || totalRows === 0} // Disable if no rows exist
+            >
+              <FirstPage />
             </IconButton>
-            <IconButton 
-                sx={{ 
-                  color: '#C4C7C5', 
-                  '&.Mui-disabled': { color: '#333' } 
-                }} 
-                onClick={onClickPreviousPage} 
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft />
+
+            {/* Previous Page Button */}
+            <IconButton
+              sx={{ color: '#C4C7C5', '&.Mui-disabled': { color: '#333' } }}
+              onClick={onClickPreviousPage}
+              disabled={currentPage === 1 || totalRows === 0} // Disable if no rows exist
+            >
+              <ChevronLeft />
             </IconButton>
-            <IconButton 
-                sx={{ 
-                  color: '#C4C7C5', 
-                  '&.Mui-disabled': { color: '#333' } 
-                }} 
-                onClick={onClickNextPage} 
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight />
+
+            {/* Next Page Button */}
+            <IconButton
+              sx={{ color: '#C4C7C5', '&.Mui-disabled': { color: '#333' } }}
+              onClick={onClickNextPage}
+              disabled={currentPage === totalPages || totalRows === 0} // Disable if no rows exist
+            >
+              <ChevronRight />
             </IconButton>
-            <IconButton 
-                sx={{ 
-                  color: '#C4C7C5', 
-                  '&.Mui-disabled': { color: '#333' } 
-                }} 
-                onClick={onClickLastPage} 
-                disabled={currentPage === totalPages}
-              >
-                <LastPage />
+
+            {/* Last Page Button */}
+            <IconButton
+              sx={{ color: '#C4C7C5', '&.Mui-disabled': { color: '#333' } }}
+              onClick={onClickLastPage}
+              disabled={currentPage === totalPages || totalRows === 0} // Disable if no rows exist
+            >
+              <LastPage />
             </IconButton>
           </Box>
       </Box>
@@ -850,13 +850,13 @@ useEffect(() => {
                 Save
             </Button>
         </DialogActions>
-    </Dialog>
-    <Dialog open={isViewModalOpen} onClose={handleViewModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
-      Source Info
-      <IconButton onClick={handleViewModalClose}>
-          <Close sx={{color: STYLED_WHITE}} />
-          </IconButton>
+      </Dialog>
+      <Dialog open={isEditModalOpen} onClose={handleEditModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537'} }}>
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
+              Edit Source
+              <IconButton onClick={handleEditModalClose}>
+                  <Close />
+              </IconButton>
           </DialogTitle>
             <DialogContent>
               <List sx={{ color: STYLED_WHITE }}>
