@@ -27,6 +27,19 @@ const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference, onCopy }) => {
     }
   };
 
+  //New function to create the title
+  const createReferenceTitle = (url: string): string => {
+    const parts = url.split('/');
+    let title = parts.pop(); // Get the last part
+    if (!title || title.trim() === "") {
+      title = parts.pop(); // if the last part is empty, get the one before.
+    }
+    return title || "Unknown Document"; // return a default value if we did not find a title.
+  };
+
+  const referenceTitle = createReferenceTitle(reference.document_url)
+
+
   return (
     <Box sx={{ mb: 1, position: 'relative' }}
       onMouseEnter={() => setShowCopyIcon(true)}
@@ -56,7 +69,7 @@ const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference, onCopy }) => {
           width: '100%'
         }}>
           <Typography variant="body2" sx={{ mb: 0.5 }}>
-            {reference.document_url.split('/').pop()}
+            {referenceTitle}
           </Typography>
           {showDetails && (
             <Typography

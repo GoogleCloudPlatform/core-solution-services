@@ -69,6 +69,7 @@ export const MainApp = () => {
   const [editSourceId, setEditSourceId] = useState<string | null>(null);
   const [chatScreenKey, setChatScreenKey] = useState(0); // **NEW: Key for ChatScreen**
   const [headerClicked, setHeaderClicked] = useState(false); // New state variable
+  const [latestChat, setLatestChat] = useState<Chat | undefined>();
 
 
 
@@ -140,15 +141,15 @@ export const MainApp = () => {
   };
 
   const handleAddSourceClick = () => {
-  console.log("Opening Add Source");
-  setShowAddSource(true);
-  setShowSources(false);
-  setShowWelcome(false);
-  setShowChat(false);
-  setCurrentChat(undefined);
-  setEditSourceId(null);
-  setShowEditSource(false);
-};
+    console.log("Opening Add Source");
+    setShowAddSource(true);
+    setShowSources(false);
+    setShowWelcome(false);
+    setShowChat(false);
+    setCurrentChat(undefined);
+    setEditSourceId(null);
+    setShowEditSource(false);
+  };
 
   const handleChatStart = () => {
     console.log("In handleChatStart")
@@ -275,8 +276,8 @@ export const MainApp = () => {
             showWelcome={showWelcome} // pass show Welcome
           />
         )}
-        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} /> }
-        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} /> }
+        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} />}
+        {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} />}
         {showEditSource && (
           <UpdateSource
             sourceId={editSourceId!} // Pass the sourceId
