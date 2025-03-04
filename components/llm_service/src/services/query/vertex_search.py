@@ -37,6 +37,9 @@ Logger = Logger.get_logger(__file__)
 # valid file extensions for Vertex Search
 VALID_FILE_EXTENSIONS = [".pdf", ".html", ".csv", ".json"]
 
+# as of 2/2025 Vertex Search only supports text modality
+DEFAULT_MODALITY = "text"
+
 async def query_vertex_search(q_engine: QueryEngine,
                               search_query: str,
                               num_results: int,
@@ -97,6 +100,7 @@ async def query_vertex_search(q_engine: QueryEngine,
       query_engine=q_engine.name,
       document_id=query_document.id,
       document_url=query_document.doc_url,
+      modality=DEFAULT_MODALITY,
       document_text=document_data["snippets"][0]["snippet"],
       chunk_id=str(n) # fake chunk id for ux's that dedup on chunk id
     )
