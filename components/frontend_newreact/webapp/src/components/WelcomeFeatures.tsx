@@ -30,8 +30,8 @@ interface WelcomeFeaturesProps {
 export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHeight, setShowChat, setShowSources, setShowWelcome, onNewChat, onResumeChat, setShowAddSource, setShowEditSource }: WelcomeFeaturesProps) => {
   const features: Feature[] = [
     {
-      icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} alt="Chat icon"/>,
-      title: 'Chat', 
+      icon: <img src={ChatInterfaceIcon} style={{ width: '24px', height: '24px' }} alt="Chat icon" />,
+      title: 'Chat',
       subtitle: 'Latest Topical Gist',
       action: 'Resume',
       onClick: () => {
@@ -43,8 +43,8 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
         setShowEditSource(false);
       }
     },
-    { 
-      icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} alt="Knowledge source icon"/>,
+    {
+      icon: <img src={SourceIcon} style={{ width: '24px', height: '24px' }} alt="Knowledge source icon" />,
       title: 'Knowledge Sources',
       subtitle: 'Knowledge Source Name',
       action: 'Query',
@@ -68,19 +68,19 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
       overflowY: 'auto', // Ensures scrolling if needed
     }}>
       <main>
-          <Typography
-            variant="h4"
-            className="greeting"
-            sx={{
-              textAlign: 'center',
-              fontSize: '32px',
-              mb: 2
-            }}
-          >
-            <span className="font-poppins bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">Hello, {username}</span>
-          </Typography>
+        <Typography
+          variant="h4"
+          className="greeting"
+          sx={{
+            textAlign: 'center',
+            fontSize: '32px',
+            mb: 2
+          }}
+        >
+          <span className="font-poppins bg-gradient-to-r from-blue-500 to-red-500 bg-clip-text text-transparent">Hello, {username}</span>
+        </Typography>
       </main>
-      
+
       <Box className="features-grid" sx={{
         maxWidth: '700px',
         width: '100%',
