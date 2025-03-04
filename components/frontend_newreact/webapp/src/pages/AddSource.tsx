@@ -7,6 +7,7 @@ import {
   Avatar,
   Menu,
   ListItemButton,
+  Switch,
   ListItemIcon,
 } from "@mui/material";
 import {
@@ -92,7 +93,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
     vector_store: 'langchain_pgvector',
     depth_limit: 0,
     chunk_size: 500,
-    is_multimodal: false,
+    is_multimodal: false
   });
 
   // Fetch embedding models when component mounts
@@ -113,7 +114,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
         }
       }
     };
-    
+
     loadEmbeddingModels();
   }, [user?.token]);
 
@@ -148,33 +149,33 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
     setIsSubmitted(true);
     setLoading(true);
 
-  try {
-    const response = await createQueryEngine(user.token)(formData as QueryEngine);
+    try {
+      const response = await createQueryEngine(user.token)(formData as QueryEngine);
 
-    if (response) {
+      if (response) {
         // Refetch the sources after successful creation (Important!)
         const engines = await fetchAllEngines(user.token)();
         if (engines) {
           console.log("Sources refetched after creation:", engines);
 
-      } else {
-        console.error("Failed to refetch sources after creation.");
-      }
-      onCancel(); // Call onCancel to trigger state update in Main.tsx
+        } else {
+          console.error("Failed to refetch sources after creation.");
+        }
+        onCancel(); // Call onCancel to trigger state update in Main.tsx
 
-    } else {
-      console.error("API call did not return a response.");
-      setError("Failed to create source.");
+      } else {
+        console.error("API call did not return a response.");
+        setError("Failed to create source.");
+      }
+    } catch (err: any) {
+      console.error("Error creating source:", err);
+      setError(err.message || "Failed to create source.");
+    } finally {
+      setLoading(false);
+      setIsConfirmationModalOpen(false);
     }
-  } catch (err: any) {
-    console.error("Error creating source:", err);
-    setError(err.message || "Failed to create source.");
-  } finally {
-    setLoading(false);
-    setIsConfirmationModalOpen(false);
-  }
     setIsConfirmationModalOpen(true);
-};
+  };
 
   const handleConfirmationModalClose = () => {
     setIsConfirmationModalOpen(false);
@@ -186,6 +187,10 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
 
   const handleChunkSizeChange = (_event: Event, newValue: number | number[]) => {
     handleChange('chunk_size', newValue as number);
+  };
+
+  const handleSwitchChange = (event: React.ChangeEvent<HTMLInputElement>) => { // Function to handle switch toggle.
+    handleChange('is_multimodal', event.target.checked)
   };
 
   return (
@@ -341,32 +346,32 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                   '&:hover fieldset': { borderColor: '#444' },
                 }
               }}
-          />
-
-        </Box>
-
-        {formData.doc_url && /^https?:\/\//.test(formData.doc_url.replace(/^gs:\/\//, '')) && (
-          <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="caption" sx={{ color: '#888' }}>
-                Depth Limit
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'white' }}>
-                {formData.depth_limit}
-              </Typography>
-            </Box>
-            <StyledSlider
-              value={formData.depth_limit ?? undefined}
-              onChange={handleDepthLimitChange}
-              min={0}
-              max={4}
-              step={1}
-              marks
-              sx={{ mb: 4 }}
-           
             />
 
           </Box>
+
+          {formData.doc_url && /^https?:\/\//.test(formData.doc_url.replace(/^gs:\/\//, '')) && (
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="caption" sx={{ color: '#888' }}>
+                  Depth Limit
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'white' }}>
+                  {formData.depth_limit}
+                </Typography>
+              </Box>
+              <StyledSlider
+                value={formData.depth_limit ?? undefined}
+                onChange={handleDepthLimitChange}
+                min={0}
+                max={4}
+                step={1}
+                marks
+                sx={{ mb: 4 }}
+
+              />
+
+            </Box>
           )}
 
 
@@ -379,37 +384,53 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
           </Button>
 
           <Collapse in={showAdvanced}>
-            <Box sx={{ mt: 3 }}>
-              <Box sx={{ mb: 4 }}>
+            <Box sx={{ p: 3, maxWidth: '800px', mx: 'auto' }}>
+              {/* ... (rest of the form fields) */}
+              <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column' }}> {/* Update Box to column */}
                 <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
                   Type
                 </Typography>
-                <Tooltip title="Select the type of query engine you want to use.">
-                  <InfoIcon sx={{ color: '#888', fontSize: '16px', cursor: 'pointer' }} />
-                </Tooltip>
-                <StyledSelect
-                  fullWidth
-                  value={formData.query_engine_type}
-                  onChange={(e) => handleChange('query_engine_type', e.target.value)}
-                  required
-                  MenuProps={{
-                    PaperProps: {
-                      sx: {
-                        backgroundColor: '#242424',
-                        border: '1px solid #333',
-                        borderRadius: '4px',
-                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
-                        maxHeight: '300px',
-                      }
-                    }
-                  }}
-                >
-                  {Object.entries(QUERY_ENGINE_TYPES).map(([key, value]) => (
-                    <StyledMenuItem key={key} value={key}>
-                      {value}{key === QUERY_ENGINE_DEFAULT_TYPE ? ' (Default)' : ''}
-                    </StyledMenuItem>
-                  ))}
-                </StyledSelect>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: "100%" }}> {/* New Box for row */}
+                  <Box sx={{ flex: 1 }}>
+                    <Tooltip title="Select the type of query engine you want to use.">
+                      <InfoIcon sx={{ color: '#888', fontSize: '16px', cursor: 'pointer' }} />
+                    </Tooltip>
+                    <StyledSelect
+                      fullWidth
+                      value={formData.query_engine_type}
+                      onChange={(e) => handleChange('query_engine_type', e.target.value)}
+                      required
+                      MenuProps={{
+                        PaperProps: {
+                          sx: {
+                            backgroundColor: '#242424',
+                            border: '1px solid #333',
+                            borderRadius: '4px',
+                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
+                            maxHeight: '300px',
+                          }
+                        }
+                      }}
+                    >
+                      {Object.entries(QUERY_ENGINE_TYPES).map(([key, value]) => (
+                        <StyledMenuItem key={key} value={key}>
+                          {value}{key === QUERY_ENGINE_DEFAULT_TYPE ? ' (Default)' : ''}
+                        </StyledMenuItem>
+                      ))}
+                    </StyledSelect>
+                  </Box>
+                  {/* Multimodal section */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexDirection: 'column' }}>
+                    <Typography variant="body1" sx={{ color: '#888' }}>Multimodal</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Switch checked={formData.is_multimodal || false} onChange={handleSwitchChange} color="primary" /> {/* Corrected line */}
+                      <Typography variant="body1" sx={{ color: formData.is_multimodal ? '#fff' : '#888', fontWeight: "bold" }}> {/* Corrected line */}
+                        {formData.is_multimodal ? 'Enabled' : 'Disabled'} {/* Corrected line */}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  {/* End of multimodal section */}
+                </Box>
               </Box>
 
               <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
@@ -578,13 +599,13 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                   <ListItemText primary="Vector Store:" secondary={formData?.vector_store === 'langchain_pgvector' ? 'PG Vector' : 'Vertex Matching Engine'} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                  <ListItemText 
-                    primary="Embedding Type:" 
+                  <ListItemText
+                    primary="Embedding Type:"
                     secondary={
-                      embeddingModels.find(model => model.id === formData?.embedding_type)?.name || 
+                      embeddingModels.find(model => model.id === formData?.embedding_type)?.name ||
                       formData?.embedding_type
-                    } 
-                    sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} 
+                    }
+                    sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}
                   />
                 </Box>
               </ListItem>
