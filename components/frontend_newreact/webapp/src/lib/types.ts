@@ -249,10 +249,12 @@ export type QueryEngine = {
   agents: string[] | null
   child_engines: string[] | null
   is_multimodal: boolean | null
+  status?: string | undefined
 }
 
 export type QueryEngineBuildParams = {
   depth_limit: string | null
+  chunk_size?: string | null
   agents: string | null
   associated_engines: string | null
   manifest_url: string | null
@@ -295,16 +297,16 @@ export type QueryEngineBuildJob = {
 }
 
 export interface ChatModel {
-    id: string;  // llm_type used in API calls
-    name: string; // Display name shown to users
-    description?: string;
-    purposes?: string[];
-    isNew?: boolean;
-    isMultimodal?: boolean;
-    modelParams?: {
-        temperature?: number;
-        [key: string]: any;
-    };
+  id: string;  // llm_type used in API calls
+  name: string; // Display name shown to users
+  description?: string;
+  purposes?: string[];
+  isNew?: boolean;
+  isMultimodal?: boolean;
+  modelParams?: {
+    temperature?: number;
+    [key: string]: any;
+  };
 }
 
 export interface CreateChatRequest {
