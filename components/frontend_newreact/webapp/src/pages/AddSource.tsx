@@ -386,46 +386,48 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
           <Collapse in={showAdvanced}>
             <Box sx={{ p: 3, maxWidth: '800px', mx: 'auto' }}>
               {/* ... (rest of the form fields) */}
-              <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column' }}> {/* Update Box to column */}
-                <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
-                  Type
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: "100%" }}> {/* New Box for row */}
-                  <Box sx={{ flex: 1 }}>
-                    <Tooltip title="Select the type of query engine you want to use.">
-                      <InfoIcon sx={{ color: '#888', fontSize: '16px', cursor: 'pointer' }} />
-                    </Tooltip>
-                    <StyledSelect
-                      fullWidth
-                      value={formData.query_engine_type}
-                      onChange={(e) => handleChange('query_engine_type', e.target.value)}
-                      required
-                      MenuProps={{
-                        PaperProps: {
-                          sx: {
-                            backgroundColor: '#242424',
-                            border: '1px solid #333',
-                            borderRadius: '4px',
-                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
-                            maxHeight: '300px',
+              <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: "100%", justifyContent: "space-between" }}> {/* New Box for row*/}
+                  <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}> {/* New Box for column Type label and select*/}
+                    <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+                      Type
+                    </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Tooltip title="Select the type of query engine you want to use.">
+                        <InfoIcon sx={{ color: '#888', fontSize: '16px', cursor: 'pointer' }} />
+                      </Tooltip>
+                      <StyledSelect
+                        fullWidth
+                        value={formData.query_engine_type}
+                        onChange={(e) => handleChange('query_engine_type', e.target.value)}
+                        required
+                        MenuProps={{
+                          PaperProps: {
+                            sx: {
+                              backgroundColor: '#242424',
+                              border: '1px solid #333',
+                              borderRadius: '4px',
+                              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
+                              maxHeight: '300px',
+                            }
                           }
-                        }
-                      }}
-                    >
-                      {Object.entries(QUERY_ENGINE_TYPES).map(([key, value]) => (
-                        <StyledMenuItem key={key} value={key}>
-                          {value}{key === QUERY_ENGINE_DEFAULT_TYPE ? ' (Default)' : ''}
-                        </StyledMenuItem>
-                      ))}
-                    </StyledSelect>
+                        }}
+                      >
+                        {Object.entries(QUERY_ENGINE_TYPES).map(([key, value]) => (
+                          <StyledMenuItem key={key} value={key}>
+                            {value}{key === QUERY_ENGINE_DEFAULT_TYPE ? ' (Default)' : ''}
+                          </StyledMenuItem>
+                        ))}
+                      </StyledSelect>
+                    </Box>
                   </Box>
                   {/* Multimodal section */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexDirection: 'column' }}>
-                    <Typography variant="body1" sx={{ color: '#888' }}>Multimodal</Typography>
+                    <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>Multimodal</Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Switch checked={formData.is_multimodal || false} onChange={handleSwitchChange} color="primary" /> {/* Corrected line */}
-                      <Typography variant="body1" sx={{ color: formData.is_multimodal ? '#fff' : '#888', fontWeight: "bold" }}> {/* Corrected line */}
-                        {formData.is_multimodal ? 'Enabled' : 'Disabled'} {/* Corrected line */}
+                      <Switch checked={formData.is_multimodal || false} onChange={handleSwitchChange} color="primary" />
+                      <Typography variant="body1" sx={{ color: (formData.is_multimodal) ? '#fff' : '#888', fontWeight: "bold" }}>
+                        {formData.is_multimodal ? 'Enabled' : 'Disabled'}
                       </Typography>
                     </Box>
                   </Box>
