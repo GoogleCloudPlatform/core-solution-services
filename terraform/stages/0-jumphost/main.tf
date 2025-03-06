@@ -113,8 +113,8 @@ resource "google_compute_instance" "jump_host" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2004-focal-v20230907"
-      size = 200
+      image = "ubuntu-os-cloud/ubuntu-2204-jammy-v20250305"
+      size  = 200
     }
   }
 
