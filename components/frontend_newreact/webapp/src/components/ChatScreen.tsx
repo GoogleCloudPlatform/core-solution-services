@@ -417,6 +417,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       alignItems: 'flex-start',
                       gap: '0.5rem',
                     }}
+                    ref={index === messages.length - 1 && message.isUser ? messagesEndRef : null} // Attach reference to the last user messsage
                   >
                     {message.isUser ? (
                       <Typography sx={{ color: '#fff', textAlign: 'right' }}>
