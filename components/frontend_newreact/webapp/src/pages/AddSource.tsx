@@ -593,8 +593,13 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
               <ListItem sx={{ borderBottom: '1px solid #888' }}>
                 <ListItemText primary="Data URL:" secondary={formData?.doc_url} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
               </ListItem>
-              <ListItem sx={{ borderBottom: '1px solid #888' }}>
-                <ListItemText primary="Type:" secondary={QUERY_ENGINE_TYPES[formData?.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || formData?.query_engine_type} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+              <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
+                <Box sx={{ flex: 1 }}>
+                  <ListItemText primary="Type:" secondary={QUERY_ENGINE_TYPES[formData?.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || formData?.query_engine_type} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <ListItemText primary="MultiModal:" secondary={formData?.is_multimodal ? "Enabled" : "Disabled"} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                </Box>
               </ListItem>
               <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
                 <Box sx={{ flex: 1 }}>

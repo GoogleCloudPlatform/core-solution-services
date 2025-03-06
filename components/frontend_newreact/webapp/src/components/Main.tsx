@@ -162,6 +162,7 @@ export const MainApp = () => {
   };
 
   const handleEditClick = (sourceId: string) => {
+    //console.log('source id edit: ', sourceId);
     setEditSourceId(sourceId);
     setShowEditSource(true);
     setShowSources(false); // Hide Sources list when editing
@@ -276,7 +277,7 @@ export const MainApp = () => {
             showWelcome={showWelcome} // pass show Welcome
           />
         )}
-        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditSourceClick={handleEditClick} />}
+        {showSources && !showAddSource && !showEditSource && <Sources onAddSourceClick={() => setShowAddSource(true)} onEditClick={handleEditClick} />}
         {showAddSource && <AddSource onCancel={() => { setShowAddSource(false); setShowSources(true); }} />}
         {showEditSource && (
           <UpdateSource

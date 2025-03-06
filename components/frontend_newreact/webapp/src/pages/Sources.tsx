@@ -52,7 +52,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 
 interface SourcesProps {
   onAddSourceClick: () => void;
-  onEditSourceClick: (sourceId: string) => void;
+  onEditClick: (sourceId: string) => void;
 }
 
 const StyledTableRow = styled(TableRow)({ // Styles for table rows
@@ -78,7 +78,7 @@ const StyledSelect = styled(Select)({ // Styles for select dropdowns
   },
 });
 
-const Sources = ({ onAddSourceClick, onEditSourceClick }: SourcesProps) => {
+const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
   const [sources, setSources] = useState<QueryEngineWithStatus[]>([]);// State for storing the list of sources
   const { user } = useAuth(); // Get the authenticated user from context
   const [loading, setLoading] = useState(true); // Loading state
@@ -86,7 +86,7 @@ const Sources = ({ onAddSourceClick, onEditSourceClick }: SourcesProps) => {
   const [selectedSources, setSelectedSources] = useState<string[]>([]); // State for tracking selected sources
   const [typeFilter, setTypeFilter] = useState('all'); // State for the type filter
   const [jobStatusFilter, setJobStatusFilter] = useState('all'); // State for the job status filter
-  // const [jobStatus, setJobStatus] = useState('); // State for the job status filter
+  //const [jobStatus, setJobStatus] = useState('); // State for the job status filter
   const navigate = useNavigate(); // For navigation
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedSource, setSelectedSource] = useState<null | string>(null);
@@ -769,15 +769,15 @@ const Sources = ({ onAddSourceClick, onEditSourceClick }: SourcesProps) => {
         </DialogActions>
       </Dialog>
       <Dialog open={isEditModalOpen} onClose={handleEditModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537' } }}>
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
           Edit Source
           <IconButton onClick={handleEditModalClose}>
             <Close />
           </IconButton>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+          <Box sx={{ mb: 1 }}>
+            <Typography variant="caption" sx={{ color: STYLED_WHITE, mb: 1, display: 'block', }}>
               Name
             </Typography>
             <TextField
@@ -809,11 +809,11 @@ const Sources = ({ onAddSourceClick, onEditSourceClick }: SourcesProps) => {
               }}
             />
           </Box>
-          <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>Name of the Query Engine (can include spaces). {editedName?.length || 0}/50 characters left.</Typography>
+          <Typography variant="caption" sx={{ color: '#888', mb: 4, display: 'block' }}>Name of the Query Engine (can include spaces). {editedName?.length || 0}/50 characters left.</Typography>
 
           {/* Add Description Field Here */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
+          <Box sx={{ mb: 1 }}>
+            <Typography variant="caption" sx={{ color: STYLED_WHITE, mb: 1, display: 'block' }}>
               Description
             </Typography>
             <TextField
@@ -853,10 +853,10 @@ const Sources = ({ onAddSourceClick, onEditSourceClick }: SourcesProps) => {
           </Button>
         </DialogActions>
       </Dialog>
-      <Dialog open={isEditModalOpen} onClose={handleEditModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537' } }}>
+      <Dialog open={isViewModalOpen} onClose={handleViewModalClose} PaperProps={{ sx: { width: '100%', maxWidth: '800px', backgroundColor: '#333537' } }}>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
-          Edit Source
-          <IconButton onClick={handleEditModalClose}>
+          View Source
+          <IconButton onClick={handleViewModalClose}>
             <Close />
           </IconButton>
         </DialogTitle>
@@ -869,8 +869,13 @@ const Sources = ({ onAddSourceClick, onEditSourceClick }: SourcesProps) => {
               <ListItemText primary="Data URL:" secondary={sourceToView?.doc_url} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
               <IconButton onClick={() => navigator.clipboard.writeText(sourceToView?.doc_url || '')}><ContentCopyIcon sx={{ color: STYLED_WHITE }} /></IconButton>
             </ListItem>
-            <ListItem sx={{ borderBottom: '1px solid #888' }}>
-              <ListItemText primary="Type:" secondary={QUERY_ENGINE_TYPES[sourceToView?.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || sourceToView?.query_engine_type} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+            <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
+              <Box sx={{ flex: 1 }}>
+                <ListItemText primary="Type:" secondary={QUERY_ENGINE_TYPES[sourceToView?.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] || sourceToView?.query_engine_type} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <ListItemText primary="MultiModal:" secondary={sourceToView ? (typeof sourceToView.is_multimodal === 'boolean' ? sourceToView.is_multimodal.toString() : "false") : 'N/A'} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+              </Box>
             </ListItem>
             <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
               <Box sx={{ flex: 1 }}>
