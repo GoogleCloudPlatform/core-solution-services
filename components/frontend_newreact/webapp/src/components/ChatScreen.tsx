@@ -223,8 +223,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         
         let history = response?.history
         console.log("history is ", history);
-        let neMessages = messagesFromHistory(history);
-
+        let newMessages = messagesFromHistory(history);
         setMessages(newMessages);
       } else {
         // Handle the case where there's no history in the response (e.g., an error occurred)
