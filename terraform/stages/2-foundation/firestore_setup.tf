@@ -24,25 +24,19 @@ variable "firestore_region" {
 variable "existing_firestore_name" {
   type        = string
   description = "Does this project has existing firestore?"
-  default     = ""
+  default     = "(default)"
 }
 
 module "firebase" {
   source           = "../../modules/firebase"
   project_id       = var.project_id
   firestore_region = var.firestore_region
-  firebase_init    = var.existing_firestore_name == "" ? true : false
+  firebase_init    = var.existing_firestore_name == "(default)" ? true : false
 }
 
 resource "google_project_service" "firestore" {
   project = var.project_id
   service = "firestore.googleapis.com"
-}
-
-data "google_firestore_database" "default_db" {
-  project = var.project_id
-  name    = "(default)"
-  count   = var.existing_firestore_name == "(default)" ? 0 : 1
 }
 
 resource "google_firestore_database" "database" {
