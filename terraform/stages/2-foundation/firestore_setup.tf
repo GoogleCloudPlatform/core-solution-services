@@ -39,11 +39,19 @@ resource "google_project_service" "firestore" {
   service = "firestore.googleapis.com"
 }
 
+data "google_firestore_database" "default_db" {
+  project = var.project_id
+  name    = "(default)"
+  count   = var.existing_firestore_name == "(default)" ? 0 : 1
+}
+
 resource "google_firestore_database" "database" {
   depends_on = [google_project_service.firestore]
 
+  count       = data.google_firestore_database.default_db.id == null ? 1 : 0
   project     = var.project_id
   location_id = var.firestore_location_id
   name        = "(default)"
   type        = "FIRESTORE_NATIVE"
 }
+
