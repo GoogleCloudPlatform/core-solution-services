@@ -86,7 +86,6 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
   const [selectedSources, setSelectedSources] = useState<string[]>([]); // State for tracking selected sources
   const [typeFilter, setTypeFilter] = useState('all'); // State for the type filter
   const [jobStatusFilter, setJobStatusFilter] = useState('all'); // State for the job status filter
-  //const [jobStatus, setJobStatus] = useState('); // State for the job status filter
   const navigate = useNavigate(); // For navigation
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedSource, setSelectedSource] = useState<null | string>(null);
