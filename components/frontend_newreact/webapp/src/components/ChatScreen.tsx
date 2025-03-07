@@ -71,21 +71,24 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [tooltipOpen, setTooltipOpen] = useState(false);   // State for tooltip
   const [iconClicked, setIconClicked] = useState(false);    // State for click effect
   const [graphEnabled, setGraphEnabled] = useState(false);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
 
-  const handleCopyClick = (text: string) => {
+
+  const handleCopyClick = (text: string, index: number) => {
     navigator.clipboard.writeText(text)
       .then(() => {
-        setTooltipOpen(true);
-        setIconClicked(true);
+        // Set the index of the message that was copied
+        setCopiedMessageIndex(index);
+
+        // Clear the copied message index after a brief delay (e.g., 2 seconds)
         setTimeout(() => {
-          setIconClicked(false);
-        }, 200);
+          setCopiedMessageIndex(null);
+        }, 2000);
       })
       .catch(err => {
         console.error('Failed to copy: ', err);
       });
   };
-
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -128,7 +131,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const handleSelectSource = (source: QueryEngine) => {
     console.log("Selected source:", source);
-    setSelectedSource(source); 
+    setSelectedSource(source);
   };
 
   const handleSubmit = async () => {
@@ -220,7 +223,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       }
 
       if (response?.history) {
-        
+
         let history = response?.history
         console.log("history is ", history);
         let newMessages = messagesFromHistory(history);
@@ -268,7 +271,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           fileUrl: fileUrl
         });
 
-      } 
+      }
       // Combine AIOutput and FileContentsBase64 in the same message so the image is below the text
       else if (historyItem.AIOutput || historyItem.FileContentsBase64) {
         newMessages.push({
@@ -364,9 +367,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             <Typography variant="h6">
               {currentChat?.title || 'New Chat'}
             </Typography>
-            <SourceSelector 
-              onSelectSource={handleSelectSource} 
-              />
+            <SourceSelector
+              onSelectSource={handleSelectSource}
+            />
           </Box>
         </Box>
       )}
@@ -394,9 +397,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                 <Box key={index}
                   onMouseEnter={() => setShowCopyIcon(true)}  // Show icon on hover
                   onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}  // Hide icon and close tooltip when mouse leaves
-                  onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Removed inline onMouseEnter/Leave
+                  //onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Removed inline onMouseEnter/Leave
                   sx={{
-                      // other styles
+                    // other styles
                     position: 'relative', // Needed for Tooltip positioning
                     marginRight: 'auto'
                   }}
@@ -410,8 +413,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       padding: '0.75rem 1rem',
                       marginBottom: '0.5rem',
                       alignSelf: message.isUser ? 'flex-end' : 'flex-start',
-                      textAlign: message.isUser ? 'right' : 'left',
-                      maxWidth: '100%',
+                      textAlign: message.isUser ? 'left' : 'left',
+                      maxWidth: message.isUser ? '50%' : '100%',
                       display: 'flex',
                       flexDirection: message.isUser ? 'row-reverse' : 'row',
                       alignItems: 'flex-start',
@@ -420,7 +423,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                     ref={index === messages.length - 1 && message.isUser ? messagesEndRef : null} // Attach reference to the last user messsage
                   >
                     {message.isUser ? (
-                      <Typography sx={{ color: '#fff', textAlign: 'right' }}>
+                      <Typography sx={{ color: '#fff', textAlign: 'left', maxWidth: '50%' }}>
                         {message.text}
                       </Typography>
                     ) : (
@@ -503,10 +506,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                           {/* Add references display */}
                           {!message.isUser && message.references && message.references.length > 0 && (
                             <Box sx={{
-                                mt: 2,
-                                pt: 2,
-                                borderTop: '1px solid #4a4a4a'
-                              }}>
+                              mt: 2,
+                              pt: 2,
+                              borderTop: '1px solid #4a4a4a'
+                            }}>
                               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                 References:
                               </Typography>
@@ -529,16 +532,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       flexDirection: 'row-reverse',
                       alignItems: 'flex-start',
                     }}>
-                     {/* ... existing JSX (Avatar, Typography for message.text) */}
+                    {/* ... existing JSX (Avatar, Typography for message.text) */}
 
-                     {/* Conditionally render the chip ONLY if message.uploadedFile exists */} 
-                     {(message.isUser && (message.fileUrl)) && (
+                    {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
+                    {(message.isUser && (message.fileUrl)) && (
                       <Box className="file-chip-container" sx={{
-                          alignSelf: 'flex-end',
-                          display: 'flex',
-                          flexDirection: 'row-reverse',
-                          alignItems: 'flex-start',
-                        }}>
+                        alignSelf: 'flex-end',
+                        display: 'flex',
+                        flexDirection: 'row-reverse',
+                        alignItems: 'flex-start',
+                      }}>
                         <Button onClick={() => setShowDocumentViewer(true)}>
                           <Chip
                             label={message.uploadedFile || message.fileUrl}
@@ -575,7 +578,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                         >
                           <ContentCopyIcon sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }} />
                         </IconButton>
-                        
+
                       </Tooltip>
                     )}
                   </Box>
@@ -598,46 +601,46 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           }}
         >
           <Box
-          onClick={toggleGraph}
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 1,
-            cursor: 'pointer',
-            marginTop: 2,
-            marginBottom: 1,
-            padding: '8px 12px',
-            borderRadius: '20px',
-            width: 'fit-content',
-            userSelect: 'none',
-            ...(graphEnabled
-              ? {
+            onClick={toggleGraph}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 1,
+              cursor: 'pointer',
+              marginTop: 2,
+              marginBottom: 1,
+              padding: '8px 12px',
+              borderRadius: '20px',
+              width: 'fit-content',
+              userSelect: 'none',
+              ...(graphEnabled
+                ? {
                   backgroundColor: '#004A77',
                   color: '#C2E7FF',
                 }
-              : {
+                : {
                   backgroundColor: 'transparent',
                   color: '#cccccc',
                 }
-            ),
-          }}
-        >
-          <BarChartIcon
-            sx={{
-              ...(graphEnabled
-                ? { color: '#A8C7FA' }
-                : { color: '#cccccc' }
-              )
-            }}
-          />
-          <Typography
-            sx={{
-              fontWeight: 500,
+              ),
             }}
           >
-            {graphEnabled ? 'Create a graph ✓' : 'Create a graph'}
-          </Typography>
-        </Box>
+            <BarChartIcon
+              sx={{
+                ...(graphEnabled
+                  ? { color: '#A8C7FA' }
+                  : { color: '#cccccc' }
+                )
+              }}
+            />
+            <Typography
+              sx={{
+                fontWeight: 500,
+              }}
+            >
+              {graphEnabled ? 'Create a graph ✓' : 'Create a graph'}
+            </Typography>
+          </Box>
           <Paper className="chat-input">
             {(selectedFile || importUrl) && (
               <>
