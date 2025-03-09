@@ -53,7 +53,7 @@ interface SidebarProps {
 }
 
 const DrawerHeader = styled('div')(({ theme }) => ({
-    display: 'flex', 
+    display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     padding: theme.spacing(1),
@@ -163,13 +163,13 @@ export const Sidebar = ({
         {
             text: 'History',
             tooltip: 'History',
-            icon: <img src={HistoryCustomIcon} className="" style={{ width: '14px', height: '14px' }} alt= "History icon" />,
+            icon: <img src={HistoryCustomIcon} className="" style={{ width: '14px', height: '14px' }} alt="History icon" />,
             id: 'history'
         },
         {
             text: 'Settings',
             tooltip: 'Settings',
-            icon: <img src={SettingsCustomIcon} style={{ width: '14px', height: '14px' }} alt= "Settings icon"/>,
+            icon: <img src={SettingsCustomIcon} style={{ width: '14px', height: '14px' }} alt="Settings icon" />,
             id: 'settings'
         },
     ];
@@ -178,14 +178,14 @@ export const Sidebar = ({
         {
             text: 'Resume Chat',
             tooltip: 'Resume Chat',
-            icon: <img src={ChatInterfaceIcon} style={{ width: '14px', height: '14px' }} alt="Resume Chat icon"/>,
+            icon: <img src={ChatInterfaceIcon} style={{ width: '14px', height: '14px' }} alt="Resume Chat icon" />,
             id: 'chat',
             onClick: () => {
                 setShowChat(true);
                 setShowWelcome(false);
                 setShowSources?.(false);
                 onResumeChat();
-                setShowAddSource(false);  
+                setShowAddSource(false);
                 setShowEditSource(false);
             }
         },
@@ -275,7 +275,7 @@ export const Sidebar = ({
                         title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
                         placement='right'
                         arrow
-                        
+
                     >
                         <IconButton
                             aria-label="Collapse or Expand Sidebar"
@@ -329,8 +329,8 @@ export const Sidebar = ({
                 isOpen={activePanel === 'settings'}
                 drawerIsOpen={isOpen}
             >
-            <header>
-                <PanelHeader>                    
+                <header>
+                    <PanelHeader>
                         <Box sx={{ typography: 'subtitle2', color: 'rgba(255, 255, 255, 0.9)' }}>
                             Settings
                         </Box>
@@ -340,17 +340,17 @@ export const Sidebar = ({
                                 setActivePanel(null);
                                 setSelectedItem(null);
                             }}
-                        
-                        sx={{
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            '&:hover': {
-                                backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                            },
-                        }}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                </PanelHeader> 
+
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                                },
+                            }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                    </PanelHeader>
                 </header>
                 <Box sx={{
                     height: 'calc(100% - 56px)', // Subtract header height
