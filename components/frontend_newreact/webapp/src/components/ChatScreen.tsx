@@ -369,6 +369,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             </Typography>
             <SourceSelector
               onSelectSource={handleSelectSource}
+              chatId={chatId}
             />
           </Box>
         </Box>
