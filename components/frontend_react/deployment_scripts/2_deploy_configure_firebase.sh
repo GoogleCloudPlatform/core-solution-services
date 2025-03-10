@@ -16,6 +16,7 @@ if [ -z "$existing_app" ]; then
       "default": "$PROJECT_ID"
     }
   }
+  EOL
 
   # Create your app in Firebase
   echo "Creating Firebase app..."
@@ -63,3 +64,4 @@ else
     fi
   done
 fi
+
