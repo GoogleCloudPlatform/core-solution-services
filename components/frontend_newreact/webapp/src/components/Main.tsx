@@ -92,7 +92,6 @@ export const MainApp = () => {
         const chat = await fetchLatestChat(user.token)();
         if (chat) {
           setLatestChat(chat);
-          setShowWelcome(false);
         } else {
           setShowWelcome(true); // Fix: set showWelcome to true when no latest chat is found.
         }
@@ -111,6 +110,20 @@ export const MainApp = () => {
       setShowSources(false);
     }
   }, [headerClicked]);
+  console.log({
+    showWelcome,
+    showChat,
+    currentChat,
+    headerClicked,
+    showSources,
+  });
+
+  useEffect(() => {
+    setShowChat(true);
+    setShowWelcome(true);
+    setShowSources(false);
+    setCurrentChat(undefined);
+  }, []);
 
   useEffect(() => {
     const updateHeaderHeight = () => {
