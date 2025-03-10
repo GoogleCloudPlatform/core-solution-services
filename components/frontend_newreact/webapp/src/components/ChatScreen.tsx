@@ -71,21 +71,24 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [tooltipOpen, setTooltipOpen] = useState(false);   // State for tooltip
   const [iconClicked, setIconClicked] = useState(false);    // State for click effect
   const [graphEnabled, setGraphEnabled] = useState(false);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
 
-  const handleCopyClick = (text: string) => {
+
+  const handleCopyClick = (text: string, index: number) => {
     navigator.clipboard.writeText(text)
       .then(() => {
-        setTooltipOpen(true);
-        setIconClicked(true);
+        // Set the index of the message that was copied
+        setCopiedMessageIndex(index);
+
+        // Clear the copied message index after a brief delay (e.g., 2 seconds)
         setTimeout(() => {
-          setIconClicked(false);
-        }, 200);
+          setCopiedMessageIndex(null);
+        }, 2000);
       })
       .catch(err => {
         console.error('Failed to copy: ', err);
       });
   };
-
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -395,7 +398,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                 <Box key={index}
                   onMouseEnter={() => setShowCopyIcon(true)}  // Show icon on hover
                   onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}  // Hide icon and close tooltip when mouse leaves
-                  onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Removed inline onMouseEnter/Leave
+                  //onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Removed inline onMouseEnter/Leave
                   sx={{
                     // other styles
                     position: 'relative', // Needed for Tooltip positioning
@@ -407,21 +410,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                     className={message.isUser ? 'user-message' : 'assistant-message'}
                     sx={{
                       backgroundColor: message.isUser ? '#343541' : 'transparent',
-                      borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0',
+                      borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0rem',
                       padding: '0.75rem 1rem',
                       marginBottom: '0.5rem',
+                      justifyContent: message.isUser ? 'flex-end' : 'flex-start', // Added justifyContent
                       alignSelf: message.isUser ? 'flex-end' : 'flex-start',
-                      textAlign: message.isUser ? 'right' : 'left',
-                      maxWidth: '100%',
+                      textAlign: message.isUser ? 'left' : 'left',
+                      maxWidth: message.isUser ? '50%' : '100%',
+                      marginLeft: message.isUser ? 'auto' : '0',
                       display: 'flex',
                       flexDirection: message.isUser ? 'row-reverse' : 'row',
-                      alignItems: 'flex-start',
+                      alignItems: message.isUser ? 'flex-end' : 'flex-start',
                       gap: '0.5rem',
                     }}
                     ref={index === messages.length - 1 && message.isUser ? messagesEndRef : null} // Attach reference to the last user messsage
                   >
                     {message.isUser ? (
-                      <Typography sx={{ color: '#fff', textAlign: 'right' }}>
+                      <Typography sx={{ color: '#fff', textAlign: 'left' }}>
                         {message.text}
                       </Typography>
                     ) : (
@@ -512,7 +517,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                                 References:
                               </Typography>
                               {message.references.map((reference, idx) => (
-                                <ReferenceChip key={idx} reference={reference} onCopy={handleCopyClick} />
+                                <ReferenceChip key={idx} reference={reference} onCopy={(text) => handleCopyClick(text, index)} />
                               ))}
                             </Box>
                           )}
@@ -522,7 +527,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                     <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
                   </Box>
                   <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
-                    onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }}
+                    onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text, index); }}
                     sx={{
                       alignSelf: 'flex-end',
                       maxWidth: '100%',
@@ -553,13 +558,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
                     {showCopyIcon && !message.isUser && !message.references && !message.imageBase64 && (
                       <Tooltip
-                        open={tooltipOpen}
-                        onClose={() => setTooltipOpen(false)}
+                        open={copiedMessageIndex === index} // Tooltip only opens if this message was copied
+                        arrow
+                        //placement="right"
+                        //onClose={() => setTooltipOpen(false)}
                         title="Copied!"
                         placement="top"
                         leaveDelay={200}
                       >
                         <IconButton
+                          onClick={() => handleCopyClick(message.text, index)}
+                          aria-label="copy"
                           sx={{
                             position: 'absolute',
                             left: -4,
