@@ -2,7 +2,7 @@
 
 # Extract values from sdkconfig.json
 echo "Extracting values from sdkconfig.json..."
-JSON_CONTENT=$(sed -n '/firebase.initializeApp({/,/});/p' sdkconfig.json | sed '1d;$d' | tr -d '\n' | sed 's/^/{/;s/$/}/')
+JSON_CONTENT=$(cat sdkconfig.json)
 PROJECT_ID=$(echo "$JSON_CONTENT" | jq -r '.projectId')
 APP_ID=$(echo "$JSON_CONTENT" | jq -r '.appId')
 STORAGE_BUCKET=$(echo "$JSON_CONTENT" | jq -r '.storageBucket')
