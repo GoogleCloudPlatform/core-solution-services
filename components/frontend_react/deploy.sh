@@ -16,20 +16,23 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Navigate to the webapp directory
 WEBAPP_DIR="$BASE_DIR/components/frontend_react/webapp"
+DEPLOYMENT_SCRIPT_DIR="$BASE_DIR/components/frontend_react/deployment_scripts"
 echo "Changing directory to $WEBAPP_DIR..."
 cd "$WEBAPP_DIR" || { echo "Failed to change directory to $WEBAPP_DIR. Please run this script from the components/frontend_react directory."; exit 1; }
 
+echo "Deployment script directory is $DEPLOYMENT_SCRIPT_DIR..."
+
 # Call sub-scripts
 echo "Installing dependencies..."
-bash "$BASE_DIR/deployment_scripts/1_deploy_install_dependencies.sh"
+bash "$DEPLOYMENT_SCRIPT_DIR/1_deploy_install_dependencies.sh"
 
 echo "Configuring Firebase..."
-bash "$BASE_DIR/deployment_scripts/2_deploy_configure_firebase.sh" "$PROJECT_ID" "$FIREBASE_APP_NAME"
+bash "$DEPLOYMENT_SCRIPT_DIR/2_deploy_configure_firebase.sh" "$PROJECT_ID" "$FIREBASE_APP_NAME"
 
 echo "Populating environment files..."
-bash "$BASE_DIR/deployment_scripts/3_deploy_set_env_vars.sh"
+bash "$DEPLOYMENT_SCRIPT_DIR/3_deploy_set_env_vars.sh"
 
 echo "Building and deploying the app..."
-bash "$BASE_DIR/deployment_scripts/4_deploy_build_and_deploy.sh"
+bash "$DEPLOYMENT_SCRIPT_DIR/4_deploy_build_and_deploy.sh"
 
 echo "Installation and deployment complete."
