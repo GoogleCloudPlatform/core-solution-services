@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,14 +24,14 @@ variable "firestore_region" {
 variable "existing_firestore_name" {
   type        = string
   description = "Does this project has existing firestore?"
-  default     = "(default)"
+  default     = ""
 }
 
 module "firebase" {
   source           = "../../modules/firebase"
   project_id       = var.project_id
   firestore_region = var.firestore_region
-  firebase_init    = var.existing_firestore_name == "(default)" ? false : true
+  firebase_init    = var.existing_firestore_name == "" ? true : false
 }
 
 resource "google_project_service" "firestore" {
@@ -42,10 +42,8 @@ resource "google_project_service" "firestore" {
 resource "google_firestore_database" "database" {
   depends_on = [google_project_service.firestore]
 
-  count       = var.existing_firestore_name == "(default)" ? 0 : 1
   project     = var.project_id
   location_id = var.firestore_location_id
   name        = "(default)"
   type        = "FIRESTORE_NATIVE"
 }
-
