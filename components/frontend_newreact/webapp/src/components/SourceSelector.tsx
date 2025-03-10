@@ -7,6 +7,7 @@ import { QueryEngine } from '../lib/types';
 
 interface SourceSelectorProps {
     className?: string;
+    chatId?: string;
     onSelectSource: (source: QueryEngine) => void;
     disabled?: boolean;
 }
@@ -18,17 +19,17 @@ const defaultChatSource: QueryEngine = {
     description: 'Default chat without specific source',
     archived_at_timestamp: null,
     archived_by: '',
-    created_by: '', 
-    created_time: new Date().toISOString(), 
+    created_by: '',
+    created_time: new Date().toISOString(),
     deleted_at_timestamp: null,
     deleted_by: '',
-    last_modified_by: '', 
+    last_modified_by: '',
     last_modified_time: new Date().toISOString(),
     llm_type: null,
-    parent_engine_id: '', 
-    user_id: 'default-user', 
-    query_engine_type: 'default_chat_type', 
-    embedding_type: 'default', 
+    parent_engine_id: '',
+    user_id: 'default-user',
+    query_engine_type: 'default_chat_type',
+    embedding_type: 'default',
     vector_store: null,
     is_public: false,
     index_id: null,
@@ -37,16 +38,16 @@ const defaultChatSource: QueryEngine = {
     doc_url: null,
     manifest_url: null,
     params: {
-        is_multimodal: 'false', 
+        is_multimodal: 'false',
     },
-    depth_limit: 3, 
+    depth_limit: 3,
     chunk_size: 1024,
-    agents: [], 
-    child_engines: [], 
-    is_multimodal: false, 
+    agents: [],
+    child_engines: [],
+    is_multimodal: false,
 };
 
-export function SourceSelector({ className, onSelectSource, disabled = false }: SourceSelectorProps) {
+export function SourceSelector({ className, chatId, onSelectSource, disabled = false }: SourceSelectorProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedSource, setSelectedSource] = useState<QueryEngine | null>(defaultChatSource);
     const open = Boolean(anchorEl);
@@ -94,6 +95,12 @@ export function SourceSelector({ className, onSelectSource, disabled = false }: 
 
         loadSources();
     }, [user]);
+
+    useEffect(() => {
+        if (chatId && sources.length > 0) {
+            setSelectedSource(sources[0]);
+        }
+    }, [chatId, sources]);
 
     return (
         <Box className={className}>
