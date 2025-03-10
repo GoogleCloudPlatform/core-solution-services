@@ -19,7 +19,7 @@ fetch_sdk_config() {
   delay=5
   for i in $(seq 1 $retries); do
     echo "Attempting to fetch Firebase SDK config (attempt $i)..."
-    firebase apps:sdkconfig WEB "$app_id" --project gps-tech-kennedan | awk 'BEGIN {print "{"} /^\s*"projectId":/ || /^\s*"appId":/ || /^\s*"storageBucket":/ || /^\s*"apiKey":/ || /^\s*"authDomain":/ || /^\s*"messagingSenderId":/ {print $0} END {print "}"}' > sdkconfig.json
+    firebase apps:sdkconfig WEB "$app_id" --project "$PROJECT_ID" | awk 'BEGIN {print "{"} /^\s*"projectId":/ || /^\s*"appId":/ || /^\s*"storageBucket":/ || /^\s*"apiKey":/ || /^\s*"authDomain":/ || /^\s*"messagingSenderId":/ {print $0} END {print "}"}' > sdkconfig.json
     if [ -s sdkconfig.json ] && is_valid_json; then
       if [ $? -eq 0 ]; then
         echo "Firebase SDK config fetched successfully."
