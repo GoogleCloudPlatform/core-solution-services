@@ -203,6 +203,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
     } catch (err) {
       console.error("Error deleting sources:", err);
     } finally {
+      console.log('should be closing dialog');
       setDeleteDialogOpen(false);
       setSourcesToDelete([]);
       setSelectedSource(null);
@@ -847,7 +848,14 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
           <Button onClick={handleEditModalClose} color="primary">
             Cancel
           </Button>
-          <Button onClick={handleSaveEdit} color="primary">
+          <Button onClick={handleSaveEdit} color="primary"
+            sx={{
+              backgroundColor: '#4a90e2',
+              '&:hover': { backgroundColor: '#357abd' },
+              borderRadius: '20px',
+              textTransform: 'none'
+            }}
+            className="font-poppins capitalize p-3 rounded-3xl bg-blue-300 text-blue-900">
             Save
           </Button>
         </DialogActions>
