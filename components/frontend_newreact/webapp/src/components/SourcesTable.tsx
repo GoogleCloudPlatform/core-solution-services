@@ -18,8 +18,11 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
-  Sync as SyncIcon 
+  Sync as SyncIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon
 } from '@mui/icons-material';
+import { useState } from 'react';
 import { QueryEngine, QUERY_ENGINE_TYPES } from '../lib/types';
 
 // Styled components
@@ -66,6 +69,8 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
   currentPage,
   rowsPerPage
 }) => {
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
   const getStatusIcon = (status: string | undefined) => {
     switch (status) {
       case 'success':
@@ -79,14 +84,25 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
     }
   };
 
+  const handleSortByName = () => {
+    setSortOrder((prevOrder) => (prevOrder === 'asc' ? 'desc' : 'asc'));
+  };
+
   // Filter sources based on type and status filters
   const filteredSources = sources.filter(source => 
     (typeFilter === 'all' || source.query_engine_type === typeFilter) &&
     (jobStatusFilter === 'all' || source.status === jobStatusFilter)
   );
 
+  // Sort sources by name
+  const sortedSources = [...filteredSources].sort((a, b) => {
+    return sortOrder === 'asc' 
+      ? a.name.localeCompare(b.name) 
+      : b.name.localeCompare(a.name);
+  });
+
   // Get paginated data
-  const paginatedSources = filteredSources.slice(
+  const paginatedSources = sortedSources.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
@@ -104,7 +120,12 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
                 sx={{ color: 'white' }}
               />
             </StyledTableCell>
-            <StyledTableCell>Name</StyledTableCell>
+            <StyledTableCell onClick={handleSortByName}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                Name
+                {sortOrder === 'asc' ? <ArrowUpwardIcon sx={{ fontSize: 16 }} /> : <ArrowDownwardIcon sx={{ fontSize: 16 }} />}
+              </Box>
+            </StyledTableCell>
             <StyledTableCell>Description</StyledTableCell>
             <StyledTableCell>Job Status</StyledTableCell>
             <StyledTableCell>Type</StyledTableCell>
@@ -160,4 +181,4 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
   );
 };
 
-export default SourcesTable; 
+export default SourcesTable;
