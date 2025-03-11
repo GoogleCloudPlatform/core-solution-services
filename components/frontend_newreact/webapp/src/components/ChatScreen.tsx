@@ -130,7 +130,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [showError, setShowError] = useState<Record<string, boolean>>({}); // State to track error visibility for each file
 
   const handleSelectSource = (source: QueryEngine) => {
-    console.log("Selected source:", source);
     setSelectedSource(source);
   };
 
@@ -225,7 +224,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       if (response?.history) {
 
         let history = response?.history
-        console.log("history is ", history);
         let newMessages = messagesFromHistory(history);
         setMessages(newMessages);
       } else {
@@ -607,17 +605,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             bottom: 0
           }}
         >
-          <Box
+         <Box
             onClick={toggleGraph}
             sx={{
-              display: 'inline-flex',
+              display: 'flex',
+              height: '32px',
+              justifyContent: 'center',
               alignItems: 'center',
               gap: 1,
               cursor: 'pointer',
               marginTop: 2,
               marginBottom: 1,
               padding: '8px 12px',
-              borderRadius: '20px',
+              borderRadius: '8px',
+              border: '1px solid #C4C7C5',
               width: 'fit-content',
               userSelect: 'none',
               ...(graphEnabled
