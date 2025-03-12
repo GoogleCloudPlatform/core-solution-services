@@ -338,9 +338,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     setImportUrl('');
   };
 
-  console.log({ hideHeader, showWelcome })
-  console.log({ messages })
-
   // Function to handle toggling the "Create a graph" feature
   const toggleGraph = () => {
     setGraphEnabled(!graphEnabled);
@@ -348,7 +345,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   return (
     <Box className="chat-screen">
-      {!hideHeader && (
+      {(!hideHeader && !graphEnabled) && (
         <Box className="chat-header" sx={{
           display: 'flex',
           alignItems: 'center',
@@ -387,8 +384,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         {!showWelcome && (
           <Box className="chat-messages" sx={{
             flexGrow: 1,
-            // overflowY: 'auto',
-            // minHeight: '100vh',
             mx: 2
           }}>
             {messages.map((message, index) => {
@@ -396,9 +391,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                 <Box key={index}
                   onMouseEnter={() => setShowCopyIcon(true)}  // Show icon on hover
                   onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}  // Hide icon and close tooltip when mouse leaves
-                  //onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text); }} // Removed inline onMouseEnter/Leave
                   sx={{
-                    // other styles
                     position: 'relative', // Needed for Tooltip positioning
                     marginRight: 'auto'
                   }}
@@ -411,9 +404,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       borderRadius: message.isUser ? '0.5rem 0.5rem 0 0.5rem' : '0.5rem 0.5rem 0.5rem 0rem',
                       padding: '0.75rem 1rem',
                       marginBottom: '0.5rem',
-                      justifyContent: message.isUser ? 'flex-end' : 'flex-start', // Added justifyContent
+                      justifyContent: message.isUser ? 'flex-end' : 'flex-start',
                       alignSelf: message.isUser ? 'flex-end' : 'flex-start',
-                      textAlign: message.isUser ? 'left' : 'left',
+                      textAlign: 'left',
                       maxWidth: message.isUser ? '50%' : '100%',
                       marginLeft: message.isUser ? 'auto' : '0',
                       display: 'flex',
@@ -523,69 +516,62 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       </>
                     )}
                     <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
-                  </Box>
-                  <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
-                    onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text, index); }}
-                    sx={{
-                      alignSelf: 'flex-end',
-                      maxWidth: '100%',
-                      display: 'flex',
-                      flexDirection: 'row-reverse',
-                      alignItems: 'flex-start',
-                    }}>
-                    {/* ... existing JSX (Avatar, Typography for message.text) */}
-
-                    {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
-                    {(message.isUser && (message.fileUrl)) && (
-                      <Box className="file-chip-container" sx={{
+                    <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
+                      onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text, index); }}
+                      sx={{
                         alignSelf: 'flex-end',
+                        maxWidth: '100%',
                         display: 'flex',
                         flexDirection: 'row-reverse',
                         alignItems: 'flex-start',
                       }}>
-                        <Button onClick={() => setShowDocumentViewer(true)}>
-                          <Chip
-                            label={message.uploadedFile || message.fileUrl}
-                            size="small"
-                            variant="outlined"
-                          />
-                        </Button>
-                      </Box>
-                    )}
+                      {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
+                      {(message.isUser && (message.fileUrl)) && (
+                        <Box className="file-chip-container" sx={{
+                          alignSelf: 'flex-end',
+                          display: 'flex',
+                          flexDirection: 'row-reverse',
+                          alignItems: 'flex-start',
+                        }}>
+                          <Button onClick={() => setShowDocumentViewer(true)}>
+                            <Chip
+                              label={message.uploadedFile || message.fileUrl}
+                              size="small"
+                              variant="outlined"
+                            />
+                          </Button>
+                        </Box>
+                      )}
 
-
-                    {showCopyIcon && !message.isUser && !message.references && !message.imageBase64 && (
-                      <Tooltip
-                        open={copiedMessageIndex === index} // Tooltip only opens if this message was copied
-                        arrow
-                        //placement="right"
-                        //onClose={() => setTooltipOpen(false)}
-                        title="Copied!"
-                        placement="top"
-                        leaveDelay={200}
-                      >
-                        <IconButton
-                          onClick={() => handleCopyClick(message.text, index)}
-                          aria-label="copy"
-                          sx={{
-                            position: 'absolute',
-                            left: -4,
-                            bottom: -4,
-                            backgroundColor: iconClicked ? '#2979ff' : 'transparent', // Blue background on click
-                            borderRadius: '50%', // Make it circular
-                            transition: 'background-color 0.2s ease', // Smooth transition
-                            padding: '4px',
-                            "&:hover": {
-                              backgroundColor: '#e3f2fd' // light blue on hover
-                            }
-
-                          }}
+                      {showCopyIcon && !message.isUser && !message.references && !message.imageBase64 && (
+                        <Tooltip
+                          open={copiedMessageIndex === index} // Tooltip only opens if this message was copied
+                          arrow
+                          title="Copied!"
+                          placement="top"
+                          leaveDelay={200}
                         >
-                          <ContentCopyIcon sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }} />
-                        </IconButton>
-
-                      </Tooltip>
-                    )}
+                          <IconButton
+                            onClick={() => handleCopyClick(message.text, index)}
+                            aria-label="copy"
+                            sx={{
+                              position: 'absolute',
+                              left: -4,
+                              bottom: -4,
+                              backgroundColor: iconClicked ? '#2979ff' : 'transparent', // Blue background on click
+                              borderRadius: '50%', // Make it circular
+                              transition: 'background-color 0.2s ease', // Smooth transition
+                              padding: '4px',
+                              "&:hover": {
+                                backgroundColor: '#e3f2fd' // light blue on hover
+                              }
+                            }}
+                          >
+                            <ContentCopyIcon sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
                   </Box>
                 </Box>
               )
@@ -605,50 +591,53 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             bottom: 0
           }}
         >
-         <Box
-            onClick={toggleGraph}
-            sx={{
-              display: 'flex',
-              height: '32px',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 1,
-              cursor: 'pointer',
-              marginTop: 2,
-              marginBottom: 1,
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid #C4C7C5',
-              width: 'fit-content',
-              userSelect: 'none',
-              ...(graphEnabled
-                ? {
-                  backgroundColor: '#004A77',
-                  color: '#C2E7FF',
-                }
-                : {
-                  backgroundColor: 'transparent',
-                  color: '#cccccc',
-                }
-              ),
-            }}
-          >
-            <BarChartIcon
+          {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
+          {(!selectedSource || selectedSource.id === "default-chat") && (
+            <Box
+              onClick={toggleGraph}
               sx={{
+                display: 'flex',
+                height: '32px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 1,
+                cursor: 'pointer',
+                marginTop: 2,
+                marginBottom: 1,
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #C4C7C5',
+                width: 'fit-content',
+                userSelect: 'none',
                 ...(graphEnabled
-                  ? { color: '#A8C7FA' }
-                  : { color: '#cccccc' }
-                )
-              }}
-            />
-            <Typography
-              sx={{
-                fontWeight: 500,
+                  ? {
+                      backgroundColor: '#004A77',
+                      color: '#C2E7FF',
+                    }
+                  : {
+                      backgroundColor: 'transparent',
+                      color: '#cccccc',
+                    }
+                ),
               }}
             >
-              {graphEnabled ? 'Create a graph ✓' : 'Create a graph'}
-            </Typography>
-          </Box>
+              <BarChartIcon
+                sx={{
+                  ...(graphEnabled
+                    ? { color: '#A8C7FA' }
+                    : { color: '#cccccc' }
+                  )
+                }}
+              />
+              <Typography
+                sx={{
+                  fontWeight: 500,
+                }}
+              >
+                {graphEnabled ? 'Create a graph ✓' : 'Create a graph'}
+              </Typography>
+            </Box>
+          )}
           <Paper className="chat-input">
             {(selectedFile || importUrl) && (
               <>
