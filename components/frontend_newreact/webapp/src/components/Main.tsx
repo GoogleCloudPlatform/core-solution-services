@@ -23,6 +23,7 @@ const MainContainer = styled(Box)(({ theme }) => ({
   padding: 0,
   width: '100%',
   overflow: 'hidden',
+
 }));
 
 const Title = styled(Box)({
@@ -175,6 +176,8 @@ export const MainApp = () => {
     setShowWelcome(false);
     setShowChat(true);
     setShowSources(false);
+    setShowAddSource(false);  // Hide Add Source
+    setShowEditSource(false); // Hide Edit Source
     setShowAddSource(false);  // Ensure Add Source is hidden
     setShowEditSource(false); // Ensure Edit Source is hidden
     setCurrentChat(undefined);
@@ -260,6 +263,8 @@ export const MainApp = () => {
             top: 0,
             left: 0,
             zIndex: 10,
+            paddingBottom: "150px", // added padding to create space for input
+            boxSizing: "border-box" // added to ensure padding does not add to size
           }}>
             <WelcomeFeatures
               username={username}
