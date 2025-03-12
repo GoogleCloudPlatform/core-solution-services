@@ -70,6 +70,8 @@ export const MainApp = () => {
   const [chatScreenKey, setChatScreenKey] = useState(0); // **NEW: Key for ChatScreen**
   const [headerClicked, setHeaderClicked] = useState(false); // New state variable
   const [latestChat, setLatestChat] = useState<Chat | undefined>();
+  const [isFileSelected, setIsFileSelected] = useState(false)
+
 
 
 
@@ -108,6 +110,8 @@ export const MainApp = () => {
       setCurrentChat(undefined);
       setHeaderClicked(false);
       setShowSources(false);
+      setShowAddSource(false);
+      setShowEditSource(false);
     }
   }, [headerClicked]);
   console.log({
@@ -116,6 +120,8 @@ export const MainApp = () => {
     currentChat,
     headerClicked,
     showSources,
+    showAddSource,
+    showEditSource,
   });
 
   useEffect(() => {

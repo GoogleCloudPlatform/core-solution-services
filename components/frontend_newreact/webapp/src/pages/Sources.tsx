@@ -180,9 +180,11 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
     if (!user?.token) return;
 
     try {
-
+      setDeleteDialogOpen(false);
+      console.log("delete modal should go away:");
       const deletePromises = sourcesToDelete.map(async (sourceId) => {
         const success = await deleteQueryEngine(user.token)({ id: sourceId } as QueryEngine);
+
         if (!success) {
           console.error(`Failed to delete source: ${sourceId}`);
         }
