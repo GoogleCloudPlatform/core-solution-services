@@ -214,7 +214,9 @@ async def llm_chat(prompt: str, llm_type: str,
     response = None
 
     # add chat history to prompt if necessary
-    if user_chat is not None or user_query is not None:
+    # Prompt history for gemini models is added using the native vertex API
+    if ((user_chat is not None or user_query is not None)
+         and "gemini" not in llm_type):
       context_prompt = get_context_prompt(
           user_chat=user_chat, user_query=user_query)
       # context_prompt includes only text (no images/video) from
