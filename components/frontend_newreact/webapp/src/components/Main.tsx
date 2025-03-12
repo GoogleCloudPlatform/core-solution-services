@@ -237,8 +237,7 @@ export const MainApp = () => {
       <CustomHeader ref={headerRef} sidebarWidth={sidebarWidth} panelWidth={panelWidth} onTitleClick={handleHeaderClick} title={
         <Title >
           <span className="primary">GenAI</span>
-          <span>for</span>
-          <span className="gradient">Public Sector</span>
+          <span className="gradient">for Public Sector</span>
         </Title>
       } >
       </CustomHeader>
