@@ -35,6 +35,7 @@ import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, L
 import axios from 'axios';
 import ClearIcon from '@mui/icons-material/Clear';
 import SourcesTable from '../components/SourcesTable';
+import CloseIcon from '@mui/icons-material/Close';
 
 
 const STYLED_WHITE = 'white';
@@ -728,8 +729,20 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
         rowsPerPage={rowsPerPage}
       />
 
-      {/* 🔹 Delete Confirmation Dialog - Add This Here */}
-      <Dialog open={deleteDialogOpen} onClose={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} PaperProps={{ sx: { backgroundColor: '#333537' } }}>
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteDialogOpen} 
+        onClose={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} 
+        PaperProps={{ sx: { backgroundColor: '#333537', position: 'relative' } }}
+      >
+        {/* Close Button */}
+        <IconButton 
+          onClick={() => setDeleteDialogOpen(false)}
+          sx={{ position: 'absolute', top: 8, right: 8, color: 'white' }}
+        >
+          <CloseIcon />
+        </IconButton>
+
         <DialogTitle sx={{ color: STYLED_WHITE }}>Confirm Deletion</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: 'white' }}>
@@ -742,7 +755,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
             </Box>
           )}
           {sourcesToDelete.length > 1 && (
-            <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1, }}>
+            <Box sx={{ backgroundColor: '#242424', p: 2, mt: 2, borderRadius: 1 }}>
               <Typography sx={{ color: '#888', mb: 1, display: 'block' }}>Source Names:</Typography>
               <List sx={{ color: STYLED_WHITE }}>
                 {sourcesToDelete.map((sourceId) => {
@@ -751,22 +764,33 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
                     <ListItem key={sourceId} sx={{ borderBottom: '1px solid #888' }}>
                       <ListItemText primary={sourceName} />
                     </ListItem>
-                  )
-                }
-                )}
+                  );
+                })}
               </List>
             </Box>
-          )};
-
-          {sourcesToDelete.length > 1 && <List sx={{ color: STYLED_WHITE }}>
-          </List>
-          }</DialogContent>
+          )}
+        </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} color="primary">
+          <Button 
+            onClick={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} 
+            sx={{
+              backgroundColor: '#242424', 
+              color: '#A8C7FA', 
+              borderRadius: '20px', 
+              textTransform: 'none',
+              '&:hover': { backgroundColor: '#3A3B3C' } // Darker background on hover
+            }}
+          >
             Cancel
           </Button>
-          <Button onClick={confirmDeleteSources} color="error" startIcon={<DeleteIcon />} variant="contained" sx={{ backgroundColor: '#F2B8B5', borderRadius: '20px', textTransform: 'none', color: '#601410' }}>
-            Delete Source
+          <Button 
+            onClick={confirmDeleteSources} 
+            color="error" 
+            startIcon={<DeleteIcon />} 
+            variant="contained" 
+            sx={{ backgroundColor: '#F2B8B5', borderRadius: '20px', textTransform: 'none', color: '#601410' }}
+          >
+            Delete {sourcesToDelete.length} {sourcesToDelete.length === 1 ? 'Source' : 'Sources'}
           </Button>
         </DialogActions>
       </Dialog>
