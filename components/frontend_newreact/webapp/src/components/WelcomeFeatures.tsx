@@ -105,48 +105,49 @@ export const WelcomeFeatures = ({ username, onChatStart, onSourcesView, headerHe
                 {feature.title}
               </Typography>
             </Box>
-            <Typography
-              variant="body2"
-              className="subtitle"
-              sx={{
-                color: 'rgba(255, 255, 255, 0.7)',
-                mt: 1
-              }}
-            >
-              {feature.subtitle}
-            </Typography>
-            <ListItemButton
-              onClick={feature.onClick}
-              tabIndex={0} // Set tabIndex to 0 to make only this tabable
-              sx={{
-                mt: 'auto',
-                pt: 2,
-                justifyContent: 'flex-start',
-                "&:focus-visible": {
-                  boxShadow: '0 0 0 2px #64b5f6',
-                  border: '1px solid #64b5f6',
-                  borderRadius: '16px',
-                  outline: 'none'
-                },
-                "&:hover": {
-                  backgroundColor: 'transparent',// remove default background
-                }
-              }}
-            >
-              <Box
-                sx={{
-                  bgcolor: '#A8C7FA',
-                  color: '#062E6F',
-                  px: 2,
-                  py: 0.5,
-                  borderRadius: '16px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-              >
-                {feature.action}
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', mt: 1 }}>
+              <Box> {/* Container for subtitle */}
+                <Typography
+                  variant="body2"
+                  className="subtitle"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    display: 'block',
+                  }}
+                >
+                  {feature.subtitle}
+                </Typography>
               </Box>
-            </ListItemButton>
+              <Box sx={{ mt: 'auto' }}> {/* Container for button, pushes it to the bottom */}
+                <ListItemButton
+                  onClick={feature.onClick}
+                  tabIndex={0}
+                  sx={{
+                    p: 0,
+                    "&:focus-visible": {
+                      boxShadow: '0 0 0 2px #64b5f6',
+                      border: '1px solid #64b5f6',
+                      borderRadius: '16px',
+                      outline: 'none',
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      bgcolor: '#A8C7FA',
+                      color: '#062E6F',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: '16px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {feature.action}
+                </Box>
+                </ListItemButton>
+              </Box>
+            </Box>
           </Paper>
         ))}
       </Box>

@@ -26,8 +26,6 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ClearIcon from '@mui/icons-material/Clear';
 import styled from '@emotion/styled';
-import InfoIcon from '@mui/icons-material/Info';
-import Tooltip from '@mui/material/Tooltip';
 import CloseIcon from '@mui/icons-material/Close';
 
 const StyledSelect = styled(Select)({
@@ -132,6 +130,11 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
 
     if (!formData.name || !formData.doc_url) {
       setError("Please fill in all required fields.");
+      return;
+    }
+
+    if (!/^https?:\/\/|^gs:\/\//.test(formData.doc_url)) {
+      setError("Invalid URL. Must start with https://, http://, or gs://");
       return;
     }
     // Open confirmation modal without starting the API request
@@ -249,9 +252,6 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
             <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
               Name
             </Typography>
-            <Tooltip title="Provide a unique name for the query engine.">
-              <InfoIcon sx={{ color: '#888', fontSize: '14px', cursor: 'pointer', ml: 0.5 }} />
-            </Tooltip>
             <TextField
               fullWidth
               placeholder="Input"
@@ -279,9 +279,6 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
             <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
               Description
             </Typography>
-            <Tooltip title="A brief description of this source.">
-              <InfoIcon sx={{ color: '#888', fontSize: '14px', cursor: 'pointer', ml: 0.5 }} />
-            </Tooltip>
             <TextField
               fullWidth
               placeholder="Enter a brief description"
@@ -307,16 +304,13 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                 }
               }}
             />
-            <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>A brief description of this source.</Typography>
+            <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>A brief description of this source. {formData.description?.length || 0}/75 characters left.</Typography>
           </Box>
 
           <Box sx={{ mb: 4 }}>
             <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>
               Data URL
             </Typography>
-            <Tooltip title="Enter a valid URL starting with https://, http://, or gs://">
-              <InfoIcon sx={{ color: '#888', fontSize: '16px', cursor: 'pointer' }} />
-            </Tooltip>
             <TextField
               fullWidth
               placeholder="Input"
@@ -347,6 +341,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                 }
               }}
             />
+            <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>Enter a valid URL starting with https://, http://, or gs://.</Typography>
 
           </Box>
 
@@ -393,9 +388,6 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                       Type
                     </Typography>
                     <Box sx={{ flex: 1 }}>
-                      <Tooltip title="Select the type of query engine you want to use.">
-                        <InfoIcon sx={{ color: '#888', fontSize: '16px', cursor: 'pointer' }} />
-                      </Tooltip>
                       <StyledSelect
                         fullWidth
                         value={formData.query_engine_type}
@@ -420,6 +412,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                         ))}
                       </StyledSelect>
                     </Box>
+                    <Typography variant="caption" sx={{ color: '#888', mb: 1, display: 'block' }}>Select the type of query engine you want to use.</Typography>
                   </Box>
                   {/* Multimodal section */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexDirection: 'column' }}>
@@ -609,8 +602,10 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                   <ListItemText
                     primary="Embedding Type:"
                     secondary={
-                      embeddingModels.find(model => model.id === formData?.embedding_type)?.name ||
-                      formData?.embedding_type
+                      formData.embedding_type
+                        ? embeddingModels.find(model => model.id === formData?.embedding_type)?.name ||
+                          formData?.embedding_type
+                        : "N/A"
                     }
                     sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }}
                   />
@@ -622,7 +617,13 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                 </Box>
                 <Box sx={{ flex: 1 }}>
                   <ListItemText primary="Chunk Size:" secondary={formData?.chunk_size?.toString()} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
-                </Box>
+                  </Box>
+              </ListItem>
+              <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
+                <ListItemText sx={{ color: formData.agents?.length ? STYLED_WHITE : '#888', '& .MuiListItemText-secondary': { color: formData.agents?.length ? STYLED_WHITE : '#888' } }} primary="Agents:" secondary={formData.agents?.join(", ") || 'N/A'} />
+              </ListItem>
+              <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '0px' }}>
+                <ListItemText sx={{ color: formData.child_engines?.length ? STYLED_WHITE : '#888', '& .MuiListItemText-secondary': { color: formData.child_engines?.length ? STYLED_WHITE : '#888' } }} primary="Child Sources:" secondary={formData.child_engines?.join(", ") || 'N/A'} />
               </ListItem>
             </List>
           </DialogContent>
