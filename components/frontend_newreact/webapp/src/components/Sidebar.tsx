@@ -33,6 +33,7 @@ import SourceIcon from '../assets/source-icon.svg'; // Import your SVG
 import HistoryCustomIcon from '../assets/history-icon.svg';
 import SettingsCustomIcon from '../assets/settings-icon.svg';
 import Tooltip from '@mui/material/Tooltip';
+import CloseIcon from '@mui/icons-material/Close';
 
 
 const drawerWidth = 150;
@@ -348,7 +349,7 @@ export const Sidebar = ({
                                 },
                             }}
                         >
-                            <MenuIcon />
+                            <CloseIcon />
                         </IconButton>
                     </PanelHeader>
                 </header>
@@ -388,7 +389,7 @@ export const Sidebar = ({
                             },
                         }}
                     >
-                        <MenuIcon />
+                        <CloseIcon />
                     </IconButton>
                 </PanelHeader>
                 {activePanel === 'history' && (

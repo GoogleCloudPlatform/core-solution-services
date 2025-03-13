@@ -798,7 +798,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
           Edit Source
           <IconButton onClick={handleEditModalClose}>
-            <Close />
+          <Close sx={{ color: STYLED_WHITE }}/>
           </IconButton>
         </DialogTitle>
         <DialogContent>
@@ -890,7 +890,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
           View Source
           <IconButton onClick={handleViewModalClose}>
-            <Close />
+          <Close sx={{ color: STYLED_WHITE }}/>
           </IconButton>
         </DialogTitle>
         <DialogContent>
@@ -935,10 +935,13 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
               </Box>
             </ListItem>
             <ListItem sx={{ borderBottom: '1px solid #888' }}>
-              <ListItemText primary="Agents:" secondary={sourceToView?.agents?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+            <ListItemText
+                   sx={{ color: sourceToView?.agents && sourceToView.agents.length > 0 ? STYLED_WHITE : '#888', '& .MuiListItemText-secondary': { color: sourceToView?.agents && sourceToView.agents.length > 0 ? STYLED_WHITE : '#888' } }}
+                  primary="Agents:" secondary={sourceToView?.agents?.join(", ") || 'N/A'}
+                />
             </ListItem>
-            <ListItem sx={{ borderBottom: '1px solid #888' }}>
-              <ListItemText primary="Child Engines:" secondary={sourceToView?.child_engines?.join(", ") || ''} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+            <ListItem sx={{ borderBottom: '0px' }}>
+            <ListItemText primary="Child Engines:" secondary={sourceToView?.child_engines?.join(", ") || 'N/A'}  sx={{ color: sourceToView?.child_engines && sourceToView.child_engines.length > 0 ? STYLED_WHITE : '#888', '& .MuiListItemText-secondary': { color: sourceToView?.child_engines && sourceToView.child_engines.length > 0 ? STYLED_WHITE : '#888' } }} />
             </ListItem>
           </List>
         </DialogContent>
