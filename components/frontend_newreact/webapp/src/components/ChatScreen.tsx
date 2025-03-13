@@ -508,7 +508,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                                 References:
                               </Typography>
                               {message.references.map((reference, idx) => (
-                                <ReferenceChip key={idx} reference={reference} onCopy={(text) => handleCopyClick(text, index)} />
+                                <ReferenceChip key={idx} reference={reference} />
                               ))}
                             </Box>
                           )}

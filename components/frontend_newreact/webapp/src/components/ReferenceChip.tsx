@@ -5,27 +5,13 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 interface ReferenceChipProps {
   reference: QueryReference;
-  onCopy?: (text: string, references?: QueryReference[]) => void;
 }
 
-const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference, onCopy }) => {
+const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference }) => {
 
   const [showDetails, setShowDetails] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
-  const [iconClicked, setIconClicked] = useState(false);
-  const [showCopyIcon, setShowCopyIcon] = useState(false);
 
-  const handleCopy = () => {
-    if (onCopy) {
-      onCopy(reference.document_text, [reference]);
-      setTooltipOpen(true);
-      setIconClicked(true);
-      setTimeout(() => {
-        setIconClicked(false);
-        setTooltipOpen(false);
-      }, 200);
-    }
-  };
 
   //New function to create the title
   const createReferenceTitle = (url: string): string => {
@@ -41,10 +27,7 @@ const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference, onCopy }) => {
 
 
   return (
-    <Box sx={{ mb: 1, position: 'relative' }}
-      onMouseEnter={() => setShowCopyIcon(true)}
-      onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}
-    >
+    <Box sx={{ mb: 1, position: 'relative' }}>
       <Button
         onClick={() => setShowDetails(!showDetails)}
         sx={{
@@ -86,35 +69,6 @@ const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference, onCopy }) => {
           )}
         </Box>
       </Button>
-      {onCopy && showCopyIcon && (
-        <Tooltip
-          open={tooltipOpen}
-          onClose={() => setTooltipOpen(false)}
-          title="Copied!"
-          placement="top"
-          leaveDelay={200}
-        >
-          <IconButton
-            sx={{
-              position: 'absolute',
-              left: -4,
-              top: -4,
-              backgroundColor: iconClicked ? '#2979ff' : 'transparent',
-              borderRadius: '50%',
-              transition: 'background-color 0.2s ease',
-              padding: '4px',
-              '&:hover': {
-                backgroundColor: '#e3f2fd',
-              },
-            }}
-            onClick={handleCopy}
-          >
-            <ContentCopyIcon
-              sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }}
-            />
-          </IconButton>
-        </Tooltip>
-      )}
     </Box>
   );
 };
