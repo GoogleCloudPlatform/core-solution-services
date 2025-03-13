@@ -588,7 +588,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             p: 2,
             flexShrink: 0,
             position: 'sticky',
-            bottom: 0
+            bottom: 0,
+            zIndex: 9999
           }}
         >
           {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
@@ -611,13 +612,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                 userSelect: 'none',
                 ...(graphEnabled
                   ? {
-                      backgroundColor: '#004A77',
-                      color: '#C2E7FF',
-                    }
+                    backgroundColor: '#004A77',
+                    color: '#C2E7FF',
+                  }
                   : {
-                      backgroundColor: 'transparent',
-                      color: '#cccccc',
-                    }
+                    backgroundColor: 'transparent',
+                    color: '#cccccc',
+                  }
                 ),
               }}
             >
