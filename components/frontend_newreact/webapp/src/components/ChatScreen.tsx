@@ -75,6 +75,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   // Ref for the scrollable container
   const chatMessagesRef = useRef<HTMLDivElement | null>(null);
   // Ref for the last rendered message element
+
+
+  const handleCopyClick = (text: string, index: number) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        // Set the index of the message that was copied
+        setCopiedMessageIndex(index);
+
+        // Clear the copied message index after a brief delay (e.g., 2 seconds)
+        setTimeout(() => {
+          setCopiedMessageIndex(null);
+        }, 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+      });
+  };
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // Add effect to fetch full chat details when currentChat changes
@@ -117,21 +134,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     setSelectedSource(source);
   };
 
-  const handleCopyClick = (text: string, index: number) => {
-    navigator.clipboard.writeText(text)
-      .then(() => {
-        // Set the index of the message that was copied
-        setCopiedMessageIndex(index);
-        // Clear the copied message index after a brief delay (e.g., 2 seconds)
-        setTimeout(() => {
-          setCopiedMessageIndex(null);
-        }, 2000);
-      })
-      .catch(err => {
-        console.error('Failed to copy: ', err);
-      });
-  };
-
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
 
@@ -155,8 +157,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     };
     setMessages(prev => [...prev, userMessage]);
     setPrompt('');
-
-    // The scrolling is now handled in useLayoutEffect after messages update
 
     setIsLoading(true);
 
@@ -320,7 +320,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const handleRemoveFile = (fileName: string) => {
     setUploadedFiles(prev => prev.filter(file => file.name !== fileName));
-    setShowError(prevErrors => {
+    setShowError?.((prevErrors) => {
       const newErrors = { ...prevErrors };
       delete newErrors[fileName];
       return newErrors;
@@ -475,6 +475,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                           >
                             {message.text}
                           </ReactMarkdown>
+                          
                           {/* If there's an image in the same AI message, display it below the text */}
                           {message.imageBase64 && (
                             <Box sx={{ mt: 2 }}>
@@ -485,9 +486,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               />
                             </Box>
                           )}
+                          
                           {/* Add references display */}
                           {!message.isUser && message.references && message.references.length > 0 && (
-                            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #4a4a4a' }}>
+                            <Box sx={{ 
+                              mt: 2, 
+                              pt: 2, 
+                              borderTop: '1px solid #4a4a4a'
+                              }}>
                               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                 References:
                               </Typography>
@@ -526,9 +532,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                           </Button>
                         </Box>
                       )}
+
                       {showCopyIcon && !message.isUser && !message.references && !message.imageBase64 && (
                         <Tooltip
-                          open={copiedMessageIndex === index}
+                          open={copiedMessageIndex === index} // Tooltip only opens if this message was copied
                           arrow
                           title="Copied!"
                           placement="top"
@@ -541,11 +548,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               position: 'absolute',
                               left: -4,
                               bottom: -4,
-                              backgroundColor: iconClicked ? '#2979ff' : 'transparent',
-                              borderRadius: '50%',
-                              transition: 'background-color 0.2s ease',
+                              backgroundColor: iconClicked ? '#2979ff' : 'transparent', // Blue background on click
+                              borderRadius: '50%', // Make it circular
+                              transition: 'background-color 0.2s ease', // Smooth transition
                               padding: '4px',
-                              "&:hover": { backgroundColor: '#e3f2fd' }
+                              "&:hover": { 
+                                backgroundColor: '#e3f2fd' // light blue on hover
+                              }
                             }}
                           >
                             <ContentCopyIcon sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }} />
@@ -560,17 +569,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             {isLoading && <LoadingSpinner />}
           </Box>
         )}
+
         {/* Chat input container */}
-        <Box className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`} sx={{
+        <Box 
+        className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`}
+        sx={{
           p: 2,
           flexShrink: 0,
           position: 'sticky',
           bottom: 0,
           zIndex: 9999
-        }}>
+        }}
+        >
           {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
           {(!selectedSource || selectedSource.id === "default-chat") && (
-            <Box onClick={toggleGraph} sx={{
+            <Box 
+            onClick={toggleGraph} 
+            sx={{
               display: 'flex',
               height: '32px',
               justifyContent: 'center',
@@ -585,12 +600,30 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
               width: 'fit-content',
               userSelect: 'none',
               ...(graphEnabled
-                ? { backgroundColor: '#004A77', color: '#C2E7FF' }
-                : { backgroundColor: 'transparent', color: '#cccccc' }
+                ? { 
+                  backgroundColor: '#004A77', 
+                  color: '#C2E7FF',
+                }
+                : { 
+                  backgroundColor: 'transparent', 
+                  color: '#cccccc',
+                }
               ),
-            }}>
-              <BarChartIcon sx={{ ...(graphEnabled ? { color: '#A8C7FA' } : { color: '#cccccc' }) }} />
-              <Typography sx={{ fontWeight: 500 }}>
+            }}
+            >
+              <BarChartIcon 
+              sx={{ 
+                ...(graphEnabled 
+                ? { color: '#A8C7FA' } 
+                : { color: '#cccccc' }
+                ) 
+                }} 
+                />
+              <Typography 
+              sx={{ 
+                fontWeight: 500, 
+                }}
+                >
                 {graphEnabled ? 'Create a graph ✓' : 'Create a graph'}
               </Typography>
             </Box>
@@ -600,7 +633,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
               <>
                 <Box className="file-chip-container">
                   <Button onClick={() => setShowDocumentViewer(true)}>
-                    <Chip label={selectedFile ? selectedFile.name : importUrl} onDelete={handleRemoveSelectedFile} size="small" variant="outlined" />
+                    <Chip 
+                    label={selectedFile ? selectedFile.name : importUrl} 
+                    onDelete={handleRemoveSelectedFile} 
+                    size="small" 
+                    variant="outlined" 
+                    />
                   </Button>
                 </Box>
                 <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
@@ -620,7 +658,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           </Paper>
         </Box>
       </Box>
-      <Modal open={isUploadModalOpen} onClose={handleCloseUploadModal} aria-labelledby="upload-modal-title">
+      
+      <Modal 
+      open={isUploadModalOpen} 
+      onClose={handleCloseUploadModal} 
+      aria-labelledby="upload-modal-title"
+      >
         <Box>
           <UploadModal
             open={isUploadModalOpen}
@@ -641,7 +684,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   );
 };
 
-// Helper function to check if the value is a ReadableStream
+// Helper functions to check response types
 const isReadableStream = (value: any): value is ReadableStream => {
   return value instanceof ReadableStream;
 };
