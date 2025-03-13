@@ -75,7 +75,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   // Ref for the scrollable container
   const chatMessagesRef = useRef<HTMLDivElement | null>(null);
   // Ref for the last rendered message element
-
+  
 
   const handleCopyClick = (text: string, index: number) => {
     navigator.clipboard.writeText(text)
@@ -360,10 +360,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             <Typography variant="h6">
               {currentChat?.title || 'New Chat'}
             </Typography>
-            <SourceSelector
-              onSelectSource={handleSelectSource}
-              chatId={chatId}
-            />
+            {/* Only show the source selector if no chat ID exists (i.e. new chat) */}
+            {!chatId && (
+              <SourceSelector
+                onSelectSource={handleSelectSource}
+                chatId={chatId}
+              />
+            )}
           </Box>
         </Box>
       )}
@@ -493,7 +496,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               mt: 2, 
                               pt: 2, 
                               borderTop: '1px solid #4a4a4a'
-                              }}>
+                            }}>
                               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                 References:
                               </Typography>
@@ -572,58 +575,58 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
         {/* Chat input container */}
         <Box 
-        className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`}
-        sx={{
-          p: 2,
-          flexShrink: 0,
-          position: 'sticky',
-          bottom: 0,
-          zIndex: 9999
-        }}
+          className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`}
+          sx={{
+            p: 2,
+            flexShrink: 0,
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 9999
+          }}
         >
           {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
           {(!selectedSource || selectedSource.id === "default-chat") && (
             <Box 
-            onClick={toggleGraph} 
-            sx={{
-              display: 'flex',
-              height: '32px',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 1,
-              cursor: 'pointer',
-              marginTop: 2,
-              marginBottom: 1,
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid #C4C7C5',
-              width: 'fit-content',
-              userSelect: 'none',
-              ...(graphEnabled
-                ? { 
-                  backgroundColor: '#004A77', 
-                  color: '#C2E7FF',
-                }
-                : { 
-                  backgroundColor: 'transparent', 
-                  color: '#cccccc',
-                }
-              ),
-            }}
+              onClick={toggleGraph} 
+              sx={{
+                display: 'flex',
+                height: '32px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 1,
+                cursor: 'pointer',
+                marginTop: 2,
+                marginBottom: 1,
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #C4C7C5',
+                width: 'fit-content',
+                userSelect: 'none',
+                ...(graphEnabled
+                  ? { 
+                      backgroundColor: '#004A77', 
+                      color: '#C2E7FF',
+                    }
+                  : { 
+                      backgroundColor: 'transparent', 
+                      color: '#cccccc',
+                    }
+                ),
+              }}
             >
               <BarChartIcon 
-              sx={{ 
-                ...(graphEnabled 
-                ? { color: '#A8C7FA' } 
-                : { color: '#cccccc' }
-                ) 
+                sx={{ 
+                  ...(graphEnabled 
+                    ? { color: '#A8C7FA' } 
+                    : { color: '#cccccc' }
+                  ) 
                 }} 
-                />
+              />
               <Typography 
-              sx={{ 
-                fontWeight: 500, 
+                sx={{ 
+                  fontWeight: 500, 
                 }}
-                >
+              >
                 {graphEnabled ? 'Create a graph ✓' : 'Create a graph'}
               </Typography>
             </Box>
@@ -634,10 +637,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                 <Box className="file-chip-container">
                   <Button onClick={() => setShowDocumentViewer(true)}>
                     <Chip 
-                    label={selectedFile ? selectedFile.name : importUrl} 
-                    onDelete={handleRemoveSelectedFile} 
-                    size="small" 
-                    variant="outlined" 
+                      label={selectedFile ? selectedFile.name : importUrl} 
+                      onDelete={handleRemoveSelectedFile} 
+                      size="small" 
+                      variant="outlined" 
                     />
                   </Button>
                 </Box>
@@ -660,9 +663,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       </Box>
       
       <Modal 
-      open={isUploadModalOpen} 
-      onClose={handleCloseUploadModal} 
-      aria-labelledby="upload-modal-title"
+        open={isUploadModalOpen} 
+        onClose={handleCloseUploadModal} 
+        aria-labelledby="upload-modal-title"
       >
         <Box>
           <UploadModal
