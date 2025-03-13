@@ -18,9 +18,9 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
-import { LoadingSpinner } from "@/components/LoadingSpinner"
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import DocumentModal from './DocumentModal';
-import ReferenceChip from "@/components/ReferenceChip"
+import ReferenceChip from "@/components/ReferenceChip";
 
 interface ChatMessage {
   text: string;
@@ -75,7 +75,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   // Ref for the scrollable container
   const chatMessagesRef = useRef<HTMLDivElement | null>(null);
   // Ref for the last rendered message element
-
+  
 
   const handleCopyClick = (text: string, index: number) => {
     navigator.clipboard.writeText(text)
@@ -160,6 +160,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
     setIsLoading(true);
 
+    // Determine if this is a new chat (i.e. no existing chatId)
+    const wasNewChat = !chatId;
+
     try {
       let response: Chat | undefined;
 
@@ -212,6 +215,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       // Only proceed if we got a valid Chat object
       if (response?.id) {
         setChatId(response.id);
+        // If this was a new chat, dispatch an event to update the chat history
+        if (wasNewChat) {
+          window.dispatchEvent(new Event("chatHistoryUpdated"));
+        }
       }
 
       if (response?.history) {
@@ -475,7 +482,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                           >
                             {message.text}
                           </ReactMarkdown>
-                          
+
                           {/* If there's an image in the same AI message, display it below the text */}
                           {message.imageBase64 && (
                             <Box sx={{ mt: 2 }}>
@@ -486,14 +493,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               />
                             </Box>
                           )}
-                          
+
                           {/* Add references display */}
                           {!message.isUser && message.references && message.references.length > 0 && (
-                            <Box sx={{ 
-                              mt: 2, 
-                              pt: 2, 
+                            <Box sx={{
+                              mt: 2,
+                              pt: 2,
                               borderTop: '1px solid #4a4a4a'
-                              }}>
+                            }}>
                               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                 References:
                               </Typography>
@@ -552,7 +559,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               borderRadius: '50%', // Make it circular
                               transition: 'background-color 0.2s ease', // Smooth transition
                               padding: '4px',
-                              "&:hover": { 
+                              "&:hover": {
                                 backgroundColor: '#e3f2fd' // light blue on hover
                               }
                             }}
@@ -572,58 +579,58 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
         {/* Chat input container */}
         <Box 
-        className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`}
-        sx={{
-          p: 2,
-          flexShrink: 0,
-          position: 'sticky',
-          bottom: 0,
-          zIndex: 9999
-        }}
+          className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`}
+          sx={{
+            p: 2,
+            flexShrink: 0,
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 9999
+          }}
         >
           {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
           {(!selectedSource || selectedSource.id === "default-chat") && (
             <Box 
-            onClick={toggleGraph} 
-            sx={{
-              display: 'flex',
-              height: '32px',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: 1,
-              cursor: 'pointer',
-              marginTop: 2,
-              marginBottom: 1,
-              padding: '8px 12px',
-              borderRadius: '8px',
-              border: '1px solid #C4C7C5',
-              width: 'fit-content',
-              userSelect: 'none',
-              ...(graphEnabled
-                ? { 
-                  backgroundColor: '#004A77', 
-                  color: '#C2E7FF',
-                }
-                : { 
-                  backgroundColor: 'transparent', 
-                  color: '#cccccc',
-                }
-              ),
-            }}
+              onClick={toggleGraph} 
+              sx={{
+                display: 'flex',
+                height: '32px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 1,
+                cursor: 'pointer',
+                marginTop: 2,
+                marginBottom: 1,
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: '1px solid #C4C7C5',
+                width: 'fit-content',
+                userSelect: 'none',
+                ...(graphEnabled
+                  ? { 
+                      backgroundColor: '#004A77', 
+                      color: '#C2E7FF',
+                    }
+                  : { 
+                      backgroundColor: 'transparent', 
+                      color: '#cccccc',
+                    }
+                ),
+              }}
             >
               <BarChartIcon 
-              sx={{ 
-                ...(graphEnabled 
-                ? { color: '#A8C7FA' } 
-                : { color: '#cccccc' }
-                ) 
+                sx={{ 
+                  ...(graphEnabled 
+                    ? { color: '#A8C7FA' } 
+                    : { color: '#cccccc' }
+                  ) 
                 }} 
-                />
+              />
               <Typography 
-              sx={{ 
-                fontWeight: 500, 
+                sx={{ 
+                  fontWeight: 500, 
                 }}
-                >
+              >
                 {graphEnabled ? 'Create a graph ✓' : 'Create a graph'}
               </Typography>
             </Box>
@@ -634,10 +641,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                 <Box className="file-chip-container">
                   <Button onClick={() => setShowDocumentViewer(true)}>
                     <Chip 
-                    label={selectedFile ? selectedFile.name : importUrl} 
-                    onDelete={handleRemoveSelectedFile} 
-                    size="small" 
-                    variant="outlined" 
+                      label={selectedFile ? selectedFile.name : importUrl} 
+                      onDelete={handleRemoveSelectedFile} 
+                      size="small" 
+                      variant="outlined" 
                     />
                   </Button>
                 </Box>
@@ -660,9 +667,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       </Box>
       
       <Modal 
-      open={isUploadModalOpen} 
-      onClose={handleCloseUploadModal} 
-      aria-labelledby="upload-modal-title"
+        open={isUploadModalOpen} 
+        onClose={handleCloseUploadModal} 
+        aria-labelledby="upload-modal-title"
       >
         <Box>
           <UploadModal
