@@ -1,6 +1,6 @@
 import { SourceSelector } from './SourceSelector'; // Import the component
 import { QueryEngine } from '../lib/types'; // Import the type
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Box, Typography, IconButton, Paper, InputBase, Avatar, Modal, Chip, Button, Snackbar, Tooltip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
@@ -53,7 +53,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   showWelcome = true
 }) => {
   const [prompt, setPrompt] = useState('');
-  console.log({ currentChat })
   const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     currentChat?.history?.map(h => ({
@@ -69,9 +68,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showCopyIcon, setShowCopyIcon] = useState(false); // State for icon visibility
   const [tooltipOpen, setTooltipOpen] = useState(false);   // State for tooltip
-  const [iconClicked, setIconClicked] = useState(false);    // State for click effect
+  const [iconClicked, setIconClicked] = useState(false);   // State for click effect
   const [graphEnabled, setGraphEnabled] = useState(false);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
+
+  // Ref for the scrollable container
+  const chatMessagesRef = useRef<HTMLDivElement | null>(null);
+  // Ref for the last rendered message element
 
 
   const handleCopyClick = (text: string, index: number) => {
@@ -90,7 +93,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       });
   };
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // Add effect to fetch full chat details when currentChat changes
   useEffect(() => {
@@ -102,7 +104,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           if (fullChat) {
             let newMessages = messagesFromHistory(fullChat.history);
             setMessages(newMessages);
-            console.log("Setting 1")
             setChatId(fullChat.id);
           }
         } catch (error) {
@@ -142,9 +143,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
     let uploadedFileName = selectedFile?.name;
     if (importUrl) {
-      uploadedFileName = importUrl.split('/').pop()
+      uploadedFileName = importUrl.split('/').pop();
       if (importUrl.startsWith("gs://")) {
-        uploadedFileName = importUrl.replace("gs://", "").split("/").pop()
+        uploadedFileName = importUrl.replace("gs://", "").split("/").pop();
       }
     }
 
@@ -156,9 +157,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     };
     setMessages(prev => [...prev, userMessage]);
     setPrompt('');
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
 
     setIsLoading(true);
 
@@ -189,8 +187,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         if (chatResponse && !isReadableStream(chatResponse)) {
           response = chatResponse;
         }
-
-      } else if (selectedSource && selectedSource.id != "default-chat") {
+      } else if (selectedSource && selectedSource.id !== "default-chat") {
         // Create new chat via query endpoint
         const queryResponse = await createQuery(user.token)({
           engine: selectedSource.id,
@@ -198,7 +195,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
         });
-        response = queryResponse
+        response = queryResponse;
       } else {
         // Create new regular chat
         const chatResponse = await createChat(user.token)({
@@ -206,29 +203,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           uploadFile: selectedFile || undefined,
           fileUrl: importUrl,
         });
-
         // Only assign if it's a Chat object
         if (chatResponse && !isReadableStream(chatResponse)) {
           response = chatResponse;
         }
       }
 
-      console.log("api response", response)
-
       // Only proceed if we got a valid Chat object
       if (response?.id) {
-        console.log("Setting 2")
         setChatId(response.id);
       }
 
       if (response?.history) {
-
-        let history = response?.history
+        let history = response.history;
         let newMessages = messagesFromHistory(history);
         setMessages(newMessages);
       } else {
-        // Handle the case where there's no history in the response (e.g., an error occurred)
-        console.error("API response does not contain 'history' property:", response)
+        console.error("API response does not contain 'history' property:", response);
       }
 
       setSelectedFile(null); // Reset file
@@ -246,11 +237,22 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     }
   };
 
+  // useLayoutEffect to scroll the container so that the last message aligns with the top
+  useLayoutEffect(() => {
+    if (chatMessagesRef.current && messagesEndRef.current) {
+      const container = chatMessagesRef.current;
+      const lastMessage = messagesEndRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const messageRect = lastMessage.getBoundingClientRect();
+      const offset = messageRect.top - containerRect.top;
+      container.scrollTo({ top: container.scrollTop + offset, behavior: 'smooth' });
+    }
+  }, [messages]);
+
   const messagesFromHistory = (history: any[]) => {
     let newMessages: ChatMessage[] = [];
     for (let i = 0; i < history.length; i++) {
       const historyItem = history[i];
-
       if (historyItem.HumanInput) {
         let uploadedFile: string | undefined;
         let fileUrl: string | undefined;
@@ -268,7 +270,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           uploadedFile: uploadedFile,
           fileUrl: fileUrl
         });
-
       }
       // Combine AIOutput and FileContentsBase64 in the same message so the image is below the text
       else if (historyItem.AIOutput || historyItem.FileContentsBase64) {
@@ -290,10 +291,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         continue;
       }
     }
-
-    console.log("new messages", newMessages)
     return newMessages;
-  }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -309,9 +309,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files[0]) {
-      console.log('File selected:', files[0].name);
       setSelectedFile(files[0]);
-      // Simulate or handle error states as needed
       const newFiles = Array.from(files).map(file => ({
         name: file.name,
         progress: 0
@@ -382,20 +380,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         justifyContent: 'flex-end'
       }}>
         {!showWelcome && (
-          <Box className="chat-messages" sx={{
+          <Box ref={chatMessagesRef} className="chat-messages" sx={{
             flexGrow: 1,
-            mx: 2
+            mx: 2,
+            overflowY: 'auto'
           }}>
             {messages.map((message, index) => {
+              const isLastItem = index === messages.length - 1;
               return (
                 <Box key={index}
-                  onMouseEnter={() => setShowCopyIcon(true)}  // Show icon on hover
-                  onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}  // Hide icon and close tooltip when mouse leaves
+                  onMouseEnter={() => setShowCopyIcon(true)}
+                  onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}
                   sx={{
-                    position: 'relative', // Needed for Tooltip positioning
+                    position: 'relative',
                     marginRight: 'auto'
                   }}
-
                 >
                   <Box
                     className={message.isUser ? 'user-message' : 'assistant-message'}
@@ -414,7 +413,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       alignItems: message.isUser ? 'flex-end' : 'flex-start',
                       gap: '0.5rem',
                     }}
-                    ref={index === messages.length - 1 && message.isUser ? messagesEndRef : null} // Attach reference to the last user messsage
+                    ref={isLastItem ? messagesEndRef : null}
                   >
                     {message.isUser ? (
                       <Typography sx={{ color: '#fff', textAlign: 'left' }}>
@@ -422,25 +421,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       </Typography>
                     ) : (
                       <>
-                        <Avatar
-                          src="/assets/images/gemini-icon.png"
-                          className="message-avatar"
-                        />
+                        <Avatar src="/assets/images/gemini-icon.png" className="message-avatar" />
                         <Box sx={{ flex: 1 }}>
                           <ReactMarkdown
                             components={{
                               code({ node, className, children }) {
                                 const match = /language-(\w+)/.exec(className || '');
                                 const language = match ? match[1] : '';
-
                                 if (!match) {
-                                  return (
-                                    <code className={className}>
-                                      {children}
-                                    </code>
-                                  );
+                                  return <code className={className}>{children}</code>;
                                 }
-
                                 return (
                                   <SyntaxHighlighter
                                     style={oneDark}
@@ -485,7 +475,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                           >
                             {message.text}
                           </ReactMarkdown>
-
+                          
                           {/* If there's an image in the same AI message, display it below the text */}
                           {message.imageBase64 && (
                             <Box sx={{ mt: 2 }}>
@@ -496,14 +486,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               />
                             </Box>
                           )}
-
+                          
                           {/* Add references display */}
                           {!message.isUser && message.references && message.references.length > 0 && (
-                            <Box sx={{
-                              mt: 2,
-                              pt: 2,
+                            <Box sx={{ 
+                              mt: 2, 
+                              pt: 2, 
                               borderTop: '1px solid #4a4a4a'
-                            }}>
+                              }}>
                               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                                 References:
                               </Typography>
@@ -526,7 +516,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                         alignItems: 'flex-start',
                       }}>
                       {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
-                      {(message.isUser && (message.fileUrl)) && (
+                      {(message.isUser && message.fileUrl) && (
                         <Box className="file-chip-container" sx={{
                           alignSelf: 'flex-end',
                           display: 'flex',
@@ -562,7 +552,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               borderRadius: '50%', // Make it circular
                               transition: 'background-color 0.2s ease', // Smooth transition
                               padding: '4px',
-                              "&:hover": {
+                              "&:hover": { 
                                 backgroundColor: '#e3f2fd' // light blue on hover
                               }
                             }}
@@ -574,67 +564,66 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                     </Box>
                   </Box>
                 </Box>
-              )
+              );
             })}
             {isLoading && <LoadingSpinner />}
-            <div ref={messagesEndRef} />
           </Box>
         )}
 
         {/* Chat input container */}
-        <Box
-          className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`}
-          sx={{
-            p: 2,
-            flexShrink: 0,
-            position: 'sticky',
-            bottom: 0,
-            zIndex: 9999
-          }}
+        <Box 
+        className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`}
+        sx={{
+          p: 2,
+          flexShrink: 0,
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 9999
+        }}
         >
           {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
           {(!selectedSource || selectedSource.id === "default-chat") && (
-            <Box
-              onClick={toggleGraph}
-              sx={{
-                display: 'flex',
-                height: '32px',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 1,
-                cursor: 'pointer',
-                marginTop: 2,
-                marginBottom: 1,
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: '1px solid #C4C7C5',
-                width: 'fit-content',
-                userSelect: 'none',
-                ...(graphEnabled
-                  ? {
-                    backgroundColor: '#004A77',
-                    color: '#C2E7FF',
-                  }
-                  : {
-                    backgroundColor: 'transparent',
-                    color: '#cccccc',
-                  }
-                ),
-              }}
+            <Box 
+            onClick={toggleGraph} 
+            sx={{
+              display: 'flex',
+              height: '32px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 1,
+              cursor: 'pointer',
+              marginTop: 2,
+              marginBottom: 1,
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: '1px solid #C4C7C5',
+              width: 'fit-content',
+              userSelect: 'none',
+              ...(graphEnabled
+                ? { 
+                  backgroundColor: '#004A77', 
+                  color: '#C2E7FF',
+                }
+                : { 
+                  backgroundColor: 'transparent', 
+                  color: '#cccccc',
+                }
+              ),
+            }}
             >
-              <BarChartIcon
-                sx={{
-                  ...(graphEnabled
-                    ? { color: '#A8C7FA' }
-                    : { color: '#cccccc' }
-                  )
+              <BarChartIcon 
+              sx={{ 
+                ...(graphEnabled 
+                ? { color: '#A8C7FA' } 
+                : { color: '#cccccc' }
+                ) 
+                }} 
+                />
+              <Typography 
+              sx={{ 
+                fontWeight: 500, 
                 }}
-              />
-              <Typography
-                sx={{
-                  fontWeight: 500,
-                }}
-              >
+                >
                 {graphEnabled ? 'Create a graph ✓' : 'Create a graph'}
               </Typography>
             </Box>
@@ -644,11 +633,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
               <>
                 <Box className="file-chip-container">
                   <Button onClick={() => setShowDocumentViewer(true)}>
-                    <Chip
-                      label={selectedFile ? selectedFile.name : importUrl}
-                      onDelete={handleRemoveSelectedFile}
-                      size="small"
-                      variant="outlined"
+                    <Chip 
+                    label={selectedFile ? selectedFile.name : importUrl} 
+                    onDelete={handleRemoveSelectedFile} 
+                    size="small" 
+                    variant="outlined" 
                     />
                   </Button>
                 </Box>
@@ -669,11 +658,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           </Paper>
         </Box>
       </Box>
-
-      <Modal
-        open={isUploadModalOpen}
-        onClose={handleCloseUploadModal}
-        aria-labelledby="upload-modal-title"
+      
+      <Modal 
+      open={isUploadModalOpen} 
+      onClose={handleCloseUploadModal} 
+      aria-labelledby="upload-modal-title"
       >
         <Box>
           <UploadModal
