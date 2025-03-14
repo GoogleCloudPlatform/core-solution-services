@@ -66,7 +66,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [showDocumentViewer, setShowDocumentViewer] = useState(false);
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [showCopyIcon, setShowCopyIcon] = useState(false); // State for icon visibility
+  // Removed global showCopyIcon state
+  const [hoveredMessageIndex, setHoveredMessageIndex] = useState<number | null>(null); // New state for tracking hovered message index
   const [tooltipOpen, setTooltipOpen] = useState(false);   // State for tooltip
   const [iconClicked, setIconClicked] = useState(false);   // State for click effect
   const [graphEnabled, setGraphEnabled] = useState(false);
@@ -400,8 +401,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
               const isLastItem = index === messages.length - 1;
               return (
                 <Box key={index}
-                  onMouseEnter={() => setShowCopyIcon(true)}
-                  onMouseLeave={() => { setShowCopyIcon(false); setTooltipOpen(false); }}
+                  onMouseEnter={() => setHoveredMessageIndex(index)}
+                  onMouseLeave={() => { setHoveredMessageIndex(null); setTooltipOpen(false); }}
                   sx={{
                     position: 'relative',
                     marginRight: 'auto'
@@ -508,7 +509,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                                 References:
                               </Typography>
                               {message.references.map((reference, idx) => (
-                                <ReferenceChip key={idx} reference={reference} />
+                                <ReferenceChip key={idx} reference={reference} sx={{ userSelect: 'text' }} />
                               ))}
                             </Box>
                           )}
@@ -544,7 +545,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       </Box>
                     )}
 
-                    {showCopyIcon && !message.isUser && !message.references && !message.imageBase64 && (
+                    {hoveredMessageIndex === index && !message.isUser && !message.references && !message.imageBase64 && (
                       <Tooltip
                         open={copiedMessageIndex === index} // Tooltip only opens if this message was copied
                         arrow
