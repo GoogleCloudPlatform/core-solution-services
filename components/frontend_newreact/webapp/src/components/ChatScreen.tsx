@@ -363,10 +363,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             <Typography variant="h6">
               {currentChat?.title || 'New Chat'}
             </Typography>
-            <SourceSelector
-              onSelectSource={handleSelectSource}
-              chatId={chatId}
-            />
+            {/* Only show the source selector if no chat ID exists (i.e. new chat) */}
+            {!chatId && (
+              <SourceSelector
+                onSelectSource={handleSelectSource}
+                chatId={chatId}
+              />
+            )}
           </Box>
         </Box>
       )}
