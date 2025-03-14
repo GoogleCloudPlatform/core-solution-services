@@ -17,25 +17,35 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
   const { user } = useAuth();
   const chatRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  
+  const loadHistory = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const chatHistory = await fetchChatHistory(user.token)();
+      if (chatHistory) {
+        setChats(chatHistory);
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  // Initial load when the history drawer is opened
   useEffect(() => {
     if (!isOpen || !user) return;
-
-    const loadHistory = async () => {
-      setLoading(true);
-      try {
-        const chatHistory = await fetchChatHistory(user.token)();
-        if (chatHistory) {
-          setChats(chatHistory);
-        }
-      } catch (error) {
-        console.error('Error loading chat history:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadHistory();
+  }, [user, isOpen]);
+
+  // Listen for the custom "chatHistoryUpdated" event to reload history when a new chat is created
+  useEffect(() => {
+    const handleHistoryUpdate = () => {
+      loadHistory();
+    };
+    window.addEventListener("chatHistoryUpdated", handleHistoryUpdate);
+    return () => window.removeEventListener("chatHistoryUpdated", handleHistoryUpdate);
   }, [user, isOpen]);
 
   const formatTimestamp = (timestamp: string) => {
@@ -59,7 +69,6 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
     // Initialize chatRefs to an array of nulls with the correct length
     chatRefs.current = Array(chats.length).fill(null);
   }, [chats]);
-
 
   return (
     <Box className="history-drawer">
@@ -125,4 +134,4 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
   );
 };
 
-export default ChatHistory; 
+export default ChatHistory;

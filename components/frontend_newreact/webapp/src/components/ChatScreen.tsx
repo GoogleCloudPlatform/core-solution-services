@@ -18,9 +18,9 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
-import { LoadingSpinner } from "@/components/LoadingSpinner"
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import DocumentModal from './DocumentModal';
-import ReferenceChip from "@/components/ReferenceChip"
+import ReferenceChip from "@/components/ReferenceChip";
 
 interface ChatMessage {
   text: string;
@@ -156,6 +156,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
     setIsLoading(true);
 
+    // Determine if this is a new chat (i.e. no existing chatId)
+    const wasNewChat = !chatId;
+
     try {
       let response: Chat | undefined;
 
@@ -208,6 +211,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       // Only proceed if we got a valid Chat object
       if (response?.id) {
         setChatId(response.id);
+        // If this was a new chat, dispatch an event to update the chat history
+        if (wasNewChat) {
+          window.dispatchEvent(new Event("chatHistoryUpdated"));
+        }
       }
 
       if (response?.history) {
@@ -482,12 +489,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               />
                             </Box>
                           )}
-
-                           {/* Add references display */}
+                          {/* Add references display */}
                           {!message.isUser && message.references && message.references.length > 0 && (
-                            <Box sx={{ 
-                              mt: 2, 
-                              pt: 2, 
+                            <Box sx={{
+                              mt: 2,
+                              pt: 2,
                               borderTop: '1px solid #4a4a4a'
                             }}>
                               <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -548,7 +554,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               borderRadius: '50%', // Make it circular
                               transition: 'background-color 0.2s ease', // Smooth transition
                               padding: '4px',
-                              "&:hover": { 
+                              "&:hover": {
                                 backgroundColor: '#e3f2fd' // light blue on hover
                               }
                             }}
@@ -580,7 +586,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
            {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
           {(!selectedSource || selectedSource.id === "default-chat") && (
             <Box 
-              onClick={toggleGraph}  
+              onClick={toggleGraph} 
               sx={{
                 display: 'flex',
                 height: '32px',
