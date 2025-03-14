@@ -108,6 +108,10 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
 
   const handleEditClick = (sourceId: string) => {
     const source = sources.find(s => s.id === sourceId);
+    // Disable edit when source is active
+    if (source && source.status === "active") {
+      return;
+    }
     if (source) {
       setSourceToEdit(source);
       setEditedName(source.name);
@@ -727,6 +731,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
         jobStatusFilter={jobStatusFilter}
         currentPage={currentPage}
         rowsPerPage={rowsPerPage}
+        isEditDisabled={(source) => source.status === "active"}
       />
 
       {/* Delete Confirmation Dialog */}
