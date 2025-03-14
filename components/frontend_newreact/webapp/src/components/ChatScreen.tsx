@@ -18,9 +18,9 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
-import { LoadingSpinner } from "@/components/LoadingSpinner"
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import DocumentModal from './DocumentModal';
-import ReferenceChip from "@/components/ReferenceChip"
+import ReferenceChip from "@/components/ReferenceChip";
 
 interface ChatMessage {
   text: string;
@@ -74,8 +74,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   // Ref for the scrollable container
   const chatMessagesRef = useRef<HTMLDivElement | null>(null);
-  // Ref for the last rendered message element
-  
+   // Ref for the last rendered message element
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopyClick = (text: string, index: number) => {
     navigator.clipboard.writeText(text)
@@ -92,8 +92,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         console.error('Failed to copy: ', err);
       });
   };
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
   // Add effect to fetch full chat details when currentChat changes
   useEffect(() => {
     const loadChat = async () => {
@@ -112,9 +110,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           setIsLoading(false);
         }
       } else {
-        // Reset messages when there's no current chat or it's a new chat
-        setMessages([]);
-        setChatId(undefined);
+        // For new chats (no currentChat id), do not reset messages.
       }
     };
 
@@ -159,6 +155,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     setPrompt('');
 
     setIsLoading(true);
+
+    // Determine if this is a new chat (i.e. no existing chatId)
+    const wasNewChat = !chatId;
 
     try {
       let response: Chat | undefined;
@@ -212,6 +211,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       // Only proceed if we got a valid Chat object
       if (response?.id) {
         setChatId(response.id);
+        // If this was a new chat, dispatch an event to update the chat history
+        if (wasNewChat) {
+          window.dispatchEvent(new Event("chatHistoryUpdated"));
+        }
       }
 
       if (response?.history) {
@@ -271,14 +274,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           fileUrl: fileUrl
         });
       }
-      // Combine AIOutput and FileContentsBase64 in the same message so the image is below the text
+      // Combine AIOutput and FileContentsBase64 in the same message so the image is below the text 
       else if (historyItem.AIOutput || historyItem.FileContentsBase64) {
         newMessages.push({
           text: historyItem.AIOutput || "",
           isUser: false,
           imageBase64: historyItem.FileContentsBase64 || ""
         });
-      }
+      } 
       else if (historyItem.QueryReferences) {
         newMessages.push({
           text: "",
@@ -382,7 +385,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         minHeight: 0,
         justifyContent: 'flex-end'
       }}>
-        {!showWelcome && (
+        {(!showWelcome || messages.length > 0) && (
           <Box ref={chatMessagesRef} className="chat-messages" sx={{
             flexGrow: 1,
             mx: 2,
@@ -478,7 +481,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                           >
                             {message.text}
                           </ReactMarkdown>
-                          
+
                           {/* If there's an image in the same AI message, display it below the text */}
                           {message.imageBase64 && (
                             <Box sx={{ mt: 2 }}>
@@ -489,12 +492,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               />
                             </Box>
                           )}
-                          
                           {/* Add references display */}
                           {!message.isUser && message.references && message.references.length > 0 && (
-                            <Box sx={{ 
-                              mt: 2, 
-                              pt: 2, 
+                            <Box sx={{
+                              mt: 2,
+                              pt: 2,
                               borderTop: '1px solid #4a4a4a'
                             }}>
                               <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -518,7 +520,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                         flexDirection: 'row-reverse',
                         alignItems: 'flex-start',
                       }}>
-                      {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
+                        {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
                       {(message.isUser && message.fileUrl) && (
                         <Box className="file-chip-container" sx={{
                           alignSelf: 'flex-end',
@@ -555,7 +557,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                               borderRadius: '50%', // Make it circular
                               transition: 'background-color 0.2s ease', // Smooth transition
                               padding: '4px',
-                              "&:hover": { 
+                              "&:hover": {
                                 backgroundColor: '#e3f2fd' // light blue on hover
                               }
                             }}
@@ -584,7 +586,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             zIndex: 9999
           }}
         >
-          {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
+           {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
           {(!selectedSource || selectedSource.id === "default-chat") && (
             <Box 
               onClick={toggleGraph} 
