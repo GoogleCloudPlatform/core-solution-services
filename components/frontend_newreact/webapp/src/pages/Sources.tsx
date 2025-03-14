@@ -100,6 +100,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
   const [rowsPerPage, setRowsPerPage] = useState(10); // Default value
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [sourceToView, setSourceToView] = useState<QueryEngine | null>(null);
+  const [isEditDisabled, setIsEditDisabled] = useState(false);
 
   const handleMenuClose = () => {
     setMenuAnchor(null);
@@ -731,7 +732,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
         jobStatusFilter={jobStatusFilter}
         currentPage={currentPage}
         rowsPerPage={rowsPerPage}
-        isEditDisabled={(source) => source.status === "active"}
+        isEditDisabled={isEditDisabled}
       />
 
       {/* Delete Confirmation Dialog */}

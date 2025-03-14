@@ -509,7 +509,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                                 References:
                               </Typography>
                               {message.references.map((reference, idx) => (
-                                <ReferenceChip key={idx} reference={reference} sx={{ userSelect: 'text' }} />
+                                <ReferenceChip key={idx} reference={reference} />
                               ))}
                             </Box>
                           )}
@@ -627,7 +627,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                   ...(graphEnabled 
                     ? { color: '#A8C7FA' } 
                     : { color: '#cccccc' }
-                  )   
+                  )    
                 }} 
               />
               <Typography 

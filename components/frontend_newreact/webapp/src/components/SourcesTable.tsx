@@ -54,6 +54,7 @@ interface SourcesTableProps {
   jobStatusFilter: string;
   currentPage: number;
   rowsPerPage: number;
+  isEditDisabled: boolean;
 }
 
 const SourcesTable: React.FC<SourcesTableProps> = ({
@@ -67,7 +68,8 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
   typeFilter,
   jobStatusFilter,
   currentPage,
-  rowsPerPage
+  rowsPerPage,
+  isEditDisabled
 }) => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
