@@ -137,22 +137,31 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       onChatStart();
     }
 
-    let uploadedFileName = selectedFile?.name;
-    if (importUrl) {
-      uploadedFileName = importUrl.split('/').pop();
-      if (importUrl.startsWith("gs://")) {
-        uploadedFileName = importUrl.replace("gs://", "").split("/").pop();
+    // Capture current state values for submission
+    const currentPrompt = prompt;
+    const currentSelectedFile = selectedFile;
+    const currentImportUrl = importUrl;
+
+    let uploadedFileName = currentSelectedFile?.name;
+    if (currentImportUrl) {
+      uploadedFileName = currentImportUrl.split('/').pop();
+      if (currentImportUrl.startsWith("gs://")) {
+        uploadedFileName = currentImportUrl.replace("gs://", "").split("/").pop();
       }
     }
 
     const userMessage: ChatMessage = {
-      text: prompt,
+      text: currentPrompt,
       isUser: true,
-      uploadedFile: selectedFile?.name,
-      fileUrl: importUrl
+      uploadedFile: currentSelectedFile?.name,
+      fileUrl: currentImportUrl
     };
     setMessages(prev => [...prev, userMessage]);
+
+    // Immediately clear prompt and attachment inputs so URL disappears from input box
     setPrompt('');
+    setSelectedFile(null);
+    setImportUrl('');
 
     setIsLoading(true);
 
@@ -164,12 +173,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
       // Common parameters
       const chatParams = {
-        userInput: prompt,
+        userInput: currentPrompt,
         llmType: selectedModel.id,
         stream: false,
         temperature: temperature,
-        uploadFile: selectedFile || undefined,
-        fileUrl: importUrl,
+        uploadFile: currentSelectedFile || undefined,
+        fileUrl: currentImportUrl,
         // Pass toolNames if "Create a graph" is enabled
         toolNames: graphEnabled ? ["vertex_code_interpreter_tool"] : []
       };
@@ -190,7 +199,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         // Create new chat via query endpoint
         const queryResponse = await createQuery(user.token)({
           engine: selectedSource.id,
-          userInput: prompt,
+          userInput: currentPrompt,
           llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
         });
@@ -199,8 +208,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         // Create new regular chat
         const chatResponse = await createChat(user.token)({
           ...chatParams,
-          uploadFile: selectedFile || undefined,
-          fileUrl: importUrl,
+          uploadFile: currentSelectedFile || undefined,
+          fileUrl: currentImportUrl,
         });
         // Only assign if it's a Chat object
         if (chatResponse && !isReadableStream(chatResponse)) {
@@ -224,10 +233,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       } else {
         console.error("API response does not contain 'history' property:", response);
       }
-
-      setSelectedFile(null); // Reset file
-      setImportUrl('');      // Reset URL
-      setPrompt('');
     } catch (error) {
       console.error('Error in chat:', error);
       const errorMessage: ChatMessage = {
@@ -621,7 +626,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                   ...(graphEnabled 
                     ? { color: '#A8C7FA' } 
                     : { color: '#cccccc' }
-                  )  
+                  )   
                 }} 
               />
               <Typography 
