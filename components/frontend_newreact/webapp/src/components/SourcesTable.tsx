@@ -158,7 +158,11 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
               <StyledTableCell>{new Date(source.created_time).toLocaleDateString()}</StyledTableCell>
               <StyledTableCell align="left">
                 <Tooltip title="Edit Source">
-                  <IconButton onClick={() => onEditClick(source.id)}>
+                  <IconButton 
+                    onClick={() => onEditClick(source.id)}
+                    disabled={source.status === "active"}
+                    sx={{ opacity: source.status === "active" ? 0.4 : 1 }}
+                  >
                     <EditNote sx={{ color: "white" }} />
                   </IconButton>
                 </Tooltip>
@@ -182,3 +186,4 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
 };
 
 export default SourcesTable;
+
