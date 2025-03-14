@@ -730,13 +730,13 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
       />
 
       {/* Delete Confirmation Dialog */}
-      <Dialog 
-        open={deleteDialogOpen} 
-        onClose={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} 
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }}
         PaperProps={{ sx: { backgroundColor: '#333537', position: 'relative' } }}
       >
         {/* Close Button */}
-        <IconButton 
+        <IconButton
           onClick={() => setDeleteDialogOpen(false)}
           sx={{ position: 'absolute', top: 8, right: 8, color: 'white' }}
         >
@@ -771,23 +771,23 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }} 
+          <Button
+            onClick={() => { setDeleteDialogOpen(false); setSourcesToDelete([]); setSelectedSource(null); }}
             sx={{
-              backgroundColor: '#242424', 
-              color: '#A8C7FA', 
-              borderRadius: '20px', 
+              backgroundColor: '#242424',
+              color: '#A8C7FA',
+              borderRadius: '20px',
               textTransform: 'none',
               '&:hover': { backgroundColor: '#3A3B3C' } // Darker background on hover
             }}
           >
             Cancel
           </Button>
-          <Button 
-            onClick={confirmDeleteSources} 
-            color="error" 
-            startIcon={<DeleteIcon />} 
-            variant="contained" 
+          <Button
+            onClick={confirmDeleteSources}
+            color="error"
+            startIcon={<DeleteIcon />}
+            variant="contained"
             sx={{ backgroundColor: '#F2B8B5', borderRadius: '20px', textTransform: 'none', color: '#601410' }}
           >
             Delete {sourcesToDelete.length} {sourcesToDelete.length === 1 ? 'Source' : 'Sources'}
@@ -798,7 +798,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
           Edit Source
           <IconButton onClick={handleEditModalClose}>
-          <Close sx={{ color: STYLED_WHITE }}/>
+            <Close sx={{ color: STYLED_WHITE }} />
           </IconButton>
         </DialogTitle>
         <DialogContent>
@@ -890,7 +890,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: STYLED_WHITE }}>
           View Source
           <IconButton onClick={handleViewModalClose}>
-          <Close sx={{ color: STYLED_WHITE }}/>
+            <Close sx={{ color: STYLED_WHITE }} />
           </IconButton>
         </DialogTitle>
         <DialogContent>
@@ -915,7 +915,7 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
                 <ListItemText primary="Vector Store:" secondary={sourceToView?.vector_store === 'langchain_pgvector' ? 'PG Vector' : 'Vertex Matching Engine'} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
               </Box>
               <Box sx={{ flex: 1 }}>
-                <ListItemText primary="Embedding Type:" secondary={sourceToView?.embedding_type === 'text-embedding-ada-002' ? "text-embedding-ada-002" : "VertexAI-Embedding"} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+                <ListItemText primary="Embedding Type:" secondary={sourceToView?.embedding_type.toString()} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
               </Box>
             </ListItem>
             <ListItem sx={{ display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #888' }}>
@@ -935,13 +935,13 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
               </Box>
             </ListItem>
             <ListItem sx={{ borderBottom: '1px solid #888' }}>
-            <ListItemText
-                   sx={{ color: sourceToView?.agents && sourceToView.agents.length > 0 ? STYLED_WHITE : '#888', '& .MuiListItemText-secondary': { color: sourceToView?.agents && sourceToView.agents.length > 0 ? STYLED_WHITE : '#888' } }}
-                  primary="Agents:" secondary={sourceToView?.agents?.join(", ") || 'N/A'}
-                />
+              <ListItemText
+                sx={{ color: sourceToView?.agents && sourceToView.agents.length > 0 ? STYLED_WHITE : '#888', '& .MuiListItemText-secondary': { color: sourceToView?.agents && sourceToView.agents.length > 0 ? STYLED_WHITE : '#888' } }}
+                primary="Agents:" secondary={sourceToView?.agents?.join(", ") || 'N/A'}
+              />
             </ListItem>
             <ListItem sx={{ borderBottom: '0px' }}>
-            <ListItemText primary="Child Engines:" secondary={sourceToView?.child_engines?.join(", ") || 'N/A'}  sx={{ color: sourceToView?.child_engines && sourceToView.child_engines.length > 0 ? STYLED_WHITE : '#888', '& .MuiListItemText-secondary': { color: sourceToView?.child_engines && sourceToView.child_engines.length > 0 ? STYLED_WHITE : '#888' } }} />
+              <ListItemText primary="Child Engines:" secondary={sourceToView?.child_engines?.join(", ") || 'N/A'} sx={{ color: sourceToView?.child_engines && sourceToView.child_engines.length > 0 ? STYLED_WHITE : '#888', '& .MuiListItemText-secondary': { color: sourceToView?.child_engines && sourceToView.child_engines.length > 0 ? STYLED_WHITE : '#888' } }} />
             </ListItem>
           </List>
         </DialogContent>
