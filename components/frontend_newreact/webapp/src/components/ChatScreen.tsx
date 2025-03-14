@@ -510,63 +510,63 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                         </Box>
                       </>
                     )}
-                    <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
-                    <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
-                      onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text, index); }}
-                      sx={{
+                  </Box>
+                  <DocumentModal open={showDocumentViewer} onClose={() => setShowDocumentViewer(false)} selectedFile={selectedFile} />
+                  <Box key={index} className={`message ${message.isUser ? 'user-message' : 'assistant-message'}`}
+                    onClick={() => { if (!message.isUser && message.text) handleCopyClick(message.text, index); }}
+                    sx={{
+                      alignSelf: 'flex-end',
+                      maxWidth: '100%',
+                      display: 'flex',
+                      flexDirection: message.isUser ? 'column' : 'row-reverse',
+                      alignItems: 'flex-start',
+                    }}>
+                    {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
+                    {(message.isUser && message.fileUrl) && (
+                      <Box className="file-chip-container" sx={{
                         alignSelf: 'flex-end',
-                        maxWidth: '100%',
                         display: 'flex',
                         flexDirection: 'row-reverse',
                         alignItems: 'flex-start',
                       }}>
-                        {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
-                      {(message.isUser && message.fileUrl) && (
-                        <Box className="file-chip-container" sx={{
-                          alignSelf: 'flex-end',
-                          display: 'flex',
-                          flexDirection: 'row-reverse',
-                          alignItems: 'flex-start',
-                        }}>
-                          <Button onClick={() => setShowDocumentViewer(true)}>
-                            <Chip
-                              label={message.uploadedFile || message.fileUrl}
-                              size="small"
-                              variant="outlined"
-                            />
-                          </Button>
-                        </Box>
-                      )}
+                        <Button onClick={() => setShowDocumentViewer(true)}>
+                          <Chip
+                            label={message.uploadedFile || message.fileUrl}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </Button>
+                      </Box>
+                    )}
 
-                      {showCopyIcon && !message.isUser && !message.references && !message.imageBase64 && (
-                        <Tooltip
-                          open={copiedMessageIndex === index} // Tooltip only opens if this message was copied
-                          arrow
-                          title="Copied!"
-                          placement="top"
-                          leaveDelay={200}
+                    {showCopyIcon && !message.isUser && !message.references && !message.imageBase64 && (
+                      <Tooltip
+                        open={copiedMessageIndex === index} // Tooltip only opens if this message was copied
+                        arrow
+                        title="Copied!"
+                        placement="top"
+                        leaveDelay={200}
+                      >
+                        <IconButton
+                          onClick={() => handleCopyClick(message.text, index)}
+                          aria-label="copy"
+                          sx={{
+                            position: 'absolute',
+                            left: -4,
+                            bottom: -4,
+                            backgroundColor: iconClicked ? '#2979ff' : 'transparent', // Blue background on click
+                            borderRadius: '50%', // Make it circular
+                            transition: 'background-color 0.2s ease', // Smooth transition
+                            padding: '4px',
+                            "&:hover": {
+                              backgroundColor: '#e3f2fd' // light blue on hover
+                            }
+                          }}
                         >
-                          <IconButton
-                            onClick={() => handleCopyClick(message.text, index)}
-                            aria-label="copy"
-                            sx={{
-                              position: 'absolute',
-                              left: -4,
-                              bottom: -4,
-                              backgroundColor: iconClicked ? '#2979ff' : 'transparent', // Blue background on click
-                              borderRadius: '50%', // Make it circular
-                              transition: 'background-color 0.2s ease', // Smooth transition
-                              padding: '4px',
-                              "&:hover": {
-                                backgroundColor: '#e3f2fd' // light blue on hover
-                              }
-                            }}
-                          >
-                            <ContentCopyIcon sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }} />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Box>
+                          <ContentCopyIcon sx={{ color: iconClicked ? 'white' : '#9e9e9e', fontSize: '16px' }} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Box>
                 </Box>
               );
@@ -621,7 +621,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                   ...(graphEnabled 
                     ? { color: '#A8C7FA' } 
                     : { color: '#cccccc' }
-                  ) 
+                  )  
                 }} 
               />
               <Typography 
@@ -695,3 +695,4 @@ const isReadableStream = (value: any): value is ReadableStream => {
 };
 
 export default ChatScreen;
+
