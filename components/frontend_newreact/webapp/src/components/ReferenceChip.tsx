@@ -61,7 +61,10 @@ const ReferenceChip: React.FC<ReferenceChipProps> = ({ reference }) => {
                 color: '#fff',
                 whiteSpace: 'pre-wrap',
                 width: '100%',
-                textAlign: 'left'
+                textAlign: 'left',
+                userSelect: 'text', // Crucial for making the text selectable
+                cursor: 'text',    // Changes cursor to text select cursor
+                overflowWrap: 'break-word' //prevent words from overflowing the box
               }}
             >
               {reference.document_text}
