@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, Button, Menu, MenuItem, Typography, CircularProgress } from '@mui/material';
 import { ChevronDown, Search, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchAllEngines } from '../lib/api';
+import { fetchAllEngines, fetchAllEngineJobs } from '../lib/api';
 import { QueryEngine } from '../lib/types';
 
 interface SourceSelectorProps {
@@ -82,7 +82,20 @@ export function SourceSelector({ className, chatId, onSelectSource, disabled = f
                 const fetchedSources = await fetchAllEngines(user.token)();
                 let allSources = [defaultChatSource]; // Start with Default Chat
                 if (fetchedSources) {
-                    allSources = [defaultChatSource, ...fetchedSources]; // Prepend Default Chat
+                    // Fetch engine jobs to get status of each engine source
+                    const engineJobs = await fetchAllEngineJobs(user.token)();
+                    // Create a set of engine names that are active based on engine jobs
+                    const activeEngineNames = new Set<string>();
+                    if (engineJobs) {
+                        engineJobs.forEach(job => {
+                            if (job.status === 'active' && job.input_data?.query_engine) {
+                                activeEngineNames.add(job.input_data.query_engine);
+                            }
+                        });
+                    }
+                    // Filter out fetchedSources that have a matching active engine job
+                    const filteredSources = fetchedSources.filter(source => !activeEngineNames.has(source.name));
+                    allSources = [defaultChatSource, ...filteredSources]; // Prepend Default Chat
                 }
                 setSources(allSources);
             } catch (err) {
