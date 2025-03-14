@@ -506,7 +506,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                   fullWidth
                   placeholder="Placeholder"
                   value={formData.agents?.join(', ') || ''}
-                  onChange={(e) => handleChange('agents', e.target.value.split(',').map(s => s.trim()))}
+                  onChange={(e) => handleChange('agents', e.target.value.split(','))}
                   InputProps={{
                     endAdornment: formData.agents?.length ? (
                       <IconButton size="small" onClick={() => handleChange('agents', [])}>
@@ -533,7 +533,7 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
                   fullWidth
                   placeholder="Placeholder"
                   value={formData.child_engines?.join(', ') || ''}
-                  onChange={(e) => handleChange('child_engines', e.target.value.split(',').map(s => s.trim()))}
+                  onChange={(e) => handleChange('child_engines', e.target.value.split(','))}
                   InputProps={{
                     endAdornment: formData.child_engines?.length ? (
                       <IconButton size="small" onClick={() => handleChange('child_engines', [])}>
@@ -646,4 +646,4 @@ const AddSource = ({ onCancel }: { onCancel: () => void }) => {
   );
 };
 
-export default AddSource; 
+export default AddSource;
