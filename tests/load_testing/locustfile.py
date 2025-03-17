@@ -13,32 +13,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import requests
-import uuid
 from locust import HttpUser, task
-from config import USERNAME, PASSWORD, BASE_URL
+from config import BASE_URL
+from user_data import users
 
-def get_token(user_email: str, user_password: str, base_url: str) -> str:
-  req_body = {
-    "email": user_email,
-    "password": user_password
-  }
-  credentails_url = f"{base_url}/authentication/api/v1/sign-in/credentials"
-  sign_in_req = requests.post(credentails_url, json=req_body, verify=False,
-                              timeout=10)
-  sign_in_res = sign_in_req.json()
-  id_token = sign_in_res["data"]["idToken"]
-  return id_token
-
-# getting an initail token to be shared between all users
-# all requests are from a single user, future work can add support for requests
-# coming from unique users
-INITIAL_ID_TOKEN = get_token(USERNAME, PASSWORD, BASE_URL)
+user_creds = users.copy()
 
 class GetChatTypesUser(HttpUser):
   """Performs a basic get request to verify load testing"""
   def on_start(self):
-    self.headers = {"Authorization": f"Bearer {INITIAL_ID_TOKEN}"}
+    if user_creds:
+      cur_user = user_creds.pop()
+      get_token_url = f"{BASE_URL}/authentication/api/v1/sign-in/credentials"
+      creds = {
+        "email": cur_user["email"],
+        "password": cur_user["password"]
+      }
+      sign_in_req = self.client.post(get_token_url, json=creds, verify=False,
+                              timeout=10)
+      sign_in_res = sign_in_req.json()
+      token = sign_in_res["data"]["idToken"]
+      self.headers = {"Authorization": f"Bearer {token}"}
+    else:
+      raise ValueError(
+        f"Insufficient user credentails provided, only {len(users)} found")
 
   @task
   def get_chat_types(self):

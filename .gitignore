@@ -17,6 +17,7 @@ dist
 node_modules
 .ipynb_checkpoints
 tests/load_testing/config.py
+tests/load_testing/user_data.py
 
 # macOS file
 .DS_Store
