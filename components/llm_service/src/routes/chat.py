@@ -26,7 +26,8 @@ from common.models import User, UserChat
 from common.models.llm import CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64, CHAT_FILE_TYPE
 from common.utils.auth_service import validate_token
 from common.utils.errors import (ResourceNotFoundException,
-                                 ValidationError)
+                                 ValidationError,
+                                 UnauthorizedUserError)
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
 from common.utils.logging_handler import Logger
@@ -146,7 +147,8 @@ def get_chat_list(skip: int = 0, limit: int = 20,
     "/{chat_id}",
     name="Get user chat",
     response_model=LLMUserChatResponse)
-def get_chat(chat_id: str):
+def get_chat(chat_id: str,
+             user_data: dict = Depends(validate_token)):
   """
   Get a specific user chat by id
 
@@ -157,6 +159,9 @@ def get_chat(chat_id: str):
     user_chat = UserChat.find_by_id(chat_id)
     chat_data = user_chat.get_fields(reformat_datetime=True)
     chat_data["id"] = user_chat.id
+    user = User.find_by_email(user_data.get("email"))
+    if user.user_id != user_chat.user_id:
+      raise UnauthorizedUserError("User is not allowed to access this chat.")
 
     return {
       "success": True,
@@ -175,7 +180,9 @@ def get_chat(chat_id: str):
   "/{chat_id}",
   name="Update user chat"
 )
-def update_chat(chat_id: str, input_chat: ChatUpdateModel):
+def update_chat(chat_id: str,
+                input_chat: ChatUpdateModel,
+                user_data: dict = Depends(validate_token)):
   """Update a user chat
 
   Args:
@@ -185,6 +192,7 @@ def update_chat(chat_id: str, input_chat: ChatUpdateModel):
   Raises:
     ResourceNotFoundException: If the Chat does not exist
     HTTPException: 500 Internal Server Error if something fails
+    UnauthorizedUserError: If user did not create this chat
 
   Returns:
     [JSON]: {'success': 'True'} if the chat is updated,
@@ -195,6 +203,10 @@ def update_chat(chat_id: str, input_chat: ChatUpdateModel):
     input_chat_dict = {**input_chat.dict()}
 
     existing_chat = UserChat.find_by_id(chat_id)
+    user = User.find_by_email(user_data.get("email"))
+    if user.user_id != existing_chat.user_id:
+      raise UnauthorizedUserError("User is not allowed to update this chat.")
+
     for key in input_chat_dict:
       if input_chat_dict.get(key) is not None:
         setattr(existing_chat, key, input_chat_dict.get(key))
