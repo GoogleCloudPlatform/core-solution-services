@@ -6,3 +6,4 @@ google-cloud-secret-manager==2.23.1
 PyJWT==2.10.1
 google-cloud-logging==3.11.4
 redis==5.2.1
+python-multipart==0.0.20
