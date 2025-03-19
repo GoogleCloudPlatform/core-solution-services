@@ -15,7 +15,7 @@
 """Tools and utils for Gmail"""
 
 # TODO: Remove dependency from langchain.
-from langchain.tools.gmail.utils import get_gmail_credentials
+from langchain_community.tools.gmail.utils import get_gmail_credentials
 from google.cloud import secretmanager
 
 from common.utils.logging_handler import Logger
