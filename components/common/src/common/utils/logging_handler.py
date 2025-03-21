@@ -34,6 +34,17 @@ class LogRecordFilter(logging.Filter):
       record.trace = '-'
     return True
 
+# Helper function to add default fields
+def _add_default_fields(extra=None):
+  """Add default fields to extra dictionary."""
+  if extra is None:
+    extra = {}
+  if 'request_id' not in extra:
+    extra['request_id'] = '-'
+  if 'trace' not in extra:
+    extra['trace'] = '-'
+  return extra
+
 # Set up cloud logging client
 if CLOUD_LOGGING_ENABLED:
   try:
@@ -71,32 +82,14 @@ if not root_logger.handlers:
     handler.setFormatter(formatter)
     root_logger.addHandler(handler)
 
+# Create a global class logger
+_static_logger = logging.getLogger('Logger')
+_static_logger.setLevel(logging.INFO)
+_static_logger.addFilter(LogRecordFilter())
+
+# Define the instance logger class
 class Logger:
-  """class def handling logs."""
-
-  # Class-level logger for static method calls
-  _class_logger = logging.getLogger('Logger')
-
-  def _add_default_fields(self, extra):
-    """Add default fields to extra dictionary."""
-    if extra is None:
-      extra = {}
-    if 'request_id' not in extra:
-      extra['request_id'] = '-'
-    if 'trace' not in extra:
-      extra['trace'] = '-'
-    return extra
-
-  @classmethod
-  def _add_default_fields_cls(cls, extra):
-    """Add default fields to extra dictionary (class method version)."""
-    if extra is None:
-      extra = {}
-    if 'request_id' not in extra:
-      extra['request_id'] = '-'
-    if 'trace' not in extra:
-      extra['trace'] = '-'
-    return extra
+  """Instance logger for module-specific logging."""
 
   def __init__(self, name):
     try:
@@ -109,83 +102,84 @@ class Logger:
 
     self.logger = logging.getLogger(module_name)
     self.logger.setLevel(logging.INFO)
-
-    # Ensure our filter is applied
-    for existing_filter in self.logger.filters:
-      if isinstance(existing_filter, LogRecordFilter):
-        break
-    else:
-      self.logger.addFilter(LogRecordFilter())
+    self.logger.addFilter(LogRecordFilter())
 
   @classmethod
   def get_logger(cls, name) -> logging.Logger:
     logger_instance = cls(name)
     return logger_instance.logger
 
-  # Instance methods
+  # Instance logging methods
   def info(self, msg, *args, **kwargs):
     extra = kwargs.get('extra', {})
-    kwargs['extra'] = self._add_default_fields(extra)
+    kwargs['extra'] = _add_default_fields(extra)
     self.logger.info(msg, *args, **kwargs)
 
   def error(self, msg, *args, **kwargs):
     extra = kwargs.get('extra', {})
-    kwargs['extra'] = self._add_default_fields(extra)
+    kwargs['extra'] = _add_default_fields(extra)
     self.logger.error(msg, *args, **kwargs)
 
   def warning(self, msg, *args, **kwargs):
     extra = kwargs.get('extra', {})
-    kwargs['extra'] = self._add_default_fields(extra)
+    kwargs['extra'] = _add_default_fields(extra)
     self.logger.warning(msg, *args, **kwargs)
 
   def debug(self, msg, *args, **kwargs):
     extra = kwargs.get('extra', {})
-    kwargs['extra'] = self._add_default_fields(extra)
+    kwargs['extra'] = _add_default_fields(extra)
     self.logger.debug(msg, *args, **kwargs)
 
   def critical(self, msg, *args, **kwargs):
     extra = kwargs.get('extra', {})
-    kwargs['extra'] = self._add_default_fields(extra)
+    kwargs['extra'] = _add_default_fields(extra)
     self.logger.critical(msg, *args, **kwargs)
 
   def exception(self, msg, *args, **kwargs):
     extra = kwargs.get('extra', {})
-    kwargs['extra'] = self._add_default_fields(extra)
+    kwargs['extra'] = _add_default_fields(extra)
     self.logger.exception(msg, *args, **kwargs)
 
-  # Class methods
-  @classmethod
-  def info(cls, msg, *args, **kwargs):
-    extra = kwargs.get('extra', {})
-    kwargs['extra'] = cls._add_default_fields_cls(extra)
-    cls._class_logger.info(msg, *args, **kwargs)
+# Define static methods at module level
+def info(msg, *args, **kwargs):
+  """Static info logger."""
+  extra = kwargs.get('extra', {})
+  kwargs['extra'] = _add_default_fields(extra)
+  _static_logger.info(msg, *args, **kwargs)
 
-  @classmethod
-  def error(cls, msg, *args, **kwargs):
-    extra = kwargs.get('extra', {})
-    kwargs['extra'] = cls._add_default_fields_cls(extra)
-    cls._class_logger.error(msg, *args, **kwargs)
+def error(msg, *args, **kwargs):
+  """Static error logger."""
+  extra = kwargs.get('extra', {})
+  kwargs['extra'] = _add_default_fields(extra)
+  _static_logger.error(msg, *args, **kwargs)
 
-  @classmethod
-  def warning(cls, msg, *args, **kwargs):
-    extra = kwargs.get('extra', {})
-    kwargs['extra'] = cls._add_default_fields_cls(extra)
-    cls._class_logger.warning(msg, *args, **kwargs)
+def warning(msg, *args, **kwargs):
+  """Static warning logger."""
+  extra = kwargs.get('extra', {})
+  kwargs['extra'] = _add_default_fields(extra)
+  _static_logger.warning(msg, *args, **kwargs)
 
-  @classmethod
-  def debug(cls, msg, *args, **kwargs):
-    extra = kwargs.get('extra', {})
-    kwargs['extra'] = cls._add_default_fields_cls(extra)
-    cls._class_logger.debug(msg, *args, **kwargs)
+def debug(msg, *args, **kwargs):
+  """Static debug logger."""
+  extra = kwargs.get('extra', {})
+  kwargs['extra'] = _add_default_fields(extra)
+  _static_logger.debug(msg, *args, **kwargs)
 
-  @classmethod
-  def critical(cls, msg, *args, **kwargs):
-    extra = kwargs.get('extra', {})
-    kwargs['extra'] = cls._add_default_fields_cls(extra)
-    cls._class_logger.critical(msg, *args, **kwargs)
+def critical(msg, *args, **kwargs):
+  """Static critical logger."""
+  extra = kwargs.get('extra', {})
+  kwargs['extra'] = _add_default_fields(extra)
+  _static_logger.critical(msg, *args, **kwargs)
 
-  @classmethod
-  def exception(cls, msg, *args, **kwargs):
-    extra = kwargs.get('extra', {})
-    kwargs['extra'] = cls._add_default_fields_cls(extra)
-    cls._class_logger.exception(msg, *args, **kwargs)
+def exception(msg, *args, **kwargs):
+  """Static exception logger."""
+  extra = kwargs.get('extra', {})
+  kwargs['extra'] = _add_default_fields(extra)
+  _static_logger.exception(msg, *args, **kwargs)
+
+Logger.info = staticmethod(info)
+Logger.error = staticmethod(error)
+Logger.warning = staticmethod(warning)
+Logger.debug = staticmethod(debug)
+Logger.critical = staticmethod(critical)
+Logger.exception = staticmethod(exception)
