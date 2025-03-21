@@ -32,7 +32,7 @@ class Logger:
     dirname = os.path.dirname(name)
     filename = os.path.split(name)[1]
     folder = os.path.split(dirname)[1]
-    module_name = f"{folder}/{filename}"
+    module_name = f'{folder}/{filename}'
     self.logger = logging.getLogger(module_name)
     self.logger.setLevel(logging.INFO)
     self.logger.propagate = False
