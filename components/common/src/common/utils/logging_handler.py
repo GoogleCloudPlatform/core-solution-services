@@ -19,7 +19,6 @@
 import logging
 import os
 import sys
-from functools import wraps
 from common.config import CLOUD_LOGGING_ENABLED
 import google.cloud.logging
 
@@ -78,19 +77,26 @@ class Logger:
   # Class-level logger for static method calls
   _class_logger = logging.getLogger('Logger')
 
-  @staticmethod
-  def _ensure_extra(method):
-    """Decorator to ensure extra fields are present."""
-    @wraps(method)
-    def wrapper(self_or_cls, msg, *args, **kwargs):
-      extra = kwargs.get('extra', {})
-      if 'request_id' not in extra:
-        extra['request_id'] = '-'
-      if 'trace' not in extra:
-        extra['trace'] = '-'
-      kwargs['extra'] = extra
-      return method(self_or_cls, msg, *args, **kwargs)
-    return wrapper
+  def _add_default_fields(self, extra):
+    """Add default fields to extra dictionary."""
+    if extra is None:
+      extra = {}
+    if 'request_id' not in extra:
+      extra['request_id'] = '-'
+    if 'trace' not in extra:
+      extra['trace'] = '-'
+    return extra
+
+  @classmethod
+  def _add_default_fields_cls(cls, extra):
+    """Add default fields to extra dictionary (class method version)."""
+    if extra is None:
+      extra = {}
+    if 'request_id' not in extra:
+      extra['request_id'] = '-'
+    if 'trace' not in extra:
+      extra['trace'] = '-'
+    return extra
 
   def __init__(self, name):
     try:
@@ -116,58 +122,70 @@ class Logger:
     logger_instance = cls(name)
     return logger_instance.logger
 
-  # Instance methods with decorator
-  @_ensure_extra
+  # Instance methods
   def info(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = self._add_default_fields(extra)
     self.logger.info(msg, *args, **kwargs)
 
-  @_ensure_extra
   def error(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = self._add_default_fields(extra)
     self.logger.error(msg, *args, **kwargs)
 
-  @_ensure_extra
   def warning(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = self._add_default_fields(extra)
     self.logger.warning(msg, *args, **kwargs)
 
-  @_ensure_extra
   def debug(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = self._add_default_fields(extra)
     self.logger.debug(msg, *args, **kwargs)
 
-  @_ensure_extra
   def critical(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = self._add_default_fields(extra)
     self.logger.critical(msg, *args, **kwargs)
 
-  @_ensure_extra
   def exception(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = self._add_default_fields(extra)
     self.logger.exception(msg, *args, **kwargs)
 
   # Class methods
   @classmethod
-  @_ensure_extra
   def info(cls, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = cls._add_default_fields_cls(extra)
     cls._class_logger.info(msg, *args, **kwargs)
 
   @classmethod
-  @_ensure_extra
   def error(cls, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = cls._add_default_fields_cls(extra)
     cls._class_logger.error(msg, *args, **kwargs)
 
   @classmethod
-  @_ensure_extra
   def warning(cls, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = cls._add_default_fields_cls(extra)
     cls._class_logger.warning(msg, *args, **kwargs)
 
   @classmethod
-  @_ensure_extra
   def debug(cls, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = cls._add_default_fields_cls(extra)
     cls._class_logger.debug(msg, *args, **kwargs)
 
   @classmethod
-  @_ensure_extra
   def critical(cls, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = cls._add_default_fields_cls(extra)
     cls._class_logger.critical(msg, *args, **kwargs)
 
   @classmethod
-  @_ensure_extra
   def exception(cls, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    kwargs['extra'] = cls._add_default_fields_cls(extra)
     cls._class_logger.exception(msg, *args, **kwargs)
