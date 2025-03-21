@@ -25,7 +25,7 @@ os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 """
 import config
 import uvicorn
-from fastapi import FastAPI, Depends, Request, Response
+from fastapi import FastAPI, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from routes import llm, chat, query, agent, agent_plan

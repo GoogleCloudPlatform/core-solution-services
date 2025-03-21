@@ -35,11 +35,12 @@ class Logger:
     module_name = f"{folder}/{filename}"
     self.logger = logging.getLogger(module_name)
     self.logger.setLevel(logging.INFO)
-    self.logger.propagate = False # Prevent duplicate logs
+    self.logger.propagate = False
 
-    log_format = "%(asctime)s:%(levelname)s: [%(name)s:%(lineno)d - " \
-                 "%(funcName)s()] request_id=%(request_id)s " \
-                 "trace=%(trace)s %(message)s"
+    log_format = (
+      '%(asctime)s:%(levelname)s: [%(name)s:%(lineno)d - %(funcName)s()] '
+      'request_id=%(request_id)s trace=%(trace)s %(message)s'
+    )
     formatter = logging.Formatter(log_format)
 
     if CLOUD_LOGGING_ENABLED and client:
@@ -56,3 +57,45 @@ class Logger:
   def get_logger(cls, name) -> logging.Logger:
     logger_instance = cls(name)
     return logger_instance.logger
+
+  def _add_default_fields(self, record):
+    if not hasattr(record, 'request_id'):
+      record.request_id = '-'
+    if not hasattr(record, 'trace'):
+      record.trace = '-'
+
+  def info(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    self._add_default_fields(extra)
+    kwargs['extra'] = extra
+    self.logger.info(msg, *args, **kwargs)
+
+  def error(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    self._add_default_fields(extra)
+    kwargs['extra'] = extra
+    self.logger.error(msg, *args, **kwargs)
+
+  def warning(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    self._add_default_fields(extra)
+    kwargs['extra'] = extra
+    self.logger.warning(msg, *args, **kwargs)
+
+  def debug(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    self._add_default_fields(extra)
+    kwargs['extra'] = extra
+    self.logger.debug(msg, *args, **kwargs)
+
+  def critical(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    self._add_default_fields(extra)
+    kwargs['extra'] = extra
+    self.logger.critical(msg, *args, **kwargs)
+
+  def exception(self, msg, *args, **kwargs):
+    extra = kwargs.get('extra', {})
+    self._add_default_fields(extra)
+    kwargs['extra'] = extra
+    self.logger.exception(msg, *args, **kwargs)
