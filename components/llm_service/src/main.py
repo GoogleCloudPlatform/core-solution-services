@@ -25,18 +25,55 @@ os.environ["GOOGLE_CLOUD_PROJECT"] = "fake-project"
 """
 import config
 import uvicorn
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request, Response
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from routes import llm, chat, query, agent, agent_plan
 from common.utils.http_exceptions import add_exception_handlers
+from common.utils.logging_handler import Logger
 from common.utils.auth_service import validate_token
-from common.config import CORS_ALLOW_ORIGINS
+from common.config import CORS_ALLOW_ORIGINS, PROJECT_ID
+from starlette.middleware.base import BaseHTTPMiddleware
+import uuid
+import time
+import logging
 
 # Basic API config
 service_title = "LLM Service API's"
 service_path = "llm-service"
 version = "v1"
+
+Logger = Logger.get_logger(__file__)
+
+class RequestTrackingMiddleware(BaseHTTPMiddleware):
+  """Middleware to inject request_id and trace into logs."""
+  async def dispatch(self, request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID")
+    if not request_id:
+      request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    request.state.start_time = time.time()
+    trace = f"projects/{PROJECT_ID}/traces/{request_id}"
+    request.state.trace = trace
+
+    # Create a custom log record factory to inject request_id and trace
+    original_factory = logging.getLogRecordFactory()
+
+    def custom_log_record_factory(*args, **kwargs):
+      record = original_factory(*args, **kwargs)
+      record.request_id = request.state.request_id
+      record.trace = request.state.trace
+      return record
+
+    logging.setLogRecordFactory(custom_log_record_factory)
+
+    response = await call_next(request)
+
+    # Restore original factory
+    logging.setLogRecordFactory(original_factory)
+
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 app = FastAPI()
 app.add_middleware(
@@ -46,6 +83,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestTrackingMiddleware)
 
 @app.get("/ping")
 def health_check():

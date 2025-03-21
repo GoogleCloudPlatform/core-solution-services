@@ -22,12 +22,8 @@ import google.cloud.logging
 
 if CLOUD_LOGGING_ENABLED:
   client = google.cloud.logging.Client()
-  client.setup_logging()
-  logging.basicConfig(format="%(asctime)s:%(levelname)s:%(message)s",
-                      level=logging.INFO)
 else:
-  logging.basicConfig(level=logging.INFO)
-
+  client = None
 
 class Logger:
   """class def handling logs."""
@@ -38,11 +34,23 @@ class Logger:
     folder = os.path.split(dirname)[1]
     module_name = f"{folder}/{filename}"
     self.logger = logging.getLogger(module_name)
-    handler = logging.StreamHandler(sys.stdout)
+    self.logger.setLevel(logging.INFO)
+    self.logger.propagate = False # Prevent duplicate logs
+
     log_format = "%(asctime)s:%(levelname)s: [%(name)s:%(lineno)d - " \
-                 "%(funcName)s()] %(message)s"
-    handler.setFormatter(logging.Formatter(log_format))
-    self.logger.addHandler(handler)
+                 "%(funcName)s()] request_id=%(request_id)s " \
+                 "trace=%(trace)s %(message)s"
+    formatter = logging.Formatter(log_format)
+
+    if CLOUD_LOGGING_ENABLED and client:
+      # Use the Cloud Logging handler
+      cloud_handler = client.get_default_handler()
+      cloud_handler.setFormatter(formatter)
+      self.logger.addHandler(cloud_handler)
+    else:
+      handler = logging.StreamHandler(sys.stdout)
+      handler.setFormatter(formatter)
+      self.logger.addHandler(handler)
 
   @classmethod
   def get_logger(cls, name) -> logging.Logger:
