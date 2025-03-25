@@ -301,6 +301,18 @@ skaffold run -p default-deploy -n $NAMESPACE --default-repo="${SKAFFOLD_DEFAULT_
 
 ### Verify deployment
 
+#### Validating the Redis deployment
+
+Redis is an optional component which is used for caching authentication tokens. It
+enhances Genie performance in multi user and concurrent user environments. If this is a 
+single user or development installation, redis installation is not required and this step
+can be safely ignored.
+ 
+If redis pods are not running and an error similar to `Error: uninstall: Release not loaded: redis: release: not found`
+and Redis is required, please reference the [redis troubleshooting section](#redis-installation-workaround) for a redis installation workaround.
+
+#### Validating API Endpoints
+
 Once deployed, check out the API docs with the following links:
 
 - Backend API documentations:
@@ -414,6 +426,35 @@ cd terraform/stages/2-foundation/
 terraform import google_firestore_database.database "(default)"
 cd -
 ```
+
+### Redis Installation Workaround
+
+In certain OS and Skaffold version combinations there is a known issue which prevents Skaffold from fetching the redis helm
+chart from the newer OCI endpoints. The workaround is to download the redis binary directly and point helm to the local chart
+by modifying the relevant skaffold reference.
+
+```bash
+cd components/redis
+helm pull oci://registry-1.docker.io/bitnamicharts/redis
+tar -xzvf redis-20.5.0.tgz (or your related version)
+vi skaffold.yaml
+```
+Update skaffold.yaml so it points to the local redis path:
+```
+      releases:
+      - name: redis
+        chartPath: redis
+```
+Cd back to the core-solution-services directory and deploy the redis microservice: 
+```bash
+cd ../..
+skaffold run -p default-deploy -m redis -n $NAMESPACE
+```
+Validate your redis deployment
+```bash
+kubectl get pods
+```
+You should see a redis-master-0 and replica pods running.
 
 ### Apple M1 laptop related errors
 - I use an Apple M1 Mac and got errors like below when I ran `terraform init`:
