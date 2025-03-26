@@ -654,7 +654,10 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
              HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
              HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
         }
-        prompt_list = convert_history_to_gemini_prompt(user_chat.history, is_multimodal)
+        prompt_list = []
+        if user_chat:
+          prompt_list.extend(
+            convert_history_to_gemini_prompt(user_chat.history, is_multimodal))
         prompt_list.append(Content(role="user", parts=[Part.from_text(prompt)]))
         chat_model = GenerativeModel(google_llm)
         if is_multimodal:
