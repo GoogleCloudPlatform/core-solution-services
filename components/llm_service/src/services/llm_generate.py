@@ -606,7 +606,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
               f" user_file_bytes=[{user_file_bytes_log}],"
               f" user_files=[{user_files}]")
 
-  # TODO: Remove this section after non-gemini llms are removed from 
+  # TODO: Remove this section after non-gemini llms are removed from
   # the model options
   prompt_list = []
   if user_chat is not None:
