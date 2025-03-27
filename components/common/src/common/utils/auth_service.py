@@ -22,7 +22,8 @@ from firebase_admin.auth import get_user
 from fastapi import Depends
 from fastapi.security import HTTPBearer
 from common.utils.errors import InvalidTokenError
-from common.config import SERVICES
+from common.config import SERVICES, CUSTOM_CLAIMS_ENABLED
+from common.utils.cache_service import set_key, get_key
 from common.utils.errors import TokenNotFoundError
 from common.utils.http_exceptions import (InternalServerError, Unauthenticated)
 from common.utils.logging_handler import Logger
@@ -63,7 +64,7 @@ def validate_oauth_token(token: auth_scheme = Depends()):
 
   token_dict = dict(token)
   if token_dict["credentials"]:
-    api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
+    api_endpoint = f"https://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
         "api/v1/validate"
     res = requests.get(
         url=api_endpoint,
@@ -115,7 +116,7 @@ def validate_user_type_and_token(accepted_user_types: list,
       raise InvalidTokenError("Unauthorized: token is empty.")
     token_dict = dict(token)
     if token_dict["credentials"]:
-      api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}" \
+      api_endpoint = f"https://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}" \
           "/api/v1/validate_token"
       res = requests.get(
           url=api_endpoint,
@@ -152,7 +153,7 @@ def user_verification(token: str) -> json:
   """
   host = SERVICES["authentication"]["host"]
   port = SERVICES["authentication"]["port"]
-  api_endpoint = f"http://{host}:{port}/authentication/api/v1/validate"
+  api_endpoint = f"https://{host}:{port}/authentication/api/v1/validate"
   response = requests.get(
       url=api_endpoint,
       headers={
@@ -189,7 +190,7 @@ def create_authz_filter(user_data: dict):
 
     Logger.info(
         f"firebase ID token for {user_data['user_id']} has roles {roles}")
-    # TODO: change this later to accomodate more than one
+    # TODO: change this later to accommodate more than one
     if roles:
       authz_filter = {"authz": {"contains": roles[0]}}
     else:
@@ -200,7 +201,7 @@ def create_authz_filter(user_data: dict):
 def get_roles_from_custom_claims(user_data: dict):
   """
   Get roles from custom claims for authorization filter.
-  
+
   Args:
     user_data: dict of user data from auth token
   
@@ -208,25 +209,28 @@ def get_roles_from_custom_claims(user_data: dict):
     dict containing roles and performs as a authorization filter
   """
   role_claims_dict = None
+  if not CUSTOM_CLAIMS_ENABLED:
+    return role_claims_dict
 
   if user_data:
+    key = f"roles_cache::{user_data.get('user_id')}"
+    cached_roles = get_key(key)  # Check if the result is already cached
+    if cached_roles:
+      return cached_roles
+
     # get firebase user
     Logger.info(f"user_data: {user_data}")
     user = get_user(user_data["user_id"])
-    Logger.info(f"user: {user}")
-
     # get roles
-    roles = None
     if user.custom_claims and "roles" in user.custom_claims:
       roles = user.custom_claims["roles"]
       Logger.info(f"roles: {roles} from user.custom_claims")
-
-    Logger.info(
-        f"firebase ID token for {user_data['user_id']} has roles: {roles}")
-
-    if roles:
       role_claims_dict = {"roles": list(roles)}
     else:
-      role_claims_dict = None
+      Logger.info(f"roles: No roles from user.custom_claims")
+    # Cache the result for future use
+    set_key(key, role_claims_dict, 3600)
+  else:
+    Logger.error(f"No user_data passed to get_roles_from_custom_claims")
 
   return role_claims_dict
