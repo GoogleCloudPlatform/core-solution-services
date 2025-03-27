@@ -227,10 +227,10 @@ def get_roles_from_custom_claims(user_data: dict):
       Logger.info(f"roles: {roles} from user.custom_claims")
       role_claims_dict = {"roles": list(roles)}
     else:
-      Logger.info(f"roles: No roles from user.custom_claims")
+      Logger.info("roles: No roles from user.custom_claims")
     # Cache the result for future use
     set_key(key, role_claims_dict, 3600)
   else:
-    Logger.error(f"No user_data passed to get_roles_from_custom_claims")
+    Logger.error("No user_data passed to get_roles_from_custom_claims")
 
   return role_claims_dict
