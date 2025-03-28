@@ -556,27 +556,34 @@ async def model_garden_predict(prompt: str,
   return predictions_text
 
 def convert_history_to_gemini_prompt(history: list, is_multimodal:bool=False
-                                     ) -> list:
+                                     ) -> list[Content]:
   """converts a user chat history inot a properly formatted gemini prompt
   history: A history entry from a UserChat object
   is_multimodal: If the model is multimodal
   Returns a properly formatted gemini prompt to be used for generating a 
   response"""
-  conversation = []
+  conversation: list[Content] = []
   for entry in history:
     content = UserChat.entry_content(entry)
     if UserChat.is_human(entry):
       conversation.append(Content(role="user", parts=[Part.from_text(content)]))
     elif UserChat.is_ai(entry):
       conversation.append(Content(role="model", parts=[Part.from_text(content)]))
-    elif is_multimodal:
+    elif is_multimodal and conversation:
+      # TODO: Currently Genie doesn't track if the user or model added a file,
+      # it's assumed that the role is the same as for the previous entry
+      # therefore we skip adding the file to history if it's the first entry,
+      # which shouldn't currenlty be possible in genie anyways
+      role = conversation[-1].role
+      part = None
       if UserChat.is_file_bytes(entry):
-        conversation.append(
-          Part.from_data(base64.b64decode(UserChat.get_file_b64(entry)),
-                          mime_type=UserChat.get_file_type(entry)))
+        part = Part.from_data(base64.b64decode(UserChat.get_file_b64(entry)),
+                          mime_type=UserChat.get_file_type(entry))
       elif UserChat.is_file_uri(entry):
-        conversation.append(Part.from_uri(UserChat.get_file_uri(entry),
-                                    mime_type=UserChat.get_file_type(entry)))
+        part = Part.from_uri(UserChat.get_file_uri(entry),
+                                    mime_type=UserChat.get_file_type(entry))
+      if part:
+        conversation.append(Content(role=role, parts=[part]))
   return conversation
 
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
