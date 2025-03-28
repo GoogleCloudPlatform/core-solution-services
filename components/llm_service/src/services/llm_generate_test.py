@@ -29,7 +29,7 @@ os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 os.environ["VLLM_GEMMA_ENDPOINT"] = "fake-endpoint"
 
 from services.llm_generate import llm_generate, llm_chat, llm_generate_multimodal,\
-  llm_vllm_service_predict
+  llm_vllm_service_predict, convert_history_to_gemini_prompt
 from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
 from vertexai.preview.language_models import TextGenerationResponse
@@ -156,20 +156,19 @@ async def test_llm_generate_multi_file(clean_firestore):
 
   with open(FAKE_FILE_NAME, "ab") as f:
     pass
-  fake_file=open(FAKE_FILE_NAME, "rb")
-  os.remove(FAKE_FILE_NAME)
-  fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
-  fake_file_bytes = await fake_upload_file.read()
-  fake_file_data = [DataSourceFile(mime_type="image/png")]
-  with mock.patch(
-  "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
-  return_value=FAKE_GOOGLE_RESPONSE):
-    response = await llm_generate_multimodal(FAKE_PROMPT,
-                                        VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
-                                        fake_file_bytes,
-                                        fake_file_data)
-  fake_file.close()
-  assert response == FAKE_GENERATE_RESPONSE
+  with open(FAKE_FILE_NAME, "rb") as fake_file:
+    os.remove(FAKE_FILE_NAME)
+    fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
+    fake_file_bytes = await fake_upload_file.read()
+    fake_file_data = [DataSourceFile(mime_type="image/png")]
+    with mock.patch(
+    "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
+    return_value=FAKE_GOOGLE_RESPONSE):
+      response = await llm_generate_multimodal(FAKE_PROMPT,
+                                          VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+                                          fake_file_bytes,
+                                          fake_file_data)
+    assert response == FAKE_GENERATE_RESPONSE
 
 
 @pytest.mark.asyncio
@@ -286,3 +285,12 @@ async def test_llm_vllm_service_predict(clean_firestore, test_chat):
       top_p=1.0,
       top_k=10
     )
+
+def test_convert_history_to_gemini_prompt():
+  test_history = [{"HumanInput": "good morning"},
+                  {"AIOutput": "good morning to you too! How can I help you?"},
+                  {"HumanInput": "What are good vacation spots?"}]
+  prompt = convert_history_to_gemini_prompt(test_history)
+  assert len(prompt) == 3
+  assert prompt[0].role == "user"
+  assert prompt[1].role == "model"
