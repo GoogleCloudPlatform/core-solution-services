@@ -156,20 +156,19 @@ async def test_llm_generate_multi_file(clean_firestore):
 
   with open(FAKE_FILE_NAME, "ab") as f:
     pass
-  fake_file=open(FAKE_FILE_NAME, "rb")
-  os.remove(FAKE_FILE_NAME)
-  fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
-  fake_file_bytes = await fake_upload_file.read()
-  fake_file_data = [DataSourceFile(mime_type="image/png")]
-  with mock.patch(
-  "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
-  return_value=FAKE_GOOGLE_RESPONSE):
-    response = await llm_generate_multimodal(FAKE_PROMPT,
-                                        VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
-                                        fake_file_bytes,
-                                        fake_file_data)
-  fake_file.close()
-  assert response == FAKE_GENERATE_RESPONSE
+  with open(FAKE_FILE_NAME, "rb") as fake_file:
+    os.remove(FAKE_FILE_NAME)
+    fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
+    fake_file_bytes = await fake_upload_file.read()
+    fake_file_data = [DataSourceFile(mime_type="image/png")]
+    with mock.patch(
+    "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
+    return_value=FAKE_GOOGLE_RESPONSE):
+      response = await llm_generate_multimodal(FAKE_PROMPT,
+                                          VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+                                          fake_file_bytes,
+                                          fake_file_data)
+    assert response == FAKE_GENERATE_RESPONSE
 
 
 @pytest.mark.asyncio
