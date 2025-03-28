@@ -1,6 +1,6 @@
 # GENIE Load Testing Instructions
 This folder contains files to load test a genie instance
-## Instaling required libraries
+## Installing required libraries
 To use it install the required packages by running `pip3 -r requirements.txt` from within this folder. 
 ## Creating test user accounts
 Ensure you are logged in with `gcloud auth login`  
