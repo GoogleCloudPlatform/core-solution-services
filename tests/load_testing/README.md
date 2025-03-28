@@ -4,7 +4,7 @@ This folder contains files to load test a genie instance
 To use it install the required packages by running `pip3 -r requirements.txt` from within this folder. 
 ## Creating test user accounts
 Ensure you are logged in with `gcloud auth login`  
-Configure the project you need to create test account for with `gcloud config set project $PROJECT_ID` where $PROJECT_ID is the name of the project.  
+Configure the project you need to create test account for with `gcloud config set project $PROJECT_ID` where $PROJECT_ID is your Google Cloud project ID.
 Run the command `python3 -c "from create_users import *; create_users(NUM_USERS)"` wtih  `NUM_USERS` replaced with the max 
 number of users you plan to test with e.g. if no more than 100 users will be tested at once run `python3 -c "from create_users import *; create_users(100)"`
 ## Running the load test
