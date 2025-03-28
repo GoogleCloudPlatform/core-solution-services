@@ -31,12 +31,14 @@ GKE_SERVICE_ACCOUNT_NAME = os.getenv("GKE_SERVICE_ACCOUNT_NAME", "gke-sa")
 PUB_SUB_PROJECT_ID = os.getenv("PUB_SUB_PROJECT_ID", PROJECT_ID)
 SERVICE_NAME = os.getenv("SERVICE_NAME")
 REGION = os.getenv("REGION", "us-central1")
+CUSTOM_CLAIMS_ENABLED = bool(
+    os.getenv("CUSTOM_CLAIMS_ENABLED", "false").lower() == "true")
 
 # TODO: Automate this with existing GKE service names.
 SERVICES = {
     "authentication": {
         "host": "authentication",
-        "port": 80
+        "port": 443
     },
     "user-management": {
         "host": "user-management",
