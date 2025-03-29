@@ -38,7 +38,7 @@ CUSTOM_CLAIMS_ENABLED = bool(
 SERVICES = {
     "authentication": {
         "host": "authentication",
-        "port": 443
+        "port": 80
     },
     "user-management": {
         "host": "user-management",

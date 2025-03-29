@@ -64,7 +64,7 @@ def validate_oauth_token(token: auth_scheme = Depends()):
 
   token_dict = dict(token)
   if token_dict["credentials"]:
-    api_endpoint = f"https://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
+    api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
         "api/v1/validate"
     res = requests.get(
         url=api_endpoint,
@@ -116,7 +116,7 @@ def validate_user_type_and_token(accepted_user_types: list,
       raise InvalidTokenError("Unauthorized: token is empty.")
     token_dict = dict(token)
     if token_dict["credentials"]:
-      api_endpoint = f"https://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}" \
+      api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}" \
           "/api/v1/validate_token"
       res = requests.get(
           url=api_endpoint,
@@ -153,7 +153,7 @@ def user_verification(token: str) -> json:
   """
   host = SERVICES["authentication"]["host"]
   port = SERVICES["authentication"]["port"]
-  api_endpoint = f"https://{host}:{port}/authentication/api/v1/validate"
+  api_endpoint = f"http://{host}:{port}/authentication/api/v1/validate"
   response = requests.get(
       url=api_endpoint,
       headers={
