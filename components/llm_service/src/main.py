@@ -69,9 +69,8 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     logging.setLogRecordFactory(custom_log_record_factory)
 
     response = await call_next(request)
-
     # Restore original factory
-    logging.setLogRecordFactory(original_factory)
+    # logging.setLogRecordFactory(original_factory)
 
     response.headers["X-Request-ID"] = request_id
     return response

@@ -17,6 +17,7 @@
 import time
 import asyncio
 import logging
+import json
 from typing import Callable, Optional, Dict, Any, Union
 from functools import wraps
 from prometheus_client import Counter, Histogram, Gauge, Summary, generate_latest, CONTENT_TYPE_LATEST
@@ -157,7 +158,16 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         "llm_service", method, path, response.status_code
       ).inc()
 
-      logger.debug(f"Request processed: {method} {path} {response.status_code} in {request_latency:.3f}s")
+      logger.debug(
+        "Request processed",
+        extra={
+          "metric_type": "request",
+          "method": method,
+          "path": path,
+          "status_code": response.status_code,
+          "duration_ms": round(request_latency * 1000, 2)
+        }
+      )
 
       return response
     except Exception as e:
@@ -166,7 +176,16 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         "llm_service", method, path, error_type
       ).inc()
 
-      logger.error(f"Request error: {method} {path} - {str(e)}")
+      logger.error(
+        "Request error",
+        extra={
+          "metric_type": "request_error",
+          "method": method,
+          "path": path,
+          "error_type": error_type,
+          "error_message": str(e)
+        }
+      )
 
       raise
 
@@ -209,12 +228,15 @@ def track_llm_generate(func: Callable):
 
         llm_type = genconfig_dict.get("llm_type", "unknown")
         prompt = genconfig_dict.get("prompt", "")
-        PROMPT_SIZE.labels("llm").observe(len(prompt))
+        prompt_size = len(prompt)
+        PROMPT_SIZE.labels("llm").observe(prompt_size)
       except Exception as e:
         logger.error(f"Error extracting LLM config: {str(e)}")
         llm_type = "unknown"
+        prompt_size = 0
     else:
       llm_type = "unknown"
+      prompt_size = 0
 
     request_id, trace = _get_request_context(args)
 
@@ -222,17 +244,45 @@ def track_llm_generate(func: Callable):
     try:
       result = await func(*args, **kwargs)
 
-      logger.info(f"LLM generation successful: type={llm_type}")
       LLM_GENERATE_COUNT.labels(llm_type=llm_type, status="success").inc()
+
+      logger.info(
+        "LLM generation successful",
+        extra={
+          "metric_type": "llm_generation",
+          "llm_type": llm_type,
+          "status": "success",
+          "prompt_size": prompt_size
+        }
+      )
 
       return result
     except Exception as e:
-      logger.error(f"LLM generation failed: type={llm_type}, error={str(e)}")
       LLM_GENERATE_COUNT.labels(llm_type=llm_type, status="error").inc()
+
+      logger.error(
+        "LLM generation failed",
+        extra={
+          "metric_type": "llm_generation",
+          "llm_type": llm_type,
+          "status": "error",
+          "prompt_size": prompt_size,
+          "error_message": str(e)
+        }
+      )
       raise
     finally:
       latency = time.time() - start_time
       LLM_GENERATE_LATENCY.labels(llm_type=llm_type).observe(latency)
+
+      logger.info(
+        "LLM generation latency",
+        extra={
+          "metric_type": "llm_generation_latency",
+          "llm_type": llm_type,
+          "duration_ms": round(latency * 1000, 2)
+        }
+      )
   return wrapper
 
 def track_embedding_generate(func: Callable):
@@ -248,28 +298,61 @@ def track_embedding_generate(func: Callable):
 
         embedding_type = embedding_config_dict.get("embedding_type", "unknown")
         text = embedding_config_dict.get("text", "")
-        PROMPT_SIZE.labels("embedding").observe(len(text))
+        text_size = len(text)
+        PROMPT_SIZE.labels("embedding").observe(text_size)
       except Exception as e:
         logger.error(f"Error extracting embedding config: {str(e)}")
         embedding_type = "unknown"
+        text_size = 0
     else:
       embedding_type = "unknown"
+      text_size = 0
 
     request_id, trace = _get_request_context(args)
     start_time = time.time()
     try:
       result = await func(*args, **kwargs)
-      logger.info(f"Embedding generation successful: type={embedding_type}")
+
       EMBEDDING_GENERATE_COUNT.labels(embedding_type=embedding_type, status="success").inc()
+
+      logger.info(
+        "Embedding generation successful",
+        extra={
+          "metric_type": "embedding_generation",
+          "embedding_type": embedding_type,
+          "status": "success",
+          "text_size": text_size
+        }
+      )
 
       return result
     except Exception as e:
-      logger.error(f"Embedding generation failed: type={embedding_type}, error={str(e)}")
       EMBEDDING_GENERATE_COUNT.labels(embedding_type=embedding_type, status="error").inc()
+
+      logger.error(
+        "Embedding generation failed",
+        extra={
+          "metric_type": "embedding_generation",
+          "embedding_type": embedding_type,
+          "status": "error",
+          "text_size": text_size,
+          "error_message": str(e)
+        }
+      )
       raise
     finally:
       latency = time.time() - start_time
+
       EMBEDDING_GENERATE_LATENCY.labels(embedding_type=embedding_type).observe(latency)
+
+      logger.info(
+        "Embedding generation latency",
+        extra={
+          "metric_type": "embedding_generation_latency",
+          "embedding_type": embedding_type,
+          "duration_ms": round(latency * 1000, 2)
+        }
+      )
 
   return wrapper
 
@@ -318,7 +401,13 @@ def track_chat_generate(func: Callable):
       if prompt_size > 0:
         PROMPT_SIZE.labels("chat").observe(prompt_size)
     except Exception as e:
-      logger.error(f"Error extracting chat parameters: {str(e)}")
+      logger.error(
+        "Error extracting chat parameters",
+        extra={
+          "metric_type": "chat_parameters_error",
+          "error_message": str(e)
+        }
+      )
 
     start_time = time.time()
     try:
@@ -331,12 +420,21 @@ def track_chat_generate(func: Callable):
         status="success"
       ).inc()
 
+      log_extra = {
+        "metric_type": "chat_generation",
+        "llm_type": llm_type,
+        "with_file": with_file,
+        "with_tools": with_tools,
+        "prompt_size": prompt_size,
+        "status": "success"
+      }
+
       if isinstance(result, dict) and "data" in result and "history" in result["data"]:
         history_size = len(result["data"]["history"])
         CHAT_HISTORY_SIZE.labels(llm_type=llm_type).observe(history_size)
-        logger.info(f"Chat generation successful: type={llm_type}, history_size={history_size}")
-      else:
-        logger.info(f"Chat generation successful: type={llm_type}")
+        log_extra["history_size"] = history_size
+
+      logger.info("Chat generation successful", extra=log_extra)
 
       return result
     except Exception as e:
@@ -347,7 +445,18 @@ def track_chat_generate(func: Callable):
         status="error"
       ).inc()
 
-      logger.error(f"Chat generation failed: type={llm_type}, error={str(e)}")
+      logger.error(
+        "Chat generation failed",
+        extra={
+          "metric_type": "chat_generation",
+          "llm_type": llm_type,
+          "with_file": with_file,
+          "with_tools": with_tools,
+          "prompt_size": prompt_size,
+          "status": "error",
+          "error_message": str(e)
+        }
+      )
       raise
     finally:
       latency = time.time() - start_time
@@ -356,6 +465,17 @@ def track_chat_generate(func: Callable):
         with_file=str(with_file),
         with_tools=str(with_tools)
       ).observe(latency)
+
+      logger.info(
+        "Chat generation latency",
+        extra={
+          "metric_type": "chat_generation_latency",
+          "llm_type": llm_type,
+          "with_file": with_file,
+          "with_tools": with_tools,
+          "duration_ms": round(latency * 1000, 2)
+        }
+      )
 
   return wrapper
 
@@ -373,15 +493,39 @@ def track_chat_operations(func: Callable):
       func_name = func.__name__
       if "create" in func_name and isinstance(result, dict) and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
-        logger.info(f"Chat created: user={user_id}")
+
+        logger.info(
+          "Chat created",
+          extra={
+            "metric_type": "chat_operation",
+            "operation": "create",
+            "user_id": user_id
+          }
+        )
 
       if "delete" in func_name and isinstance(result, dict) and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
-        logger.info(f"Chat deleted: user={user_id}")
+
+        logger.info(
+          "Chat deleted",
+          extra={
+            "metric_type": "chat_operation",
+            "operation": "delete",
+            "user_id": user_id
+          }
+        )
 
       return result
     except Exception as e:
-      logger.error(f"Chat operation failed: function={func.__name__}, error={str(e)}")
+      logger.error(
+        "Chat operation failed",
+        extra={
+          "metric_type": "chat_operation",
+          "operation": func.__name__,
+          "user_id": user_id,
+          "error_message": str(e)
+        }
+      )
       raise
 
   @wraps(func)
@@ -397,15 +541,39 @@ def track_chat_operations(func: Callable):
       func_name = func.__name__
       if "create" in func_name and isinstance(result, dict) and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
-        logger.info(f"Chat created: user={user_id}")
+
+        logger.info(
+          "Chat created",
+          extra={
+            "metric_type": "chat_operation",
+            "operation": "create",
+            "user_id": user_id
+          }
+        )
 
       if "delete" in func_name and isinstance(result, dict) and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
-        logger.info(f"Chat deleted: user={user_id}")
+
+        logger.info(
+          "Chat deleted",
+          extra={
+            "metric_type": "chat_operation",
+            "operation": "delete",
+            "user_id": user_id
+          }
+        )
 
       return result
     except Exception as e:
-      logger.error(f"Chat operation failed: function={func.__name__}, error={str(e)}")
+      logger.error(
+        "Chat operation failed",
+        extra={
+          "metric_type": "chat_operation",
+          "operation": func.__name__,
+          "user_id": user_id,
+          "error_message": str(e)
+        }
+      )
       raise
 
   if asyncio.iscoroutinefunction(func):
@@ -417,6 +585,7 @@ def track_agent_execution(func: Callable):
   @wraps(func)
   async def wrapper(*args, **kwargs):
     agent_type = kwargs.get("agent_type", "unknown")
+    agent_name = kwargs.get("agent_name", "unknown")
 
     request_id, trace = _get_request_context(args)
 
@@ -425,17 +594,46 @@ def track_agent_execution(func: Callable):
       # Call the original function
       result = await func(*args, **kwargs)
 
-      logger.info(f"Agent execution successful: type={agent_type}")
       AGENT_EXECUTION_COUNT.labels(agent_type=agent_type, status="success").inc()
+
+      logger.info(
+        "Agent execution successful",
+        extra={
+          "metric_type": "agent_execution",
+          "agent_type": agent_type,
+          "agent_name": agent_name,
+          "status": "success"
+        }
+      )
 
       return result
     except Exception as e:
-      logger.error(f"Agent execution failed: type={agent_type}, error={str(e)}")
       AGENT_EXECUTION_COUNT.labels(agent_type=agent_type, status="error").inc()
+
+      logger.error(
+        "Agent execution failed",
+        extra={
+          "metric_type": "agent_execution",
+          "agent_type": agent_type,
+          "agent_name": agent_name,
+          "status": "error",
+          "error_message": str(e)
+        }
+      )
       raise
     finally:
       latency = time.time() - start_time
       AGENT_EXECUTION_LATENCY.labels(agent_type=agent_type).observe(latency)
+
+      logger.info(
+        "Agent execution latency",
+        extra={
+          "metric_type": "agent_execution_latency",
+          "agent_type": agent_type,
+          "agent_name": agent_name,
+          "duration_ms": round(latency * 1000, 2)
+        }
+      )
 
   return wrapper
 
@@ -464,17 +662,46 @@ def track_vector_db_query(func: Callable):
     try:
       result = await func(*args, **kwargs)
 
-      logger.info(f"Vector DB query successful: db_type={db_type}, engine={engine_name}")
       VECTOR_DB_QUERY_COUNT.labels(db_type=db_type, engine_name=engine_name, status="success").inc()
+
+      logger.info(
+        "Vector DB query successful",
+        extra={
+          "metric_type": "vector_db_query",
+          "db_type": db_type,
+          "engine_name": engine_name,
+          "status": "success"
+        }
+      )
 
       return result
     except Exception as e:
-      logger.error(f"Vector DB query failed: db_type={db_type}, engine={engine_name}, error={str(e)}")
       VECTOR_DB_QUERY_COUNT.labels(db_type=db_type, engine_name=engine_name, status="error").inc()
+
+      logger.error(
+        "Vector DB query failed",
+        extra={
+          "metric_type": "vector_db_query",
+          "db_type": db_type,
+          "engine_name": engine_name,
+          "status": "error",
+          "error_message": str(e)
+        }
+      )
       raise
     finally:
       latency = time.time() - start_time
       VECTOR_DB_QUERY_LATENCY.labels(db_type=db_type, engine_name=engine_name).observe(latency)
+
+      logger.info(
+        "Vector DB query latency",
+        extra={
+          "metric_type": "vector_db_query_latency",
+          "db_type": db_type,
+          "engine_name": engine_name,
+          "duration_ms": round(latency * 1000, 2)
+        }
+      )
 
   return wrapper
 
@@ -505,16 +732,45 @@ def track_vector_db_build(func: Callable):
     try:
       result = await func(*args, **kwargs)
 
-      logger.info(f"Vector DB build initiated: db_type={db_type}, engine={engine_name}")
       VECTOR_DB_BUILD_COUNT.labels(db_type=db_type, engine_name=engine_name, status="success").inc()
+
+      logger.info(
+        "Vector DB build initiated",
+        extra={
+          "metric_type": "vector_db_build",
+          "db_type": db_type,
+          "engine_name": engine_name,
+          "status": "success"
+        }
+      )
 
       return result
     except Exception as e:
-      logger.error(f"Vector DB build failed: db_type={db_type}, engine={engine_name}, error={str(e)}")
       VECTOR_DB_BUILD_COUNT.labels(db_type=db_type, engine_name=engine_name, status="error").inc()
+
+      logger.error(
+        "Vector DB build failed",
+        extra={
+          "metric_type": "vector_db_build",
+          "db_type": db_type,
+          "engine_name": engine_name,
+          "status": "error",
+          "error_message": str(e)
+        }
+      )
       raise
     finally:
       latency = time.time() - start_time
       VECTOR_DB_BUILD_LATENCY.labels(db_type=db_type, engine_name=engine_name).observe(latency)
+
+      logger.info(
+        "Vector DB build latency",
+        extra={
+          "metric_type": "vector_db_build_latency",
+          "db_type": db_type,
+          "engine_name": engine_name,
+          "duration_ms": round(latency * 1000, 2)
+        }
+      )
 
   return wrapper

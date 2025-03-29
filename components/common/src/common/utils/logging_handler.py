@@ -16,11 +16,12 @@
 
 """class and methods for logs handling."""
 
+import json
 import logging
 import os
 import sys
 from common.config import CLOUD_LOGGING_ENABLED
-import google.cloud.logging
+
 
 # Create a filter to add missing fields
 class LogRecordFilter(logging.Filter):
@@ -45,42 +46,53 @@ def _add_default_fields(extra=None):
     extra['trace'] = '-'
   return extra
 
-# Set up cloud logging client
-if CLOUD_LOGGING_ENABLED:
-  try:
-    client = google.cloud.logging.Client()
-  except Exception:
-    print('Failed to initialize Cloud Logging client, falling back to stdout')
-    client = None
-else:
-  client = None
+# Custom JSON formatter for structured logging
+class JsonFormatter(logging.Formatter):
+  """JSON formatter for structured logging that preserves extra fields."""
 
-# Configure root logger once
+  def format(self, record):
+    # Get basic log record info
+    log_entry = {
+      "message": record.getMessage(),
+      "severity": record.levelname,
+      "logger": record.name,
+      "file": record.pathname,
+      "line": record.lineno,
+      "function": record.funcName,
+      "request_id": getattr(record, "request_id", "-"),
+      "trace": getattr(record, "trace", "-")
+    }
+
+    # Add any extra fields from the record
+    for key, value in record.__dict__.items():
+      if (key not in log_entry and 
+          key not in ["args", "asctime", "created", "exc_info", "exc_text", 
+                    "filename", "levelno", "module", "msecs", "msg", 
+                    "name", "pathname", "process", "processName", 
+                    "relativeCreated", "stack_info", "thread", "threadName"]):
+        log_entry[key] = value
+
+    return json.dumps(log_entry)
+
+# Force reconfiguration of root logger by removing existing handlers
 root_logger = logging.getLogger()
+print(f"*** STARTUP: Root logger initially has {len(root_logger.handlers)} handlers ***")
+
+for handler in root_logger.handlers[:]:
+  root_logger.removeHandler(handler)
+print("*** STARTUP: Removed existing handlers from root logger ***")
+
 root_logger.setLevel(logging.INFO)
 
-# Add our filter to the root logger
 root_filter = LogRecordFilter()
 if root_filter not in root_logger.filters:
   root_logger.addFilter(root_filter)
 
-# Common log format
-log_format = (
-  '%(asctime)s:%(levelname)s: [%(name)s:%(lineno)d - %(funcName)s()] '
-  'request_id=%(request_id)s trace=%(trace)s %(message)s'
-)
-formatter = logging.Formatter(log_format)
-
-# Set up handlers only once
-if not root_logger.handlers:
-  if CLOUD_LOGGING_ENABLED and client:
-    cloud_handler = client.get_default_handler()
-    cloud_handler.setFormatter(formatter)
-    root_logger.addHandler(cloud_handler)
-  else:
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(formatter)
-    root_logger.addHandler(handler)
+# Add JSON formatter handler for stdout
+json_handler = logging.StreamHandler(sys.stdout)
+json_handler.setFormatter(JsonFormatter())
+root_logger.addHandler(json_handler)
+print("*** STARTUP: Added JSON formatter handler to root logger ***")
 
 # Create a global class logger
 _static_logger = logging.getLogger('Logger')
