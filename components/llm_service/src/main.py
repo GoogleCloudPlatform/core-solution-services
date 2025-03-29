@@ -34,6 +34,7 @@ from common.utils.logging_handler import Logger
 from common.utils.auth_service import validate_token
 from common.config import CORS_ALLOW_ORIGINS, PROJECT_ID
 from starlette.middleware.base import BaseHTTPMiddleware
+from metrics import PrometheusMiddleware, create_metrics_router
 import uuid
 import time
 import logging
@@ -84,6 +85,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(RequestTrackingMiddleware)
+app.add_middleware(PrometheusMiddleware)
+
+metrics_router = create_metrics_router()
 
 @app.get("/ping")
 def health_check():
@@ -107,7 +111,6 @@ def hello():
   See <a href='/{service_path}/api/{version}/docs'>API docs</a>
   """
 
-
 api = FastAPI(
     title=service_title,
     version="latest",
@@ -116,11 +119,13 @@ api = FastAPI(
     dependencies=[Depends(validate_token)]
     )
 
+app.include_router(metrics_router)
 api.include_router(llm.router)
 api.include_router(chat.router)
 api.include_router(query.router)
 api.include_router(agent.router)
 api.include_router(agent_plan.router)
+
 
 add_exception_handlers(app)
 add_exception_handlers(api)

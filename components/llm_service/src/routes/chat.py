@@ -40,6 +40,7 @@ from schemas.llm_schema import (ChatUpdateModel,
 from services.llm_generate import llm_chat
 from services.agents.agent_tools import chat_tools, run_chat_tools
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
+from metrics import track_chat_generate, track_chat_operations
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
@@ -48,6 +49,7 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     "/chat_types",
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
+@track_chat_operations
 def get_chat_llm_list(user_data: dict = Depends(validate_token),
                       is_multimodal: Optional[bool] = None):
   """
@@ -89,6 +91,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
     "",
     name="Get all user chats",
     response_model=LLMUserAllChatsResponse)
+@track_chat_operations
 def get_chat_list(skip: int = 0, limit: int = 20,
                   with_all_history: bool = False,
                   with_first_history: bool = False,
@@ -147,6 +150,7 @@ def get_chat_list(skip: int = 0, limit: int = 20,
     "/{chat_id}",
     name="Get user chat",
     response_model=LLMUserChatResponse)
+@track_chat_operations
 def get_chat(chat_id: str,
              user_data: dict = Depends(validate_token)):
   """
@@ -180,6 +184,7 @@ def get_chat(chat_id: str,
   "/{chat_id}",
   name="Update user chat"
 )
+@track_chat_operations
 def update_chat(chat_id: str,
                 input_chat: ChatUpdateModel,
                 user_data: dict = Depends(validate_token)):
@@ -232,6 +237,7 @@ def update_chat(chat_id: str,
   "/{chat_id}",
   name="Delete user chat"
 )
+@track_chat_operations
 def delete_chat(chat_id: str, hard_delete=False):
   """Delete a user chat. We default to soft delete.
 
@@ -285,6 +291,7 @@ def validate_tool_names(tool_names: Optional[str]):
 @router.post(
     "",
     name="Create new chat", deprecated=True)
+@track_chat_generate
 async def create_user_chat(
      prompt: Annotated[str, Form()],
      llm_type: Annotated[str, Form()] = None,
@@ -422,6 +429,7 @@ async def create_user_chat(
 
 
 @router.post("/empty_chat", name="Create new chat")
+@track_chat_operations
 async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.  
@@ -452,6 +460,7 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
 
 @router.post(
     "/{chat_id}/generate")
+@track_chat_generate
 async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   """
   Continue chat based on context of user chat

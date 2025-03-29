@@ -1,0 +1,520 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Prometheus metrics and instrumentation for the LLM Service"""
+
+import time
+import asyncio
+import logging
+from typing import Callable, Optional, Dict, Any, Union
+from functools import wraps
+from prometheus_client import Counter, Histogram, Gauge, Summary, generate_latest, CONTENT_TYPE_LATEST
+from fastapi import Request, Response
+from fastapi.routing import APIRouter
+from starlette.middleware.base import BaseHTTPMiddleware
+from common.models import QueryEngine
+
+from common.utils.logging_handler import Logger
+logger = Logger.get_logger(__file__)
+
+# Fast level request Metrics
+REQUEST_COUNT = Counter(
+  "fastapi_request_count", "FastAPI Request Count",
+  ["app_name", "method", "endpoint", "http_status"]
+)
+
+REQUEST_LATENCY = Histogram(
+  "fastapi_request_latency_seconds", "Request latency",
+  ["app_name", "method", "endpoint"]
+)
+
+ERROR_COUNT = Counter(
+  "fastapi_error_count", "FastAPI Error Count",
+  ["app_name", "method", "endpoint", "error_type"]
+)
+
+# LLM Generation Metrics
+LLM_GENERATE_COUNT = Counter(
+  "llm_generate_count", "LLM Generation Count",
+  ["llm_type", "status"]
+)
+
+LLM_GENERATE_LATENCY = Histogram(
+  "llm_generate_latency_seconds", "LLM Generation Latency",
+  ["llm_type"]
+)
+
+# Embedding Metrics
+EMBEDDING_GENERATE_COUNT = Counter(
+  "embedding_generate_count", "Embedding Generation Count",
+  ["embedding_type", "status"]
+)
+
+EMBEDDING_GENERATE_LATENCY = Histogram(
+  "embedding_generate_latency_seconds", "Embedding Generation Latency",
+  ["embedding_type"]
+)
+
+# Chat Metrics
+CHAT_GENERATE_COUNT = Counter(
+  "chat_generate_count", "Chat Generation Count",
+  ["llm_type", "with_file", "with_tools", "status"]
+)
+
+CHAT_GENERATE_LATENCY = Histogram(
+  "chat_generate_latency_seconds", "Chat Generation Latency",
+  ["llm_type", "with_file", "with_tools"]
+)
+
+CHAT_HISTORY_SIZE = Histogram(
+  "chat_history_size", "Number of Entries in Chat History",
+  ["llm_type"], buckets=[1, 2, 5, 10, 15, 20, 30, 50, 100]
+)
+
+ACTIVE_CHATS_TOTAL = Gauge(
+  "active_chats_total", "Total Active Chats",
+  ["user_id"]
+)
+
+# Prompt size
+PROMPT_SIZE = Histogram(
+  "prompt_size_bytes", "Prompt Size in Bytes",
+  ["type"], buckets=[64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+)
+
+# Agent Metrics
+AGENT_EXECUTION_COUNT = Counter(
+  "agent_execution_count", "Agent Execution Count",
+  ["agent_type", "status"]
+)
+
+AGENT_EXECUTION_LATENCY = Histogram(
+  "agent_execution_latency_seconds", "Agent Execution Latency",
+  ["agent_type"]
+)
+
+TOOLS_USAGE_COUNT = Counter(
+  "tools_usage_count", "Number of Times Each Tool Is Used",
+  ["tool_name"]
+)
+
+# Vector DB Metrics
+VECTOR_DB_QUERY_COUNT = Counter(
+  "vector_db_query_count", "Vector Database Query Count",
+  ["db_type", "engine_name", "status"]
+)
+
+VECTOR_DB_QUERY_LATENCY = Histogram(
+  "vector_db_query_latency_seconds", "Vector Database Query Latency",
+  ["db_type", "engine_name"]
+)
+
+VECTOR_DB_BUILD_COUNT = Counter(
+  "vector_db_build_count", "Vector Database Build Count",
+  ["db_type", "engine_name", "status"]
+)
+
+VECTOR_DB_BUILD_LATENCY = Histogram(
+  "vector_db_build_latency_seconds", "Vector Database Build Latency",
+  ["db_type", "engine_name"]
+)
+
+VECTOR_DB_DOC_COUNT = Histogram(
+  "vector_db_doc_count", "Number of Documents in Vector DB",
+  ["db_type", "engine_name"], buckets=[10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000]
+)
+
+class PrometheusMiddleware(BaseHTTPMiddleware):
+  async def dispatch(self, request: Request, call_next):
+    start_time = time.time()
+
+    method = request.method
+    path = request.url.path
+    # Extract request_id and trace from request state
+    request_id = getattr(request.state, "request_id", "-")
+    trace = getattr(request.state, "trace", "-")
+
+    try:
+      response = await call_next(request)
+      request_latency = time.time() - start_time
+
+      REQUEST_LATENCY.labels(
+        "llm_service", method, path
+      ).observe(request_latency)
+
+      REQUEST_COUNT.labels(
+        "llm_service", method, path, response.status_code
+      ).inc()
+
+      logger.debug(f"Request processed: {method} {path} {response.status_code} in {request_latency:.3f}s")
+
+      return response
+    except Exception as e:
+      error_type = type(e).__name__
+      ERROR_COUNT.labels(
+        "llm_service", method, path, error_type
+      ).inc()
+
+      logger.error(f"Request error: {method} {path} - {str(e)}")
+
+      raise
+
+# prometheus needs its own router
+def create_metrics_router() -> APIRouter:
+  """Creates a router with the /metrics endpoint"""
+  metrics_router = APIRouter(tags=["Metrics"])
+
+  @metrics_router.get("/metrics")
+  async def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+  return metrics_router
+
+def _get_request_context(args) -> tuple:
+  """Extract request_id and trace from request if available"""
+  request_id = "-"
+  trace = "-"
+
+  for arg in args:
+    if hasattr(arg, "state"):
+      request_id = getattr(arg.state, "request_id", "-")
+      trace = getattr(arg.state, "trace", "-")
+      break
+
+  return request_id, trace
+
+
+def track_llm_generate(func: Callable):
+  @wraps(func)
+  async def wrapper(*args, **kwargs):
+    # Extract llm_type
+    gen_config = kwargs.get("gen_config")
+    if gen_config:
+      try:
+        if hasattr(gen_config, "dict"):
+          genconfig_dict = gen_config.dict()
+        else:
+          genconfig_dict = gen_config.model_dump()
+
+        llm_type = genconfig_dict.get("llm_type", "unknown")
+        prompt = genconfig_dict.get("prompt", "")
+        PROMPT_SIZE.labels("llm").observe(len(prompt))
+      except Exception as e:
+        logger.error(f"Error extracting LLM config: {str(e)}")
+        llm_type = "unknown"
+    else:
+      llm_type = "unknown"
+
+    request_id, trace = _get_request_context(args)
+
+    start_time = time.time()
+    try:
+      result = await func(*args, **kwargs)
+
+      logger.info(f"LLM generation successful: type={llm_type}")
+      LLM_GENERATE_COUNT.labels(llm_type=llm_type, status="success").inc()
+
+      return result
+    except Exception as e:
+      logger.error(f"LLM generation failed: type={llm_type}, error={str(e)}")
+      LLM_GENERATE_COUNT.labels(llm_type=llm_type, status="error").inc()
+      raise
+    finally:
+      latency = time.time() - start_time
+      LLM_GENERATE_LATENCY.labels(llm_type=llm_type).observe(latency)
+  return wrapper
+
+def track_embedding_generate(func: Callable):
+  @wraps(func)
+  async def wrapper(*args, **kwargs):
+    embedding_config = kwargs.get("embeddings_config")
+    if embedding_config:
+      try:
+        if hasattr(embedding_config, "dict"):
+          embedding_config_dict = embedding_config.dict()
+        else:
+          embedding_config_dict = embedding_config.model_dump()
+
+        embedding_type = embedding_config_dict.get("embedding_type", "unknown")
+        text = embedding_config_dict.get("text", "")
+        PROMPT_SIZE.labels("embedding").observe(len(text))
+      except Exception as e:
+        logger.error(f"Error extracting embedding config: {str(e)}")
+        embedding_type = "unknown"
+    else:
+      embedding_type = "unknown"
+
+    request_id, trace = _get_request_context(args)
+    start_time = time.time()
+    try:
+      result = await func(*args, **kwargs)
+      logger.info(f"Embedding generation successful: type={embedding_type}")
+      EMBEDDING_GENERATE_COUNT.labels(embedding_type=embedding_type, status="success").inc()
+
+      return result
+    except Exception as e:
+      logger.error(f"Embedding generation failed: type={embedding_type}, error={str(e)}")
+      EMBEDDING_GENERATE_COUNT.labels(embedding_type=embedding_type, status="error").inc()
+      raise
+    finally:
+      latency = time.time() - start_time
+      EMBEDDING_GENERATE_LATENCY.labels(embedding_type=embedding_type).observe(latency)
+
+  return wrapper
+
+def track_chat_generate(func: Callable):
+  """Decorator to track chat generation metrics"""
+  @wraps(func)
+  async def wrapper(*args, **kwargs):
+    # Extract parameters based on endpoint pattern
+    gen_config = kwargs.get("gen_config", None)
+    chat_id = kwargs.get("chat_id", None)
+
+    llm_type = "unknown"
+    with_file = False
+    with_tools = False
+    prompt_size = 0
+
+    # Get request context
+    request_id, trace = _get_request_context(args)
+
+    try:
+      # For create_user_chat function
+      if not gen_config:
+        prompt = kwargs.get("prompt", "")
+        llm_type = kwargs.get("llm_type", "unknown")
+        chat_file = kwargs.get("chat_file", None)
+        chat_file_url = kwargs.get("chat_file_url", None)
+        tool_names = kwargs.get("tool_names", None)
+
+        with_file = (chat_file is not None or chat_file_url is not None)
+        with_tools = tool_names is not None
+        prompt_size = len(prompt) if prompt else 0
+
+      else:
+        if hasattr(gen_config, "dict"):
+          genconfig_dict = gen_config.dict()
+        else:
+          genconfig_dict = gen_config.model_dump()
+
+        llm_type = genconfig_dict.get("llm_type", "unknown")
+        prompt = genconfig_dict.get("prompt", "")
+        with_file = (genconfig_dict.get("chat_file_b64") is not None or
+                    genconfig_dict.get("chat_file_url") is not None)
+        with_tools = genconfig_dict.get("tool_names") is not None
+        prompt_size = len(prompt)
+
+      if prompt_size > 0:
+        PROMPT_SIZE.labels("chat").observe(prompt_size)
+    except Exception as e:
+      logger.error(f"Error extracting chat parameters: {str(e)}")
+
+    start_time = time.time()
+    try:
+      result = await func(*args, **kwargs)
+
+      CHAT_GENERATE_COUNT.labels(
+        llm_type=llm_type,
+        with_file=str(with_file),
+        with_tools=str(with_tools),
+        status="success"
+      ).inc()
+
+      if isinstance(result, dict) and "data" in result and "history" in result["data"]:
+        history_size = len(result["data"]["history"])
+        CHAT_HISTORY_SIZE.labels(llm_type=llm_type).observe(history_size)
+        logger.info(f"Chat generation successful: type={llm_type}, history_size={history_size}")
+      else:
+        logger.info(f"Chat generation successful: type={llm_type}")
+
+      return result
+    except Exception as e:
+      CHAT_GENERATE_COUNT.labels(
+        llm_type=llm_type,
+        with_file=str(with_file),
+        with_tools=str(with_tools),
+        status="error"
+      ).inc()
+
+      logger.error(f"Chat generation failed: type={llm_type}, error={str(e)}")
+      raise
+    finally:
+      latency = time.time() - start_time
+      CHAT_GENERATE_LATENCY.labels(
+        llm_type=llm_type,
+        with_file=str(with_file),
+        with_tools=str(with_tools)
+      ).observe(latency)
+
+  return wrapper
+
+def track_chat_operations(func: Callable):
+  @wraps(func)
+  async def async_wrapper(*args, **kwargs):
+    user_data = kwargs.get("user_data", None)
+    user_id = user_data.get("email", "unknown") if user_data else "unknown"
+
+    request_id, trace = _get_request_context(args)
+
+    try:
+      result = await func(*args, **kwargs)
+
+      func_name = func.__name__
+      if "create" in func_name and isinstance(result, dict) and result.get("success"):
+        ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
+        logger.info(f"Chat created: user={user_id}")
+
+      if "delete" in func_name and isinstance(result, dict) and result.get("success"):
+        ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
+        logger.info(f"Chat deleted: user={user_id}")
+
+      return result
+    except Exception as e:
+      logger.error(f"Chat operation failed: function={func.__name__}, error={str(e)}")
+      raise
+
+  @wraps(func)
+  def sync_wrapper(*args, **kwargs):
+    user_data = kwargs.get("user_data", None)
+    user_id = user_data.get("email", "unknown") if user_data else "unknown"
+
+    request_id, trace = _get_request_context(args)
+
+    try:
+      result = func(*args, **kwargs)
+
+      func_name = func.__name__
+      if "create" in func_name and isinstance(result, dict) and result.get("success"):
+        ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
+        logger.info(f"Chat created: user={user_id}")
+
+      if "delete" in func_name and isinstance(result, dict) and result.get("success"):
+        ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
+        logger.info(f"Chat deleted: user={user_id}")
+
+      return result
+    except Exception as e:
+      logger.error(f"Chat operation failed: function={func.__name__}, error={str(e)}")
+      raise
+
+  if asyncio.iscoroutinefunction(func):
+    return async_wrapper
+  else:
+    return sync_wrapper
+
+def track_agent_execution(func: Callable):
+  @wraps(func)
+  async def wrapper(*args, **kwargs):
+    agent_type = kwargs.get("agent_type", "unknown")
+
+    request_id, trace = _get_request_context(args)
+
+    start_time = time.time()
+    try:
+      # Call the original function
+      result = await func(*args, **kwargs)
+
+      logger.info(f"Agent execution successful: type={agent_type}")
+      AGENT_EXECUTION_COUNT.labels(agent_type=agent_type, status="success").inc()
+
+      return result
+    except Exception as e:
+      logger.error(f"Agent execution failed: type={agent_type}, error={str(e)}")
+      AGENT_EXECUTION_COUNT.labels(agent_type=agent_type, status="error").inc()
+      raise
+    finally:
+      latency = time.time() - start_time
+      AGENT_EXECUTION_LATENCY.labels(agent_type=agent_type).observe(latency)
+
+  return wrapper
+
+def track_vector_db_query(func: Callable):
+  """Decorator to track vector database query metrics"""
+  @wraps(func)
+  async def wrapper(*args, **kwargs):
+    # Extract vector DB type and engine name
+    query_engine_id = kwargs.get("query_engine_id") or args[0]
+    db_type = "unknown"
+    engine_name = "unknown"
+
+    try:
+      # Try to get the QueryEngine object to extract relevant metadata
+      if query_engine_id:
+        q_engine = QueryEngine.find_by_id(query_engine_id)
+        if q_engine:
+          db_type = q_engine.vector_store or "unknown"
+          engine_name = q_engine.name or "unknown"
+    except Exception as e:
+      logger.error(f"Error extracting vector DB info: {str(e)}")
+
+    request_id, trace = _get_request_context(args)
+
+    start_time = time.time()
+    try:
+      result = await func(*args, **kwargs)
+
+      logger.info(f"Vector DB query successful: db_type={db_type}, engine={engine_name}")
+      VECTOR_DB_QUERY_COUNT.labels(db_type=db_type, engine_name=engine_name, status="success").inc()
+
+      return result
+    except Exception as e:
+      logger.error(f"Vector DB query failed: db_type={db_type}, engine={engine_name}, error={str(e)}")
+      VECTOR_DB_QUERY_COUNT.labels(db_type=db_type, engine_name=engine_name, status="error").inc()
+      raise
+    finally:
+      latency = time.time() - start_time
+      VECTOR_DB_QUERY_LATENCY.labels(db_type=db_type, engine_name=engine_name).observe(latency)
+
+  return wrapper
+
+def track_vector_db_build(func: Callable):
+  """Decorator to track vector database build metrics"""
+  @wraps(func)
+  async def wrapper(*args, **kwargs):
+    # Extract vector DB type and engine name from config
+    gen_config = kwargs.get("gen_config")
+    db_type = "unknown"
+    engine_name = "unknown"
+
+    if gen_config:
+      try:
+        if hasattr(gen_config, "dict"):
+          genconfig_dict = gen_config.dict()
+        else:
+          genconfig_dict = gen_config.model_dump()
+
+        db_type = genconfig_dict.get("vector_store", "unknown")
+        engine_name = genconfig_dict.get("query_engine", "unknown")
+      except Exception as e:
+        logger.error(f"Error extracting vector DB build config: {str(e)}")
+
+    request_id, trace = _get_request_context(args)
+
+    start_time = time.time()
+    try:
+      result = await func(*args, **kwargs)
+
+      logger.info(f"Vector DB build initiated: db_type={db_type}, engine={engine_name}")
+      VECTOR_DB_BUILD_COUNT.labels(db_type=db_type, engine_name=engine_name, status="success").inc()
+
+      return result
+    except Exception as e:
+      logger.error(f"Vector DB build failed: db_type={db_type}, engine={engine_name}, error={str(e)}")
+      VECTOR_DB_BUILD_COUNT.labels(db_type=db_type, engine_name=engine_name, status="error").inc()
+      raise
+    finally:
+      latency = time.time() - start_time
+      VECTOR_DB_BUILD_LATENCY.labels(db_type=db_type, engine_name=engine_name).observe(latency)
+
+  return wrapper
