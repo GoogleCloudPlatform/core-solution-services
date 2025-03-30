@@ -21,6 +21,9 @@ metadata:
   annotations:
     cloud.google.com/backend-config: '{"ports": {"80":"default-backend-config"}}'
     cloud.google.com/neg: '{"ingress": true}' # Creates a NEG after an Ingress is created
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "80"
 spec:
   type: NodePort
   ports:
