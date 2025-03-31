@@ -70,7 +70,7 @@ EMBEDDING_GENERATE_LATENCY = Histogram(
 # Chat Metrics
 CHAT_GENERATE_COUNT = Counter(
   "chat_generate_count", "Chat Generation Count",
-  ["llm_type", "with_file", "with_tools", "status"]
+  ["llm_type", "with_file", "with_tools", "status", "user_id"]
 )
 
 CHAT_GENERATE_LATENCY = Histogram(
