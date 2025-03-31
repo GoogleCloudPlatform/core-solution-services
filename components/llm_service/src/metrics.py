@@ -88,6 +88,18 @@ ACTIVE_CHATS_TOTAL = Gauge(
   ["user_id"]
 )
 
+# User Activity Metrics
+USER_ACTIVITY = Counter(
+  "user_activity", "User Activity Counter",
+  ["user_id", "activity_type"]
+)
+
+# Active Users Gauge (can be set to current count of active users)
+ACTIVE_USERS = Gauge(
+  "active_users", "Number of Active Users",
+  ["time_window"]
+)
+
 # Prompt size
 PROMPT_SIZE = Histogram(
   "prompt_size_bytes", "Prompt Size in Bytes",
@@ -238,6 +250,12 @@ def track_llm_generate(func: Callable):
       llm_type = "unknown"
       prompt_size = 0
 
+    # Extract user information if available
+    user_data = kwargs.get("user_data", None)
+    if user_data and isinstance(user_data, dict):
+      user_id = user_data.get("email", "unknown")
+      record_user_activity(user_id, "llm_generation")
+
     request_id, trace = _get_request_context(args)
 
     start_time = time.time()
@@ -308,6 +326,12 @@ def track_embedding_generate(func: Callable):
       embedding_type = "unknown"
       text_size = 0
 
+    # Extract user information if available
+    user_data = kwargs.get("user_data", None)
+    if user_data and isinstance(user_data, dict):
+      user_id = user_data.get("email", "unknown")
+      record_user_activity(user_id, "embedding_generation")
+
     request_id, trace = _get_request_context(args)
     start_time = time.time()
     try:
@@ -363,6 +387,7 @@ def track_chat_generate(func: Callable):
     # Extract parameters based on endpoint pattern
     gen_config = kwargs.get("gen_config", None)
     chat_id = kwargs.get("chat_id", None)
+    user_id = "unknown"
 
     llm_type = "unknown"
     with_file = False
@@ -373,6 +398,12 @@ def track_chat_generate(func: Callable):
     request_id, trace = _get_request_context(args)
 
     try:
+      # Extract user information
+      user_data = kwargs.get("user_data", None)
+      if user_data and isinstance(user_data, dict):
+        user_id = user_data.get("email", "unknown")
+        record_user_activity(user_id, "chat_generation")
+
       # For create_user_chat function
       if not gen_config:
         prompt = kwargs.get("prompt", "")
@@ -417,7 +448,8 @@ def track_chat_generate(func: Callable):
         llm_type=llm_type,
         with_file=str(with_file),
         with_tools=str(with_tools),
-        status="success"
+        status="success",
+        user_id=user_id
       ).inc()
 
       log_extra = {
@@ -426,7 +458,8 @@ def track_chat_generate(func: Callable):
         "with_file": with_file,
         "with_tools": with_tools,
         "prompt_size": prompt_size,
-        "status": "success"
+        "status": "success",
+        "user_id": user_id
       }
 
       if isinstance(result, dict) and "data" in result and "history" in result["data"]:
@@ -442,7 +475,8 @@ def track_chat_generate(func: Callable):
         llm_type=llm_type,
         with_file=str(with_file),
         with_tools=str(with_tools),
-        status="error"
+        status="error",
+        user_id=user_id
       ).inc()
 
       logger.error(
@@ -454,6 +488,7 @@ def track_chat_generate(func: Callable):
           "with_tools": with_tools,
           "prompt_size": prompt_size,
           "status": "error",
+          "user_id": user_id,
           "error_message": str(e)
         }
       )
@@ -493,6 +528,7 @@ def track_chat_operations(func: Callable):
       func_name = func.__name__
       if "create" in func_name and isinstance(result, dict) and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
+        record_user_activity(user_id, "chat_create")
 
         logger.info(
           "Chat created",
@@ -505,6 +541,7 @@ def track_chat_operations(func: Callable):
 
       if "delete" in func_name and isinstance(result, dict) and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
+        record_user_activity(user_id, "chat_delete")
 
         logger.info(
           "Chat deleted",
@@ -541,6 +578,7 @@ def track_chat_operations(func: Callable):
       func_name = func.__name__
       if "create" in func_name and isinstance(result, dict) and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
+        record_user_activity(user_id, "chat_create")
 
         logger.info(
           "Chat created",
@@ -553,6 +591,7 @@ def track_chat_operations(func: Callable):
 
       if "delete" in func_name and isinstance(result, dict) and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
+        record_user_activity(user_id, "chat_delete")
 
         logger.info(
           "Chat deleted",
@@ -586,6 +625,12 @@ def track_agent_execution(func: Callable):
   async def wrapper(*args, **kwargs):
     agent_type = kwargs.get("agent_type", "unknown")
     agent_name = kwargs.get("agent_name", "unknown")
+
+    # Extract user information if available
+    user_data = kwargs.get("user_data", None)
+    if user_data and isinstance(user_data, dict):
+      user_id = user_data.get("email", "unknown")
+      record_user_activity(user_id, "agent_execution")
 
     request_id, trace = _get_request_context(args)
 
@@ -656,6 +701,12 @@ def track_vector_db_query(func: Callable):
     except Exception as e:
       logger.error(f"Error extracting vector DB info: {str(e)}")
 
+    # Extract user information if available
+    user_data = kwargs.get("user_data", None)
+    if user_data and isinstance(user_data, dict):
+      user_id = user_data.get("email", "unknown")
+      record_user_activity(user_id, "vector_db_query")
+
     request_id, trace = _get_request_context(args)
 
     start_time = time.time()
@@ -725,6 +776,12 @@ def track_vector_db_build(func: Callable):
         engine_name = genconfig_dict.get("query_engine", "unknown")
       except Exception as e:
         logger.error(f"Error extracting vector DB build config: {str(e)}")
+
+    # Extract user information if available
+    user_data = kwargs.get("user_data", None)
+    if user_data and isinstance(user_data, dict):
+      user_id = user_data.get("email", "unknown")
+      record_user_activity(user_id, "vector_db_build")
 
     request_id, trace = _get_request_context(args)
 
