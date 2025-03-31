@@ -225,6 +225,18 @@ def _get_request_context(args) -> tuple:
 
   return request_id, trace
 
+def record_user_activity(user_id: str, activity_type: str):
+  """Record user activity for tracking active users
+  
+  Args:
+      user_id: The user's ID (usually email)
+      activity_type: Type of activity (e.g., 'chat', 'query', 'login')
+  """
+  if user_id and user_id != "unknown":
+    USER_ACTIVITY.labels(
+      user_id=user_id,
+      activity_type=activity_type
+    ).inc()
 
 def track_llm_generate(func: Callable):
   @wraps(func)
