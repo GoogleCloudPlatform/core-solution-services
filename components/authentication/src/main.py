@@ -21,7 +21,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes import (refresh_token, validate_token, password, sign_in, sign_up)
 from common.config import CORS_ALLOW_ORIGINS
 from common.utils.http_exceptions import add_exception_handlers
+from common.utils.logging_handler import Logger
+from metrics import (
+  RequestTrackingMiddleware, 
+  PrometheusMiddleware, 
+  create_metrics_router
+)
 
+Logger = Logger.get_logger(__file__)
+
+# Basic API config
+service_title = "Authentication"
+service_path = "authentication"
+version = "v1"
 
 app = FastAPI()
 app.add_middleware(
@@ -31,15 +43,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Add instrumentation middleware
+app.add_middleware(RequestTrackingMiddleware)
+app.add_middleware(PrometheusMiddleware)
 
-# Basic API config
-service_title = "Authentication"
-service_path = "authentication"
-version = "v1"
-
+# Create metrics router
+metrics_router = create_metrics_router()
+app.include_router(metrics_router)
 
 @app.get("/ping")
 def health_check():
+  """Health Check API
+  
+  Returns:
+      dict: Status object with success message
+  """
   return {
     "success": True,
     "message": "Successfully reached Authentication microservice",
