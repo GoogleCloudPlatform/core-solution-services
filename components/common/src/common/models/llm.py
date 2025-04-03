@@ -126,7 +126,7 @@ class UserChat(BaseModel):
           ref_data["chunk_url"] = ref.chunk_url
         if ref.page is not None:
           ref_data["page"] = ref.page
-        if ref.timestamp_start is not None:
+        if ref.timestamp_start and ref.timestamp_stop:
           ref_data["timestamp_start"] = ref.timestamp_start
           ref_data["timestamp_stop"] = ref.timestamp_stop
         reference_data.append(ref_data)
