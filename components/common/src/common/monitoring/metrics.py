@@ -19,9 +19,11 @@ import asyncio
 import logging
 from functools import wraps
 from typing import Callable, Optional, Dict, Any, Tuple
-from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import Counter, Histogram, Gauge, Summary
 from common.utils.logging_handler import Logger
 from common.monitoring.middleware import get_request_context
+
+__all__ = ['Counter', 'Histogram', 'Gauge', 'Summary', 'operation_tracker', 'extract_user_id', 'log_operation_result']
 
 # Default logger
 logger = Logger.get_logger(__file__)

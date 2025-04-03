@@ -17,9 +17,8 @@
 import asyncio
 from functools import wraps
 from typing import Callable
-from prometheus_client import Counter, Histogram, Gauge
+from common.monitoring.metrics import Counter, Histogram, Gauge
 from common.utils.logging_handler import Logger
-from common.monitoring.middleware import get_request_context
 from common.monitoring.metrics import operation_tracker
 
 # Initialize logger
