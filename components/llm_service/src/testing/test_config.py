@@ -27,7 +27,7 @@ from config import (COHERE_LLM_TYPE,
                     OPENAI_LLM_TYPE_GPT4_LATEST,
                     VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN,
                     VERTEX_LLM_TYPE_BISON_TEXT,
-                    VERTEX_LLM_TYPE_BISON_CHAT,
+                    VERTEX_LLM_TYPE_CHAT,
                     VERTEX_LLM_TYPE_GEMINI_PRO,
                     VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                     VERTEX_LLM_TYPE_GEMINI_FLASH,
@@ -152,11 +152,11 @@ TEST_VERTEX_CONFIG = {
     "top_p": 1.0,
     "top_k": 10
   },
-  VERTEX_LLM_TYPE_BISON_CHAT: {
+  VERTEX_LLM_TYPE_CHAT: {
     KEY_PROVIDER: PROVIDER_VERTEX,
     KEY_IS_CHAT: True,
     KEY_ENABLED: True,
-    KEY_MODEL_NAME: "chat-bison@002"
+    KEY_MODEL_NAME: "gemini-1.5-flash"
   },
   VERTEX_LLM_TYPE_BISON_TEXT: {
     KEY_PROVIDER: PROVIDER_VERTEX,
@@ -183,7 +183,7 @@ TEST_VERTEX_CONFIG = {
     KEY_IS_CHAT: True,
     KEY_IS_MULTI: True,
     KEY_ENABLED: True,
-    KEY_MODEL_NAME: "gemini-1.5-flash-001"
+    KEY_MODEL_NAME: "gemini-1.5-flash"
   }
 }
 

@@ -28,15 +28,15 @@ from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
 from google.cloud import secretmanager
-from model_config import (ModelConfig, VENDOR_OPENAI,
-                          PROVIDER_VERTEX, VENDOR_COHERE,
-                          PROVIDER_MODEL_GARDEN,
-                          PROVIDER_TRUSS,
-                          PROVIDER_VLLM,
-                          VERTEX_LLM_TYPE_CHAT,
-                          VERTEX_LLM_TYPE_GECKO_EMBEDDING,
-                          VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
-                          VERTEX_LLM_TYPE_GEMINI_FLASH)
+from config.model_config import (ModelConfig, VENDOR_OPENAI,
+                                PROVIDER_VERTEX, VENDOR_COHERE,
+                                PROVIDER_MODEL_GARDEN,
+                                PROVIDER_TRUSS,
+                                PROVIDER_VLLM,
+                                VERTEX_LLM_TYPE_CHAT,
+                                VERTEX_LLM_TYPE_GECKO_EMBEDDING,
+                                VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
+                                VERTEX_LLM_TYPE_GEMINI_FLASH)
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()

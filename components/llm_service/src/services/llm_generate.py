@@ -447,7 +447,7 @@ async def llm_service_predict(prompt: str, is_chat: bool,
     the text response: str
   """
   llm_service_config = get_model_config().get_provider_config(
-      PROVIDER_LLM_SERVICE, llm_type)
+      PROVIDER_LLM_SERVICE)
   if not auth_token:
     auth_client = UserCredentials(llm_service_config.get("user"),
                                   llm_service_config.get("password"))
