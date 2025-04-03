@@ -2,6 +2,7 @@ PyJWT==2.10.1
 firebase-admin==6.7.0
 google-cloud-logging==3.11.4
 google-cloud-secret-manager==2.23.1
+prometheus_client==0.16.0
 protobuf==5.29.3
 redis==5.2.1
 regex==2024.11.6

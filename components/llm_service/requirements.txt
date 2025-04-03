@@ -13,7 +13,6 @@ packaging==24.2
 pandas==2.2.3
 pdf2image==1.17.0
 pgvector==0.3.6
-prometheus_client==0.16.0
 psycopg2-binary==2.9.10
 pyarrow==19.0.1
 pyparsing==3.2.1

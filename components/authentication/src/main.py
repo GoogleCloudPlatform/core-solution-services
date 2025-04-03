@@ -19,12 +19,12 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from routes import (refresh_token, validate_token, password, sign_in, sign_up)
-from common.config import CORS_ALLOW_ORIGINS
+from common.config import CORS_ALLOW_ORIGINS, PROJECT_ID
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.logging_handler import Logger
-from metrics import (
-  RequestTrackingMiddleware, 
-  PrometheusMiddleware, 
+from common.monitoring.middleware import (
+  RequestTrackingMiddleware,
+  PrometheusMiddleware,
   create_metrics_router
 )
 
@@ -36,6 +36,8 @@ service_path = "authentication"
 version = "v1"
 
 app = FastAPI()
+
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOW_ORIGINS,
@@ -44,8 +46,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 # Add instrumentation middleware
-app.add_middleware(RequestTrackingMiddleware)
-app.add_middleware(PrometheusMiddleware)
+app.add_middleware(
+  RequestTrackingMiddleware,
+  project_id=PROJECT_ID,
+  service_name="auth_service"
+)
+app.add_middleware(
+  PrometheusMiddleware,
+  service_name="auth_service"
+)
 
 # Create metrics router
 metrics_router = create_metrics_router()
