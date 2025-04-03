@@ -19,7 +19,7 @@ import json
 from typing import List, Optional, Generator, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
-from vertexai.preview.language_models import TextEmbeddingModel
+from vertexai.language_models import TextEmbeddingModel
 from vertexai.vision_models import (Image, MultiModalEmbeddingModel)
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger

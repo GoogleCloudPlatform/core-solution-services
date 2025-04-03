@@ -23,8 +23,8 @@ import google.auth
 import google.auth.transport.requests
 import google.cloud.aiplatform
 from openai import OpenAI, OpenAIError
-from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-from vertexai.preview.generative_models import (
+from vertexai.language_models import (ChatModel, TextGenerationModel)
+from vertexai.generative_models  import (
     GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold, Content)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
@@ -580,7 +580,7 @@ def convert_history_to_gemini_prompt(history: list, is_multimodal:bool=False,
       # TODO: Currently Genie doesn't track if the user or model added a file,
       # it's assumed that the role is the same as for the previous entry
       # therefore we skip adding the file to history if it's the first entry,
-      # which shouldn't currenlty be possible in genie anyways
+      # which shouldn't currently be possible in genie anyways
       role = conversation[-1].role
       part = None
       if UserChat.is_file_bytes(entry):
@@ -642,7 +642,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
           prompt_list.append(Part.from_uri(UserChat.get_file_uri(entry),
                                       mime_type=UserChat.get_file_type(entry)))
   prompt_list.append(prompt)
-  # the context prompt is only used for non-gemini models and canot handle
+  # the context prompt is only used for non-gemini models and cannot handle
   # the gemini Part object
   context_prompt = "\n\n".join(entry for entry in prompt_list
                                if isinstance(entry, str))
