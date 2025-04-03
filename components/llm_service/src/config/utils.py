@@ -38,3 +38,6 @@ def get_provider_model_config(provider_id):
 
 def get_model_config_value(llm_type, key, default=None):
   return get_model_config().get_config_value(llm_type, key, default)
+
+def get_model_system_prompt(model_id=None):
+  return get_model_config().get_default_system_prompt(model_id)

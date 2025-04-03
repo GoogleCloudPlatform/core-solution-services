@@ -57,7 +57,7 @@ with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
                           COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
-                          VERTEX_LLM_TYPE_BISON_CHAT,
+                          VERTEX_LLM_TYPE_CHAT,
                           VERTEX_LLM_TYPE_GEMINI_PRO,
                           VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                           VERTEX_LLM_TYPE_GEMINI_FLASH,
@@ -201,7 +201,7 @@ async def test_llm_chat_google(clean_firestore, test_chat):
           "vertexai.preview.language_models.ChatSession.send_message_async",
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_chat(
-      FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT)
+      FAKE_PROMPT, VERTEX_LLM_TYPE_CHAT)
 
   assert response == FAKE_GENERATE_RESPONSE
 
@@ -216,7 +216,7 @@ async def test_llm_chat_google_resume(clean_firestore, test_chat):
           "vertexai.preview.language_models.ChatSession.send_message_async",
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_chat(
-      FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT, test_chat)
+      FAKE_PROMPT, VERTEX_LLM_TYPE_CHAT, test_chat)
 
   assert response == FAKE_GENERATE_RESPONSE
 

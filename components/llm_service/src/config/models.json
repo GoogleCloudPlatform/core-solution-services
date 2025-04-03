@@ -49,6 +49,7 @@
       "env_flag": "ENABLE_COHERE_LLM"
     }
   },
+  "default_system_prompt": "You are a helpful AI assistant.",
   "models": {
     "VertexAI-Text": {
       "is_chat": false,
@@ -106,6 +107,7 @@
       "provider": "Truss",
       "enabled": false,
       "context_length": 4096,
+      "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone.",
       "model_params": {
         "temperature": 0.2,
         "top_p": 0.95,
