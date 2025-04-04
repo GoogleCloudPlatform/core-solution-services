@@ -154,15 +154,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     const userMessage: ChatMessage = {
       text: currentPrompt,
       isUser: true,
-      uploadedFile: currentSelectedFile?.name,
-      fileUrl: currentImportUrl
+      uploadedFile: currentSelectedFile?.name || '', // Include the uploaded file name
+      fileUrl: currentImportUrl || '' // Include the file URL
     };
     setMessages(prev => [...prev, userMessage]);
 
     // Immediately clear prompt and attachment inputs so URL disappears from input box
-    setPrompt('');
-    setSelectedFile(null);
-    setImportUrl('');
+    // setPrompt('');
+    // setSelectedFile(null);
+    // setImportUrl('');
 
     setIsLoading(true);
 
@@ -171,6 +171,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
     try {
       let response: Chat | undefined;
+      chatId: graphEnabled ? null : chatId // Assuming chatId is defined in the scope
 
       // Common parameters
       const chatParams = {
@@ -243,6 +244,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+            // Clear the prompt and attachment inputs only after processing the response
+	    setPrompt('');
+      setSelectedFile(null);
+      setImportUrl('');
     }
   };
 
@@ -313,6 +318,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false);
     setUploadedFiles([]);
+    setSelectedFile(null); // Clear the selected file
+    setImportUrl(''); // Clear the import URL
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -337,7 +344,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   };
 
   const handleAddFiles = () => {
-    handleCloseUploadModal();
+    setIsUploadModalOpen(false);
+    setUploadedFiles([]);
   };
 
   const handleRemoveSelectedFile = () => {
@@ -347,7 +355,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   // Function to handle toggling the "Create a graph" feature
   const toggleGraph = () => {
-    setGraphEnabled(!graphEnabled);
+    setGraphEnabled(prevState => !prevState);
+    //window.location.reload();
+    const resetChat = () => {
+      //setMessages([]); // Clear chat history
+      setPrompt(''); // Clear the input prompt
+      setSelectedFile(null); // Clear the selected file
+      setImportUrl(''); // Clear the import URL
+      setChatId(undefined); // Reset chat ID if necessary
+      // Reset any other state variables as needed
+    };
+    resetChat();
   };
 
   return (
@@ -427,10 +445,22 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                     }}
                     ref={isLastItem ? messagesEndRef : null}
                   >
-                    {message.isUser ? (
-                      <Typography sx={{ color: '#fff', textAlign: 'left' }}>
-                        {message.text}
-                      </Typography>
+                      {message.isUser ? (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: '#fff' }}>
+                          {/* Render the image if it exists in the userMessage */}
+                          {/* {message.uploadedFile && message.fileUrl && ( */}
+                          <Box sx={{ mb: 2 }}> {/* Add margin below the image */}
+                            <img
+                              src={message.fileUrl} // Use fileUrl to display the image
+                              alt={message.uploadedFile}
+                              style={{ width: '100%', maxHeight: '300px', objectFit: 'contain' }} // Adjust styles as needed
+                            />
+                          </Box>
+                          {/* )} */}
+                          <Typography sx={{ textAlign: 'left' }}>
+                            {message.text}
+                          </Typography>
+                        </Box>
                     ) : (
                       <>
                         <Avatar src="/assets/images/gemini-icon.png" className="message-avatar" />
@@ -589,7 +619,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             flexShrink: 0,
             position: 'sticky',
             bottom: 0,
-            zIndex: 9999
+            zIndex: 0
           }}
         >
            {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
@@ -701,4 +731,3 @@ const isReadableStream = (value: any): value is ReadableStream => {
 };
 
 export default ChatScreen;
-
