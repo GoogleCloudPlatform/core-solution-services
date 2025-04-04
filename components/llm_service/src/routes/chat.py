@@ -38,7 +38,8 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse,
                                 LLMGetDetailsResponse)
-from services.llm_generate import llm_chat, generate_chat_summary
+from services.llm_generate import (llm_chat, generate_chat_summary,
+                                   get_models_for_user)
 from services.agents.agent_tools import chat_tools, run_chat_tools
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
 
@@ -50,7 +51,8 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
 def get_chat_llm_list(user_data: dict = Depends(validate_token),
-                    is_multimodal: Optional[bool] = None):
+                    is_multimodal: Optional[bool] = None,
+                    details:bool = False):
   """
   Get available Chat LLMs, optionally filter by
   multimodal capabilities. Returns basic model information.
@@ -66,18 +68,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
   """
   Logger.info("Entering chat/chat_types")
   try:
-    model_config = get_model_config()
-    if is_multimodal is True:
-      llm_types = model_config.get_multimodal_chat_llm_types()
-    elif is_multimodal is False:
-      llm_types = model_config.get_text_chat_llm_types()
-    elif is_multimodal is None:
-      llm_types = model_config.get_chat_llm_types()
-    else:
-      return BadRequest("Invalid request parameter value: is_multimodal")
-
-    user_enabled_llms = [llm for llm in llm_types if \
-                model_config.is_model_enabled_for_user(llm, user_data)]
+    user_enabled_llms = get_models_for_user(user_data, is_multimodal)
     return {
       "success": True,
       "message": "Successfully retrieved chat llm types",
@@ -110,40 +101,31 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
   Logger.info("Entering chat/chat_types/details")
   try:
     model_config = get_model_config()
-    if is_multimodal is True:
-      llm_types = model_config.get_multimodal_chat_llm_types()
-    elif is_multimodal is False:
-      llm_types = model_config.get_text_chat_llm_types()
-    elif is_multimodal is None:
-      llm_types = model_config.get_chat_llm_types()
-    else:
-      return BadRequest("Invalid request parameter value: is_multimodal")
-
+    llm_types = get_models_for_user(user_data, is_multimodal)
     model_details = []
     for llm in llm_types:
-      if model_config.is_model_enabled_for_user(llm, user_data):
-        config = model_config.get_model_config(llm)
+      config = model_config.get_model_config(llm)
 
-        # Get model parameters from config
-        model_params = config.get("model_params", {})
+      # Get model parameters from config
+      model_params = config.get("model_params", {})
 
-        # Get provider parameters and merge with model params
-        _, provider_config = model_config.get_model_provider_config(llm)
-        if provider_config and "model_params" in provider_config:
-          # Provider params are the base, model params override them
-          merged_params = provider_config["model_params"].copy()
-          merged_params.update(model_params)
-          model_params = merged_params
+      # Get provider parameters and merge with model params
+      _, provider_config = model_config.get_model_provider_config(llm)
+      if provider_config and "model_params" in provider_config:
+        # Provider params are the base, model params override them
+        merged_params = provider_config["model_params"].copy()
+        merged_params.update(model_params)
+        model_params = merged_params
 
-        model_details.append({
-          "id": llm,
-          "name": config.get("name", ""),
-          "description": config.get("description", ""),
-          "capabilities": config.get("capabilities", []),
-          "date_added": config.get("date_added", ""),
-          "is_multi": config.get("is_multi", False),
-          "model_params": model_params
-        })
+      model_details.append({
+        "id": llm,
+        "name": config.get("name", ""),
+        "description": config.get("description", ""),
+        "capabilities": config.get("capabilities", []),
+        "date_added": config.get("date_added", ""),
+        "is_multi": config.get("is_multi", False),
+        "model_params": model_params
+      })
 
     Logger.info(f"Chat LLM models for user {model_details}")
     return {
