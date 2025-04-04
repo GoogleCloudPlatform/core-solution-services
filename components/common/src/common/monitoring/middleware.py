@@ -17,6 +17,7 @@
 import time
 import uuid
 import logging
+import re
 from fastapi import Request, Response
 from fastapi.routing import APIRouter
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -49,8 +50,11 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
   4. Basic request metrics (optional)
   """
 
+  # Regex to extract the trace ID from X-Cloud-Trace-Context
+  TRACE_CONTEXT_RE = re.compile(r"([a-f0-9]{32})/([0-9]+);o=([0-9]+)")
+  
   def __init__(
-      self, 
+      self,
       app,
       project_id: str = None,
       service_name: str = "service",
@@ -73,7 +77,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
         log_factory_reset: Whether to reset the log factory after request processing
     """
     super().__init__(app)
-    
+
     # If project_id not provided, try to get from common.config
     if project_id is None:
       try:
@@ -81,7 +85,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
         project_id = PROJECT_ID
       except (ImportError, AttributeError):
         project_id = "unknown-project"
-    
+
     self.project_id = project_id
     self.service_name = service_name
     self.collect_metrics = collect_metrics
@@ -90,7 +94,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     self.error_count = error_count_metric or ERROR_COUNT
     self.log_factory_reset = log_factory_reset
     self.logger = self._get_logger()
-    
+
   def _get_logger(self):
     """Get the logger for the middleware.
     
@@ -105,25 +109,41 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
   async def dispatch(self, request: Request, call_next):
     # Capture start time for latency measurement
     start_time = time.time()
-    
+
     # Get or generate request ID
-    request_id = request.headers.get("X-Request-ID")
-    if not request_id:
-      request_id = str(uuid.uuid4())
-    
-    # Store request context in request state
-    request.state.request_id = request_id
-    request.state.start_time = start_time
-    trace = f"projects/{self.project_id}/traces/{request_id}"
+    # The UI front end is expected to generate
+    # this X-Request-ID, if not present, generate a service level uuid
+    app_request_id = request.headers.get("X-Request-ID")
+    if not app_request_id:
+      app_request_id = str(uuid.uuid4())
+    request.state.app_request_id = app_request_id
+
+    # Capture the GCP Trace ID from the ingress/GCLB
+    gcp_trace_id = None
+    cloud_trace_context = request.headers.get("X-Cloud-Trace-Context")
+    if cloud_trace_context:
+      match = self.TRACE_CONTEXT_RE.match(cloud_trace_context)
+      if match:
+        gcp_trace_id = match.group(1) # Extract the 32-hex trace ID
+        request.state.gcp_trace_id = gcp_trace_id
+
+    # Determine the ID to use for the GCP trace context string
+    # Prioritize the actual trace ID from GCP if available as this
+    trace_id_for_gcp = gcp_trace_id if gcp_trace_id else app_request_id
+    trace = f"projects/{self.project_id}/traces/{trace_id_for_gcp}"
     request.state.trace = trace
+
+    request.state.start_time = start_time
 
     # Create a custom log record factory to inject request context
     original_factory = logging.getLogRecordFactory()
 
     def custom_log_record_factory(*args, **kwargs):
       record = original_factory(*args, **kwargs)
-      record.request_id = request.state.request_id
-      record.trace = request.state.trace
+      # Add both IDs and the trace context string to log records
+      record.app_request_id = getattr(request.state, "app_request_id", "-")
+      record.gcp_trace_id = getattr(request.state, "gcp_trace_id", "-")
+      record.trace = getattr(request.state, "trace", "-")
       return record
 
     logging.setLogRecordFactory(custom_log_record_factory)
@@ -131,26 +151,26 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     try:
       # Process the request
       response = await call_next(request)
-      
+
       # Calculate request metrics
       request_latency = time.time() - start_time
       method = request.method
       path = request.url.path
-      
+
       # Collect metrics if enabled
       if self.collect_metrics:
         self.request_latency.labels(
           self.service_name, method, path
         ).observe(request_latency)
-        
+
         self.request_count.labels(
           self.service_name, method, path, response.status_code
         ).inc()
-      
+
       # Add request ID to response headers
-      response.headers["X-Request-ID"] = request_id
-      
-      # Log request completion (debug level)
+      response.headers["X-Request-ID"] = app_request_id
+
+      # Log request completion (debug level) and include ids
       self.logger.debug(
         "Request processed",
         extra={
@@ -159,21 +179,22 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
           "path": path,
           "status_code": response.status_code,
           "duration_ms": round(request_latency * 1000, 2),
-          "request_id": request_id,
+          "app_request_id": app_request_id, #client id or service generated
+          "gcp_trace_id": gcp_trace_id if gcp_trace_id else "-", # The ID from GCLB if present
           "trace": trace
         }
       )
-      
+
       return response
     except Exception as e:
       # Handle and log exceptions
       error_type = type(e).__name__
-      
+
       if self.collect_metrics:
         self.error_count.labels(
           self.service_name, request.method, request.url.path, error_type
         ).inc()
-      
+
       self.logger.error(
         "Request error",
         extra={
@@ -182,11 +203,12 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
           "path": request.url.path,
           "error_type": error_type,
           "error_message": str(e),
-          "request_id": request_id,
+          "app_request_id": app_request_id, # The ID from client or generated
+          "gcp_trace_id": gcp_trace_id if gcp_trace_id else "-", # The ID from GCLB if present
           "trace": trace
         }
       )
-      
+
       raise
     finally:
       # Reset log factory if configured to do so
@@ -195,7 +217,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
 
 class PrometheusMiddleware(BaseHTTPMiddleware):
   """Middleware to collect Prometheus metrics for all requests."""
-  
+
   def __init__(self, app, service_name: str = "service"):
     """Initialize the middleware.
     
@@ -205,14 +227,14 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
     """
     super().__init__(app)
     self.service_name = service_name
-    
+
   async def dispatch(self, request: Request, call_next):
     start_time = time.time()
     method = request.method
     path = request.url.path
-    
+
     # Extract request_id and trace from request state
-    request_id = getattr(request.state, "request_id", "-")
+    app_request_id = getattr(request.state, "app_request_id", "-")
     trace = getattr(request.state, "trace", "-")
 
     try:
@@ -233,7 +255,7 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
       ERROR_COUNT.labels(
         self.service_name, method, path, error_type
       ).inc()
-      
+
       raise
 
 def create_metrics_router() -> APIRouter:
@@ -251,21 +273,21 @@ def create_metrics_router() -> APIRouter:
   return metrics_router
 
 def get_request_context(args) -> tuple:
-  """Extract request_id and trace from request if available.
+  """Extract app_request_id and trace from request if available.
   
   Args:
       args: Arguments passed to the decorated function
       
   Returns:
-      tuple: (request_id, trace) extracted from arguments or defaults
+      tuple: (app_request_id, trace) extracted from arguments or defaults
   """
-  request_id = "-"
+  app_request_id = "-"
   trace = "-"
 
   for arg in args:
     if hasattr(arg, "state"):
-      request_id = getattr(arg.state, "request_id", "-")
+      app_request_id = getattr(arg.state, "app_request_id", "-")
       trace = getattr(arg.state, "trace", "-")
       break
 
-  return request_id, trace
+  return app_request_id, trace
