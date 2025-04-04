@@ -51,8 +51,7 @@ router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
 def get_chat_llm_list(user_data: dict = Depends(validate_token),
-                    is_multimodal: Optional[bool] = None,
-                    details:bool = False):
+                    is_multimodal: Optional[bool] = None):
   """
   Get available Chat LLMs, optionally filter by
   multimodal capabilities. Returns basic model information.
