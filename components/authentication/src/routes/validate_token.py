@@ -29,6 +29,7 @@ from config import (ERROR_RESPONSES,
                     AUTH_REQUIRE_FIRESTORE_USER,
                     AUTH_EMAIL_DOMAINS_WHITELIST,
                     AUTH_AUTO_CREATE_USERS)
+from metrics import track_token_validation
 
 Logger = Logger.get_logger(__file__)
 
@@ -42,6 +43,7 @@ auth_scheme = HTTPBearer(auto_error=False)
     "/validate",
     response_model=ValidateTokenResponseModel,
     response_model_exclude_none=True)
+@track_token_validation
 def validate_id_token(token: auth_scheme = Depends()):
   """Validates the Token present in Headers
   ### Raises:

@@ -24,6 +24,7 @@ from common.utils.http_exceptions import (InvalidToken, InternalServerError)
 from common.utils.logging_handler import Logger
 from common.models import User
 from config import ERROR_RESPONSES
+from metrics import track_token_refresh
 
 # pylint: disable = broad-exception-raised
 router = APIRouter(
@@ -33,6 +34,7 @@ Logger = Logger.get_logger(__file__)
 
 
 @router.post("/generate", response_model=GenerateTokenResponseModel)
+@track_token_refresh
 def generate_id_token(input_params: GenerateTokenRequestModel):
   """Generates IdToken from the Refresh token received
 

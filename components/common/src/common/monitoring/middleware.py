@@ -18,10 +18,11 @@ import time
 import uuid
 import logging
 import re
+import json
 from fastapi import Request, Response
 from fastapi.routing import APIRouter
 from starlette.middleware.base import BaseHTTPMiddleware
-from typing import Callable, Optional
+from typing import Optional
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 # Default metrics for HTTP requests
@@ -51,8 +52,8 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
   """
 
   # Regex to extract the trace ID from X-Cloud-Trace-Context
-  TRACE_CONTEXT_RE = re.compile(r"([a-f0-9]{32})/([0-9]+);o=([0-9]+)")
-  
+  TRACE_CONTEXT_RE = re.compile(r"([a-f0-9]{32})/([0-9]+)(?:;o=([0-9]+))?")
+
   def __init__(
       self,
       app,
@@ -178,10 +179,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
           "method": method,
           "path": path,
           "status_code": response.status_code,
-          "duration_ms": round(request_latency * 1000, 2),
-          "app_request_id": app_request_id, #client id or service generated
-          "gcp_trace_id": gcp_trace_id if gcp_trace_id else "-", # The ID from GCLB if present
-          "trace": trace
+          "duration_ms": round(request_latency * 1000, 2)
         }
       )
 
@@ -202,10 +200,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
           "method": request.method,
           "path": request.url.path,
           "error_type": error_type,
-          "error_message": str(e),
-          "app_request_id": app_request_id, # The ID from client or generated
-          "gcp_trace_id": gcp_trace_id if gcp_trace_id else "-", # The ID from GCLB if present
-          "trace": trace
+          "error_message": str(e)
         }
       )
 

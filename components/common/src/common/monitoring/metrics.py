@@ -18,7 +18,7 @@ import time
 import asyncio
 import logging
 from functools import wraps
-from typing import Callable, Optional, Dict, Any, Tuple
+from typing import Callable, Optional, Dict, Any
 from prometheus_client import Counter, Histogram, Gauge, Summary
 from common.utils.logging_handler import Logger
 from common.monitoring.middleware import get_request_context

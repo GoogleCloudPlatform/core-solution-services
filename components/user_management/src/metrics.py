@@ -17,10 +17,9 @@
 import time
 import asyncio
 from functools import wraps
-from typing import Callable, Dict, Any, Optional
+from typing import Callable
 from common.utils.logging_handler import Logger
-from common.monitoring.middleware import get_request_context
-from common.monitoring.metrics import Counter, Histogram, Gauge, extract_user_id, log_operation_result
+from common.monitoring.metrics import Counter, Histogram, Gauge, log_operation_result
 
 # Initialize logger
 logger = Logger.get_logger(__file__)
@@ -104,9 +103,6 @@ def track_user_operation(operation_type: str):
   def decorator(func: Callable):
     @wraps(func)
     async def async_wrapper(*args, **kwargs):
-      # Get request context
-      request_id, trace = get_request_context(args)
-
       # Track concurrent operations
       CONCURRENT_OPERATIONS.labels(operation=operation_type).inc()
 
@@ -148,7 +144,6 @@ def track_user_operation(operation_type: str):
           logger,
           operation_type,
           "success",
-          request_id,
           {"result": "success"}
         )
 
@@ -180,7 +175,6 @@ def track_user_operation(operation_type: str):
           logger,
           operation_type,
           "error",
-          request_id,
           {"error_message": str(error)}
         )
 
@@ -196,8 +190,7 @@ def track_user_operation(operation_type: str):
           extra={
             "metric_type": "user_operation_latency",
             "operation": operation_type,
-            "duration_ms": round(latency * 1000, 2),
-            "request_id": request_id
+            "duration_ms": round(latency * 1000, 2)
           }
         )
 
@@ -206,8 +199,6 @@ def track_user_operation(operation_type: str):
 
     @wraps(func)
     def sync_wrapper(*args, **kwargs):
-      # Get request context
-      request_id, trace = get_request_context(args)
 
       # Track concurrent operations
       CONCURRENT_OPERATIONS.labels(operation=operation_type).inc()
@@ -250,7 +241,6 @@ def track_user_operation(operation_type: str):
           logger,
           operation_type,
           "success",
-          request_id,
           {"result": "success"}
         )
 
@@ -282,7 +272,6 @@ def track_user_operation(operation_type: str):
           logger,
           operation_type,
           "error",
-          request_id,
           {"error_message": str(error)}
         )
 
@@ -298,8 +287,7 @@ def track_user_operation(operation_type: str):
           extra={
             "metric_type": "user_operation_latency",
             "operation": operation_type,
-            "duration_ms": round(latency * 1000, 2),
-            "request_id": request_id
+            "duration_ms": round(latency * 1000, 2)
           }
         )
 
@@ -325,8 +313,6 @@ def track_user_status_update(func: Callable):
   """
   @wraps(func)
   async def async_wrapper(*args, **kwargs):
-    # Get request context
-    request_id, trace = get_request_context(args)
 
     # Extract status information
     input_status = kwargs.get("input_status", {})
@@ -381,7 +367,6 @@ def track_user_status_update(func: Callable):
           "metric_type": "user_operation_latency",
           "operation": "status_update",
           "duration_ms": round(latency * 1000, 2),
-          "request_id": request_id,
           "status_from": old_status,
           "status_to": new_status
         }
@@ -410,9 +395,6 @@ def track_user_import(func: Callable):
   """
   @wraps(func)
   async def async_wrapper(*args, **kwargs):
-    # Get request context
-    request_id, trace = get_request_context(args)
-
     # Start timing
     start_time = time.time()
 
@@ -461,8 +443,7 @@ def track_user_import(func: Callable):
         extra={
           "metric_type": "user_operation_latency",
           "operation": "import_users",
-          "duration_ms": round(latency * 1000, 2),
-          "request_id": request_id
+          "duration_ms": round(latency * 1000, 2)
         }
       )
 

@@ -17,10 +17,9 @@
 import time
 import asyncio
 from functools import wraps
-from typing import Callable, Dict, Any, Optional
+from typing import Callable
 from common.monitoring.metrics import Counter, Histogram, Gauge
 from common.utils.logging_handler import Logger
-from common.monitoring.middleware import get_request_context
 from common.monitoring.metrics import extract_user_id, log_operation_result
 from common.models import QueryEngine
 
@@ -154,7 +153,7 @@ def _extract_config_dict(config):
   """
   if not config:
     return {}
-    
+
   try:
     if hasattr(config, "dict"):
       return config.dict()
@@ -187,9 +186,6 @@ def track_llm_generate(func: Callable):
     if user_id != "unknown":
       record_user_activity(user_id, "llm_generation")
 
-    # Get request context
-    app_request_id, trace = get_request_context(args)
-
     start_time = time.time()
     try:
       result = await func(*args, **kwargs)
@@ -202,7 +198,6 @@ def track_llm_generate(func: Callable):
         logger,
         "llm_generation",
         "success",
-        app_request_id,
         {
           "llm_type": llm_type,
           "prompt_size": prompt_size
@@ -219,7 +214,6 @@ def track_llm_generate(func: Callable):
         logger,
         "llm_generation",
         "error",
-        app_request_id,
         {
           "llm_type": llm_type,
           "prompt_size": prompt_size,
@@ -238,8 +232,7 @@ def track_llm_generate(func: Callable):
         extra={
           "metric_type": "llm_generation_latency",
           "llm_type": llm_type,
-          "duration_ms": round(latency * 1000, 2),
-          "app_request_id": app_request_id
+          "duration_ms": round(latency * 1000, 2)
         }
       )
   return wrapper
@@ -265,9 +258,6 @@ def track_embedding_generate(func: Callable):
     if user_id != "unknown":
       record_user_activity(user_id, "embedding_generation")
 
-    # Get request context
-    app_request_id, trace = get_request_context(args)
-
     start_time = time.time()
     try:
       result = await func(*args, **kwargs)
@@ -280,7 +270,6 @@ def track_embedding_generate(func: Callable):
         logger,
         "embedding_generation",
         "success",
-        app_request_id,
         {
           "embedding_type": embedding_type,
           "text_size": text_size
@@ -297,7 +286,6 @@ def track_embedding_generate(func: Callable):
         logger,
         "embedding_generation",
         "error",
-        app_request_id,
         {
           "embedding_type": embedding_type,
           "text_size": text_size,
@@ -316,8 +304,7 @@ def track_embedding_generate(func: Callable):
         extra={
           "metric_type": "embedding_generation_latency",
           "embedding_type": embedding_type,
-          "duration_ms": round(latency * 1000, 2),
-          "app_request_id": app_request_id
+          "duration_ms": round(latency * 1000, 2)
         }
       )
   return wrapper
@@ -335,9 +322,6 @@ def track_chat_generate(func: Callable):
     with_file = False
     with_tools = False
     prompt_size = 0
-
-    # Get request context
-    app_request_id, trace = get_request_context(args)
 
     # Extract user information
     user_data = kwargs.get("user_data")
@@ -378,7 +362,6 @@ def track_chat_generate(func: Callable):
         logger,
         "chat_parameters_extraction",
         "error",
-        app_request_id,
         {"error_message": str(e)}
       )
 
@@ -415,7 +398,6 @@ def track_chat_generate(func: Callable):
         logger,
         "chat_generation",
         "success",
-        app_request_id,
         log_extra
       )
 
@@ -435,7 +417,6 @@ def track_chat_generate(func: Callable):
         logger,
         "chat_generation",
         "error",
-        app_request_id,
         {
           "llm_type": llm_type,
           "with_file": with_file,
@@ -463,8 +444,7 @@ def track_chat_generate(func: Callable):
           "llm_type": llm_type,
           "with_file": with_file,
           "with_tools": with_tools,
-          "duration_ms": round(latency * 1000, 2),
-          "app_request_id": app_request_id
+          "duration_ms": round(latency * 1000, 2)
         }
       )
   return wrapper
@@ -476,9 +456,6 @@ def track_chat_operations(func: Callable):
     # Extract user information
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
-
-    # Get request context
-    app_request_id, trace = get_request_context(args)
 
     try:
       result = await func(*args, **kwargs)
@@ -495,7 +472,6 @@ def track_chat_operations(func: Callable):
           logger,
           "chat_creation",
           "success",
-          app_request_id,
           {"user_id": user_id}
         )
 
@@ -508,7 +484,6 @@ def track_chat_operations(func: Callable):
           logger,
           "chat_deletion",
           "success",
-          app_request_id,
           {"user_id": user_id}
         )
 
@@ -518,8 +493,7 @@ def track_chat_operations(func: Callable):
       log_operation_result(
         logger,
         "chat_operation",
-        "error", 
-        app_request_id,
+        "error",
         {
           "operation": func.__name__,
           "user_id": user_id,
@@ -533,9 +507,6 @@ def track_chat_operations(func: Callable):
     # Extract user information
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
-
-    # Get request context
-    app_request_id, trace = get_request_context(args)
 
     try:
       result = func(*args, **kwargs)
@@ -552,7 +523,6 @@ def track_chat_operations(func: Callable):
           logger,
           "chat_creation",
           "success",
-          app_request_id,
           {"user_id": user_id}
         )
 
@@ -565,7 +535,6 @@ def track_chat_operations(func: Callable):
           logger,
           "chat_deletion",
           "success",
-          app_request_id,
           {"user_id": user_id}
         )
 
@@ -575,8 +544,7 @@ def track_chat_operations(func: Callable):
       log_operation_result(
         logger,
         "chat_operation",
-        "error", 
-        app_request_id,
+        "error",
         {
           "operation": func.__name__,
           "user_id": user_id,
@@ -605,9 +573,6 @@ def track_agent_execution(func: Callable):
     if user_id != "unknown":
       record_user_activity(user_id, "agent_execution")
 
-    # Get request context
-    app_request_id, trace = get_request_context(args)
-
     start_time = time.time()
     try:
       # Call the original function
@@ -621,7 +586,6 @@ def track_agent_execution(func: Callable):
         logger,
         "agent_execution",
         "success",
-        app_request_id,
         {
           "agent_type": agent_type,
           "agent_name": agent_name
@@ -638,7 +602,6 @@ def track_agent_execution(func: Callable):
         logger,
         "agent_execution",
         "error",
-        app_request_id,
         {
           "agent_type": agent_type,
           "agent_name": agent_name,
@@ -658,8 +621,7 @@ def track_agent_execution(func: Callable):
           "metric_type": "agent_execution_latency",
           "agent_type": agent_type,
           "agent_name": agent_name,
-          "duration_ms": round(latency * 1000, 2),
-          "app_request_id": app_request_id
+          "duration_ms": round(latency * 1000, 2)
         }
       )
   return wrapper
@@ -689,9 +651,6 @@ def track_vector_db_query(func: Callable):
     if user_id != "unknown":
       record_user_activity(user_id, "vector_db_query")
 
-    # Get request context
-    app_request_id, trace = get_request_context(args)
-
     start_time = time.time()
     try:
       result = await func(*args, **kwargs)
@@ -708,7 +667,6 @@ def track_vector_db_query(func: Callable):
         logger,
         "vector_db_query",
         "success",
-        app_request_id,
         {
           "db_type": db_type,
           "engine_name": engine_name
@@ -729,7 +687,6 @@ def track_vector_db_query(func: Callable):
         logger,
         "vector_db_query",
         "error",
-        app_request_id,
         {
           "db_type": db_type,
           "engine_name": engine_name,
@@ -752,8 +709,7 @@ def track_vector_db_query(func: Callable):
           "metric_type": "vector_db_query_latency",
           "db_type": db_type,
           "engine_name": engine_name,
-          "duration_ms": round(latency * 1000, 2),
-          "app_request_id": app_request_id
+          "duration_ms": round(latency * 1000, 2)
         }
       )
   return wrapper
@@ -775,9 +731,6 @@ def track_vector_db_build(func: Callable):
     if user_id != "unknown":
       record_user_activity(user_id, "vector_db_build")
 
-    # Get request context
-    app_request_id, trace = get_request_context(args)
-
     start_time = time.time()
     try:
       result = await func(*args, **kwargs)
@@ -794,13 +747,12 @@ def track_vector_db_build(func: Callable):
         logger,
         "vector_db_build",
         "success",
-        app_request_id,
         {
           "db_type": db_type,
           "engine_name": engine_name
         }
       )
- 
+
       return result
     except Exception as e:
       # Record error metrics
@@ -815,7 +767,6 @@ def track_vector_db_build(func: Callable):
         logger,
         "vector_db_build",
         "error",
-        app_request_id,
         {
           "db_type": db_type,
           "engine_name": engine_name,
@@ -838,8 +789,7 @@ def track_vector_db_build(func: Callable):
           "metric_type": "vector_db_build_latency",
           "db_type": db_type,
           "engine_name": engine_name,
-          "duration_ms": round(latency * 1000, 2),
-          "app_request_id": app_request_id
+          "duration_ms": round(latency * 1000, 2)
         }
       )
   return wrapper

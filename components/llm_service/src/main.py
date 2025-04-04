@@ -106,7 +106,6 @@ api.include_router(query.router)
 api.include_router(agent.router)
 api.include_router(agent_plan.router)
 
-
 add_exception_handlers(app)
 add_exception_handlers(api)
 app.mount(f"/{service_path}/api/{version}", api)

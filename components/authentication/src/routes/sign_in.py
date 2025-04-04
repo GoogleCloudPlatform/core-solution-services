@@ -38,7 +38,7 @@ from config import (AUTH_REQUIRE_FIRESTORE_USER,
                     FIREBASE_API_KEY,
                     IDP_URL,
                     ERROR_RESPONSES)
-
+from metrics import track_signin
 # pylint: disable = broad-exception-raised
 
 IDP_SIGN_IN_URL = f"{IDP_URL}:signInWithIdp?key={FIREBASE_API_KEY}"
@@ -103,6 +103,7 @@ def save_roles_from_auth_provider_token(
 
 
 @router.post("/token", response_model=SignInWithTokenResponseModel)
+@track_signin
 def sign_in_with_token(token: auth_scheme = Depends()):
   """This endpoint will take the Google oauth token as an Authorization header
   and returns the firebase id_token and refresh token.
@@ -165,6 +166,7 @@ def sign_in_with_token(token: auth_scheme = Depends()):
 
 
 @router.post("/credentials", response_model=SignInWithCredentialsResponseModel)
+@track_signin
 def sign_in_with_credentials(credentials: SignInWithCredentialsModel):
   """This endpoint will take the user email and password as an input
   and returns an id token and refresh token from the IDP.
