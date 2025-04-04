@@ -24,7 +24,7 @@ import google.auth.transport.requests
 import google.cloud.aiplatform
 from openai import OpenAI, OpenAIError
 from vertexai.language_models import (ChatModel, TextGenerationModel)
-from vertexai.generative_models  import (
+from vertexai.generative_models import (
     GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold, Content)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
@@ -53,6 +53,13 @@ Logger = Logger.get_logger(__file__)
 # A conservative characters-per-token constant, used to check
 # whether prompt length exceeds context window size
 CHARS_PER_TOKEN = 3
+SAFETY_SETTINGS = {
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+}
+
 
 async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
     Union[str, AsyncGenerator[str, None]]:
@@ -428,11 +435,9 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
 
   return output
 
-
 async def llm_service_predict(prompt: str, is_chat: bool,
                               llm_type: str, user_chat=None,
                               auth_token: str = None) -> str:
-
   """
   Send a prompt to an instance of the LLM service and return response.
 
@@ -622,8 +627,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
               f" user_file_bytes=[{user_file_bytes_log}],"
               f" user_files=[{user_files}]")
 
-  # TODO: Remove this section after non-gemini llms are removed from
-  # the model options
+  # TODO: Remove this section after non-gemini llms are removed from model options
   prompt_list = []
   if user_chat is not None:
     history = user_chat.history
@@ -647,29 +651,18 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   context_prompt = "\n\n".join(entry for entry in prompt_list
                                if isinstance(entry, str))
 
-  # Get model params. If params are set at the model level
-  # use those else use global vertex params.
-  parameters = {}
+  # Get model params at the model level else use global vertex params.
+  parameters = get_provider_value(PROVIDER_VERTEX, KEY_MODEL_PARAMS)
   provider_config = get_provider_model_config(PROVIDER_VERTEX)
   for _, model_config in provider_config.items():
     model_name = model_config.get(KEY_MODEL_NAME)
     if model_name == google_llm and KEY_MODEL_PARAMS in model_config:
       parameters = model_config.get(KEY_MODEL_PARAMS)
-  else:
-    parameters = get_provider_value(PROVIDER_VERTEX,
-                                    KEY_MODEL_PARAMS)
 
   try:
     if is_chat:
       # gemini uses new "GenerativeModel" class and requires different params
       if "gemini" in google_llm:
-        # TODO: fix safety settings
-        safety_settings = {
-             HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-             HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        }
         prompt_list = []
         if user_chat:
           prompt_list.extend(
@@ -695,7 +688,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         generation_config = GenerationConfig(**parameters)
         response = await chat_model.generate_content_async(prompt_list,
             generation_config=generation_config,
-            safety_settings=safety_settings,
+            safety_settings=SAFETY_SETTINGS,
             stream=stream)
 
         if stream:
