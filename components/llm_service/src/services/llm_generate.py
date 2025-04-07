@@ -219,11 +219,6 @@ async def llm_chat(prompt: str, llm_type: str,
 
   try:
     response = None
-    # Include the system prompt at the beginning, if present
-    context_prompt = ""
-    system_prompt = get_model_system_prompt(llm_type)
-    if system_prompt:
-      context_prompt += f"System prompt: {system_prompt}\n\n"
 
     # add chat history to prompt if necessary
     # Prompt history for gemini models is added using the native vertex API
@@ -262,8 +257,9 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
+      system_prompt = get_model_system_prompt(llm_type)
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
-                                         google_llm, system_prompt, user_chat,
+                                          google_llm, system_prompt, user_chat,
                                           chat_file_bytes, chat_files,
                                           stream=stream)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
@@ -565,16 +561,14 @@ async def model_garden_predict(prompt: str,
 
   return predictions_text
 
-def convert_history_to_gemini_prompt(history: list, is_multimodal:bool=False,
-    system_prompt: Optional[str] = None) -> list[Content]:
+def convert_history_to_gemini_prompt(history: list, is_multimodal:bool=False
+                                     ) -> list[Content]:
   """converts a user chat history inot a properly formatted gemini prompt
   history: A history entry from a UserChat object
   is_multimodal: If the model is multimodal
   Returns a properly formatted gemini prompt to be used for generating a 
   response"""
   conversation: list[Content] = []
-  if system_prompt:
-    conversation.append(Content(role="system", parts=[Part.from_text(system_prompt)]))
   for entry in history:
     content = UserChat.entry_content(entry)
     if UserChat.is_human(entry):
@@ -666,9 +660,9 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
         prompt_list = []
         if user_chat:
           prompt_list.extend(
-            convert_history_to_gemini_prompt(user_chat.history, is_multimodal, system_prompt))
+            convert_history_to_gemini_prompt(user_chat.history, is_multimodal))
         prompt_list.append(Content(role="user", parts=[Part.from_text(prompt)]))
-        chat_model = GenerativeModel(google_llm)
+        chat_model = GenerativeModel(google_llm, system_instruction=system_prompt)
         if is_multimodal:
           if user_file_bytes is not None and user_files is not None:
             # user_file_bytes refers to a single image and so we index into

@@ -500,7 +500,7 @@ class ModelConfig():
     """
     provider_config = None
     model_config = self.get_model_config(model_id)
-    provider = model_config.get(KEY_PROVIDER, "")
+    provider = model_config.get(KEY_PROVIDER, None)
     if provider is not None:
       provider_config = self.get_provider_config(provider)
       Logger.debug(f"provider = {provider}")
@@ -580,7 +580,7 @@ class ModelConfig():
     """
     vendor_config = None
     model_config = self.get_model_config(model_id)
-    vendor_id = model_config.get(KEY_VENDOR, "")
+    vendor_id = model_config.get(KEY_VENDOR, None)
     if vendor_id is not None:
       vendor_config = self.get_vendor_config(vendor_id)
     return vendor_id, vendor_config
@@ -694,7 +694,7 @@ class ModelConfig():
                               self.default_system_prompt)
     return self.default_system_prompt
 
-  def get_llm_types(self) -> list:
+  def get_llm_types(self) -> list[str]:
     """ Get all supported and enabled LLM types, as a list of model
         identifiers.
     """
@@ -704,7 +704,7 @@ class ModelConfig():
     ]
     return llm_types
 
-  def get_text_llm_types(self) -> list:
+  def get_text_llm_types(self) -> list[str]:
     """ Get all supported and enabled text-only LLM types, as a list of model
         identifiers.
     """
@@ -714,7 +714,7 @@ class ModelConfig():
     ]
     return text_llm_types
 
-  def get_multimodal_llm_types(self) -> list:
+  def get_multimodal_llm_types(self) -> list[str]:
     """ Get all supported and enabled multimodal LLM types, as a list of model
         identifiers.
     """
@@ -724,7 +724,7 @@ class ModelConfig():
     ]
     return multimodal_llm_types
 
-  def get_chat_llm_types(self) -> list:
+  def get_chat_llm_types(self) -> list[str]:
     """ Get all supported and enabled chat LLM types, as a list of model
         identifiers.
     """
@@ -734,7 +734,7 @@ class ModelConfig():
     ]
     return chat_llm_types
 
-  def get_text_chat_llm_types(self) -> list:
+  def get_text_chat_llm_types(self) -> list[str]:
     """ Get all supported and enabled text-only chat LLM types, as a list of model
         identifiers.
     """
@@ -746,7 +746,7 @@ class ModelConfig():
     ]
     return text_chat_llm_types
 
-  def get_multimodal_chat_llm_types(self) -> list:
+  def get_multimodal_chat_llm_types(self) -> list[str]:
     """ Get all supported and enabled multimodal chat LLM types, as a list of model
         identifiers.
     """
@@ -758,7 +758,7 @@ class ModelConfig():
     ]
     return multimodal_chat_llm_types
 
-  def get_embedding_types(self) -> list:
+  def get_embedding_types(self) -> list[str]:
     """ Get all supported and enabled embedding types, as a list of model
         identifiers.
     """
@@ -768,7 +768,7 @@ class ModelConfig():
     ]
     return embedding_types
 
-  def get_text_embedding_types(self) -> list:
+  def get_text_embedding_types(self) -> list[str]:
     """ Get all supported and enabled text-only embedding types, as a list of model
         identifiers.
     """
@@ -778,7 +778,7 @@ class ModelConfig():
     ]
     return text_embedding_types
 
-  def get_multimodal_embedding_types(self) -> list:
+  def get_multimodal_embedding_types(self) -> list[str]:
     """ Get all supported and enabled multimodal embedding types, as a list of model
         identifiers.
     """
