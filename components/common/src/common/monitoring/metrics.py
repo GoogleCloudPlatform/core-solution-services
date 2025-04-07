@@ -21,7 +21,6 @@ from functools import wraps
 from typing import Callable, Optional, Dict, Any
 from prometheus_client import Counter, Histogram, Gauge, Summary
 from common.utils.logging_handler import Logger
-from common.monitoring.middleware import get_request_context
 
 __all__ = ['Counter', 'Histogram', 'Gauge', 'Summary', 'operation_tracker', 'extract_user_id', 'log_operation_result']
 
@@ -53,9 +52,6 @@ def operation_tracker(
   def decorator(func: Callable):
     @wraps(func)
     async def async_wrapper(*args, **kwargs):
-      # Get request context if available
-      request_id, trace = get_request_context(args)
-
       # Track concurrent operations if gauge provided
       if concurrent_gauge:
         concurrent_gauge.labels(operation=operation_type).inc()
@@ -83,8 +79,7 @@ def operation_tracker(
           extra={
             "metric_type": "operation",
             "operation": operation_type,
-            "status": status,
-            "request_id": request_id
+            "status": status
           }
         )
 
@@ -103,8 +98,7 @@ def operation_tracker(
             "metric_type": "operation",
             "operation": operation_type,
             "status": "error",
-            "error_message": str(e),
-            "request_id": request_id
+            "error_message": str(e)
           }
         )
 
@@ -120,8 +114,7 @@ def operation_tracker(
           extra={
             "metric_type": "operation_latency",
             "operation": operation_type,
-            "duration_ms": round(latency * 1000, 2),
-            "request_id": request_id
+            "duration_ms": round(latency * 1000, 2)
           }
         )
 
@@ -131,9 +124,6 @@ def operation_tracker(
 
     @wraps(func)
     def sync_wrapper(*args, **kwargs):
-      # Get request context if available
-      request_id, trace = get_request_context(args)
-
       # Track concurrent operations if gauge provided
       if concurrent_gauge:
         concurrent_gauge.labels(operation=operation_type).inc()
@@ -161,8 +151,7 @@ def operation_tracker(
           extra={
             "metric_type": "operation",
             "operation": operation_type,
-            "status": status,
-            "request_id": request_id
+            "status": status
           }
         )
 
@@ -181,8 +170,7 @@ def operation_tracker(
             "metric_type": "operation",
             "operation": operation_type,
             "status": "error",
-            "error_message": str(e),
-            "request_id": request_id
+            "error_message": str(e)
           }
         )
 
@@ -198,8 +186,7 @@ def operation_tracker(
           extra={
             "metric_type": "operation_latency",
             "operation": operation_type,
-            "duration_ms": round(latency * 1000, 2),
-            "request_id": request_id
+            "duration_ms": round(latency * 1000, 2)
           }
         )
 
@@ -234,7 +221,6 @@ def log_operation_result(
     logger: logging.Logger, 
     operation_type: str, 
     status: str, 
-    request_id: str,
     additional_data: Optional[Dict[str, Any]] = None
 ):
   """Log operation result with consistent format.
@@ -243,14 +229,12 @@ def log_operation_result(
       logger: Logger instance to use
       operation_type: Type of operation being performed
       status: Status of operation ('success' or 'error')
-      request_id: Request ID for correlation
       additional_data: Additional data to include in log
   """
   extra = {
     "metric_type": f"{operation_type}",
     "operation": operation_type,
-    "status": status,
-    "request_id": request_id
+    "status": status
   }
 
   if additional_data:

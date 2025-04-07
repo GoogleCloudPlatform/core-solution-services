@@ -12,42 +12,79 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable = broad-except
-
-"""class and methods for logs handling."""
+"""Class and methods for structured logging with Cloud Logging support."""
 
 import json
 import logging
 import os
 import sys
-from common.config import CLOUD_LOGGING_ENABLED
+import traceback
+import datetime
+from common.config import CLOUD_LOGGING_ENABLED, SERVICE_NAME, CONTAINER_NAME
 
+# Get log level from environment, default to INFO
+LOG_LEVEL_NAME = os.environ.get('LOG_LEVEL', 'INFO').upper()
+LOG_LEVEL = getattr(logging, LOG_LEVEL_NAME, logging.INFO)
+
+# Initialize Cloud Logging if enabled
+if CLOUD_LOGGING_ENABLED:
+  try:
+    import google.cloud.logging
+    client = google.cloud.logging.Client()
+    print("*** STARTUP: Initialized Cloud Logging client ***")
+  except Exception as e:
+    print(f"*** STARTUP: Failed to initialize Cloud Logging client: {e} ***")
+    print("*** STARTUP: Falling back to standard logging ***")
+    client = None
+else:
+  client = None
 
 # Create a filter to add missing fields
 class LogRecordFilter(logging.Filter):
   """Filter to ensure required fields are present in log records."""
 
   def filter(self, record):
-    # Add default values for required fields if they don"t exist
-    if not hasattr(record, "app_request_id"):
-      record.app_request_id = "-"
-    if not hasattr(record, "gcp_trace_id"):
-      record.gcp_trace_id = "-"
+    # Add default values for required fields if they don't exist
+    if not hasattr(record, "request_id"):
+      record.request_id = "-"
     if not hasattr(record, "trace"):
       record.trace = "-"
+    if not hasattr(record, "session_id"):
+      record.session_id = "-"
+        
     return True
+
+# Custom JSON encoder that handles non-serializable objects
+class SafeJsonEncoder(json.JSONEncoder):
+  """JSON encoder that safely handles non-serializable objects."""
+
+  def default(self, obj):
+    try:
+      return super().default(obj)
+    except TypeError:
+      # For objects that can't be serialized, convert to string
+      return str(obj)
 
 # Helper function to add default fields
 def _add_default_fields(extra=None):
   """Add default fields to extra dictionary."""
   if extra is None:
     extra = {}
-  if "app_request_id" not in extra:
-    extra["app_request_id"] = "-"
-  if "gcp_trace_id" not in extra:
-    extra["gcp_trace_id"] = "-"
+    
+  # Add default values for standard fields
+  if "request_id" not in extra:
+    extra["request_id"] = "-"
   if "trace" not in extra:
     extra["trace"] = "-"
+  if "session_id" not in extra:
+    extra["session_id"] = "-"
+  
+  # Store all additional fields in extras dictionary
+  extras = {k: v for k, v in extra.items() 
+           if k not in ["request_id", "trace", "session_id"]}
+  if extras:
+    extra["extras"] = extras
+    
   return extra
 
 # Custom JSON formatter for structured logging
@@ -55,29 +92,69 @@ class JsonFormatter(logging.Formatter):
   """JSON formatter for structured logging that preserves extra fields."""
 
   def format(self, record):
-    # Get basic log record info
+    # Generate ISO-8601 timestamp compatible with Cloud Logging
+    timestamp = datetime.datetime.fromtimestamp(record.created).isoformat() + 'Z'
+    
+    # Build basic log record info
     log_entry = {
+      "timestamp": timestamp,
       "message": record.getMessage(),
       "severity": record.levelname,
       "logger": record.name,
       "file": record.pathname,
       "line": record.lineno,
       "function": record.funcName,
-      "app_request_id": getattr(record, "app_request_id", "-"),
-      "gcp_trace_id": getattr(record, "gcp_trace_id", "-"),
-      "trace": getattr(record, "trace", "-")
+      "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service"
     }
-
-    # Add any extra fields from the record
-    for key, value in record.__dict__.items():
-      if (key not in log_entry and 
-          key not in ["args", "asctime", "created", "exc_info", "exc_text", 
-                    "filename", "levelno", "module", "msecs", "msg", 
-                    "name", "pathname", "process", "processName", 
-                    "relativeCreated", "stack_info", "thread", "threadName"]):
-        log_entry[key] = value
-
-    return json.dumps(log_entry)
+    
+    # Add context fields with standardized naming
+    log_entry["request_id"] = getattr(record, "request_id", "-")
+    log_entry["trace"] = getattr(record, "trace", "-")
+    log_entry["session_id"] = getattr(record, "session_id", "-")
+    
+    # Properly format trace for Google Cloud Logging
+    trace_value = log_entry["trace"]
+    if trace_value != "-":
+      if trace_value.startswith("projects/"):
+        # Trace is already in full format (from middleware)
+        log_entry["logging.googleapis.com/trace"] = trace_value
+      else:
+        # Just use the trace ID as provided
+        log_entry["logging.googleapis.com/trace"] = trace_value
+        
+    # Add null values instead of dash placeholders for cleaner JSON
+    for field in ["request_id", "trace", "session_id"]:
+      if log_entry[field] == "-":
+        log_entry[field] = None
+            
+    # Add any extras fields from the record
+    extras = getattr(record, "extras", {})
+    if isinstance(extras, dict):
+      for key, value in extras.items():
+        if key not in log_entry:
+          log_entry[key] = value
+    
+    # Add exception info if present
+    if record.exc_info:
+      exception_data = {
+        "type": record.exc_info[0].__name__,
+        "message": str(record.exc_info[1]),
+        "traceback": traceback.format_exception(*record.exc_info)
+      }
+      log_entry["exception"] = exception_data
+        
+    # Return JSON string, handling non-serializable objects
+    try:
+      return json.dumps(log_entry, cls=SafeJsonEncoder)
+    except Exception as e:
+      # Fallback in case JSON serialization fails completely
+      return json.dumps({
+        "timestamp": timestamp,
+        "severity": "ERROR",
+        "logger": "logging_handler",
+        "message": f"Failed to serialize log: {str(e)}",
+        "original_message": record.getMessage()
+      })
 
 # Force reconfiguration of root logger by removing existing handlers
 root_logger = logging.getLogger()
@@ -87,26 +164,39 @@ for handler in root_logger.handlers[:]:
   root_logger.removeHandler(handler)
 print("*** STARTUP: Removed existing handlers from root logger ***")
 
-root_logger.setLevel(logging.INFO)
+# Set log level from environment
+root_logger.setLevel(LOG_LEVEL)
 
+# Add filter to root logger
 root_filter = LogRecordFilter()
 if root_filter not in root_logger.filters:
   root_logger.addFilter(root_filter)
 
-# Add JSON formatter handler for stdout
-json_handler = logging.StreamHandler(sys.stdout)
-json_handler.setFormatter(JsonFormatter())
-root_logger.addHandler(json_handler)
-print("*** STARTUP: Added JSON formatter handler to root logger ***")
+# Add handlers to root logger
+if CLOUD_LOGGING_ENABLED and client:
+  # If Cloud Logging is enabled, use its handler
+  cloud_handler = client.get_default_handler()
+  cloud_handler.setFormatter(JsonFormatter())
+  root_logger.addHandler(cloud_handler)
+  print("*** STARTUP: Added Cloud Logging handler to root logger ***")
+else:
+  # Otherwise use standard JSON output to stdout
+  json_handler = logging.StreamHandler(sys.stdout)
+  json_handler.setFormatter(JsonFormatter())
+  root_logger.addHandler(json_handler)
+  print("*** STARTUP: Added JSON formatter handler to root logger ***")
+
+print(f"*** STARTUP: Initialized structured logging with level: {LOG_LEVEL_NAME} ***")
+print(f"*** STARTUP: Structured fields enabled: request_id, session_id, trace ***")
 
 # Create a global class logger
 _static_logger = logging.getLogger("Logger")
-_static_logger.setLevel(logging.INFO)
+_static_logger.setLevel(LOG_LEVEL)
 _static_logger.addFilter(LogRecordFilter())
 
 # Define the instance logger class
 class Logger:
-  """Instance logger for module-specific logging."""
+  """Instance logger for module-specific logging with structured output."""
 
   def __init__(self, name):
     try:
@@ -118,7 +208,7 @@ class Logger:
       module_name = str(name)
 
     self.logger = logging.getLogger(module_name)
-    self.logger.setLevel(logging.INFO)
+    self.logger.setLevel(LOG_LEVEL)
     self.logger.addFilter(LogRecordFilter())
 
   @classmethod
