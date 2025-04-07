@@ -66,11 +66,3 @@ spec:
                 name: frontend-streamlit
                 port:
                   number: 80
-
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend-flutterflow
-                port:
-                  number: 80

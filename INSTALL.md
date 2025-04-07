@@ -333,26 +333,19 @@ BASE_IP_ADDRESS=$(gcloud compute addresses list --global --format="value(address
 ### React app
 > [React](https://react.dev/) is a popular frontend development framework.
 
-The codebase includes a React app that supports Chat and Query (RAG) for end users, along with Google Identity login.  See the [components/frontend_react/README.md](components/frontend_react/README.md) for instructions on bnuilding and deploying the React app.
+The codebase includes a React app that supports Chat and Query (RAG) for end users, along with Google Identity login.  See the [components/frontend_react/README.md](components/frontend_react/README.md) for instructions on building and deploying the React app.
 
-### Streamlit and Flutterflow UX
-
-> [FlutterFlow](https://flutterflow.io/enterprise) is a low-code development platform that enables you to build native mobile and web applications without writing code.
+### Streamlit UX
 
 > [Streamlit](https://streamlit.io) is an open-source Python library that makes it easy to create custom web apps. It's a popular choice for data scientists and machine learning engineers who want to quickly create interactive dashboards and visualizations
 
 As of the 0.3.0 release the React app is the preferred UX for GENIE and we recommend you deploy and use that app.
 
-The Flutterflow app is not currently maintained but may be useful for those that have existing apps using Flutterflow.
-
 When running `skaffold run` like above, it automatically deploys the Streamlit-based frontend app altogether with all services deployment.  The streamlit UX is for development purposes only.  
 
-- Once deployed, you can verify the FlutterFlow frontend app at `https://$YOUR_DNS_DOMAIN` in a web browser.
 - Once deployed, you can verify the Streamlit frontend app at `https://$YOUR_DNS_DOMAIN/streamlit` in a web browser.
 
 ### (Optional) Deploy or run frontend apps manually
-
-See [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
 
 See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the Streamlit app.
 
@@ -502,7 +495,7 @@ Log out and log back in again to re-evaluate group memberships
 ### sb deploy --dev fails for Mac OS
 ```shell
 sh: envsubst: command not found
-build [frontend-flutterflow] failed: exit status 127
+build [llm-service] failed: exit status 127
 ```
 Fix
 ```shell
