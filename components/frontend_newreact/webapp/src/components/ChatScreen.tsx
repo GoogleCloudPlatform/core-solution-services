@@ -133,16 +133,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
-
+  
     if (onChatStart) {
       onChatStart();
     }
-
+  
     // Capture current state values for submission
     const currentPrompt = prompt;
     const currentSelectedFile = selectedFile;
     const currentImportUrl = importUrl;
-
+  
     let uploadedFileName = currentSelectedFile?.name;
     if (currentImportUrl) {
       uploadedFileName = currentImportUrl.split('/').pop();
@@ -150,7 +150,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         uploadedFileName = currentImportUrl.replace("gs://", "").split("/").pop();
       }
     }
-
+  
     const userMessage: ChatMessage = {
       text: currentPrompt,
       isUser: true,
@@ -158,20 +158,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       fileUrl: currentImportUrl || '' // Include the file URL
     };
     setMessages(prev => [...prev, userMessage]);
-
+  
     // Immediately clear prompt and attachment inputs so URL disappears from input box
-    // setPrompt('');
-    // setSelectedFile(null);
-    // setImportUrl('');
+    setPrompt('');
+    setSelectedFile(null);
+    setImportUrl('');
 
     setIsLoading(true);
-
+  
     // Determine if this is a new chat (i.e. no existing chatId)
     const wasNewChat = !chatId;
-
+  
     try {
       let response: Chat | undefined;
-      chatId: graphEnabled ? null : chatId // Assuming chatId is defined in the scope
 
       // Common parameters
       const chatParams = {
@@ -184,7 +183,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         // Pass toolNames if "Create a graph" is enabled
         toolNames: graphEnabled ? ["vertex_code_interpreter_tool"] : []
       };
-
+  
       if (chatId) {
         // Continue existing chat
         const chatResponse = await resumeChat(user.token)({
@@ -192,7 +191,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           ...chatParams,
           queryEngineId: selectedSource?.id || undefined
         });
-
+  
         // Only assign if it's a Chat object
         if (chatResponse && !isReadableStream(chatResponse)) {
           response = chatResponse;
@@ -218,7 +217,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           response = chatResponse;
         }
       }
-
+  
       // Only proceed if we got a valid Chat object
       if (response?.id) {
         setChatId(response.id);
@@ -227,11 +226,34 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           window.dispatchEvent(new Event("chatHistoryUpdated"));
         }
       }
-
+  
       if (response?.history) {
         let history = response.history;
         let newMessages = messagesFromHistory(history);
         setMessages(newMessages);
+        
+        // Simulate streaming the response
+        const fullMessage = newMessages[newMessages.length - 1].text || '';
+        let displayedMessage = '';
+        let index = 0;
+  
+        const typingInterval = setInterval(() => {
+          if (index < fullMessage.length) {
+            displayedMessage += fullMessage[index];
+            setMessages(prev => {
+              const updatedMessages = [...prev];
+              updatedMessages[updatedMessages.length - 1] = {
+                ...updatedMessages[updatedMessages.length - 1],
+                text: displayedMessage
+              };
+              return updatedMessages;
+            });
+            index++;
+          } else {
+            clearInterval(typingInterval);
+          }
+        }, 30); // Adjust this interval for the speed of the simulated typing effect
+  
       } else {
         console.error("API response does not contain 'history' property:", response);
       }
@@ -250,7 +272,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       setImportUrl('');
     }
   };
-
   // useLayoutEffect to scroll the container so that the last message aligns with the top
   useLayoutEffect(() => {
     if (chatMessagesRef.current && messagesEndRef.current) {
