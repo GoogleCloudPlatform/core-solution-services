@@ -23,8 +23,8 @@ import pytest
 from unittest import mock
 from common.utils.logging_handler import Logger
 from common.utils.config import set_env_var
-from vertexai.preview.language_models import TextEmbedding
-from vertexai.preview.vision_models import MultiModalEmbeddingResponse
+from vertexai.language_models import TextEmbedding
+from vertexai.vision_models import MultiModalEmbeddingResponse
 from services.embeddings import get_embeddings, get_multimodal_embeddings
 with set_env_var("PG_HOST", ""):
   from config import (get_model_config, DEFAULT_QUERY_EMBEDDING_MODEL,
