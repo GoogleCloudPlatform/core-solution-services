@@ -41,7 +41,8 @@ LLM_GENERATE_LATENCY = Histogram(
 # Response size
 LLM_RESPONSE_SIZE = Histogram(
   "llm_response_size_chars", "LLM Response Size in Characters",
-  ["llm_type"], buckets=[10, 50, 100, 500, 1000, 2000, 5000, 10000, 20000, 50000]
+  ["llm_type"], buckets=[10, 50, 100, 500, 1000,\
+                          2000, 5000, 10000, 20000, 50000]
 )
 
 # Embedding Metrics
@@ -170,13 +171,21 @@ def _extract_config_dict(config):
       return config.model_dump()
     else:
       return dict(config)
-  except Exception:
-    logger.error("Error extracting config dictionary")
+  except TypeError as e:
+    logger.error(f"Type error extracting config dictionary: {e}")
+    return {}
+  except AttributeError as e:
+    logger.error(f"Attribute error extracting config dictionary: {e}")
+    return {}
+  except ValueError as e:
+    logger.error(f"Value error extracting config dictionary: {e}")
+    return {}
+  except KeyError as e:
+    logger.error(f"Key error extracting config dictionary: {e}")
     return {}
 
 def track_llm_generate(func: Callable):
   """Decorator to track LLM generation metrics including response size"""
-  import inspect
 
   @wraps(func)
   async def wrapper(*args, **kwargs):
@@ -244,7 +253,8 @@ def track_llm_generate(func: Callable):
         LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(response_size)
       elif isinstance(result, dict) and "content" in result:
         # For dictionary responses with content field
-        response_size = len(result["content"]) if isinstance(result["content"], str) else 0
+        response_size = len(result["content"])\
+            if isinstance(result["content"], str) else 0
         logger.info(
           "LLM response size",
           extra={
@@ -424,13 +434,49 @@ def track_chat_generate(func: Callable):
       # Record prompt size metric
       if prompt_size > 0:
         PROMPT_SIZE.labels("chat").observe(prompt_size)
-    except Exception as e:
-      # Log error extracting parameters
+    except TypeError as e:
+      # Handle type errors (wrong parameter types)
       log_operation_result(
         logger,
         "chat_parameters_extraction",
         "error",
-        {"error_message": str(e)}
+        {
+          "error_type": "TypeError",
+          "error_message": str(e)
+        }
+      )
+    except AttributeError as e:
+      # Handle attribute errors (missing attributes)
+      log_operation_result(
+        logger,
+        "chat_parameters_extraction",
+        "error",
+        {
+          "error_type": "AttributeError",
+          "error_message": str(e)
+        }
+      )
+    except KeyError as e:
+      # Handle key errors (missing dictionary keys)
+      log_operation_result(
+        logger,
+        "chat_parameters_extraction",
+        "error",
+        {
+          "error_type": "KeyError",
+          "error_message": str(e)
+        }
+      )
+    except ValueError as e:
+      # Handle value errors (invalid values)
+      log_operation_result(
+        logger,
+        "chat_parameters_extraction",
+        "error",
+        {
+          "error_type": "ValueError",
+          "error_message": str(e)
+        }
       )
 
     start_time = time.time()
@@ -763,8 +809,18 @@ def track_vector_db_query(func: Callable):
         if q_engine:
           db_type = q_engine.vector_store or "unknown"
           engine_name = q_engine.name or "unknown"
-    except Exception as e:
-      logger.error(f"Error extracting vector DB info: {str(e)}")
+    except AttributeError as e:
+      # Handle attribute errors (missing attributes on QueryEngine)
+      logger.error(f"Attribute error extracting vector DB info: {str(e)}")
+    except KeyError as e:
+      # Handle key errors (missing dict keys)
+      logger.error(f"Key error extracting vector DB info: {str(e)}")
+    except ValueError as e:
+      # Handle value errors (invalid ID format)
+      logger.error(f"Value error extracting vector DB info: {str(e)}")
+    except TypeError as e:
+      # Handle type errors (wrong parameter types)
+      logger.error(f"Type error extracting vector DB info: {str(e)}")
 
     # Extract user information
     user_data = kwargs.get("user_data")

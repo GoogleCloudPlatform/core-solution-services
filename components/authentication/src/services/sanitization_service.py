@@ -95,8 +95,5 @@ def sanitize_user_data(user_dict):
       except ValueError as e:
         # Handle value errors (invalid datetime values)
         sanitized[field] = f"[Invalid datetime: {str(e)}]"
-      except Exception as e:
-        # Fallback for unexpected errors, with better context
-        sanitized[field] = f"[Unexpected error: {type(e).__name__}]"
 
   return sanitized

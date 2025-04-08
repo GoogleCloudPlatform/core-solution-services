@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """ User endpoints """
-# pylint: disable=unused-variable,no-value-for-parameter
+# pylint: disable=unused-variable,no-value-for-parameter,unused-import
 
 import re
 import traceback
@@ -96,7 +96,8 @@ def search_user_by_email(email: str):
   except Exception as error:
     logger.error(f"Unexpected error searching user by email: {error}")
     logger.error(traceback.format_exc())
-    raise InternalServerError(f"Error searching for user by email: {str(error)}") from error
+    raise InternalServerError(
+      f"Error searching for user by email: {str(error)}") from error
 
 
 @router.get("/user/search", response_model=UserSearchResponseModel)
@@ -267,7 +268,8 @@ def get_user(user_id: str, fetch_tree: Optional[bool] = False):
   except Exception as error:
     logger.error(f"Error retrieving user with ID {user_id}: {error}")
     logger.error(traceback.format_exc())
-    raise InternalServerError(f"Failed to retrieve user information: {str(error)}") from error
+    raise InternalServerError(
+      f"Failed to retrieve user information: {str(error)}") from error
 
 
 @router.post("/user", response_model=PostUserResponseModel)
@@ -569,7 +571,8 @@ def delete_user(user_id: str,
   except Exception as error:
     logger.error(f"Error deleting user {user_id}: {error}")
     logger.error(traceback.format_exc())
-    raise InternalServerError(f"Failed to delete user: {str(error)}") from error
+    raise InternalServerError(
+      f"Failed to delete user: {str(error)}") from error
 
 
 @router.post(
@@ -600,11 +603,12 @@ def import_users(request: Request, json_file: UploadFile = File(...)):
   except ValidationError as error:
     logger.error(f"Validation error importing users: {error}")
     logger.error(traceback.format_exc())
-    raise BadRequest(str(error), data=getattr(error, 'data', None)) from error
+    raise BadRequest(str(error), data=getattr(error, "data", None)) from error
   except Exception as error:
     logger.error(f"Error importing users: {error}")
     logger.error(traceback.format_exc())
-    raise InternalServerError(f"Failed to import users: {str(error)}") from error
+    raise InternalServerError(
+      f"Failed to import users: {str(error)}") from error
 
 
 @router.put(
@@ -653,13 +657,15 @@ def update_user_status(user_id: str, input_status: UpdateStatusModel):
     }
 
   except ResourceNotFoundException as error:
-    logger.error(f"User not found for status update with ID {user_id}: {error}")
+    logger.error(
+      f"User not found for status update with ID {user_id}: {error}")
     logger.error(traceback.format_exc())
     raise ResourceNotFound(str(error)) from error
   except Exception as error:
     logger.error(f"Error updating status for user {user_id}: {error}")
     logger.error(traceback.format_exc())
-    raise InternalServerError(f"Failed to update user status: {str(error)}") from error
+    raise InternalServerError(
+      f"Failed to update user status: {str(error)}") from error
 
 
 @router.get(
@@ -705,13 +711,15 @@ def get_applications_assigned_to_user(user_id: str):
     }
 
   except ResourceNotFoundException as error:
-    logger.error(f"User not found when getting applications for ID {user_id}: {error}")
+    logger.error(
+      f"User not found when getting applications for ID {user_id}: {error}")
     logger.error(traceback.format_exc())
     raise ResourceNotFound(str(error)) from error
   except Exception as error:
     logger.error(f"Error getting applications for user {user_id}: {error}")
     logger.error(traceback.format_exc())
-    raise InternalServerError(f"Failed to retrieve user applications: {str(error)}") from error
+    raise InternalServerError(
+      f"Failed to retrieve user applications: {str(error)}") from error
 
 
 @router.post(
@@ -773,13 +781,16 @@ def create_inspace_user_account(user_id: str):
       }
       user.inspace_user = inspace_mapping
       user.update()
-      response_message = "Successfully updated Inspace User id for current user"
+      response_message = (
+        "Successfully updated Inspace User id "
+        "for current user"
+      )
     elif status_code == 404:
       # ---- Inspace User creation if user doesn't exist----
       if create_inspace_user_helper(user):
-        response_message = "Successfully created Inspace User for current user"
+        response_message = "Successfully created Inspace User for user"
       else:
-        response_message = "Cannot create Inspace User for current User"
+        response_message = "Cannot create Inspace User for user"
 
     # fetch and return updated user
     user = User.find_by_user_id(user_id)
@@ -791,18 +802,22 @@ def create_inspace_user_account(user_id: str):
       "data": user_fields
     }
   except ResourceNotFoundException as error:
-    logger.error(f"User not found when creating Inspace user for ID {user_id}: {error}")
+    logger.error(
+      f"User not found when creating Inspace user for ID {user_id}: {error}")
     logger.error(traceback.format_exc())
     raise ResourceNotFound(str(error)) from error
   except ConflictError as error:
-    logger.error(f"Conflict error creating Inspace user for {user_id}: {error}")
+    logger.error(
+      f"Conflict error creating Inspace user for {user_id}: {error}")
     logger.error(traceback.format_exc())
     raise Conflict(str(error)) from error
   except ValidationError as error:
-    logger.error(f"Validation error creating Inspace user for {user_id}: {error}")
+    logger.error(
+      f"Validation error creating Inspace user for {user_id}: {error}")
     logger.error(traceback.format_exc())
     raise BadRequest(str(error)) from error
   except Exception as error:
     logger.error(f"Error creating Inspace user for {user_id}: {error}")
     logger.error(traceback.format_exc())
-    raise InternalServerError(f"Failed to create Inspace user: {str(error)}") from error
+    raise InternalServerError(
+      f"Failed to create Inspace user: {str(error)}") from error

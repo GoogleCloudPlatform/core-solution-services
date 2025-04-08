@@ -93,7 +93,8 @@ class JsonFormatter(logging.Formatter):
 
   def format(self, record):
     # Generate ISO-8601 timestamp compatible with Cloud Logging
-    timestamp = datetime.datetime.fromtimestamp(record.created).isoformat() + "Z"
+    timestamp = datetime.datetime.fromtimestamp(
+      record.created).isoformat() + "Z"
 
     # Build basic log record info
     log_entry = {
@@ -171,19 +172,47 @@ class JsonFormatter(logging.Formatter):
     # Return JSON string, handling non-serializable objects
     try:
       return json.dumps(log_entry, cls=SafeJsonEncoder)
-    except Exception as e:
-      # Fallback in case JSON serialization fails completely
+    except TypeError as exc:
       return json.dumps({
         "timestamp": timestamp,
         "severity": "ERROR",
         "logger": "logging_handler",
-        "message": f"Failed to serialize log: {str(e)}",
+        "message": f"Type error during log serialization: {str(exc)}",
+        "error_type": "TypeError",
+        "original_message": record.getMessage()
+      })
+    except ValueError as exc:
+      return json.dumps({
+        "timestamp": timestamp,
+        "severity": "ERROR",
+        "logger": "logging_handler",
+        "message": f"Value error during log serialization: {str(exc)}",
+        "error_type": "ValueError",
+        "original_message": record.getMessage()
+      })
+    except OverflowError as exc:
+      return json.dumps({
+        "timestamp": timestamp,
+        "severity": "ERROR",
+        "logger": "logging_handler",
+        "message": f"Overflow error during log serialization: {str(exc)}",
+        "error_type": "OverflowError",
+        "original_message": record.getMessage()
+      })
+    except RecursionError as exc:
+      return json.dumps({
+        "timestamp": timestamp,
+        "severity": "ERROR",
+        "logger": "logging_handler",
+        "message": f"Recursion error during log serialization: {str(exc)}",
+        "error_type": "RecursionError",
         "original_message": record.getMessage()
       })
 
 # Force reconfiguration of root logger by removing existing handlers
 root_logger = logging.getLogger()
-print(f"*** STARTUP: Root logger initially has {len(root_logger.handlers)} handlers ***")
+print("*** STARTUP: Root logger initially has"
+      f" {len(root_logger.handlers)} handlers ***")
 
 for handler in root_logger.handlers[:]:
   root_logger.removeHandler(handler)
@@ -211,8 +240,8 @@ else:
   root_logger.addHandler(json_handler)
   print("*** STARTUP: Added JSON formatter handler to root logger ***")
 
-print(f"*** STARTUP: Initialized structured logging with level: {LOG_LEVEL_NAME} ***")
-print(f"*** STARTUP: Structured fields enabled: request_id, session_id, trace ***")
+print("*** STARTUP: Initialized structured logging "
+      f"with level: {LOG_LEVEL_NAME} ***")
 
 # Create a global class logger
 _static_logger = logging.getLogger("Logger")

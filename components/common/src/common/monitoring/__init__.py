@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Common monitoring utilities for request tracking and metrics across services."""
+"""Common monitoring utilities for request tracking
+ and metrics across services."""
 
 # Import and expose the key middleware components for easy access
 from common.monitoring.middleware import (

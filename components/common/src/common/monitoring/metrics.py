@@ -22,7 +22,13 @@ from typing import Callable, Optional, Dict, Any
 from prometheus_client import Counter, Histogram, Gauge, Summary
 from common.utils.logging_handler import Logger
 
-__all__ = ['Counter', 'Histogram', 'Gauge', 'Summary', 'operation_tracker', 'extract_user_id', 'log_operation_result']
+__all__ = ["Counter",
+           "Histogram",
+           "Gauge",
+           "Summary",
+           "operation_tracker",
+           "extract_user_id",
+           "log_operation_result"]
 
 # Default logger
 logger = Logger.get_logger(__file__)
@@ -241,6 +247,8 @@ def log_operation_result(
     extra.update(additional_data)
 
   if status == "success":
-    logger.info(f"{operation_type.replace('_', ' ').title()} successful", extra=extra)
+    logger.info(f"{operation_type.replace('_', ' ').title()} successful",
+                 extra=extra)
   else:
-    logger.error(f"{operation_type.replace('_', ' ').title()} failed", extra=extra)
+    logger.error(f"{operation_type.replace('_', ' ').title()} failed",
+                  extra=extra)

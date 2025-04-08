@@ -90,7 +90,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
       request_count_metric: Optional custom Counter for request counts
       request_latency_metric: Optional custom Histogram for request latency
       error_count_metric: Optional custom Counter for error counts
-      log_factory_reset: Whether to reset the log factory after request processing
+      log_factory_reset: Whether to reset the log factory after request
     """
     super().__init__(app)
 
@@ -235,10 +235,6 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
     start_time = time.time()
     method = request.method
     path = request.url.path
-
-    # Extract request_id and trace from request state
-    request_id = getattr(request.state, "request_id", "-")
-    trace = getattr(request.state, "trace", "-")
 
     try:
       response = await call_next(request)

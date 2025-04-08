@@ -85,7 +85,8 @@ def validate_id_token(token: auth_scheme = Depends()):
       raise UnauthorizedUserError(
           f"Unauthorized: User {user_email} not found.")
 
-    Logger.info(f"user: {sanitize_user_data(user.get_fields(reformat_datetime=True))}")
+    sandata = sanitize_user_data(user.get_fields(reformat_datetime=True))
+    Logger.info(f"user: {sandata}")
     user_fields = user.get_fields(reformat_datetime=True)
     if user_fields.get("status") == "inactive":
       raise UnauthorizedUserError("Unauthorized: User status is inactive.")
