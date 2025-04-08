@@ -20,7 +20,7 @@ import json
 import base64
 import io
 from typing import Optional, Annotated, Union
-from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
 from common.models.llm import (CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64,
@@ -512,7 +512,7 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
 
   Args:
     chat_id: ID of the chat to continue
-    request: FastAPI Request object containing the request body
+    gen_config: llm generation parameters
 
   Returns:
     LLMUserChatResponse or StreamingResponse
