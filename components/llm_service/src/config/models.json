@@ -49,6 +49,7 @@
       "env_flag": "ENABLE_COHERE_LLM"
     }
   },
+  "default_system_prompt": "You are a helpful AI assistant.",
   "models": {
     "VertexAI-Text": {
       "is_chat": false,
@@ -92,7 +93,8 @@
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
-      "model_name": "gemini-1.5-pro-002"
+      "model_name": "gemini-1.5-pro-002",
+      "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone."
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {
       "is_chat": true,
