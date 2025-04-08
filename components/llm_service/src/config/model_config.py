@@ -570,7 +570,7 @@ class ModelConfig():
 
     return vendor_enabled
 
-  def get_model_vendor_config(self, model_id: str) -> Tuple[str, dict]:
+  def get_model_vendor_config(self, model_id: str) -> dict:
     """
     Get vendor config for model.
     Args:
