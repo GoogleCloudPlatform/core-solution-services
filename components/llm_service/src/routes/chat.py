@@ -19,7 +19,7 @@ import traceback
 import json
 import base64
 import io
-from typing import Optional
+from typing import Optional, Annotated, Union
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
