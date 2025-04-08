@@ -478,7 +478,7 @@ async def create_user_chat(
 @router.post("/empty_chat", name="Create new chat")
 async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
-  Create new chat for authenticated user.  
+  Create new chat for authenticated user.
   Returns:
       Data for the newly created chat
   """
@@ -517,7 +517,7 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   Returns:
     LLMUserChatResponse or StreamingResponse
   """
-
+  Logger.info(f"generating chat response for {chat_id}")
   tool_names = gen_config.tool_names
   validate_tool_names(tool_names)
 

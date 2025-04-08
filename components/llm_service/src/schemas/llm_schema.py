@@ -150,7 +150,7 @@ class LLMGenerateModel(BaseModel):
   chat_file_b64: Optional[str] = None
   chat_file_b64_name: Optional[str] = None
   chat_file_url: Optional[str] = None
-  tool_names: Optional[List[str]] = None
+  tool_names: Optional[str] = None
   model_config = ConfigDict(from_attributes=True, json_schema_extra={
     "example": LLM_GENERATE_EXAMPLE
   })
