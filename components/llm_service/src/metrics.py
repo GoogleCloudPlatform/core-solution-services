@@ -16,6 +16,7 @@
 
 import time
 import asyncio
+import inspect
 from functools import wraps
 from typing import Callable
 from common.monitoring.metrics import Counter, Histogram, Gauge
@@ -35,6 +36,12 @@ LLM_GENERATE_COUNT = Counter(
 LLM_GENERATE_LATENCY = Histogram(
   "llm_generate_latency_seconds", "LLM Generation Latency",
   ["llm_type"]
+)
+
+# Response size
+LLM_RESPONSE_SIZE = Histogram(
+  "llm_response_size_chars", "LLM Response Size in Characters",
+  ["llm_type"], buckets=[10, 50, 100, 500, 1000, 2000, 5000, 10000, 20000, 50000]
 )
 
 # Embedding Metrics
@@ -84,8 +91,8 @@ ACTIVE_USERS = Gauge(
 # Prompt size
 PROMPT_SIZE = Histogram(
   "prompt_size_bytes", "Prompt Size in Bytes",
-  ["type"], buckets=[64, 128, 256, 512, 1024, 2048, 4096,\
-                      8192, 16384, 32768, 65536]
+  ["type"], buckets=[
+    64, 128, 256, 512, 1024, 2048, 4096,8192, 16384, 32768, 65536]
 )
 
 # Agent Metrics
@@ -127,8 +134,8 @@ VECTOR_DB_BUILD_LATENCY = Histogram(
 
 VECTOR_DB_DOC_COUNT = Histogram(
   "vector_db_doc_count", "Number of Documents in Vector DB",
-  ["db_type", "engine_name"], buckets=[10, 50, 100, 500, 1000,\
-                                        5000, 10000, 50000, 100000]
+  ["db_type", "engine_name"], buckets=[
+    10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000]
 )
 
 def record_user_activity(user_id: str, activity_type: str):
@@ -168,7 +175,9 @@ def _extract_config_dict(config):
     return {}
 
 def track_llm_generate(func: Callable):
-  """Decorator to track LLM generation metrics"""
+  """Decorator to track LLM generation metrics including response size"""
+  import inspect
+
   @wraps(func)
   async def wrapper(*args, **kwargs):
     # Extract llm_type
@@ -191,6 +200,61 @@ def track_llm_generate(func: Callable):
     start_time = time.time()
     try:
       result = await func(*args, **kwargs)
+
+      # Handle streaming vs non-streaming responses for size metrics
+      if inspect.isasyncgen(result):
+        # For streaming responses, wrap the generator to count characters
+        original_result = result
+
+        async def size_tracking_generator():
+          total_chars = 0
+          async for chunk in original_result:
+            if isinstance(chunk, str):
+              total_chars += len(chunk)
+            yield chunk
+
+          # Log the total response size after streaming completes
+          logger.info(
+            "LLM response size",
+            extra={
+              "metric_type": "llm_response_size",
+              "llm_type": llm_type,
+              "is_streaming": True,
+              "response_size_chars": total_chars
+            }
+          )
+
+          # Record response size in histogram
+          LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
+
+        # Return the wrapped generator
+        result = size_tracking_generator()
+      elif isinstance(result, str):
+        # For direct string responses, measure size immediately
+        response_size = len(result)
+        logger.info(
+          "LLM response size",
+          extra={
+            "metric_type": "llm_response_size",
+            "llm_type": llm_type,
+            "is_streaming": False,
+            "response_size_chars": response_size
+          }
+        )
+        LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(response_size)
+      elif isinstance(result, dict) and "content" in result:
+        # For dictionary responses with content field
+        response_size = len(result["content"]) if isinstance(result["content"], str) else 0
+        logger.info(
+          "LLM response size",
+          extra={
+            "metric_type": "llm_response_size",
+            "llm_type": llm_type,
+            "is_streaming": False,
+            "response_size_chars": response_size
+          }
+        )
+        LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(response_size)
 
       # Record success metrics
       LLM_GENERATE_COUNT.labels(llm_type=llm_type, status="success").inc()
@@ -315,7 +379,7 @@ def track_embedding_generate(func: Callable):
   return wrapper
 
 def track_chat_generate(func: Callable):
-  """Decorator to track chat generation metrics"""
+  """Decorator to track chat generation metrics including response size"""
   @wraps(func)
   async def wrapper(*args, **kwargs):
     # Extract parameters
@@ -373,6 +437,51 @@ def track_chat_generate(func: Callable):
     try:
       result = await func(*args, **kwargs)
 
+      # Handle streaming vs non-streaming results for response size tracking
+      if asyncio.iscoroutine(result) or inspect.isasyncgen(result):
+        # For streaming responses, wrap the generator to count characters
+        original_result = result
+
+        async def size_tracking_generator():
+          total_chars = 0
+          async for chunk in original_result:
+            total_chars += len(chunk) if isinstance(chunk, str) else 0
+            yield chunk
+
+          # Log the total response size after all chunks are processed
+          logger.info(
+            "LLM response size",
+            extra={
+              "metric_type": "llm_response_size",
+              "llm_type": llm_type,
+              "with_file": with_file,
+              "with_tools": with_tools,
+              "is_streaming": True,
+              "response_size_chars": total_chars
+            }
+          )
+
+          # Create a histogram of response sizes
+          LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
+
+        # Replace the result with our tracking generator
+        result = size_tracking_generator()
+      elif isinstance(result, str):
+        # For direct string responses, measure size immediately
+        response_size = len(result)
+        logger.info(
+          "LLM response size",
+          extra={
+            "metric_type": "llm_response_size",
+            "llm_type": llm_type,
+            "with_file": with_file,
+            "with_tools": with_tools,
+            "is_streaming": False,
+            "response_size_chars": response_size
+          }
+        )
+        LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(response_size)
+
       # Record success metrics
       CHAT_GENERATE_COUNT.labels(
         llm_type=llm_type,
@@ -392,8 +501,7 @@ def track_chat_generate(func: Callable):
       }
 
       # Track chat history size if available
-      if isinstance(result, dict) and "data" in result\
-          and "history" in result["data"]:
+      if isinstance(result, dict) and "data" in result and "history" in result["data"]:
         history_size = len(result["data"]["history"])
         CHAT_HISTORY_SIZE.labels(llm_type=llm_type).observe(history_size)
         log_extra["history_size"] = history_size

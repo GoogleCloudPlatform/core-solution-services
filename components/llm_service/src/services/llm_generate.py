@@ -678,7 +678,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                               mime_type=user_file.mime_type)]))
         # Logger.info(f"context list {prompt_list}")
         for l in prompt_list:
-          Logger.info(l if len(str(l)) < 50 else str(l)[:49])
+          Logger.debug(l if len(str(l)) < 50 else str(l)[:49])
         generation_config = GenerationConfig(**parameters)
         response = await chat_model.generate_content_async(prompt_list,
             generation_config=generation_config,

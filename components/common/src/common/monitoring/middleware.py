@@ -37,7 +37,7 @@ except (ImportError, AttributeError):
 try:
   from common.utils.logging_handler import Logger
 except ImportError:
-  Logger = None  # Will handle this case in _get_logger
+  Logger = None  # Will handle in _get_logger
 
 # Default metrics for HTTP requests
 REQUEST_COUNT = Counter(
@@ -82,14 +82,15 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     """Initialize the middleware with configuration options.
     
     Args:
-        app: The FastAPI application
-        project_id: Google Cloud project ID for trace context (if None, attempts to get from common.config)
-        service_name: Name of the service (used for metrics)
-        collect_metrics: Whether to collect Prometheus metrics
-        request_count_metric: Optional custom Counter for request counts
-        request_latency_metric: Optional custom Histogram for request latency
-        error_count_metric: Optional custom Counter for error counts
-        log_factory_reset: Whether to reset the log factory after request processing
+      app: The FastAPI application
+      project_id: Google Cloud project ID for trace context (if None,
+                  attempts to get from common.config)
+      service_name: Name of the service (used for metrics)
+      collect_metrics: Whether to collect Prometheus metrics
+      request_count_metric: Optional custom Counter for request counts
+      request_latency_metric: Optional custom Histogram for request latency
+      error_count_metric: Optional custom Counter for error counts
+      log_factory_reset: Whether to reset the log factory after request processing
     """
     super().__init__(app)
 
@@ -224,8 +225,8 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
     """Initialize the middleware.
     
     Args:
-        app: The FastAPI application
-        service_name: Name of the service to use in metrics
+      app: The FastAPI application
+      service_name: Name of the service to use in metrics
     """
     super().__init__(app)
     self.service_name = service_name
@@ -235,7 +236,7 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
     method = request.method
     path = request.url.path
 
-    # Extract request_id and trace from request state (using standardized names)
+    # Extract request_id and trace from request state
     request_id = getattr(request.state, "request_id", "-")
     trace = getattr(request.state, "trace", "-")
 
@@ -264,7 +265,7 @@ def create_metrics_router() -> APIRouter:
   """Creates a router with the /metrics endpoint for Prometheus scraping.
   
   Returns:
-      APIRouter: Router with /metrics endpoint configured
+    APIRouter: Router with /metrics endpoint configured
   """
   metrics_router = APIRouter(tags=["Metrics"])
 
@@ -278,10 +279,10 @@ def get_request_context(args) -> tuple:
   """Extract request_id, trace and session_id from request if available.
   
   Args:
-      args: Arguments passed to the decorated function
+    args: Arguments passed to the decorated function
       
   Returns:
-      tuple: (request_id, trace, session_id) extracted from arguments or defaults
+    tuple: request_id, trace, session_id extracted from arguments or defaults
   """
   request_id = "-"
   trace = "-"

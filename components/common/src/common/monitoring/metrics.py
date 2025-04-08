@@ -69,7 +69,7 @@ def operation_tracker(
 
         # Record operation count
         operation_counter.labels(
-          operation=operation_type, 
+          operation=operation_type,
           status=status
         ).inc()
 
@@ -87,7 +87,7 @@ def operation_tracker(
       except Exception as e:
         # Record error
         operation_counter.labels(
-          operation=operation_type, 
+          operation=operation_type,
           status="error"
         ).inc()
 
@@ -141,7 +141,7 @@ def operation_tracker(
 
         # Record operation count
         operation_counter.labels(
-          operation=operation_type, 
+          operation=operation_type,
           status=status
         ).inc()
 
@@ -159,7 +159,7 @@ def operation_tracker(
       except Exception as e:
         # Record error
         operation_counter.labels(
-          operation=operation_type, 
+          operation=operation_type,
           status="error"
         ).inc()
 
@@ -218,9 +218,9 @@ def extract_user_id(user_data: Optional[Dict[str, Any]]) -> str:
 
 
 def log_operation_result(
-    logger: logging.Logger, 
-    operation_type: str, 
-    status: str, 
+    logger: logging.Logger,
+    operation_type: str,
+    status: str,
     additional_data: Optional[Dict[str, Any]] = None
 ):
   """Log operation result with consistent format.
