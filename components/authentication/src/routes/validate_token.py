@@ -69,7 +69,13 @@ def validate_id_token(token: auth_scheme = Depends()):
 
     if AUTH_AUTO_CREATE_USERS and email_domain in AUTH_EMAIL_DOMAINS_WHITELIST:
       create_if_not_exist = True
-    Logger.info(f"create_if_not_exist: {create_if_not_exist}")
+    Logger.info(
+      "Create user if not existent flag",
+      extra={
+        "metric_type": "auth_config",
+        "create_if_not_exist": create_if_not_exist
+      }
+    )
 
     user = get_user_by_email(user_email,
                              check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER,
