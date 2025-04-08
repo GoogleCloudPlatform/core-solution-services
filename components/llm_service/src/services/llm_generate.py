@@ -176,6 +176,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
+                   user_data: Optional[dict] = None,
                    chat_files: Optional[List[DataSourceFile]] = None,
                    chat_file_bytes: Optional[bytes] = None,
                    stream: bool = False) -> \
@@ -261,6 +262,7 @@ async def llm_chat(prompt: str, llm_type: str,
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                                           google_llm, system_prompt, user_chat,
                                           chat_file_bytes, chat_files,
+                                          user_data=user_data,
                                           stream=stream)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
@@ -597,6 +599,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 user_chat: Optional[UserChat]=None,
                 user_file_bytes: bytes=None,
                 user_files: List[DataSourceFile]=None,
+                user_data: Optional[dict]=None,
                 stream: bool=False) -> Union[str, AsyncGenerator[str, None]]:
   """
   Generate text with a Google multimodal LLM given a prompt.
@@ -621,7 +624,9 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
               f" user_file_bytes=[{user_file_bytes_log}],"
               f" user_files=[{user_files}]")
 
-  # TODO: Remove this section after non-gemini llms are removed from model options
+  # TODO: Remove this section after non-gemini llms are removed from
+  # the model options
+  _ = user_data #used in metrics tracking
   prompt_list = []
   if user_chat is not None:
     history = user_chat.history

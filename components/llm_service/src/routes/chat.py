@@ -461,7 +461,9 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
 @router.post(
     "/{chat_id}/generate")
 @track_chat_generate
-async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
+async def user_chat_generate(chat_id: str,
+                              gen_config: LLMGenerateModel,
+                              user_data: dict = Depends(validate_token)):
   """
   Continue chat based on context of user chat
 
@@ -536,6 +538,7 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
       response = await llm_chat(prompt,
                             llm_type,
                             user_chat=user_chat,
+                            user_data=user_data,
                             chat_files=chat_files,
                             chat_file_bytes=chat_file_bytes,
                             stream=stream)
