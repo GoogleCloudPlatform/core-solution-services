@@ -139,7 +139,14 @@ def test_get_chat(create_user, create_chat, client_with_emulator):
 @pytest.mark.asyncio
 async def test_create_chat(create_user, client_with_emulator):
   """Test creating a new chat"""
-  url = f"{api_url}"
+  url = f"{api_url}\empty_chat"
+  resp = client_with_emulator.post(url)
+  assert resp.status_code == 200, "Failed to create empty chat"
+  json_response = resp.json()
+  chat_data = json_response["data"]
+  chat_id = chat_data[id]
+
+  url = f"{api_url}/{chat_id}/generate"
 
   # Test regular chat creation
   with mock.patch("routes.chat.llm_chat",
