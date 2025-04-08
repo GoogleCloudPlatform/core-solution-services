@@ -506,7 +506,7 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
 
 @router.post(
     "/{chat_id}/generate")
-async def user_chat_generate(chat_id: str, request: Request):
+async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   """
   Continue chat based on context of user chat
 
@@ -517,33 +517,9 @@ async def user_chat_generate(chat_id: str, request: Request):
   Returns:
     LLMUserChatResponse or StreamingResponse
   """
-  body = await request.json()
-  tool_names = body.get("tool_names")
 
-  # Parse tool_names if it's a string
-  if isinstance(tool_names, str):
-    try:
-      body["tool_names"] = json.loads(tool_names)
-    except json.JSONDecodeError as e:
-      raise HTTPException(
-        status_code=422,
-        detail="Tool names must be a string representing a json formatted list"
-      ) from e
-
-  # Validate tool names if present
-  if body.get("tool_names"):
-    if invalid_tools := [tool for tool in body["tool_names"]
-                        if tool not in chat_tools]:
-      raise HTTPException(
-        status_code=422,
-        detail=f"Invalid tool names: {','.join(invalid_tools)}"
-      )
-
-  # Now that tool_names is validated and converted, parse with Pydantic
-  try:
-    gen_config = LLMGenerateModel(**body)
-  except ValidationError as e:
-    raise HTTPException(status_code=422, detail=str(e)) from e
+  tool_names = gen_config.tool_names
+  validate_tool_names(tool_names)
 
   response_files = None
 
