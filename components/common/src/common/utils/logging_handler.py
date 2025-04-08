@@ -23,7 +23,7 @@ import datetime
 from common.config import CLOUD_LOGGING_ENABLED, SERVICE_NAME, CONTAINER_NAME
 
 # Get log level from environment, default to INFO
-LOG_LEVEL_NAME = os.environ.get('LOG_LEVEL', 'INFO').upper()
+LOG_LEVEL_NAME = os.environ.get("LOG_LEVEL", "INFO").upper()
 LOG_LEVEL = getattr(logging, LOG_LEVEL_NAME, logging.INFO)
 
 # Initialize Cloud Logging if enabled
@@ -44,14 +44,14 @@ class LogRecordFilter(logging.Filter):
   """Filter to ensure required fields are present in log records."""
 
   def filter(self, record):
-    # Add default values for required fields if they don't exist
+    # Add default values for required fields if they don"t exist
     if not hasattr(record, "request_id"):
       record.request_id = "-"
     if not hasattr(record, "trace"):
       record.trace = "-"
     if not hasattr(record, "session_id"):
       record.session_id = "-"
-        
+
     return True
 
 # Custom JSON encoder that handles non-serializable objects
@@ -62,7 +62,7 @@ class SafeJsonEncoder(json.JSONEncoder):
     try:
       return super().default(obj)
     except TypeError:
-      # For objects that can't be serialized, convert to string
+      # For objects that can"t be serialized, convert to string
       return str(obj)
 
 # Helper function to add default fields
@@ -70,7 +70,7 @@ def _add_default_fields(extra=None):
   """Add default fields to extra dictionary."""
   if extra is None:
     extra = {}
-    
+
   # Add default values for standard fields
   if "request_id" not in extra:
     extra["request_id"] = "-"
@@ -78,13 +78,13 @@ def _add_default_fields(extra=None):
     extra["trace"] = "-"
   if "session_id" not in extra:
     extra["session_id"] = "-"
-  
+
   # Store all additional fields in extras dictionary
-  extras = {k: v for k, v in extra.items() 
+  extras = {k: v for k, v in extra.items()
            if k not in ["request_id", "trace", "session_id"]}
   if extras:
     extra["extras"] = extras
-    
+
   return extra
 
 # Custom JSON formatter for structured logging
@@ -93,8 +93,8 @@ class JsonFormatter(logging.Formatter):
 
   def format(self, record):
     # Generate ISO-8601 timestamp compatible with Cloud Logging
-    timestamp = datetime.datetime.fromtimestamp(record.created).isoformat() + 'Z'
-    
+    timestamp = datetime.datetime.fromtimestamp(record.created).isoformat() + "Z"
+
     # Build basic log record info
     log_entry = {
       "timestamp": timestamp,
@@ -106,12 +106,12 @@ class JsonFormatter(logging.Formatter):
       "function": record.funcName,
       "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service"
     }
-    
+
     # Add context fields with standardized naming
     log_entry["request_id"] = getattr(record, "request_id", "-")
     log_entry["trace"] = getattr(record, "trace", "-")
     log_entry["session_id"] = getattr(record, "session_id", "-")
-    
+
     # Properly format trace for Google Cloud Logging
     trace_value = log_entry["trace"]
     if trace_value != "-":
@@ -121,19 +121,44 @@ class JsonFormatter(logging.Formatter):
       else:
         # Just use the trace ID as provided
         log_entry["logging.googleapis.com/trace"] = trace_value
-        
+
     # Add null values instead of dash placeholders for cleaner JSON
     for field in ["request_id", "trace", "session_id"]:
       if log_entry[field] == "-":
         log_entry[field] = None
-            
+
     # Add any extras fields from the record
     extras = getattr(record, "extras", {})
     if isinstance(extras, dict):
       for key, value in extras.items():
         if key not in log_entry:
           log_entry[key] = value
-    
+
+    # Process any nested fields in extras to bring them up to the top level
+    if "extras" in log_entry and isinstance(log_entry["extras"], dict):
+      for nested_key, nested_value in log_entry["extras"].items():
+        if nested_key not in log_entry:
+          log_entry[nested_key] = nested_value
+      # remove the original extras to avoid duplication
+      del log_entry["extras"]
+
+    # Look for specific metric fields directly on the record
+    standard_attributes = [
+      "args", "created", "exc_info", "exc_text", "filename", 
+      "funcName", "levelname", "levelno", "lineno", "module", 
+      "msecs", "msg", "name", "pathname", "process", 
+      "processName", "relativeCreated", "stack_info", 
+      "thread", "threadName"
+    ]
+
+    for attr_name in dir(record):
+      # Skip private attributes, methods, and already-processed fields
+      if (not attr_name.startswith("__") and
+          not callable(getattr(record, attr_name)) and
+          attr_name not in log_entry and
+          attr_name not in standard_attributes):
+        log_entry[attr_name] = getattr(record, attr_name)
+
     # Add exception info if present
     if record.exc_info:
       exception_data = {
@@ -142,7 +167,7 @@ class JsonFormatter(logging.Formatter):
         "traceback": traceback.format_exception(*record.exc_info)
       }
       log_entry["exception"] = exception_data
-        
+
     # Return JSON string, handling non-serializable objects
     try:
       return json.dumps(log_entry, cls=SafeJsonEncoder)

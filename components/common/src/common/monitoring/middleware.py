@@ -22,7 +22,12 @@ from fastapi import Request, Response
 from fastapi.routing import APIRouter
 from starlette.middleware.base import BaseHTTPMiddleware
 from typing import Optional
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import (
+  Counter,
+  Histogram,
+  generate_latest,
+  CONTENT_TYPE_LATEST
+)
 
 try:
   from common.config import PROJECT_ID

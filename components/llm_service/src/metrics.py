@@ -84,7 +84,8 @@ ACTIVE_USERS = Gauge(
 # Prompt size
 PROMPT_SIZE = Histogram(
   "prompt_size_bytes", "Prompt Size in Bytes",
-  ["type"], buckets=[64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
+  ["type"], buckets=[64, 128, 256, 512, 1024, 2048, 4096,\
+                      8192, 16384, 32768, 65536]
 )
 
 # Agent Metrics
@@ -126,7 +127,8 @@ VECTOR_DB_BUILD_LATENCY = Histogram(
 
 VECTOR_DB_DOC_COUNT = Histogram(
   "vector_db_doc_count", "Number of Documents in Vector DB",
-  ["db_type", "engine_name"], buckets=[10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000]
+  ["db_type", "engine_name"], buckets=[10, 50, 100, 500, 1000,\
+                                        5000, 10000, 50000, 100000]
 )
 
 def record_user_activity(user_id: str, activity_type: str):
@@ -263,7 +265,8 @@ def track_embedding_generate(func: Callable):
       result = await func(*args, **kwargs)
 
       # Record success metrics
-      EMBEDDING_GENERATE_COUNT.labels(embedding_type=embedding_type, status="success").inc()
+      EMBEDDING_GENERATE_COUNT.labels(embedding_type=embedding_type,\
+                                       status="success").inc()
 
       # Log success
       log_operation_result(
@@ -279,7 +282,8 @@ def track_embedding_generate(func: Callable):
       return result
     except Exception as e:
       # Record error metrics
-      EMBEDDING_GENERATE_COUNT.labels(embedding_type=embedding_type, status="error").inc()
+      EMBEDDING_GENERATE_COUNT.labels(embedding_type=embedding_type,\
+                                       status="error").inc()
 
       # Log error
       log_operation_result(
@@ -296,7 +300,8 @@ def track_embedding_generate(func: Callable):
     finally:
       # Record latency
       latency = time.time() - start_time
-      EMBEDDING_GENERATE_LATENCY.labels(embedding_type=embedding_type).observe(latency)
+      EMBEDDING_GENERATE_LATENCY.labels(
+        embedding_type=embedding_type).observe(latency)
 
       # Log latency
       logger.info(
@@ -315,7 +320,6 @@ def track_chat_generate(func: Callable):
   async def wrapper(*args, **kwargs):
     # Extract parameters
     gen_config = kwargs.get("gen_config")
-    chat_id = kwargs.get("chat_id")
 
     # Initialize defaults
     llm_type = "unknown"
@@ -388,7 +392,8 @@ def track_chat_generate(func: Callable):
       }
 
       # Track chat history size if available
-      if isinstance(result, dict) and "data" in result and "history" in result["data"]:
+      if isinstance(result, dict) and "data" in result\
+          and "history" in result["data"]:
         history_size = len(result["data"]["history"])
         CHAT_HISTORY_SIZE.labels(llm_type=llm_type).observe(history_size)
         log_extra["history_size"] = history_size
@@ -464,7 +469,8 @@ def track_chat_operations(func: Callable):
       func_name = func.__name__
 
       # Handle chat creation
-      if "create" in func_name and isinstance(result, dict) and result.get("success"):
+      if "create" in func_name and isinstance(result, dict)\
+          and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
         record_user_activity(user_id, "chat_create")
 
@@ -476,7 +482,8 @@ def track_chat_operations(func: Callable):
         )
 
       # Handle chat deletion
-      if "delete" in func_name and isinstance(result, dict) and result.get("success"):
+      if "delete" in func_name and isinstance(result, dict)\
+          and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
         record_user_activity(user_id, "chat_delete")
 
@@ -515,7 +522,8 @@ def track_chat_operations(func: Callable):
       func_name = func.__name__
 
       # Handle chat creation
-      if "create" in func_name and isinstance(result, dict) and result.get("success"):
+      if "create" in func_name and isinstance(result, dict)\
+          and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
         record_user_activity(user_id, "chat_create")
 
@@ -527,7 +535,8 @@ def track_chat_operations(func: Callable):
         )
 
       # Handle chat deletion
-      if "delete" in func_name and isinstance(result, dict) and result.get("success"):
+      if "delete" in func_name and isinstance(result, dict)\
+          and result.get("success"):
         ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
         record_user_activity(user_id, "chat_delete")
 
@@ -579,7 +588,8 @@ def track_agent_execution(func: Callable):
       result = await func(*args, **kwargs)
 
       # Record success metrics
-      AGENT_EXECUTION_COUNT.labels(agent_type=agent_type, status="success").inc()
+      AGENT_EXECUTION_COUNT.labels(agent_type=agent_type,\
+                                    status="success").inc()
 
       # Log success
       log_operation_result(
@@ -595,7 +605,8 @@ def track_agent_execution(func: Callable):
       return result
     except Exception as e:
       # Record error metrics
-      AGENT_EXECUTION_COUNT.labels(agent_type=agent_type, status="error").inc()
+      AGENT_EXECUTION_COUNT.labels(agent_type=agent_type,\
+                                    status="error").inc()
 
       # Log error
       log_operation_result(
@@ -612,7 +623,8 @@ def track_agent_execution(func: Callable):
     finally:
       # Record latency
       latency = time.time() - start_time
-      AGENT_EXECUTION_LATENCY.labels(agent_type=agent_type).observe(latency)
+      AGENT_EXECUTION_LATENCY.labels(
+        agent_type=agent_type).observe(latency)
 
       # Log latency
       logger.info(
@@ -657,8 +669,8 @@ def track_vector_db_query(func: Callable):
 
       # Record success metrics
       VECTOR_DB_QUERY_COUNT.labels(
-        db_type=db_type, 
-        engine_name=engine_name, 
+        db_type=db_type,
+        engine_name=engine_name,
         status="success"
       ).inc()
 
@@ -677,8 +689,8 @@ def track_vector_db_query(func: Callable):
     except Exception as e:
       # Record error metrics
       VECTOR_DB_QUERY_COUNT.labels(
-        db_type=db_type, 
-        engine_name=engine_name, 
+        db_type=db_type,
+        engine_name=engine_name,
         status="error"
       ).inc()
 
@@ -698,7 +710,7 @@ def track_vector_db_query(func: Callable):
       # Record latency
       latency = time.time() - start_time
       VECTOR_DB_QUERY_LATENCY.labels(
-        db_type=db_type, 
+        db_type=db_type,
         engine_name=engine_name
       ).observe(latency)
 
@@ -737,8 +749,8 @@ def track_vector_db_build(func: Callable):
 
       # Record success metrics
       VECTOR_DB_BUILD_COUNT.labels(
-        db_type=db_type, 
-        engine_name=engine_name, 
+        db_type=db_type,
+        engine_name=engine_name,
         status="success"
       ).inc()
 
@@ -757,8 +769,8 @@ def track_vector_db_build(func: Callable):
     except Exception as e:
       # Record error metrics
       VECTOR_DB_BUILD_COUNT.labels(
-        db_type=db_type, 
-        engine_name=engine_name, 
+        db_type=db_type,
+        engine_name=engine_name,
         status="error"
       ).inc()
 
@@ -778,7 +790,7 @@ def track_vector_db_build(func: Callable):
       # Record latency
       latency = time.time() - start_time
       VECTOR_DB_BUILD_LATENCY.labels(
-        db_type=db_type, 
+        db_type=db_type,
         engine_name=engine_name
       ).observe(latency)
 

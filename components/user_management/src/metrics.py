@@ -18,8 +18,14 @@ import time
 import asyncio
 from functools import wraps
 from typing import Callable
+from common.models import User
 from common.utils.logging_handler import Logger
-from common.monitoring.metrics import Counter, Histogram, Gauge, log_operation_result
+from common.monitoring.metrics import (
+  Counter,
+  Histogram,
+  Gauge,
+  log_operation_result
+)
 
 # Initialize logger
 logger = Logger.get_logger(__file__)
@@ -182,7 +188,8 @@ def track_user_operation(operation_type: str):
       finally:
         # Record latency
         latency = time.time() - start_time
-        USER_OPERATION_LATENCY.labels(operation=operation_type).observe(latency)
+        USER_OPERATION_LATENCY.labels(
+          operation=operation_type).observe(latency)
 
         # Log latency
         logger.info(
@@ -279,7 +286,8 @@ def track_user_operation(operation_type: str):
       finally:
         # Record latency
         latency = time.time() - start_time
-        USER_OPERATION_LATENCY.labels(operation=operation_type).observe(latency)
+        USER_OPERATION_LATENCY.labels(
+          operation=operation_type).observe(latency)
 
         # Log latency
         logger.info(
@@ -303,39 +311,34 @@ def track_user_operation(operation_type: str):
   return decorator
 
 def track_user_status_update(func: Callable):
-  """Decorator to track user status updates.
-  
-  Args:
-      func: Function to decorate
-      
-  Returns:
-      Decorated function
-  """
   @wraps(func)
   async def async_wrapper(*args, **kwargs):
-
     # Extract status information
     input_status = kwargs.get("input_status", {})
     new_status = getattr(input_status, "status", None)
     old_status = None
 
-    # We need to infer old status from the function args
+    # infer old status from the function args
     user_id = kwargs.get("user_id", None)
     if not user_id and len(args) > 0:
       user_id = args[0]
 
     if user_id:
       try:
-        # This assumes you have a User model with a find_by_uuid method
-        from common.models import User
         user = User.find_by_uuid(user_id)
         old_status = user.status
-      except Exception:
+      except (ValueError, TypeError) as e:
+        logger.debug(f"Invalid user_id format: {e}")
+        old_status = "unknown"
+      except AttributeError as e:
+        logger.debug(f"User has no status attribute: {e}")
+        old_status = "unknown"
+      except KeyError as e:
+        logger.debug(f"User not found: {e}")
         old_status = "unknown"
 
     start_time = time.time()
     try:
-      # Execute function
       result = await func(*args, **kwargs)
 
       # Record metrics
@@ -346,19 +349,35 @@ def track_user_status_update(func: Callable):
       ).inc()
 
       return result
-    except Exception:
-      # Record error metrics
+    except (ValueError, TypeError) as e:
+      logger.warning(f"Validation error in status update: {e}")
       USER_STATUS_UPDATE_COUNT.labels(
         status_from=old_status or "unknown",
         status_to=new_status or "unknown",
         result="error"
       ).inc()
-
+      raise
+    except (KeyError, AttributeError) as e:
+      logger.warning(f"Data error in status update: {e}")
+      USER_STATUS_UPDATE_COUNT.labels(
+        status_from=old_status or "unknown",
+        status_to=new_status or "unknown",
+        result="error"
+      ).inc()
+      raise
+    except Exception as e:
+      logger.error(f"Unexpected error in status update: {e}")
+      USER_STATUS_UPDATE_COUNT.labels(
+        status_from=old_status or "unknown",
+        status_to=new_status or "unknown",
+        result="error"
+      ).inc()
       raise
     finally:
       # Record latency
       latency = time.time() - start_time
-      USER_OPERATION_LATENCY.labels(operation="status_update").observe(latency)
+      USER_OPERATION_LATENCY.labels(
+        operation="status_update").observe(latency)
 
       # Log latency
       logger.info(
@@ -372,38 +391,16 @@ def track_user_status_update(func: Callable):
         }
       )
 
-  @wraps(func)
-  def sync_wrapper(*args, **kwargs):
-    # Implement sync version if needed
-    # Similar to async but without await
-    pass
-
-  # Return appropriate wrapper based on function type
-  if asyncio.iscoroutinefunction(func):
-    return async_wrapper
-  else:
-    return sync_wrapper
-
 def track_user_import(func: Callable):
-  """Decorator to track user import operations.
-  
-  Args:
-      func: Function to decorate
-      
-  Returns:
-      Decorated function
-  """
   @wraps(func)
   async def async_wrapper(*args, **kwargs):
-    # Start timing
+
     start_time = time.time()
 
     try:
-      # Execute function
       result = await func(*args, **kwargs)
 
-      # Extract import information
-      import_method = "json"  # Assuming JSON is the default import method
+      import_method = kwargs.get("import_method", "json")
 
       # Try to get the batch size
       batch_size = 0
@@ -424,18 +421,39 @@ def track_user_import(func: Callable):
       ).inc()
 
       return result
-    except Exception:
-      # Record error metrics
+    except ValueError as e:
+      logger.warning(f"Validation error in user import: {e}")
       USER_IMPORT_COUNT.labels(
-        method="json",
+        method=kwargs.get("import_method", "json"),
         status="error"
       ).inc()
-
+      raise
+    except (KeyError, AttributeError) as e:
+      logger.warning(f"Data structure error in user import: {e}")
+      USER_IMPORT_COUNT.labels(
+        method=kwargs.get("import_method", "json"),
+        status="error"
+      ).inc()
+      raise
+    except IOError as e:
+      logger.warning(f"I/O error in user import: {e}")
+      USER_IMPORT_COUNT.labels(
+        method=kwargs.get("import_method", "json"),
+        status="error"
+      ).inc()
+      raise
+    except Exception as e:
+      logger.error(f"Unexpected error in user import: {e}", exc_info=True)
+      USER_IMPORT_COUNT.labels(
+        method=kwargs.get("import_method", "json"),
+        status="error"
+      ).inc()
       raise
     finally:
       # Record latency
       latency = time.time() - start_time
-      USER_OPERATION_LATENCY.labels(operation="import_users").observe(latency)
+      USER_OPERATION_LATENCY.labels(
+        operation="import_users").observe(latency)
 
       # Log latency
       logger.info(
@@ -449,8 +467,11 @@ def track_user_import(func: Callable):
 
   @wraps(func)
   def sync_wrapper(*args, **kwargs):
-    # Implement sync version if needed
-    pass
+    # synchronous operations not currently supported
+    # Placeholder for API compatibility
+    raise NotImplementedError(
+    f"Synchronous version of {func.__name__} is not implemented"
+  )
 
   # Return appropriate wrapper based on function type
   if asyncio.iscoroutinefunction(func):
