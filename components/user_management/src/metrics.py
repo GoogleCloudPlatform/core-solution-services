@@ -311,6 +311,14 @@ def track_user_operation(operation_type: str):
   return decorator
 
 def track_user_status_update(func: Callable):
+  """Track user status update operations.
+  
+  Args:
+      func: The function to track
+      
+  Returns:
+      Wrapped function with tracking instrumentation
+  """
   @wraps(func)
   async def async_wrapper(*args, **kwargs):
     # Extract status information
@@ -391,10 +399,103 @@ def track_user_status_update(func: Callable):
         }
       )
 
+  @wraps(func)
+  def sync_wrapper(*args, **kwargs):
+    # Extract status information
+    input_status = kwargs.get("input_status", {})
+    new_status = getattr(input_status, "status", None)
+    old_status = None
+
+    # infer old status from the function args
+    user_id = kwargs.get("user_id", None)
+    if not user_id and len(args) > 0:
+      user_id = args[0]
+
+    if user_id:
+      try:
+        user = User.find_by_uuid(user_id)
+        old_status = user.status
+      except (ValueError, TypeError) as e:
+        logger.debug(f"Invalid user_id format: {e}")
+        old_status = "unknown"
+      except AttributeError as e:
+        logger.debug(f"User has no status attribute: {e}")
+        old_status = "unknown"
+      except KeyError as e:
+        logger.debug(f"User not found: {e}")
+        old_status = "unknown"
+
+    start_time = time.time()
+    try:
+      result = func(*args, **kwargs)
+
+      # Record metrics
+      USER_STATUS_UPDATE_COUNT.labels(
+        status_from=old_status or "unknown",
+        status_to=new_status or "unknown",
+        result="success"
+      ).inc()
+
+      return result
+    except (ValueError, TypeError) as e:
+      logger.warning(f"Validation error in status update: {e}")
+      USER_STATUS_UPDATE_COUNT.labels(
+        status_from=old_status or "unknown",
+        status_to=new_status or "unknown",
+        result="error"
+      ).inc()
+      raise
+    except (KeyError, AttributeError) as e:
+      logger.warning(f"Data error in status update: {e}")
+      USER_STATUS_UPDATE_COUNT.labels(
+        status_from=old_status or "unknown",
+        status_to=new_status or "unknown",
+        result="error"
+      ).inc()
+      raise
+    except Exception as e:
+      logger.error(f"Unexpected error in status update: {e}")
+      USER_STATUS_UPDATE_COUNT.labels(
+        status_from=old_status or "unknown",
+        status_to=new_status or "unknown",
+        result="error"
+      ).inc()
+      raise
+    finally:
+      # Record latency
+      latency = time.time() - start_time
+      USER_OPERATION_LATENCY.labels(
+        operation="status_update").observe(latency)
+
+      # Log latency
+      logger.info(
+        "User status update operation latency",
+        extra={
+          "metric_type": "user_operation_latency",
+          "operation": "status_update",
+          "duration_ms": round(latency * 1000, 2),
+          "status_from": old_status,
+          "status_to": new_status
+        }
+      )
+
+  # Return appropriate wrapper based on function type
+  if asyncio.iscoroutinefunction(func):
+    return async_wrapper
+  else:
+    return sync_wrapper
+
 def track_user_import(func: Callable):
+  """Track user import operations.
+  
+  Args:
+      func: The function to track
+      
+  Returns:
+      Wrapped function with tracking instrumentation
+  """
   @wraps(func)
   async def async_wrapper(*args, **kwargs):
-
     start_time = time.time()
 
     try:
@@ -467,11 +568,137 @@ def track_user_import(func: Callable):
 
   @wraps(func)
   def sync_wrapper(*args, **kwargs):
-    # synchronous operations not currently supported
-    # Placeholder for API compatibility
-    raise NotImplementedError(
-    f"Synchronous version of {func.__name__} is not implemented"
-  )
+    start_time = time.time()
+
+    try:
+      result = func(*args, **kwargs)
+
+      import_method = kwargs.get("import_method", "json")
+
+      # Try to get the batch size
+      batch_size = 0
+      if isinstance(result, dict) and "data" in result:
+        data = result["data"]
+        if "created" in data and isinstance(data["created"], list):
+          batch_size = len(data["created"])
+        elif "users" in data and isinstance(data["users"], list):
+          batch_size = len(data["users"])
+        elif isinstance(data, list):
+          batch_size = len(data)
+
+      # Record metrics
+      if batch_size > 0:
+        USER_IMPORT_BATCH_SIZE.observe(batch_size)
+
+      USER_IMPORT_COUNT.labels(
+        method=import_method,
+        status="success"
+      ).inc()
+
+      # Log success with additional context
+      logger.info(
+        f"Successfully imported {batch_size} users via {import_method}",
+        extra={
+          "metric_type": "user_import_success",
+          "import_method": import_method,
+          "batch_size": batch_size
+        }
+      )
+
+      return result
+    except ValueError as e:
+      # Validation errors (data doesn't match schema)
+      logger.warning(
+        f"Validation error in user import: {e}",
+        extra={
+          "metric_type": "user_import_error",
+          "error_type": "validation_error",
+          "error_message": str(e)
+        }
+      )
+      USER_IMPORT_COUNT.labels(
+        method=kwargs.get("import_method", "json"),
+        status="error"
+      ).inc()
+      raise
+    except (KeyError, AttributeError) as e:
+      # Data structure errors (missing keys, wrong types)
+      logger.warning(
+        f"Data structure error in user import: {e}",
+        extra={
+          "metric_type": "user_import_error",
+          "error_type": "data_structure_error",
+          "error_message": str(e)
+        }
+      )
+      USER_IMPORT_COUNT.labels(
+        method=kwargs.get("import_method", "json"),
+        status="error"
+      ).inc()
+      raise
+    except IOError as e:
+      # File handling errors
+      logger.warning(
+        f"I/O error in user import: {e}",
+        extra={
+          "metric_type": "user_import_error",
+          "error_type": "io_error",
+          "error_message": str(e)
+        }
+      )
+      USER_IMPORT_COUNT.labels(
+        method=kwargs.get("import_method", "json"),
+        status="error"
+      ).inc()
+      raise
+    except TypeError as e:
+      # Type errors (wrong parameter types)
+      logger.warning(
+        f"Type error in user import: {e}",
+        extra={
+          "metric_type": "user_import_error",
+          "error_type": "type_error",
+          "error_message": str(e)
+        }
+      )
+      USER_IMPORT_COUNT.labels(
+        method=kwargs.get("import_method", "json"),
+        status="error"
+      ).inc()
+      raise
+    except Exception as e:
+      # All other unexpected errors
+      logger.error(
+        f"Unexpected error in user import: {type(e).__name__}: {e}",
+        extra={
+          "metric_type": "user_import_error",
+          "error_type": "unexpected_error",
+          "error_class": type(e).__name__,
+          "error_message": str(e)
+        },
+        exc_info=True
+      )
+      USER_IMPORT_COUNT.labels(
+        method=kwargs.get("import_method", "json"),
+        status="error"
+      ).inc()
+      raise
+    finally:
+      # Record latency
+      latency = time.time() - start_time
+      USER_OPERATION_LATENCY.labels(
+        operation="import_users").observe(latency)
+
+      # Log latency
+      logger.info(
+        "User import operation latency",
+        extra={
+          "metric_type": "user_operation_latency",
+          "operation": "import_users",
+          "duration_ms": round(latency * 1000, 2),
+          "import_method": kwargs.get("import_method", "json")
+        }
+      )
 
   # Return appropriate wrapper based on function type
   if asyncio.iscoroutinefunction(func):
