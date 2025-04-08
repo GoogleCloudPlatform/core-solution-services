@@ -144,7 +144,7 @@ async def test_create_chat(create_user, client_with_emulator):
   assert resp.status_code == 200, "Failed to create empty chat"
   json_response = resp.json()
   chat_data = json_response["data"]
-  chat_id = chat_data[id]
+  chat_id = chat_data["id"]
 
   url = f"{api_url}/{chat_id}/generate"
 
