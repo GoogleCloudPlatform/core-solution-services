@@ -33,6 +33,7 @@ from schemas.sign_in_schema import (SignInWithCredentialsModel,
                                     SignInWithCredentialsResponseModel,
                                     SignInWithTokenResponseModel)
 from services.validation_service import validate_google_oauth_token
+from services.sanitization_service import sanitize_token_data
 from config import (AUTH_REQUIRE_FIRESTORE_USER,
                     AUTH_RBAC_DEFAULT_ROLE_SET,
                     FIREBASE_API_KEY,
@@ -118,7 +119,7 @@ def sign_in_with_token(token: auth_scheme = Depends()):
     email = decoded_token.get("email")
 
     Logger.info(f"request for sign-in: {email}")
-    Logger.info(f"decoded_token: {decoded_token}")
+    Logger.info(f"decoded_token: {sanitize_token_data(decoded_token)}")
 
     user = get_user_by_email(
         email, check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER)

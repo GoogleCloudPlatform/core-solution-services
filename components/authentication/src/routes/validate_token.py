@@ -24,6 +24,7 @@ from common.utils.http_exceptions import (BadRequest, InvalidToken,
 from common.utils.logging_handler import Logger
 from common.utils.user_handler import get_user_by_email
 from services.validation_service import validate_token
+from services.sanitization_service import sanitize_user_data
 from schemas.validate_token_schema import ValidateTokenResponseModel
 from config import (ERROR_RESPONSES,
                     AUTH_REQUIRE_FIRESTORE_USER,
@@ -78,7 +79,7 @@ def validate_id_token(token: auth_scheme = Depends()):
       raise UnauthorizedUserError(
           f"Unauthorized: User {user_email} not found.")
 
-    Logger.info(f"user: {user.get_fields(reformat_datetime=True)}")
+    Logger.info(f"user: {sanitize_user_data(user.get_fields(reformat_datetime=True))}")
     user_fields = user.get_fields(reformat_datetime=True)
     if user_fields.get("status") == "inactive":
       raise UnauthorizedUserError("Unauthorized: User status is inactive.")

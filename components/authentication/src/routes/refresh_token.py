@@ -16,6 +16,7 @@
 
 from services.refresh_token_service import generate_token
 from services.validation_service import validate_token
+from services.sanitization_service import sanitize_token_data
 from utils.exception_handler import InvalidRefreshTokenError
 from fastapi import APIRouter
 from schemas.generate_token_schema import (GenerateTokenResponseModel,
@@ -54,7 +55,7 @@ def generate_id_token(input_params: GenerateTokenRequestModel):
     token_resp = generate_token(input_dict)
 
     decoded_token = validate_token(token_resp["id_token"])
-    Logger.info(f"decoded_token: {decoded_token}")
+    Logger.info(f"decoded_token: {sanitize_token_data(decoded_token)}")
     user = User.find_by_email(decoded_token["email"])
     token_resp["user_id"] = user.user_id
     return {
