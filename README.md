@@ -19,8 +19,6 @@ Highlighted features:
 - Easy plug in and use of LLM models available in the market, leveraging [Langchain](https://www.langchain.com/) as a model interface layer.
 - Configurable agents based on Langchain.
 - A frontend app using React that supports chat and RAG, using Vertex Search or the GENIE native RAG pipeline.
-- A frontend app using [Streamlit](https://streamlit.io/) for developer prototyping.
-- Cross-platform frontend application powered by [FlutterFlow](https://flutterflow.io/) that delivers end-to-end user flows on Android, iOS, web, and desktop platforms.
 
 ## Releases
 

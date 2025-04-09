@@ -31,10 +31,11 @@ os.environ["VLLM_GEMMA_ENDPOINT"] = "fake-endpoint"
 from services.llm_generate import (llm_generate, llm_chat,
                                  llm_generate_multimodal,
                                  llm_vllm_service_predict,
+                                 convert_history_to_gemini_prompt,
                                  generate_chat_summary)
 from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
-from vertexai.preview.language_models import TextGenerationResponse
+from vertexai.language_models import TextGenerationResponse
 from common.models import User, UserChat
 from common.testing.firestore_emulator import (firestore_emulator,
                                                clean_firestore)
@@ -59,7 +60,7 @@ with (mock.patch("common.utils.secrets.get_secret", new=mock.AsyncMock())):
                           COHERE_LLM_TYPE,
                           OPENAI_LLM_TYPE_GPT3_5,
                           VERTEX_LLM_TYPE_BISON_TEXT,
-                          VERTEX_LLM_TYPE_BISON_CHAT,
+                          VERTEX_LLM_TYPE_CHAT,
                           VERTEX_LLM_TYPE_GEMINI_PRO,
                           VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                           VERTEX_LLM_TYPE_GEMINI_FLASH,
@@ -141,7 +142,7 @@ async def test_llm_generate_google(clean_firestore):
   }
   get_model_config().llm_models = TEST_VERTEX_CONFIG
   with mock.patch(
-      "vertexai.preview.language_models.TextGenerationModel.predict_async",
+      "vertexai.language_models.TextGenerationModel.predict_async",
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate(
       FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_TEXT)
@@ -158,20 +159,19 @@ async def test_llm_generate_multi_file(clean_firestore):
 
   with open(FAKE_FILE_NAME, "ab") as f:
     pass
-  fake_file=open(FAKE_FILE_NAME, "rb")
-  os.remove(FAKE_FILE_NAME)
-  fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
-  fake_file_bytes = await fake_upload_file.read()
-  fake_file_data = [DataSourceFile(mime_type="image/png")]
-  with mock.patch(
-  "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
-  return_value=FAKE_GOOGLE_RESPONSE):
-    response = await llm_generate_multimodal(FAKE_PROMPT,
-                                        VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
-                                        fake_file_bytes,
-                                        fake_file_data)
-  fake_file.close()
-  assert response == FAKE_GENERATE_RESPONSE
+  with open(FAKE_FILE_NAME, "rb") as fake_file:
+    os.remove(FAKE_FILE_NAME)
+    fake_upload_file = UploadFile(file=fake_file, filename=FAKE_FILE_NAME)
+    fake_file_bytes = await fake_upload_file.read()
+    fake_file_data = [DataSourceFile(mime_type="image/png")]
+    with mock.patch(
+    "vertexai.generative_models.GenerativeModel.generate_content_async",
+    return_value=FAKE_GOOGLE_RESPONSE):
+      response = await llm_generate_multimodal(FAKE_PROMPT,
+                                          VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
+                                          fake_file_bytes,
+                                          fake_file_data)
+    assert response == FAKE_GENERATE_RESPONSE
 
 
 @pytest.mark.asyncio
@@ -185,7 +185,7 @@ async def test_llm_generate_multi_url(clean_firestore):
                                    gcs_path="gs://fake_bucket/file.png")]
   fake_file_bytes = None
   with mock.patch(
-  "vertexai.preview.generative_models.GenerativeModel.generate_content_async",
+  "vertexai.generative_models.GenerativeModel.generate_content_async",
   return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_generate_multimodal(FAKE_PROMPT,
                                         VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
@@ -201,10 +201,10 @@ async def test_llm_chat_google(clean_firestore, test_chat):
   }
   get_model_config().llm_models = TEST_VERTEX_CONFIG
   with mock.patch(
-          "vertexai.preview.language_models.ChatSession.send_message_async",
+          "vertexai.generative_models.GenerativeModel.generate_content_async",
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_chat(
-      FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT)
+      FAKE_PROMPT, VERTEX_LLM_TYPE_CHAT)
 
   assert response == FAKE_GENERATE_RESPONSE
 
@@ -216,10 +216,10 @@ async def test_llm_chat_google_resume(clean_firestore, test_chat):
   }
   get_model_config().llm_models = TEST_VERTEX_CONFIG
   with mock.patch(
-          "vertexai.preview.language_models.ChatSession.send_message_async",
+          "vertexai.generative_models.GenerativeModel.generate_content_async",
           return_value=FAKE_GOOGLE_RESPONSE):
     response = await llm_chat(
-      FAKE_PROMPT, VERTEX_LLM_TYPE_BISON_CHAT, test_chat)
+      FAKE_PROMPT, VERTEX_LLM_TYPE_CHAT, test_chat)
 
   assert response == FAKE_GENERATE_RESPONSE
 
@@ -354,3 +354,11 @@ async def test_generate_chat_summary_strips_quotes(clean_firestore, test_chat):
 
     # Verify quotes are stripped
     assert summary == "Machine Learning Discussion"
+def test_convert_history_to_gemini_prompt():
+  test_history = [{"HumanInput": "good morning"},
+                  {"AIOutput": "good morning to you too! How can I help you?"},
+                  {"HumanInput": "What are good vacation spots?"}]
+  prompt = convert_history_to_gemini_prompt(test_history)
+  assert len(prompt) == 3
+  assert prompt[0].role == "user"
+  assert prompt[1].role == "model"

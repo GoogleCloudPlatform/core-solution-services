@@ -19,7 +19,7 @@ import json
 from typing import List, Optional, Generator, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
-from vertexai.preview.language_models import TextEmbeddingModel
+from vertexai.language_models import TextEmbeddingModel
 from vertexai.vision_models import (Image, MultiModalEmbeddingModel)
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
@@ -302,7 +302,7 @@ def get_llm_service_embeddings(embedding_type: str,
     list of embedding vectors (each vector is a list of floats)
   """
   llm_service_config = get_model_config().get_provider_config(
-      PROVIDER_LLM_SERVICE, embedding_type)
+      PROVIDER_LLM_SERVICE)
   auth_client = UserCredentials(llm_service_config.get("user"),
                                 llm_service_config.get("password"))
   auth_token = auth_client.get_id_token()

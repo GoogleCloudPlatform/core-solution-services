@@ -26,10 +26,10 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Callable, Tuple, List
 from common.utils.config import get_environ_flag
-from common.utils.gcs_adapter import download_file_from_gcs
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from common.utils.auth_service import get_roles_from_custom_claims
+from utils.gcs_helper import download_file_from_gcs
 import langchain_community.chat_models as langchain_chat
 import langchain_community.llms as langchain_llm
 import langchain_community.embeddings as langchain_embedding
@@ -65,6 +65,7 @@ KEY_DESCRIPTION = "description"
 KEY_CAPABILITIES = "capabilities"
 KEY_DATE_ADDED = "date_added"
 KEY_NAME = "name"
+KEY_DEFAULT_SYSTEM_PROMPT = "default_system_prompt"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -91,7 +92,8 @@ MODEL_CONFIG_KEYS = [
   KEY_DESCRIPTION,
   KEY_CAPABILITIES,
   KEY_DATE_ADDED,
-  KEY_NAME
+  KEY_NAME,
+  KEY_DEFAULT_SYSTEM_PROMPT
 ]
 
 # model providers
@@ -119,17 +121,11 @@ LLAMA2CPP_LLM_TYPE = "Llama2cpp"
 LLAMA2CPP_LLM_TYPE_EMBEDDING = "Llama2cpp-Embedding"
 VERTEX_LLM_TYPE_CHAT = "VertexAI-Chat"
 VERTEX_LLM_TYPE_BISON_TEXT = "VertexAI-Text"
-VERTEX_LLM_TYPE_BISON_CHAT = "VertexAI-Chat-Palm2"
-VERTEX_LLM_TYPE_BISON_V1_CHAT = "VertexAI-Chat-V1"
-VERTEX_LLM_TYPE_BISON_V2_CHAT = "VertexAI-Chat-Palm2-V2"
-VERTEX_LLM_TYPE_BISON_CHAT_32K = "VertexAI-Chat-Palm2-32k"
 VERTEX_LLM_TYPE_GECKO_EMBEDDING = "VertexAI-Embedding"
 VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION = "VertexAI-Embedding-Vision"
 VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT = "VertexAI-ModelGarden-LLAMA2-Chat"
 TRUSS_LLM_LLAMA2_CHAT = "Truss-Llama2-Chat"
 VLLM_LLM_GEMMA_CHAT = "vLLM-Gemma-Chat"
-VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN = "VertexAI-Chat-Palm2V2-Langchain"
-VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN = "VertexAI-Chat-Palm2-32k-Langchain"
 VERTEX_LLM_TYPE_GEMINI_PRO = "VertexAI-Gemini-Pro"
 VERTEX_LLM_TYPE_GEMINI_PRO_VISION = "VertexAI-Gemini-Pro-Vision"
 VERTEX_LLM_TYPE_GEMINI_1_5_PRO = "VertexAI-Gemini-1.5-Pro"
@@ -147,9 +143,6 @@ MODEL_TYPES = [
   LLAMA2CPP_LLM_TYPE,
   LLAMA2CPP_LLM_TYPE_EMBEDDING,
   VERTEX_LLM_TYPE_BISON_TEXT,
-  VERTEX_LLM_TYPE_BISON_CHAT,
-  VERTEX_LLM_TYPE_BISON_V2_CHAT,
-  VERTEX_LLM_TYPE_BISON_V1_CHAT,
   VERTEX_LLM_TYPE_GEMINI_PRO,
   VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
   VERTEX_LLM_TYPE_GEMINI_1_5_PRO,
@@ -159,9 +152,6 @@ MODEL_TYPES = [
   VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
   TRUSS_LLM_LLAMA2_CHAT,
   VLLM_LLM_GEMMA_CHAT,
-  VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
-  VERTEX_LLM_TYPE_BISON_CHAT_32K,
-  VERTEX_LLM_TYPE_BISON_CHAT_32K_LANGCHAIN,
   VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN,
   HUGGINGFACE_EMBEDDING
 ]
@@ -283,6 +273,7 @@ class ModelConfig():
     self.llm_model_vendors: Dict[str, Dict[str, Any]] = {}
     self.llm_models: Dict[str, Dict[str, Any]] = {}
     self.llm_embedding_models: Dict[str, Dict[str, Any]] = {}
+    self.default_system_prompt: str = ""
 
   def read_model_config(self):
     """ read model config from json config file """
@@ -293,6 +284,7 @@ class ModelConfig():
         self.llm_model_vendors = model_config.get(KEY_VENDORS, {})
         self.llm_models = model_config.get(KEY_MODELS, {})
         self.llm_embedding_models = model_config.get(KEY_EMBEDDINGS, {})
+        self.default_system_prompt = model_config.get(KEY_DEFAULT_SYSTEM_PROMPT, "")
     except Exception as e:
       Logger.error(
           "Can't load models config json at"
@@ -306,6 +298,7 @@ class ModelConfig():
     self.llm_model_vendors = mc.llm_model_vendors
     self.llm_models = mc.llm_models
     self.llm_embedding_models = mc.llm_embedding_models
+    self.default_system_prompt = mc.default_system_prompt
 
   def set_model_config(self):
     """
@@ -700,7 +693,16 @@ class ModelConfig():
     self.read_model_config()
     self.set_model_config()
 
-  def get_llm_types(self) -> dict:
+  def get_default_system_prompt(self, model_id: str = None) -> str:
+    """Get default prompt for the given model.
+    """
+    if model_id:
+      model_config = self.get_model_config(model_id)
+      return model_config.get(KEY_DEFAULT_SYSTEM_PROMPT,
+                              self.default_system_prompt)
+    return self.default_system_prompt
+
+  def get_llm_types(self) -> list[str]:
     """ Get all supported and enabled LLM types, as a list of model
         identifiers.
     """
@@ -710,7 +712,7 @@ class ModelConfig():
     ]
     return llm_types
 
-  def get_text_llm_types(self) -> dict:
+  def get_text_llm_types(self) -> list[str]:
     """ Get all supported and enabled text-only LLM types, as a list of model
         identifiers.
     """
@@ -720,7 +722,7 @@ class ModelConfig():
     ]
     return text_llm_types
 
-  def get_multimodal_llm_types(self) -> dict:
+  def get_multimodal_llm_types(self) -> list[str]:
     """ Get all supported and enabled multimodal LLM types, as a list of model
         identifiers.
     """
@@ -730,7 +732,7 @@ class ModelConfig():
     ]
     return multimodal_llm_types
 
-  def get_chat_llm_types(self) -> dict:
+  def get_chat_llm_types(self) -> list[str]:
     """ Get all supported and enabled chat LLM types, as a list of model
         identifiers.
     """
@@ -740,7 +742,7 @@ class ModelConfig():
     ]
     return chat_llm_types
 
-  def get_text_chat_llm_types(self) -> dict:
+  def get_text_chat_llm_types(self) -> list[str]:
     """ Get all supported and enabled text-only chat LLM types, as a list of model
         identifiers.
     """
@@ -752,7 +754,7 @@ class ModelConfig():
     ]
     return text_chat_llm_types
 
-  def get_multimodal_chat_llm_types(self) -> dict:
+  def get_multimodal_chat_llm_types(self) -> list[str]:
     """ Get all supported and enabled multimodal chat LLM types, as a list of model
         identifiers.
     """
@@ -764,7 +766,7 @@ class ModelConfig():
     ]
     return multimodal_chat_llm_types
 
-  def get_embedding_types(self) -> dict:
+  def get_embedding_types(self) -> list[str]:
     """ Get all supported and enabled embedding types, as a list of model
         identifiers.
     """
@@ -774,7 +776,7 @@ class ModelConfig():
     ]
     return embedding_types
 
-  def get_text_embedding_types(self) -> dict:
+  def get_text_embedding_types(self) -> list[str]:
     """ Get all supported and enabled text-only embedding types, as a list of model
         identifiers.
     """
@@ -784,7 +786,7 @@ class ModelConfig():
     ]
     return text_embedding_types
 
-  def get_multimodal_embedding_types(self) -> dict:
+  def get_multimodal_embedding_types(self) -> list[str]:
     """ Get all supported and enabled multimodal embedding types, as a list of model
         identifiers.
     """
@@ -805,7 +807,7 @@ class ModelConfig():
       RuntimeError if model download fails
       InvalidModelConfigException if config is invalid/missing
     """
-    model_file_url = model_config.get(KEY_MODEL_FILE_URL, None)
+    model_file_url = model_config.get(KEY_MODEL_FILE_URL, "")
     Logger.info(f"{model_id} model file url = {model_file_url}")
     model_file = Path(model_file_url).name
     models_dir = os.path.join(os.path.dirname(__file__), "models/")

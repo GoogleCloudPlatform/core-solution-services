@@ -241,7 +241,6 @@ export NAMESPACE=default
 export PG_HOST=<the IP of your deployed Alloydb instance>
 export DOMAIN_NAME=<your domain>
 export API_BASE_URL=https://${DOMAIN_NAME}
-export APP_BASE_PATH="/streamlit"
 export SKAFFOLD_DEFAULT_REPO=us-docker.pkg.dev/${PROJECT_ID}/default
 ```
 
@@ -251,7 +250,7 @@ If you are installing GENIE you can deploy a subset of the microservices used by
 
 ```
 skaffold config set default-repo "${SKAFFOLD_DEFAULT_REPO}"
-skaffold run -p default-deploy -m authentication,redis,llm_service,jobs_service,frontend_streamlit -n $NAMESPACE
+skaffold run -p default-deploy -m authentication,redis,llm_service,jobs_service -n $NAMESPACE
 ```
 - This will run `skaffold` commands to deploy those microservices to the GKE cluster.
 
@@ -301,6 +300,18 @@ skaffold run -p default-deploy -n $NAMESPACE --default-repo="${SKAFFOLD_DEFAULT_
 
 ### Verify deployment
 
+#### Validating the Redis deployment
+
+Redis is an optional component which is used for caching authentication tokens. It
+enhances Genie performance in multi user and concurrent user environments. If this is a 
+single user or development installation, redis installation is not required and this step
+can be safely ignored.
+ 
+If redis pods are not running and an error similar to `Error: uninstall: Release not loaded: redis: release: not found`
+and Redis is required, please reference the [redis troubleshooting section](#redis-installation-workaround) for a redis installation workaround.
+
+#### Validating API Endpoints
+
 Once deployed, check out the API docs with the following links:
 
 - Backend API documentations:
@@ -321,28 +332,7 @@ BASE_IP_ADDRESS=$(gcloud compute addresses list --global --format="value(address
 ### React app
 > [React](https://react.dev/) is a popular frontend development framework.
 
-The codebase includes a React app that supports Chat and Query (RAG) for end users, along with Google Identity login.  See the [components/frontend_react/README.md](components/frontend_react/README.md) for instructions on bnuilding and deploying the React app.
-
-### Streamlit and Flutterflow UX
-
-> [FlutterFlow](https://flutterflow.io/enterprise) is a low-code development platform that enables you to build native mobile and web applications without writing code.
-
-> [Streamlit](https://streamlit.io) is an open-source Python library that makes it easy to create custom web apps. It's a popular choice for data scientists and machine learning engineers who want to quickly create interactive dashboards and visualizations
-
-As of the 0.3.0 release the React app is the preferred UX for GENIE and we recommend you deploy and use that app.
-
-The Flutterflow app is not currently maintained but may be useful for those that have existing apps using Flutterflow.
-
-When running `skaffold run` like above, it automatically deploys the Streamlit-based frontend app altogether with all services deployment.  The streamlit UX is for development purposes only.  
-
-- Once deployed, you can verify the FlutterFlow frontend app at `https://$YOUR_DNS_DOMAIN` in a web browser.
-- Once deployed, you can verify the Streamlit frontend app at `https://$YOUR_DNS_DOMAIN/streamlit` in a web browser.
-
-### (Optional) Deploy or run frontend apps manually
-
-See [docs/flutterflow_app.md](docs/flutterflow_app.md) to clone and deploy a FlutterFlow app.
-
-See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the Streamlit app.
+The codebase includes a React app that supports Chat and Query (RAG) for end users, along with Google Identity login.  See the [components/frontend_react/README.md](components/frontend_react/README.md) for instructions on building and deploying the React app.
 
 ## Node-pool configuration (Optional)
 
@@ -415,6 +405,35 @@ terraform import google_firestore_database.database "(default)"
 cd -
 ```
 
+### Redis Installation Workaround
+
+In certain OS and Skaffold version combinations there is a known issue which prevents Skaffold from fetching the redis helm
+chart from the newer OCI endpoints. The workaround is to download the redis binary directly and point helm to the local chart
+by modifying the relevant skaffold reference.
+
+```bash
+cd components/redis
+helm pull oci://registry-1.docker.io/bitnamicharts/redis
+tar -xzvf redis-20.5.0.tgz (or your related version)
+vi skaffold.yaml
+```
+Update skaffold.yaml so it points to the local redis path:
+```
+      releases:
+      - name: redis
+        chartPath: redis
+```
+Cd back to the core-solution-services directory and deploy the redis microservice: 
+```bash
+cd ../..
+skaffold run -p default-deploy -m redis -n $NAMESPACE
+```
+Validate your redis deployment
+```bash
+kubectl get pods
+```
+You should see a redis-master-0 and replica pods running.
+
 ### Apple M1 laptop related errors
 - I use an Apple M1 Mac and got errors like below when I ran `terraform init`:
   ```
@@ -461,7 +480,7 @@ Log out and log back in again to re-evaluate group memberships
 ### sb deploy --dev fails for Mac OS
 ```shell
 sh: envsubst: command not found
-build [frontend-flutterflow] failed: exit status 127
+build [llm-service] failed: exit status 127
 ```
 Fix
 ```shell

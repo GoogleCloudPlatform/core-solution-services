@@ -57,6 +57,7 @@
       "description": "Provides access to Cohere's large language models."
     }
   },
+  "default_system_prompt": "You are a helpful AI assistant.",
   "models": {
     "VertexAI-Text": {
       "name": "Vertex AI Text",
@@ -129,37 +130,8 @@
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
-      "model_name": "gemini-1.5-pro-001",
-      "description": "A powerful and versatile Gemini 1.5 Pro model from Vertex AI."
-    },
-    "VertexAI-Chat-Palm2V2-Langchain": {
-      "name": "PaLM 2 Chat V2 (Langchain)",
-      "is_chat": true,
-      "provider": "Langchain",
-      "model_name": "chat-bison@002",
-      "model_class": "ChatVertexAI",
-      "context_length": 2048,
-      "description": "Vertex AI's PaLM 2 chat model accessed via Langchain.",
-      "enabled": false
-    },
-    "VertexAI-Chat-Palm2-32k": {
-      "name": "PaLM 2 Chat 32K",
-      "is_chat": true,
-      "provider": "Vertex",
-      "model_name": "chat-bison-32k",
-      "context_length": 32000,
-      "description": "Vertex AI's PaLM 2 chat model with a 32k context window.",
-      "enabled": false
-    },
-    "VertexAI-Chat-Palm2-32k-Langchain": {
-      "name": "PaLM 2 Chat 32K (Langchain)",
-      "is_chat": true,
-      "provider": "Langchain",
-      "model_name": "chat-bison-32k",
-      "model_class": "ChatVertexAI",
-      "context_length": 32000,
-      "description": "Vertex AI's PaLM 2 chat model with a 32k context window, accessed via Langchain.",
-      "enabled": false
+      "model_name": "gemini-1.5-pro-002",
+      "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone."
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {
       "name": "Gemini Pro (Langchain)",

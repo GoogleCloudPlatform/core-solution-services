@@ -220,7 +220,7 @@ PYTHONPATH=components/common/src/ python components/authentication/scripts/user_
 ```
 
 ### Create a Query Engine
-You can use the method below to create a query engine from the command line, to test your installation, or to ensure that at least one query engine is present.  Query Engines can also be created using the "Query Engines" page in streamlit.
+You can use the method below to create a query engine from the command line, to test your installation, or to ensure that at least one query engine is present.
 
 Get the access token for a particular user:
 ```

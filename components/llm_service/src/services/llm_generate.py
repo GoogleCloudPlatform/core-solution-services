@@ -23,9 +23,9 @@ import google.auth
 import google.auth.transport.requests
 import google.cloud.aiplatform
 from openai import OpenAI, OpenAIError
-from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-from vertexai.preview.generative_models import (
-    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold)
+from vertexai.language_models import (ChatModel, TextGenerationModel)
+from vertexai.generative_models import (
+    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold, Content)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
 from common.utils.errors import ResourceNotFoundException
@@ -36,7 +36,7 @@ from common.utils.request_handler import (post_method,
 from common.utils.token_handler import UserCredentials
 from config import (get_model_config, get_provider_models,
                     get_provider_value, get_provider_model_config,
-                    get_model_config_value,
+                    get_model_config_value, get_model_system_prompt,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN, PROVIDER_VLLM,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
@@ -54,6 +54,13 @@ Logger = Logger.get_logger(__file__)
 # A conservative characters-per-token constant, used to check
 # whether prompt length exceeds context window size
 CHARS_PER_TOKEN = 3
+SAFETY_SETTINGS = {
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+}
+
 
 async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
     Union[str, AsyncGenerator[str, None]]:
@@ -155,7 +162,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model {llm_type} needs to be multimodal")
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
-                            google_llm, None, user_file_bytes,
+                            google_llm, None, None, user_file_bytes,
                             user_files)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
@@ -215,7 +222,9 @@ async def llm_chat(prompt: str, llm_type: str,
     response = None
 
     # add chat history to prompt if necessary
-    if user_chat is not None or user_query is not None:
+    # Prompt history for gemini models is added using the native vertex API
+    if ((user_chat is not None or user_query is not None)
+         and "gemini" not in llm_type):
       context_prompt = get_context_prompt(
           user_chat=user_chat, user_query=user_query)
       # context_prompt includes only text (no images/video) from
@@ -249,8 +258,9 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
+      system_prompt = get_model_system_prompt(llm_type)
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
-                                          google_llm, user_chat,
+                                          google_llm, system_prompt, user_chat,
                                           chat_file_bytes, chat_files,
                                           stream=stream)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
@@ -422,11 +432,9 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
 
   return output
 
-
 async def llm_service_predict(prompt: str, is_chat: bool,
                               llm_type: str, user_chat=None,
                               auth_token: str = None) -> str:
-
   """
   Send a prompt to an instance of the LLM service and return response.
 
@@ -441,7 +449,7 @@ async def llm_service_predict(prompt: str, is_chat: bool,
     the text response: str
   """
   llm_service_config = get_model_config().get_provider_config(
-      PROVIDER_LLM_SERVICE, llm_type)
+      PROVIDER_LLM_SERVICE)
   if not auth_token:
     auth_client = UserCredentials(llm_service_config.get("user"),
                                   llm_service_config.get("password"))
@@ -554,8 +562,40 @@ async def model_garden_predict(prompt: str,
 
   return predictions_text
 
+def convert_history_to_gemini_prompt(history: list, is_multimodal:bool=False
+                                     ) -> list[Content]:
+  """converts a user chat history inot a properly formatted gemini prompt
+  history: A history entry from a UserChat object
+  is_multimodal: If the model is multimodal
+  Returns a properly formatted gemini prompt to be used for generating a 
+  response"""
+  conversation: list[Content] = []
+  for entry in history:
+    content = UserChat.entry_content(entry)
+    if UserChat.is_human(entry):
+      conversation.append(Content(role="user", parts=[Part.from_text(content)]))
+    elif UserChat.is_ai(entry):
+      conversation.append(Content(role="model", parts=[Part.from_text(content)]))
+    elif is_multimodal and conversation:
+      # TODO: Currently Genie doesn't track if the user or model added a file,
+      # it's assumed that the role is the same as for the previous entry
+      # therefore we skip adding the file to history if it's the first entry,
+      # which shouldn't currently be possible in genie anyways
+      role = conversation[-1].role
+      part = None
+      if UserChat.is_file_bytes(entry):
+        part = Part.from_data(base64.b64decode(UserChat.get_file_b64(entry)),
+                          mime_type=UserChat.get_file_type(entry))
+      elif UserChat.is_file_uri(entry):
+        part = Part.from_uri(UserChat.get_file_uri(entry),
+                                    mime_type=UserChat.get_file_type(entry))
+      if part:
+        conversation.append(Content(role=role, parts=[part]))
+  return conversation
+
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
-                google_llm: str, user_chat: Optional[UserChat]=None,
+                google_llm: str, system_prompt: str=None,
+                user_chat: Optional[UserChat]=None,
                 user_file_bytes: bytes=None,
                 user_files: List[DataSourceFile]=None,
                 stream: bool=False) -> Union[str, AsyncGenerator[str, None]]:
@@ -566,6 +606,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
     is_chat: true if the model is a chat model
     is_multimodal: true if the model is a multimodal model
     google_llm: name of the vertex llm model
+    system_prompt: system prompt to use for chat models
     user_chat: chat history
     user_file_bytes: the bytes of the file provided by the user
     user_files: list of DataSourceFiles for files provided by the user
@@ -581,7 +622,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
               f" user_file_bytes=[{user_file_bytes_log}],"
               f" user_files=[{user_files}]")
 
-  # TODO: Consider images in chat
+  # TODO: Remove this section after non-gemini llms are removed from model options
   prompt_list = []
   if user_chat is not None:
     history = user_chat.history
@@ -600,53 +641,49 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
           prompt_list.append(Part.from_uri(UserChat.get_file_uri(entry),
                                       mime_type=UserChat.get_file_type(entry)))
   prompt_list.append(prompt)
-  # the context prompt is only used for non-gemini models and canot handle
+  # the context prompt is only used for non-gemini models and cannot handle
   # the gemini Part object
   context_prompt = "\n\n".join(entry for entry in prompt_list
                                if isinstance(entry, str))
 
-  # Get model params. If params are set at the model level
-  # use those else use global vertex params.
-  parameters = {}
+  # Get model params at the model level else use global vertex params.
+  parameters = get_provider_value(PROVIDER_VERTEX, KEY_MODEL_PARAMS)
   provider_config = get_provider_model_config(PROVIDER_VERTEX)
   for _, model_config in provider_config.items():
     model_name = model_config.get(KEY_MODEL_NAME)
     if model_name == google_llm and KEY_MODEL_PARAMS in model_config:
       parameters = model_config.get(KEY_MODEL_PARAMS)
-  else:
-    parameters = get_provider_value(PROVIDER_VERTEX,
-                                    KEY_MODEL_PARAMS)
 
   try:
     if is_chat:
       # gemini uses new "GenerativeModel" class and requires different params
       if "gemini" in google_llm:
-        # TODO: fix safety settings
-        safety_settings = {
-             HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-             HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        }
-        chat_model = GenerativeModel(google_llm)
+        prompt_list = []
+        if user_chat:
+          prompt_list.extend(
+            convert_history_to_gemini_prompt(user_chat.history, is_multimodal))
+        prompt_list.append(Content(role="user", parts=[Part.from_text(prompt)]))
+        chat_model = GenerativeModel(google_llm, system_instruction=system_prompt)
         if is_multimodal:
           if user_file_bytes is not None and user_files is not None:
             # user_file_bytes refers to a single image and so we index into
             # user_files (a list) to get a single mime type
-            prompt_list.append(Part.from_data(user_file_bytes,
-                                            mime_type=user_files[0].mime_type))
+            prompt_list.append(Content( role="user", parts=[
+              Part.from_data(user_file_bytes,
+                             mime_type=user_files[0].mime_type)]))
           elif user_files is not None:
             # user_files is a list referring to one or more images
             for user_file in user_files:
-              prompt_list.append(Part.from_uri(user_file.gcs_path,
-                                               mime_type=user_file.mime_type))
+              prompt_list.append(Content(role="user", parts=[
+                Part.from_uri(user_file.gcs_path,
+                              mime_type=user_file.mime_type)]))
         # Logger.info(f"context list {prompt_list}")
         for l in prompt_list:
           Logger.info(l if len(str(l)) < 50 else str(l)[:49])
         generation_config = GenerationConfig(**parameters)
         response = await chat_model.generate_content_async(prompt_list,
             generation_config=generation_config,
-            safety_settings=safety_settings,
+            safety_settings=SAFETY_SETTINGS,
             stream=stream)
 
         if stream:

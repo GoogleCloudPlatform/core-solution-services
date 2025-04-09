@@ -510,8 +510,6 @@ You should see output similar to the following
 ```
 NAME                                    READY   STATUS    RESTARTS   AGE
 authentication-69bfb78d69-4j64d         1/1     Running   0          91m
-frontend-flutterflow-5559bbcc85-rwvjg   1/1     Running   0          80m
-frontend-streamlit-f7d7f7b5d-cjmjr      1/1     Running   0          80m
 jobs-service-7ccc46f786-w5lr5           1/1     Running   0          85m
 llm-service-799f986dcd-t852z            1/1     Running   0          89m
 redis-master-0                          1/1     Running   0          84m
@@ -615,7 +613,7 @@ To build the front end, change to the `webapp` directory
 cd components/frontend_react/webapp
 ```
 
-Install the npm dependcies
+Install the npm dependencies
 
 ```
 npm install
