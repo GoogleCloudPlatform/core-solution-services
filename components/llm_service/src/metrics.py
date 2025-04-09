@@ -423,6 +423,7 @@ def track_chat_generate(func: Callable):
     with_tools = False
     prompt_size = 0
     response_size = 0
+    is_streaming = False
 
     # Extract user information
     user_data = kwargs.get("user_data")
@@ -439,6 +440,7 @@ def track_chat_generate(func: Callable):
         chat_file = kwargs.get("chat_file")
         chat_file_url = kwargs.get("chat_file_url")
         tool_names = kwargs.get("tool_names")
+        is_streaming = kwargs.get("stream", False)
 
         with_file = (chat_file is not None or chat_file_url is not None)
         with_tools = tool_names is not None
@@ -452,6 +454,7 @@ def track_chat_generate(func: Callable):
         with_file = (config_dict.get("chat_file_b64") is not None or
                     config_dict.get("chat_file_url") is not None)
         with_tools = config_dict.get("tool_names") is not None
+        is_streaming = config_dict.get("stream", False)
         prompt_size = len(prompt)
 
       # Record prompt size metric
@@ -571,9 +574,8 @@ def track_chat_generate(func: Callable):
         "with_tools": with_tools,
         "prompt_size": prompt_size,
         "user_id": user_id,
-        # Include response_size for non-streaming responses
-        "response_size": response_size if not inspect.isasyncgen(
-          result) else None
+        # For streaming responses, indicate response_size is pending
+        "response_size": "streaming" if is_streaming else response_size
       }
 
       # Track chat history size if available
