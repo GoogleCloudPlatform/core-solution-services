@@ -19,14 +19,17 @@ import traceback
 import json
 import base64
 import io
-from metrics import LLM_RESPONSE_SIZE
 from typing import Union, Annotated, Optional
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
-from common.models.llm import CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64, CHAT_FILE_TYPE
+from common.models.llm import ( 
+  CHAT_FILE,
+  CHAT_FILE_URL,
+  CHAT_FILE_BASE64,
+  CHAT_FILE_TYPE
+)
 from common.utils.auth_service import validate_token
-from common.utils.sanitization_service import sanitize_user_data
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  UnauthorizedUserError)
@@ -42,7 +45,11 @@ from schemas.llm_schema import (ChatUpdateModel,
 from services.llm_generate import llm_chat
 from services.agents.agent_tools import chat_tools, run_chat_tools
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
-from metrics import track_chat_generate, track_chat_operations
+from metrics import (
+  track_chat_generate,
+  track_chat_operations,
+  LLM_RESPONSE_SIZE
+)
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
@@ -333,7 +340,7 @@ async def create_user_chat(
       "has_history": history is not None
     }
   )
-  
+
   # a file that could be returned as part of the response as base64 contents
   response_files: list[str] = None
   validate_tool_names(tool_names)
@@ -519,7 +526,8 @@ async def user_chat_generate(chat_id: str,
     extra={
       "operation": "chat_generate",
       "chat_id": chat_id,
-      "config": {k: v for k, v in genconfig_dict.items() if k != "chat_file_b64"}
+      "config": {
+        k: v for k, v in genconfig_dict.items() if k != "chat_file_b64"}
     }
   )
 
