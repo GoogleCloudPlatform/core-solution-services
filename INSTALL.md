@@ -241,7 +241,6 @@ export NAMESPACE=default
 export PG_HOST=<the IP of your deployed Alloydb instance>
 export DOMAIN_NAME=<your domain>
 export API_BASE_URL=https://${DOMAIN_NAME}
-export APP_BASE_PATH="/"
 export SKAFFOLD_DEFAULT_REPO=us-docker.pkg.dev/${PROJECT_ID}/default
 ```
 
