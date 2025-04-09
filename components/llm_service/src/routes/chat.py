@@ -19,6 +19,7 @@ import traceback
 import json
 import base64
 import io
+from metrics import LLM_RESPONSE_SIZE
 from typing import Union, Annotated, Optional
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
@@ -321,10 +322,18 @@ async def create_user_chat(
   Returns:
       LLMUserChatResponse or StreamingResponse
   """
-  Logger.info("Creating new chat using"
-              f" prompt={prompt} llm_type={llm_type}"
-              f" chat_file={chat_file} chat_file_url={chat_file_url}"
-              f" tools={tool_names} stream={stream} history={history}")
+  Logger.info(
+    "Creating new chat",
+    extra={
+      "operation": "create_user_chat",
+      "llm_type": llm_type,
+      "has_file": chat_file is not None or chat_file_url is not None,
+      "has_tools": tool_names is not None,
+      "stream": stream,
+      "has_history": history is not None
+    }
+  )
+  
   # a file that could be returned as part of the response as base64 contents
   response_files: list[str] = None
   validate_tool_names(tool_names)
@@ -437,7 +446,14 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
   Returns:
       Data for the newly created chat
   """
-  Logger.info(f"Creating new chat for {sanitize_user_data(user_data)}")
+  Logger.info(
+    "Creating empty chat", 
+    extra={
+      "operation": "create_empty_chat",
+      "user_id": user_data.get("email", "unknown"),
+      "status": "start"
+    }
+  )
 
   try:
     user = User.find_by_email(user_data.get("email"))
@@ -459,8 +475,7 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
     raise InternalServerError(str(e)) from e
 
 
-@router.post(
-    "/{chat_id}/generate")
+@router.post("/{chat_id}/generate")
 @track_chat_generate
 async def user_chat_generate(chat_id: str,
                               gen_config: LLMGenerateModel,
@@ -499,8 +514,14 @@ async def user_chat_generate(chat_id: str,
     chat_file_bytes = await chat_file.read()
 
   genconfig_dict = {**gen_config.model_dump()}
-  Logger.info(f"Generating new chat response for chat_id={chat_id},"
-              f"genconfig_dict={genconfig_dict}")
+  Logger.info(
+    "Processing chat request",
+    extra={
+      "operation": "chat_generate",
+      "chat_id": chat_id,
+      "config": {k: v for k, v in genconfig_dict.items() if k != "chat_file_b64"}
+    }
+  )
 
   prompt = genconfig_dict.get("prompt")
   if prompt is None or prompt == "":
@@ -536,22 +557,64 @@ async def user_chat_generate(chat_id: str,
       response, response_files = run_chat_tools(prompt)
     # Otherwise generate text from prompt if no tools
     else:
-      response = await llm_chat(prompt,
-                            llm_type,
-                            user_chat=user_chat,
-                            user_data=user_data,
-                            chat_files=chat_files,
-                            chat_file_bytes=chat_file_bytes,
-                            stream=stream)
       if stream:
-        # Return streaming response
-        return StreamingResponse(
-            response,
-            media_type="text/event-stream"
-        )
+        # Get the streaming generator
+        generator = await llm_chat(prompt,
+                              llm_type,
+                              user_chat=user_chat,
+                              user_data=user_data,
+                              chat_files=chat_files,
+                              chat_file_bytes=chat_file_bytes,
+                              stream=stream)
 
-    # save chat history
-    user_chat.update_history(prompt, response)
+        # Wrap the generator to track response size
+        async def size_tracking_stream():
+          total_chars = 0
+          response_content = ""
+          try:
+            async for chunk in generator:
+              if isinstance(chunk, str):
+                total_chars += len(chunk)
+                response_content += chunk
+              yield chunk
+          finally:
+            # Log size at the end of streaming
+            Logger.info(
+              "LLM response size",
+              extra={
+                "operation": "chat_generate",
+                "chat_id": chat_id,
+                "metric_type": "llm_response_size",
+                "llm_type": llm_type,
+                "is_streaming": True,
+                "response_size_chars": total_chars
+              }
+            )
+            # Record metrics
+            LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
+            # Save response to history after streaming completes
+            user_chat.update_history(prompt, response_content)
+
+        # Return streaming response with tracking wrapper
+        return StreamingResponse(
+          size_tracking_stream(),
+          media_type="text/event-stream"
+        )
+      else:
+        # Non-streaming response
+        response = await llm_chat(prompt,
+                              llm_type,
+                              user_chat=user_chat,
+                              user_data=user_data,
+                              chat_files=chat_files,
+                              chat_file_bytes=chat_file_bytes,
+                              stream=stream)
+
+      # For non-streaming, save chat history here
+      if not stream:
+        user_chat.update_history(prompt, response)
+
+    # Handle response files if any
     if response_files:
       for file in response_files:
         user_chat.update_history(custom_entry={
@@ -562,15 +625,18 @@ async def user_chat_generate(chat_id: str,
           CHAT_FILE_TYPE: "image/png"
         })
 
-    chat_data = user_chat.get_fields(reformat_datetime=True)
-    chat_data["id"] = user_chat.id
+    # For non-streaming responses, return the full data
+    if not stream:
+      chat_data = user_chat.get_fields(reformat_datetime=True)
+      chat_data["id"] = user_chat.id
 
-    return {
-        "success": True,
-        "message": "Successfully generated text",
-        "data": chat_data
-    }
+      return {
+          "success": True,
+          "message": "Successfully generated text",
+          "data": chat_data
+      }
   except Exception as e:
     Logger.error(e)
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
+  
