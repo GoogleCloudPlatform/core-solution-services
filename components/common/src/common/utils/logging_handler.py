@@ -96,22 +96,19 @@ class JsonFormatter(logging.Formatter):
     timestamp = datetime.datetime.fromtimestamp(
       record.created).isoformat() + "Z"
 
-    # Build basic log record info
     log_entry = {
       "timestamp": timestamp,
-      "message": record.getMessage(),
       "severity": record.levelname,
+      "message": record.getMessage(),
+      "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
+      "request_id": getattr(record, "request_id", "-"),
+      "trace": getattr(record, "trace", "-"),
+      "session_id": getattr(record, "session_id", "-"),
       "logger": record.name,
       "file": record.pathname,
-      "line": record.lineno,
       "function": record.funcName,
-      "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service"
+      "line": record.lineno
     }
-
-    # Add context fields with standardized naming
-    log_entry["request_id"] = getattr(record, "request_id", "-")
-    log_entry["trace"] = getattr(record, "trace", "-")
-    log_entry["session_id"] = getattr(record, "session_id", "-")
 
     # Properly format trace for Google Cloud Logging
     trace_value = log_entry["trace"]
@@ -176,8 +173,15 @@ class JsonFormatter(logging.Formatter):
       return json.dumps({
         "timestamp": timestamp,
         "severity": "ERROR",
-        "logger": "logging_handler",
         "message": f"Type error during log serialization: {str(exc)}",
+        "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
+        "request_id": None,
+        "trace": None,
+        "session_id": None,
+        "logger": "logging_handler",
+        "file": record.pathname,
+        "function": "format",
+        "line": 0,
         "error_type": "TypeError",
         "original_message": record.getMessage()
       })
@@ -185,8 +189,15 @@ class JsonFormatter(logging.Formatter):
       return json.dumps({
         "timestamp": timestamp,
         "severity": "ERROR",
-        "logger": "logging_handler",
         "message": f"Value error during log serialization: {str(exc)}",
+        "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
+        "request_id": None,
+        "trace": None,
+        "session_id": None,
+        "logger": "logging_handler",
+        "file": record.pathname,
+        "function": "format",
+        "line": 0,
         "error_type": "ValueError",
         "original_message": record.getMessage()
       })
@@ -194,8 +205,15 @@ class JsonFormatter(logging.Formatter):
       return json.dumps({
         "timestamp": timestamp,
         "severity": "ERROR",
-        "logger": "logging_handler",
         "message": f"Overflow error during log serialization: {str(exc)}",
+        "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
+        "request_id": None,
+        "trace": None,
+        "session_id": None,
+        "logger": "logging_handler", 
+        "file": record.pathname,
+        "function": "format",
+        "line": 0,
         "error_type": "OverflowError",
         "original_message": record.getMessage()
       })
@@ -203,8 +221,15 @@ class JsonFormatter(logging.Formatter):
       return json.dumps({
         "timestamp": timestamp,
         "severity": "ERROR",
-        "logger": "logging_handler",
         "message": f"Recursion error during log serialization: {str(exc)}",
+        "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
+        "request_id": None,
+        "trace": None,
+        "session_id": None,
+        "logger": "logging_handler",
+        "file": record.pathname,
+        "function": "format",
+        "line": 0,
         "error_type": "RecursionError",
         "original_message": record.getMessage()
       })
