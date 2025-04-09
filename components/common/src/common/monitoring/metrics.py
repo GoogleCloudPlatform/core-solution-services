@@ -31,7 +31,7 @@ __all__ = ["Counter",
            "log_operation_result"]
 
 # Default logger
-logger = Logger.get_logger(__file__)
+logger = Logger.get_logger("common.monitoring.metrics")
 
 def operation_tracker(
     operation_type: str,

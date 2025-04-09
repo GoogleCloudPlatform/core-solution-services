@@ -22,7 +22,7 @@ from common.utils.logging_handler import Logger
 from common.monitoring.metrics import operation_tracker
 
 # Initialize logger
-logger = Logger.get_logger(__file__)
+logger = Logger.get_logger("authentication_service.metrics")
 
 # Authentication-specific Metrics
 AUTH_OPERATION_COUNT = Counter(

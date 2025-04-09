@@ -25,7 +25,7 @@ from common.monitoring.metrics import extract_user_id, log_operation_result
 from common.models import QueryEngine
 
 # Initialize logger
-logger = Logger.get_logger(__file__)
+logger = Logger.get_logger("llm_service.metrics")
 
 # LLM Generation Metrics
 LLM_GENERATE_COUNT = Counter(

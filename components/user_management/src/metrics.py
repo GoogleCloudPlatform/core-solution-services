@@ -28,7 +28,7 @@ from common.monitoring.metrics import (
 )
 
 # Initialize logger
-logger = Logger.get_logger(__file__)
+logger = Logger.get_logger("user_management.metrics")
 
 # User Management Operation Metrics
 USER_OPERATION_COUNT = Counter(
