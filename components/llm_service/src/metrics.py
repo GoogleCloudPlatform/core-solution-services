@@ -220,14 +220,30 @@ def track_llm_generate(func: Callable):
           nonlocal response_size  # Reference the outer variable
           total_chars = 0
           try:
+            logger.debug(
+              "Starting streaming response tracking",
+              extra={"metric_type": "streaming_debug", "llm_type": llm_type}
+            )
+
             async for chunk in original_result:
               if isinstance(chunk, str):
                 chunk_size = len(chunk)
                 total_chars += chunk_size
                 response_size = total_chars  # Update outer variable
               yield chunk
+
+            logger.debug(
+              f"Completed streaming with {total_chars} total characters",
+              extra={"metric_type": "streaming_debug", "llm_type": llm_type}
+            )
+          except Exception as e:
+            logger.error(
+              f"Error in streaming: {str(e)}",
+              extra={"metric_type": "streaming_error", "llm_type": llm_type}
+            )
+            raise
           finally:
-            # This will run even if the client disconnects early
+            # This will run regardless of how the generator exits
             logger.info(
               "LLM response size",
               extra={
@@ -237,7 +253,7 @@ def track_llm_generate(func: Callable):
                 "response_size_chars": total_chars
               }
             )
-            # Record response size in histogram
+            # Create a histogram of response sizes
             LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
 
         # Return the wrapped generator
