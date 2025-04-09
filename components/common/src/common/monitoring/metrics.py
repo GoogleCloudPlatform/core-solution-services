@@ -224,7 +224,7 @@ def extract_user_id(user_data: Optional[Dict[str, Any]]) -> str:
 
 
 def log_operation_result(
-    logger: logging.Logger,
+    log_instance: logging.Logger,
     operation_type: str,
     status: str,
     additional_data: Optional[Dict[str, Any]] = None
@@ -247,8 +247,8 @@ def log_operation_result(
     extra.update(additional_data)
 
   if status == "success":
-    logger.info(f"{operation_type.replace('_', ' ').title()} successful",
+    log_instance.info(f"{operation_type.replace('_', ' ').title()} successful",
                  extra=extra)
   else:
-    logger.error(f"{operation_type.replace('_', ' ').title()} failed",
+    log_instance.error(f"{operation_type.replace('_', ' ').title()} failed",
                   extra=extra)

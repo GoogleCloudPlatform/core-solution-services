@@ -32,7 +32,7 @@ if CLOUD_LOGGING_ENABLED:
     import google.cloud.logging
     client = google.cloud.logging.Client()
     print("*** STARTUP: Initialized Cloud Logging client ***")
-  except Exception as e:
+  except (ImportError, google.cloud.exceptions.GoogleCloudError) as e:
     print(f"*** STARTUP: Failed to initialize Cloud Logging client: {e} ***")
     print("*** STARTUP: Falling back to standard logging ***")
     client = None
@@ -58,12 +58,12 @@ class LogRecordFilter(logging.Filter):
 class SafeJsonEncoder(json.JSONEncoder):
   """JSON encoder that safely handles non-serializable objects."""
 
-  def default(self, obj):
+  def default(self, o):
     try:
-      return super().default(obj)
+      return super().default(o)
     except TypeError:
       # For objects that can"t be serialized, convert to string
-      return str(obj)
+      return str(o)
 
 # Helper function to add default fields
 def _add_default_fields(extra=None):

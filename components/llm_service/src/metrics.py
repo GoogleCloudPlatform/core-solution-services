@@ -798,7 +798,10 @@ def track_vector_db_query(func: Callable):
   @wraps(func)
   async def wrapper(*args, **kwargs):
     # Extract vector DB information
-    query_engine_id = kwargs.get("query_engine_id") or args[0]
+    query_engine_id = kwargs.get("query_engine_id")
+    if not query_engine_id and args:
+      query_engine_id = args[0] if args else None
+
     db_type = "unknown"
     engine_name = "unknown"
 

@@ -143,7 +143,8 @@ def search_user(search_query: str,
   except Exception as error:
     logger.error(f"Error searching users with query '{search_query}': {error}")
     logger.error(traceback.format_exc())
-    raise InternalServerError(f"Failed to search users: {str(error)}") from error
+    raise InternalServerError(
+      f"Failed to search users: {str(error)}") from error
 
 
 @router.get("/users", response_model=AllUserResponseModel, name="Get all Users")
@@ -220,7 +221,8 @@ def get_users(user_type: Optional[str] = None,
   except Exception as error:
     logger.error(f"Error getting users: {error}")
     logger.error(traceback.format_exc())
-    raise InternalServerError(f"Failed to retrieve users: {str(error)}") from error
+    raise InternalServerError(
+      f"Failed to retrieve users: {str(error)}") from error
 
 
 @router.get(
