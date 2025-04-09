@@ -18,8 +18,7 @@ from google.oauth2 import id_token
 from firebase_admin.auth import verify_id_token
 import redis
 
-from services.sanitization_service import sanitize_token_data
-
+from common.utils.sanitization_service import sanitize_token_data
 from common.utils.cache_service import set_key, get_key
 from common.utils.errors import InvalidTokenError
 from common.utils.http_exceptions import InternalServerError, Unauthenticated

@@ -23,8 +23,8 @@ from common.utils.http_exceptions import (BadRequest, InvalidToken,
                                           InternalServerError, Unauthorized)
 from common.utils.logging_handler import Logger
 from common.utils.user_handler import get_user_by_email
+from common.utils.sanitization_service import sanitize_user_data
 from services.validation_service import validate_token
-from services.sanitization_service import sanitize_user_data
 from schemas.validate_token_schema import ValidateTokenResponseModel
 from config import (ERROR_RESPONSES,
                     AUTH_REQUIRE_FIRESTORE_USER,

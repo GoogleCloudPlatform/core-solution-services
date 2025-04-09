@@ -25,6 +25,7 @@ from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
 from common.models.llm import CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64, CHAT_FILE_TYPE
 from common.utils.auth_service import validate_token
+from common.utils.sanitization_service import sanitize_user_data
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  UnauthorizedUserError)
@@ -436,7 +437,7 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
   Returns:
       Data for the newly created chat
   """
-  Logger.info(f"Creating new chat for {user_data}")
+  Logger.info(f"Creating new chat for {sanitize_user_data(user_data)}")
 
   try:
     user = User.find_by_email(user_data.get("email"))

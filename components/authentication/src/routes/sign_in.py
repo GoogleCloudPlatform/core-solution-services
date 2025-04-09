@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from requests.exceptions import ConnectTimeout
 from firebase_admin.auth import verify_id_token, get_user, set_custom_user_claims
+from common.utils.sanitization_service import sanitize_token_data
 from common.utils.user_handler import get_user_by_email, create_user_in_firestore
 from common.utils.logging_handler import Logger
 from common.utils.sessions import create_session
@@ -33,7 +34,6 @@ from schemas.sign_in_schema import (SignInWithCredentialsModel,
                                     SignInWithCredentialsResponseModel,
                                     SignInWithTokenResponseModel)
 from services.validation_service import validate_google_oauth_token
-from services.sanitization_service import sanitize_token_data
 from config import (AUTH_REQUIRE_FIRESTORE_USER,
                     AUTH_RBAC_DEFAULT_ROLE_SET,
                     FIREBASE_API_KEY,

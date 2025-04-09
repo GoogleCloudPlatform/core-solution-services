@@ -16,7 +16,7 @@
 
 from services.refresh_token_service import generate_token
 from services.validation_service import validate_token
-from services.sanitization_service import sanitize_token_data
+from common.utils.sanitization_service import sanitize_token_data
 from utils.exception_handler import InvalidRefreshTokenError
 from fastapi import APIRouter
 from schemas.generate_token_schema import (GenerateTokenResponseModel,
