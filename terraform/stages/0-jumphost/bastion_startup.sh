@@ -87,7 +87,7 @@ export AUTH_EMAIL_DOMAINS_WHITELIST=google.com
 export CORS_ALLOW_ORIGINS="*"
 export PROJECT_ID=$(gcloud config get project)
 export NAMESPACE=default
-export APP_BASE_PATH="/streamlit"
+export APP_BASE_PATH="/"
 export DOMAIN_NAME="your-domain-name"     # sb-var:domain_name
 export REGION="us-central1"               # sb-var:gcp_region
 EOF

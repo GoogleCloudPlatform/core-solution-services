@@ -241,7 +241,7 @@ export NAMESPACE=default
 export PG_HOST=<the IP of your deployed Alloydb instance>
 export DOMAIN_NAME=<your domain>
 export API_BASE_URL=https://${DOMAIN_NAME}
-export APP_BASE_PATH="/streamlit"
+export APP_BASE_PATH="/"
 export SKAFFOLD_DEFAULT_REPO=us-docker.pkg.dev/${PROJECT_ID}/default
 ```
 
@@ -251,7 +251,7 @@ If you are installing GENIE you can deploy a subset of the microservices used by
 
 ```
 skaffold config set default-repo "${SKAFFOLD_DEFAULT_REPO}"
-skaffold run -p default-deploy -m authentication,redis,llm_service,jobs_service,frontend_streamlit -n $NAMESPACE
+skaffold run -p default-deploy -m authentication,redis,llm_service,jobs_service -n $NAMESPACE
 ```
 - This will run `skaffold` commands to deploy those microservices to the GKE cluster.
 
@@ -334,20 +334,6 @@ BASE_IP_ADDRESS=$(gcloud compute addresses list --global --format="value(address
 > [React](https://react.dev/) is a popular frontend development framework.
 
 The codebase includes a React app that supports Chat and Query (RAG) for end users, along with Google Identity login.  See the [components/frontend_react/README.md](components/frontend_react/README.md) for instructions on building and deploying the React app.
-
-### Streamlit UX
-
-> [Streamlit](https://streamlit.io) is an open-source Python library that makes it easy to create custom web apps. It's a popular choice for data scientists and machine learning engineers who want to quickly create interactive dashboards and visualizations
-
-As of the 0.3.0 release the React app is the preferred UX for GENIE and we recommend you deploy and use that app.
-
-When running `skaffold run` like above, it automatically deploys the Streamlit-based frontend app altogether with all services deployment.  The streamlit UX is for development purposes only.  
-
-- Once deployed, you can verify the Streamlit frontend app at `https://$YOUR_DNS_DOMAIN/streamlit` in a web browser.
-
-### (Optional) Deploy or run frontend apps manually
-
-See [components/frontend_streamlit/README.md](components/frontend_streamlit/README.md) for options to run or deploy the Streamlit app.
 
 ## Node-pool configuration (Optional)
 
