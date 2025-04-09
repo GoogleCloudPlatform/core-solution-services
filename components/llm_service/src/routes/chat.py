@@ -578,14 +578,6 @@ async def user_chat_generate(chat_id: str,
             CHAT_FILE_TYPE: "image/png"
           })
 
-      # Add additional history entries for code interpreter if needed
-      if "vertex_code_interpreter_tool" in json.loads(tool_names):
-        # The test expects 4 additional entries, but we've only added 2 so far
-        # Add two more entries to match test expectations
-        user_chat.update_history(custom_entry={
-          "CodeInterpreterResult": "Generated code executed successfully"
-        })
-
       chat_data = user_chat.get_fields(reformat_datetime=True)
       chat_data["id"] = user_chat.id
 
