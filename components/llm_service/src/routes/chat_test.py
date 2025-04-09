@@ -37,6 +37,8 @@ from common.utils.auth_service import validate_token
 from common.testing.firestore_emulator import (
   firestore_emulator, clean_firestore
 )
+
+from services.query.query_service import query_generate_for_chat
 from services.query.data_source import DataSourceFile
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
@@ -152,7 +154,9 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
 
   # Test regular chat creation
   with mock.patch("routes.chat.llm_chat",
-                  return_value=FAKE_GENERATE_RESPONSE):
+                 return_value=FAKE_GENERATE_RESPONSE), \
+       mock.patch("routes.chat.generate_chat_summary",
+                 return_value="Test Summary"):
     resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS)
 
   json_response = resp.json()
@@ -164,6 +168,8 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
   assert chat_data["history"][1] == \
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "returned chat data generated text"
+  assert chat_data["title"] == "Test Summary", \
+    "chat title set from summary"
 
   # Test streaming chat creation
   streaming_params = {
@@ -171,7 +177,7 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
     "stream": True
   }
   with mock.patch("routes.chat.llm_chat",
-                  return_value=iter([FAKE_GENERATE_RESPONSE])):
+                 return_value=iter([FAKE_GENERATE_RESPONSE])):
     resp = client_with_emulator.post(url, data=streaming_params)
     assert resp.status_code == 200, "Streaming response status 200"
     assert resp.headers["content-type"] == "text/event-stream; charset=utf-8", \
@@ -182,8 +188,8 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
     **FAKE_GENERATE_PARAMS,
     "history": '[{"human": "test prompt"}, {"ai": "test response"}]'
   }
-  with mock.patch("routes.chat.llm_chat",
-                  return_value=FAKE_GENERATE_RESPONSE):
+  with mock.patch("routes.chat.generate_chat_summary",
+                 return_value="Test Summary"):
     resp = client_with_emulator.post(url, data=history_params)
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
@@ -193,6 +199,8 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
     "History human message preserved"
   assert chat_data["history"][1] == {"ai": "test response"}, \
     "History AI message preserved"
+  assert chat_data["title"] == "Test Summary", \
+    "chat title set from summary"
 
   # Test invalid history format
   invalid_history_params = {
@@ -206,11 +214,17 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
   invalid_params = {
     "llm_type": FAKE_GENERATE_PARAMS["llm_type"]
   }
+  # Skip mocking llm_chat since validation will fail before it would be called
   resp = client_with_emulator.post(url, data=invalid_params)
   assert resp.status_code == 422, "Missing prompt and history returns 422"
+  json_response = resp.json()
+  assert json_response["success"] is False, "Error response indicates failure"
+  error_msg = "Error message mentions missing prompt"
+  assert "prompt" in json_response["message"].lower(), error_msg
+  assert json_response["data"] is None, "Error response has no data"
 
   # Verify final state
-  user_chats = UserChat.find_by_user(userid)
+  user_chats = UserChat.find_by_user(USER_EXAMPLE["user_id"])
   assert len(user_chats) == 2, "Created expected number of chats"
 
   # Verify the regular chat creation
@@ -224,6 +238,8 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
   assert regular_chat.history[1] == \
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "saved chat data generated text"
+  assert regular_chat.title == "Test Summary", \
+    "chat title saved from summary"
 
 
 def test_delete_chat(create_user, create_chat, client_with_emulator):
@@ -519,7 +535,6 @@ def test_generate_chat_summary_error(
     "Error message describes failure"
   assert json_response["data"] is None, "Error response has no data"
 
-
 def test_chat_generate_adds_missing_title(
     create_user,
     create_chat,
@@ -716,3 +731,56 @@ def test_chat_llm_multimodal_filter(client_with_emulator):
     json_response = resp.json()
     assert json_response["success"] is True
     assert all(model["is_multi"] for model in json_response["data"])
+
+
+@pytest.mark.asyncio
+async def test_chat_generate_with_query_engine(create_user, create_chat,
+                                               create_engine,
+                                               client_with_emulator):
+  """Test generating chat response with query engine"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate"
+
+  # Test parameters as JSON
+  test_params = {
+    "prompt": FAKE_GENERATE_PARAMS["prompt"],
+    "llm_type": FAKE_GENERATE_PARAMS["llm_type"],
+    "query_engine_id": create_engine.id,
+    "query_filter": {"key": "value"}
+  }
+
+  # Mock query results
+  mock_references = [
+    QueryReference(
+      query_engine_id=create_engine.id,
+      query_engine=create_engine.name,
+      document_id="doc1",
+      document_url="http://test.com/doc1",
+      document_text="Test reference text",
+      modality="text",
+      chunk_id="chunk1"
+    )
+  ]
+  mock_content_files = [
+    DataSourceFile(
+      gcs_path="gs://bucket/image1.jpg",
+      mime_type="image/jpeg"
+    )
+  ]
+
+  with mock.patch("routes.chat.query_generate_for_chat",
+                 return_value=(mock_references, mock_content_files)), \
+       mock.patch("routes.chat.llm_chat",
+                 return_value=FAKE_GENERATE_RESPONSE):
+    resp = client_with_emulator.post(url, json=test_params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  chat_data = json_response.get("data")
+
+  # Verify chat history includes query engine and references
+  history = chat_data["history"]
+  assert any(CHAT_SOURCE in entry for entry in history), \
+    "Chat history includes source"
+  assert any(CHAT_QUERY_REFERENCES in entry for entry in history), \
+    "Chat history includes references"
