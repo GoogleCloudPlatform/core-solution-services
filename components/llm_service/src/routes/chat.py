@@ -23,7 +23,7 @@ from typing import Union, Annotated, Optional
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat
-from common.models.llm import ( 
+from common.models.llm import (
   CHAT_FILE,
   CHAT_FILE_URL,
   CHAT_FILE_BASE64,
