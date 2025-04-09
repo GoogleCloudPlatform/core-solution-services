@@ -19,7 +19,7 @@ import traceback
 import json
 import base64
 import io
-from typing import Optional, Annotated, Union
+from typing import Optional
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat, QueryEngine, QueryReference
@@ -340,7 +340,7 @@ def validate_tool_names(tool_names: Optional[str]):
 @router.post(
     "",
     name="Create new chat",
-    response_model=LLMUserChatResponse)
+    response_model=LLMUserChatResponse, deprecated=True)
 async def create_chat(prompt: str = Form(None),
                      llm_type: str = Form(None),
                      stream: bool = Form(False),
@@ -581,7 +581,7 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
 
 @router.post(
     "/{chat_id}/generate")
-async def user_chat_generate(chat_id: str, request: Request):
+async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   """
   Continue chat based on context of user chat
 
@@ -595,6 +595,8 @@ async def user_chat_generate(chat_id: str, request: Request):
   Logger.info(f"generating chat response for {chat_id}")
   tool_names = gen_config.tool_names
   validate_tool_names(tool_names)
+  query_engine_id = gen_config.query_engine_id
+  query_filter = gen_config.query_filter
 
   response_files = None
 
