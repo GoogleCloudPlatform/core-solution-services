@@ -17,6 +17,7 @@
 Google Storage helper functions.
 """
 import io
+import os
 import uuid
 import base64
 from pathlib import Path
@@ -26,6 +27,39 @@ from schemas.llm_schema import FileB64
 from google.cloud import storage
 
 Logger = Logger.get_logger(__file__)
+
+def get_blob_from_gcs_path(gcs_path):
+  """
+  Returns blob object using gcs_path
+  """
+  storage_client = storage.Client()
+  bucket_name = gcs_path.split("gs://")[1].split("/")[0]
+  blob_name = gcs_path.split(bucket_name)[-1].strip("/")
+  bucket = storage_client.bucket(bucket_name)
+  if not bucket:
+    raise ValueError(f"Unknown path \"{gcs_path}\"")
+  blob = bucket.get_blob(blob_name)
+  if not blob:
+    raise ValueError(f"Unknown path \"{gcs_path}\"")
+  return blob
+
+def download_file_from_gcs(gcs_path, destination_folder_path="data/"):
+  """
+  Downloads file from gcs
+  """
+  try:
+    storage_client = storage.Client()
+    bucket_name = gcs_path.split("gs://")[1].split("/")[0]
+    bucket = storage_client.get_bucket(bucket_name)
+    blob_name = gcs_path.split(bucket_name)[-1].strip("/")
+    blob = bucket.blob(blob_name)
+    os.makedirs(destination_folder_path, exist_ok=True)
+    destination_path = destination_folder_path + blob_name.split("/")[-1]
+    blob.download_to_filename(destination_path)
+    return destination_path
+  except Exception as e:
+    Logger.error(e)
+    raise Exception("Failed to download file from the GCS path") from e
 
 def clear_bucket(storage_client: storage.Client, bucket_name: str) -> None:
   """
@@ -101,8 +135,8 @@ def upload_file_to_gcs(bucket: storage.Bucket,
   return gcs_url
 
 def create_bucket_for_file(filename: str) -> storage.Bucket:
-  """This funciton creates a bucket to be used for storage
-  The filename parameter was originaly used to help create a unique name
+  """This function creates a bucket to be used for storage
+  The filename parameter was originally used to help create a unique name
   for a bucket but is no longer used. It has been left in for compatability"""
   storage_client = storage.Client()
   bucket_name = str(uuid.uuid4())
