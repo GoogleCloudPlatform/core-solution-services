@@ -199,9 +199,10 @@ async def llm_chat(prompt: str, llm_type: str,
       yielding response chunks
   """
   chat_file_bytes_log = chat_file_bytes[:10] if chat_file_bytes else None
+  user_chat_info = f"id={user_chat.id}" if user_chat else "None"
   Logger.info(f"Generating chat with llm_type=[{llm_type}],"
               f" prompt=[{prompt}]"
-              f" user_chat=[{user_chat}]"
+              f" user_chat=[{user_chat_info}]"
               f" user_query=[{user_query}]"
               f" chat_file_bytes=[{chat_file_bytes_log}]"
               f" chat_files=[{chat_files}]")
