@@ -196,6 +196,7 @@ def track_llm_generate(func: Callable):
     llm_type = config_dict.get("llm_type", "unknown")
     prompt = config_dict.get("prompt", "")
     prompt_size = len(prompt)
+    response_size = 0  # Track this outside the generator
 
     if prompt_size > 0:
       PROMPT_SIZE.labels("llm").observe(prompt_size)
@@ -216,25 +217,28 @@ def track_llm_generate(func: Callable):
         original_result = result
 
         async def size_tracking_generator():
+          nonlocal response_size  # Reference the outer variable
           total_chars = 0
-          async for chunk in original_result:
-            if isinstance(chunk, str):
-              total_chars += len(chunk)
-            yield chunk
-
-          # Log the total response size after streaming completes
-          logger.info(
-            "LLM response size",
-            extra={
-              "metric_type": "llm_response_size",
-              "llm_type": llm_type,
-              "is_streaming": True,
-              "response_size_chars": total_chars
-            }
-          )
-
-          # Record response size in histogram
-          LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
+          try:
+            async for chunk in original_result:
+              if isinstance(chunk, str):
+                chunk_size = len(chunk)
+                total_chars += chunk_size
+                response_size = total_chars  # Update outer variable
+              yield chunk
+          finally:
+            # This will run even if the client disconnects early
+            logger.info(
+              "LLM response size",
+              extra={
+                "metric_type": "llm_response_size",
+                "llm_type": llm_type,
+                "is_streaming": True,
+                "response_size_chars": total_chars
+              }
+            )
+            # Record response size in histogram
+            LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
 
         # Return the wrapped generator
         result = size_tracking_generator()
@@ -253,8 +257,8 @@ def track_llm_generate(func: Callable):
         LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(response_size)
       elif isinstance(result, dict) and "content" in result:
         # For dictionary responses with content field
-        response_size = len(result["content"])\
-            if isinstance(result["content"], str) else 0
+        response_size = len(result["content"]) if isinstance(
+          result["content"], str) else 0
         logger.info(
           "LLM response size",
           extra={
@@ -276,7 +280,9 @@ def track_llm_generate(func: Callable):
         "success",
         {
           "llm_type": llm_type,
-          "prompt_size": prompt_size
+          "prompt_size": prompt_size,
+          "response_size": response_size if not inspect.isasyncgen(
+            result) else None
         }
       )
 
@@ -400,6 +406,7 @@ def track_chat_generate(func: Callable):
     with_file = False
     with_tools = False
     prompt_size = 0
+    response_size = 0
 
     # Extract user information
     user_data = kwargs.get("user_data")
@@ -489,26 +496,30 @@ def track_chat_generate(func: Callable):
         original_result = result
 
         async def size_tracking_generator():
+          nonlocal response_size  # Reference the outer variable
           total_chars = 0
-          async for chunk in original_result:
-            total_chars += len(chunk) if isinstance(chunk, str) else 0
-            yield chunk
-
-          # Log the total response size after all chunks are processed
-          logger.info(
-            "LLM response size",
-            extra={
-              "metric_type": "llm_response_size",
-              "llm_type": llm_type,
-              "with_file": with_file,
-              "with_tools": with_tools,
-              "is_streaming": True,
-              "response_size_chars": total_chars
-            }
-          )
-
-          # Create a histogram of response sizes
-          LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
+          try:
+            async for chunk in original_result:
+              if isinstance(chunk, str):
+                chunk_size = len(chunk)
+                total_chars += chunk_size
+                response_size = total_chars  # Update outer variable
+              yield chunk
+          finally:
+            # This will run even if the client disconnects early
+            logger.info(
+              "LLM response size",
+              extra={
+                "metric_type": "llm_response_size",
+                "llm_type": llm_type,
+                "with_file": with_file,
+                "with_tools": with_tools,
+                "is_streaming": True,
+                "response_size_chars": total_chars
+              }
+            )
+            # Create a histogram of response sizes
+            LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
 
         # Replace the result with our tracking generator
         result = size_tracking_generator()
@@ -543,12 +554,15 @@ def track_chat_generate(func: Callable):
         "with_file": with_file,
         "with_tools": with_tools,
         "prompt_size": prompt_size,
-        "user_id": user_id
+        "user_id": user_id,
+        # Include response_size for non-streaming responses
+        "response_size": response_size if not inspect.isasyncgen(
+          result) else None
       }
 
       # Track chat history size if available
-      if isinstance(result, dict) and "data"\
-          in result and "history" in result["data"]:
+      if isinstance(
+        result, dict) and "data" in result and "history" in result["data"]:
         history_size = len(result["data"]["history"])
         CHAT_HISTORY_SIZE.labels(llm_type=llm_type).observe(history_size)
         log_extra["history_size"] = history_size

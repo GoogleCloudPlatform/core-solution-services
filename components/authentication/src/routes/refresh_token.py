@@ -16,13 +16,13 @@
 
 from services.refresh_token_service import generate_token
 from services.validation_service import validate_token
-from common.utils.sanitization_service import sanitize_token_data
 from utils.exception_handler import InvalidRefreshTokenError
 from fastapi import APIRouter
 from schemas.generate_token_schema import (GenerateTokenResponseModel,
                                            GenerateTokenRequestModel)
 from common.utils.http_exceptions import (InvalidToken, InternalServerError)
 from common.utils.logging_handler import Logger
+from common.utils.sanitization_service import sanitize_token_data
 from common.models import User
 from config import ERROR_RESPONSES
 from metrics import track_token_refresh
