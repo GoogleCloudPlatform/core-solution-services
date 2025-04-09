@@ -109,7 +109,7 @@ def get_llm_details(user_data: dict = Depends(validate_token),
               f" is_embedding:[{is_embedding}]")
   try:
     model_config = get_model_config()
-
+    llm_types = []
     if is_embedding is True and is_multimodal is True:
       llm_types = model_config.get_multimodal_embedding_types()
     elif is_embedding is True and is_multimodal is False:

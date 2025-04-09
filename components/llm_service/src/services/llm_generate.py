@@ -770,3 +770,18 @@ async def generate_chat_summary(user_chat: UserChat) -> str:
     summary = summary[:97] + "..."
 
   return summary
+
+def get_models_for_user(user_data: dict, is_multimodal: Optional[bool] = None
+                        ) -> list[str]:
+  """Takes the user's informaiton and whether they want multimodal models
+  then returns a list of model names the user has access to """
+  model_config = get_model_config()
+  if is_multimodal is True:
+    llm_types = model_config.get_multimodal_chat_llm_types()
+  elif is_multimodal is False:
+    llm_types = model_config.get_text_chat_llm_types()
+  else: # multimodal is None
+    llm_types = model_config.get_chat_llm_types()
+
+  return [llm for llm in llm_types if
+          model_config.is_model_enabled_for_user(llm, user_data)]

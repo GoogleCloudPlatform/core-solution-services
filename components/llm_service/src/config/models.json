@@ -131,6 +131,7 @@
       "is_multi": true,
       "provider": "Vertex",
       "model_name": "gemini-1.5-pro-002",
+      "description": "A powerful and versatile Gemini 1.5 Pro model from Vertex AI.",
       "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone."
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {

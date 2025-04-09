@@ -19,8 +19,8 @@ import traceback
 import json
 import base64
 import io
-from typing import Optional
-from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException, Request
+from typing import Optional, Annotated, Union
+from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat, QueryEngine, QueryReference
 from common.models.llm import (CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64,
@@ -39,7 +39,8 @@ from schemas.llm_schema import (ChatUpdateModel,
                                 LLMUserAllChatsResponse,
                                 LLMGetTypesResponse,
                                 LLMGetDetailsResponse)
-from services.llm_generate import llm_chat, generate_chat_summary
+from services.llm_generate import (llm_chat, generate_chat_summary,
+                                   get_models_for_user)
 from services.agents.agent_tools import chat_tools, run_chat_tools
 from services.query.query_service import query_generate_for_chat
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
@@ -68,18 +69,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
   """
   Logger.info("Entering chat/chat_types")
   try:
-    model_config = get_model_config()
-    if is_multimodal is True:
-      llm_types = model_config.get_multimodal_chat_llm_types()
-    elif is_multimodal is False:
-      llm_types = model_config.get_text_chat_llm_types()
-    elif is_multimodal is None:
-      llm_types = model_config.get_chat_llm_types()
-    else:
-      return BadRequest("Invalid request parameter value: is_multimodal")
-
-    user_enabled_llms = [llm for llm in llm_types if \
-                model_config.is_model_enabled_for_user(llm, user_data)]
+    user_enabled_llms = get_models_for_user(user_data, is_multimodal)
     return {
       "success": True,
       "message": "Successfully retrieved chat llm types",
@@ -112,40 +102,31 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
   Logger.info("Entering chat/chat_types/details")
   try:
     model_config = get_model_config()
-    if is_multimodal is True:
-      llm_types = model_config.get_multimodal_chat_llm_types()
-    elif is_multimodal is False:
-      llm_types = model_config.get_text_chat_llm_types()
-    elif is_multimodal is None:
-      llm_types = model_config.get_chat_llm_types()
-    else:
-      return BadRequest("Invalid request parameter value: is_multimodal")
-
+    llm_types = get_models_for_user(user_data, is_multimodal)
     model_details = []
     for llm in llm_types:
-      if model_config.is_model_enabled_for_user(llm, user_data):
-        config = model_config.get_model_config(llm)
+      config = model_config.get_model_config(llm)
 
-        # Get model parameters from config
-        model_params = config.get("model_params", {})
+      # Get model parameters from config
+      model_params = config.get("model_params", {})
 
-        # Get provider parameters and merge with model params
-        _, provider_config = model_config.get_model_provider_config(llm)
-        if provider_config and "model_params" in provider_config:
-          # Provider params are the base, model params override them
-          merged_params = provider_config["model_params"].copy()
-          merged_params.update(model_params)
-          model_params = merged_params
+      # Get provider parameters and merge with model params
+      _, provider_config = model_config.get_model_provider_config(llm)
+      if provider_config and "model_params" in provider_config:
+        # Provider params are the base, model params override them
+        merged_params = provider_config["model_params"].copy()
+        merged_params.update(model_params)
+        model_params = merged_params
 
-        model_details.append({
-          "id": llm,
-          "name": config.get("name", ""),
-          "description": config.get("description", ""),
-          "capabilities": config.get("capabilities", []),
-          "date_added": config.get("date_added", ""),
-          "is_multi": config.get("is_multi", False),
-          "model_params": model_params
-        })
+      model_details.append({
+        "id": llm,
+        "name": config.get("name", ""),
+        "description": config.get("description", ""),
+        "capabilities": config.get("capabilities", []),
+        "date_added": config.get("date_added", ""),
+        "is_multi": config.get("is_multi", False),
+        "model_params": model_params
+      })
 
     Logger.info(f"Chat LLM models for user {model_details}")
     return {
@@ -345,11 +326,11 @@ def validate_tool_names(tool_names: Optional[str]):
   # ensuring the tool names provided were properly formatted
     try:
       tool_names = json.loads(tool_names)
-    except json.decoder.JSONDecodeError as exc:
+    except json.decoder.JSONDecodeError as e:
       raise HTTPException(
           status_code=422,
           detail=("Tool names must be a string representing a "
-                 "json formatted list")) from exc
+                 "json formatted list")) from e
     # ensuring the tools provided are valid for chat
     if invalid_tools := [tool for tool in tool_names if tool not in chat_tools]:
       failure_message = f"Invalid tool names: {','.join(invalid_tools)}"
@@ -572,7 +553,7 @@ async def create_chat(prompt: str = Form(None),
 @router.post("/empty_chat", name="Create new chat")
 async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
-  Create new chat for authenticated user.  
+  Create new chat for authenticated user.
   Returns:
       Data for the newly created chat
   """
@@ -606,40 +587,14 @@ async def user_chat_generate(chat_id: str, request: Request):
 
   Args:
     chat_id: ID of the chat to continue
-    request: FastAPI Request object containing the request body
+    gen_config: llm generation parameters
 
   Returns:
     LLMUserChatResponse or StreamingResponse
   """
-  body = await request.json()
-  tool_names = body.get("tool_names")
-  query_engine_id = body.get("query_engine_id")
-  query_filter = body.get("query_filter")
-
-  # Parse tool_names if it's a string
-  if isinstance(tool_names, str):
-    try:
-      body["tool_names"] = json.loads(tool_names)
-    except json.JSONDecodeError as exc:
-      raise HTTPException(
-        status_code=422,
-        detail="Tool names must be a string representing a json formatted list"
-      ) from exc
-
-  # Validate tool names if present
-  if body.get("tool_names"):
-    if invalid_tools := [tool for tool in body["tool_names"]
-                        if tool not in chat_tools]:
-      raise HTTPException(
-        status_code=422,
-        detail=f"Invalid tool names: {','.join(invalid_tools)}"
-      )
-
-  # Now that tool_names is validated and converted, parse with Pydantic
-  try:
-    gen_config = LLMGenerateModel(**body)
-  except ValidationError as e:
-    raise HTTPException(status_code=422, detail=str(e)) from e
+  Logger.info(f"generating chat response for {chat_id}")
+  tool_names = gen_config.tool_names
+  validate_tool_names(tool_names)
 
   response_files = None
 
@@ -730,8 +685,6 @@ async def user_chat_generate(chat_id: str, request: Request):
           prompt += "\n\n" + \
               f"A search of the {query_engine.name} Source produced " \
               f"these references: {query_refs_str}"
-
-        # Normal chat response with combined context files
         response = await llm_chat(prompt,
                               llm_type,
                               user_chat=user_chat,
@@ -756,6 +709,21 @@ async def user_chat_generate(chat_id: str, request: Request):
           query_result=query_result,
           query_references=query_references
         )
+
+      if response_files:
+        for file in response_files:
+          user_chat.update_history(custom_entry={
+            CHAT_FILE: file["name"]
+          })
+          user_chat.update_history(custom_entry={
+            CHAT_FILE_BASE64: file["contents"]
+          })
+
+      chat_data = user_chat.get_fields(reformat_datetime=True)
+      chat_data["id"] = user_chat.id
+
+      # save chat history
+      user_chat.update_history(prompt=prompt, response=response)
 
       if response_files:
         for file in response_files:

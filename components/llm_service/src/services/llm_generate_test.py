@@ -31,8 +31,8 @@ os.environ["VLLM_GEMMA_ENDPOINT"] = "fake-endpoint"
 from services.llm_generate import (llm_generate, llm_chat,
                                  llm_generate_multimodal,
                                  llm_vllm_service_predict,
-                                 convert_history_to_gemini_prompt,
-                                 generate_chat_summary)
+                                 generate_chat_summary,
+                                 convert_history_to_gemini_prompt)
 from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
 from vertexai.language_models import TextGenerationResponse
@@ -354,6 +354,7 @@ async def test_generate_chat_summary_strips_quotes(clean_firestore, test_chat):
 
     # Verify quotes are stripped
     assert summary == "Machine Learning Discussion"
+
 def test_convert_history_to_gemini_prompt():
   test_history = [{"HumanInput": "good morning"},
                   {"AIOutput": "good morning to you too! How can I help you?"},
