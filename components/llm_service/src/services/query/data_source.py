@@ -26,7 +26,6 @@ from base64 import b64encode
 from typing import List, Tuple
 from pathlib import Path
 from common.utils.logging_handler import Logger
-from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.models import QueryEngine
 from config import get_default_manifest
 from pypdf import PdfReader, PdfWriter, PageObject
@@ -192,7 +191,7 @@ class DataSource:
       if not manifest_url.startswith("gs://"):
         raise RuntimeError("unsupported manifest URL {manifest_url}")
       # download manifest from gs:// bucket
-      blob = get_blob_from_gcs_path(manifest_url)
+      blob = gcs_helper.get_blob_from_gcs_path(manifest_url)
       manifest_spec = json.loads(blob.download_as_string())
       Logger.info(f"loaded document manifest from {manifest_url}")
     else:

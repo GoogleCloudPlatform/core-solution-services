@@ -26,10 +26,10 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Callable, Tuple, List
 from common.utils.config import get_environ_flag
-from common.utils.gcs_adapter import download_file_from_gcs
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
 from common.utils.auth_service import get_roles_from_custom_claims
+from utils.gcs_helper import download_file_from_gcs
 import langchain_community.chat_models as langchain_chat
 import langchain_community.llms as langchain_llm
 import langchain_community.embeddings as langchain_embedding
