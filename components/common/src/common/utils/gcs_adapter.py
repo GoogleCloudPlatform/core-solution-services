@@ -14,7 +14,6 @@
 
 """Module for GCS Services"""
 import os
-import gcsfs
 import traceback
 import logging
 import glob
@@ -56,32 +55,6 @@ class GcsCrudService:
       blobs = self.storage_client.list_blobs(self.bucket_name)
 
     return blobs
-
-  def upload_file_to_gcs_bucket(self,
-                                file_name: str,
-                                file_body: str,
-                                parent_folder_name=None):
-    """
-    Upload new file to GCS bucket
-    :param file_name: string
-    :param file_body: string
-    :param parent_folder_name: string (optional)
-    :return: string
-    """
-    folder_name = file_name.split(".")[0]
-    fs = gcsfs.GCSFileSystem(project=self.bucket_name)
-
-    if parent_folder_name is not None:
-      folder_path = f"{self.bucket_name}/{parent_folder_name}/{folder_name}/" \
-                    f"{file_name}"
-    else:
-      folder_path = f"{self.bucket_name}/{folder_name}/{file_name}"
-
-    with fs.open(folder_path, "wb") as f:
-      f.write(file_body)
-    fs.du(folder_path)
-
-    return {"gs_path": f"gs://{folder_path}"}
 
   def get_blob_from_gcs_path(self, gcs_path):
     """returns blob object using gcs_path"""

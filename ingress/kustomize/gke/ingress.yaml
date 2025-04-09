@@ -58,11 +58,3 @@ spec:
                 name: tools-service
                 port:
                   number: 80
-
-          - path: /streamlit/
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend-streamlit
-                port:
-                  number: 80

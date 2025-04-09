@@ -22,11 +22,11 @@ from common.config import REGION
 from common.utils.config import get_environ_flag, load_config_json
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
-from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.utils.token_handler import UserCredentials
 from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
+from utils.gcs_helper import get_blob_from_gcs_path
 from google.cloud import secretmanager
 from config.model_config import (ModelConfig, VENDOR_OPENAI,
                                 PROVIDER_VERTEX, VENDOR_COHERE,

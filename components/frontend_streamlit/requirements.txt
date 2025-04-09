@@ -1,5 +1,0 @@
-streamlit==1.43.2
-streamlit-chat==0.1.1
-streamlit-javascript==0.1.5
-streamlit-extras==0.6.0
-moment==0.12.1

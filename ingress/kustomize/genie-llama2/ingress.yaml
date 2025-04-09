@@ -43,14 +43,6 @@ spec:
                 port:
                   number: 80
 
-          - path: /streamlit/
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend-streamlit
-                port:
-                  number: 80
-
           - path: /truss-llama2-7b-service/
             pathType: Prefix
             backend:
