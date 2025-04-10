@@ -18,6 +18,7 @@ import time
 import uuid
 import logging
 import re
+import contextvars
 from fastapi import Request, Response
 from fastapi.routing import APIRouter
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -39,6 +40,11 @@ try:
 except ImportError:
   Logger = None  # Will handle in _get_logger
 
+# Context variables for request context
+request_id_var = contextvars.ContextVar("request_id", default="-")
+trace_var = contextvars.ContextVar("trace", default="-")
+session_id_var = contextvars.ContextVar("session_id", default="-")
+
 # Default metrics for HTTP requests
 REQUEST_COUNT = Counter(
   "fastapi_request_count", "FastAPI Request Count",
@@ -54,6 +60,34 @@ ERROR_COUNT = Counter(
   "fastapi_error_count", "FastAPI Error Count",
   ["app_name", "method", "endpoint", "error_type"]
 )
+
+class RequestContextFilter(logging.Filter):
+  """Filter that adds request context to log records.
+  
+  Uses contextvars to retrieve the current request context and adds it to
+  log records. This avoids the need for modifying the log factory.
+  """
+
+  def filter(self, record):
+    """Add request context to the log record."""
+    record.request_id = request_id_var.get()
+    record.trace = trace_var.get()
+    record.session_id = session_id_var.get()
+    return True
+
+# Install the filter once at module import time
+request_filter = RequestContextFilter()
+root_logger = logging.getLogger()
+
+# Check if our filter is already installed
+filter_installed = False
+for f in root_logger.filters:
+  if isinstance(f, RequestContextFilter):
+    filter_installed = True
+    break
+
+if not filter_installed:
+  root_logger.addFilter(request_filter)
 
 class RequestTrackingMiddleware(BaseHTTPMiddleware):
   """Middleware to inject request_id and trace into logs and track requests.
@@ -76,8 +110,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
       collect_metrics: bool = False,
       request_count_metric: Optional[Counter] = None,
       request_latency_metric: Optional[Histogram] = None,
-      error_count_metric: Optional[Counter] = None,
-      log_factory_reset: bool = True
+      error_count_metric: Optional[Counter] = None
   ):
     """Initialize the middleware with configuration options.
     
@@ -90,7 +123,6 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
       request_count_metric: Optional custom Counter for request counts
       request_latency_metric: Optional custom Histogram for request latency
       error_count_metric: Optional custom Counter for error counts
-      log_factory_reset: Whether to reset the log factory after request
     """
     super().__init__(app)
 
@@ -103,7 +135,6 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     self.request_count = request_count_metric or REQUEST_COUNT
     self.request_latency = request_latency_metric or REQUEST_LATENCY
     self.error_count = error_count_metric or ERROR_COUNT
-    self.log_factory_reset = log_factory_reset
     self.logger = self._get_logger()
 
   def _get_logger(self):
@@ -144,18 +175,10 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
 
     request.state.start_time = start_time
 
-    # Create a custom log record factory to inject request context
-    original_factory = logging.getLogRecordFactory()
-
-    def custom_log_record_factory(*args, **kwargs):
-      record = original_factory(*args, **kwargs)
-      # Add context fields with standardized names
-      record.request_id = getattr(request.state, "request_id", "-")
-      record.trace = getattr(request.state, "trace", "-")
-      record.session_id = getattr(request.state, "session_id", "-")
-      return record
-
-    logging.setLogRecordFactory(custom_log_record_factory)
+    # Set context variables for the current task
+    token_request_id = request_id_var.set(request_id)
+    token_trace = trace_var.set(trace)
+    token_session_id = session_id_var.set(session_id)
 
     try:
       # Process the request
@@ -214,9 +237,10 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
 
       raise
     finally:
-      # Reset log factory if configured to do so
-      if self.log_factory_reset:
-        logging.setLogRecordFactory(original_factory)
+      # Reset context variables
+      request_id_var.reset(token_request_id)
+      trace_var.reset(token_trace)
+      session_id_var.reset(token_session_id)
 
 class PrometheusMiddleware(BaseHTTPMiddleware):
   """Middleware to collect Prometheus metrics for all requests."""
@@ -280,15 +304,17 @@ def get_request_context(args) -> tuple:
   Returns:
     tuple: request_id, trace, session_id extracted from arguments or defaults
   """
-  request_id = "-"
-  trace = "-"
-  session_id = "-"
+  # First check context vars (for use outside of request handlers)
+  request_id = request_id_var.get()
+  trace = trace_var.get()
+  session_id = session_id_var.get()
 
+  # Then try to extract from request if available
   for arg in args:
     if hasattr(arg, "state"):
-      request_id = getattr(arg.state, "request_id", "-")
-      trace = getattr(arg.state, "trace", "-")
-      session_id = getattr(arg.state, "session_id", "-")
+      request_id = getattr(arg.state, "request_id", request_id)
+      trace = getattr(arg.state, "trace", trace)
+      session_id = getattr(arg.state, "session_id", session_id)
       break
 
   return request_id, trace, session_id

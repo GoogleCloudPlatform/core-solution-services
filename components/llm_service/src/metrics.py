@@ -18,10 +18,10 @@ import time
 import asyncio
 import inspect
 from functools import wraps
-from typing import Callable, Dict, Any, Optional
+from typing import Callable, Dict, Any
 
 from common.monitoring.metrics import (
-  Counter, Histogram, Gauge, Summary,
+  Counter, Histogram, Gauge,
   extract_user_id, log_operation_result,
   safe_extract_config_dict, measure_latency,
   track_streaming_response_size, record_response_size,
@@ -223,7 +223,7 @@ def extract_chat_params(kwargs: Dict[str, Any]) -> Dict[str, Any]:
       # For create_user_chat function
       prompt = kwargs.get("prompt", "")
       params["llm_type"] = kwargs.get("llm_type", "unknown")
-      params["with_file"] = (kwargs.get("chat_file") is not None or 
+      params["with_file"] = (kwargs.get("chat_file") is not None or
                             kwargs.get("chat_file_url") is not None)
       params["with_tools"] = kwargs.get("tool_names") is not None
       params["is_streaming"] = kwargs.get("stream", False)
@@ -240,6 +240,7 @@ def extract_chat_params(kwargs: Dict[str, Any]) -> Dict[str, Any]:
       params["prompt_size"] = len(config_dict.get("prompt", ""))
   except Exception as e:
     logger.error(f"Error extracting chat parameters: {type(e).__name__}: {e}")
+    raise
 
   # Record prompt size metric
   if params["prompt_size"] > 0:
@@ -272,6 +273,7 @@ def get_query_engine_info(query_engine_id: str) -> Dict[str, str]:
       info["engine_name"] = q_engine.name or "unknown"
   except Exception as e:
     logger.error(f"Error extracting vector DB info: {type(e).__name__}: {e}")
+    raise
 
   return info
 
@@ -344,7 +346,7 @@ def track_chat_generate(func: Callable):
       else:
         # Record size for non-streaming
         record_response_size(
-          result, 
+          result,
           LLM_RESPONSE_SIZE,
           llm_type,
           {"with_file": with_file, "with_tools": with_tools}

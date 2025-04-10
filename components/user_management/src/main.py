@@ -64,8 +64,7 @@ app.add_middleware(
 app.add_middleware(
   RequestTrackingMiddleware,
   project_id=PROJECT_ID,
-  service_name="user-management-service",
-  log_factory_reset=False
+  service_name="user-management-service"
 )
 app.add_middleware(
   PrometheusMiddleware,

@@ -49,8 +49,7 @@ app.add_middleware(
 app.add_middleware(
   RequestTrackingMiddleware,
   project_id=PROJECT_ID,
-  service_name="authentication-service",
-  log_factory_reset=False
+  service_name="authentication-service"
 )
 app.add_middleware(
   PrometheusMiddleware,
