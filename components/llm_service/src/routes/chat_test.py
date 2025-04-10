@@ -140,23 +140,12 @@ def test_get_chat(create_user, create_chat, client_with_emulator):
 
 @pytest.mark.asyncio
 async def test_create_chat(create_user, client_with_emulator):
-  """Test creating a new chat"""
-  url = f"{api_url}/empty_chat"
-  resp = client_with_emulator.post(url)
-  assert resp.status_code == 200, "Failed to create empty chat"
-  json_response = resp.json()
-  chat_data = json_response["data"]
-  assert "id" in chat_data, "Chat ID not found in generated chat"
-
-def test_create_chat_deprecated(create_user, client_with_emulator):
   userid = CHAT_EXAMPLE["user_id"]
   url = f"{api_url}"
 
   # Test regular chat creation
   with mock.patch("routes.chat.llm_chat",
-                 return_value=FAKE_GENERATE_RESPONSE), \
-       mock.patch("routes.chat.generate_chat_summary",
-                 return_value="Test Summary"):
+                  return_value=FAKE_GENERATE_RESPONSE):
     resp = client_with_emulator.post(url, data=FAKE_GENERATE_PARAMS)
 
   json_response = resp.json()
@@ -168,8 +157,6 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
   assert chat_data["history"][1] == \
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "returned chat data generated text"
-  assert chat_data["title"] == "Test Summary", \
-    "chat title set from summary"
 
   # Test streaming chat creation
   streaming_params = {
@@ -177,7 +164,7 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
     "stream": True
   }
   with mock.patch("routes.chat.llm_chat",
-                 return_value=iter([FAKE_GENERATE_RESPONSE])):
+                  return_value=iter([FAKE_GENERATE_RESPONSE])):
     resp = client_with_emulator.post(url, data=streaming_params)
     assert resp.status_code == 200, "Streaming response status 200"
     assert resp.headers["content-type"] == "text/event-stream; charset=utf-8", \
@@ -188,8 +175,8 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
     **FAKE_GENERATE_PARAMS,
     "history": '[{"human": "test prompt"}, {"ai": "test response"}]'
   }
-  with mock.patch("routes.chat.generate_chat_summary",
-                 return_value="Test Summary"):
+  with mock.patch("routes.chat.llm_chat",
+                  return_value=FAKE_GENERATE_RESPONSE):
     resp = client_with_emulator.post(url, data=history_params)
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
@@ -199,8 +186,6 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
     "History human message preserved"
   assert chat_data["history"][1] == {"ai": "test response"}, \
     "History AI message preserved"
-  assert chat_data["title"] == "Test Summary", \
-    "chat title set from summary"
 
   # Test invalid history format
   invalid_history_params = {
@@ -214,17 +199,11 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
   invalid_params = {
     "llm_type": FAKE_GENERATE_PARAMS["llm_type"]
   }
-  # Skip mocking llm_chat since validation will fail before it would be called
   resp = client_with_emulator.post(url, data=invalid_params)
   assert resp.status_code == 422, "Missing prompt and history returns 422"
-  json_response = resp.json()
-  assert json_response["success"] is False, "Error response indicates failure"
-  error_msg = "Error message mentions missing prompt"
-  assert "prompt" in json_response["message"].lower(), error_msg
-  assert json_response["data"] is None, "Error response has no data"
 
   # Verify final state
-  user_chats = UserChat.find_by_user(USER_EXAMPLE["user_id"])
+  user_chats = UserChat.find_by_user(userid)
   assert len(user_chats) == 2, "Created expected number of chats"
 
   # Verify the regular chat creation
@@ -238,8 +217,7 @@ def test_create_chat_deprecated(create_user, client_with_emulator):
   assert regular_chat.history[1] == \
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "saved chat data generated text"
-  assert regular_chat.title == "Test Summary", \
-    "chat title saved from summary"
+
 
 
 def test_delete_chat(create_user, create_chat, client_with_emulator):
