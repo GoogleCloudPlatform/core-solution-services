@@ -64,11 +64,12 @@ app.add_middleware(
 app.add_middleware(
   RequestTrackingMiddleware,
   project_id=PROJECT_ID,
-  service_name="user_management_service"
+  service_name="user-management-service",
+  log_factory_reset=False
 )
 app.add_middleware(
   PrometheusMiddleware,
-  service_name="user_management_service"
+  service_name="user-management-service"
 )
 
 # Create metrics router
