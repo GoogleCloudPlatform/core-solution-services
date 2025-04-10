@@ -284,7 +284,8 @@ def safe_extract_config_dict(config: Any) -> Dict[str, Any]:
     return {}
 
 
-def measure_latency(start_time: float, metric_name: str, extra_data: Dict[str, Any] = None) -> float:
+def measure_latency(start_time: float, metric_name: str,
+                     extra_data: Dict[str, Any] = None) -> float:
   """Calculate and log latency information
   
   Args:
@@ -395,7 +396,8 @@ def record_response_size(
   if isinstance(result, str):
     response_size = len(result)
   elif isinstance(result, dict) and "content" in result:
-    response_size = len(result["content"]) if isinstance(result["content"], str) else 0
+    response_size = len(result["content"]) if isinstance(
+      result["content"], str) else 0
 
   if response_size > 0:
     logger.info(
@@ -415,7 +417,7 @@ def record_response_size(
 
 def record_user_activity(
     user_id: str,
-    activity_type: str, 
+    activity_type: str,
     activity_counter: Counter
 ) -> None:
   """Record user activity for tracking active users
@@ -470,6 +472,7 @@ def create_decorator_for_streaming_func(
           labels = extract_labels_func(kwargs)
         except Exception as e:
           logger.error(f"Error extracting labels: {str(e)}")
+          raise
 
       # Record user activity if counter provided
       if activity_counter and activity_type and user_id != "unknown":
@@ -483,7 +486,8 @@ def create_decorator_for_streaming_func(
         result = await func(*args, **kwargs)
 
         # Handle streaming responses if size metric provided
-        if response_size_metric and (inspect.isasyncgen(result) or asyncio.iscoroutine(result)):
+        if response_size_metric and (
+          inspect.isasyncgen(result) or asyncio.iscoroutine(result)):
           # Wrap with size tracking generator
           original_result = result
           result = track_streaming_response_size(
@@ -495,7 +499,7 @@ def create_decorator_for_streaming_func(
         elif response_size_metric:
           # Record size for non-streaming response
           record_response_size(
-            result, 
+            result,
             response_size_metric,
             metric_name,
             labels

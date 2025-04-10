@@ -354,7 +354,8 @@ def track_chat_generate(func: Callable):
 
       # Track chat history size if available
       history_size = None
-      if isinstance(result, dict) and "data" in result and "history" in result["data"]:
+      if isinstance(
+        result, dict) and "data" in result and "history" in result["data"]:
         history_size = len(result["data"]["history"])
         CHAT_HISTORY_SIZE.labels(llm_type=llm_type).observe(history_size)
 

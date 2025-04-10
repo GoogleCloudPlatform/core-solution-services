@@ -95,7 +95,8 @@ class JsonFormatter(logging.Formatter):
 
   def format(self, record):
     # Generate ISO-8601 timestamp compatible with Cloud Logging
-    timestamp = datetime.datetime.fromtimestamp(record.created).isoformat() + "Z"
+    timestamp = datetime.datetime.fromtimestamp(
+      record.created).isoformat() + "Z"
 
     # Build core log entry with essential fields only
     log_entry = {
@@ -116,7 +117,8 @@ class JsonFormatter(logging.Formatter):
 
     # Handle Cloud Logging trace format
     if log_entry["trace"]:
-      if isinstance(log_entry["trace"], str) and log_entry["trace"].startswith("projects/"):
+      if isinstance(log_entry["trace"], str) and log_entry[
+        "trace"].startswith("projects/"):
         log_entry["logging.googleapis.com/trace"] = log_entry["trace"]
       elif log_entry["trace"] != "-" and log_entry["trace"] is not None:
         log_entry["logging.googleapis.com/trace"] = log_entry["trace"]
@@ -132,9 +134,9 @@ class JsonFormatter(logging.Formatter):
     # Process additional fields in a single pass from record.__dict__
     # Skip standard attributes and already processed fields
     for key, value in record.__dict__.items():
-      if (key not in STANDARD_ATTRIBUTES and 
-          key not in log_entry and 
-          not key.startswith("_") and 
+      if (key not in STANDARD_ATTRIBUTES and
+          key not in log_entry and
+          not key.startswith("_") and
           not callable(value)):
         log_entry[key] = value
 
@@ -152,12 +154,14 @@ class JsonFormatter(logging.Formatter):
       error_msg = {
         "timestamp": timestamp,
         "severity": "ERROR",
-        "message": f"Error during log serialization: {type(exc).__name__}: {str(exc)}",
+        "message": f"Log serialization error: {type(exc).__name__}: {str(exc)}",
         "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
         "logger": "logging_handler",
         "original_message": str(record.getMessage())
       }
-      return json.dumps(error_msg)
+      print(error_msg)
+      raise
+
 
 # Force reconfiguration of root logger by removing existing handlers
 root_logger = logging.getLogger()
