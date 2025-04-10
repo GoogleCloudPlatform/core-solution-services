@@ -25,4 +25,3 @@ sqlalchemy-bigquery @ https://github.com/googleapis/python-bigquery-sqlalchemy/a
 sqlparse==0.5.3
 sqlvalidator==0.0.20
 timeout-decorator==0.5.0
-transformers>=4.30.0
