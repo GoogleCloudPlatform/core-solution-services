@@ -157,15 +157,15 @@ def extract_llm_params(kwargs: Dict[str, Any]) -> Dict[str, Any]:
   """
   gen_config = kwargs.get("gen_config")
   config_dict = safe_extract_config_dict(gen_config)
-  
+
   llm_type = config_dict.get("llm_type", "unknown")
   prompt = config_dict.get("prompt", "")
   prompt_size = len(prompt)
-  
+
   # Record prompt size
   if prompt_size > 0:
     PROMPT_SIZE.labels("llm").observe(prompt_size)
-  
+
   return {
     "llm_type": llm_type,
     "prompt_size": prompt_size
@@ -183,15 +183,15 @@ def extract_embedding_params(kwargs: Dict[str, Any]) -> Dict[str, Any]:
   """
   embedding_config = kwargs.get("embeddings_config")
   config_dict = safe_extract_config_dict(embedding_config)
-  
+
   embedding_type = config_dict.get("embedding_type", "unknown")
   text = config_dict.get("text", "")
   text_size = len(text)
-  
+
   # Record text size
   if text_size > 0:
     PROMPT_SIZE.labels("embedding").observe(text_size)
-  
+
   return {
     "embedding_type": embedding_type,
     "text_size": text_size
@@ -208,7 +208,7 @@ def extract_chat_params(kwargs: Dict[str, Any]) -> Dict[str, Any]:
       Dict with chat parameters
   """
   gen_config = kwargs.get("gen_config")
-  
+
   # Initialize defaults
   params = {
     "llm_type": "unknown",
@@ -217,7 +217,7 @@ def extract_chat_params(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     "prompt_size": 0,
     "is_streaming": False
   }
-  
+
   try:
     if not gen_config:
       # For create_user_chat function
@@ -231,7 +231,7 @@ def extract_chat_params(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     else:
       # For other chat functions with gen_config
       config_dict = safe_extract_config_dict(gen_config)
-      
+
       params["llm_type"] = config_dict.get("llm_type", "unknown")
       params["with_file"] = (config_dict.get("chat_file_b64") is not None or
                            config_dict.get("chat_file_url") is not None)
@@ -240,11 +240,11 @@ def extract_chat_params(kwargs: Dict[str, Any]) -> Dict[str, Any]:
       params["prompt_size"] = len(config_dict.get("prompt", ""))
   except Exception as e:
     logger.error(f"Error extracting chat parameters: {type(e).__name__}: {e}")
-    
+
   # Record prompt size metric
   if params["prompt_size"] > 0:
     PROMPT_SIZE.labels("chat").observe(params["prompt_size"])
-    
+
   return params
 
 
@@ -261,10 +261,10 @@ def get_query_engine_info(query_engine_id: str) -> Dict[str, str]:
     "db_type": "unknown",
     "engine_name": "unknown"
   }
-  
+
   if not query_engine_id:
     return info
-    
+
   try:
     q_engine = QueryEngine.find_by_id(query_engine_id)
     if q_engine:
@@ -272,7 +272,7 @@ def get_query_engine_info(query_engine_id: str) -> Dict[str, str]:
       info["engine_name"] = q_engine.name or "unknown"
   except Exception as e:
     logger.error(f"Error extracting vector DB info: {type(e).__name__}: {e}")
-    
+
   return info
 
 
@@ -301,7 +301,7 @@ track_embedding_generate = create_decorator_for_streaming_func(
 
 def track_chat_generate(func: Callable):
   """Decorator to track chat generation metrics including response size"""
-  
+
   @wraps(func)
   async def wrapper(*args, **kwargs):
     # Extract parameters
@@ -311,24 +311,24 @@ def track_chat_generate(func: Callable):
     with_tools = params["with_tools"]
     prompt_size = params["prompt_size"]
     is_streaming = params["is_streaming"]
-    
+
     # Extract user information and record activity
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
     if user_id != "unknown":
       record_user_activity(user_id, "chat_generation", USER_ACTIVITY)
-    
+
     # Start timing
     start_time = time.time()
-    
+
     try:
       # Call original function
       result = await func(*args, **kwargs)
-      
+
       # Format labels for metrics
       str_with_file = str(with_file)
       str_with_tools = str(with_tools)
-      
+
       # Handle streaming vs non-streaming results for size tracking
       if asyncio.iscoroutine(result) or inspect.isasyncgen(result):
         extra_data = {
@@ -349,13 +349,13 @@ def track_chat_generate(func: Callable):
           llm_type,
           {"with_file": with_file, "with_tools": with_tools}
         )
-      
+
       # Track chat history size if available
       history_size = None
       if isinstance(result, dict) and "data" in result and "history" in result["data"]:
         history_size = len(result["data"]["history"])
         CHAT_HISTORY_SIZE.labels(llm_type=llm_type).observe(history_size)
-      
+
       # Record success metrics
       CHAT_GENERATE_COUNT.labels(
         llm_type=llm_type,
@@ -364,7 +364,7 @@ def track_chat_generate(func: Callable):
         status="success",
         user_id=user_id
       ).inc()
-      
+
       # Log success
       log_extra = {
         "llm_type": llm_type,
@@ -374,14 +374,14 @@ def track_chat_generate(func: Callable):
         "user_id": user_id,
         "response_size": "streaming" if is_streaming else "done"
       }
-      
+
       if history_size is not None:
         log_extra["history_size"] = history_size
-        
+
       log_operation_result(logger, "chat_generation", "success", log_extra)
-      
+
       return result
-      
+
     except Exception as e:
       # Record error metrics
       CHAT_GENERATE_COUNT.labels(
@@ -391,7 +391,7 @@ def track_chat_generate(func: Callable):
         status="error",
         user_id=user_id
       ).inc()
-      
+
       # Log error
       log_operation_result(
         logger,
@@ -407,7 +407,7 @@ def track_chat_generate(func: Callable):
         }
       )
       raise
-      
+
     finally:
       # Record latency
       latency = measure_latency(
@@ -424,25 +424,25 @@ def track_chat_generate(func: Callable):
         with_file=str(with_file),
         with_tools=str(with_tools)
       ).observe(latency)
-      
+
   return wrapper
 
 
 def track_chat_operations(func: Callable) -> Callable:
   """Decorator to track chat operations (create, delete, etc.)"""
-  
+
   @wraps(func)
   async def async_wrapper(*args, **kwargs):
     # Extract user information
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
-    
+
     try:
       result = await func(*args, **kwargs)
-      
+
       # Check operation type from function name
       func_name = func.__name__
-      
+
       if isinstance(result, dict) and result.get("success"):
         # Handle chat creation
         if "create" in func_name:
@@ -451,7 +451,7 @@ def track_chat_operations(func: Callable) -> Callable:
           log_operation_result(
             logger, "chat_creation", "success", {"user_id": user_id}
           )
-          
+
         # Handle chat deletion
         elif "delete" in func_name:
           ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
@@ -459,9 +459,9 @@ def track_chat_operations(func: Callable) -> Callable:
           log_operation_result(
             logger, "chat_deletion", "success", {"user_id": user_id}
           )
-      
+
       return result
-      
+
     except Exception as e:
       # Log error
       log_operation_result(
@@ -481,13 +481,13 @@ def track_chat_operations(func: Callable) -> Callable:
     # Extract user information
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
-    
+
     try:
       result = func(*args, **kwargs)
-      
+
       # Check operation type from function name
       func_name = func.__name__
-      
+
       if isinstance(result, dict) and result.get("success"):
         # Handle chat creation
         if "create" in func_name:
@@ -496,7 +496,7 @@ def track_chat_operations(func: Callable) -> Callable:
           log_operation_result(
             logger, "chat_creation", "success", {"user_id": user_id}
           )
-          
+
         # Handle chat deletion
         elif "delete" in func_name:
           ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
@@ -504,9 +504,9 @@ def track_chat_operations(func: Callable) -> Callable:
           log_operation_result(
             logger, "chat_deletion", "success", {"user_id": user_id}
           )
-      
+
       return result
-      
+
     except Exception as e:
       # Log error
       log_operation_result(
@@ -530,32 +530,32 @@ def track_chat_operations(func: Callable) -> Callable:
 
 def track_agent_execution(func: Callable):
   """Decorator to track agent execution metrics"""
-  
+
   @wraps(func)
   async def wrapper(*args, **kwargs):
     # Extract agent information
     agent_type = kwargs.get("agent_type", "unknown")
     agent_name = kwargs.get("agent_name", "unknown")
-    
+
     # Extract user information and record activity
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
     if user_id != "unknown":
       record_user_activity(user_id, "agent_execution", USER_ACTIVITY)
-    
+
     # Start timing
     start_time = time.time()
-    
+
     try:
       # Call the original function
       result = await func(*args, **kwargs)
-      
+
       # Record success metrics
       AGENT_EXECUTION_COUNT.labels(
-        agent_type=agent_type, 
+        agent_type=agent_type,
         status="success"
       ).inc()
-      
+
       # Log success
       log_operation_result(
         logger,
@@ -566,16 +566,16 @@ def track_agent_execution(func: Callable):
           "agent_name": agent_name
         }
       )
-      
+
       return result
-      
+
     except Exception as e:
       # Record error metrics
       AGENT_EXECUTION_COUNT.labels(
-        agent_type=agent_type, 
+        agent_type=agent_type,
         status="error"
       ).inc()
-      
+
       # Log error
       log_operation_result(
         logger,
@@ -588,52 +588,52 @@ def track_agent_execution(func: Callable):
         }
       )
       raise
-      
+
     finally:
       # Record latency
       latency = measure_latency(
-        start_time, 
+        start_time,
         "agent_execution",
         {"agent_type": agent_type, "agent_name": agent_name}
       )
       AGENT_EXECUTION_LATENCY.labels(agent_type=agent_type).observe(latency)
-      
+
   return wrapper
 
 
 def track_vector_db_query(func: Callable):
   """Decorator to track vector database query metrics"""
-  
+
   @wraps(func)
   async def wrapper(*args, **kwargs):
     # Extract vector DB information
     query_engine_id = kwargs.get("query_engine_id")
     if not query_engine_id and args:
       query_engine_id = args[0] if args else None
-      
+
     engine_info = get_query_engine_info(query_engine_id)
     db_type = engine_info["db_type"]
     engine_name = engine_info["engine_name"]
-    
+
     # Extract user information and record activity
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
     if user_id != "unknown":
       record_user_activity(user_id, "vector_db_query", USER_ACTIVITY)
-    
+
     # Start timing
     start_time = time.time()
-    
+
     try:
       result = await func(*args, **kwargs)
-      
+
       # Record success metrics
       VECTOR_DB_QUERY_COUNT.labels(
         db_type=db_type,
         engine_name=engine_name,
         status="success"
       ).inc()
-      
+
       # Log success
       log_operation_result(
         logger,
@@ -644,9 +644,9 @@ def track_vector_db_query(func: Callable):
           "engine_name": engine_name
         }
       )
-      
+
       return result
-      
+
     except Exception as e:
       # Record error metrics
       VECTOR_DB_QUERY_COUNT.labels(
@@ -654,7 +654,7 @@ def track_vector_db_query(func: Callable):
         engine_name=engine_name,
         status="error"
       ).inc()
-      
+
       # Log error
       log_operation_result(
         logger,
@@ -667,7 +667,7 @@ def track_vector_db_query(func: Callable):
         }
       )
       raise
-      
+
     finally:
       # Record latency
       latency = measure_latency(
@@ -679,41 +679,41 @@ def track_vector_db_query(func: Callable):
         db_type=db_type,
         engine_name=engine_name
       ).observe(latency)
-      
+
   return wrapper
 
 
 def track_vector_db_build(func: Callable):
   """Decorator to track vector database build metrics"""
-  
+
   @wraps(func)
   async def wrapper(*args, **kwargs):
     # Extract vector DB information from config
     gen_config = kwargs.get("gen_config")
     config_dict = safe_extract_config_dict(gen_config)
-    
+
     db_type = config_dict.get("vector_store", "unknown")
     engine_name = config_dict.get("query_engine", "unknown")
-    
+
     # Extract user information and record activity
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
     if user_id != "unknown":
       record_user_activity(user_id, "vector_db_build", USER_ACTIVITY)
-    
+
     # Start timing
     start_time = time.time()
-    
+
     try:
       result = await func(*args, **kwargs)
-      
+
       # Record success metrics
       VECTOR_DB_BUILD_COUNT.labels(
         db_type=db_type,
         engine_name=engine_name,
         status="success"
       ).inc()
-      
+
       # Log success
       log_operation_result(
         logger,
@@ -724,9 +724,9 @@ def track_vector_db_build(func: Callable):
           "engine_name": engine_name
         }
       )
-      
+
       return result
-      
+
     except Exception as e:
       # Record error metrics
       VECTOR_DB_BUILD_COUNT.labels(
@@ -734,7 +734,7 @@ def track_vector_db_build(func: Callable):
         engine_name=engine_name,
         status="error"
       ).inc()
-      
+
       # Log error
       log_operation_result(
         logger,
@@ -747,7 +747,7 @@ def track_vector_db_build(func: Callable):
         }
       )
       raise
-      
+
     finally:
       # Record latency
       latency = measure_latency(
@@ -759,7 +759,7 @@ def track_vector_db_build(func: Callable):
         db_type=db_type,
         engine_name=engine_name
       ).observe(latency)
-      
+
   return wrapper
 
 

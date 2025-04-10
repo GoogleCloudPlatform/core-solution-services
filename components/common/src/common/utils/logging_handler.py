@@ -44,7 +44,7 @@ class LogRecordFilter(logging.Filter):
   """Filter to ensure required fields are present in log records."""
 
   def filter(self, record):
-    # Add default values for required fields if they don"t exist
+    # Add default values for required fields if they don't exist
     if not hasattr(record, "request_id"):
       record.request_id = "-"
     if not hasattr(record, "trace"):
@@ -59,11 +59,13 @@ class SafeJsonEncoder(json.JSONEncoder):
   """JSON encoder that safely handles non-serializable objects."""
 
   def default(self, o):
-    try:
-      return super().default(o)
-    except TypeError:
-      # For objects that can"t be serialized, convert to string
-      return str(o)
+    # Handle common types that are problematic in JSON
+    if isinstance(o, (datetime.datetime, datetime.date)):
+      return o.isoformat()
+    if hasattr(o, "__dict__"):
+      return o.__dict__
+    # Fall back to string representation for anything else
+    return str(o)
 
 # Helper function to add default fields
 def _add_default_fields(extra=None):
@@ -71,21 +73,21 @@ def _add_default_fields(extra=None):
   if extra is None:
     extra = {}
 
-  # Add default values for standard fields
-  if "request_id" not in extra:
-    extra["request_id"] = "-"
-  if "trace" not in extra:
-    extra["trace"] = "-"
-  if "session_id" not in extra:
-    extra["session_id"] = "-"
-
-  # Store all additional fields in extras dictionary
-  extras = {k: v for k, v in extra.items()
-           if k not in ["request_id", "trace", "session_id"]}
-  if extras:
-    extra["extras"] = extras
+  # Set default fields only if not present
+  for field in ["request_id", "trace", "session_id"]:
+    if field not in extra:
+      extra[field] = "-"
 
   return extra
+
+# Standard attributes to exclude when processing record.__dict__
+STANDARD_ATTRIBUTES = {
+  "args", "created", "exc_info", "exc_text", "filename", 
+  "funcName", "levelname", "levelno", "lineno", "module", 
+  "msecs", "msg", "name", "pathname", "process", 
+  "processName", "relativeCreated", "stack_info", 
+  "thread", "threadName", "request_id", "trace", "session_id"
+}
 
 # Custom JSON formatter for structured logging
 class JsonFormatter(logging.Formatter):
@@ -93,146 +95,69 @@ class JsonFormatter(logging.Formatter):
 
   def format(self, record):
     # Generate ISO-8601 timestamp compatible with Cloud Logging
-    timestamp = datetime.datetime.fromtimestamp(
-      record.created).isoformat() + "Z"
+    timestamp = datetime.datetime.fromtimestamp(record.created).isoformat() + "Z"
 
+    # Build core log entry with essential fields only
     log_entry = {
       "timestamp": timestamp,
       "severity": record.levelname,
       "message": record.getMessage(),
       "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
-      "request_id": getattr(record, "request_id", "-"),
-      "trace": getattr(record, "trace", "-"),
-      "session_id": getattr(record, "session_id", "-"),
       "logger": record.name,
       "file": record.pathname,
       "function": record.funcName,
       "line": record.lineno
     }
 
-    # Properly format trace for Google Cloud Logging
-    trace_value = log_entry["trace"]
-    if trace_value != "-":
-      if trace_value.startswith("projects/"):
-        # Trace is already in full format (from middleware)
-        log_entry["logging.googleapis.com/trace"] = trace_value
-      else:
-        # Just use the trace ID as provided
-        log_entry["logging.googleapis.com/trace"] = trace_value
-
-    # Add null values instead of dash placeholders for cleaner JSON
+    # Add request context fields but use null instead of dashes
     for field in ["request_id", "trace", "session_id"]:
-      if log_entry[field] == "-":
-        log_entry[field] = None
+      value = getattr(record, field, "-")
+      log_entry[field] = None if value == "-" else value
 
-    # Add any extras fields from the record
+    # Handle Cloud Logging trace format
+    if log_entry["trace"]:
+      if isinstance(log_entry["trace"], str) and log_entry["trace"].startswith("projects/"):
+        log_entry["logging.googleapis.com/trace"] = log_entry["trace"]
+      elif log_entry["trace"] != "-" and log_entry["trace"] is not None:
+        log_entry["logging.googleapis.com/trace"] = log_entry["trace"]
+
+    # Add exception info if present
+    if record.exc_info:
+      log_entry["exception"] = {
+        "type": record.exc_info[0].__name__,
+        "message": str(record.exc_info[1]),
+        "traceback": traceback.format_exception(*record.exc_info)
+      }
+
+    # Process additional fields in a single pass from record.__dict__
+    # Skip standard attributes and already processed fields
+    for key, value in record.__dict__.items():
+      if (key not in STANDARD_ATTRIBUTES and 
+          key not in log_entry and 
+          not key.startswith("_") and 
+          not callable(value)):
+        log_entry[key] = value
+
+    # Add extras content if present
     extras = getattr(record, "extras", {})
     if isinstance(extras, dict):
       for key, value in extras.items():
         if key not in log_entry:
           log_entry[key] = value
 
-    # Process any nested fields in extras to bring them up to the top level
-    if "extras" in log_entry and isinstance(log_entry["extras"], dict):
-      for nested_key, nested_value in log_entry["extras"].items():
-        if nested_key not in log_entry:
-          log_entry[nested_key] = nested_value
-      # remove the original extras to avoid duplication
-      del log_entry["extras"]
-
-    # Look for specific metric fields directly on the record
-    standard_attributes = [
-      "args", "created", "exc_info", "exc_text", "filename", 
-      "funcName", "levelname", "levelno", "lineno", "module", 
-      "msecs", "msg", "name", "pathname", "process", 
-      "processName", "relativeCreated", "stack_info", 
-      "thread", "threadName"
-    ]
-
-    for attr_name in dir(record):
-      # Skip private attributes, methods, and already-processed fields
-      if (not attr_name.startswith("__") and
-          not callable(getattr(record, attr_name)) and
-          attr_name not in log_entry and
-          attr_name not in standard_attributes):
-        log_entry[attr_name] = getattr(record, attr_name)
-
-    # Add exception info if present
-    if record.exc_info:
-      exception_data = {
-        "type": record.exc_info[0].__name__,
-        "message": str(record.exc_info[1]),
-        "traceback": traceback.format_exception(*record.exc_info)
-      }
-      log_entry["exception"] = exception_data
-
-    # Return JSON string, handling non-serializable objects
+    # Return JSON string with simplified error handling
     try:
       return json.dumps(log_entry, cls=SafeJsonEncoder)
-    except TypeError as exc:
-      return json.dumps({
+    except Exception as exc:
+      error_msg = {
         "timestamp": timestamp,
         "severity": "ERROR",
-        "message": f"Type error during log serialization: {str(exc)}",
+        "message": f"Error during log serialization: {type(exc).__name__}: {str(exc)}",
         "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
-        "request_id": None,
-        "trace": None,
-        "session_id": None,
         "logger": "logging_handler",
-        "file": record.pathname,
-        "function": "format",
-        "line": 0,
-        "error_type": "TypeError",
-        "original_message": record.getMessage()
-      })
-    except ValueError as exc:
-      return json.dumps({
-        "timestamp": timestamp,
-        "severity": "ERROR",
-        "message": f"Value error during log serialization: {str(exc)}",
-        "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
-        "request_id": None,
-        "trace": None,
-        "session_id": None,
-        "logger": "logging_handler",
-        "file": record.pathname,
-        "function": "format",
-        "line": 0,
-        "error_type": "ValueError",
-        "original_message": record.getMessage()
-      })
-    except OverflowError as exc:
-      return json.dumps({
-        "timestamp": timestamp,
-        "severity": "ERROR",
-        "message": f"Overflow error during log serialization: {str(exc)}",
-        "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
-        "request_id": None,
-        "trace": None,
-        "session_id": None,
-        "logger": "logging_handler", 
-        "file": record.pathname,
-        "function": "format",
-        "line": 0,
-        "error_type": "OverflowError",
-        "original_message": record.getMessage()
-      })
-    except RecursionError as exc:
-      return json.dumps({
-        "timestamp": timestamp,
-        "severity": "ERROR",
-        "message": f"Recursion error during log serialization: {str(exc)}",
-        "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
-        "request_id": None,
-        "trace": None,
-        "session_id": None,
-        "logger": "logging_handler",
-        "file": record.pathname,
-        "function": "format",
-        "line": 0,
-        "error_type": "RecursionError",
-        "original_message": record.getMessage()
-      })
+        "original_message": str(record.getMessage())
+      }
+      return json.dumps(error_msg)
 
 # Force reconfiguration of root logger by removing existing handlers
 root_logger = logging.getLogger()
@@ -273,6 +198,9 @@ _static_logger = logging.getLogger("Logger")
 _static_logger.setLevel(LOG_LEVEL)
 _static_logger.addFilter(LogRecordFilter())
 
+# Cache for logger instances
+_logger_cache = {}
+
 # Define the instance logger class
 class Logger:
   """Instance logger for module-specific logging with structured output."""
@@ -292,7 +220,11 @@ class Logger:
 
   @classmethod
   def get_logger(cls, name) -> logging.Logger:
+    if name in _logger_cache:
+      return _logger_cache[name]
+
     logger_instance = cls(name)
+    _logger_cache[name] = logger_instance.logger
     return logger_instance.logger
 
   # Instance logging methods

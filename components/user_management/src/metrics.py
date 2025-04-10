@@ -515,13 +515,15 @@ def track_user_import(func: Callable):
       if isinstance(e, ValueError):
         logger.warning("Validation error in user import", extra=error_context)
       elif isinstance(e, (KeyError, AttributeError)):
-        logger.warning("Data structure error in user import", extra=error_context)
+        logger.warning("Data structure error in user import",
+                        extra=error_context)
       elif isinstance(e, IOError):
         logger.warning("I/O error in user import", extra=error_context)
       elif isinstance(e, TypeError):
         logger.warning("Type error in user import", extra=error_context)
       else:
-        logger.error("Unexpected error in user import", extra=error_context, exc_info=True)
+        logger.error("Unexpected error in user import", extra=error_context,
+                      exc_info=True)
 
       # Record error metrics
       USER_IMPORT_COUNT.labels(
@@ -582,16 +584,19 @@ def track_user_import(func: Callable):
       }
 
       if isinstance(e, ValueError):
-        logger.warning("Validation error in user import", extra=error_context)
+        logger.warning("Validation error in user import",
+                        extra=error_context)
       elif isinstance(e, (KeyError, AttributeError)):
-        logger.warning("Data structure error in user import", extra=error_context)
+        logger.warning("Data structure error in user import",
+                        extra=error_context)
       elif isinstance(e, IOError):
         logger.warning("I/O error in user import", extra=error_context)
       elif isinstance(e, TypeError):
         logger.warning("Type error in user import", extra=error_context)
       else:
         error_context["error_class"] = error_type
-        logger.error("Unexpected error in user import", extra=error_context, exc_info=True)
+        logger.error("Unexpected error in user import",
+                      extra=error_context, exc_info=True)
 
       # Record error metrics
       USER_IMPORT_COUNT.labels(

@@ -72,7 +72,8 @@ ACTIVE_USERS = Gauge(
 
 # For tracking concurrent operations
 CONCURRENT_OPERATIONS = Gauge(
-  "concurrent_auth_operations", "Number of Concurrent Authentication Operations",
+  "concurrent_auth_operations",
+  "Number of Concurrent Authentication Operations",
   ["operation"]
 )
 
