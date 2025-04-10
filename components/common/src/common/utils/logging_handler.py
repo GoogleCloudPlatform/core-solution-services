@@ -20,7 +20,16 @@ import os
 import sys
 import traceback
 import datetime
+import contextvars
 from common.config import CLOUD_LOGGING_ENABLED, SERVICE_NAME, CONTAINER_NAME
+try:
+  from common.monitoring.middleware import (
+    request_id_var, trace_var, session_id_var
+  )
+except ImportError:
+  request_id_var = contextvars.ContextVar("request_id", default="-")
+  trace_var = contextvars.ContextVar("trace", default="-")
+  session_id_var = contextvars.ContextVar("session_id", default="-")
 
 # Get log level from environment, default to INFO
 LOG_LEVEL_NAME = os.environ.get("LOG_LEVEL", "INFO").upper()
@@ -39,18 +48,28 @@ if CLOUD_LOGGING_ENABLED:
 else:
   client = None
 
+
 # Create a filter to add missing fields
 class LogRecordFilter(logging.Filter):
   """Filter to ensure required fields are present in log records."""
 
   def filter(self, record):
     # Add default values for required fields if they don't exist
-    if not hasattr(record, "request_id"):
-      record.request_id = "-"
-    if not hasattr(record, "trace"):
-      record.trace = "-"
-    if not hasattr(record, "session_id"):
-      record.session_id = "-"
+    # First check if already set
+    if not hasattr(record, "request_id") or record.request_id == "-":
+      # Try to get from context vars
+      ctx_request_id = request_id_var.get()
+      record.request_id = ctx_request_id if ctx_request_id != "-" else "-"
+
+    if not hasattr(record, "trace") or record.trace == "-":
+      # Try to get from context vars
+      ctx_trace = trace_var.get()
+      record.trace = ctx_trace if ctx_trace != "-" else "-"
+
+    if not hasattr(record, "session_id") or record.session_id == "-":
+      # Try to get from context vars
+      ctx_session_id = session_id_var.get()
+      record.session_id = ctx_session_id if ctx_session_id != "-" else "-"
 
     return True
 
@@ -76,7 +95,15 @@ def _add_default_fields(extra=None):
   # Set default fields only if not present
   for field in ["request_id", "trace", "session_id"]:
     if field not in extra:
-      extra[field] = "-"
+      # Try to get from context vars first
+      if field == "request_id":
+        extra[field] = request_id_var.get()
+      elif field == "trace":
+        extra[field] = trace_var.get()
+      elif field == "session_id":
+        extra[field] = session_id_var.get()
+      else:
+        extra[field] = "-"
 
   return extra
 
