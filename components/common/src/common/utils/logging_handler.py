@@ -221,6 +221,8 @@ else:
   root_logger.addHandler(json_handler)
   print("*** STARTUP: Added JSON formatter handler to root logger ***")
 
+__all__ = ["Logger", "root_filter"]
+
 print("*** STARTUP: Initialized structured logging "
       f"with level: {LOG_LEVEL_NAME} ***")
 

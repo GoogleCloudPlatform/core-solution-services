@@ -40,6 +40,11 @@ try:
 except ImportError:
   Logger = None  # Will handle in _get_logger
 
+try:
+  from common.utils.logging_handler import root_filter
+except ImportError:
+  Logger = None
+
 # Context variables for request context
 request_id_var = contextvars.ContextVar("request_id", default="-")
 trace_var = contextvars.ContextVar("trace", default="-")
@@ -188,6 +193,15 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     token_request_id = request_id_var.set(request_id)
     token_trace = trace_var.set(trace)
     token_session_id = session_id_var.set(session_id)
+
+    self.logger.debug(
+    "Context variables set in middleware",
+    extra={
+        "request_id": request_id,  # Should be picked up by filter
+        "trace": trace,            # Should be picked up by filter
+        "session_id": session_id   # Should be picked up by filter
+      }
+    )
 
     # HYBRID APPROACH: Still use log factory for backward compatibility
     # but rely primarily on the filter for most cases
