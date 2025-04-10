@@ -314,6 +314,9 @@ def track_chat_generate(func: Callable):
     prompt_size = params["prompt_size"]
     is_streaming = params["is_streaming"]
 
+    str_with_file = str(with_file)
+    str_with_tools = str(with_tools)
+
     # Extract user information and record activity
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
@@ -326,10 +329,6 @@ def track_chat_generate(func: Callable):
     try:
       # Call original function
       result = await func(*args, **kwargs)
-
-      # Format labels for metrics
-      str_with_file = str(with_file)
-      str_with_tools = str(with_tools)
 
       # Handle streaming vs non-streaming results for size tracking
       if asyncio.iscoroutine(result) or inspect.isasyncgen(result):
@@ -386,7 +385,6 @@ def track_chat_generate(func: Callable):
       return result
 
     except Exception as e:
-      # Record error metrics
       CHAT_GENERATE_COUNT.labels(
         llm_type=llm_type,
         with_file=str_with_file,
@@ -424,8 +422,8 @@ def track_chat_generate(func: Callable):
       )
       CHAT_GENERATE_LATENCY.labels(
         llm_type=llm_type,
-        with_file=str(with_file),
-        with_tools=str(with_tools)
+        with_file=str_with_file,
+        with_tools=str_with_tools
       ).observe(latency)
 
   return wrapper
