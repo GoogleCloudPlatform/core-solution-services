@@ -17,9 +17,12 @@
 import asyncio
 from functools import wraps
 from typing import Callable
-from common.monitoring.metrics import Counter, Histogram, Gauge
+
+from common.monitoring.metrics import (
+  Counter, Histogram, Gauge,
+  operation_tracker
+)
 from common.utils.logging_handler import Logger
-from common.monitoring.metrics import operation_tracker
 
 # Initialize logger
 logger = Logger.get_logger("authentication_service.metrics")
@@ -69,10 +72,18 @@ ACTIVE_USERS = Gauge(
 
 # For tracking concurrent operations
 CONCURRENT_OPERATIONS = Gauge(
-  "concurrent_auth_operations",\
-      "Number of Concurrent Authentication Operations",
+  "concurrent_auth_operations", "Number of Concurrent Authentication Operations",
   ["operation"]
 )
+
+# Mapping of operation types to specific counters
+OPERATION_COUNTERS = {
+  "signup": USER_SIGNUP_COUNT,
+  "signin": USER_SIGNIN_COUNT,
+  "password_reset": PASSWORD_RESET_COUNT,
+  "token_validation": TOKEN_VALIDATION_COUNT,
+  "token_refresh": TOKEN_REFRESH_COUNT
+}
 
 def track_auth_operation(operation_type: str):
   """Decorator to track authentication operations.
@@ -85,94 +96,61 @@ def track_auth_operation(operation_type: str):
   Returns:
       Decorator function for the specified operation type
   """
-  # Create generic tracker using common utility
-  generic_tracker = operation_tracker(
-    operation_type=operation_type,
-    operation_counter=AUTH_OPERATION_COUNT,
-    latency_histogram=AUTH_OPERATION_LATENCY,
-    concurrent_gauge=CONCURRENT_OPERATIONS,
-    custom_logger=logger
-  )
+  # Get specific counter for this operation type if it exists
+  specific_counter = OPERATION_COUNTERS.get(operation_type)
 
   def decorator(func: Callable):
+    # Create generic tracker using common utility
+    tracked_func = operation_tracker(
+      operation_type=operation_type,
+      operation_counter=AUTH_OPERATION_COUNT,
+      latency_histogram=AUTH_OPERATION_LATENCY,
+      concurrent_gauge=CONCURRENT_OPERATIONS,
+      custom_logger=logger
+    )(func)
+
     @wraps(func)
     async def async_wrapper(*args, **kwargs):
-      # Call function with generic tracking
       try:
-        result = await generic_tracker(func)(*args, **kwargs)
+        # Call function with generic tracking
+        result = await tracked_func(*args, **kwargs)
 
-        # Determine success or failure based on result
-        status = "success"
-        if isinstance(result, dict) and not result.get("success", True):
-          status = "error"
-
-        # Increment specific counter based on operation type
-        if operation_type == "signup":
-          USER_SIGNUP_COUNT.labels(status=status).inc()
-        elif operation_type == "signin":
-          USER_SIGNIN_COUNT.labels(status=status).inc()
-        elif operation_type == "password_reset":
-          PASSWORD_RESET_COUNT.labels(status=status).inc()
-        elif operation_type == "token_validation":
-          TOKEN_VALIDATION_COUNT.labels(status=status).inc()
-        elif operation_type == "token_refresh":
-          TOKEN_REFRESH_COUNT.labels(status=status).inc()
+        # Increment specific counter if it exists
+        if specific_counter:
+          status = "success"
+          if isinstance(result, dict) and not result.get("success", True):
+            status = "error"
+          specific_counter.labels(status=status).inc()
 
         return result
       except Exception:
         # Increment specific counter for errors
-        if operation_type == "signup":
-          USER_SIGNUP_COUNT.labels(status="error").inc()
-        elif operation_type == "signin":
-          USER_SIGNIN_COUNT.labels(status="error").inc()
-        elif operation_type == "password_reset":
-          PASSWORD_RESET_COUNT.labels(status="error").inc()
-        elif operation_type == "token_validation":
-          TOKEN_VALIDATION_COUNT.labels(status="error").inc()
-        elif operation_type == "token_refresh":
-          TOKEN_REFRESH_COUNT.labels(status="error").inc()
+        if specific_counter:
+          specific_counter.labels(status="error").inc()
 
-        # Re-raise the exception without capturing it
+        # Re-raise the exception
         raise
 
     @wraps(func)
     def sync_wrapper(*args, **kwargs):
-      # Call function with generic tracking
       try:
-        result = generic_tracker(func)(*args, **kwargs)
+        # Call function with generic tracking
+        result = tracked_func(*args, **kwargs)
 
-        # Determine success or failure based on result
-        status = "success"
-        if isinstance(result, dict) and not result.get("success", True):
-          status = "error"
-
-        # Increment specific counter based on operation type
-        if operation_type == "signup":
-          USER_SIGNUP_COUNT.labels(status=status).inc()
-        elif operation_type == "signin":
-          USER_SIGNIN_COUNT.labels(status=status).inc()
-        elif operation_type == "password_reset":
-          PASSWORD_RESET_COUNT.labels(status=status).inc()
-        elif operation_type == "token_validation":
-          TOKEN_VALIDATION_COUNT.labels(status=status).inc()
-        elif operation_type == "token_refresh":
-          TOKEN_REFRESH_COUNT.labels(status=status).inc()
+        # Increment specific counter if it exists
+        if specific_counter:
+          status = "success"
+          if isinstance(result, dict) and not result.get("success", True):
+            status = "error"
+          specific_counter.labels(status=status).inc()
 
         return result
       except Exception:
         # Increment specific counter for errors
-        if operation_type == "signup":
-          USER_SIGNUP_COUNT.labels(status="error").inc()
-        elif operation_type == "signin":
-          USER_SIGNIN_COUNT.labels(status="error").inc()
-        elif operation_type == "password_reset":
-          PASSWORD_RESET_COUNT.labels(status="error").inc()
-        elif operation_type == "token_validation":
-          TOKEN_VALIDATION_COUNT.labels(status="error").inc()
-        elif operation_type == "token_refresh":
-          TOKEN_REFRESH_COUNT.labels(status="error").inc()
+        if specific_counter:
+          specific_counter.labels(status="error").inc()
 
-        # Re-raise the exception without capturing it
+        # Re-raise the exception
         raise
 
     # Return appropriate wrapper based on function type
@@ -184,22 +162,8 @@ def track_auth_operation(operation_type: str):
   return decorator
 
 # Convenience decorators for specific auth operations
-def track_signup(func):
-  """Track signup operations."""
-  return track_auth_operation("signup")(func)
-
-def track_signin(func):
-  """Track signin operations."""
-  return track_auth_operation("signin")(func)
-
-def track_password_reset(func):
-  """Track password reset operations."""
-  return track_auth_operation("password_reset")(func)
-
-def track_token_validation(func):
-  """Track token validation operations."""
-  return track_auth_operation("token_validation")(func)
-
-def track_token_refresh(func):
-  """Track token refresh operations."""
-  return track_auth_operation("token_refresh")(func)
+track_signup = track_auth_operation("signup")
+track_signin = track_auth_operation("signin")
+track_password_reset = track_auth_operation("password_reset")
+track_token_validation = track_auth_operation("token_validation")
+track_token_refresh = track_auth_operation("token_refresh")
