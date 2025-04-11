@@ -53,19 +53,19 @@ def filter_metric_labels(metric, labels, additional_labels=None):
   """
   # Get the label names defined for this metric
   metric_labelnames = getattr(metric, "_labelnames", [])
-  
+
   # Combine with additional labels if provided
   if additional_labels:
     combined_labels = {**labels, **additional_labels}
   else:
     combined_labels = labels.copy() if labels else {}
-  
+
   # Filter to include only valid labels
   filtered_labels = {
-    k: v for k, v in combined_labels.items() 
+    k: v for k, v in combined_labels.items()
     if k in metric_labelnames
   }
-  
+
   return filtered_labels
 
 
@@ -543,12 +543,12 @@ def create_decorator_for_streaming_func(
 
         # Log success - FIXED: Filter labels to match metric definition
         filtered_success_labels = filter_metric_labels(
-          count_metric, 
+          count_metric,
           labels,
           {"status": "success"}
         )
         count_metric.labels(**filtered_success_labels).inc()
-        
+
         log_operation_result(
           logger,
           metric_name,
@@ -561,12 +561,12 @@ def create_decorator_for_streaming_func(
       except Exception as e:
         # Log error - FIXED: Filter labels to match metric definition
         filtered_error_labels = filter_metric_labels(
-          count_metric, 
+          count_metric,
           labels,
           {"status": "error"}
         )
         count_metric.labels(**filtered_error_labels).inc()
-        
+
         error_data = {**labels, "error_message": str(e)}
         log_operation_result(
           logger,
