@@ -34,6 +34,7 @@ from common.utils.logging_handler import Logger
 from common.utils.request_handler import (post_method,
                                           DEFAULT_TIMEOUT)
 from common.utils.token_handler import UserCredentials
+from common.utils.context_vars import get_context
 from config import (get_model_config, get_provider_models,
                     get_provider_value, get_provider_model_config,
                     get_model_config_value, get_model_system_prompt,
@@ -72,8 +73,21 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
   Returns:
     Either the full text response as str, or an AsyncGenerator yielding response chunks
   """
-  Logger.info(f"Generating text with an LLM given a prompt={prompt},"
-              f" llm_type={llm_type}")
+  context = get_context()
+  Logger.info(
+    "Generating text with an LLM",
+    extra={
+      "operation": "llm_generate",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "stream": stream,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   # default to openai LLM
   if llm_type is None:
     llm_type = DEFAULT_LLM_TYPE
@@ -118,8 +132,18 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
     process_time = round(time.time() - start_time)
-    Logger.info(f"Received response in {process_time} seconds from "
-                f"model with llm_type={llm_type}.")
+    Logger.info(
+      "LLM generation latency",
+      extra={
+        "operation": "llm_generate",
+        "metric_type": "llm_generation_latency",
+        "llm_type": llm_type,
+        "duration_ms": round(process_time * 1000, 2),
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
     return response
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -137,8 +161,22 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
   Returns:
     the text response: str
   """
-  Logger.info(f"Generating text with an LLM given a prompt={prompt},"
-              f" user_file_bytes=bytes, llm_type={llm_type}")
+  context = get_context()
+  Logger.info(
+    "Generating multimodal text with an LLM",
+    extra={
+      "operation": "llm_generate_multimodal",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "has_file_bytes": user_file_bytes is not None,
+      "has_files": user_files is not None and len(user_files) > 0,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   # default to Gemini multimodal LLM
   if llm_type is None:
     llm_type = DEFAULT_MULTIMODAL_LLM_TYPE
@@ -167,8 +205,18 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
     process_time = round(time.time() - start_time)
-    Logger.info(f"Received response in {process_time} seconds from "
-                f"model with llm_type={llm_type}.")
+    Logger.info(
+      "LLM generation latency",
+      extra={
+        "operation": "llm_generate_multimodal",
+        "metric_type": "llm_generation_latency",
+        "llm_type": llm_type,
+        "duration_ms": round(process_time * 1000, 2),
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
     return response
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -176,6 +224,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
+                   user_data: Optional[dict] = None,
                    chat_files: Optional[List[DataSourceFile]] = None,
                    chat_file_bytes: Optional[bytes] = None,
                    stream: bool = False) -> \
@@ -197,13 +246,27 @@ async def llm_chat(prompt: str, llm_type: str,
     Either the full text response as str, or an AsyncGenerator
       yielding response chunks
   """
-  chat_file_bytes_log = chat_file_bytes[:10] if chat_file_bytes else None
-  Logger.info(f"Generating chat with llm_type=[{llm_type}],"
-              f" prompt=[{prompt}]"
-              f" user_chat=[{user_chat}]"
-              f" user_query=[{user_query}]"
-              f" chat_file_bytes=[{chat_file_bytes_log}]"
-              f" chat_files=[{chat_files}]")
+  context = get_context()
+  Logger.info(
+    "Generating chat with an LLM",
+    extra={
+      "operation": "llm_chat",
+      "metric_type": "chat_generation",
+      "llm_type": llm_type,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "chat_id": user_chat.id if user_chat else None,
+      "query_id": user_query.id if user_query else None,
+      "has_chat_file_bytes": chat_file_bytes is not None,
+      "has_chat_files": chat_files is not None and len(chat_files) > 0,
+      "with_file": chat_file_bytes is not None or (chat_files is not None and len(chat_files) > 0),
+      "with_tools": False,  # Update if tools are used
+      "stream": stream,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
@@ -261,6 +324,7 @@ async def llm_chat(prompt: str, llm_type: str,
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                                           google_llm, system_prompt, user_chat,
                                           chat_file_bytes, chat_files,
+                                          user_data=user_data,
                                           stream=stream)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
@@ -349,9 +413,22 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
   parameters.update({"prompt": f"'{prompt}'"})
 
   api_url = f"http://{model_endpoint}/v1/models/model:predict"
-  Logger.info(f"Generating text using Truss Hosted Model "
-              f"api_url=[{api_url}], prompt=[{prompt}], "
-              f"parameters=[{parameters}.")
+  context = get_context()
+  Logger.info(
+    "Generating text using Truss Hosted Model",
+    extra={
+      "operation": "llm_truss_service_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "api_url": api_url,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "has_parameters": parameters is not None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   resp = post_method(api_url, request_body=parameters)
 
@@ -361,7 +438,18 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
 
   json_response = resp.json()
 
-  Logger.info(f"Got LLM service response {json_response}")
+  Logger.info(
+    "Received Truss service response",
+    extra={
+      "operation": "llm_truss_service_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   output = json_response["data"]["generated_text"]
 
   # if the prompt is repeated as part of the response, remove it
@@ -390,6 +478,7 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
   Returns:
     the text response: str
   """
+  context = get_context()
   if parameters is None:
     parameters = get_provider_value(
         PROVIDER_VLLM, KEY_MODEL_PARAMS, llm_type)
@@ -411,9 +500,22 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
     models = client.models.list()
     model = models.data[0].id
 
-    Logger.info(f"Generating text using vLLM Hosted Model {model} hosted at"
-            f"api_base=[{openai_api_base}], prompt=[{prompt}], "
-            f"parameters=[{parameters}.")
+    Logger.info(
+      "Generating text using vLLM Hosted Model",
+      extra={
+        "operation": "llm_vllm_service_predict",
+        "metric_type": "llm_generation",
+        "llm_type": llm_type,
+        "model": model,
+        "api_base": openai_api_base,
+        "prompt_length": len(prompt) if prompt else 0,
+        "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+        "has_parameters": parameters is not None,
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
     response = client.chat.completions.create(
         model=model,
@@ -423,7 +525,18 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
         **parameter_kwargs
     )
     output = response.choices[0].message.content
-    Logger.info(f"Got LLM service response {response}")
+    Logger.info(
+      "Received vLLM service response",
+      extra={
+        "operation": "llm_vllm_service_predict",
+        "metric_type": "llm_generation",
+        "llm_type": llm_type,
+        "response_status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
   except OpenAIError as e:
     Logger.error(f"OpenAI API error: {e}")
@@ -447,6 +560,7 @@ async def llm_service_predict(prompt: str, is_chat: bool,
   Returns:
     the text response: str
   """
+  context = get_context()
   llm_service_config = get_model_config().get_provider_config(
       PROVIDER_LLM_SERVICE)
   if not auth_token:
@@ -471,7 +585,21 @@ async def llm_service_predict(prompt: str, is_chat: bool,
     "llm_type": llm_type
   }
 
-  Logger.info(f"Sending LLM service request to {api_url}")
+  Logger.info(
+    "Sending LLM service request",
+    extra={
+      "operation": "llm_service_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "api_url": api_url,
+      "is_chat": is_chat,
+      "has_user_chat": user_chat is not None,
+      "chat_id": user_chat.id if user_chat else None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   resp = post_method(api_url,
                      request_body=request_body,
                      token=auth_token)
@@ -482,7 +610,18 @@ async def llm_service_predict(prompt: str, is_chat: bool,
 
   json_response = resp.json()
 
-  Logger.info(f"Got LLM service response {json_response}")
+  Logger.info(
+    "Received LLM service response",
+    extra={
+      "operation": "llm_service_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   output = json_response["content"]
   return output
 
@@ -498,6 +637,7 @@ async def model_garden_predict(prompt: str,
   Returns:
     the prediction text.
   """
+  context = get_context()
   aip_endpoint_name = get_provider_value(
       PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
 
@@ -519,9 +659,20 @@ async def model_garden_predict(prompt: str,
     req_body = {"model": f"{aip_endpoint_name}",
                 "messages":[{"role": "user",
                              "content": f"{prompt}"}]}
-    Logger.info(f"Generating text using OpenAPI for Model Garden "
-              f"endpoint=[{openapi_endpoint}], req_headers=[{req_headers}], "
-              f"req_body=[{req_body}.")
+    Logger.info(
+      "Generating text using OpenAPI for Model Garden",
+      extra={
+        "operation": "model_garden_predict",
+        "metric_type": "llm_generation",
+        "llm_type": llm_type,
+        "endpoint": openapi_endpoint,
+        "prompt_length": len(prompt) if prompt else 0,
+        "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
     resp = requests.post(
       url=f"{openapi_endpoint}", json=req_body, headers=req_headers,
@@ -532,15 +683,38 @@ async def model_garden_predict(prompt: str,
         f"Error status {resp.status_code}: {str(resp)}")
 
     json_response = resp.json()
-    Logger.info(f"Got LLM service response {json_response}")
+    Logger.info(
+      "Received Model Garden OpenAPI response",
+      extra={
+        "operation": "model_garden_predict",
+        "metric_type": "llm_generation",
+        "llm_type": llm_type,
+        "response_status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
     output = json_response["choices"][0]["message"]["content"]
     return output
 
   aip_endpoint = f"projects/{PROJECT_ID}/locations/" \
                  f"{REGION}/endpoints/{aip_endpoint_name}"
-  Logger.info(f"Generating text using Model Garden "
-              f"endpoint=[{aip_endpoint}], prompt=[{prompt}], "
-              f"parameters=[{parameters}.")
+  Logger.info(
+    "Generating text using Model Garden",
+    extra={
+      "operation": "model_garden_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "endpoint": aip_endpoint,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "has_parameters": parameters is not None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   if parameters is None:
     parameters = get_provider_value(PROVIDER_MODEL_GARDEN,
@@ -554,10 +728,21 @@ async def model_garden_predict(prompt: str,
   response = await endpoint_without_peft.predict_async(instances=instances)
 
   predictions_text = "\n".join(response.predictions)
-  Logger.info(f"Received response from "
-              f"{response.model_resource_name} version="
-              f"[{response.model_version_id}] with {len(response.predictions)}"
-              f" prediction(s) = [{predictions_text}] ")
+  Logger.info(
+    "Received Model Garden response",
+    extra={
+      "operation": "model_garden_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "model_resource_name": response.model_resource_name,
+      "model_version_id": response.model_version_id,
+      "predictions_count": len(response.predictions),
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   return predictions_text
 
@@ -597,6 +782,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 user_chat: Optional[UserChat]=None,
                 user_file_bytes: bytes=None,
                 user_files: List[DataSourceFile]=None,
+                user_data: Optional[dict]=None,
                 stream: bool=False) -> Union[str, AsyncGenerator[str, None]]:
   """
   Generate text with a Google multimodal LLM given a prompt.
@@ -613,15 +799,31 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   Returns:
     Either the full text response as str, or an AsyncGenerator yielding response chunks
   """
+  context = get_context()
+  Logger.info(
+    "Generating text with a Google multimodal LLM",
+    extra={
+      "operation": "google_llm_predict",
+      "metric_type": "llm_generation",
+      "llm_type": google_llm,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "is_chat": is_chat,
+      "is_multimodal": is_multimodal,
+      "has_user_file_bytes": user_file_bytes is not None,
+      "has_user_files": user_files is not None and len(user_files) > 0,
+      "with_file": user_file_bytes is not None or (user_files is not None and len(user_files) > 0),
+      "chat_id": user_chat.id if user_chat else None,
+      "stream": stream,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
-  user_file_bytes_log = user_file_bytes[:10] if user_file_bytes else None
-  Logger.info(f"Generating text with a Google multimodal LLM:"
-              f" prompt=[{prompt}], is_chat=[{is_chat}],"
-              f" is_multimodal=[{is_multimodal}], google_llm=[{google_llm}],"
-              f" user_file_bytes=[{user_file_bytes_log}],"
-              f" user_files=[{user_files}]")
-
-  # TODO: Remove this section after non-gemini llms are removed from model options
+  # TODO: Remove this section after non-gemini llms are removed from
+  # the model options
+  _ = user_data #used in metrics tracking
   prompt_list = []
   if user_chat is not None:
     history = user_chat.history
@@ -678,7 +880,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                               mime_type=user_file.mime_type)]))
         # Logger.info(f"context list {prompt_list}")
         for l in prompt_list:
-          Logger.info(l if len(str(l)) < 50 else str(l)[:49])
+          Logger.debug(l if len(str(l)) < 50 else str(l)[:49])
         generation_config = GenerationConfig(**parameters)
         response = await chat_model.generate_content_async(prompt_list,
             generation_config=generation_config,
@@ -725,7 +927,19 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-  Logger.info(f"Received response from the Model [{response.text}]")
+  Logger.info(
+    "Received response from Google LLM",
+    extra={
+      "operation": "google_llm_predict",
+      "metric_type": "llm_generation",
+      "llm_type": google_llm,
+      "response_length": len(response.text) if hasattr(response, "text") else 0,
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   response = response.text
 
   return response

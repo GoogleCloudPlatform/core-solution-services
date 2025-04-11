@@ -18,6 +18,7 @@ from google.oauth2 import id_token
 from firebase_admin.auth import verify_id_token
 import redis
 
+from common.utils.sanitization_service import sanitize_token_data
 from common.utils.cache_service import set_key, get_key
 from common.utils.errors import InvalidTokenError
 from common.utils.http_exceptions import InternalServerError, Unauthenticated
@@ -77,7 +78,7 @@ def validate_token(bearer_token):
     cached_token = set_token_cache(f"cache::{token}", decoded_token)
     Logger.info(f"Id Token caching status: {cached_token}")
 
-  Logger.info(f"Id Token: {decoded_token}")
+  Logger.info(f"Id Token: {sanitize_token_data(decoded_token)}")
   return decoded_token
 
 

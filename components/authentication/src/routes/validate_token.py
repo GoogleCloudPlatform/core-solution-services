@@ -23,12 +23,14 @@ from common.utils.http_exceptions import (BadRequest, InvalidToken,
                                           InternalServerError, Unauthorized)
 from common.utils.logging_handler import Logger
 from common.utils.user_handler import get_user_by_email
+from common.utils.sanitization_service import sanitize_user_data
 from services.validation_service import validate_token
 from schemas.validate_token_schema import ValidateTokenResponseModel
 from config import (ERROR_RESPONSES,
                     AUTH_REQUIRE_FIRESTORE_USER,
                     AUTH_EMAIL_DOMAINS_WHITELIST,
                     AUTH_AUTO_CREATE_USERS)
+from metrics import track_token_validation
 
 Logger = Logger.get_logger(__file__)
 
@@ -42,6 +44,7 @@ auth_scheme = HTTPBearer(auto_error=False)
     "/validate",
     response_model=ValidateTokenResponseModel,
     response_model_exclude_none=True)
+@track_token_validation
 def validate_id_token(token: auth_scheme = Depends()):
   """Validates the Token present in Headers
   ### Raises:
@@ -66,7 +69,13 @@ def validate_id_token(token: auth_scheme = Depends()):
 
     if AUTH_AUTO_CREATE_USERS and email_domain in AUTH_EMAIL_DOMAINS_WHITELIST:
       create_if_not_exist = True
-    Logger.info(f"create_if_not_exist: {create_if_not_exist}")
+    Logger.info(
+      "Create user if not existent flag",
+      extra={
+        "metric_type": "auth_config",
+        "create_if_not_exist": create_if_not_exist
+      }
+    )
 
     user = get_user_by_email(user_email,
                              check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER,
@@ -76,7 +85,8 @@ def validate_id_token(token: auth_scheme = Depends()):
       raise UnauthorizedUserError(
           f"Unauthorized: User {user_email} not found.")
 
-    Logger.info(f"user: {user.to_dict()}")
+    sandata = sanitize_user_data(user.get_fields(reformat_datetime=True))
+    Logger.info(f"user: {sandata}")
     user_fields = user.get_fields(reformat_datetime=True)
     if user_fields.get("status") == "inactive":
       raise UnauthorizedUserError("Unauthorized: User status is inactive.")

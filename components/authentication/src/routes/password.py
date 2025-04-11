@@ -36,6 +36,7 @@ from schemas.password_schema import (SendPasswordResetEmailModel,
                                      ChangePasswordResponseModel)
 from schemas.error_schema import (NotFoundErrorResponseModel,
                                   UnauthorizedUserErrorResponseModel)
+from metrics import track_password_reset
 
 # pylint: disable = broad-exception-raised
 
@@ -108,6 +109,7 @@ def send_password_reset_email(
 
 
 @router.post("/reset-password", response_model=ResetPasswordResponseModel)
+@track_password_reset
 def reset_password(input_reset_password: ResetPasswordModel):
   """This endpoint will reset password using the given oobCode
   ### Args:

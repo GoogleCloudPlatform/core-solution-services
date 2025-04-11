@@ -38,6 +38,7 @@ from config import (PAYLOAD_FILE_SIZE, ERROR_RESPONSES,
                     ENABLE_OPENAI_LLM, ENABLE_COHERE_LLM,
                     DEFAULT_VECTOR_STORE, PG_HOST, AGENT_CONFIG_PATH,
                     ONEDRIVE_CLIENT_ID, ONEDRIVE_TENANT_ID)
+from metrics import track_agent_execution
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/agent", tags=["Agents"], responses=ERROR_RESPONSES)
@@ -106,6 +107,7 @@ def get_agent_types(agent_type: str):
 @router.post(
     "/dispatch/{agent_name}",
     name="Evaluate user input and choose a dispatch route")
+@track_agent_execution
 async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
                        user_data: dict = Depends(validate_token)):
   """
@@ -219,6 +221,7 @@ async def run_dispatch(agent_name: str, run_config: LLMAgentRunModel,
     "/run/{agent_name}",
     name="Run agent on user input",
     response_model=LLMAgentRunResponse)
+@track_agent_execution
 async def agent_run(agent_name: str,
                     run_config: LLMAgentRunModel,
                     user_data: dict = Depends(validate_token)):
@@ -336,6 +339,7 @@ async def agent_run(agent_name: str,
     "/run/{agent_name}/{chat_id}",
     name="Run agent on user input with chat history",
     response_model=LLMAgentRunResponse)
+@track_agent_execution
 async def agent_run_chat(agent_name: str, chat_id: str,
                          run_config: LLMAgentRunModel,
                          user_data: dict = Depends(validate_token)):
