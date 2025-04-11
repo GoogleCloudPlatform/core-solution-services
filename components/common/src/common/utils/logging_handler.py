@@ -28,6 +28,12 @@ request_id_var = contextvars.ContextVar("request_id", default="-")
 trace_var = contextvars.ContextVar("trace", default="-")
 session_id_var = contextvars.ContextVar("session_id", default="-")
 
+# Adding debugging to track the context variables instances
+cv_instance_id = id(request_id_var)
+print(f"*** STARTUP: logging_handler.py created request_id_var with ID: {cv_instance_id} ***")
+print(f"*** STARTUP: trace_var ID: {id(trace_var)} ***")
+print(f"*** STARTUP: session_id_var ID: {id(session_id_var)} ***")
+
 # Get log level from environment, default to INFO
 LOG_LEVEL_NAME = os.environ.get("LOG_LEVEL", "INFO").upper()
 LOG_LEVEL = getattr(logging, LOG_LEVEL_NAME, logging.INFO)
@@ -58,32 +64,44 @@ class LogRecordFilter(logging.Filter):
   def filter(self, record):
     """Add request context to the log record."""
     # Debug logging to trace filter execution - remove in production
-    print(f"LogRecordFilter processing: name={record.name}")
-    print(f"Initial values: request_id={getattr(record, 'request_id', '-')}, "
-          f"trace={getattr(record, 'trace', '-')}")
+    print(f"DEBUG LOGGER: Filtering record: name={record.name}")
+    
+    # Debug - show current context variable values
+    print(f"DEBUG LOGGER: Context var values at filter time:")
+    print(f"  request_id_var: {request_id_var.get()}")
+    print(f"  trace_var: {trace_var.get()}")
+    print(f"  session_id_var: {session_id_var.get()}")
+    
+    # Debug - show current record values
+    print(f"DEBUG LOGGER: Initial record values:")
+    print(f"  request_id: {getattr(record, 'request_id', '-')}")
+    print(f"  trace: {getattr(record, 'trace', '-')}")
+    print(f"  session_id: {getattr(record, 'session_id', '-')}")
 
     # Only set values if they're not already present
     if not hasattr(record, "request_id") or record.request_id == "-":
       # Try to get from context vars
       ctx_request_id = request_id_var.get()
       record.request_id = ctx_request_id if ctx_request_id != "-" else None
-      print(f"Set request_id to: {record.request_id}")
+      print(f"DEBUG LOGGER: Set request_id to: {record.request_id}")
 
     if not hasattr(record, "trace") or record.trace == "-":
       # Try to get from context vars
       ctx_trace = trace_var.get()
       record.trace = ctx_trace if ctx_trace != "-" else None
-      print(f"Set trace to: {record.trace}")
+      print(f"DEBUG LOGGER: Set trace to: {record.trace}")
 
     if not hasattr(record, "session_id") or record.session_id == "-":
       # Try to get from context vars
       ctx_session_id = session_id_var.get()
       record.session_id = ctx_session_id if ctx_session_id != "-" else None
-      print(f"Set session_id to: {record.session_id}")
+      print(f"DEBUG LOGGER: Set session_id to: {record.session_id}")
 
     # Debug final values
-    print(f"Final: request_id={getattr(record, 'request_id', '-')}, "
-          f"trace={getattr(record, 'trace', '-')}")
+    print(f"DEBUG LOGGER: Final record values:")
+    print(f"  request_id: {getattr(record, 'request_id', '-')}")
+    print(f"  trace: {getattr(record, 'trace', '-')}")
+    print(f"  session_id: {getattr(record, 'session_id', '-')}")
 
     return True
 
@@ -109,6 +127,12 @@ def _add_default_fields(extra=None):
   if extra is None:
     extra = {}
 
+  # Debug - show current context variable values
+  print(f"DEBUG LOGGER: _add_default_fields context var values:")
+  print(f"  request_id_var: {request_id_var.get()}")
+  print(f"  trace_var: {trace_var.get()}")
+  print(f"  session_id_var: {session_id_var.get()}")
+
   # Set default fields only if not present
   for field in ["request_id", "trace", "session_id"]:
     if field not in extra:
@@ -122,6 +146,7 @@ def _add_default_fields(extra=None):
       else:
         extra[field] = "-"
 
+  print(f"DEBUG LOGGER: _add_default_fields result: {extra}")
   return extra
 
 # Standard attributes to exclude when processing record.__dict__
@@ -141,6 +166,12 @@ class JsonFormatter(logging.Formatter):
     # Generate ISO-8601 timestamp compatible with Cloud Logging
     timestamp = datetime.datetime.fromtimestamp(
       record.created).isoformat() + "Z"
+
+    # Debug - show what values we have when formatting
+    print(f"DEBUG LOGGER: JsonFormatter.format record values:")
+    print(f"  request_id: {getattr(record, 'request_id', '-')}")
+    print(f"  trace: {getattr(record, 'trace', '-')}")
+    print(f"  session_id: {getattr(record, 'session_id', '-')}")
 
     # Build core log entry with essential fields only
     log_entry = {
@@ -190,6 +221,10 @@ class JsonFormatter(logging.Formatter):
       for key, value in extras.items():
         if key not in log_entry:
           log_entry[key] = value
+
+    # Debug - show final log entry before serialization
+    print(f"DEBUG LOGGER: Final log_entry keys: {list(log_entry.keys())}")
+    print(f"DEBUG LOGGER: Final trace value: {log_entry.get('trace')}")
 
     # Return JSON string with simplified error handling
     try:
@@ -372,9 +407,23 @@ Logger.debug = staticmethod(debug)
 Logger.critical = staticmethod(critical)
 Logger.exception = staticmethod(exception)
 
+# Debug helper function for testing context vars
+def debug_context_vars():
+  """Print current context variable values for debugging."""
+  print(f"DEBUG HELPER: Current context variable values:")
+  print(f"  request_id_var (id={id(request_id_var)}): {request_id_var.get()}")
+  print(f"  trace_var (id={id(trace_var)}): {trace_var.get()}")
+  print(f"  session_id_var (id={id(session_id_var)}): {session_id_var.get()}")
+  return {
+    "request_id": request_id_var.get(),
+    "trace": trace_var.get(), 
+    "session_id": session_id_var.get()
+  }
+
 # Expose necessary elements for importing
 __all__ = ["Logger",
           "log_record_filter",
           "request_id_var",
           "trace_var",
-          "session_id_var"]
+          "session_id_var",
+          "debug_context_vars"]

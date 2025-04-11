@@ -38,6 +38,9 @@ from common.monitoring.middleware import (
   PrometheusMiddleware,
   create_metrics_router
 )
+#debug
+from common.utils.logging_handler import debug_context_vars
+from common.monitoring.middleware import create_debug_router
 
 # Basic API config
 service_title = "LLM Service API's"
@@ -48,6 +51,11 @@ version = "v1"
 logger = Logger.get_logger(__file__)
 
 app = FastAPI()
+
+print("*** STARTUP: main.py initializing ***")
+print("*** STARTUP: Checking context vars in main.py ***")
+debug_context_vars()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOW_ORIGINS,
@@ -100,11 +108,20 @@ api = FastAPI(
     )
 
 app.include_router(metrics_router)
+
+#debug
+debug_router = create_debug_router()
+app.include_router(debug_router)
+
 api.include_router(llm.router)
 api.include_router(chat.router)
 api.include_router(query.router)
 api.include_router(agent.router)
 api.include_router(agent_plan.router)
+
+#debug
+print("*** STARTUP: All middleware added, checking context vars again ***")
+debug_context_vars()
 
 add_exception_handlers(app)
 add_exception_handlers(api)
