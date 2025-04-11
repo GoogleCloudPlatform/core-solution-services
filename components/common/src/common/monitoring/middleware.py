@@ -149,7 +149,11 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     return logging.getLogger(__name__)
 
   async def dispatch(self, request: Request, call_next):
+
     # Debug current context vars at start of request
+    # In RequestTrackingMiddleware.dispatch method, add these lines at the beginning:
+    print(f"==== REQUEST START: {request.url.path} ====")
+    print(f"Headers: X-Request-ID={request.headers.get('X-Request-ID')}, X-Cloud-Trace-Context={request.headers.get('X-Cloud-Trace-Context')}")
     print(f"DEBUG MIDDLEWARE: Start of request context vars")
     debug_context_vars()
     
@@ -220,8 +224,13 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
       print(f"DEBUG MIDDLEWARE: Before calling next middleware/handler")
       debug_context_vars()
       
+      #debug
+      print(f"==== CONTEXT BEFORE REQUEST: request_id={request_id_var.get()}, trace={trace_var.get()} ====")
+
       # Process the request
       response = await call_next(request)
+
+      print(f"==== CONTEXT AFTER REQUEST: request_id={request_id_var.get()}, trace={trace_var.get()} ====")
       
       # Log after processing 
       print(f"DEBUG MIDDLEWARE: After calling next middleware/handler")
