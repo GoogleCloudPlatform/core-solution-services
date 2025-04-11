@@ -73,6 +73,7 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
   Returns:
     Either the full text response as str, or an AsyncGenerator yielding response chunks
   """
+  context = get_context()
   Logger.info(
     "Generating text with an LLM",
     extra={
@@ -81,7 +82,10 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
       "llm_type": llm_type,
       "prompt_length": len(prompt) if prompt else 0,
       "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
-      "stream": stream
+      "stream": stream,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
   # default to openai LLM
@@ -134,7 +138,10 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
         "operation": "llm_generate",
         "metric_type": "llm_generation_latency",
         "llm_type": llm_type,
-        "duration_ms": round(process_time * 1000, 2)
+        "duration_ms": round(process_time * 1000, 2),
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
       }
     )
     return response
@@ -154,6 +161,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
   Returns:
     the text response: str
   """
+  context = get_context()
   Logger.info(
     "Generating multimodal text with an LLM",
     extra={
@@ -163,7 +171,10 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
       "prompt_length": len(prompt) if prompt else 0,
       "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
       "has_file_bytes": user_file_bytes is not None,
-      "has_files": user_files is not None and len(user_files) > 0
+      "has_files": user_files is not None and len(user_files) > 0,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
   # default to Gemini multimodal LLM
@@ -200,7 +211,10 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
         "operation": "llm_generate_multimodal",
         "metric_type": "llm_generation_latency",
         "llm_type": llm_type,
-        "duration_ms": round(process_time * 1000, 2)
+        "duration_ms": round(process_time * 1000, 2),
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
       }
     )
     return response
@@ -399,6 +413,7 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
   parameters.update({"prompt": f"'{prompt}'"})
 
   api_url = f"http://{model_endpoint}/v1/models/model:predict"
+  context = get_context()
   Logger.info(
     "Generating text using Truss Hosted Model",
     extra={
@@ -408,7 +423,10 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
       "api_url": api_url,
       "prompt_length": len(prompt) if prompt else 0,
       "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
-      "has_parameters": parameters is not None
+      "has_parameters": parameters is not None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
 
@@ -426,7 +444,10 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
       "operation": "llm_truss_service_predict",
       "metric_type": "llm_generation",
       "llm_type": llm_type,
-      "response_status": "success"
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
   output = json_response["data"]["generated_text"]
@@ -457,6 +478,7 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
   Returns:
     the text response: str
   """
+  context = get_context()
   if parameters is None:
     parameters = get_provider_value(
         PROVIDER_VLLM, KEY_MODEL_PARAMS, llm_type)
@@ -488,7 +510,10 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
         "api_base": openai_api_base,
         "prompt_length": len(prompt) if prompt else 0,
         "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
-        "has_parameters": parameters is not None
+        "has_parameters": parameters is not None,
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
       }
     )
 
@@ -506,7 +531,10 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
         "operation": "llm_vllm_service_predict",
         "metric_type": "llm_generation",
         "llm_type": llm_type,
-        "response_status": "success"
+        "response_status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
       }
     )
 
@@ -532,6 +560,7 @@ async def llm_service_predict(prompt: str, is_chat: bool,
   Returns:
     the text response: str
   """
+  context = get_context()
   llm_service_config = get_model_config().get_provider_config(
       PROVIDER_LLM_SERVICE)
   if not auth_token:
@@ -565,7 +594,10 @@ async def llm_service_predict(prompt: str, is_chat: bool,
       "api_url": api_url,
       "is_chat": is_chat,
       "has_user_chat": user_chat is not None,
-      "chat_id": user_chat.id if user_chat else None
+      "chat_id": user_chat.id if user_chat else None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
   resp = post_method(api_url,
@@ -584,7 +616,10 @@ async def llm_service_predict(prompt: str, is_chat: bool,
       "operation": "llm_service_predict",
       "metric_type": "llm_generation",
       "llm_type": llm_type,
-      "response_status": "success"
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
   output = json_response["content"]
@@ -602,6 +637,7 @@ async def model_garden_predict(prompt: str,
   Returns:
     the prediction text.
   """
+  context = get_context()
   aip_endpoint_name = get_provider_value(
       PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
 
@@ -631,7 +667,10 @@ async def model_garden_predict(prompt: str,
         "llm_type": llm_type,
         "endpoint": openapi_endpoint,
         "prompt_length": len(prompt) if prompt else 0,
-        "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else ""
+        "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
       }
     )
 
@@ -650,7 +689,10 @@ async def model_garden_predict(prompt: str,
         "operation": "model_garden_predict",
         "metric_type": "llm_generation",
         "llm_type": llm_type,
-        "response_status": "success"
+        "response_status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
       }
     )
     output = json_response["choices"][0]["message"]["content"]
@@ -667,7 +709,10 @@ async def model_garden_predict(prompt: str,
       "endpoint": aip_endpoint,
       "prompt_length": len(prompt) if prompt else 0,
       "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
-      "has_parameters": parameters is not None
+      "has_parameters": parameters is not None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
 
@@ -692,7 +737,10 @@ async def model_garden_predict(prompt: str,
       "model_resource_name": response.model_resource_name,
       "model_version_id": response.model_version_id,
       "predictions_count": len(response.predictions),
-      "response_status": "success"
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
 
@@ -751,6 +799,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   Returns:
     Either the full text response as str, or an AsyncGenerator yielding response chunks
   """
+  context = get_context()
   Logger.info(
     "Generating text with a Google multimodal LLM",
     extra={
@@ -765,7 +814,10 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
       "has_user_files": user_files is not None and len(user_files) > 0,
       "with_file": user_file_bytes is not None or (user_files is not None and len(user_files) > 0),
       "chat_id": user_chat.id if user_chat else None,
-      "stream": stream
+      "stream": stream,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
 
@@ -882,7 +934,10 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
       "metric_type": "llm_generation",
       "llm_type": google_llm,
       "response_length": len(response.text) if hasattr(response, "text") else 0,
-      "response_status": "success"
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
   response = response.text

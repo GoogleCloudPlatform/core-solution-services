@@ -329,7 +329,7 @@ async def create_user_chat(
   Returns:
       LLMUserChatResponse or StreamingResponse
   """
-
+  context = get_context()
   Logger.info(
     "Creating new chat",
     extra={
@@ -338,7 +338,10 @@ async def create_user_chat(
       "has_file": chat_file is not None or chat_file_url is not None,
       "has_tools": tool_names is not None,
       "stream": stream,
-      "has_history": history is not None
+      "has_history": history is not None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
 
@@ -462,7 +465,8 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
       "user_id": user_data.get("email", "unknown"),
       "status": "start",
       "request_id": context["request_id"],
-      "trace": context["trace"]
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
 
@@ -505,6 +509,7 @@ async def user_chat_generate(chat_id: str,
   response_files = None
   tool_names = gen_config.tool_names
   validate_tool_names(tool_names)
+  context = get_context()
 
   # process chat file(s): upload to GCS and determine mime type
   chat_file_bytes = None
@@ -525,7 +530,6 @@ async def user_chat_generate(chat_id: str,
     chat_file_bytes = await chat_file.read()
 
   genconfig_dict = {**gen_config.model_dump()}
-  context = get_context()
   Logger.info(
     "Processing chat request",
     extra={
@@ -619,7 +623,6 @@ async def user_chat_generate(chat_id: str,
               yield chunk
           finally:
             # Log size at the end of streaming
-            context = get_context()
             Logger.info(
               "LLM response size",
               extra={
@@ -656,7 +659,6 @@ async def user_chat_generate(chat_id: str,
 
         # Track response size for non-streaming responses
         response_size = len(response)
-        context = get_context()
         Logger.info(
           "LLM response size",
           extra={
