@@ -30,7 +30,7 @@ from common.models.llm import (
   CHAT_FILE_TYPE
 )
 from common.utils.auth_service import validate_token
-from common.utils.context_vars import preserve_context
+from common.utils.context_vars import preserve_context, get_context
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  UnauthorizedUserError)
@@ -455,12 +455,15 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
   Returns:
       Data for the newly created chat
   """
+  context = get_context()
   Logger.info(
     "Creating empty chat", 
     extra={
       "operation": "create_empty_chat",
       "user_id": user_data.get("email", "unknown"),
-      "status": "start"
+      "status": "start",
+      "request_id": context["request_id"],
+      "trace": context["trace"]
     }
   )
 
@@ -485,7 +488,6 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
 
 
 @router.post("/{chat_id}/generate")
-@preserve_context
 @track_chat_generate
 async def user_chat_generate(chat_id: str,
                               gen_config: LLMGenerateModel,
@@ -524,13 +526,16 @@ async def user_chat_generate(chat_id: str,
     chat_file_bytes = await chat_file.read()
 
   genconfig_dict = {**gen_config.model_dump()}
+  context = get_context()
   Logger.info(
     "Processing chat request",
     extra={
       "operation": "chat_generate",
       "chat_id": chat_id,
       "config": {
-        k: v for k, v in genconfig_dict.items() if k != "chat_file_b64"}
+        k: v for k, v in genconfig_dict.items() if k != "chat_file_b64"},
+      "request_id": context["request_id"],
+      "trace": context["trace"]
     }
   )
 
