@@ -300,8 +300,8 @@ def validate_tool_names(tool_names: Optional[str]):
 @router.post(
     "",
     name="Create new chat", deprecated=True)
-@track_chat_generate
 @preserve_context
+@track_chat_generate
 async def create_user_chat(
      prompt: Annotated[str, Form()],
      llm_type: Annotated[str, Form()] = None,
@@ -447,8 +447,8 @@ async def create_user_chat(
 
 
 @router.post("/empty_chat", name="Create new chat")
-@track_chat_operations
 @preserve_context
+@track_chat_operations
 async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.  
@@ -485,8 +485,8 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
 
 
 @router.post("/{chat_id}/generate")
-@track_chat_generate
 @preserve_context
+@track_chat_generate
 async def user_chat_generate(chat_id: str,
                               gen_config: LLMGenerateModel,
                               user_data: dict = Depends(validate_token)):
