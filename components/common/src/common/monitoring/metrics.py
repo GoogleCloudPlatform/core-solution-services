@@ -39,6 +39,36 @@ __all__ = ["Counter",
 # Default logger
 logger = Logger.get_logger("common.monitoring.metrics")
 
+
+def filter_metric_labels(metric, labels, additional_labels=None):
+  """Filter labels to only include those defined in the metric.
+  
+  Args:
+      metric: The prometheus metric object
+      labels: Dictionary of labels to filter
+      additional_labels: Additional labels to include (e.g., status)
+  
+  Returns:
+      Dictionary containing only the labels that are valid for this metric
+  """
+  # Get the label names defined for this metric
+  metric_labelnames = getattr(metric, "_labelnames", [])
+  
+  # Combine with additional labels if provided
+  if additional_labels:
+    combined_labels = {**labels, **additional_labels}
+  else:
+    combined_labels = labels.copy() if labels else {}
+  
+  # Filter to include only valid labels
+  filtered_labels = {
+    k: v for k, v in combined_labels.items() 
+    if k in metric_labelnames
+  }
+  
+  return filtered_labels
+
+
 def operation_tracker(
     operation_type: str,
     operation_counter: Counter,
@@ -253,11 +283,15 @@ def log_operation_result(
     extra.update(additional_data)
 
   if status == "success":
-    log_instance.info(f"{operation_type.replace('_', ' ').title()} successful",
-                 extra=extra)
+    log_instance.info(
+      f"{operation_type.replace('_', ' ').title()} successful",
+      extra=extra
+    )
   else:
-    log_instance.error(f"{operation_type.replace('_', ' ').title()} failed",
-                  extra=extra)
+    log_instance.error(
+      f"{operation_type.replace('_', ' ').title()} failed",
+      extra=extra
+    )
 
 
 def safe_extract_config_dict(config: Any) -> Dict[str, Any]:
@@ -280,7 +314,9 @@ def safe_extract_config_dict(config: Any) -> Dict[str, Any]:
     else:
       return dict(config)
   except (TypeError, AttributeError, ValueError, KeyError) as e:
-    logger.error(f"Error extracting config dictionary: {type(e).__name__}: {e}")
+    logger.error(
+      f"Error extracting config dictionary: {type(e).__name__}: {e}"
+    )
     return {}
 
 
@@ -505,8 +541,14 @@ def create_decorator_for_streaming_func(
             labels
           )
 
-        # Log success
-        count_metric.labels(status="success", **labels).inc()
+        # Log success - FIXED: Filter labels to match metric definition
+        filtered_success_labels = filter_metric_labels(
+          count_metric, 
+          labels,
+          {"status": "success"}
+        )
+        count_metric.labels(**filtered_success_labels).inc()
+        
         log_operation_result(
           logger,
           metric_name,
@@ -517,8 +559,14 @@ def create_decorator_for_streaming_func(
         return result
 
       except Exception as e:
-        # Log error
-        count_metric.labels(status="error", **labels).inc()
+        # Log error - FIXED: Filter labels to match metric definition
+        filtered_error_labels = filter_metric_labels(
+          count_metric, 
+          labels,
+          {"status": "error"}
+        )
+        count_metric.labels(**filtered_error_labels).inc()
+        
         error_data = {**labels, "error_message": str(e)}
         log_operation_result(
           logger,
@@ -529,13 +577,14 @@ def create_decorator_for_streaming_func(
         raise
 
       finally:
-        # Record latency
+        # Record latency - FIXED: Filter labels to match metric definition
         latency = measure_latency(
           start_time,
           metric_name,
           labels
         )
-        latency_metric.labels(**labels).observe(latency)
+        filtered_latency_labels = filter_metric_labels(latency_metric, labels)
+        latency_metric.labels(**filtered_latency_labels).observe(latency)
 
     return wrapper
 

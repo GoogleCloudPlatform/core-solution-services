@@ -22,14 +22,11 @@ import traceback
 import datetime
 import contextvars
 from common.config import CLOUD_LOGGING_ENABLED, SERVICE_NAME, CONTAINER_NAME
-try:
-  from common.monitoring.middleware import (
-    request_id_var, trace_var, session_id_var
-  )
-except ImportError:
-  request_id_var = contextvars.ContextVar("request_id", default="-")
-  trace_var = contextvars.ContextVar("trace", default="-")
-  session_id_var = contextvars.ContextVar("session_id", default="-")
+
+# Define context variables at module level to be used across the application
+request_id_var = contextvars.ContextVar("request_id", default="-")
+trace_var = contextvars.ContextVar("trace", default="-")
+session_id_var = contextvars.ContextVar("session_id", default="-")
 
 # Get log level from environment, default to INFO
 LOG_LEVEL_NAME = os.environ.get("LOG_LEVEL", "INFO").upper()
@@ -45,33 +42,53 @@ if CLOUD_LOGGING_ENABLED:
     print(f"*** STARTUP: Failed to initialize Cloud Logging client: {e} ***")
     print("*** STARTUP: Falling back to standard logging ***")
     client = None
+  except Exception as e:
+    print(f"*** STARTUP: Unexpected error with Cloud Logging client: {e} ***")
+    print("*** STARTUP: Falling back to standard logging ***")
+    client = None
+    raise
 else:
   client = None
 
 
-# Create a filter to add missing fields
+# Create a single filter for the whole application
 class LogRecordFilter(logging.Filter):
   """Filter to ensure required fields are present in log records."""
 
   def filter(self, record):
-    # Add default values for required fields if they don't exist
-    # First check if already set
+    """Add request context to the log record."""
+    # Debug logging to trace filter execution - remove in production
+    print(f"LogRecordFilter processing: name={record.name}")
+    print(f"Initial values: request_id={getattr(record, 'request_id', '-')}, "
+          f"trace={getattr(record, 'trace', '-')}")
+
+    # Only set values if they're not already present
     if not hasattr(record, "request_id") or record.request_id == "-":
       # Try to get from context vars
       ctx_request_id = request_id_var.get()
-      record.request_id = ctx_request_id if ctx_request_id != "-" else "-"
+      record.request_id = ctx_request_id if ctx_request_id != "-" else None
+      print(f"Set request_id to: {record.request_id}")
 
     if not hasattr(record, "trace") or record.trace == "-":
       # Try to get from context vars
       ctx_trace = trace_var.get()
-      record.trace = ctx_trace if ctx_trace != "-" else "-"
+      record.trace = ctx_trace if ctx_trace != "-" else None
+      print(f"Set trace to: {record.trace}")
 
     if not hasattr(record, "session_id") or record.session_id == "-":
       # Try to get from context vars
       ctx_session_id = session_id_var.get()
-      record.session_id = ctx_session_id if ctx_session_id != "-" else "-"
+      record.session_id = ctx_session_id if ctx_session_id != "-" else None
+      print(f"Set session_id to: {record.session_id}")
+
+    # Debug final values
+    print(f"Final: request_id={getattr(record, 'request_id', '-')}, "
+          f"trace={getattr(record, 'trace', '-')}")
 
     return True
+
+# Create a single instance of the filter for the entire application
+log_record_filter = LogRecordFilter()
 
 # Custom JSON encoder that handles non-serializable objects
 class SafeJsonEncoder(json.JSONEncoder):
@@ -177,7 +194,7 @@ class JsonFormatter(logging.Formatter):
     # Return JSON string with simplified error handling
     try:
       return json.dumps(log_entry, cls=SafeJsonEncoder)
-    except Exception as exc:
+    except TypeError as exc:
       error_msg = {
         "timestamp": timestamp,
         "severity": "ERROR",
@@ -185,6 +202,26 @@ class JsonFormatter(logging.Formatter):
         "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
         "logger": "logging_handler",
         "original_message": str(record.getMessage())
+      }
+      print(error_msg)
+      raise
+    except ValueError as exc:
+      error_msg = {
+        "timestamp": timestamp,
+        "severity": "ERROR",
+        "message": f"JSON value error: {type(exc).__name__}: {str(exc)}",
+        "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
+        "logger": "logging_handler"
+      }
+      print(error_msg)
+      raise
+    except Exception as exc:
+      error_msg = {
+        "timestamp": timestamp,
+        "severity": "ERROR",
+        "message": f"Unexpected error in log formatting: {str(exc)}",
+        "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
+        "logger": "logging_handler"
       }
       print(error_msg)
       raise
@@ -202,10 +239,12 @@ print("*** STARTUP: Removed existing handlers from root logger ***")
 # Set log level from environment
 root_logger.setLevel(LOG_LEVEL)
 
-# Add filter to root logger
-root_filter = LogRecordFilter()
-if root_filter not in root_logger.filters:
-  root_logger.addFilter(root_filter)
+# Add filter to root logger - use the single instance created above
+if log_record_filter not in root_logger.filters:
+  root_logger.addFilter(log_record_filter)
+  print("*** STARTUP: Added LogRecordFilter to root logger ***")
+  print("*** STARTUP: Root logger filters: " +
+        f"{[type(f).__name__ for f in root_logger.filters]} ***")
 
 # Add handlers to root logger
 if CLOUD_LOGGING_ENABLED and client:
@@ -221,15 +260,13 @@ else:
   root_logger.addHandler(json_handler)
   print("*** STARTUP: Added JSON formatter handler to root logger ***")
 
-__all__ = ["Logger", "root_filter"]
-
 print("*** STARTUP: Initialized structured logging "
       f"with level: {LOG_LEVEL_NAME} ***")
 
 # Create a global class logger
 _static_logger = logging.getLogger("Logger")
 _static_logger.setLevel(LOG_LEVEL)
-_static_logger.addFilter(LogRecordFilter())
+# No need to add filter here as root logger already has it
 
 # Cache for logger instances
 _logger_cache = {}
@@ -249,7 +286,7 @@ class Logger:
 
     self.logger = logging.getLogger(module_name)
     self.logger.setLevel(LOG_LEVEL)
-    self.logger.addFilter(LogRecordFilter())
+    # No need to add filter here as root logger already has it
 
   @classmethod
   def get_logger(cls, name) -> logging.Logger:
@@ -334,3 +371,10 @@ Logger.warning = staticmethod(warning)
 Logger.debug = staticmethod(debug)
 Logger.critical = staticmethod(critical)
 Logger.exception = staticmethod(exception)
+
+# Expose necessary elements for importing
+__all__ = ["Logger",
+          "log_record_filter",
+          "request_id_var",
+          "trace_var",
+          "session_id_var"]
