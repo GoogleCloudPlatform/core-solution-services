@@ -21,7 +21,7 @@ import re
 from fastapi import Request, Response
 from fastapi.routing import APIRouter
 from starlette.middleware.base import BaseHTTPMiddleware
-from typing import Optional
+from typing import Optional, Dict, Any
 from prometheus_client import (
   Counter,
   Histogram,
@@ -29,38 +29,11 @@ from prometheus_client import (
   CONTENT_TYPE_LATEST
 )
 
-# Import context variables and filter from logging_handler
-try:
-  from common.utils.logging_handler import (
-    request_id_var, trace_var, session_id_var, debug_context_vars
-  )
-  # Debug the imported context vars
-  print(f"*** STARTUP: middleware.py imported context vars from logging_handler ***")
-  print(f"*** STARTUP: middleware.py request_id_var ID: {id(request_id_var)} ***")
-  print(f"*** STARTUP: middleware.py trace_var ID: {id(trace_var)} ***")
-  print(f"*** STARTUP: middleware.py session_id_var ID: {id(session_id_var)} ***")
-except ImportError as e:
-  # Only define these here if logging_handler import fails
-  import contextvars
-  print(f"*** STARTUP: Import from logging_handler failed: {e} ***")
-  print("*** STARTUP: Defining local context vars ***")
-  request_id_var = contextvars.ContextVar("request_id", default="-")
-  trace_var = contextvars.ContextVar("trace", default="-")
-  session_id_var = contextvars.ContextVar("session_id", default="-")
-  print(f"*** STARTUP: middleware.py created local request_id_var ID: {id(request_id_var)} ***")
-  
-  # Define a debug helper function since import failed
-  def debug_context_vars():
-    """Print current context variable values for debugging."""
-    print(f"DEBUG HELPER (middleware): Current context variable values:")
-    print(f"  request_id_var (id={id(request_id_var)}): {request_id_var.get()}")
-    print(f"  trace_var (id={id(trace_var)}): {trace_var.get()}")
-    print(f"  session_id_var (id={id(session_id_var)}): {session_id_var.get()}")
-    return {
-      "request_id": request_id_var.get(), 
-      "trace": trace_var.get(), 
-      "session_id": session_id_var.get()
-    }
+# Import context variables ONLY from the centralized module
+from common.utils.context_vars import (
+  request_id_var, trace_var, session_id_var,
+  debug_context_vars, get_context, set_context, reset_context
+)
 
 try:
   from common.config import PROJECT_ID
@@ -69,7 +42,9 @@ except (ImportError, AttributeError):
 
 try:
   from common.utils.logging_handler import Logger
-except ImportError:
+  print("*** STARTUP: middleware.py imported Logger from logging_handler ***")
+except ImportError as e:
+  print(f"*** STARTUP: Import of Logger from logging_handler failed: {e} ***")
   Logger = None  # Will handle in _get_logger
 
 # Default metrics for HTTP requests
@@ -138,9 +113,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     
     # Debug the context vars in the constructor
     print(f"DEBUG MIDDLEWARE: Constructor context vars for {service_name}:")
-    print(f"  request_id_var (id={id(request_id_var)}): {request_id_var.get()}")
-    print(f"  trace_var (id={id(trace_var)}): {trace_var.get()}")
-    print(f"  session_id_var (id={id(session_id_var)}): {session_id_var.get()}")
+    debug_context_vars()
 
   def _get_logger(self):
     """Get the logger for the middleware."""
@@ -149,11 +122,13 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     return logging.getLogger(__name__)
 
   async def dispatch(self, request: Request, call_next):
-
+    """Process request, adds tracking IDs, and collects metrics."""
     # Debug current context vars at start of request
-    # In RequestTrackingMiddleware.dispatch method, add these lines at the beginning:
     print(f"==== REQUEST START: {request.url.path} ====")
-    print(f"Headers: X-Request-ID={request.headers.get('X-Request-ID')}, X-Cloud-Trace-Context={request.headers.get('X-Cloud-Trace-Context')}")
+    print(
+      f"Headers: X-Request-ID={request.headers.get('X-Request-ID')}, "
+      f"X-Cloud-Trace-Context={request.headers.get('X-Cloud-Trace-Context')}"
+    )
     print(f"DEBUG MIDDLEWARE: Start of request context vars")
     debug_context_vars()
     
@@ -192,45 +167,41 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
 
     request.state.start_time = start_time
 
-    # Set the context variables for this request
+    # Store the original context before setting the new one
+    prev_context = get_context()
+    
+    # Set the context variables for this request and store tokens
     print(f"DEBUG MIDDLEWARE: About to set context vars:")
-    print(f"  request_id_var ID: {id(request_id_var)}")
     print(f"  request_id: {request_id}")
-    token_request_id = request_id_var.set(request_id)
-    token_trace = trace_var.set(trace)
-    token_session_id = session_id_var.set(session_id)
+    context_tokens = set_context(
+      request_id=request_id,
+      trace=trace, 
+      session_id=session_id
+    )
     
     # Debug context vars after setting
     print(f"DEBUG MIDDLEWARE: After setting context vars:")
-    print(f"  request_id_var.get(): {request_id_var.get()}")
-    print(f"  trace_var.get(): {trace_var.get()}")
-    print(f"  session_id_var.get(): {session_id_var.get()}")
-
-    # Add debugging to verify context variables are set correctly
-    self.logger.debug(
-      "Context variables set in middleware",
-      extra={
-        "debug_request_id": request_id,
-        "debug_trace": trace,
-        "debug_session_id": session_id,
-        "context_request_id": request_id_var.get(),
-        "context_trace": trace_var.get(),
-        "context_session_id": session_id_var.get(),
-      }
-    )
+    debug_context_vars()
 
     try:
       # Log before processing
       print(f"DEBUG MIDDLEWARE: Before calling next middleware/handler")
       debug_context_vars()
       
-      #debug
-      print(f"==== CONTEXT BEFORE REQUEST: request_id={request_id_var.get()}, trace={trace_var.get()} ====")
+      # Debug context before request
+      print(
+        f"==== CONTEXT BEFORE REQUEST: request_id={request_id_var.get()}, "
+        f"trace={trace_var.get()} ===="
+      )
 
       # Process the request
       response = await call_next(request)
 
-      print(f"==== CONTEXT AFTER REQUEST: request_id={request_id_var.get()}, trace={trace_var.get()} ====")
+      # Debug context after request
+      print(
+        f"==== CONTEXT AFTER REQUEST: request_id={request_id_var.get()}, "
+        f"trace={trace_var.get()} ===="
+      )
       
       # Log after processing 
       print(f"DEBUG MIDDLEWARE: After calling next middleware/handler")
@@ -293,21 +264,9 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
       print(f"DEBUG MIDDLEWARE: Before resetting context vars:")
       debug_context_vars()
       
-      self.logger.debug(
-        "Context variables before reset",
-        extra={
-          "final_request_id": request_id_var.get(),
-          "final_trace": trace_var.get(),
-          "final_session_id": session_id_var.get(),
-        }
-      )
-
-      # Reset context variables
-      print(f"DEBUG MIDDLEWARE: Resetting context vars with tokens:")
-      print(f"  token_request_id: {token_request_id}")
-      request_id_var.reset(token_request_id)
-      trace_var.reset(token_trace)
-      session_id_var.reset(token_session_id)
+      # Reset context variables to previous values
+      # IMPORTANT: Wait until the end of the request to reset
+      reset_context(context_tokens)
       
       # Debug after reset
       print(f"DEBUG MIDDLEWARE: After resetting context vars:")
@@ -332,6 +291,9 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
     method = request.method
     path = request.url.path
 
+    # Preserve context variables across the middleware boundary
+    current_context = get_context()
+    
     try:
       response = await call_next(request)
       request_latency = time.time() - start_time
@@ -367,23 +329,24 @@ def create_metrics_router() -> APIRouter:
 
   return metrics_router
 
-def get_request_context(args) -> tuple:
+def get_request_context(args) -> Dict[str, str]:
   """Extract request_id, trace and session_id from request if available.
   
   Args:
     args: Arguments passed to the decorated function
       
   Returns:
-    tuple: request_id, trace, session_id extracted from arguments or defaults
+    Dict containing request_id, trace, session_id extracted from arguments or defaults
   """
   # Debug current context vars
   print(f"DEBUG MIDDLEWARE: get_request_context called")
   debug_context_vars()
   
   # First check context vars (for use outside of request handlers)
-  request_id = request_id_var.get()
-  trace = trace_var.get()
-  session_id = session_id_var.get()
+  context = get_context()
+  request_id = context["request_id"]
+  trace = context["trace"] 
+  session_id = context["session_id"]
   
   print(f"DEBUG MIDDLEWARE: get_request_context initial values:")
   print(f"  request_id: {request_id}")
@@ -406,7 +369,12 @@ def get_request_context(args) -> tuple:
   print(f"  request_id: {request_id}")
   print(f"  trace: {trace}")
   print(f"  session_id: {session_id}")
-  return request_id, trace, session_id
+  
+  return {
+    "request_id": request_id,
+    "trace": trace,
+    "session_id": session_id
+  }
 
 
 # Debug endpoint for testing context variables and logging
@@ -421,10 +389,8 @@ def create_debug_router() -> APIRouter:
   @debug_router.get("/debug/context-vars")
   async def debug_context_vars_endpoint(request: Request):
     """Endpoint to check the current state of context variables"""
-    # Get the context variables directly
-    ctx_request_id = request_id_var.get()
-    ctx_trace = trace_var.get()
-    ctx_session_id = session_id_var.get()
+    # Get current context
+    context = debug_context_vars()
     
     # Get values from request state
     req_request_id = getattr(request.state, "request_id", "-")
@@ -433,14 +399,7 @@ def create_debug_router() -> APIRouter:
     
     # Create response
     response = {
-      "context_vars": {
-        "request_id_var": ctx_request_id,
-        "trace_var": ctx_trace,
-        "session_id_var": ctx_session_id,
-        "request_id_var_id": str(id(request_id_var)),
-        "trace_var_id": str(id(trace_var)),
-        "session_id_var_id": str(id(session_id_var))
-      },
+      "context_vars": context,
       "request_state": {
         "request_id": req_request_id,
         "trace": req_trace,
@@ -458,9 +417,9 @@ def create_debug_router() -> APIRouter:
     logger.info(
       "Debug context vars endpoint called",
       extra={
-        "context_request_id": ctx_request_id,
-        "context_trace": ctx_trace,
-        "context_session_id": ctx_session_id,
+        "context_request_id": context["request_id"],
+        "context_trace": context["trace"],
+        "context_session_id": context["session_id"],
         "request_state_request_id": req_request_id,
         "request_state_trace": req_trace,
         "request_state_session_id": req_session_id
@@ -475,9 +434,7 @@ def create_debug_router() -> APIRouter:
     logger = logging.getLogger("debug.log_check")
     
     # Get current context values
-    current_request_id = request_id_var.get()
-    current_trace = trace_var.get()
-    current_session_id = session_id_var.get()
+    context = get_context()
     
     # Log with explicit extras
     logger.info(
@@ -486,9 +443,9 @@ def create_debug_router() -> APIRouter:
         "test_request_id": getattr(request.state, "request_id", "NOT_SET"),
         "test_trace": getattr(request.state, "trace", "NOT_SET"),
         "test_session_id": getattr(request.state, "session_id", "NOT_SET"),
-        "context_request_id": current_request_id,
-        "context_trace": current_trace,
-        "context_session_id": current_session_id,
+        "context_request_id": context["request_id"],
+        "context_trace": context["trace"],
+        "context_session_id": context["session_id"],
       }
     )
     
@@ -503,13 +460,12 @@ def create_debug_router() -> APIRouter:
     
     return {
       "message": "Debug log created",
-      "request_id": current_request_id,
-      "trace": current_trace,
-      "session_id": current_session_id,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"],
       "request_state_values": {
         "request_id": getattr(request.state, "request_id", "NOT_SET"),
         "trace": getattr(request.state, "trace", "NOT_SET"),
         "session_id": getattr(request.state, "session_id", "NOT_SET"),
       }
     }
-  

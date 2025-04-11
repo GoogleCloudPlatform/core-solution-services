@@ -22,11 +22,9 @@ import traceback
 import datetime
 import contextvars
 from common.config import CLOUD_LOGGING_ENABLED, SERVICE_NAME, CONTAINER_NAME
-
-# Define context variables at module level to be used across the application
-request_id_var = contextvars.ContextVar("request_id", default="-")
-trace_var = contextvars.ContextVar("trace", default="-")
-session_id_var = contextvars.ContextVar("session_id", default="-")
+from common.utils.context_vars import (
+  request_id_var, trace_var, session_id_var, debug_context_vars
+)
 
 # Adding debugging to track the context variables instances
 cv_instance_id = id(request_id_var)
@@ -430,19 +428,6 @@ Logger.warning = staticmethod(warning)
 Logger.debug = staticmethod(debug)
 Logger.critical = staticmethod(critical)
 Logger.exception = staticmethod(exception)
-
-# Debug helper function for testing context vars
-def debug_context_vars():
-  """Print current context variable values for debugging."""
-  print(f"DEBUG HELPER: Current context variable values:")
-  print(f"  request_id_var (id={id(request_id_var)}): {request_id_var.get()}")
-  print(f"  trace_var (id={id(trace_var)}): {trace_var.get()}")
-  print(f"  session_id_var (id={id(session_id_var)}): {session_id_var.get()}")
-  return {
-    "request_id": request_id_var.get(),
-    "trace": trace_var.get(), 
-    "session_id": session_id_var.get()
-  }
 
 # Expose necessary elements for importing
 __all__ = ["Logger",

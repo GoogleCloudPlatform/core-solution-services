@@ -28,6 +28,7 @@ from common.monitoring.metrics import (
   record_user_activity, create_decorator_for_streaming_func
 )
 from common.utils.logging_handler import Logger
+from common.utils.context_vars import get_context, set_context, reset_context
 from common.models import QueryEngine
 
 # Initialize logger
@@ -277,6 +278,56 @@ def get_query_engine_info(query_engine_id: str) -> Dict[str, str]:
 
   return info
 
+# Store original decorator function
+original_create_decorator = create_decorator_for_streaming_func
+
+def create_decorator_for_streaming_func_with_context(
+  count_metric=None,
+  latency_metric=None,
+  response_size_metric=None,
+  activity_counter=None,
+  activity_type=None,
+  metric_name=None,
+  extract_labels_func=None
+):
+  """Wrapper around create_decorator_for_streaming_func that preserves context"""
+  original_decorator = original_create_decorator(
+    count_metric=count_metric,
+    latency_metric=latency_metric,
+    response_size_metric=response_size_metric,
+    activity_counter=activity_counter,
+    activity_type=activity_type,
+    metric_name=metric_name,
+    extract_labels_func=extract_labels_func
+  )
+  
+  def context_preserving_decorator(func):
+    # Get the original decorated function
+    decorated_func = original_decorator(func)
+    
+    @wraps(decorated_func)
+    async def wrapper(*args, **kwargs):
+      # Preserve context - capture current context
+      current_context = get_context()
+      context_tokens = set_context(
+        request_id=current_context["request_id"],
+        trace=current_context["trace"],
+        session_id=current_context["session_id"]
+      )
+      
+      try:
+        # Call the original decorated function
+        return await decorated_func(*args, **kwargs)
+      finally:
+        # Always reset context to ensure no leaks
+        reset_context(context_tokens)
+        
+    return wrapper
+  
+  return context_preserving_decorator
+
+# Replace the original function with our context-preserving version
+create_decorator_for_streaming_func = create_decorator_for_streaming_func_with_context
 
 # Create LLM generation decorator
 track_llm_generate = create_decorator_for_streaming_func(
@@ -289,7 +340,6 @@ track_llm_generate = create_decorator_for_streaming_func(
   extract_labels_func=extract_llm_params
 )
 
-
 # Create embedding generation decorator
 track_embedding_generate = create_decorator_for_streaming_func(
   count_metric=EMBEDDING_GENERATE_COUNT,
@@ -300,185 +350,209 @@ track_embedding_generate = create_decorator_for_streaming_func(
   extract_labels_func=extract_embedding_params
 )
 
-
 def track_chat_generate(func: Callable):
   """Decorator to track chat generation metrics including response size"""
 
   @wraps(func)
   async def wrapper(*args, **kwargs):
-    # Extract parameters
-    params = extract_chat_params(kwargs)
-    llm_type = params["llm_type"]
-    with_file = params["with_file"]
-    with_tools = params["with_tools"]
-    prompt_size = params["prompt_size"]
-    is_streaming = params["is_streaming"]
-
-    str_with_file = str(with_file)
-    str_with_tools = str(with_tools)
-
-    # Extract user information and record activity
-    user_data = kwargs.get("user_data")
-    user_id = extract_user_id(user_data)
-    if user_id != "unknown":
-      record_user_activity(user_id, "chat_generation", USER_ACTIVITY)
-
-    # Start timing
-    start_time = time.time()
-
+    # Preserve context - capture current context
+    current_context = get_context()
+    context_tokens = set_context(
+      request_id=current_context["request_id"],
+      trace=current_context["trace"],
+      session_id=current_context["session_id"]
+    )
+    
     try:
-      # Call original function
-      result = await func(*args, **kwargs)
+      # Extract parameters
+      params = extract_chat_params(kwargs)
+      llm_type = params["llm_type"]
+      with_file = params["with_file"]
+      with_tools = params["with_tools"]
+      prompt_size = params["prompt_size"]
+      is_streaming = params["is_streaming"]
 
-      # Handle streaming vs non-streaming results for size tracking
-      if asyncio.iscoroutine(result) or inspect.isasyncgen(result):
-        extra_data = {
-          "with_file": with_file,
-          "with_tools": with_tools
-        }
-        result = await track_streaming_response_size(
-          generator=result,
-          response_size_metric=LLM_RESPONSE_SIZE,
-          metric_type=llm_type,
-          extra_data=extra_data
-        )
-      else:
-        # Record size for non-streaming
-        record_response_size(
-          result,
-          LLM_RESPONSE_SIZE,
-          llm_type,
-          {"with_file": with_file, "with_tools": with_tools}
-        )
+      str_with_file = str(with_file)
+      str_with_tools = str(with_tools)
 
-      # Track chat history size if available
-      history_size = None
-      if isinstance(
-        result, dict) and "data" in result and "history" in result["data"]:
-        history_size = len(result["data"]["history"])
-        CHAT_HISTORY_SIZE.labels(llm_type=llm_type).observe(history_size)
+      # Extract user information and record activity
+      user_data = kwargs.get("user_data")
+      user_id = extract_user_id(user_data)
+      if user_id != "unknown":
+        record_user_activity(user_id, "chat_generation", USER_ACTIVITY)
 
-      # Record success metrics
-      CHAT_GENERATE_COUNT.labels(
-        llm_type=llm_type,
-        with_file=str_with_file,
-        with_tools=str_with_tools,
-        status="success",
-        user_id=user_id
-      ).inc()
+      # Start timing
+      start_time = time.time()
 
-      # Log success
-      log_extra = {
-        "llm_type": llm_type,
-        "with_file": with_file,
-        "with_tools": with_tools,
-        "prompt_size": prompt_size,
-        "user_id": user_id,
-        "response_size": "streaming" if is_streaming else "done"
-      }
+      try:
+        # Call original function
+        result = await func(*args, **kwargs)
 
-      if history_size is not None:
-        log_extra["history_size"] = history_size
+        # Handle streaming vs non-streaming results for size tracking
+        if asyncio.iscoroutine(result) or inspect.isasyncgen(result):
+          extra_data = {
+            "with_file": with_file,
+            "with_tools": with_tools
+          }
+          result = await track_streaming_response_size(
+            generator=result,
+            response_size_metric=LLM_RESPONSE_SIZE,
+            metric_type=llm_type,
+            extra_data=extra_data
+          )
+        else:
+          # Record size for non-streaming
+          record_response_size(
+            result,
+            LLM_RESPONSE_SIZE,
+            llm_type,
+            {"with_file": with_file, "with_tools": with_tools}
+          )
 
-      log_operation_result(logger, "chat_generation", "success", log_extra)
+        # Track chat history size if available
+        history_size = None
+        if isinstance(
+          result, dict) and "data" in result and "history" in result["data"]:
+          history_size = len(result["data"]["history"])
+          CHAT_HISTORY_SIZE.labels(llm_type=llm_type).observe(history_size)
 
-      return result
+        # Record success metrics
+        CHAT_GENERATE_COUNT.labels(
+          llm_type=llm_type,
+          with_file=str_with_file,
+          with_tools=str_with_tools,
+          status="success",
+          user_id=user_id
+        ).inc()
 
-    except Exception as e:
-      CHAT_GENERATE_COUNT.labels(
-        llm_type=llm_type,
-        with_file=str_with_file,
-        with_tools=str_with_tools,
-        status="error",
-        user_id=user_id
-      ).inc()
-
-      # Log error
-      log_operation_result(
-        logger,
-        "chat_generation",
-        "error",
-        {
+        # Log success
+        log_extra = {
           "llm_type": llm_type,
           "with_file": with_file,
           "with_tools": with_tools,
           "prompt_size": prompt_size,
           "user_id": user_id,
-          "error_message": str(e)
+          "response_size": "streaming" if is_streaming else "done"
         }
-      )
-      raise
 
+        if history_size is not None:
+          log_extra["history_size"] = history_size
+
+        log_operation_result(logger, "chat_generation", "success", log_extra)
+
+        return result
+
+      except Exception as e:
+        CHAT_GENERATE_COUNT.labels(
+          llm_type=llm_type,
+          with_file=str_with_file,
+          with_tools=str_with_tools,
+          status="error",
+          user_id=user_id
+        ).inc()
+
+        # Log error
+        log_operation_result(
+          logger,
+          "chat_generation",
+          "error",
+          {
+            "llm_type": llm_type,
+            "with_file": with_file,
+            "with_tools": with_tools,
+            "prompt_size": prompt_size,
+            "user_id": user_id,
+            "error_message": str(e)
+          }
+        )
+        raise
+
+      finally:
+        # Record latency
+        latency = measure_latency(
+          start_time,
+          "chat_generation",
+          {
+            "llm_type": llm_type,
+            "with_file": with_file,
+            "with_tools": with_tools
+          }
+        )
+        CHAT_GENERATE_LATENCY.labels(
+          llm_type=llm_type,
+          with_file=str_with_file,
+          with_tools=str_with_tools
+        ).observe(latency)
+    
     finally:
-      # Record latency
-      latency = measure_latency(
-        start_time,
-        "chat_generation",
-        {
-          "llm_type": llm_type,
-          "with_file": with_file,
-          "with_tools": with_tools
-        }
-      )
-      CHAT_GENERATE_LATENCY.labels(
-        llm_type=llm_type,
-        with_file=str_with_file,
-        with_tools=str_with_tools
-      ).observe(latency)
+      # Always reset context to ensure no leaks
+      reset_context(context_tokens)
 
   return wrapper
-
 
 def track_chat_operations(func: Callable) -> Callable:
   """Decorator to track chat operations (create, delete, etc.)"""
 
   @wraps(func)
   async def async_wrapper(*args, **kwargs):
-    # Extract user information
-    user_data = kwargs.get("user_data")
-    user_id = extract_user_id(user_data)
-
+    # Preserve context - capture current context
+    current_context = get_context()
+    context_tokens = set_context(
+      request_id=current_context["request_id"],
+      trace=current_context["trace"],
+      session_id=current_context["session_id"]
+    )
+    
     try:
-      result = await func(*args, **kwargs)
+      # Extract user information
+      user_data = kwargs.get("user_data")
+      user_id = extract_user_id(user_data)
 
-      # Check operation type from function name
-      func_name = func.__name__
+      try:
+        result = await func(*args, **kwargs)
 
-      if isinstance(result, dict) and result.get("success"):
-        # Handle chat creation
-        if "create" in func_name:
-          ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
-          record_user_activity(user_id, "chat_create", USER_ACTIVITY)
-          log_operation_result(
-            logger, "chat_creation", "success", {"user_id": user_id}
-          )
+        # Check operation type from function name
+        func_name = func.__name__
 
-        # Handle chat deletion
-        elif "delete" in func_name:
-          ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
-          record_user_activity(user_id, "chat_delete", USER_ACTIVITY)
-          log_operation_result(
-            logger, "chat_deletion", "success", {"user_id": user_id}
-          )
+        if isinstance(result, dict) and result.get("success"):
+          # Handle chat creation
+          if "create" in func_name:
+            ACTIVE_CHATS_TOTAL.labels(user_id=user_id).inc()
+            record_user_activity(user_id, "chat_create", USER_ACTIVITY)
+            log_operation_result(
+              logger, "chat_creation", "success", {"user_id": user_id}
+            )
 
-      return result
+          # Handle chat deletion
+          elif "delete" in func_name:
+            ACTIVE_CHATS_TOTAL.labels(user_id=user_id).dec()
+            record_user_activity(user_id, "chat_delete", USER_ACTIVITY)
+            log_operation_result(
+              logger, "chat_deletion", "success", {"user_id": user_id}
+            )
 
-    except Exception as e:
-      # Log error
-      log_operation_result(
-        logger,
-        "chat_operation",
-        "error",
-        {
-          "operation": func.__name__,
-          "user_id": user_id,
-          "error_message": str(e)
-        }
-      )
-      raise
+        return result
+
+      except Exception as e:
+        # Log error
+        log_operation_result(
+          logger,
+          "chat_operation",
+          "error",
+          {
+            "operation": func.__name__,
+            "user_id": user_id,
+            "error_message": str(e)
+          }
+        )
+        raise
+    finally:
+      # Always reset context to ensure no leaks
+      reset_context(context_tokens)
 
   @wraps(func)
   def sync_wrapper(*args, **kwargs):
+    # For sync functions, no async context preservation needed
     # Extract user information
     user_data = kwargs.get("user_data")
     user_id = extract_user_id(user_data)
@@ -534,70 +608,82 @@ def track_agent_execution(func: Callable):
 
   @wraps(func)
   async def wrapper(*args, **kwargs):
-    # Extract agent information
-    agent_type = kwargs.get("agent_type", "unknown")
-    agent_name = kwargs.get("agent_name", "unknown")
-
-    # Extract user information and record activity
-    user_data = kwargs.get("user_data")
-    user_id = extract_user_id(user_data)
-    if user_id != "unknown":
-      record_user_activity(user_id, "agent_execution", USER_ACTIVITY)
-
-    # Start timing
-    start_time = time.time()
-
+    # Preserve context - capture current context
+    current_context = get_context()
+    context_tokens = set_context(
+      request_id=current_context["request_id"],
+      trace=current_context["trace"],
+      session_id=current_context["session_id"]
+    )
+    
     try:
-      # Call the original function
-      result = await func(*args, **kwargs)
+      # Extract agent information
+      agent_type = kwargs.get("agent_type", "unknown")
+      agent_name = kwargs.get("agent_name", "unknown")
 
-      # Record success metrics
-      AGENT_EXECUTION_COUNT.labels(
-        agent_type=agent_type,
-        status="success"
-      ).inc()
+      # Extract user information and record activity
+      user_data = kwargs.get("user_data")
+      user_id = extract_user_id(user_data)
+      if user_id != "unknown":
+        record_user_activity(user_id, "agent_execution", USER_ACTIVITY)
 
-      # Log success
-      log_operation_result(
-        logger,
-        "agent_execution",
-        "success",
-        {
-          "agent_type": agent_type,
-          "agent_name": agent_name
-        }
-      )
+      # Start timing
+      start_time = time.time()
 
-      return result
+      try:
+        # Call the original function
+        result = await func(*args, **kwargs)
 
-    except Exception as e:
-      # Record error metrics
-      AGENT_EXECUTION_COUNT.labels(
-        agent_type=agent_type,
-        status="error"
-      ).inc()
+        # Record success metrics
+        AGENT_EXECUTION_COUNT.labels(
+          agent_type=agent_type,
+          status="success"
+        ).inc()
 
-      # Log error
-      log_operation_result(
-        logger,
-        "agent_execution",
-        "error",
-        {
-          "agent_type": agent_type,
-          "agent_name": agent_name,
-          "error_message": str(e)
-        }
-      )
-      raise
+        # Log success
+        log_operation_result(
+          logger,
+          "agent_execution",
+          "success",
+          {
+            "agent_type": agent_type,
+            "agent_name": agent_name
+          }
+        )
 
+        return result
+
+      except Exception as e:
+        # Record error metrics
+        AGENT_EXECUTION_COUNT.labels(
+          agent_type=agent_type,
+          status="error"
+        ).inc()
+
+        # Log error
+        log_operation_result(
+          logger,
+          "agent_execution",
+          "error",
+          {
+            "agent_type": agent_type,
+            "agent_name": agent_name,
+            "error_message": str(e)
+          }
+        )
+        raise
+
+      finally:
+        # Record latency
+        latency = measure_latency(
+          start_time,
+          "agent_execution",
+          {"agent_type": agent_type, "agent_name": agent_name}
+        )
+        AGENT_EXECUTION_LATENCY.labels(agent_type=agent_type).observe(latency)
     finally:
-      # Record latency
-      latency = measure_latency(
-        start_time,
-        "agent_execution",
-        {"agent_type": agent_type, "agent_name": agent_name}
-      )
-      AGENT_EXECUTION_LATENCY.labels(agent_type=agent_type).observe(latency)
+      # Always reset context to ensure no leaks
+      reset_context(context_tokens)
 
   return wrapper
 
@@ -607,79 +693,91 @@ def track_vector_db_query(func: Callable):
 
   @wraps(func)
   async def wrapper(*args, **kwargs):
-    # Extract vector DB information
-    query_engine_id = kwargs.get("query_engine_id")
-    if not query_engine_id and args:
-      query_engine_id = args[0] if args else None
-
-    engine_info = get_query_engine_info(query_engine_id)
-    db_type = engine_info["db_type"]
-    engine_name = engine_info["engine_name"]
-
-    # Extract user information and record activity
-    user_data = kwargs.get("user_data")
-    user_id = extract_user_id(user_data)
-    if user_id != "unknown":
-      record_user_activity(user_id, "vector_db_query", USER_ACTIVITY)
-
-    # Start timing
-    start_time = time.time()
-
+    # Preserve context - capture current context
+    current_context = get_context()
+    context_tokens = set_context(
+      request_id=current_context["request_id"],
+      trace=current_context["trace"],
+      session_id=current_context["session_id"]
+    )
+    
     try:
-      result = await func(*args, **kwargs)
+      # Extract vector DB information
+      query_engine_id = kwargs.get("query_engine_id")
+      if not query_engine_id and args:
+        query_engine_id = args[0] if args else None
 
-      # Record success metrics
-      VECTOR_DB_QUERY_COUNT.labels(
-        db_type=db_type,
-        engine_name=engine_name,
-        status="success"
-      ).inc()
+      engine_info = get_query_engine_info(query_engine_id)
+      db_type = engine_info["db_type"]
+      engine_name = engine_info["engine_name"]
 
-      # Log success
-      log_operation_result(
-        logger,
-        "vector_db_query",
-        "success",
-        {
-          "db_type": db_type,
-          "engine_name": engine_name
-        }
-      )
+      # Extract user information and record activity
+      user_data = kwargs.get("user_data")
+      user_id = extract_user_id(user_data)
+      if user_id != "unknown":
+        record_user_activity(user_id, "vector_db_query", USER_ACTIVITY)
 
-      return result
+      # Start timing
+      start_time = time.time()
 
-    except Exception as e:
-      # Record error metrics
-      VECTOR_DB_QUERY_COUNT.labels(
-        db_type=db_type,
-        engine_name=engine_name,
-        status="error"
-      ).inc()
+      try:
+        result = await func(*args, **kwargs)
 
-      # Log error
-      log_operation_result(
-        logger,
-        "vector_db_query",
-        "error",
-        {
-          "db_type": db_type,
-          "engine_name": engine_name,
-          "error_message": str(e)
-        }
-      )
-      raise
+        # Record success metrics
+        VECTOR_DB_QUERY_COUNT.labels(
+          db_type=db_type,
+          engine_name=engine_name,
+          status="success"
+        ).inc()
 
+        # Log success
+        log_operation_result(
+          logger,
+          "vector_db_query",
+          "success",
+          {
+            "db_type": db_type,
+            "engine_name": engine_name
+          }
+        )
+
+        return result
+
+      except Exception as e:
+        # Record error metrics
+        VECTOR_DB_QUERY_COUNT.labels(
+          db_type=db_type,
+          engine_name=engine_name,
+          status="error"
+        ).inc()
+
+        # Log error
+        log_operation_result(
+          logger,
+          "vector_db_query",
+          "error",
+          {
+            "db_type": db_type,
+            "engine_name": engine_name,
+            "error_message": str(e)
+          }
+        )
+        raise
+
+      finally:
+        # Record latency
+        latency = measure_latency(
+          start_time,
+          "vector_db_query",
+          {"db_type": db_type, "engine_name": engine_name}
+        )
+        VECTOR_DB_QUERY_LATENCY.labels(
+          db_type=db_type,
+          engine_name=engine_name
+        ).observe(latency)
     finally:
-      # Record latency
-      latency = measure_latency(
-        start_time,
-        "vector_db_query",
-        {"db_type": db_type, "engine_name": engine_name}
-      )
-      VECTOR_DB_QUERY_LATENCY.labels(
-        db_type=db_type,
-        engine_name=engine_name
-      ).observe(latency)
+      # Always reset context to ensure no leaks
+      reset_context(context_tokens)
 
   return wrapper
 
@@ -689,77 +787,89 @@ def track_vector_db_build(func: Callable):
 
   @wraps(func)
   async def wrapper(*args, **kwargs):
-    # Extract vector DB information from config
-    gen_config = kwargs.get("gen_config")
-    config_dict = safe_extract_config_dict(gen_config)
-
-    db_type = config_dict.get("vector_store", "unknown")
-    engine_name = config_dict.get("query_engine", "unknown")
-
-    # Extract user information and record activity
-    user_data = kwargs.get("user_data")
-    user_id = extract_user_id(user_data)
-    if user_id != "unknown":
-      record_user_activity(user_id, "vector_db_build", USER_ACTIVITY)
-
-    # Start timing
-    start_time = time.time()
-
+    # Preserve context - capture current context
+    current_context = get_context()
+    context_tokens = set_context(
+      request_id=current_context["request_id"],
+      trace=current_context["trace"],
+      session_id=current_context["session_id"]
+    )
+    
     try:
-      result = await func(*args, **kwargs)
+      # Extract vector DB information from config
+      gen_config = kwargs.get("gen_config")
+      config_dict = safe_extract_config_dict(gen_config)
 
-      # Record success metrics
-      VECTOR_DB_BUILD_COUNT.labels(
-        db_type=db_type,
-        engine_name=engine_name,
-        status="success"
-      ).inc()
+      db_type = config_dict.get("vector_store", "unknown")
+      engine_name = config_dict.get("query_engine", "unknown")
 
-      # Log success
-      log_operation_result(
-        logger,
-        "vector_db_build",
-        "success",
-        {
-          "db_type": db_type,
-          "engine_name": engine_name
-        }
-      )
+      # Extract user information and record activity
+      user_data = kwargs.get("user_data")
+      user_id = extract_user_id(user_data)
+      if user_id != "unknown":
+        record_user_activity(user_id, "vector_db_build", USER_ACTIVITY)
 
-      return result
+      # Start timing
+      start_time = time.time()
 
-    except Exception as e:
-      # Record error metrics
-      VECTOR_DB_BUILD_COUNT.labels(
-        db_type=db_type,
-        engine_name=engine_name,
-        status="error"
-      ).inc()
+      try:
+        result = await func(*args, **kwargs)
 
-      # Log error
-      log_operation_result(
-        logger,
-        "vector_db_build",
-        "error",
-        {
-          "db_type": db_type,
-          "engine_name": engine_name,
-          "error_message": str(e)
-        }
-      )
-      raise
+        # Record success metrics
+        VECTOR_DB_BUILD_COUNT.labels(
+          db_type=db_type,
+          engine_name=engine_name,
+          status="success"
+        ).inc()
 
+        # Log success
+        log_operation_result(
+          logger,
+          "vector_db_build",
+          "success",
+          {
+            "db_type": db_type,
+            "engine_name": engine_name
+          }
+        )
+
+        return result
+
+      except Exception as e:
+        # Record error metrics
+        VECTOR_DB_BUILD_COUNT.labels(
+          db_type=db_type,
+          engine_name=engine_name,
+          status="error"
+        ).inc()
+
+        # Log error
+        log_operation_result(
+          logger,
+          "vector_db_build",
+          "error",
+          {
+            "db_type": db_type,
+            "engine_name": engine_name,
+            "error_message": str(e)
+          }
+        )
+        raise
+
+      finally:
+        # Record latency
+        latency = measure_latency(
+          start_time,
+          "vector_db_build",
+          {"db_type": db_type, "engine_name": engine_name}
+        )
+        VECTOR_DB_BUILD_LATENCY.labels(
+          db_type=db_type,
+          engine_name=engine_name
+        ).observe(latency)
     finally:
-      # Record latency
-      latency = measure_latency(
-        start_time,
-        "vector_db_build",
-        {"db_type": db_type, "engine_name": engine_name}
-      )
-      VECTOR_DB_BUILD_LATENCY.labels(
-        db_type=db_type,
-        engine_name=engine_name
-      ).observe(latency)
+      # Always reset context to ensure no leaks
+      reset_context(context_tokens)
 
   return wrapper
 
