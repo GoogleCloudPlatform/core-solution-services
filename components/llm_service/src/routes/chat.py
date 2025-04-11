@@ -644,7 +644,8 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
             CHAT_FILE: file["name"]
           })
           user_chat.update_history(custom_entry={
-            CHAT_FILE_BASE64: file["contents"]
+            CHAT_FILE_BASE64: file["contents"],
+            CHAT_FILE_TYPE: "image/png"
           })
 
       chat_data = user_chat.get_fields(reformat_datetime=True)
