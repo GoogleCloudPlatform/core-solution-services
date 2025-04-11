@@ -110,18 +110,20 @@ def get_llm_details(user_data: dict = Depends(validate_token),
   try:
     model_config = get_model_config()
     llm_types = []
-    if is_embedding is True and is_multimodal is True:
-      llm_types = model_config.get_multimodal_embedding_types()
-    elif is_embedding is True and is_multimodal is False:
-      llm_types = model_config.get_text_embedding_types()
-    elif is_embedding is True and is_multimodal is None:
-      llm_types = model_config.get_embedding_types()
-    elif is_multimodal is True:
-      llm_types = model_config.get_multimodal_llm_types()
-    elif is_multimodal is False:
-      llm_types = model_config.get_text_llm_types()
+    if is_embedding:
+      if is_multimodal is None:
+        llm_types = model_config.get_embedding_types()
+      elif is_multimodal:
+        llm_types = model_config.get_multimodal_embedding_types()
+      else:
+        llm_types = model_config.get_text_embedding_types()
     elif is_multimodal is None:
       llm_types = model_config.get_llm_types()
+    elif is_multimodal:
+      llm_types = model_config.get_multimodal_llm_types()
+    else:
+      llm_types = model_config.get_text_llm_types()
+
 
     model_details = []
     for llm in llm_types:
