@@ -185,6 +185,27 @@ class JsonFormatter(logging.Formatter):
       "line": record.lineno
     }
 
+    # For request_id
+    request_id = getattr(record, "request_id", "-")
+    if request_id == "-":
+      ctx_request_id = request_id_var.get()
+      if ctx_request_id != "-":
+        request_id = ctx_request_id
+
+    # For trace
+    trace = getattr(record, "trace", "-")
+    if trace == "-":
+      ctx_trace = trace_var.get()
+      if ctx_trace != "-":
+        trace = ctx_trace
+
+    # For session_id
+    session_id = getattr(record, "session_id", "-")
+    if session_id == "-":
+      ctx_session_id = session_id_var.get()
+      if ctx_session_id != "-":
+        session_id = ctx_session_id
+
     # Add request context fields but use null instead of dashes
     for field in ["request_id", "trace", "session_id"]:
       value = getattr(record, field, "-")
