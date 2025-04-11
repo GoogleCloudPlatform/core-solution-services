@@ -193,7 +193,7 @@ class JsonFormatter(logging.Formatter):
         "original_message": str(record.getMessage())
       }
       print(f"ERROR IN LOGGER: {json.dumps(error_msg)}")
-      return json.dumps(error_msg)
+      raise
 
 # Force reconfiguration of root logger by removing existing handlers
 root_logger = logging.getLogger()

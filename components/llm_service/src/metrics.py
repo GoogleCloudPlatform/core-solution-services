@@ -300,11 +300,11 @@ def create_decorator_for_streaming_func_with_context(
     metric_name=metric_name,
     extract_labels_func=extract_labels_func
   )
-  
+
   def context_preserving_decorator(func):
     # Get the original decorated function
     decorated_func = original_decorator(func)
-    
+
     @wraps(decorated_func)
     async def wrapper(*args, **kwargs):
       # Preserve context - capture current context
@@ -314,16 +314,16 @@ def create_decorator_for_streaming_func_with_context(
         trace=current_context["trace"],
         session_id=current_context["session_id"]
       )
-      
+
       try:
         # Call the original decorated function
         return await decorated_func(*args, **kwargs)
       finally:
         # Always reset context to ensure no leaks
         reset_context(context_tokens)
-        
+
     return wrapper
-  
+
   return context_preserving_decorator
 
 # Replace the original function with our context-preserving version
@@ -362,7 +362,7 @@ def track_chat_generate(func: Callable):
       trace=current_context["trace"],
       session_id=current_context["session_id"]
     )
-    
+
     try:
       # Extract parameters
       params = extract_chat_params(kwargs)
@@ -483,7 +483,7 @@ def track_chat_generate(func: Callable):
           with_file=str_with_file,
           with_tools=str_with_tools
         ).observe(latency)
-    
+
     finally:
       # Always reset context to ensure no leaks
       reset_context(context_tokens)
@@ -502,7 +502,7 @@ def track_chat_operations(func: Callable) -> Callable:
       trace=current_context["trace"],
       session_id=current_context["session_id"]
     )
-    
+
     try:
       # Extract user information
       user_data = kwargs.get("user_data")
@@ -615,7 +615,7 @@ def track_agent_execution(func: Callable):
       trace=current_context["trace"],
       session_id=current_context["session_id"]
     )
-    
+
     try:
       # Extract agent information
       agent_type = kwargs.get("agent_type", "unknown")
@@ -700,7 +700,7 @@ def track_vector_db_query(func: Callable):
       trace=current_context["trace"],
       session_id=current_context["session_id"]
     )
-    
+
     try:
       # Extract vector DB information
       query_engine_id = kwargs.get("query_engine_id")
@@ -794,7 +794,7 @@ def track_vector_db_build(func: Callable):
       trace=current_context["trace"],
       session_id=current_context["session_id"]
     )
-    
+
     try:
       # Extract vector DB information from config
       gen_config = kwargs.get("gen_config")

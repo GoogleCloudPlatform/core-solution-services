@@ -38,9 +38,6 @@ from common.monitoring.middleware import (
   PrometheusMiddleware,
   create_metrics_router
 )
-#debug
-from common.utils.logging_handler import debug_context_vars
-from common.monitoring.middleware import create_debug_router
 
 # Basic API config
 service_title = "LLM Service API's"
@@ -51,11 +48,6 @@ version = "v1"
 logger = Logger.get_logger(__file__)
 
 app = FastAPI()
-
-print("*** STARTUP: main.py initializing ***")
-print("*** STARTUP: Checking context vars in main.py ***")
-debug_context_vars()
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOW_ORIGINS,
@@ -108,50 +100,11 @@ api = FastAPI(
     )
 
 app.include_router(metrics_router)
-
-# With:
-try:
-    # Create a minimal router directly
-    from fastapi import APIRouter, Request
-    from common.utils.logging_handler import request_id_var, trace_var, session_id_var
-    
-    debug_router = APIRouter(tags=["Debug"])
-    
-    @debug_router.get("/debug/context-vars")
-    async def debug_context_vars_endpoint(request: Request):
-        """Endpoint to check the current state of context variables"""
-        return {
-            "context_vars": {
-                "request_id": request_id_var.get(),
-                "trace": trace_var.get(),
-                "session_id": session_id_var.get(),
-                "ids": {
-                    "request_id_var": id(request_id_var),
-                    "trace_var": id(trace_var),
-                    "session_id_var": id(session_id_var)
-                }
-            },
-            "request_state": {
-                "request_id": getattr(request.state, "request_id", "-"),
-                "trace": getattr(request.state, "trace", "-"),
-                "session_id": getattr(request.state, "session_id", "-")
-            }
-        }
-    
-    app.include_router(debug_router)
-    print("*** Added debug router successfully ***")
-except Exception as e:
-    print(f"*** Failed to add debug router: {e} ***")
-
 api.include_router(llm.router)
 api.include_router(chat.router)
 api.include_router(query.router)
 api.include_router(agent.router)
 api.include_router(agent_plan.router)
-
-#debug
-print("*** STARTUP: All middleware added, checking context vars again ***")
-debug_context_vars()
 
 add_exception_handlers(app)
 add_exception_handlers(api)
