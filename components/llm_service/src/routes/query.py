@@ -536,7 +536,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
 @router.post(
     "/engine/{query_engine_id}",
     name="Make a query to a query engine",
-    response_model=LLMQueryResponse)
+    response_model=LLMQueryResponse, deprecated=True)
 async def query(query_engine_id: str,
                 gen_config: LLMQueryModel,
                 user_data: dict = Depends(validate_token)):
@@ -700,7 +700,7 @@ async def query(query_engine_id: str,
 @router.post(
     "/{user_query_id}",
     name="Continue chat with a prior user query",
-    response_model=LLMQueryResponse)
+    response_model=LLMQueryResponse, deprecated=True)
 async def query_continue(
   user_query_id: str,
   gen_config: LLMQueryModel,
