@@ -290,7 +290,7 @@ def create_decorator_for_streaming_func_with_context(
   metric_name=None,
   extract_labels_func=None
 ):
-  """Wrapper around create_decorator_for_streaming_func that preserves context"""
+  """Context Safe wrapper around create_decorator_for_streaming_func"""
   original_decorator = original_create_decorator(
     count_metric=count_metric,
     latency_metric=latency_metric,
@@ -327,7 +327,8 @@ def create_decorator_for_streaming_func_with_context(
   return context_preserving_decorator
 
 # Replace the original function with our context-preserving version
-create_decorator_for_streaming_func = create_decorator_for_streaming_func_with_context
+create_decorator_for_streaming_func =\
+    create_decorator_for_streaming_func_with_context
 
 # Create LLM generation decorator
 track_llm_generate = create_decorator_for_streaming_func(
