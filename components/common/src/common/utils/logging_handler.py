@@ -173,18 +173,6 @@ class JsonFormatter(logging.Formatter):
     print(f"  trace: {getattr(record, 'trace', '-')}")
     print(f"  session_id: {getattr(record, 'session_id', '-')}")
 
-    # Build core log entry with essential fields only
-    log_entry = {
-      "timestamp": timestamp,
-      "severity": record.levelname,
-      "message": record.getMessage(),
-      "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
-      "logger": record.name,
-      "file": record.pathname,
-      "function": record.funcName,
-      "line": record.lineno
-    }
-
     # For request_id
     request_id = getattr(record, "request_id", "-")
     if request_id == "-":
@@ -205,6 +193,21 @@ class JsonFormatter(logging.Formatter):
       ctx_session_id = session_id_var.get()
       if ctx_session_id != "-":
         session_id = ctx_session_id
+
+    # Build core log entry with essential fields only
+    log_entry = {
+      "timestamp": timestamp,
+      "severity": record.levelname,
+      "message": record.getMessage(),
+      "service": SERVICE_NAME or CONTAINER_NAME or "unknown-service",
+      "logger": record.name,
+      "file": record.pathname,
+      "function": record.funcName,
+      "line": record.lineno,
+      "request_id": None if request_id == "-" else request_id,
+      "trace": None if trace == "-" else trace,
+      "session_id": None if session_id == "-" else session_id
+    }
 
     # Add request context fields but use null instead of dashes
     for field in ["request_id", "trace", "session_id"]:
