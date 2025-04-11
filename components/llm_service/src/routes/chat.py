@@ -30,7 +30,7 @@ from common.models.llm import (
   CHAT_FILE_TYPE
 )
 from common.utils.auth_service import validate_token
-from common.utils.context_vars import preserve_context, get_context
+from common.utils.context_vars import get_context
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  UnauthorizedUserError)
@@ -300,7 +300,6 @@ def validate_tool_names(tool_names: Optional[str]):
 @router.post(
     "",
     name="Create new chat", deprecated=True)
-@preserve_context
 @track_chat_generate
 async def create_user_chat(
      prompt: Annotated[str, Form()],
@@ -330,6 +329,7 @@ async def create_user_chat(
   Returns:
       LLMUserChatResponse or StreamingResponse
   """
+
   Logger.info(
     "Creating new chat",
     extra={
@@ -447,7 +447,6 @@ async def create_user_chat(
 
 
 @router.post("/empty_chat", name="Create new chat")
-@preserve_context
 @track_chat_operations
 async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
@@ -535,7 +534,8 @@ async def user_chat_generate(chat_id: str,
       "config": {
         k: v for k, v in genconfig_dict.items() if k != "chat_file_b64"},
       "request_id": context["request_id"],
-      "trace": context["trace"]
+      "trace": context["trace"],
+      "session_id": context["session_id"]
     }
   )
 
@@ -619,6 +619,7 @@ async def user_chat_generate(chat_id: str,
               yield chunk
           finally:
             # Log size at the end of streaming
+            context = get_context()
             Logger.info(
               "LLM response size",
               extra={
@@ -627,7 +628,10 @@ async def user_chat_generate(chat_id: str,
                 "metric_type": "llm_response_size",
                 "llm_type": llm_type,
                 "is_streaming": True,
-                "response_size_chars": total_chars
+                "response_size_chars": total_chars,
+                "request_id": context["request_id"],
+                "trace": context["trace"],
+                "session_id": context["session_id"]
               }
             )
             # Record metrics
@@ -652,6 +656,7 @@ async def user_chat_generate(chat_id: str,
 
         # Track response size for non-streaming responses
         response_size = len(response)
+        context = get_context()
         Logger.info(
           "LLM response size",
           extra={
@@ -660,7 +665,10 @@ async def user_chat_generate(chat_id: str,
             "metric_type": "llm_response_size",
             "llm_type": llm_type,
             "is_streaming": False,
-            "response_size_chars": response_size
+            "response_size_chars": response_size,
+            "request_id": context["request_id"],
+            "trace": context["trace"],
+            "session_id": context["session_id"]
           }
         )
         LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(response_size)

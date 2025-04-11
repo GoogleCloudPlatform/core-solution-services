@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2025
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,35 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Centralized context variables for request tracking and correlation.
+"""
 
-This module provides the single source of truth for context variables used
-throughout the application. All components should import from this module
-rather than creating their own context variables.
+This module provides context variables for tracking request information across
+async boundaries.
+
 """
 
 import contextvars
-import asyncio
-from typing import Dict, Any, Optional, Callable, Awaitable
-from functools import wraps
+import logging
+from typing import Dict, List, Optional, Tuple
 
-# Define context variables in one place to avoid multiple instances
+# Create context variables
 request_id_var = contextvars.ContextVar("request_id", default="-")
 trace_var = contextvars.ContextVar("trace", default="-")
 session_id_var = contextvars.ContextVar("session_id", default="-")
 
-# Print startup information to help with debugging
-print(f"*** STARTUP: context_vars.py initialized context variables ***")
-print(f"*** STARTUP: request_id_var ID: {id(request_id_var)} ***")
-print(f"*** STARTUP: trace_var ID: {id(trace_var)} ***")
-print(f"*** STARTUP: session_id_var ID: {id(session_id_var)} ***")
+# Logger for this module
+logger = logging.getLogger(__name__)
+
+def debug_context_vars() -> Dict[str, str]:
+  """Print and return the current values of all context variables."""
+  context = {
+    "request_id": request_id_var.get(),
+    "trace": trace_var.get(),
+    "session_id": session_id_var.get()
+  }
+  logger.debug(f"Current context vars: {context}")
+  return context
 
 def get_context() -> Dict[str, str]:
-  """Get the current context as a dictionary.
-  
-  Returns:
-    Dict containing request_id, trace, and session_id
-  """
+  """Get all context variables as a dictionary."""
   return {
     "request_id": request_id_var.get(),
     "trace": trace_var.get(),
@@ -48,123 +50,75 @@ def get_context() -> Dict[str, str]:
   }
 
 def set_context(
-    request_id: Optional[str] = None, 
-    trace: Optional[str] = None, 
-    session_id: Optional[str] = None) -> Dict[str, contextvars.Token]:
-  """Set the context variables and return tokens for resetting.
+  request_id: Optional[str] = None,
+  trace: Optional[str] = None,
+  session_id: Optional[str] = None
+) -> List[Tuple[contextvars.ContextVar, contextvars.Token]]:
+  """Set context variables and return tokens for resetting.
   
   Args:
-    request_id: Optional request ID
-    trace: Optional trace ID
-    session_id: Optional session ID
-    
+    request_id: Request ID to set
+    trace: Trace ID to set
+    session_id: Session ID to set
+      
   Returns:
-    Dictionary of tokens that can be used to reset the context
+    List of (var, token) pairs that can be used to reset context
   """
-  tokens = {}
+  tokens = []
+
   if request_id is not None:
-    tokens["request_id"] = request_id_var.set(request_id)
+    token = request_id_var.set(request_id)
+    tokens.append((request_id_var, token))
+
   if trace is not None:
-    tokens["trace"] = trace_var.set(trace)
+    token = trace_var.set(trace)
+    tokens.append((trace_var, token))
+
   if session_id is not None:
-    tokens["session_id"] = session_id_var.set(session_id)
+    token = session_id_var.set(session_id)
+    tokens.append((session_id_var, token))
+
   return tokens
 
-def reset_context(tokens: Dict[str, contextvars.Token]) -> None:
-  """Reset context variables using the provided tokens.
+def reset_context(
+  tokens: List[Tuple[contextvars.ContextVar, contextvars.Token]]
+) -> None:
+  """Reset context variables using the tokens from set_context.
   
   Args:
-    tokens: Dictionary of tokens returned by set_context
+    tokens: List of (var, token) pairs from set_context
   """
-  if "request_id" in tokens:
-    request_id_var.reset(tokens["request_id"])
-  if "trace" in tokens:
-    trace_var.reset(tokens["trace"])
-  if "session_id" in tokens:
-    session_id_var.reset(tokens["session_id"])
+  for var, token in tokens:
+    var.reset(token)
 
-async def copy_context_to_task(coro: Awaitable, context: Dict[str, str]) -> Any:
-  """Copy the current context to a new task/coroutine.
+class AsyncContextPreserver:
+  """Context manager to preserve context vars across async boundaries.
   
-  This function ensures context variables are properly propagated to
-  child tasks in async code.
-  
-  Args:
-    coro: The coroutine to run with the copied context
-    context: Dictionary containing request_id, trace, and session_id
-    
-  Returns:
-    The result of the coroutine
+  Usage:
+    async def some_async_function():
+      with AsyncContextPreserver() as context:
+        # Do work, await things, etc.
+        await some_other_async_function()
+              
+      # Now context variables are restored to what they were
   """
-  # Create a new task with the copied context
-  task = asyncio.create_task(coro)
-  
-  # Set the context in the new task
-  if context.get("request_id") and context.get("request_id") != "-":
-    request_id_var.set(context["request_id"])
-  if context.get("trace") and context.get("trace") != "-":
-    trace_var.set(context["trace"])
-  if context.get("session_id") and context.get("session_id") != "-":
-    session_id_var.set(context["session_id"])
-  
-  # Wait for the task to complete
-  return await task
 
-def preserve_context(func):
-  """Decorator that preserves context across async boundaries.
-  
-  This decorator ensures that the context variables are properly
-  propagated to async functions, even when they're called from
-  different async contexts.
-  
-  Args:
-    func: The async function to decorate
-    
-  Returns:
-    Decorated function that preserves context
-  """
-  @wraps(func)
-  async def wrapper(*args, **kwargs):
-    # Capture current context
-    context = get_context()
-    print(f"PRESERVE CONTEXT: Entering {func.__name__} with context {context}")
-    # Create tokens for the new context
-    tokens = set_context(
-      request_id=context["request_id"],
-      trace=context["trace"],
-      session_id=context["session_id"]
-    )
-    
-    try:
-      # Run the function with preserved context
-      return await func(*args, **kwargs)
-    finally:
-      # Reset context to previous values
-      print(f"PRESERVE CONTEXT: Exiting {func.__name__}")
-      reset_context(tokens)
-  
-  return wrapper
+  def __init__(self):
+    self.tokens = None
+    self.preserved_context = None
 
-def debug_context_vars() -> Dict[str, Any]:
-  """Print current context variable values for debugging.
-  
-  Returns:
-    Dictionary with the current context values
-  """
-  context = {
-    "request_id": request_id_var.get(),
-    "trace": trace_var.get(),
-    "session_id": session_id_var.get(),
-    "ids": {
-      "request_id_var": id(request_id_var),
-      "trace_var": id(trace_var),
-      "session_id_var": id(session_id_var)
-    }
-  }
-  
-  print(f"DEBUG CONTEXT: Current context variable values:")
-  print(f"  request_id_var (id={id(request_id_var)}): {request_id_var.get()}")
-  print(f"  trace_var (id={id(trace_var)}): {trace_var.get()}")
-  print(f"  session_id_var (id={id(session_id_var)}): {session_id_var.get()}")
-  
-  return context
+  def __enter__(self):
+    # Save current context
+    self.preserved_context = get_context()
+    return self.preserved_context
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    # Restore context
+    if self.preserved_context:
+      _ = set_context(
+        request_id=self.preserved_context.get("request_id"),
+        trace=self.preserved_context.get("trace"),
+        session_id=self.preserved_context.get("session_id")
+      )
+      # We don't need to keep the tokens because we're restoring
+      # not resetting
