@@ -210,9 +210,9 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
       )
 
       return response
-    except Exception as e:
+    except Exception as exc:
       # Handle and log exceptions
-      error_type = type(e).__name__
+      error_type = type(exc).__name__
 
       if self.collect_metrics:
         self.error_count.labels(
@@ -226,7 +226,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
           "method": request.method,
           "path": request.url.path,
           "error_type": error_type,
-          "error_message": str(e)
+          "error_message": str(exc)
         }
       )
 
@@ -278,8 +278,8 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
       ).inc()
 
       return response
-    except Exception as e:
-      error_type = type(e).__name__
+    except Exception as exc:
+      error_type = type(exc).__name__
       ERROR_COUNT.labels(
         self.service_name, method, path, error_type
       ).inc()
