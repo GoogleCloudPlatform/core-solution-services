@@ -127,7 +127,7 @@ def preserve_context(func):
   async def wrapper(*args, **kwargs):
     # Capture current context
     context = get_context()
-    
+    print(f"PRESERVE CONTEXT: Entering {func.__name__} with context {context}")
     # Create tokens for the new context
     tokens = set_context(
       request_id=context["request_id"],
@@ -140,6 +140,7 @@ def preserve_context(func):
       return await func(*args, **kwargs)
     finally:
       # Reset context to previous values
+      print(f"PRESERVE CONTEXT: Exiting {func.__name__}")
       reset_context(tokens)
   
   return wrapper

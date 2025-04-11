@@ -34,6 +34,7 @@ from common.utils.logging_handler import Logger
 from common.utils.request_handler import (post_method,
                                           DEFAULT_TIMEOUT)
 from common.utils.token_handler import UserCredentials
+from common.utils.context_vars import preserve_context
 from config import (get_model_config, get_provider_models,
                     get_provider_value, get_provider_model_config,
                     get_model_config_value, get_model_system_prompt,
@@ -724,6 +725,7 @@ def convert_history_to_gemini_prompt(history: list, is_multimodal:bool=False
         conversation.append(Content(role=role, parts=[part]))
   return conversation
 
+@preserve_context
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                 google_llm: str, system_prompt: str=None,
                 user_chat: Optional[UserChat]=None,
