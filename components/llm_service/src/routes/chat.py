@@ -30,6 +30,7 @@ from common.models.llm import (
   CHAT_FILE_TYPE
 )
 from common.utils.auth_service import validate_token
+from common.utils.context_vars import preserve_context
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  UnauthorizedUserError)
@@ -53,7 +54,6 @@ from metrics import (
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
-
 @router.get(
     "/chat_types",
     name="Get all Chat LLM types",
@@ -301,6 +301,7 @@ def validate_tool_names(tool_names: Optional[str]):
     "",
     name="Create new chat", deprecated=True)
 @track_chat_generate
+@preserve_context
 async def create_user_chat(
      prompt: Annotated[str, Form()],
      llm_type: Annotated[str, Form()] = None,
@@ -447,6 +448,7 @@ async def create_user_chat(
 
 @router.post("/empty_chat", name="Create new chat")
 @track_chat_operations
+@preserve_context
 async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.  
@@ -484,6 +486,7 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
 
 @router.post("/{chat_id}/generate")
 @track_chat_generate
+@preserve_context
 async def user_chat_generate(chat_id: str,
                               gen_config: LLMGenerateModel,
                               user_data: dict = Depends(validate_token)):
