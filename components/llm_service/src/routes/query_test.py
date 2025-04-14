@@ -395,6 +395,7 @@ def test_query_generate(create_user, create_engine, create_user_query,
 
   query_result = QueryResult.find_by_id(QUERY_RESULT_EXAMPLE["id"])
   fake_query_response = (query_result, [create_query_reference])
+
   with mock.patch("routes.query.query_generate",
                   return_value=fake_query_response):
     resp = client_with_emulator.post(url, json=FAKE_QUERY_PARAMS)

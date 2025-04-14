@@ -29,6 +29,7 @@ from schemas.sign_up_schema import (SignUpWithCredentialsModel,
                                     SignUpWithCredentialsResponseModel)
 from schemas.error_schema import ConnectionErrorResponseModel
 from services.create_session_service import create_session
+from metrics import track_signup
 
 Logger = Logger.get_logger(__file__)
 ERROR_RESPONSE_DICT = deepcopy(ERROR_RESPONSES)
@@ -45,6 +46,7 @@ router = APIRouter(
 @router.post(
     "/credentials",
     response_model=SignUpWithCredentialsResponseModel)
+@track_signup
 def sign_up_with_credentials(credentials: SignUpWithCredentialsModel):
   """ This endpoint creates a new user with the given email and password
   by making an HTTP POST request to the IDP auth signUp endpoint and
@@ -79,12 +81,12 @@ def sign_up_with_credentials(credentials: SignUpWithCredentialsModel):
     }
     resp = requests.post(url, data, timeout=60)
     resp_data = resp.json()
-    Logger.info("IDP SIGNUP RESPONSE", resp_data)
+    Logger.info("IDP SIGNUP RESPONSE", extra={"response_data": resp_data})
     if resp.status_code == 200:
       res = resp.json()
       res["user_id"] = user_data.user_id
       session_res = create_session(user_data.user_id)
-      Logger.info("SESSION_RES: ", session_res)
+      Logger.info("SESSION_RES: ", extra={"session_data": session_res})
       res["session_id"] = session_res.get("session_id")
       return {"success": True, "message": "Successfully signed up", "data": res}
     if resp.status_code == 400:

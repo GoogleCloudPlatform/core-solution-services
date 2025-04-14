@@ -39,6 +39,7 @@ from schemas.llm_schema import (LLMGenerateModel,
 from services.llm_generate import llm_generate, llm_generate_multimodal
 from services.embeddings import get_embeddings, get_multimodal_embeddings
 from utils.file_helper import validate_multimodal_file_type
+from metrics import track_llm_generate, track_embedding_generate
 
 router = APIRouter(prefix="/llm", tags=["LLMs"], responses=ERROR_RESPONSES)
 
@@ -202,6 +203,7 @@ def get_embedding_types(is_multimodal: Optional[bool] = None):
     "/embedding",
     name="Generate embeddings from LLM",
     response_model=LLMEmbeddingsResponse)
+@track_embedding_generate
 async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
   """
   Generate embeddings with an LLM
@@ -239,6 +241,7 @@ async def generate_embeddings(embeddings_config: LLMEmbeddingsModel):
     "/embedding/multimodal",
     name="Generate multimodal embeddings from LLM",
     response_model=LLMMultimodalEmbeddingsResponse)
+@track_embedding_generate
 async def generate_embeddings_multimodal(
   embeddings_config: LLMMultimodalEmbeddingsModel):
   """
@@ -289,6 +292,7 @@ async def generate_embeddings_multimodal(
     "/generate",
     name="Generate text from LLM",
     response_model=LLMGenerateResponse)
+@track_llm_generate
 async def generate(gen_config: LLMGenerateModel):
   """
   Generate text with an LLM
@@ -327,6 +331,7 @@ async def generate(gen_config: LLMGenerateModel):
     "/generate/multimodal",
     name="Generate text with a multimodal LLM",
     response_model=LLMGenerateResponse)
+@track_llm_generate
 async def generate_multimodal(gen_config: LLMMultimodalGenerateModel):
   """
   Generate text with a multimodal LLM

@@ -23,9 +23,14 @@ from typing import Optional, Annotated, Union
 from fastapi import APIRouter, Depends, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from common.models import User, UserChat, QueryEngine, QueryReference
-from common.models.llm import (CHAT_FILE, CHAT_FILE_URL, CHAT_FILE_BASE64,
-                               CHAT_FILE_TYPE)
+from common.models.llm import (
+  CHAT_FILE,
+  CHAT_FILE_URL,
+  CHAT_FILE_BASE64,
+  CHAT_FILE_TYPE
+)
 from common.utils.auth_service import validate_token
+from common.utils.context_vars import get_context
 from common.utils.errors import (ResourceNotFoundException,
                                  ValidationError,
                                  UnauthorizedUserError)
@@ -44,14 +49,19 @@ from services.llm_generate import (llm_chat, generate_chat_summary,
 from services.agents.agent_tools import chat_tools, run_chat_tools
 from services.query.query_service import query_generate_for_chat
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
+from metrics import (
+  track_chat_generate,
+  track_chat_operations,
+  LLM_RESPONSE_SIZE
+)
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/chat", tags=["Chat"], responses=ERROR_RESPONSES)
-
 @router.get(
     "/chat_types",
     name="Get all Chat LLM types",
     response_model=LLMGetTypesResponse)
+@track_chat_operations
 def get_chat_llm_list(user_data: dict = Depends(validate_token),
                     is_multimodal: Optional[bool] = None):
   """
@@ -143,6 +153,7 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
     "",
     name="Get all user chats",
     response_model=LLMUserAllChatsResponse)
+@track_chat_operations
 def get_chat_list(skip: int = 0, limit: int = 20,
                 with_all_history: bool = False,
                 with_first_history: bool = False,
@@ -201,6 +212,7 @@ def get_chat_list(skip: int = 0, limit: int = 20,
     "/{chat_id}",
     name="Get user chat",
     response_model=LLMUserChatResponse)
+@track_chat_operations
 def get_chat(chat_id: str,
              user_data: dict = Depends(validate_token)):
   """
@@ -234,6 +246,7 @@ def get_chat(chat_id: str,
   "/{chat_id}",
   name="Update user chat"
 )
+@track_chat_operations
 def update_chat(chat_id: str,
                 input_chat: ChatUpdateModel,
                 user_data: dict = Depends(validate_token)):
@@ -286,6 +299,7 @@ def update_chat(chat_id: str,
   "/{chat_id}",
   name="Delete user chat"
 )
+@track_chat_operations
 def delete_chat(chat_id: str, hard_delete=False):
   """Delete a user chat. We default to soft delete.
 
@@ -340,6 +354,7 @@ def validate_tool_names(tool_names: Optional[str]):
 @router.post(
     "",
     name="Create new chat", deprecated=True)
+@track_chat_generate
 async def create_user_chat(
      prompt: Annotated[str, Form()],
      llm_type: Annotated[str, Form()] = None,
@@ -368,10 +383,22 @@ async def create_user_chat(
   Returns:
       LLMUserChatResponse or StreamingResponse
   """
-  Logger.info("Creating new chat using"
-              f" prompt={prompt} llm_type={llm_type}"
-              f" chat_file={chat_file} chat_file_url={chat_file_url}"
-              f" tools={tool_names} stream={stream} history={history}")
+  context = get_context()
+  Logger.info(
+    "Creating new chat",
+    extra={
+      "operation": "create_user_chat",
+      "llm_type": llm_type,
+      "has_file": chat_file is not None or chat_file_url is not None,
+      "has_tools": tool_names is not None,
+      "stream": stream,
+      "has_history": history is not None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
+
   # a file that could be returned as part of the response as base64 contents
   response_files: list[str] = None
   validate_tool_names(tool_names)
@@ -477,13 +504,25 @@ async def create_user_chat(
 
 
 @router.post("/empty_chat", name="Create new chat")
+@track_chat_operations
 async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
   Create new chat for authenticated user.
   Returns:
       Data for the newly created chat
   """
-  Logger.info(f"Creating new chat for {user_data}")
+  context = get_context()
+  Logger.info(
+    "Creating empty chat", 
+    extra={
+      "operation": "create_empty_chat",
+      "user_id": user_data.get("email", "unknown"),
+      "status": "start",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   try:
     user = User.find_by_email(user_data.get("email"))
@@ -505,9 +544,11 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
     raise InternalServerError(str(e)) from e
 
 
-@router.post(
-    "/{chat_id}/generate")
-async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
+@router.post("/{chat_id}/generate")
+@track_chat_generate
+async def user_chat_generate(chat_id: str,
+                              gen_config: LLMGenerateModel,
+                              user_data: dict = Depends(validate_token)):
   """
   Continue chat based on context of user chat
 
@@ -523,6 +564,21 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
   validate_tool_names(tool_names)
   query_engine_id = gen_config.query_engine_id
   query_filter = gen_config.query_filter
+  context = get_context()
+  
+  genconfig_dict = {**gen_config.model_dump()}
+  Logger.info(
+    "Processing chat request",
+    extra={
+      "operation": "chat_generate",
+      "chat_id": chat_id,
+      "config": {
+        k: v for k, v in genconfig_dict.items() if k != "chat_file_b64"},
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   response_files = None
 
@@ -610,33 +666,91 @@ async def user_chat_generate(chat_id: str, gen_config: LLMGenerateModel):
 
           # Add reference text to prompt
           query_refs_str = QueryReference.reference_list_str(query_references)
+          # New: Add query results to history if present
+          user_chat.update_history(
+            query_engine=query_engine,
+            query_result=query_result,
+            query_references=query_references
+          )
           prompt += "\n\n" + \
               f"A search of the {query_engine.name} Source produced " \
               f"these references: {query_refs_str}"
-        response = await llm_chat(prompt,
+
+        if stream:
+          # Get the streaming generator
+          generator = await llm_chat(prompt,
                               llm_type,
                               user_chat=user_chat,
-                              chat_files=context_files,
+                              user_data=user_data,
+                              chat_files=chat_files,
                               chat_file_bytes=chat_file_bytes,
                               stream=stream)
 
-        if stream:
-          # Return streaming response
+          # Wrap the generator to track response size
+          async def size_tracking_stream():
+            total_chars = 0
+            response_content = ""
+            try:
+              async for chunk in generator:
+                if isinstance(chunk, str):
+                  total_chars += len(chunk)
+                  response_content += chunk
+                yield chunk
+            finally:
+              # Log size at the end of streaming
+              Logger.info(
+                "LLM response size",
+                extra={
+                  "operation": "chat_generate",
+                  "chat_id": chat_id,
+                  "metric_type": "llm_response_size",
+                  "llm_type": llm_type,
+                  "is_streaming": True,
+                  "response_size_chars": total_chars,
+                  "request_id": context["request_id"],
+                  "trace": context["trace"],
+                  "session_id": context["session_id"]
+                }
+              )
+              # Record metrics
+              LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
+              # Save response to history after streaming completes
+              user_chat.update_history(prompt, response_content)
+
+          # Return streaming response with tracking wrapper
           return StreamingResponse(
-            response,
+            size_tracking_stream(),
             media_type="text/event-stream"
           )
+        else:
+          # Non-streaming response
+          response = await llm_chat(prompt,
+                                llm_type,
+                                user_chat=user_chat,
+                                user_data=user_data,
+                                chat_files=chat_files,
+                                chat_file_bytes=chat_file_bytes,
+                                stream=stream)
+
+          # Track response size for non-streaming responses
+          response_size = len(response)
+          Logger.info(
+            "LLM response size",
+            extra={
+              "operation": "chat_generate",
+              "chat_id": chat_id,
+              "metric_type": "llm_response_size",
+              "llm_type": llm_type,
+              "is_streaming": False,
+              "response_size_chars": response_size,
+              "request_id": context["request_id"],
+              "trace": context["trace"],
+              "session_id": context["session_id"]
+            }
 
       # save chat history
       user_chat.update_history(prompt=prompt, response=response)
-
-      # New: Add query results to history if present
-      if query_engine_id:
-        user_chat.update_history(
-          query_engine=query_engine,
-          query_result=query_result,
-          query_references=query_references
-        )
+      LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(response_size)
 
       if response_files:
         for file in response_files:
@@ -725,3 +839,4 @@ async def generate_chat_summary_route(chat_id: str):
     Logger.error(e)
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
+  
