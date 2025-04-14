@@ -747,6 +747,7 @@ async def user_chat_generate(chat_id: str,
               "trace": context["trace"],
               "session_id": context["session_id"]
             }
+          )
 
       # save chat history
       user_chat.update_history(prompt=prompt, response=response)
