@@ -565,7 +565,7 @@ async def user_chat_generate(chat_id: str,
   query_engine_id = gen_config.query_engine_id
   query_filter = gen_config.query_filter
   context = get_context()
-  
+
   genconfig_dict = {**gen_config.model_dump()}
   Logger.info(
     "Processing chat request",
@@ -840,4 +840,3 @@ async def generate_chat_summary_route(chat_id: str):
     Logger.error(e)
     Logger.error(traceback.print_exc())
     raise InternalServerError(str(e)) from e
-  
