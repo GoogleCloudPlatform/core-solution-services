@@ -38,7 +38,6 @@ from common.utils.auth_service import validate_token
 from common.testing.firestore_emulator import (
   firestore_emulator, clean_firestore
 )
-
 from services.query.query_service import query_generate_for_chat
 from services.query.data_source import DataSourceFile
 

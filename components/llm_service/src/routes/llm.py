@@ -125,7 +125,6 @@ def get_llm_details(user_data: dict = Depends(validate_token),
     else:
       llm_types = model_config.get_text_llm_types()
 
-
     model_details = []
     for llm in llm_types:
       if model_config.is_model_enabled_for_user(llm, user_data):

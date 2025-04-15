@@ -47,7 +47,6 @@ from schemas.llm_schema import (ChatUpdateModel,
 from services.llm_generate import (llm_chat, generate_chat_summary,
                                    get_models_for_user)
 from services.agents.agent_tools import chat_tools, run_chat_tools
-from services.query.query_service import query_generate_for_chat
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
 from metrics import (
   track_chat_generate,
@@ -449,6 +448,7 @@ async def create_user_chat(
           "data": chat_data
       }
 
+
     if tool_names:
       response, response_files = run_chat_tools(prompt)
     # Otherwise generate text from prompt if no tools
@@ -580,6 +580,7 @@ async def user_chat_generate(chat_id: str,
     }
   )
 
+
   response_files = None
 
   try:
@@ -638,8 +639,6 @@ async def user_chat_generate(chat_id: str,
     stream = genconfig_dict.get("stream", False)
 
     try:
-      query_result = None
-      query_references = None
       context_files = chat_files or []  # Initialize with any uploaded files
 
       if tool_names:
@@ -767,14 +766,14 @@ async def user_chat_generate(chat_id: str,
 
       # save chat history
       user_chat.update_history(prompt=prompt, response=response)
-
       if response_files:
         for file in response_files:
           user_chat.update_history(custom_entry={
             CHAT_FILE: file["name"]
           })
           user_chat.update_history(custom_entry={
-            CHAT_FILE_BASE64: file["contents"]
+            CHAT_FILE_BASE64: file["contents"],
+            CHAT_FILE_TYPE: "image/png"
           })
 
       chat_data = user_chat.get_fields(reformat_datetime=True)
