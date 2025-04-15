@@ -21,6 +21,7 @@ import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import DocumentModal from './DocumentModal';
 import ReferenceChip from "@/components/ReferenceChip";
+import '@/styles/ChatScreen.css';
 
 interface ChatMessage {
   text: string;
@@ -130,7 +131,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const handleSelectSource = (source: QueryEngine) => {
     setSelectedSource(source);
   };
-
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
   
@@ -163,20 +163,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     setPrompt('');
     setSelectedFile(null);
     setImportUrl('');
-
+  
     setIsLoading(true);
   
     // Determine if this is a new chat (i.e. no existing chatId)
     const wasNewChat = !chatId;
   
     try {
-      let response: Chat | undefined;
-
+      let response: Chat | null | undefined;
+  
       // Common parameters
       const chatParams = {
         userInput: currentPrompt,
         llmType: selectedModel.id,
-        stream: false,
+        stream: true,  // Set stream to true for streaming output
         temperature: temperature,
         uploadFile: currentSelectedFile || undefined,
         fileUrl: currentImportUrl,
@@ -192,8 +192,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           queryEngineId: selectedSource?.id || undefined
         });
   
-        // Only assign if it's a Chat object
-        if (chatResponse && !isReadableStream(chatResponse)) {
+        if (chatResponse instanceof ReadableStream) {
+          // Handle the streaming response separately
+          await handleStream(chatResponse);
+        } else {
+          // Only assign to response if it's a Chat object
           response = chatResponse;
         }
       } else if (selectedSource && selectedSource.id !== "default-chat") {
@@ -204,7 +207,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
         });
-        response = queryResponse;
+  
+        // Only assign to response if it's a Chat object
+        if (queryResponse && !(queryResponse instanceof ReadableStream)) {
+          response = queryResponse;
+        }
       } else {
         // Create new regular chat
         const chatResponse = await createChat(user.token)({
@@ -212,14 +219,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           uploadFile: currentSelectedFile || undefined,
           fileUrl: currentImportUrl,
         });
-        // Only assign if it's a Chat object
-        if (chatResponse && !isReadableStream(chatResponse)) {
+  
+        if (chatResponse instanceof ReadableStream) {
+          // Handle the streaming response separately
+          await handleStream(chatResponse);
+        } else {
+          // Only assign to response if it's a Chat object
           response = chatResponse;
         }
       }
   
       // Only proceed if we got a valid Chat object
-      if (response?.id) {
+      if (response && 'id' in response) {
         setChatId(response.id);
         // If this was a new chat, dispatch an event to update the chat history
         if (wasNewChat) {
@@ -231,29 +242,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         let history = response.history;
         let newMessages = messagesFromHistory(history);
         setMessages(newMessages);
-        
-        // Simulate streaming the response
-        const fullMessage = newMessages[newMessages.length - 1].text || '';
-        let displayedMessage = '';
-        let index = 0;
-  
-        const typingInterval = setInterval(() => {
-          if (index < fullMessage.length) {
-            displayedMessage += fullMessage[index];
-            setMessages(prev => {
-              const updatedMessages = [...prev];
-              updatedMessages[updatedMessages.length - 1] = {
-                ...updatedMessages[updatedMessages.length - 1],
-                text: displayedMessage
-              };
-              return updatedMessages;
-            });
-            index++;
-          } else {
-            clearInterval(typingInterval);
-          }
-        }, 30); // Adjust this interval for the speed of the simulated typing effect
-  
       } else {
         console.error("API response does not contain 'history' property:", response);
       }
@@ -266,10 +254,73 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-            // Clear the prompt and attachment inputs only after processing the response
-	    setPrompt('');
+      // Clear the prompt and attachment inputs only after processing the response
+      setPrompt('');
       setSelectedFile(null);
       setImportUrl('');
+    }
+  };
+  
+  // Helper function to handle regular chat response
+  const handleChatResponse = async (chatResponse: Chat) => {
+    if (chatResponse?.history) {
+      let history = chatResponse.history;
+      let newMessages = messagesFromHistory(history);
+      setMessages(newMessages);
+    } else {
+      console.error("Chat response does not contain 'history' property:", chatResponse);
+    }
+  };
+  
+  // Helper function to handle streaming response
+  const handleStream = async (stream: ReadableStream) => {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let accumulatedResponse = "";
+  
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+  
+        const chunk = decoder.decode(value);
+        accumulatedResponse += chunk;
+  
+        // Update the message in the state
+        setMessages(prev => {
+          const updatedMessages = [...prev];
+          const lastMessage = updatedMessages[updatedMessages.length - 1];
+          
+          if (lastMessage && !lastMessage.isUser) {
+            // Add the streamed content to the last AI message
+            updatedMessages[updatedMessages.length - 1] = {
+              ...lastMessage,
+              text: accumulatedResponse
+            };
+          } else {
+            // Create a new message for streaming content
+            updatedMessages.push({ text: accumulatedResponse, isUser: false });
+          }
+  
+          return updatedMessages;
+        });
+      }
+  
+      // ✅ Handle Create a Graph case
+      let parsed: any;
+      try {
+        parsed = JSON.parse(accumulatedResponse);
+      } catch {
+        parsed = null;
+      }
+  
+      if (parsed?.data?.history) {
+        const newMessages = messagesFromHistory(parsed.data.history);
+        setMessages(newMessages);
+      }
+  
+    } finally {
+      reader.releaseLock();
     }
   };
   // useLayoutEffect to scroll the container so that the last message aligns with the top

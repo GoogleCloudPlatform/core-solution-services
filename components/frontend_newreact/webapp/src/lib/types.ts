@@ -201,6 +201,7 @@ export interface Chat {
   user_id: string;
   agent_name: string | null;
   history: ChatHistoryEntry[];
+  streamingHistory?: string;
 }
 
 export const QUERY_ENGINE_TYPES = {
