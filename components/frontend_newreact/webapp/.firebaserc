@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "core-solution-services-ui"
+  },
+  "targets": {
+    "core-solution-services-ui": {
+      "hosting": {
+        "new-genie-ui": [
+          "new-genie-ui"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
