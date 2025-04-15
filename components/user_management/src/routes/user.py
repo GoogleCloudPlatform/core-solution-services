@@ -13,11 +13,11 @@
 # limitations under the License.
 
 """ User endpoints """
-# pylint: disable=broad-exception-raised,broad-exception-caught
+# pylint: disable=unused-variable,no-value-for-parameter,unused-import
+
 import re
 import traceback
 import math
-
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 from typing_extensions import Literal
@@ -51,14 +51,19 @@ from services.agent import delete_agent, get_agent, update_agent
 from services.association_group_handler import (update_refs_for_user_by_type)
 from config import ERROR_RESPONSES
 
-# pylint: disable=unused-variable,no-value-for-parameter
+from metrics import (
+  track_create_user, track_update_user, track_delete_user,
+  track_get_user, track_list_users, track_search_users,
+  track_user_status_update, track_user_import
+)
 
-Logger = Logger.get_logger(__file__)
+logger = Logger.get_logger(__file__)
 
 router = APIRouter(tags=["User"], responses=ERROR_RESPONSES)
 
 
 @router.get("/user/search/email", response_model=UserSearchResponseModel)
+@track_search_users
 def search_user_by_email(email: str):
   """Search for users based on the user first name
 
@@ -84,17 +89,19 @@ def search_user_by_email(email: str):
       "message": "Successfully fetched the user",
       "data": result
     }
-  except ValidationError as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise BadRequest(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ValidationError as error:
+    logger.error(f"Validation error searching user by email: {error}")
+    logger.error(traceback.format_exc())
+    raise BadRequest(str(error)) from error
+  except Exception as error:
+    logger.error(f"Unexpected error searching user by email: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(
+      f"Error searching for user by email: {str(error)}") from error
 
 
 @router.get("/user/search", response_model=UserSearchResponseModel)
+@track_search_users
 def search_user(search_query: str,
                 skip: int = Query(0, ge=0, le=2000),
                 limit: int = Query(10, ge=1, le=100)):
@@ -133,13 +140,15 @@ def search_user(search_query: str,
       "message": "Successfully fetched the users",
       "data": result
     }
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except Exception as error:
+    logger.error(f"Error searching users with query '{search_query}': {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(
+      f"Failed to search users: {str(error)}") from error
 
 
 @router.get("/users", response_model=AllUserResponseModel, name="Get all Users")
+@track_list_users
 def get_users(user_type: Optional[str] = None,
               skip: int = Query(0, ge=0, le=2000),
               limit: int = Query(10, ge=1, le=100),
@@ -205,14 +214,15 @@ def get_users(user_type: Optional[str] = None,
         "message": "Data fetched successfully",
         "data": response
     }
-  except ValidationError as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise BadRequest(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ValidationError as error:
+    logger.error(f"Validation error getting users: {error}")
+    logger.error(traceback.format_exc())
+    raise BadRequest(str(error)) from error
+  except Exception as error:
+    logger.error(f"Error getting users: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(
+      f"Failed to retrieve users: {str(error)}") from error
 
 
 @router.get(
@@ -221,6 +231,7 @@ def get_users(user_type: Optional[str] = None,
   responses={404: {
     "model": NotFoundErrorResponseModel
   }})
+@track_get_user
 def get_user(user_id: str, fetch_tree: Optional[bool] = False):
   """The get user endpoint will return the user from firestore of
   which user_id is provided
@@ -252,17 +263,19 @@ def get_user(user_id: str, fetch_tree: Optional[bool] = False):
       "data": user_fields
     }
 
-  except ResourceNotFoundException as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise ResourceNotFound(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ResourceNotFoundException as error:
+    logger.error(f"User not found with ID {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise ResourceNotFound(str(error)) from error
+  except Exception as error:
+    logger.error(f"Error retrieving user with ID {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(
+      f"Failed to retrieve user information: {str(error)}") from error
 
 
 @router.post("/user", response_model=PostUserResponseModel)
+@track_create_user
 def create_user(input_user: UserModel, request: Request,
                 create_inspace_user: Optional[bool] = False):
   """The create user endpoint will add the user in request body to the
@@ -321,18 +334,18 @@ def create_user(input_user: UserModel, request: Request,
       "message": response_message,
       "data": user_fields
     }
-  except ConflictError as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise Conflict(str(e)) from e
-  except ValidationError as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise BadRequest(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ConflictError as error:
+    logger.error(f"Conflict error creating user: {error}")
+    logger.error(traceback.format_exc())
+    raise Conflict(str(error)) from error
+  except ValidationError as error:
+    logger.error(f"Validation error creating user: {error}")
+    logger.error(traceback.format_exc())
+    raise BadRequest(str(error)) from error
+  except Exception as error:
+    logger.error(f"Error creating user {input_user.email}: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(f"Failed to create user: {str(error)}") from error
 
 
 @router.put(
@@ -341,6 +354,7 @@ def create_user(input_user: UserModel, request: Request,
   responses={404: {
     "model": NotFoundErrorResponseModel
   }})
+@track_update_user
 def update_user(user_id: str,
                 input_user: UpdateUserModel,
                 request: Request,
@@ -465,14 +479,22 @@ def update_user(user_id: str,
       "data": user_fields
     }
 
-  except ResourceNotFoundException as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise ResourceNotFound(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ConflictError as error:
+    logger.error(f"Conflict error updating user {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise Conflict(str(error)) from error
+  except ValidationError as error:
+    logger.error(f"Validation error updating user {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise BadRequest(str(error)) from error
+  except ResourceNotFoundException as error:
+    logger.error(f"User not found for update with ID {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise ResourceNotFound(str(error)) from error
+  except Exception as error:
+    logger.error(f"Error updating user {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(f"Failed to update user: {str(error)}") from error
 
 
 @router.delete(
@@ -481,6 +503,7 @@ def update_user(user_id: str,
   responses={404: {
     "model": NotFoundErrorResponseModel
   }})
+@track_delete_user
 def delete_user(user_id: str,
                 request: Request,
                 delete_inspace_user: Optional[bool] = False):
@@ -539,20 +562,26 @@ def delete_user(user_id: str,
       "message": response_msg
     }
 
-  except ResourceNotFoundException as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise ResourceNotFound(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ValidationError as error:
+    logger.error(f"Validation error deleting user {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise BadRequest(str(error)) from error
+  except ResourceNotFoundException as error:
+    logger.error(f"User not found for deletion with ID {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise ResourceNotFound(str(error)) from error
+  except Exception as error:
+    logger.error(f"Error deleting user {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(
+      f"Failed to delete user: {str(error)}") from error
 
 
 @router.post(
   "/user/import/json",
   response_model=BulkImportUserResponseModel,
   name="Import User from JSON file")
+@track_user_import
 def import_users(request: Request, json_file: UploadFile = File(...)):
   """Create user from json file
 
@@ -573,14 +602,15 @@ def import_users(request: Request, json_file: UploadFile = File(...)):
       json_schema=BasicUserModel,
       object_name="users")
     return final_output
-  except ValidationError as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise BadRequest(str(e), data=e.data) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ValidationError as error:
+    logger.error(f"Validation error importing users: {error}")
+    logger.error(traceback.format_exc())
+    raise BadRequest(str(error), data=getattr(error, "data", None)) from error
+  except Exception as error:
+    logger.error(f"Error importing users: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(
+      f"Failed to import users: {str(error)}") from error
 
 
 @router.put(
@@ -589,6 +619,7 @@ def import_users(request: Request, json_file: UploadFile = File(...)):
   responses={404: {
     "model": NotFoundErrorResponseModel
   }})
+@track_user_status_update
 def update_user_status(user_id: str, input_status: UpdateStatusModel):
   """Change the status of a user with the user_id passed in the request body
 
@@ -627,14 +658,16 @@ def update_user_status(user_id: str, input_status: UpdateStatusModel):
       "data": user_fields
     }
 
-  except ResourceNotFoundException as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise ResourceNotFound(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ResourceNotFoundException as error:
+    logger.error(
+      f"User not found for status update with ID {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise ResourceNotFound(str(error)) from error
+  except Exception as error:
+    logger.error(f"Error updating status for user {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(
+      f"Failed to update user status: {str(error)}") from error
 
 
 @router.get(
@@ -679,14 +712,16 @@ def get_applications_assigned_to_user(user_id: str):
       }
     }
 
-  except ResourceNotFoundException as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise ResourceNotFound(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ResourceNotFoundException as error:
+    logger.error(
+      f"User not found when getting applications for ID {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise ResourceNotFound(str(error)) from error
+  except Exception as error:
+    logger.error(f"Error getting applications for user {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(
+      f"Failed to retrieve user applications: {str(error)}") from error
 
 
 @router.post(
@@ -748,13 +783,16 @@ def create_inspace_user_account(user_id: str):
       }
       user.inspace_user = inspace_mapping
       user.update()
-      response_message = "Successfully updated Inspace User id for current user"
+      response_message = (
+        "Successfully updated Inspace User id "
+        "for current user"
+      )
     elif status_code == 404:
       # ---- Inspace User creation if user doesn't exist----
       if create_inspace_user_helper(user):
-        response_message = "Successfully created Inspace User for current user"
+        response_message = "Successfully created Inspace User for user"
       else:
-        response_message = "Cannot create Inspace User for current User"
+        response_message = "Cannot create Inspace User for user"
 
     # fetch and return updated user
     user = User.find_by_user_id(user_id)
@@ -765,162 +803,23 @@ def create_inspace_user_account(user_id: str):
       "message": response_message,
       "data": user_fields
     }
-  except ResourceNotFoundException as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise ResourceNotFound(str(e)) from e
-  except ConflictError as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise Conflict(str(e)) from e
-  except ValidationError as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise BadRequest(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
-
-
-@router.post("/non-exist/inspace/user", include_in_schema=False)
-def update_inspace_user_field(skip: Optional[int] = 0,
-                              limit: Optional[int] = 100):
-  """
-  Update Inspace User Field Value
-  """
-  try:
-    if not is_inspace_enabled():
-      raise ValidationError("you don't have permission to access this endpoint")
-    # ids for which inspace user was created
-    created_inspace_users = []
-    # ids for which inspace user creation failed
-    failed_user_ids = []
-    # fields where inspace mapping was set as True
-    inspace_users = []
-    # fields where inspace mapping was set as False
-    non_inspace_users = []
-    # users for which inspace user already exists
-    already_created_inspace_users = []
-    # users whose document was not modified
-    non_modified_users = []
-    response_message = ""
-    allowed_inspace_user_types = ["learner"]
-    allowed_inspace_user_types.extend(STAFF_USERS)
-
-    users = User.collection.order("-created_time").filter(
-      "is_deleted", "==", False).offset(skip).fetch(limit)
-
-    for user in users:
-      if user.inspace_user is None:
-        if user.user_type in allowed_inspace_user_types:
-          user.inspace_user = {"is_inspace_user": True, "inspace_user_id": ""}
-          user.update()
-          inspace_users.append(user.user_id)
-        else:
-          user.inspace_user = {"is_inspace_user": False, "inspace_user_id": ""}
-          user.update()
-          non_inspace_users.append(user.user_id)
-
-    users = User.collection.order("-created_time").filter(
-      "is_deleted", "==", False).offset(skip).fetch(limit)
-
-    for user in users:
-      if user.user_type in allowed_inspace_user_types:
-        try:
-          if user.inspace_user.get("is_inspace_user") is False:
-            non_modified_users.append(user.user_id)
-
-          elif (user.inspace_user.get("is_inspace_user") is True
-                and user.inspace_user.get("inspace_user_id") == ""):
-            # ---- Inspace User creation ----
-            response_message = create_inspace_user_helper(user)
-            if response_message:
-              Logger.info(f"Inspace User Created for {user.user_id}")
-              created_inspace_users.append(user.user_id)
-
-          else:
-            already_created_inspace_users.append(user.user_id)
-
-        except Exception as e:
-          Logger.error(e)
-          Logger.error(traceback.print_exc())
-          failed_user_ids.append(user.user_id)
-
-      else:
-        non_modified_users.append(user.user_id)
-
-    return {
-        "success": True,
-        "message": response_message,
-        "data": {
-            "created_inspace_users": created_inspace_users,
-            "failed_inspace_user_creation": failed_user_ids,
-            "inspace_users_true": inspace_users,
-            "inspace_users_false": non_inspace_users,
-            "non_modified_users": non_modified_users,
-            "already_created_inspace_users": already_created_inspace_users
-        }
-    }
-  except ValidationError as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise BadRequest(str(e)) from e
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
-
-
-@router.post("/user/add-is-deleted", include_in_schema=False)
-def update_user_documents():
-  """This endpoint will add the is_deleted field in User documents where it
-      doesn't exist.
-
-  ### Raises:
-      Exception: 500 Internal Server Error if something went wrong
-  """
-  try:
-    users = list(User.collection.order("-created_time").fetch())
-
-    # list of user documents which are updated with the is_deleted field
-    updated_users = []
-
-    # total count of all user records
-    user_count = 0
-    for _ in enumerate(users):
-      user_count += 1
-
-    # calculate number of workers required (100 docs per worker)
-    workers = math.ceil(user_count / 100)
-
-    # function to update the document
-    def update_field(user_list):
-      for user in user_list:
-        if user.is_deleted is None:
-          user.is_deleted = False
-          user.update()
-          Logger.info(f"Updated {user.user_id}: is_deleted={user.is_deleted}")
-          updated_users.append(user.user_id)
-        else:
-          Logger.info(f"{user.user_id}: is_deleted={user.is_deleted}")
-
-    # initialize executor
-    executor = ThreadPoolExecutor(max_workers=workers)
-
-    for i in range(workers):
-      executor.submit(update_field, users[i*100:(i+1)*100])
-
-    executor.shutdown(wait=True)
-
-    return {
-      "success": True,
-      "message": "Successfully added the is_deleted field for following users",
-      "data": {
-        "updated_users": updated_users
-      }
-    }
-  except Exception as e:
-    Logger.error(e)
-    Logger.error(traceback.print_exc())
-    raise InternalServerError(str(e)) from e
+  except ResourceNotFoundException as error:
+    logger.error(
+      f"User not found when creating Inspace user for ID {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise ResourceNotFound(str(error)) from error
+  except ConflictError as error:
+    logger.error(
+      f"Conflict error creating Inspace user for {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise Conflict(str(error)) from error
+  except ValidationError as error:
+    logger.error(
+      f"Validation error creating Inspace user for {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise BadRequest(str(error)) from error
+  except Exception as error:
+    logger.error(f"Error creating Inspace user for {user_id}: {error}")
+    logger.error(traceback.format_exc())
+    raise InternalServerError(
+      f"Failed to create Inspace user: {str(error)}") from error

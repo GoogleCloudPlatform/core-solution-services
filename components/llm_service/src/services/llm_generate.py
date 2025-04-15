@@ -23,9 +23,9 @@ import google.auth
 import google.auth.transport.requests
 import google.cloud.aiplatform
 from openai import OpenAI, OpenAIError
-from vertexai.preview.language_models import (ChatModel, TextGenerationModel)
-from vertexai.preview.generative_models import (
-    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold)
+from vertexai.language_models import (ChatModel, TextGenerationModel)
+from vertexai.generative_models import (
+    GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold, Content)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
 from common.utils.errors import ResourceNotFoundException
@@ -34,9 +34,10 @@ from common.utils.logging_handler import Logger
 from common.utils.request_handler import (post_method,
                                           DEFAULT_TIMEOUT)
 from common.utils.token_handler import UserCredentials
+from common.utils.context_vars import get_context
 from config import (get_model_config, get_provider_models,
                     get_provider_value, get_provider_model_config,
-                    get_model_config_value,
+                    get_model_config_value, get_model_system_prompt,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN, PROVIDER_VLLM,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
@@ -54,6 +55,13 @@ Logger = Logger.get_logger(__file__)
 # A conservative characters-per-token constant, used to check
 # whether prompt length exceeds context window size
 CHARS_PER_TOKEN = 3
+SAFETY_SETTINGS = {
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+}
+
 
 async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
     Union[str, AsyncGenerator[str, None]]:
@@ -66,8 +74,21 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
   Returns:
     Either the full text response as str, or an AsyncGenerator yielding response chunks
   """
-  Logger.info(f"Generating text with an LLM given a prompt={prompt},"
-              f" llm_type={llm_type}")
+  context = get_context()
+  Logger.info(
+    "Generating text with an LLM",
+    extra={
+      "operation": "llm_generate",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "stream": stream,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   # default to openai LLM
   if llm_type is None:
     llm_type = DEFAULT_LLM_TYPE
@@ -112,8 +133,18 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
     process_time = round(time.time() - start_time)
-    Logger.info(f"Received response in {process_time} seconds from "
-                f"model with llm_type={llm_type}.")
+    Logger.info(
+      "LLM generation latency",
+      extra={
+        "operation": "llm_generate",
+        "metric_type": "llm_generation_latency",
+        "llm_type": llm_type,
+        "duration_ms": round(process_time * 1000, 2),
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
     return response
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -131,8 +162,22 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
   Returns:
     the text response: str
   """
-  Logger.info(f"Generating text with an LLM given a prompt={prompt},"
-              f" user_file_bytes=bytes, llm_type={llm_type}")
+  context = get_context()
+  Logger.info(
+    "Generating multimodal text with an LLM",
+    extra={
+      "operation": "llm_generate_multimodal",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "has_file_bytes": user_file_bytes is not None,
+      "has_files": user_files is not None and len(user_files) > 0,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   # default to Gemini multimodal LLM
   if llm_type is None:
     llm_type = DEFAULT_MULTIMODAL_LLM_TYPE
@@ -155,14 +200,24 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model {llm_type} needs to be multimodal")
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
-                            google_llm, None, user_file_bytes,
+                            google_llm, None, None, user_file_bytes,
                             user_files)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
     process_time = round(time.time() - start_time)
-    Logger.info(f"Received response in {process_time} seconds from "
-                f"model with llm_type={llm_type}.")
+    Logger.info(
+      "LLM generation latency",
+      extra={
+        "operation": "llm_generate_multimodal",
+        "metric_type": "llm_generation_latency",
+        "llm_type": llm_type,
+        "duration_ms": round(process_time * 1000, 2),
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
     return response
   except Exception as e:
     raise InternalServerError(str(e)) from e
@@ -170,6 +225,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
 async def llm_chat(prompt: str, llm_type: str,
                    user_chat: Optional[UserChat] = None,
                    user_query: Optional[UserQuery] = None,
+                   user_data: Optional[dict] = None,
                    chat_files: Optional[List[DataSourceFile]] = None,
                    chat_file_bytes: Optional[bytes] = None,
                    stream: bool = False) -> \
@@ -191,13 +247,27 @@ async def llm_chat(prompt: str, llm_type: str,
     Either the full text response as str, or an AsyncGenerator
       yielding response chunks
   """
-  chat_file_bytes_log = chat_file_bytes[:10] if chat_file_bytes else None
-  Logger.info(f"Generating chat with llm_type=[{llm_type}],"
-              f" prompt=[{prompt}]"
-              f" user_chat=[{user_chat}]"
-              f" user_query=[{user_query}]"
-              f" chat_file_bytes=[{chat_file_bytes_log}]"
-              f" chat_files=[{chat_files}]")
+  context = get_context()
+  Logger.info(
+    "Generating chat with an LLM",
+    extra={
+      "operation": "llm_chat",
+      "metric_type": "chat_generation",
+      "llm_type": llm_type,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "chat_id": user_chat.id if user_chat else None,
+      "query_id": user_query.id if user_query else None,
+      "has_chat_file_bytes": chat_file_bytes is not None,
+      "has_chat_files": chat_files is not None and len(chat_files) > 0,
+      "with_file": chat_file_bytes is not None or (chat_files is not None and len(chat_files) > 0),
+      "with_tools": False,  # Update if tools are used
+      "stream": stream,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   if llm_type not in get_model_config().get_chat_llm_types():
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
@@ -215,7 +285,9 @@ async def llm_chat(prompt: str, llm_type: str,
     response = None
 
     # add chat history to prompt if necessary
-    if user_chat is not None or user_query is not None:
+    # Prompt history for gemini models is added using the native vertex API
+    if ((user_chat is not None or user_query is not None)
+         and "gemini" not in llm_type):
       context_prompt = get_context_prompt(
           user_chat=user_chat, user_query=user_query)
       # context_prompt includes only text (no images/video) from
@@ -249,9 +321,11 @@ async def llm_chat(prompt: str, llm_type: str,
         raise RuntimeError(
             f"Vertex model name not found for llm type {llm_type}")
       is_chat = True
+      system_prompt = get_model_system_prompt(llm_type)
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
-                                          google_llm, user_chat,
+                                          google_llm, system_prompt, user_chat,
                                           chat_file_bytes, chat_files,
+                                          user_data=user_data,
                                           stream=stream)
     elif llm_type in get_provider_models(PROVIDER_LANGCHAIN):
       response = await langchain_llm_generate(prompt, llm_type, user_chat)
@@ -340,9 +414,22 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
   parameters.update({"prompt": f"'{prompt}'"})
 
   api_url = f"http://{model_endpoint}/v1/models/model:predict"
-  Logger.info(f"Generating text using Truss Hosted Model "
-              f"api_url=[{api_url}], prompt=[{prompt}], "
-              f"parameters=[{parameters}.")
+  context = get_context()
+  Logger.info(
+    "Generating text using Truss Hosted Model",
+    extra={
+      "operation": "llm_truss_service_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "api_url": api_url,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "has_parameters": parameters is not None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   resp = post_method(api_url, request_body=parameters)
 
@@ -352,7 +439,18 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
 
   json_response = resp.json()
 
-  Logger.info(f"Got LLM service response {json_response}")
+  Logger.info(
+    "Received Truss service response",
+    extra={
+      "operation": "llm_truss_service_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   output = json_response["data"]["generated_text"]
 
   # if the prompt is repeated as part of the response, remove it
@@ -381,6 +479,7 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
   Returns:
     the text response: str
   """
+  context = get_context()
   if parameters is None:
     parameters = get_provider_value(
         PROVIDER_VLLM, KEY_MODEL_PARAMS, llm_type)
@@ -402,9 +501,22 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
     models = client.models.list()
     model = models.data[0].id
 
-    Logger.info(f"Generating text using vLLM Hosted Model {model} hosted at"
-            f"api_base=[{openai_api_base}], prompt=[{prompt}], "
-            f"parameters=[{parameters}.")
+    Logger.info(
+      "Generating text using vLLM Hosted Model",
+      extra={
+        "operation": "llm_vllm_service_predict",
+        "metric_type": "llm_generation",
+        "llm_type": llm_type,
+        "model": model,
+        "api_base": openai_api_base,
+        "prompt_length": len(prompt) if prompt else 0,
+        "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+        "has_parameters": parameters is not None,
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
     response = client.chat.completions.create(
         model=model,
@@ -414,7 +526,18 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
         **parameter_kwargs
     )
     output = response.choices[0].message.content
-    Logger.info(f"Got LLM service response {response}")
+    Logger.info(
+      "Received vLLM service response",
+      extra={
+        "operation": "llm_vllm_service_predict",
+        "metric_type": "llm_generation",
+        "llm_type": llm_type,
+        "response_status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
   except OpenAIError as e:
     Logger.error(f"OpenAI API error: {e}")
@@ -422,11 +545,9 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
 
   return output
 
-
 async def llm_service_predict(prompt: str, is_chat: bool,
                               llm_type: str, user_chat=None,
                               auth_token: str = None) -> str:
-
   """
   Send a prompt to an instance of the LLM service and return response.
 
@@ -440,8 +561,9 @@ async def llm_service_predict(prompt: str, is_chat: bool,
   Returns:
     the text response: str
   """
+  context = get_context()
   llm_service_config = get_model_config().get_provider_config(
-      PROVIDER_LLM_SERVICE, llm_type)
+      PROVIDER_LLM_SERVICE)
   if not auth_token:
     auth_client = UserCredentials(llm_service_config.get("user"),
                                   llm_service_config.get("password"))
@@ -464,7 +586,21 @@ async def llm_service_predict(prompt: str, is_chat: bool,
     "llm_type": llm_type
   }
 
-  Logger.info(f"Sending LLM service request to {api_url}")
+  Logger.info(
+    "Sending LLM service request",
+    extra={
+      "operation": "llm_service_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "api_url": api_url,
+      "is_chat": is_chat,
+      "has_user_chat": user_chat is not None,
+      "chat_id": user_chat.id if user_chat else None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   resp = post_method(api_url,
                      request_body=request_body,
                      token=auth_token)
@@ -475,7 +611,18 @@ async def llm_service_predict(prompt: str, is_chat: bool,
 
   json_response = resp.json()
 
-  Logger.info(f"Got LLM service response {json_response}")
+  Logger.info(
+    "Received LLM service response",
+    extra={
+      "operation": "llm_service_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   output = json_response["content"]
   return output
 
@@ -491,6 +638,7 @@ async def model_garden_predict(prompt: str,
   Returns:
     the prediction text.
   """
+  context = get_context()
   aip_endpoint_name = get_provider_value(
       PROVIDER_MODEL_GARDEN, KEY_MODEL_ENDPOINT, llm_type)
 
@@ -512,9 +660,20 @@ async def model_garden_predict(prompt: str,
     req_body = {"model": f"{aip_endpoint_name}",
                 "messages":[{"role": "user",
                              "content": f"{prompt}"}]}
-    Logger.info(f"Generating text using OpenAPI for Model Garden "
-              f"endpoint=[{openapi_endpoint}], req_headers=[{req_headers}], "
-              f"req_body=[{req_body}.")
+    Logger.info(
+      "Generating text using OpenAPI for Model Garden",
+      extra={
+        "operation": "model_garden_predict",
+        "metric_type": "llm_generation",
+        "llm_type": llm_type,
+        "endpoint": openapi_endpoint,
+        "prompt_length": len(prompt) if prompt else 0,
+        "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
     resp = requests.post(
       url=f"{openapi_endpoint}", json=req_body, headers=req_headers,
@@ -525,15 +684,38 @@ async def model_garden_predict(prompt: str,
         f"Error status {resp.status_code}: {str(resp)}")
 
     json_response = resp.json()
-    Logger.info(f"Got LLM service response {json_response}")
+    Logger.info(
+      "Received Model Garden OpenAPI response",
+      extra={
+        "operation": "model_garden_predict",
+        "metric_type": "llm_generation",
+        "llm_type": llm_type,
+        "response_status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
     output = json_response["choices"][0]["message"]["content"]
     return output
 
   aip_endpoint = f"projects/{PROJECT_ID}/locations/" \
                  f"{REGION}/endpoints/{aip_endpoint_name}"
-  Logger.info(f"Generating text using Model Garden "
-              f"endpoint=[{aip_endpoint}], prompt=[{prompt}], "
-              f"parameters=[{parameters}.")
+  Logger.info(
+    "Generating text using Model Garden",
+    extra={
+      "operation": "model_garden_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "endpoint": aip_endpoint,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "has_parameters": parameters is not None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   if parameters is None:
     parameters = get_provider_value(PROVIDER_MODEL_GARDEN,
@@ -547,17 +729,61 @@ async def model_garden_predict(prompt: str,
   response = await endpoint_without_peft.predict_async(instances=instances)
 
   predictions_text = "\n".join(response.predictions)
-  Logger.info(f"Received response from "
-              f"{response.model_resource_name} version="
-              f"[{response.model_version_id}] with {len(response.predictions)}"
-              f" prediction(s) = [{predictions_text}] ")
+  Logger.info(
+    "Received Model Garden response",
+    extra={
+      "operation": "model_garden_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "model_resource_name": response.model_resource_name,
+      "model_version_id": response.model_version_id,
+      "predictions_count": len(response.predictions),
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
   return predictions_text
 
+def convert_history_to_gemini_prompt(history: list, is_multimodal:bool=False
+                                     ) -> list[Content]:
+  """converts a user chat history inot a properly formatted gemini prompt
+  history: A history entry from a UserChat object
+  is_multimodal: If the model is multimodal
+  Returns a properly formatted gemini prompt to be used for generating a 
+  response"""
+  conversation: list[Content] = []
+  for entry in history:
+    content = UserChat.entry_content(entry)
+    if UserChat.is_human(entry):
+      conversation.append(Content(role="user", parts=[Part.from_text(content)]))
+    elif UserChat.is_ai(entry):
+      conversation.append(Content(role="model", parts=[Part.from_text(content)]))
+    elif is_multimodal and conversation:
+      # TODO: Currently Genie doesn't track if the user or model added a file,
+      # it's assumed that the role is the same as for the previous entry
+      # therefore we skip adding the file to history if it's the first entry,
+      # which shouldn't currently be possible in genie anyways
+      role = conversation[-1].role
+      part = None
+      if UserChat.is_file_bytes(entry):
+        part = Part.from_data(base64.b64decode(UserChat.get_file_b64(entry)),
+                          mime_type=UserChat.get_file_type(entry))
+      elif UserChat.is_file_uri(entry):
+        part = Part.from_uri(UserChat.get_file_uri(entry),
+                                    mime_type=UserChat.get_file_type(entry))
+      if part:
+        conversation.append(Content(role=role, parts=[part]))
+  return conversation
+
 async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
-                google_llm: str, user_chat: Optional[UserChat]=None,
+                google_llm: str, system_prompt: str=None,
+                user_chat: Optional[UserChat]=None,
                 user_file_bytes: bytes=None,
                 user_files: List[DataSourceFile]=None,
+                user_data: Optional[dict]=None,
                 stream: bool=False) -> Union[str, AsyncGenerator[str, None]]:
   """
   Generate text with a Google multimodal LLM given a prompt.
@@ -566,6 +792,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
     is_chat: true if the model is a chat model
     is_multimodal: true if the model is a multimodal model
     google_llm: name of the vertex llm model
+    system_prompt: system prompt to use for chat models
     user_chat: chat history
     user_file_bytes: the bytes of the file provided by the user
     user_files: list of DataSourceFiles for files provided by the user
@@ -573,15 +800,31 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   Returns:
     Either the full text response as str, or an AsyncGenerator yielding response chunks
   """
+  context = get_context()
+  Logger.info(
+    "Generating text with a Google multimodal LLM",
+    extra={
+      "operation": "google_llm_predict",
+      "metric_type": "llm_generation",
+      "llm_type": google_llm,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "is_chat": is_chat,
+      "is_multimodal": is_multimodal,
+      "has_user_file_bytes": user_file_bytes is not None,
+      "has_user_files": user_files is not None and len(user_files) > 0,
+      "with_file": user_file_bytes is not None or (user_files is not None and len(user_files) > 0),
+      "chat_id": user_chat.id if user_chat else None,
+      "stream": stream,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
 
-  user_file_bytes_log = user_file_bytes[:10] if user_file_bytes else None
-  Logger.info(f"Generating text with a Google multimodal LLM:"
-              f" prompt=[{prompt}], is_chat=[{is_chat}],"
-              f" is_multimodal=[{is_multimodal}], google_llm=[{google_llm}],"
-              f" user_file_bytes=[{user_file_bytes_log}],"
-              f" user_files=[{user_files}]")
-
-  # TODO: Consider images in chat
+  # TODO: Remove this section after non-gemini llms are removed from
+  # the model options
+  _ = user_data #used in metrics tracking
   prompt_list = []
   if user_chat is not None:
     history = user_chat.history
@@ -600,53 +843,49 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
           prompt_list.append(Part.from_uri(UserChat.get_file_uri(entry),
                                       mime_type=UserChat.get_file_type(entry)))
   prompt_list.append(prompt)
-  # the context prompt is only used for non-gemini models and canot handle
+  # the context prompt is only used for non-gemini models and cannot handle
   # the gemini Part object
   context_prompt = "\n\n".join(entry for entry in prompt_list
                                if isinstance(entry, str))
 
-  # Get model params. If params are set at the model level
-  # use those else use global vertex params.
-  parameters = {}
+  # Get model params at the model level else use global vertex params.
+  parameters = get_provider_value(PROVIDER_VERTEX, KEY_MODEL_PARAMS)
   provider_config = get_provider_model_config(PROVIDER_VERTEX)
   for _, model_config in provider_config.items():
     model_name = model_config.get(KEY_MODEL_NAME)
     if model_name == google_llm and KEY_MODEL_PARAMS in model_config:
       parameters = model_config.get(KEY_MODEL_PARAMS)
-  else:
-    parameters = get_provider_value(PROVIDER_VERTEX,
-                                    KEY_MODEL_PARAMS)
 
   try:
     if is_chat:
       # gemini uses new "GenerativeModel" class and requires different params
       if "gemini" in google_llm:
-        # TODO: fix safety settings
-        safety_settings = {
-             HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-             HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-             HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-             HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        }
-        chat_model = GenerativeModel(google_llm)
+        prompt_list = []
+        if user_chat:
+          prompt_list.extend(
+            convert_history_to_gemini_prompt(user_chat.history, is_multimodal))
+        prompt_list.append(Content(role="user", parts=[Part.from_text(prompt)]))
+        chat_model = GenerativeModel(google_llm, system_instruction=system_prompt)
         if is_multimodal:
           if user_file_bytes is not None and user_files is not None:
             # user_file_bytes refers to a single image and so we index into
             # user_files (a list) to get a single mime type
-            prompt_list.append(Part.from_data(user_file_bytes,
-                                            mime_type=user_files[0].mime_type))
+            prompt_list.append(Content( role="user", parts=[
+              Part.from_data(user_file_bytes,
+                             mime_type=user_files[0].mime_type)]))
           elif user_files is not None:
             # user_files is a list referring to one or more images
             for user_file in user_files:
-              prompt_list.append(Part.from_uri(user_file.gcs_path,
-                                               mime_type=user_file.mime_type))
+              prompt_list.append(Content(role="user", parts=[
+                Part.from_uri(user_file.gcs_path,
+                              mime_type=user_file.mime_type)]))
         # Logger.info(f"context list {prompt_list}")
         for l in prompt_list:
-          Logger.info(l if len(str(l)) < 50 else str(l)[:49])
+          Logger.debug(l if len(str(l)) < 50 else str(l)[:49])
         generation_config = GenerationConfig(**parameters)
         response = await chat_model.generate_content_async(prompt_list,
             generation_config=generation_config,
-            safety_settings=safety_settings,
+            safety_settings=SAFETY_SETTINGS,
             stream=stream)
 
         if stream:
@@ -689,7 +928,19 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
-  Logger.info(f"Received response from the Model [{response.text}]")
+  Logger.info(
+    "Received response from Google LLM",
+    extra={
+      "operation": "google_llm_predict",
+      "metric_type": "llm_generation",
+      "llm_type": google_llm,
+      "response_length": len(response.text) if hasattr(response, "text") else 0,
+      "response_status": "success",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
   response = response.text
 
   return response
@@ -733,3 +984,18 @@ async def generate_chat_summary(user_chat: UserChat) -> str:
     summary = summary[:97] + "..."
 
   return summary
+
+def get_models_for_user(user_data: dict, is_multimodal: Optional[bool] = None
+                        ) -> list[str]:
+  """Takes the user's informaiton and whether they want multimodal models
+  then returns a list of model names the user has access to """
+  model_config = get_model_config()
+  if is_multimodal is True:
+    llm_types = model_config.get_multimodal_chat_llm_types()
+  elif is_multimodal is False:
+    llm_types = model_config.get_text_chat_llm_types()
+  else: # multimodal is None
+    llm_types = model_config.get_chat_llm_types()
+
+  return [llm for llm in llm_types if
+          model_config.is_model_enabled_for_user(llm, user_data)]

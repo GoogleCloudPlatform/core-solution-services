@@ -31,8 +31,8 @@ if HUGGINGFACE_API_KEY is None:
                 "name": "projects/" + PROJECT_ID +
                         "/secrets/huggingface-api-key/versions/latest"
             }).payload.data.decode("utf-8").strip()
-    except Exception as exc:
-        print(f"ERROR while loading huggingface_api_key: {exc}")
+    except Exception as e:
+        print(f"ERROR while loading huggingface_api_key: {e}")
         HUGGINGFACE_API_KEY = None
 
 assert HUGGINGFACE_API_KEY, "HUGGINGFACE_API_KEY is not set"
@@ -98,6 +98,6 @@ class Model:
                 print(f"Prediction completed - {data}")
                 return {"data": data}
 
-            except Exception as exc:
-                print(f"ERROR while running prediction: {exc}")
-                return {"status": "error", "data": None, "message": str(exc)}
+            except Exception as e:
+                print(f"ERROR while running prediction: {e}")
+                return {"status": "error", "data": None, "message": str(e)}

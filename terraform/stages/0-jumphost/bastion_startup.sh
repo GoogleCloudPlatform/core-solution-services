@@ -56,25 +56,14 @@ gcloud components list
 sudo snap install terraform --classic
 sudo snap install helm --classic
 sudo snap install kubectl --classic
-pushd /usr/bin
-sudo ln -s python3.9 python
-sudo rm /usr/bin/python3 && sudo ln -s python3.9 python3
-popd
 
-# Changing system python to python 3.9 (from python 3.8) breaks apt
-# https://stackoverflow.com/questions/56218562/how-to-fix-modulenotfounderror-no-module-named-apt-pkg
-# Another workaround is `sudo apt remove python3-apt -y && sudo apt install python3-apt -y`
-pushd /usr/lib/python3/dist-packages
-sudo cp apt_pkg.cpython-38-x86_64-linux-gnu.so apt_pkg.so
-popd
-
-python -m pip install --upgrade pip
-python -m pip install --upgrade pyopenssl
-python -m pip install google-cloud-firestore google-cloud-bigquery firebase-admin
-python -m pip install solutions-builder==1.18.1 --ignore-installed PyYAML
+python3 -m pip install --upgrade pip
+python3 -m pip install --upgrade pyopenssl
+python3 -m pip install google-cloud-firestore google-cloud-bigquery firebase-admin
+python3 -m pip install solutions-builder==1.18.1 --ignore-installed PyYAML
 
 # Install dependencies for running user-tool
-python -m pip install fireo==2.1.0 regex fastapi google-cloud-secret-manager
+python3 -m pip install fireo==2.1.0 regex fastapi google-cloud-secret-manager
 
 # add aliases profile script
 cat << EOF | sudo tee /etc/profile.d/00-aliases.sh
@@ -98,7 +87,6 @@ export AUTH_EMAIL_DOMAINS_WHITELIST=google.com
 export CORS_ALLOW_ORIGINS="*"
 export PROJECT_ID=$(gcloud config get project)
 export NAMESPACE=default
-export APP_BASE_PATH="/streamlit"
 export DOMAIN_NAME="your-domain-name"     # sb-var:domain_name
 export REGION="us-central1"               # sb-var:gcp_region
 EOF

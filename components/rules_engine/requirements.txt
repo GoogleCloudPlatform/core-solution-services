@@ -1,5 +1,5 @@
-fastapi-restful==0.4.2
-google-cloud-bigquery==3.10.0
-google-cloud-storage==2.10.0
-regex==2023.10.3
-zen-engine==0.15.0
+fastapi-restful==0.6.0
+google-cloud-bigquery==3.30.0
+google-cloud-storage==3.1.0
+regex==2024.11.6
+zen-engine==0.40.0

@@ -30,13 +30,22 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from routes import llm, chat, query, agent, agent_plan
 from common.utils.http_exceptions import add_exception_handlers
+from common.utils.logging_handler import Logger
 from common.utils.auth_service import validate_token
-from common.config import CORS_ALLOW_ORIGINS
+from common.config import CORS_ALLOW_ORIGINS, PROJECT_ID
+from common.monitoring.middleware import (
+  RequestTrackingMiddleware,
+  PrometheusMiddleware,
+  create_metrics_router
+)
 
 # Basic API config
 service_title = "LLM Service API's"
 service_path = "llm-service"
 version = "v1"
+
+# Initialize logger
+logger = Logger.get_logger(__file__)
 
 app = FastAPI()
 app.add_middleware(
@@ -46,6 +55,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add monitoring middleware
+app.add_middleware(
+  RequestTrackingMiddleware,
+  project_id=PROJECT_ID,
+  service_name="llm_service"
+)
+app.add_middleware(
+  PrometheusMiddleware,
+  service_name="llm_service"
+)
+
+metrics_router = create_metrics_router()
 
 @app.get("/ping")
 def health_check():
@@ -69,7 +91,6 @@ def hello():
   See <a href='/{service_path}/api/{version}/docs'>API docs</a>
   """
 
-
 api = FastAPI(
     title=service_title,
     version="latest",
@@ -78,6 +99,7 @@ api = FastAPI(
     dependencies=[Depends(validate_token)]
     )
 
+app.include_router(metrics_router)
 api.include_router(llm.router)
 api.include_router(chat.router)
 api.include_router(query.router)
@@ -90,8 +112,9 @@ app.mount(f"/{service_path}/api/{version}", api)
 
 if __name__ == "__main__":
   uvicorn.run(
-      "main:app",
-      host="0.0.0.0",
-      port=int(config.PORT),
-      log_level="debug",
-      reload=True)
+    "main:app",
+    host="0.0.0.0",
+    port=int(config.PORT),
+    log_level="debug",
+    reload=True
+  )

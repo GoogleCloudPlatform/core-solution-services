@@ -22,8 +22,10 @@ from schemas.generate_token_schema import (GenerateTokenResponseModel,
                                            GenerateTokenRequestModel)
 from common.utils.http_exceptions import (InvalidToken, InternalServerError)
 from common.utils.logging_handler import Logger
+from common.utils.sanitization_service import sanitize_token_data
 from common.models import User
 from config import ERROR_RESPONSES
+from metrics import track_token_refresh
 
 # pylint: disable = broad-exception-raised
 router = APIRouter(
@@ -33,6 +35,7 @@ Logger = Logger.get_logger(__file__)
 
 
 @router.post("/generate", response_model=GenerateTokenResponseModel)
+@track_token_refresh
 def generate_id_token(input_params: GenerateTokenRequestModel):
   """Generates IdToken from the Refresh token received
 
@@ -52,7 +55,7 @@ def generate_id_token(input_params: GenerateTokenRequestModel):
     token_resp = generate_token(input_dict)
 
     decoded_token = validate_token(token_resp["id_token"])
-    Logger.info(f"decoded_token: {decoded_token}")
+    Logger.info(f"decoded_token: {sanitize_token_data(decoded_token)}")
     user = User.find_by_email(decoded_token["email"])
     token_resp["user_id"] = user.user_id
     return {

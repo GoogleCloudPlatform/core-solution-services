@@ -32,6 +32,7 @@ secret_client = secretmanager.SecretManagerServiceClient()
 PORT = os.environ["PORT"] if os.environ.get("PORT") is not None else 80
 PROJECT_ID = os.environ.get("PROJECT_ID", "")
 os.environ["GOOGLE_CLOUD_PROJECT"] = PROJECT_ID
+SERVICE_NAME = os.getenv("SERVICE_NAME")
 DATABASE_PREFIX = os.getenv("DATABASE_PREFIX", "")
 API_BASE_URL = os.getenv("API_BASE_URL")
 IDP_URL = "https://identitytoolkit.googleapis.com/v1/accounts"

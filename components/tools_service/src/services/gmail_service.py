@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """Tools and utils for Gmail"""
-from langchain.tools.gmail.utils import build_resource_service
+from langchain_community.tools.gmail.utils import build_resource_service
 from langchain.agents.agent_toolkits import GmailToolkit
 from common.utils.logging_handler import Logger
 from utils.google_credential import get_google_credential

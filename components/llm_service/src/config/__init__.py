@@ -84,8 +84,6 @@ from config.model_config import (
     COHERE_LLM_TYPE,
     VERTEX_LLM_TYPE_CHAT,
     VERTEX_LLM_TYPE_BISON_TEXT,
-    VERTEX_LLM_TYPE_BISON_CHAT,
-    VERTEX_LLM_TYPE_BISON_CHAT_LANGCHAIN,
     VERTEX_LLM_TYPE_GEMINI_PRO_LANGCHAIN,
     VERTEX_AI_MODEL_GARDEN_LLAMA2_CHAT,
     VERTEX_LLM_TYPE_GEMINI_PRO,
@@ -118,6 +116,10 @@ from config.model_config import (
     KEY_ROLE_ACCESS,
     KEY_SUB_PROVIDER,
     KEY_NAME,
+    KEY_DEFAULT_SYSTEM_PROMPT,
+
+    # model types
+    MODEL_TYPES,
 
     # model providers
     PROVIDER_VERTEX,
@@ -154,5 +156,6 @@ from config.utils import (
   get_provider_embedding_types,
   get_provider_config,
   get_provider_model_config,
-  get_model_config_value
+  get_model_config_value,
+  get_model_system_prompt
 )

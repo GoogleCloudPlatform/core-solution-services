@@ -22,23 +22,20 @@ from common.config import REGION
 from common.utils.config import get_environ_flag, load_config_json
 from common.utils.logging_handler import Logger
 from common.utils.secrets import get_secret
-from common.utils.gcs_adapter import get_blob_from_gcs_path
 from common.utils.token_handler import UserCredentials
 from schemas.error_schema import (UnauthorizedResponseModel,
                                   InternalServerErrorResponseModel,
                                   ValidationErrorResponseModel)
+from utils.gcs_helper import get_blob_from_gcs_path
 from google.cloud import secretmanager
 from config.model_config import (ModelConfig, VENDOR_OPENAI,
                                 PROVIDER_VERTEX, VENDOR_COHERE,
-                                PROVIDER_LANGCHAIN, PROVIDER_MODEL_GARDEN,
-                                PROVIDER_TRUSS, PROVIDER_LLM_SERVICE,
-                                PROVIDER_VLLM, VLLM_LLM_GEMMA_CHAT,
+                                PROVIDER_MODEL_GARDEN,
+                                PROVIDER_TRUSS,
+                                PROVIDER_VLLM,
                                 VERTEX_LLM_TYPE_CHAT,
-                                VERTEX_LLM_TYPE_BISON_CHAT, TRUSS_LLM_LLAMA2_CHAT,
                                 VERTEX_LLM_TYPE_GECKO_EMBEDDING,
                                 VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
-                                VERTEX_LLM_TYPE_GEMINI_PRO,
-                                VERTEX_LLM_TYPE_GEMINI_PRO_VISION,
                                 VERTEX_LLM_TYPE_GEMINI_FLASH)
 
 Logger = Logger.get_logger(__file__)

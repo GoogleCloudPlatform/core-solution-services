@@ -51,6 +51,7 @@ from services.query.query_service import (query_generate,
                                           delete_engine, update_user_query)
 from services.llm_generate import generate_chat_summary
 from utils.gcs_helper import upload_b64files_to_gcs
+from metrics import track_vector_db_query, track_vector_db_build
 
 Logger = Logger.get_logger(__file__)
 router = APIRouter(prefix="/query", tags=["Query"], responses=ERROR_RESPONSES)
@@ -450,6 +451,7 @@ def delete_query_engine(query_engine_id: str, hard_delete: bool = True):
     "/engine",
     name="Create a query engine",
     response_model=BatchJobModel)
+@track_vector_db_build
 async def query_engine_create(gen_config: LLMQueryEngineModel,
                               user_data: dict = Depends(validate_token)):
   """
@@ -536,7 +538,8 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
 @router.post(
     "/engine/{query_engine_id}",
     name="Make a query to a query engine",
-    response_model=LLMQueryResponse)
+    response_model=LLMQueryResponse, deprecated=True)
+@track_vector_db_query
 async def query(query_engine_id: str,
                 gen_config: LLMQueryModel,
                 user_data: dict = Depends(validate_token)):
@@ -700,7 +703,8 @@ async def query(query_engine_id: str,
 @router.post(
     "/{user_query_id}",
     name="Continue chat with a prior user query",
-    response_model=LLMQueryResponse)
+    response_model=LLMQueryResponse, deprecated=True)
+@track_vector_db_query
 async def query_continue(
   user_query_id: str,
   gen_config: LLMQueryModel,

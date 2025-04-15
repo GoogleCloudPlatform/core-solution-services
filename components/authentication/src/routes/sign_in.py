@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBearer
 from requests.exceptions import ConnectTimeout
 from firebase_admin.auth import verify_id_token, get_user, set_custom_user_claims
+from common.utils.sanitization_service import sanitize_token_data
 from common.utils.user_handler import get_user_by_email, create_user_in_firestore
 from common.utils.logging_handler import Logger
 from common.utils.sessions import create_session
@@ -38,7 +39,7 @@ from config import (AUTH_REQUIRE_FIRESTORE_USER,
                     FIREBASE_API_KEY,
                     IDP_URL,
                     ERROR_RESPONSES)
-
+from metrics import track_signin
 # pylint: disable = broad-exception-raised
 
 IDP_SIGN_IN_URL = f"{IDP_URL}:signInWithIdp?key={FIREBASE_API_KEY}"
@@ -103,6 +104,7 @@ def save_roles_from_auth_provider_token(
 
 
 @router.post("/token", response_model=SignInWithTokenResponseModel)
+@track_signin
 def sign_in_with_token(token: auth_scheme = Depends()):
   """This endpoint will take the Google oauth token as an Authorization header
   and returns the firebase id_token and refresh token.
@@ -117,7 +119,7 @@ def sign_in_with_token(token: auth_scheme = Depends()):
     email = decoded_token.get("email")
 
     Logger.info(f"request for sign-in: {email}")
-    Logger.info(f"decoded_token: {decoded_token}")
+    Logger.info(f"decoded_token: {sanitize_token_data(decoded_token)}")
 
     user = get_user_by_email(
         email, check_firestore_user=AUTH_REQUIRE_FIRESTORE_USER)
@@ -165,6 +167,7 @@ def sign_in_with_token(token: auth_scheme = Depends()):
 
 
 @router.post("/credentials", response_model=SignInWithCredentialsResponseModel)
+@track_signin
 def sign_in_with_credentials(credentials: SignInWithCredentialsModel):
   """This endpoint will take the user email and password as an input
   and returns an id token and refresh token from the IDP.
