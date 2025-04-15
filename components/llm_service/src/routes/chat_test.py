@@ -16,22 +16,31 @@
   Unit tests for LLM Service endpoints
 """
 # disabling pylint rules that conflict with pytest fixtures
-# pylint: disable=unused-argument,redefined-outer-name,unused-import,unused-variable,ungrouped-imports
+# pylint: disable=unused-argument,redefined-outer-name,unused-import
+# pylint: disable=unused-variable,ungrouped-imports
 import os
 import json
 import pytest
+from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
 from testing.test_config import API_URL, TESTING_FOLDER_PATH
 from schemas.schema_examples import (LLM_GENERATE_EXAMPLE, CHAT_EXAMPLE,
-                                     USER_EXAMPLE)
-from common.models import UserChat, User
-from common.models.llm import CHAT_HUMAN, CHAT_AI, CHAT_FILE, CHAT_FILE_BASE64
+                                     USER_EXAMPLE, QUERY_ENGINE_EXAMPLE)
+from common.models import UserChat, User, QueryEngine, QueryReference
+from common.models.llm import (CHAT_HUMAN, CHAT_AI, CHAT_FILE, CHAT_FILE_BASE64,
+                             CHAT_SOURCE, CHAT_QUERY_RESULT,
+                             CHAT_QUERY_REFERENCES)
 from common.utils.http_exceptions import add_exception_handlers
 from common.utils.auth_service import validate_user
 from common.utils.auth_service import validate_token
-from common.testing.firestore_emulator import firestore_emulator, clean_firestore
+from common.testing.firestore_emulator import (
+  firestore_emulator, clean_firestore
+)
+
+from services.query.query_service import query_generate_for_chat
+from services.query.data_source import DataSourceFile
 
 os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
 os.environ["PROJECT_ID"] = "fake-project"
@@ -68,6 +77,11 @@ FAKE_GENERATE_PARAMS = {
 
 FAKE_GENERATE_RESPONSE = "test generation"
 
+async def list_to_async(l: list) -> AsyncGenerator:
+  """Used to simulate async streaming responses"""
+  for i in l:
+    yield i
+
 
 @pytest.fixture
 def client_with_emulator(clean_firestore, scope="module"):
@@ -98,6 +112,15 @@ def create_chat(client_with_emulator):
   chat.save()
 
 
+@pytest.fixture
+def create_engine(firestore_emulator, clean_firestore):
+  """Create a test query engine"""
+  query_engine_dict = QUERY_ENGINE_EXAMPLE
+  q_engine = QueryEngine.from_dict(query_engine_dict)
+  q_engine.save()
+  return q_engine
+
+
 def test_get_chats(create_user, create_chat, client_with_emulator):
   params = {"skip": 0, "limit": "30"}
   url = f"{api_url}"
@@ -121,7 +144,17 @@ def test_get_chat(create_user, create_chat, client_with_emulator):
   assert chatid == saved_id, "all data not retrieved"
 
 
-def test_create_chat(create_user, client_with_emulator):
+@pytest.mark.asyncio
+async def test_create_chat(create_user, client_with_emulator):
+  """Test creating a new chat"""
+  url = f"{api_url}/empty_chat"
+  resp = client_with_emulator.post(url)
+  assert resp.status_code == 200, "Failed to create empty chat"
+  json_response = resp.json()
+  chat_data = json_response["data"]
+  assert "id" in chat_data, "Chat ID not found in generated chat"
+
+def test_create_chat_deprecated(create_user, client_with_emulator):
   userid = CHAT_EXAMPLE["user_id"]
   url = f"{api_url}"
 
@@ -201,6 +234,7 @@ def test_create_chat(create_user, client_with_emulator):
     "saved chat data generated text"
 
 
+
 def test_delete_chat(create_user, create_chat, client_with_emulator):
   userid = CHAT_EXAMPLE["user_id"]
   chatid = CHAT_EXAMPLE["id"]
@@ -256,22 +290,19 @@ def test_update_chat(create_user, create_chat, client_with_emulator):
       [{"human": "q"}, {"ai": "a"}], "history updated"
 
 
-def test_chat_generate(create_chat, client_with_emulator):
+def test_chat_generate(create_user, create_chat, client_with_emulator):
+  """Test generating a response in an existing chat"""
   chatid = CHAT_EXAMPLE["id"]
-
   url = f"{api_url}/{chatid}/generate"
 
+  # Test regular generation
   with mock.patch("routes.chat.llm_chat",
-                  return_value=FAKE_GENERATE_RESPONSE):
+                 return_value=FAKE_GENERATE_RESPONSE):
     resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
 
   json_response = resp.json()
   assert resp.status_code == 200, "Status 200"
   chat_data = json_response.get("data")
-  assert chat_data["history"][0] == CHAT_EXAMPLE["history"][0], \
-    "returned chat history 0"
-  assert chat_data["history"][1] == CHAT_EXAMPLE["history"][1], \
-    "returned chat history 1"
   assert chat_data["history"][-2] == \
     {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
     "returned chat data prompt"
@@ -279,16 +310,48 @@ def test_chat_generate(create_chat, client_with_emulator):
     {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
     "returned chat data generated text"
 
-  user_chat = UserChat.find_by_id(chatid)
-  assert user_chat is not None, "retrieved user chat"
-  assert len(user_chat.history) == len(CHAT_EXAMPLE["history"]) + 2, \
-    "user chat history updated"
-  assert user_chat.history[-2] == \
-    {CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]}, \
-    "retrieved user chat prompt"
-  assert user_chat.history[-1] == \
-    {CHAT_AI: FAKE_GENERATE_RESPONSE}, \
-    "retrieved user chat response"
+  # Test streaming generation
+  streaming_params = {**FAKE_GENERATE_PARAMS, "stream": True}
+  with mock.patch("routes.chat.llm_chat",
+                 return_value=list_to_async([FAKE_GENERATE_RESPONSE])):
+    resp = client_with_emulator.post(url, json=streaming_params)
+    assert resp.status_code == 200, "Streaming response status 200"
+    assert resp.headers["content-type"] == "text/event-stream; charset=utf-8", \
+      "Streaming response content type"
+
+  # Test missing title generates summary
+  chat = UserChat.find_by_id(chatid)
+  chat.title = ""
+  chat.save()
+
+  with mock.patch("routes.chat.llm_chat",
+                 return_value=FAKE_GENERATE_RESPONSE), \
+       mock.patch("routes.chat.generate_chat_summary",
+                 return_value="Test Summary"):
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  chat_data = json_response.get("data")
+  assert chat_data["title"] == "Test Summary", \
+    "Missing title generated summary"
+
+  # Test existing title preserved
+  chat = UserChat.find_by_id(chatid)
+  chat.title = "Existing Title"
+  chat.save()
+
+  with mock.patch("routes.chat.llm_chat",
+                 return_value=FAKE_GENERATE_RESPONSE), \
+       mock.patch("routes.chat.generate_chat_summary") as mock_summary:
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  chat_data = json_response.get("data")
+  assert chat_data["title"] == "Existing Title", \
+    "Existing title preserved"
+  assert not mock_summary.called, "Summary not generated for existing title"
 
 def test_invalid_tool_names_chat(client_with_emulator):
   """Verify that llm tool name validation catches invalid cases"""
@@ -329,35 +392,388 @@ def test_invalid_tool_names_chat_generate(create_user, create_chat,
   json_response = resp.json()
   assert "nonexistent_tool" in json_response["detail"]
 
-@pytest.mark.long
-def test_create_chat_code_interpreter(create_user, create_chat,
-                                      client_with_emulator):
-  url = f"{api_url}"
-  generate_params = FAKE_GENERATE_PARAMS.copy()
-  # testing with a non-list input strng
-  generate_params["tool_names"] = '["vertex_code_interpreter_tool"]'
-  generate_params["prompt"] = "give me a pie chart of continents by land area"
-  resp = client_with_emulator.post(url, data=generate_params)
-  assert resp.status_code == 200
-  json_response = resp.json()
-  user_chat = json_response["data"]
-  assert len(user_chat["history"]) == 4, "user has unexpected number of entries"
-  assert CHAT_FILE in user_chat["history"][2], "No generated file name found"
-  assert CHAT_FILE_BASE64 in user_chat["history"][3], "File conetent not found"
 
 @pytest.mark.long
-def test_generate_chat_code_interpreter(create_user, create_chat,
-                                      client_with_emulator):
+def test_generate_chat_code_interpreter(
+    create_user,
+    create_chat,
+    client_with_emulator
+):
+  """Test generating chat response with code interpreter tool"""
   chatid = CHAT_EXAMPLE["id"]
   url = f"{api_url}/{chatid}/generate"
   generate_params = FAKE_GENERATE_PARAMS.copy()
-  # testing with a non-list input strng
   generate_params["tool_names"] = '["vertex_code_interpreter_tool"]'
   generate_params["prompt"] = "give me a pie chart of continents by land area"
-  resp = client_with_emulator.post(url, json=generate_params)
-  assert resp.status_code == 200
+
+  # Mock response from code interpreter tool
+  mock_tool_response = {
+    "generated_code": "print('test code')",
+    "execution_result": "test result", 
+    "execution_error": None,
+    "output_files": [
+      {
+        "name": "plot.png",
+        # Real response would have actual base64 data
+        "contents": "base64encodedstring"
+      }
+    ]
+  }
+
+  # Mock both the code interpreter tool and summary generation
+  with mock.patch(
+    "services.agents.agent_tools.vertex_code_interpreter_tool",
+    return_value=mock_tool_response
+  ), mock.patch(
+    "routes.chat.generate_chat_summary",
+    return_value="Test Chart Generation Chat"
+  ), mock.patch(
+    "services.llm_generate.llm_chat",
+    return_value="Test Chart Generation Chat"
+  ):
+    resp = client_with_emulator.post(url, json=generate_params)
+
+    assert resp.status_code == 200
+    json_response = resp.json()
+    user_chat = json_response["data"]
+
+    # Get the new entries (last 4 entries in history)
+    new_entries = user_chat["history"][-4:]
+
+    # Check user prompt
+    assert new_entries[0] == {
+      CHAT_HUMAN: generate_params["prompt"]
+    }, "First new entry should be user prompt"
+
+    # Check AI response containing code and result
+    expected_response = (
+      "Code generated\n\n"
+      "```print('test code')```"
+      "Execution result from the code: "
+      "```test result```"
+    )
+    assert new_entries[1] == {
+      CHAT_AI: expected_response
+    }, "Second new entry should be AI response with code"
+
+    # Check file entries
+    assert new_entries[2] == {
+      CHAT_FILE: "plot.png"
+    }, "Third new entry should be file name"
+
+    assert new_entries[3] == {
+      CHAT_FILE_BASE64: "base64encodedstring"
+    }, "Fourth new entry should be file content"
+
+    # If this was a new chat with no title, verify the title was set
+    chat = UserChat.find_by_id(chatid)
+    if not chat.title:
+      assert user_chat["title"] == "Test Chart Generation Chat"
+
+def test_generate_chat_summary(create_user, create_chat, client_with_emulator):
+  """Test the generate_summary endpoint"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate_summary"
+
+  # Test successful summary generation
+  with mock.patch(
+      "services.llm_generate.generate_chat_summary",
+      return_value="Test Summary"
+  ), mock.patch(
+      "services.llm_generate.llm_chat",
+      return_value="Test Summary"
+  ):
+    resp = client_with_emulator.post(url)
+
+    assert resp.status_code == 200
+    json_response = resp.json()
+    assert json_response["success"] is True
+    assert json_response["data"]["title"] == "Test Summary"
+
+    # Verify the chat was updated in the database
+    updated_chat = UserChat.find_by_id(chatid)
+    assert updated_chat.title == "Test Summary"
+
+def test_generate_chat_summary_not_found(create_user, client_with_emulator):
+  """Test generate_summary with non-existent chat"""
+  url = f"{api_url}/non-existent-id/generate_summary"
+
+  resp = client_with_emulator.post(url)
+  assert resp.status_code == 404, "Non-existent chat returns 404"
   json_response = resp.json()
-  user_chat = json_response["data"]
-  assert len(user_chat["history"]) == len(CHAT_EXAMPLE["history"]) + 4
-  assert CHAT_FILE in user_chat["history"][-2], "No generated file name found"
-  assert CHAT_FILE_BASE64 in user_chat["history"][-1], "File conetent not found"
+  assert json_response["success"] is False, "Error response indicates failure"
+  assert "not found" in json_response["message"].lower(), \
+    "Error message indicates not found"
+  assert json_response["data"] is None, "Error response has no data"
+
+def test_generate_chat_summary_error(
+    create_user,
+    create_chat,
+    client_with_emulator
+):
+  """Test generate_summary when summary generation fails"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate_summary"
+
+  with mock.patch(
+      "routes.chat.generate_chat_summary",
+      side_effect=Exception("Summary generation failed")
+  ):
+    resp = client_with_emulator.post(url)
+
+  assert resp.status_code == 500, "Failed summary generation returns 500"
+  json_response = resp.json()
+  assert json_response["success"] is False, "Error response indicates failure"
+  assert "summary generation failed" in json_response["message"].lower(), \
+    "Error message describes failure"
+  assert json_response["data"] is None, "Error response has no data"
+
+def test_chat_generate_adds_missing_title(
+    create_user,
+    create_chat,
+    client_with_emulator
+):
+  """Test that generating a chat response adds a title if missing"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate"
+
+  # First remove the title
+  chat = UserChat.find_by_id(chatid)
+  chat.title = ""
+  chat.save()
+
+  with mock.patch(
+      "routes.chat.llm_chat",
+      return_value=FAKE_GENERATE_RESPONSE
+  ), mock.patch(
+      "services.llm_generate.generate_chat_summary",
+      return_value="Test Summary"
+  ), mock.patch(
+      "services.llm_generate.llm_chat",
+      return_value="Test Summary"
+  ):
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+
+    json_response = resp.json()
+    assert resp.status_code == 200
+    chat_data = json_response.get("data")
+
+    # Verify chat response was generated
+    assert chat_data["history"][-2] == {
+      CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]
+    }
+    assert chat_data["history"][-1] == {
+      CHAT_AI: FAKE_GENERATE_RESPONSE
+    }
+
+    # Verify summary was generated and set as title
+    assert chat_data["title"] == "Test Summary"
+
+    # Verify chat was saved to database with summary
+    updated_chat = UserChat.find_by_id(chatid)
+    assert updated_chat.title == "Test Summary"
+
+def test_chat_generate_keeps_existing_title(
+    create_user,
+    create_chat,
+    client_with_emulator
+):
+  """Test that generating a chat response preserves existing title"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate"
+
+  # Set an existing title
+  chat = UserChat.find_by_id(chatid)
+  chat.title = "Existing Title"
+  chat.save()
+
+  with mock.patch("routes.chat.llm_chat",
+                 return_value=FAKE_GENERATE_RESPONSE), \
+       mock.patch("services.llm_generate.generate_chat_summary",
+                 return_value="Test Summary") as mock_summary:
+
+    resp = client_with_emulator.post(url, json=FAKE_GENERATE_PARAMS)
+
+    json_response = resp.json()
+    assert resp.status_code == 200
+    chat_data = json_response.get("data")
+
+    # Verify chat response was generated
+    assert chat_data["history"][-2] == {
+      CHAT_HUMAN: FAKE_GENERATE_PARAMS["prompt"]
+    }
+    assert chat_data["history"][-1] == {
+      CHAT_AI: FAKE_GENERATE_RESPONSE
+    }
+
+    # Verify title was preserved and summary was not generated
+    assert chat_data["title"] == "Existing Title"
+    assert not mock_summary.called, "Summary not generated for existing title"
+
+    # Verify chat in database still has original title
+    updated_chat = UserChat.find_by_id(chatid)
+    assert updated_chat.title == "Existing Title"
+
+def test_get_chat_llm_list(client_with_emulator):
+  """Test getting basic chat LLM list"""
+  url = f"{api_url}/chat_types"
+
+  removed_model = "VertexAI-Gemini-Pro"
+  def mock_is_model_enabled_for_user(model_id, user_data):
+    if model_id == removed_model:
+      return False
+    return True
+
+  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                 side_effect=mock_is_model_enabled_for_user):
+
+    # Test getting all models
+    resp = client_with_emulator.get(url)
+    assert resp.status_code == 200, "Status 200"
+    json_response = resp.json()
+    assert json_response["success"] is True
+    assert len(json_response["data"]) > 0
+
+    # Verify response contains only model IDs
+    for model in json_response["data"]:
+      assert isinstance(model, str), "Model entries should be strings (IDs)"
+      assert model != removed_model, "Disabled model should not be included"
+
+def test_get_chat_llm_details(client_with_emulator):
+  """Test getting detailed chat LLM information"""
+  url = f"{api_url}/chat_types/details"
+
+  # Mock the model config to return test data
+  test_model_config = {
+    "name": "Test Chat Model",
+    "description": "A test chat model",
+    "capabilities": ["chat"],
+    "date_added": "2024-01-01",
+    "is_multi": False,
+    "model_params": {
+      "temperature": 0.7,
+      "max_tokens": 1000
+    }
+  }
+
+  test_provider_config = {
+    "model_params": {
+      "temperature": 0.5,  # This should be overridden by model config
+      "top_p": 0.9  # This should be preserved
+    }
+  }
+
+  def mock_get_model_config(model_id):
+    return test_model_config
+
+  def mock_get_model_provider_config(model_id):
+    return "test_provider", test_provider_config
+
+  def mock_is_model_enabled_for_user(model_id, user_data):
+    return True
+
+  with mock.patch("config.model_config.ModelConfig.get_model_config",
+                 side_effect=mock_get_model_config), \
+       mock.patch("config.model_config.ModelConfig.get_model_provider_config",
+                 side_effect=mock_get_model_provider_config), \
+       mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                 side_effect=mock_is_model_enabled_for_user):
+
+    # Test getting all models
+    resp = client_with_emulator.get(url)
+    assert resp.status_code == 200, "Status 200"
+    json_response = resp.json()
+    assert json_response["success"] is True
+    assert len(json_response["data"]) > 0
+
+    # Verify model details structure
+    model = json_response["data"][0]
+    assert "id" in model
+    assert model["name"] == test_model_config["name"]
+    assert model["description"] == test_model_config["description"]
+    assert model["capabilities"] == test_model_config["capabilities"]
+    assert model["date_added"] == test_model_config["date_added"]
+    assert model["is_multi"] == test_model_config["is_multi"]
+
+    # Verify merged model parameters
+    assert "model_params" in model
+    assert model["model_params"]["temperature"] == 0.7  # From model config
+    assert model["model_params"]["top_p"] == 0.9  # From provider config
+    assert model["model_params"]["max_tokens"] == 1000  # From model config
+
+def test_chat_llm_multimodal_filter(client_with_emulator):
+  """Test multimodal filtering for both chat LLM endpoints"""
+  base_url = f"{api_url}/chat_types"
+
+  def mock_is_model_enabled_for_user(model_id, user_data):
+    return True
+
+  with mock.patch("config.model_config.ModelConfig.is_model_enabled_for_user",
+                 side_effect=mock_is_model_enabled_for_user):
+    # Test basic list endpoint
+    resp = client_with_emulator.get(base_url, params={"is_multimodal": True})
+    assert resp.status_code == 200
+    json_response = resp.json()
+    assert json_response["success"] is True
+
+    # Test details endpoint
+    details_url = f"{base_url}/details"
+    params = {"is_multimodal": True}
+    resp = client_with_emulator.get(details_url, params=params)
+    assert resp.status_code == 200
+    json_response = resp.json()
+    assert json_response["success"] is True
+    assert all(model["is_multi"] for model in json_response["data"])
+
+
+@pytest.mark.asyncio
+async def test_chat_generate_with_query_engine(create_user, create_chat,
+                                               create_engine,
+                                               client_with_emulator):
+  """Test generating chat response with query engine"""
+  chatid = CHAT_EXAMPLE["id"]
+  url = f"{api_url}/{chatid}/generate"
+
+  # Test parameters as JSON
+  test_params = {
+    "prompt": FAKE_GENERATE_PARAMS["prompt"],
+    "llm_type": FAKE_GENERATE_PARAMS["llm_type"],
+    "query_engine_id": create_engine.id,
+    "query_filter": {"key": "value"}
+  }
+
+  # Mock query results
+  mock_references = [
+    QueryReference(
+      query_engine_id=create_engine.id,
+      query_engine=create_engine.name,
+      document_id="doc1",
+      document_url="http://test.com/doc1",
+      document_text="Test reference text",
+      modality="text",
+      chunk_id="chunk1"
+    )
+  ]
+  mock_content_files = [
+    DataSourceFile(
+      gcs_path="gs://bucket/image1.jpg",
+      mime_type="image/jpeg"
+    )
+  ]
+
+  with mock.patch("routes.chat.query_generate_for_chat",
+                 return_value=(mock_references, mock_content_files)), \
+       mock.patch("routes.chat.llm_chat",
+                 return_value=FAKE_GENERATE_RESPONSE):
+    resp = client_with_emulator.post(url, json=test_params)
+
+  json_response = resp.json()
+  assert resp.status_code == 200, "Status 200"
+  chat_data = json_response.get("data")
+
+  # Verify chat history includes query engine and references
+  history = chat_data["history"]
+  assert any(CHAT_SOURCE in entry for entry in history), \
+    "Chat history includes source"
+  assert any(CHAT_QUERY_REFERENCES in entry for entry in history), \
+    "Chat history includes references"

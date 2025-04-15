@@ -14,9 +14,13 @@
 """
 Models for LLM generation and chat
 """
-from typing import List
+from typing import List, Optional, TYPE_CHECKING
 from fireo.fields import TextField, ListField, IDField
 from common.models import BaseModel
+
+# Use TYPE_CHECKING to avoid circular imports
+if TYPE_CHECKING:
+  from common.models.llm_query import QueryEngine, QueryResult, QueryReference
 
 # constants used as tags for chat history
 CHAT_HUMAN = "HumanInput"
@@ -25,6 +29,9 @@ CHAT_FILE = "UploadedFile"
 CHAT_FILE_URL = "FileURL"
 CHAT_FILE_BASE64 = "FileContentsBase64"
 CHAT_FILE_TYPE = "FileType"
+CHAT_SOURCE = "Source"
+CHAT_QUERY_RESULT = "QueryResult"
+CHAT_QUERY_REFERENCES = "QueryReferences"
 
 class UserChat(BaseModel):
   """
@@ -76,7 +83,10 @@ class UserChat(BaseModel):
   def update_history(self,
                      prompt: str=None,
                      response: str=None,
-                     custom_entry: dict=None):
+                     custom_entry: dict=None,
+                     query_engine: Optional["QueryEngine"]=None,
+                     query_result: Optional["QueryResult"]=None,
+                     query_references: Optional[List["QueryReference"]]=None):
     """ Update history with query and response """
 
     if not self.history:
@@ -90,6 +100,38 @@ class UserChat(BaseModel):
 
     if custom_entry:
       self.history.append(custom_entry)
+
+    if query_engine:
+      self.history.append({
+        CHAT_SOURCE: {
+          "id": query_engine.id,
+          "name": query_engine.name,
+          "type": query_engine.query_engine_type
+        }
+      })
+
+    if query_result:
+      self.history.append({CHAT_QUERY_RESULT: query_result.response})
+
+    if query_references:
+      reference_data = []
+      for ref in query_references:
+        ref_data = {
+          "chunk_id": ref.chunk_id,
+          "document_url": ref.document_url,
+          "document_text": ref.document_text,
+          "modality": ref.modality
+        }
+        if ref.chunk_url:
+          ref_data["chunk_url"] = ref.chunk_url
+        if ref.page is not None:
+          ref_data["page"] = ref.page
+        if ref.timestamp_start and ref.timestamp_stop:
+          ref_data["timestamp_start"] = ref.timestamp_start
+          ref_data["timestamp_stop"] = ref.timestamp_stop
+        reference_data.append(ref_data)
+
+      self.history.append({CHAT_QUERY_REFERENCES: reference_data})
 
     self.save(merge=True)
 
@@ -110,6 +152,18 @@ class UserChat(BaseModel):
     return CHAT_FILE_URL in entry
 
   @classmethod
+  def is_source(cls, entry: dict) -> bool:
+    return CHAT_SOURCE in entry
+
+  @classmethod
+  def is_query_result(cls, entry: dict) -> bool:
+    return CHAT_QUERY_RESULT in entry
+
+  @classmethod
+  def is_query_references(cls, entry: dict) -> bool:
+    return CHAT_QUERY_REFERENCES in entry
+
+  @classmethod
   def get_file_b64(cls, entry: dict) -> str:
     return entry[CHAT_FILE_BASE64]
 
@@ -120,6 +174,18 @@ class UserChat(BaseModel):
   @classmethod
   def get_file_uri(cls, entry: dict) -> str:
     return entry[CHAT_FILE_URL]
+
+  @classmethod
+  def get_source(cls, entry: dict) -> dict:
+    return entry[CHAT_SOURCE]
+
+  @classmethod
+  def get_query_result(cls, entry: dict) -> str:
+    return entry[CHAT_QUERY_RESULT]
+
+  @classmethod
+  def get_query_references(cls, entry: dict) -> List[dict]:
+    return entry[CHAT_QUERY_REFERENCES]
 
   @classmethod
   def entry_content(cls, entry: dict) -> str:

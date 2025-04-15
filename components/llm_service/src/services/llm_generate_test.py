@@ -28,8 +28,11 @@ os.environ["MODEL_GARDEN_LLAMA2_CHAT_ENDPOINT_ID"] = "fake-endpoint"
 os.environ["TRUSS_LLAMA2_ENDPOINT"] = "fake-endpoint"
 os.environ["VLLM_GEMMA_ENDPOINT"] = "fake-endpoint"
 
-from services.llm_generate import llm_generate, llm_chat, llm_generate_multimodal,\
-  llm_vllm_service_predict, convert_history_to_gemini_prompt
+from services.llm_generate import (llm_generate, llm_chat,
+                                 llm_generate_multimodal,
+                                 llm_vllm_service_predict,
+                                 generate_chat_summary,
+                                 convert_history_to_gemini_prompt)
 from fastapi import UploadFile
 from google.cloud.aiplatform.models import Prediction
 from vertexai.language_models import TextGenerationResponse
@@ -285,6 +288,72 @@ async def test_llm_vllm_service_predict(clean_firestore, test_chat):
       top_p=1.0,
       top_k=10
     )
+
+@pytest.mark.asyncio
+async def test_generate_chat_summary(clean_firestore, test_chat):
+  """Test generating a chat summary"""
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
+
+  # Mock the llm_chat function that generate_chat_summary uses internally
+  with mock.patch(
+      "services.llm_generate.llm_chat",
+      return_value="Discussion about Machine Learning Basics") as mock_llm_chat:
+
+    summary = await generate_chat_summary(test_chat)
+
+    # Verify the summary is returned correctly
+    assert summary == "Discussion about Machine Learning Basics"
+
+    # Verify llm_chat was called with correct prompt
+    mock_llm_chat.assert_called_once()
+    prompt_arg = mock_llm_chat.call_args[1]["prompt"]
+    assert "Please generate a brief, informative title" in prompt_arg
+    assert "Conversation:" in prompt_arg
+
+@pytest.mark.asyncio
+async def test_generate_chat_summary_long_response(clean_firestore, test_chat):
+  """Test generating a chat summary with a response longer than 100 chars"""
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
+
+  long_response = "This is a very long response that exceeds the maximum " \
+                 "length of 100 characters so it should be truncated to " \
+                 "fit within the limit"
+
+  with mock.patch(
+      "services.llm_generate.llm_chat",
+      return_value=long_response):
+
+    summary = await generate_chat_summary(test_chat)
+
+    # Verify the summary is truncated correctly
+    assert len(summary) == 100
+    assert summary.endswith("...")
+    assert summary.startswith("This is a very")
+
+@pytest.mark.asyncio
+async def test_generate_chat_summary_strips_quotes(clean_firestore, test_chat):
+  """Test that the summary generator strips quotes from the response"""
+  get_model_config().llm_model_providers = {
+    PROVIDER_VERTEX: TEST_VERTEX_CONFIG
+  }
+  get_model_config().llm_models = TEST_VERTEX_CONFIG
+
+  quoted_response = '"Machine Learning Discussion"'
+
+  with mock.patch(
+      "services.llm_generate.llm_chat",
+      return_value=quoted_response):
+
+    summary = await generate_chat_summary(test_chat)
+
+    # Verify quotes are stripped
+    assert summary == "Machine Learning Discussion"
 
 def test_convert_history_to_gemini_prompt():
   test_history = [{"HumanInput": "good morning"},

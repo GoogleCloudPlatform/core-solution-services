@@ -19,7 +19,7 @@ import traceback
 from fastapi import APIRouter, Depends
 
 from common.models import (QueryEngine,
-                           User, UserQuery, QueryDocument)
+                           User, UserQuery, QueryDocument, UserChat)
 from common.models.llm_query import QE_TYPE_INTEGRATED_SEARCH
 from common.schemas.batch_job_schemas import BatchJobModel
 from common.utils.auth_service import validate_token
@@ -45,9 +45,11 @@ from schemas.llm_schema import (LLMQueryModel,
                                 LLMQueryEngineURLResponse,
                                 LLMQueryEngineResponse,
                                 LLMQueryResponse,
-                                LLMGetVectorStoreTypesResponse)
+                                LLMGetVectorStoreTypesResponse,
+                                LLMQueryEngineUpdateModel)
 from services.query.query_service import (query_generate,
                                           delete_engine, update_user_query)
+from services.llm_generate import generate_chat_summary
 from utils.gcs_helper import upload_b64files_to_gcs
 from metrics import track_vector_db_query, track_vector_db_build
 
@@ -365,7 +367,7 @@ def delete_query(query_id: str, hard_delete: bool = True):
   "/engine/{query_engine_id}",
   name="Update a query engine")
 def update_query_engine(query_engine_id: str,
-                        data_config: LLMQueryEngineModel):
+                        data_config: LLMQueryEngineUpdateModel):
   """
   Update a query engine. It only supports updating description
   and read access group.
@@ -388,8 +390,11 @@ def update_query_engine(query_engine_id: str,
 
   try:
     Logger.info(f"Updating q_engine=[{q_engine.name}]")
-    q_engine.description = data_dict["description"]
-    q_engine.read_access_group = data_dict["read_access_group"]
+    read_access_group = data_dict.get("read_access_group", None)
+    if read_access_group:
+      q_engine.read_access_group = read_access_group
+    q_engine.name = data_dict["name"]
+    q_engine.description = data_dict.get("description", None)
     q_engine.save()
     Logger.info(f"Successfully updated q_engine=[{q_engine.name}]")
 
@@ -533,7 +538,7 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
 @router.post(
     "/engine/{query_engine_id}",
     name="Make a query to a query engine",
-    response_model=LLMQueryResponse)
+    response_model=LLMQueryResponse, deprecated=True)
 @track_vector_db_query
 async def query(query_engine_id: str,
                 gen_config: LLMQueryModel,
@@ -572,6 +577,9 @@ async def query(query_engine_id: str,
   query_filter = genconfig_dict.get("query_filter")
   Logger.info(f"query_filter = {query_filter}")
 
+  chat_mode = genconfig_dict.get("chat_mode", False)
+  Logger.info(f"chat_mode = {chat_mode}")
+
   # get the User GENIE stores
   user = User.find_by_email(user_data.get("email"))
 
@@ -579,6 +587,7 @@ async def query(query_engine_id: str,
   Logger.info(f"run_as_batch_job = {run_as_batch_job}")
 
   user_query = None
+  user_chat = None
   if run_as_batch_job:
     # create user query object to hold the query state
     user_query = UserQuery(user_id=user.user_id,
@@ -646,16 +655,44 @@ async def query(query_engine_id: str,
                           query_references, None,
                           query_filter)
 
+    # Create UserChat if chat_mode is enabled
+    if chat_mode:
+      user_chat = UserChat(user_id=user.user_id,
+                          llm_type=llm_type,
+                          prompt=prompt)
+      user_chat.history = UserChat.get_history_entry(prompt,
+                                                     query_result.response)
+
+      # Add query engine results to chat history
+      user_chat.update_history(
+        query_engine=q_engine,
+        query_result=query_result,
+        query_references=query_references
+      )
+
+      user_chat.save()
+
+      # Generate and set chat title
+      summary = await generate_chat_summary(user_chat)
+      user_chat.title = summary
+      user_chat.save()
+
     query_result_dict = query_result.get_fields(reformat_datetime=True)
+
+    response_data = {
+      "user_query_id": user_query.id,
+      "query_result": query_result_dict,
+      "query_references": query_reference_dicts
+    }
+
+    if chat_mode and user_chat:
+      response_data["user_chat_id"] = user_chat.id
+      response_data["user_chat"] = user_chat.get_fields(reformat_datetime=True)
 
     return {
         "success": True,
         "message": "Successfully generated text",
-        "data": {
-            "user_query_id": user_query.id,
-            "query_result": query_result_dict,
-            "query_references": query_reference_dicts
-        }
+        "data": response_data
     }
   except Exception as e:
     Logger.error(e)
@@ -666,7 +703,7 @@ async def query(query_engine_id: str,
 @router.post(
     "/{user_query_id}",
     name="Continue chat with a prior user query",
-    response_model=LLMQueryResponse)
+    response_model=LLMQueryResponse, deprecated=True)
 @track_vector_db_query
 async def query_continue(
   user_query_id: str,

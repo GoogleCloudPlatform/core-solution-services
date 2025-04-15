@@ -67,6 +67,7 @@ from config.config import (
     DEFAULT_QUERY_EMBEDDING_MODEL,
     DEFAULT_QUERY_MULTIMODAL_EMBEDDING_MODEL,
     DEFAULT_MULTIMODAL_LLM_TYPE,
+    DEFAULT_CHAT_SUMMARY_MODEL,
 
     # query engine and other defaults
     DEFAULT_WEB_DEPTH_LIMIT,
@@ -114,6 +115,7 @@ from config.model_config import (
     KEY_VENDOR,
     KEY_ROLE_ACCESS,
     KEY_SUB_PROVIDER,
+    KEY_NAME,
     KEY_DEFAULT_SYSTEM_PROMPT,
 
     # model types

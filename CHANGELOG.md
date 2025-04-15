@@ -1,5 +1,15 @@
 # Releases
 
+## v0.5.0
+
+New features:
+- New GENIE frontend UI in the component frontend_newreact
+- Automatic title generation for chats
+- Updated model config values including display name, description, date_added, capabilities
+- The ability to store queries to query engines in chat history
+- New endpoints in chat/ and llm/ to get detailed config info on models available for a user
+- Query engines in chat: query references retrieved from user prompt stored in history and placed in chat context
+
 ## v0.4.0
 
 New features:
