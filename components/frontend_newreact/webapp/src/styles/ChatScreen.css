@@ -1,0 +1,290 @@
+.upload-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 600px;
+  background-color: #333537;
+  border-radius: 8px;
+  padding: 24px;
+  outline: none;
+}
+
+.upload-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.upload-area {
+  margin-bottom: 16px;
+}
+
+.upload-drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-drop-zone:hover {
+  border-color: #666;
+}
+
+.choose-file-text {
+  color: #1976d2;
+  text-decoration: underline;
+}
+
+.uploaded-file {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.file-info {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.upload-progress {
+  height: 4px;
+  background-color: #eee;
+  border-radius: 2px;
+  margin-top: 4px;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #1976d2;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.import-url-section {
+  margin-top: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.chat-input {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  position: relative;
+  background-color: rgba(32, 33, 35, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px !important;
+}
+
+.chat-input .MuiInputBase-root {
+  order: 2;
+  padding: 0 40px 0 0;
+  color: rgba(255, 255, 255, 0.9);
+  min-height: 24px;
+}
+
+.chat-input .MuiInputBase-root input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.file-chip-container {
+  order: 1;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+/* Style the chip for dark background */
+.file-chip-container .MuiChip-root {
+  background-color: rgba(48, 48, 48, 1);
+  color: #fff;
+  border: none;
+  height: 32px;
+  margin-left: 0;
+}
+
+/* Style the chip delete icon */
+.file-chip-container .MuiChip-deleteIcon {
+  color: #fff;
+  opacity: 0.7;
+}
+
+.file-chip-container .MuiChip-deleteIcon:hover {
+  opacity: 1;
+}
+
+/* Style the add button */
+.chat-input .MuiIconButton-root {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(64, 65, 79, 1);
+  color: rgba(255, 255, 255, 0.7);
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+}
+
+.chat-input .MuiIconButton-root:hover {
+  background-color: rgba(64, 65, 79, 0.8);
+  color: #fff;
+}
+
+.chat-input-container {
+  padding: 16px;
+}
+
+/* Add these new styles */
+.chat-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.welcome-messages {
+  flex: 0;
+  min-height: 0;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  min-height: 0;
+}
+
+.chat-input-container {
+  padding: 16px;
+  background-color: #1a1a1a;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* Add a padding bottom to the last message to ensure space above input */
+.chat-messages .message:last-child {
+  margin-bottom: 16px;
+}
+
+/* Update existing styles */
+.chat-header {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(32, 33, 35, 1);
+}
+
+/* Add these styles for markdown content */
+.chat-messages pre {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: #282c34;
+  overflow-x: auto;
+}
+
+.chat-messages code {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+  border-radius: 0.3em;
+  background-color: rgba(40, 44, 52, 0.5);
+}
+
+.chat-messages pre code {
+  padding: 0;
+  background-color: transparent;
+}
+
+.chat-messages a {
+  color: #93B0FF;
+  text-decoration: none;
+}
+
+.chat-messages a:hover {
+  text-decoration: underline;
+}
+
+.chat-messages blockquote {
+  border-left: 4px solid #4a4a4a;
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.chat-messages table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  width: 100%;
+}
+
+.chat-messages th,
+.chat-messages td {
+  border: 1px solid #4a4a4a;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.chat-messages th {
+  background-color: #343541;
+}
+
+/* Add these new styles for the loader */
+.gemini-loader {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  margin: 20px auto;
+}
+
+.sparkle {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(to bottom, #d1a0e0, #e995a8);
+  transform: rotate(45deg);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.line {
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  width: 20px;
+  height: 10px;
+  border-radius: 50% 50% 0 0;
+  border-bottom: none;
+  border: 3px solid #d1a0e0;
+  animation: rotateLine 1.5s linear infinite;
+}
+
+@keyframes rotateLine {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
