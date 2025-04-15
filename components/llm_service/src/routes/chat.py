@@ -732,23 +732,22 @@ async def user_chat_generate(chat_id: str,
                                 chat_file_bytes=chat_file_bytes,
                                 stream=stream)
 
-          # Track response size for non-streaming responses
-          response_size = len(response)
-          Logger.info(
-            "LLM response size",
-            extra={
-              "operation": "chat_generate",
-              "chat_id": chat_id,
-              "metric_type": "llm_response_size",
-              "llm_type": llm_type,
-              "is_streaming": False,
-              "response_size_chars": response_size,
-              "request_id": context["request_id"],
-              "trace": context["trace"],
-              "session_id": context["session_id"]
-            }
-          )
-
+      # Track response size for non-streaming responses
+      response_size = len(response)
+      Logger.info(
+        "LLM response size",
+        extra={
+          "operation": "chat_generate",
+          "chat_id": chat_id,
+          "metric_type": "llm_response_size",
+          "llm_type": llm_type,
+          "is_streaming": False,
+          "response_size_chars": response_size,
+          "request_id": context["request_id"],
+          "trace": context["trace"],
+          "session_id": context["session_id"]
+        }
+      )
       # save chat history
       user_chat.update_history(prompt=prompt, response=response)
       LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(response_size)

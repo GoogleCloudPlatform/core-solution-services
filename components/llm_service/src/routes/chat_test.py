@@ -21,6 +21,7 @@
 import os
 import json
 import pytest
+from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest import mock
@@ -75,6 +76,11 @@ FAKE_GENERATE_PARAMS = {
   }
 
 FAKE_GENERATE_RESPONSE = "test generation"
+
+async def list_to_async(l: list) -> AsyncGenerator:
+  """Used to simulate async streaming responses"""
+  for i in l:
+    yield i
 
 
 @pytest.fixture
@@ -307,7 +313,7 @@ def test_chat_generate(create_user, create_chat, client_with_emulator):
   # Test streaming generation
   streaming_params = {**FAKE_GENERATE_PARAMS, "stream": True}
   with mock.patch("routes.chat.llm_chat",
-                 return_value=iter([FAKE_GENERATE_RESPONSE])):
+                 return_value=list_to_async([FAKE_GENERATE_RESPONSE])):
     resp = client_with_emulator.post(url, json=streaming_params)
     assert resp.status_code == 200, "Streaming response status 200"
     assert resp.headers["content-type"] == "text/event-stream; charset=utf-8", \
