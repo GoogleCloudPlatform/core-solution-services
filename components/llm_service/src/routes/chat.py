@@ -47,6 +47,7 @@ from schemas.llm_schema import (ChatUpdateModel,
 from services.llm_generate import (llm_chat, generate_chat_summary,
                                    get_models_for_user)
 from services.agents.agent_tools import chat_tools, run_chat_tools
+from services.query.query_service import query_generate_for_chat
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
 from metrics import (
   track_chat_generate,
@@ -582,6 +583,8 @@ async def user_chat_generate(chat_id: str,
 
 
   response_files = None
+  query_result = None
+  query_references = None
 
   try:
     # process chat file(s): upload to GCS and determine mime type
