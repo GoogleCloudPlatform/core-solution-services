@@ -583,7 +583,6 @@ async def user_chat_generate(chat_id: str,
 
 
   response_files = None
-  query_result = None
   query_references = None
 
   try:
@@ -672,7 +671,6 @@ async def user_chat_generate(chat_id: str,
           # It will be communicated to the LLM in a later history
           user_chat.update_history(
             query_engine=query_engine,
-            query_result=query_result,
             query_references=query_references,
             query_refs_str=query_refs_str
           )

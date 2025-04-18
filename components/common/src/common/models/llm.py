@@ -86,7 +86,6 @@ class UserChat(BaseModel):
                      response: str=None,
                      custom_entry: dict=None,
                      query_engine: Optional["QueryEngine"]=None,
-                     query_result: Optional["QueryResult"]=None,
                      query_references: Optional[List["QueryReference"]]=None,
                      query_refs_str: Optional[str]=None):
     """ Update history with query and response """
@@ -103,7 +102,8 @@ class UserChat(BaseModel):
     if custom_entry:
       self.history.append(custom_entry)
 
-    if query_engine and query_result and query_references and query_refs_str:
+    if all((x is not None) for x in
+           (query_engine, query_references, query_refs_str)):
       reference_data = []
       for ref in query_references:
         ref_data = {
@@ -126,7 +126,6 @@ class UserChat(BaseModel):
           "name": query_engine.name,
           "type": query_engine.query_engine_type
         },
-        CHAT_QUERY_RESULT: query_result.response,
         CHAT_QUERY_REFERENCES: reference_data,
         CHAT_QUERY_REFRENCE_READABLE: query_refs_str
       })
@@ -164,7 +163,6 @@ class UserChat(BaseModel):
   @classmethod
   def is_full_query_response(cls, entry: dict) -> bool:
     return (CHAT_QUERY_REFERENCES in entry and
-            CHAT_QUERY_RESULT in entry and
             CHAT_SOURCE in entry and
             CHAT_QUERY_REFRENCE_READABLE in entry)
 
