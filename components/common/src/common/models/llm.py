@@ -86,6 +86,7 @@ class UserChat(BaseModel):
                      response: str=None,
                      custom_entry: dict=None,
                      query_engine: Optional["QueryEngine"]=None,
+                     query_result: Optional["QueryResult"]=None,
                      query_references: Optional[List["QueryReference"]]=None,
                      query_refs_str: Optional[str]=None):
     """ Update history with query and response """
@@ -101,6 +102,9 @@ class UserChat(BaseModel):
 
     if custom_entry:
       self.history.append(custom_entry)
+
+    if query_result:
+      self.history.append({CHAT_QUERY_RESULT: query_result.response})
 
     if all((x is not None) for x in
            (query_engine, query_references, query_refs_str)):
