@@ -103,8 +103,35 @@ class UserChat(BaseModel):
     if custom_entry:
       self.history.append(custom_entry)
 
+    if query_engine:
+      self.history.append({
+        CHAT_SOURCE: {
+          "id": query_engine.id,
+          "name": query_engine.name,
+          "type": query_engine.query_engine_type
+        }
+      })
+
     if query_result:
       self.history.append({CHAT_QUERY_RESULT: query_result.response})
+
+    if query_references:
+      reference_data = []
+      for ref in query_references:
+        ref_data = {
+          "chunk_id": ref.chunk_id,
+          "document_url": ref.document_url,
+          "document_text": ref.document_text,
+          "modality": ref.modality
+        }
+        if ref.chunk_url:
+          ref_data["chunk_url"] = ref.chunk_url
+        if ref.page is not None:
+          ref_data["page"] = ref.page
+        if ref.timestamp_start and ref.timestamp_stop:
+          ref_data["timestamp_start"] = ref.timestamp_start
+          ref_data["timestamp_stop"] = ref.timestamp_stop
+        reference_data.append(ref_data)
 
     if all((x is not None) for x in
            (query_engine, query_references, query_refs_str)):

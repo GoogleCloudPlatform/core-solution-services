@@ -668,7 +668,7 @@ async def user_chat_generate(chat_id: str,
           # Add reference text to prompt
           query_refs_str = QueryReference.reference_list_str(query_references)
           # New: Add query results to history if present
-          # It will be communicated to the LLM in a later history
+          # It will be communicated to the LLM as part of chat history
           user_chat.update_history(
             query_engine=query_engine,
             query_references=query_references,
