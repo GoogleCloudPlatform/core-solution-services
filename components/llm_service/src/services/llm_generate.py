@@ -761,6 +761,10 @@ def convert_history_to_gemini_prompt(history: list, is_multimodal:bool=False
       conversation.append(Content(role="user", parts=[Part.from_text(content)]))
     elif UserChat.is_ai(entry):
       conversation.append(Content(role="model", parts=[Part.from_text(content)]))
+    elif UserChat.is_full_query_response(entry):
+      conversation.append(
+        Content(role="model", parts=[Part.from_text(
+          UserChat.convert_query_response_to_chat_entry(entry))]))
     elif is_multimodal and conversation:
       # TODO: Currently Genie doesn't track if the user or model added a file,
       # it's assumed that the role is the same as for the previous entry

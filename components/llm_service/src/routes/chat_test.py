@@ -461,7 +461,8 @@ def test_generate_chat_code_interpreter(
     }, "Third new entry should be file name"
 
     assert new_entries[3] == {
-      CHAT_FILE_BASE64: "base64encodedstring"
+      CHAT_FILE_BASE64: "base64encodedstring",
+      "FileType": "image/png"
     }, "Fourth new entry should be file content"
 
     # If this was a new chat with no title, verify the title was set
