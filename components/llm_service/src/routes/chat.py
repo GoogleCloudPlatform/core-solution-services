@@ -669,14 +669,13 @@ async def user_chat_generate(chat_id: str,
           # Add reference text to prompt
           query_refs_str = QueryReference.reference_list_str(query_references)
           # New: Add query results to history if present
+          # It will be communicated to the LLM in a later history
           user_chat.update_history(
             query_engine=query_engine,
             query_result=query_result,
-            query_references=query_references
+            query_references=query_references,
+            query_refs_str=query_refs_str
           )
-          prompt += "\n\n" + \
-              f"A search of the {query_engine.name} Source produced " \
-              f"these references: {query_refs_str}"
 
         if stream:
           # Get the streaming generator

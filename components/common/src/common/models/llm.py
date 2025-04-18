@@ -32,6 +32,7 @@ CHAT_FILE_TYPE = "FileType"
 CHAT_SOURCE = "Source"
 CHAT_QUERY_RESULT = "QueryResult"
 CHAT_QUERY_REFERENCES = "QueryReferences"
+CHAT_QUERY_REFRENCE_READABLE = "ReadableQueryReference"
 
 class UserChat(BaseModel):
   """
@@ -86,7 +87,8 @@ class UserChat(BaseModel):
                      custom_entry: dict=None,
                      query_engine: Optional["QueryEngine"]=None,
                      query_result: Optional["QueryResult"]=None,
-                     query_references: Optional[List["QueryReference"]]=None):
+                     query_references: Optional[List["QueryReference"]]=None,
+                     query_refs_str: Optional[str]=None):
     """ Update history with query and response """
 
     if not self.history:
@@ -101,19 +103,7 @@ class UserChat(BaseModel):
     if custom_entry:
       self.history.append(custom_entry)
 
-    if query_engine:
-      self.history.append({
-        CHAT_SOURCE: {
-          "id": query_engine.id,
-          "name": query_engine.name,
-          "type": query_engine.query_engine_type
-        }
-      })
-
-    if query_result:
-      self.history.append({CHAT_QUERY_RESULT: query_result.response})
-
-    if query_references:
+    if query_engine and query_result and query_references and query_refs_str:
       reference_data = []
       for ref in query_references:
         ref_data = {
@@ -130,8 +120,16 @@ class UserChat(BaseModel):
           ref_data["timestamp_start"] = ref.timestamp_start
           ref_data["timestamp_stop"] = ref.timestamp_stop
         reference_data.append(ref_data)
-
-      self.history.append({CHAT_QUERY_REFERENCES: reference_data})
+      self.history.append({
+        CHAT_SOURCE: {
+          "id": query_engine.id,
+          "name": query_engine.name,
+          "type": query_engine.query_engine_type
+        },
+        CHAT_QUERY_RESULT: query_result.response,
+        CHAT_QUERY_REFERENCES: reference_data,
+        CHAT_QUERY_REFRENCE_READABLE: query_refs_str
+      })
 
     self.save(merge=True)
 
@@ -164,6 +162,13 @@ class UserChat(BaseModel):
     return CHAT_QUERY_REFERENCES in entry
 
   @classmethod
+  def is_full_query_response(cls, entry: dict) -> bool:
+    return (CHAT_QUERY_REFERENCES in entry and
+            CHAT_QUERY_RESULT in entry and
+            CHAT_SOURCE in entry and
+            CHAT_QUERY_REFRENCE_READABLE in entry)
+
+  @classmethod
   def get_file_b64(cls, entry: dict) -> str:
     return entry[CHAT_FILE_BASE64]
 
@@ -190,3 +195,11 @@ class UserChat(BaseModel):
   @classmethod
   def entry_content(cls, entry: dict) -> str:
     return list(entry.values())[0]
+
+  @classmethod
+  def convert_query_response_to_chat_entry(cls, entry: dict) -> str:
+    if not cls.is_full_query_response(entry):
+      return ""
+    return (f"A search of the {entry[CHAT_SOURCE]['name']} Source produced "
+              f"these references: {entry[CHAT_QUERY_REFRENCE_READABLE]}")
+
