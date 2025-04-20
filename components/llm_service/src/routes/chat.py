@@ -47,6 +47,7 @@ from schemas.llm_schema import (ChatUpdateModel,
 from services.llm_generate import (llm_chat, generate_chat_summary,
                                    get_models_for_user)
 from services.agents.agent_tools import chat_tools, run_chat_tools
+from services.query.query_service import query_generate_for_chat
 from utils.file_helper import process_chat_file, validate_multimodal_file_type
 from metrics import (
   track_chat_generate,
@@ -582,6 +583,7 @@ async def user_chat_generate(chat_id: str,
 
 
   response_files = None
+  query_references = None
 
   try:
     # process chat file(s): upload to GCS and determine mime type
@@ -666,14 +668,12 @@ async def user_chat_generate(chat_id: str,
           # Add reference text to prompt
           query_refs_str = QueryReference.reference_list_str(query_references)
           # New: Add query results to history if present
+          # It will be communicated to the LLM as part of chat history
           user_chat.update_history(
             query_engine=query_engine,
-            query_result=query_result,
-            query_references=query_references
+            query_references=query_references,
+            query_refs_str=query_refs_str
           )
-          prompt += "\n\n" + \
-              f"A search of the {query_engine.name} Source produced " \
-              f"these references: {query_refs_str}"
 
         if stream:
           # Get the streaming generator
