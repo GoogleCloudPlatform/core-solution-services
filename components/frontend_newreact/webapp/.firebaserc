@@ -1,5 +1,15 @@
 {
   "projects": {
-    "default": "your-project-id"
-  }
+    "default": "kat-genie-dev"
+  },
+  "targets": {
+    "kat-genie-dev": {
+      "hosting": {
+        "new-genie-ui": [
+          "new-genie-ui"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
