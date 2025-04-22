@@ -45,7 +45,7 @@ else:
 # Custom JSON encoder that handles non-serializable objects
 class SafeJsonEncoder(json.JSONEncoder):
   """JSON encoder that safely handles non-serializable objects."""
-
+  
   def default(self, o):
     # Convert boolean values to lowercase strings
     if isinstance(o, bool):
@@ -55,7 +55,7 @@ class SafeJsonEncoder(json.JSONEncoder):
     if hasattr(o, "__dict__"):
       return o.__dict__
     return str(o)
-  
+
   def encode(self, o):
     # Process dictionaries to convert any boolean values to lowercase strings
     if isinstance(o, dict):
@@ -67,7 +67,7 @@ class SafeJsonEncoder(json.JSONEncoder):
       for i, item in enumerate(o):
         if isinstance(item, bool):
           o[i] = str(item).lower()
-    
+
     # Call the parent encode method
     return super().encode(o)
 
@@ -189,22 +189,16 @@ class JsonFormatter(logging.Formatter):
           key not in log_entry and
           not key.startswith("_") and
           not callable(value)):
-        # Convert boolean values to lowercase strings
-        if isinstance(value, bool):
-          log_entry[key] = str(value).lower()
-        else:
-          log_entry[key] = value
+
+        log_entry[key] = value
 
     # Add extras content if present
     extras = getattr(record, "extras", {})
     if isinstance(extras, dict):
       for key, value in extras.items():
         if key not in log_entry:
-          # Convert boolean values to lowercase strings
-          if isinstance(value, bool):
-            log_entry[key] = str(value).lower()
-          else:
-            log_entry[key] = value
+
+          log_entry[key] = value
 
     # Return JSON string with simplified error handling
     try:
