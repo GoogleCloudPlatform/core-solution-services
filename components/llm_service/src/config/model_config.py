@@ -538,7 +538,7 @@ class ModelConfig():
     """ get config value from provider model config """
 
     Logger.info("Provider value retrieval initiated")
-    Logger.info("Provider details", 
+    Logger.info("Provider details",
         extra={
           "provider_id": provider_id,
           "model_id": model_id

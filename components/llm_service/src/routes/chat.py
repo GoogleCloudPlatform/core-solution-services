@@ -138,7 +138,7 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
         "model_params": model_params
       })
 
-    Logger.info(f"Chat LLM details operation initiated")
+    Logger.info("Chat LLM details operation initiated")
     return {
       "success": True,
       "message": "Chat LLM details successfully retrieved",
@@ -560,7 +560,7 @@ async def user_chat_generate(chat_id: str,
   Returns:
     LLMUserChatResponse or StreamingResponse
   """
-  Logger.info(f"Chat response generation initiated")
+  Logger.info("Chat response generation initiated")
   tool_names = gen_config.tool_names
   validate_tool_names(tool_names)
   query_engine_id = gen_config.query_engine_id
