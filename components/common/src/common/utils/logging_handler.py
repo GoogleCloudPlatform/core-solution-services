@@ -54,8 +54,7 @@ class SafeJsonEncoder(json.JSONEncoder):
 
   def default(self, o):
     # Convert boolean values to lowercase strings
-    if isinstance(o, bool):
-      return self._boolstr(o)
+    o = self._boolstr(o)
     if isinstance(o, (datetime.datetime, datetime.date)):
       return o.isoformat()
     if hasattr(o, "__dict__"):
@@ -66,13 +65,11 @@ class SafeJsonEncoder(json.JSONEncoder):
     # Process dictionaries to convert any boolean values to lowercase strings
     if isinstance(o, dict):
       for key, value in o.items():
-        if isinstance(value, bool):
-          o[key] = self._boolstr(value)
+        o[key] = self._boolstr(value)
     # Handle boolean values in lists
     elif isinstance(o, list):
       for i, item in enumerate(o):
-        if isinstance(item, bool):
-          o[i] = self._boolstr(item)
+        o[i] = self._boolstr(item)
 
     # Call the parent encode method
     return super().encode(o)
