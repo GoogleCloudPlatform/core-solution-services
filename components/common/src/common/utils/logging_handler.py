@@ -43,7 +43,6 @@ else:
   client = None
 
 # Custom JSON encoder that handles non-serializable objects
-# Custom JSON encoder that handles non-serializable objects
 class SafeJsonEncoder(json.JSONEncoder):
   """JSON encoder that safely handles non-serializable objects."""
 
