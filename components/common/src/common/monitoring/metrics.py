@@ -357,7 +357,7 @@ def measure_latency(start_time: float, metric_name: str,
   logger.info(
     f"{metric_name} latency",
     extra={
-      "metric_type": f"Latency measured for {metric_name}",
+      "metric_type": f"Latency for {metric_name}",
       "duration_ms": round(latency * 1000, 2),
       **extra_data
     }

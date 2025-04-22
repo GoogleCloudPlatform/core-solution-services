@@ -43,13 +43,20 @@ else:
   client = None
 
 # Custom JSON encoder that handles non-serializable objects
+# Custom JSON encoder that handles non-serializable objects
 class SafeJsonEncoder(json.JSONEncoder):
   """JSON encoder that safely handles non-serializable objects."""
+
+  def _boolstr(self, val):
+    """Convert boolean values to lowercase strings."""
+    if isinstance(val, bool):
+      return str(val).lower()
+    return val
 
   def default(self, o):
     # Convert boolean values to lowercase strings
     if isinstance(o, bool):
-      return str(o).lower()
+      return self._boolstr(o)
     if isinstance(o, (datetime.datetime, datetime.date)):
       return o.isoformat()
     if hasattr(o, "__dict__"):
@@ -61,12 +68,12 @@ class SafeJsonEncoder(json.JSONEncoder):
     if isinstance(o, dict):
       for key, value in o.items():
         if isinstance(value, bool):
-          o[key] = str(value).lower()
+          o[key] = self._boolstr(value)
     # Handle boolean values in lists
     elif isinstance(o, list):
       for i, item in enumerate(o):
         if isinstance(item, bool):
-          o[i] = str(item).lower()
+          o[i] = self._boolstr(item)
 
     # Call the parent encode method
     return super().encode(o)
