@@ -47,11 +47,29 @@ class SafeJsonEncoder(json.JSONEncoder):
   """JSON encoder that safely handles non-serializable objects."""
 
   def default(self, o):
+    # Convert boolean values to lowercase strings
+    if isinstance(o, bool):
+      return str(o).lower()
     if isinstance(o, (datetime.datetime, datetime.date)):
       return o.isoformat()
     if hasattr(o, "__dict__"):
       return o.__dict__
     return str(o)
+  
+  def encode(self, o):
+    # Process dictionaries to convert any boolean values to lowercase strings
+    if isinstance(o, dict):
+      for key, value in o.items():
+        if isinstance(value, bool):
+          o[key] = str(value).lower()
+    # Handle boolean values in lists
+    elif isinstance(o, list):
+      for i, item in enumerate(o):
+        if isinstance(item, bool):
+          o[i] = str(item).lower()
+    
+    # Call the parent encode method
+    return super().encode(o)
 
 class LogRecordFilter(logging.Filter):
   """Filter to ensure context variables are included in log records."""
@@ -171,14 +189,22 @@ class JsonFormatter(logging.Formatter):
           key not in log_entry and
           not key.startswith("_") and
           not callable(value)):
-        log_entry[key] = value
+        # Convert boolean values to lowercase strings
+        if isinstance(value, bool):
+          log_entry[key] = str(value).lower()
+        else:
+          log_entry[key] = value
 
     # Add extras content if present
     extras = getattr(record, "extras", {})
     if isinstance(extras, dict):
       for key, value in extras.items():
         if key not in log_entry:
-          log_entry[key] = value
+          # Convert boolean values to lowercase strings
+          if isinstance(value, bool):
+            log_entry[key] = str(value).lower()
+          else:
+            log_entry[key] = value
 
     # Return JSON string with simplified error handling
     try:
