@@ -259,6 +259,21 @@ def extract_user_id(user_data: Optional[Dict[str, Any]]) -> str:
   return "unknown"
 
 
+def _capitalize_first_letter(text: str) -> str:
+  """Capitalize only the first letter of a string.
+  
+  Args:
+      text: The text to capitalize
+      
+  Returns:
+      Text with only the first letter capitalized
+  """
+  text = text.replace("_", " ")
+  if not text:
+    return text
+  return text[0].upper() + text[1:]
+
+
 def log_operation_result(
     log_instance: logging.Logger,
     operation_type: str,
@@ -282,18 +297,16 @@ def log_operation_result(
   if additional_data:
     extra.update(additional_data)
 
+  operation_formatted = _capitalize_first_letter(operation_type)
+  
   if status == "success":
-    operation_str = operation_type.replace("_", " ")
-    capitalized_operation = operation_str[0].upper() + operation_str[1:]
     log_instance.info(
-      f"{capitalized_operation} successful",
+      f"{operation_formatted} successful",
       extra=extra
     )
   else:
-    operation_str = operation_type.replace("_", " ")
-    capitalized_operation = operation_str[0].upper() + operation_str[1:]
     log_instance.error(
-      f"{capitalized_operation} failed",
+      f"{operation_formatted} failed",
       extra=extra
     )
 
