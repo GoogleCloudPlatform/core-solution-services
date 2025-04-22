@@ -216,8 +216,18 @@ export const generateChatResponse =
     });
 };
 
-export const createChat =
-(token: string) => async ({
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64String = (reader.result as string).split(',')[1]; // remove data:...;base64,
+      resolve(base64String);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+export const createChat = (token: string) => async ({
   userInput,
   llmType,
   uploadFile,
@@ -229,25 +239,26 @@ export const createChat =
   queryEngineId,
   queryFilter
 }: RunChatParams): Promise<Chat | ReadableStream | undefined | null> => {
-  
-  
-  // Step 1: Create an empty chat
-  const emptyChat = await createEmptyChat(token);
-  if (!emptyChat || !emptyChat.id) {
-    throw new Error('Failed to create an empty chat');
-  }
 
-  // Step 2: Generate Char Response
+  const emptyChat = await createEmptyChat(token);
+  if (!emptyChat?.id) throw new Error('Failed to create an empty chat');
+
   const url = `${endpoint}/chat/${emptyChat.id}/generate`;
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-  
+
+  let file_base64: string | undefined;
+  if (uploadFile) {
+    file_base64 = await fileToBase64(uploadFile);
+  }
+
   const formData = {
     prompt: userInput,
     llm_type: llmType,
     stream,
-    ...(uploadFile && { chat_file: uploadFile }),
-    ...(fileUrl && { chat_file_url: fileUrl }),
-    ...(toolNames && toolNames.length > 0 && { tool_names: JSON.stringify(toolNames) }),
+    ...(file_base64 && { chat_file_b64: file_base64 }),
+    ...(uploadFile?.name && { chat_file_b64_name: uploadFile.name }),
+    ...(fileUrl && { chat_file_b64_url: fileUrl }),
+    ...(toolNames?.length && { tool_names: JSON.stringify(toolNames) }),
     ...(history && { history: JSON.stringify(history) }),
     ...(temperature !== undefined && { temperature }),
     ...(queryEngineId && { query_engine_id: queryEngineId }),
@@ -255,20 +266,21 @@ export const createChat =
   };
 
   if (stream) {
-    return fetch(url, {
+    const response = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(formData)
-    }).then(response => {
-      if (!response.ok) {
-        return response.json().then(errorData => {
-          throw new Error(errorData.message.replace(/^\d+\s+/, ''));
-        });
-      }
-      return response.body; // This is a ReadableStream
     });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message.replace(/^\d+\s+/, ''));
+    }
+    return response.body;
   }
-  return axios.post(url, formData, { headers }).then(path(["data", "data"]))
+
+  const response = await axios.post(url, formData, { headers });
+  return response?.data?.data;
 };
 
 export const fetchLatestChat = (token: string) => async (): Promise<Chat | null | undefined> => {
