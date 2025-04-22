@@ -77,7 +77,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
   Returns:
       LLMGetTypesResponse with basic model information
   """
-  Logger.info("Entering chat/chat_types")
+  Logger.info("Chat LLM types query initiated")
   try:
     user_enabled_llms = get_models_for_user(user_data, is_multimodal)
     return {
@@ -109,7 +109,7 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
   Returns:
       LLMGetDetailsResponse with detailed model information
   """
-  Logger.info("Entering chat/chat_types/details")
+  Logger.info("Chat LLM details operation initiated")
   try:
     model_config = get_model_config()
     llm_types = get_models_for_user(user_data, is_multimodal)
@@ -138,10 +138,10 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
         "model_params": model_params
       })
 
-    Logger.info(f"Chat LLM models for user {model_details}")
+    Logger.info(f"Chat LLM details operation initiated")
     return {
       "success": True,
-      "message": "Successfully retrieved chat llm details",
+      "message": "Chat LLM details successfully retrieved",
       "data": model_details
     }
   except Exception as e:
@@ -385,7 +385,7 @@ async def create_user_chat(
   """
   context = get_context()
   Logger.info(
-    "Creating new chat",
+    "New chat creation initiated",
     extra={
       "operation": "create_user_chat",
       "llm_type": llm_type,
@@ -514,7 +514,7 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
   context = get_context()
   Logger.info(
-    "Creating empty chat", 
+    "Empty chat creation initiated", 
     extra={
       "operation": "create_empty_chat",
       "user_id": user_data.get("email", "unknown"),
@@ -560,7 +560,7 @@ async def user_chat_generate(chat_id: str,
   Returns:
     LLMUserChatResponse or StreamingResponse
   """
-  Logger.info(f"generating chat response for {chat_id}")
+  Logger.info(f"Chat response generation initiated")
   tool_names = gen_config.tool_names
   validate_tool_names(tool_names)
   query_engine_id = gen_config.query_engine_id
@@ -569,7 +569,7 @@ async def user_chat_generate(chat_id: str,
 
   genconfig_dict = {**gen_config.model_dump()}
   Logger.info(
-    "Processing chat request",
+    "Chat request processing initiated",
     extra={
       "operation": "chat_generate",
       "chat_id": chat_id,
@@ -600,8 +600,7 @@ async def user_chat_generate(chat_id: str,
       chat_files = await process_chat_file(chat_file, chat_file_url)
 
     genconfig_dict = {**gen_config.model_dump()}
-    Logger.info(f"Generating new chat response for chat_id={chat_id},"
-                f"genconfig_dict={genconfig_dict}")
+    Logger.info("Chat response generation initiated")
 
     prompt = genconfig_dict.get("prompt")
     if prompt is None or prompt == "":

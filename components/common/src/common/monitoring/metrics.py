@@ -283,13 +283,17 @@ def log_operation_result(
     extra.update(additional_data)
 
   if status == "success":
+    operation_str = operation_type.replace('_', ' ')
+    capitalized_operation = operation_str[0].upper() + operation_str[1:]
     log_instance.info(
-      f"{operation_type.replace('_', ' ').title()} successful",
+      f"{capitalized_operation} successful",
       extra=extra
     )
   else:
+    operation_str = operation_type.replace('_', ' ')
+    capitalized_operation = operation_str[0].upper() + operation_str[1:]
     log_instance.error(
-      f"{operation_type.replace('_', ' ').title()} failed",
+      f"{capitalized_operation} failed",
       extra=extra
     )
 
@@ -340,7 +344,7 @@ def measure_latency(start_time: float, metric_name: str,
   logger.info(
     f"{metric_name} latency",
     extra={
-      "metric_type": f"{metric_name}_latency",
+      "metric_type": f"Latency measured for {metric_name}",
       "duration_ms": round(latency * 1000, 2),
       **extra_data
     }
