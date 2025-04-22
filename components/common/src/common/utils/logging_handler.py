@@ -45,7 +45,7 @@ else:
 # Custom JSON encoder that handles non-serializable objects
 class SafeJsonEncoder(json.JSONEncoder):
   """JSON encoder that safely handles non-serializable objects."""
-  
+
   def default(self, o):
     # Convert boolean values to lowercase strings
     if isinstance(o, bool):
