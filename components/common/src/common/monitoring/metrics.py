@@ -298,7 +298,7 @@ def log_operation_result(
     extra.update(additional_data)
 
   operation_formatted = _capitalize_first_letter(operation_type)
-  
+
   if status == "success":
     log_instance.info(
       f"{operation_formatted} successful",
