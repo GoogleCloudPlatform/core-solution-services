@@ -283,14 +283,14 @@ def log_operation_result(
     extra.update(additional_data)
 
   if status == "success":
-    operation_str = operation_type.replace('_', ' ')
+    operation_str = operation_type.replace("_", " ")
     capitalized_operation = operation_str[0].upper() + operation_str[1:]
     log_instance.info(
       f"{capitalized_operation} successful",
       extra=extra
     )
   else:
-    operation_str = operation_type.replace('_', ' ')
+    operation_str = operation_type.replace("_", " ")
     capitalized_operation = operation_str[0].upper() + operation_str[1:]
     log_instance.error(
       f"{capitalized_operation} failed",
