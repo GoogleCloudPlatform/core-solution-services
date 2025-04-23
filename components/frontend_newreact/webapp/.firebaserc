@@ -1,9 +1,9 @@
 {
   "projects": {
-    "default": "kat-genie-dev"
+    "default": "core-solution-service-ui"
   },
   "targets": {
-    "kat-genie-dev": {
+    "core-solution-services-ui": {
       "hosting": {
         "new-genie-ui": [
           "new-genie-ui"
