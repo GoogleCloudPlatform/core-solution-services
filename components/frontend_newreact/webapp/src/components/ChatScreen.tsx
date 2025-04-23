@@ -238,13 +238,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         }
       }
   
-      if (response?.history) {
-        let history = response.history;
-        let newMessages = messagesFromHistory(history);
-        setMessages(newMessages);
-      } else {
-        console.error("API response does not contain 'history' property:", response);
-      }
     } catch (error) {
       console.error('Error in chat:', error);
       const errorMessage: ChatMessage = {
@@ -258,17 +251,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       setPrompt('');
       setSelectedFile(null);
       setImportUrl('');
-    }
-  };
-  
-  // Helper function to handle regular chat response
-  const handleChatResponse = async (chatResponse: Chat) => {
-    if (chatResponse?.history) {
-      let history = chatResponse.history;
-      let newMessages = messagesFromHistory(history);
-      setMessages(newMessages);
-    } else {
-      console.error("Chat response does not contain 'history' property:", chatResponse);
     }
   };
   
