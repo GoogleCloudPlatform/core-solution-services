@@ -271,7 +271,8 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     context_tokens = set_context(
       request_id=request_id,
       trace=trace,
-      session_id=session_id
+      session_id=session_id,
+      cloud_trace_context=cloud_trace_context
     )
 
     try:
@@ -338,7 +339,8 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
         temp_tokens = set_context(
           request_id=request_id,
           trace=trace,
-          session_id=session_id
+          session_id=session_id,
+          cloud_trace_context=cloud_trace_context
         )
 
         self.logger.error(
