@@ -207,7 +207,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
         });
-        response = queryResponse;
         // Only assign to response if it's a Chat object
         if (queryResponse && !(queryResponse instanceof ReadableStream)) {
           response = queryResponse;
@@ -431,11 +430,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     setGraphEnabled(prevState => !prevState);
     //window.location.reload();
     const resetChat = () => {
-      //setMessages([]); // Clear chat history
       setPrompt(''); // Clear the input prompt
       setSelectedFile(null); // Clear the selected file
       setImportUrl(''); // Clear the import URL
-      //setChatId(undefined); // Reset chat ID if necessary
       // Reset any other state variables as needed
     };
     resetChat();
