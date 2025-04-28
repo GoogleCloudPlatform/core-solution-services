@@ -207,7 +207,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           llmType: selectedModel.id,
           chatMode: true  // Always true - we always want a Chat back
         });
-  
+        response = queryResponse;
         // Only assign to response if it's a Chat object
         if (queryResponse && !(queryResponse instanceof ReadableStream)) {
           response = queryResponse;
@@ -237,7 +237,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           window.dispatchEvent(new Event("chatHistoryUpdated"));
         }
       }
-  
+       if (response?.history) {
+        let history = response.history;
+        let newMessages = messagesFromHistory(history);
+        setMessages(newMessages);
+      } else {
+        console.error("API response does not contain 'history' property:", response);
+      }
     } catch (error) {
       console.error('Error in chat:', error);
       const errorMessage: ChatMessage = {
@@ -254,55 +260,68 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     }
   };
   
+  const handleChatResponse = async (chatResponse: Chat) => {
+    if (chatResponse?.history) {
+      let history = chatResponse.history;
+      let newMessages = messagesFromHistory(history);
+      setMessages(newMessages);
+    } else {
+      console.error("Chat response does not contain 'history' property:", chatResponse);
+    }
+  };
   // Helper function to handle streaming response
-  const handleStream = async (stream: ReadableStream) => {
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
+  const handleStream = async (streamOrString: ReadableStream | string) => {
     let accumulatedResponse = "";
   
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+    if (typeof streamOrString === "string") {
+      // Static response
+      accumulatedResponse = streamOrString;
+    } else {
+      // Streamed response
+      const reader = streamOrString.getReader();
+      const decoder = new TextDecoder();
   
-        const chunk = decoder.decode(value);
-        accumulatedResponse += chunk;
-  
-        // Update the message in the state
-        setMessages(prev => {
-          const updatedMessages = [...prev];
-          const lastMessage = updatedMessages[updatedMessages.length - 1];
-          
-          if (lastMessage && !lastMessage.isUser) {
-            // Add the streamed content to the last AI message
-            updatedMessages[updatedMessages.length - 1] = {
-              ...lastMessage,
-              text: accumulatedResponse
-            };
-          } else {
-            // Create a new message for streaming content
-            updatedMessages.push({ text: accumulatedResponse, isUser: false });
-          }
-  
-          return updatedMessages;
-        });
-      }
-  
-      // ✅ Handle Create a Graph case
-      let parsed: any;
       try {
-        parsed = JSON.parse(accumulatedResponse);
-      } catch {
-        parsed = null;
-      }
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
   
-      if (parsed?.data?.history) {
-        const newMessages = messagesFromHistory(parsed.data.history);
-        setMessages(newMessages);
-      }
+          const chunk = decoder.decode(value);
+          accumulatedResponse += chunk;
   
-    } finally {
-      reader.releaseLock();
+          setMessages(prev => {
+            const updatedMessages = [...prev];
+            const lastMessage = updatedMessages[updatedMessages.length - 1];
+  
+            if (lastMessage && !lastMessage.isUser) {
+              updatedMessages[updatedMessages.length - 1] = {
+                ...lastMessage,
+                text: accumulatedResponse
+              };
+            } else {
+              updatedMessages.push({ text: accumulatedResponse, isUser: false });
+            }
+  
+            return updatedMessages;
+          });
+        }
+      
+  
+    // ✅ Handle Create a Graph case or any static post-processing
+    let parsed: any;
+    try {
+      parsed = JSON.parse(accumulatedResponse);
+    } catch {
+      parsed = null;
+    }
+  
+    if (parsed?.data?.history) {
+      const newMessages = messagesFromHistory(parsed.data.history);
+      setMessages(newMessages);
+    }
+      } finally {
+        reader.releaseLock();
+      }
     }
   };
   // useLayoutEffect to scroll the container so that the last message aligns with the top
@@ -416,7 +435,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       setPrompt(''); // Clear the input prompt
       setSelectedFile(null); // Clear the selected file
       setImportUrl(''); // Clear the import URL
-      setChatId(undefined); // Reset chat ID if necessary
+      //setChatId(undefined); // Reset chat ID if necessary
       // Reset any other state variables as needed
     };
     resetChat();
@@ -673,7 +692,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             flexShrink: 0,
             position: 'sticky',
             bottom: 0,
-            zIndex: 0
+            zIndex: 99
           }}
         >
            {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}

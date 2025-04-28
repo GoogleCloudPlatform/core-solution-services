@@ -2,13 +2,14 @@ import { Box, styled } from "@mui/material";
 import { ProfileMenu } from "@/components/ProfileMenu";
 import * as React from 'react';
 import { useNavigate } from "react-router-dom";
+import { useSidebarStore } from '../lib/sidebarStore';
 
 interface HeaderProps {
     sidebarWidth: number;
     panelWidth: number;
     title?: React.ReactNode;
     rightContent?: React.ReactNode;
-    onTitleClick?: () => void; // Add a prop for the title click handler
+    onTitleClick?: () => void; // Prop to handle title click
 }
 
 
@@ -25,7 +26,7 @@ const HeaderContainer = styled(Box, {
     right: 0,
     left: `${sidebarWidth + panelWidth}px`,
     transition: 'left 0.3s ease-in-out',
-    cursor: 'pointer'//Added the pointer
+    cursor: 'pointer' // Added the pointer
 }));
 
 const Title = styled(Box)({
@@ -47,16 +48,18 @@ const Title = styled(Box)({
 
 export const CustomHeader = React.forwardRef<HTMLDivElement, HeaderProps>(({ sidebarWidth, panelWidth, title, rightContent, onTitleClick }, ref) => {  // Correct destructuring of props and ref
     const navigate = useNavigate();
+    const { isOpen, activePanel } = useSidebarStore();
+    // No local showChat state here
 
     const handleTitleClick = () => {
         if (onTitleClick) {
-            onTitleClick();
+            onTitleClick(); // Notify the parent component of the click
         }
     };
 
     return (
         <HeaderContainer sidebarWidth={sidebarWidth} panelWidth={panelWidth} ref={ref}> {/* Pass ref to HeaderContainer */}
-            <Box onClick={handleTitleClick}>{/*Make Title clickable*/}
+            <Box onClick={handleTitleClick}> {/* Make Title clickable */}
                 {title ? title : (
                     <Title>
                         <span className="primary">GenAI</span>

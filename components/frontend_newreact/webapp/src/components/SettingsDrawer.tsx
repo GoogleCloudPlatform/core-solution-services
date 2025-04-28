@@ -13,26 +13,17 @@ interface SettingsDrawerProps {
 const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
     open
 }) => {
-    const [temperature, setTemperature] = useState(0.2);
     const [modelBrowserOpen, setModelBrowserOpen] = useState(false);
     const { selectedModel, setSelectedModel, loading } = useModel();
 
-    useEffect(() => {
-        if (selectedModel?.modelParams?.temperature !== undefined) {
-            setTemperature(selectedModel.modelParams.temperature);
-        }
-    }, [selectedModel]);
+    const temperature = selectedModel?.modelParams?.temperature ?? 0.2;
 
     const handleModelSelect = (model: ChatModel) => {
         setSelectedModel(model);
         setModelBrowserOpen(false);
-        if (model.modelParams?.temperature !== undefined) {
-            setTemperature(model.modelParams.temperature);
-        }
     };
 
     const handleTemperatureChange = (event: Event, newValue: number | number[]) => {
-        setTemperature(newValue as number);
         if (selectedModel) {
             const updatedModel = {
                 ...selectedModel,
@@ -119,7 +110,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                     max={2}
                     step={0.1}
                     disabled={selectedModel?.modelParams?.temperature === undefined}
-                    tabIndex={0} // Make the Slider itself focusable
+                    tabIndex={0}
                     slotProps={{
                         thumb: {
                             "aria-label": 'Temperature',
@@ -131,7 +122,7 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
                     sx={{
                         color: '#4a90e2',
                         '&:focus-visible': {
-                            outline: 'none', // Remove default outline
+                            outline: 'none',
                         },
                         '& .MuiSlider-rail': {
                             backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -167,4 +158,3 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({
 };
 
 export default SettingsDrawer;
-
