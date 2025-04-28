@@ -31,19 +31,23 @@ except ImportError:
     )
     print("*** STARTUP: Successfully imported from logging_handler ***")
 
+    cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context", default="-")
+
     # Define missing functions if not available from logging_handler
     def get_context() -> Dict[str, str]:
       """Get all context variables as a dictionary."""
       return {
         "request_id": request_id_var.get(),
         "trace": trace_var.get(),
-        "session_id": session_id_var.get()
+        "session_id": session_id_var.get(),
+        "cloud_trace_context": cloud_trace_context_var.get()
       }
 
     def set_context(
       request_id: Optional[str] = None,
       trace: Optional[str] = None,
-      session_id: Optional[str] = None
+      session_id: Optional[str] = None,
+      cloud_trace_context: Optional[str] = None
     ) -> list:
       """Set context variables and return tokens for resetting."""
       tokens = []
@@ -59,6 +63,10 @@ except ImportError:
       if session_id is not None:
         token = session_id_var.set(session_id)
         tokens.append((session_id_var, token))
+        
+      if cloud_trace_context is not None:
+        token = cloud_trace_context_var.set(cloud_trace_context)
+        tokens.append((cloud_trace_context_var, token))
 
       return tokens
 
@@ -85,7 +93,8 @@ except ImportError:
           _ = set_context(
             request_id=self.preserved_context.get("request_id"),
             trace=self.preserved_context.get("trace"),
-            session_id=self.preserved_context.get("session_id")
+            session_id=self.preserved_context.get("session_id"),
+            cloud_trace_context=self.preserved_context.get("cloud_trace_context")
           )
   except ImportError as e:
     # Define context vars locally if all imports fail
@@ -95,19 +104,22 @@ except ImportError:
     request_id_var = contextvars.ContextVar("request_id", default="-")
     trace_var = contextvars.ContextVar("trace", default="-")
     session_id_var = contextvars.ContextVar("session_id", default="-")
+    cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context", default="-")
 
     def get_context() -> Dict[str, str]:
       """Get all context variables as a dictionary."""
       return {
         "request_id": request_id_var.get(),
         "trace": trace_var.get(),
-        "session_id": session_id_var.get()
+        "session_id": session_id_var.get(),
+        "cloud_trace_context": cloud_trace_context_var.get()
       }
 
     def set_context(
       request_id: Optional[str] = None,
       trace: Optional[str] = None,
-      session_id: Optional[str] = None
+      session_id: Optional[str] = None,
+      cloud_trace_context: Optional[str] = None
     ) -> list:
       """Set context variables and return tokens for resetting."""
       tokens = []
@@ -123,6 +135,10 @@ except ImportError:
       if session_id is not None:
         token = session_id_var.set(session_id)
         tokens.append((session_id_var, token))
+        
+      if cloud_trace_context is not None:
+        token = cloud_trace_context_var.set(cloud_trace_context)
+        tokens.append((cloud_trace_context_var, token))
 
       return tokens
 
@@ -149,7 +165,8 @@ except ImportError:
           _ = set_context(
             request_id=self.preserved_context.get("request_id"),
             trace=self.preserved_context.get("trace"),
-            session_id=self.preserved_context.get("session_id")
+            session_id=self.preserved_context.get("session_id"),
+            cloud_trace_context=self.preserved_context.get("cloud_trace_context")
           )
 
 try:
@@ -255,6 +272,9 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
       match = self.TRACE_CONTEXT_RE.match(cloud_trace_context)
       if match:
         trace_id = match.group(1)  # Extract the 32-hex trace ID
+    
+    # Store the raw cloud trace context
+    request.state.cloud_trace_context = cloud_trace_context
 
     # Determine the ID to use for the trace context string
     trace_id_for_context = trace_id if trace_id else request_id
@@ -297,6 +317,10 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
 
       # Add request ID to response headers
       response.headers["X-Request-ID"] = request_id
+      
+      # Add cloud trace context to response headers if present
+      if cloud_trace_context:
+        response.headers["X-Cloud-Trace-Context"] = cloud_trace_context
 
       # Log request completion (debug level) and include ids
       # Re-assert the context to ensure proper logging
@@ -305,7 +329,8 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
         temp_tokens = set_context(
           request_id=request_id,
           trace=trace,
-          session_id=session_id
+          session_id=session_id,
+          cloud_trace_context=cloud_trace_context
         )
 
         self.logger.debug(
@@ -431,6 +456,7 @@ def get_request_context(args) -> Dict[str, str]:
   request_id = context["request_id"]
   trace = context["trace"]
   session_id = context["session_id"]
+  cloud_trace_context = context.get("cloud_trace_context", "-")
 
   # Then try to extract from request if available
   for arg in args:
@@ -438,10 +464,12 @@ def get_request_context(args) -> Dict[str, str]:
       request_id = getattr(arg.state, "request_id", request_id)
       trace = getattr(arg.state, "trace", trace)
       session_id = getattr(arg.state, "session_id", session_id)
+      cloud_trace_context = getattr(arg.state, "cloud_trace_context", cloud_trace_context)
       break
 
   return {
     "request_id": request_id,
     "trace": trace,
-    "session_id": session_id
+    "session_id": session_id,
+    "cloud_trace_context": cloud_trace_context
   }
