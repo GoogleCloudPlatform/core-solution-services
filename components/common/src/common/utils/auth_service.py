@@ -27,7 +27,11 @@ from common.utils.cache_service import set_key, get_key
 from common.utils.errors import TokenNotFoundError
 from common.utils.http_exceptions import (InternalServerError, Unauthenticated)
 from common.utils.logging_handler import Logger
-from common.utils.context_vars import get_context, get_trace_headers
+from common.utils.context_vars import (
+  get_context,
+  get_trace_headers,
+  preserve_context
+)
 
 auth_scheme = HTTPBearer(auto_error=False)
 AUTH_SERVICE_NAME = SERVICES["authentication"]["host"]
@@ -36,6 +40,8 @@ default_firebase_app = firebase_admin.initialize_app()
 
 Logger = Logger.get_logger(__file__)
 
+
+@preserve_context
 def validate_token(token: auth_scheme = Depends()):
   """
   Main validation function that is depended on by all microservices.

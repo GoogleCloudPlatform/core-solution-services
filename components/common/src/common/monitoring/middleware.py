@@ -272,6 +272,9 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
       match = self.TRACE_CONTEXT_RE.match(cloud_trace_context)
       if match:
         trace_id = match.group(1)  # Extract the 32-hex trace ID
+
+    request_id = request.headers.get("X-Request-ID")
+    cloud_trace_context = request.headers.get("X-Cloud-Trace-Context")
     
     # Store the raw cloud trace context
     request.state.cloud_trace_context = cloud_trace_context
@@ -316,7 +319,8 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
         ).inc()
 
       # Add request ID to response headers
-      response.headers["X-Request-ID"] = request_id
+      if request_id:
+        response.headers["X-Request-ID"] = request_id
       
       # Add cloud trace context to response headers if present
       if cloud_trace_context:

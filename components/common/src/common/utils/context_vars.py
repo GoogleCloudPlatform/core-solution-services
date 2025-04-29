@@ -159,3 +159,59 @@ class AsyncContextPreserver:
       )
       # We don't need to keep the tokens because we're restoring
       # not resetting
+
+def preserve_context(func):
+  """Decorator to preserve context variables across function calls.
+  
+  This decorator ensures that context variables are properly preserved
+  across function calls, especially for functions that make HTTP requests
+  or cross async boundaries.
+  
+  Usage:
+    @preserve_context
+    def my_function():
+      # Context variables will be restored when this function exits
+      
+    @preserve_context
+    async def my_async_function():
+      # Context variables will be restored even after awaits
+  """
+  import functools
+  import inspect
+  
+  @functools.wraps(func)
+  def sync_wrapper(*args, **kwargs):
+    """Wrapper for synchronous functions."""
+    # Store original context
+    original_context = get_context()
+    try:
+      return func(*args, **kwargs)
+    finally:
+      # Restore context
+      _ = set_context(
+        request_id=original_context.get('request_id'),
+        trace=original_context.get('trace'),
+        session_id=original_context.get('session_id'),
+        cloud_trace_context=original_context.get('cloud_trace_context')
+      )
+  
+  @functools.wraps(func)
+  async def async_wrapper(*args, **kwargs):
+    """Wrapper for async functions."""
+    # Store original context
+    original_context = get_context()
+    try:
+      return await func(*args, **kwargs)
+    finally:
+      # Restore context
+      _ = set_context(
+        request_id=original_context.get('request_id'),
+        trace=original_context.get('trace'),
+        session_id=original_context.get('session_id'),
+        cloud_trace_context=original_context.get('cloud_trace_context')
+      )
+  
+  # Return appropriate wrapper based on whether func is async
+  if inspect.iscoroutinefunction(func):
+    return async_wrapper
+  return sync_wrapper
