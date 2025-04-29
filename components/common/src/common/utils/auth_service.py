@@ -128,7 +128,8 @@ def validate_user_type_and_token(accepted_user_types: list,
 
       # Get trace headers and add authorization
       headers = get_trace_headers()
-      headers["Authorization"] = f"{token_dict['scheme']} {token_dict['credentials']}"
+      headers["Authorization"] =\
+          f"{token_dict['scheme']} {token_dict['credentials']}"
 
       res = requests.get(
           url=api_endpoint,

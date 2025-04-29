@@ -71,7 +71,7 @@ def get_trace_headers() -> Dict[str, str]:
     headers["X-Request-ID"] = request_id
 
   # Add session ID if available
-  session_id = context.get("session_id") 
+  session_id = context.get("session_id")
   if session_id and session_id != "-":
     headers["X-Session-ID"] = session_id
 
