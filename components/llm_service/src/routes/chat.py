@@ -763,21 +763,6 @@ async def user_chat_generate(chat_id: str,
       chat_data = user_chat.get_fields(reformat_datetime=True)
       chat_data["id"] = user_chat.id
 
-      # save chat history
-      user_chat.update_history(prompt=prompt, response=response)
-      if response_files:
-        for file in response_files:
-          user_chat.update_history(custom_entry={
-            CHAT_FILE: file["name"]
-          })
-          user_chat.update_history(custom_entry={
-            CHAT_FILE_BASE64: file["contents"],
-            CHAT_FILE_TYPE: "image/png"
-          })
-
-      chat_data = user_chat.get_fields(reformat_datetime=True)
-      chat_data["id"] = user_chat.id
-
       return {
         "success": True,
         "message": "Successfully generated text",
