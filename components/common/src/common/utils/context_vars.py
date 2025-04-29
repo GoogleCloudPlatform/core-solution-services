@@ -26,11 +26,11 @@ import inspect
 from typing import Dict, List, Optional, Tuple
 
 # Create context variables
-request_id_var = contextvars.ContextVar("request_id", default="-")
-trace_var = contextvars.ContextVar("trace", default="-")
-session_id_var = contextvars.ContextVar("session_id", default="-")
+request_id_var = contextvars.ContextVar("request_id", default=None)
+trace_var = contextvars.ContextVar("trace", default=None)
+session_id_var = contextvars.ContextVar("session_id", default=None)
 cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context",
-                                                  default="-")
+                                                  default=None)
 
 # Logger for this module
 logger = logging.getLogger(__name__)
@@ -67,17 +67,17 @@ def get_trace_headers() -> Dict[str, str]:
 
   # Add request ID if available
   request_id = context.get("request_id")
-  if request_id and request_id != "-":
+  if request_id is not None:
     headers["X-Request-ID"] = request_id
 
   # Add session ID if available
   session_id = context.get("session_id")
-  if session_id and session_id != "-":
+  if session_id is not None:
     headers["X-Session-ID"] = session_id
 
   # Add cloud trace context if available
   cloud_trace_context = context.get("cloud_trace_context")
-  if cloud_trace_context and cloud_trace_context != "-":
+  if cloud_trace_context is not None:
     headers["X-Cloud-Trace-Context"] = cloud_trace_context
 
   return headers
