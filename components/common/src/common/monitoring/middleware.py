@@ -32,7 +32,7 @@ except ImportError:
     print("*** STARTUP: Successfully imported from logging_handler ***")
 
     cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context",
-                                                      default="-")
+                                                      default=None)
 
     # Define missing functions if not available from logging_handler
     def get_context() -> Dict[str, str]:
@@ -103,11 +103,11 @@ except ImportError:
     print(f"*** STARTUP: Import from logging_handler failed: {e} ***")
     print("*** STARTUP: Defining local context vars ***")
 
-    request_id_var = contextvars.ContextVar("request_id", default="-")
-    trace_var = contextvars.ContextVar("trace", default="-")
-    session_id_var = contextvars.ContextVar("session_id", default="-")
+    request_id_var = contextvars.ContextVar("request_id", default=None)
+    trace_var = contextvars.ContextVar("trace", default=None)
+    session_id_var = contextvars.ContextVar("session_id", default=None)
     cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context",
-                                                      default="-")
+                                                      default=None)
 
     def get_context() -> Dict[str, str]:
       """Get all context variables as a dictionary."""
@@ -289,7 +289,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
     request.state.trace = trace
 
     # Add session_id if available
-    session_id = request.headers.get("X-Session-ID", "-")
+    session_id = request.headers.get("X-Session-ID")
     request.state.session_id = session_id
 
     request.state.start_time = start_time
@@ -464,7 +464,7 @@ def get_request_context(args) -> Dict[str, str]:
   request_id = context["request_id"]
   trace = context["trace"]
   session_id = context["session_id"]
-  cloud_trace_context = context.get("cloud_trace_context", "-")
+  cloud_trace_context = context.get("cloud_trace_context")
 
   # Then try to extract from request if available
   for arg in args:
