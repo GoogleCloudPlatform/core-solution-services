@@ -74,8 +74,8 @@ def validate_oauth_token(token: auth_scheme = Depends()):
         "api/v1/validate"
 
     headers = get_trace_headers()
-    headers["Authorization"] = f"{token_dict['scheme']} {token_dict[
-      'credentials']}"
+    headers["Authorization"] =\
+    f"{token_dict['scheme']} {token_dict['credentials']}"
 
     res = requests.get(
         url=api_endpoint,

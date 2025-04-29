@@ -206,10 +206,10 @@ def preserve_context(func):
     finally:
       # Restore context
       _ = set_context(
-        request_id=original_context.get('request_id'),
-        trace=original_context.get('trace'),
-        session_id=original_context.get('session_id'),
-        cloud_trace_context=original_context.get('cloud_trace_context')
+        request_id=original_context.get("request_id"),
+        trace=original_context.get("trace"),
+        session_id=original_context.get("session_id"),
+        cloud_trace_context=original_context.get("cloud_trace_context")
       )
 
   # Return appropriate wrapper based on whether func is async
