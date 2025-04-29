@@ -21,13 +21,16 @@ async boundaries.
 
 import contextvars
 import logging
+import functools
+import inspect
 from typing import Dict, List, Optional, Tuple
 
 # Create context variables
 request_id_var = contextvars.ContextVar("request_id", default="-")
 trace_var = contextvars.ContextVar("trace", default="-")
 session_id_var = contextvars.ContextVar("session_id", default="-")
-cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context", default="-")
+cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context",
+                                                  default="-")
 
 # Logger for this module
 logger = logging.getLogger(__name__)
@@ -61,22 +64,22 @@ def get_trace_headers() -> Dict[str, str]:
   """
   context = get_context()
   headers = {}
-  
+
   # Add request ID if available
   request_id = context.get("request_id")
   if request_id and request_id != "-":
     headers["X-Request-ID"] = request_id
-  
+
   # Add session ID if available
   session_id = context.get("session_id") 
   if session_id and session_id != "-":
     headers["X-Session-ID"] = session_id
-  
+
   # Add cloud trace context if available
   cloud_trace_context = context.get("cloud_trace_context")
   if cloud_trace_context and cloud_trace_context != "-":
     headers["X-Cloud-Trace-Context"] = cloud_trace_context
-  
+
   return headers
 
 def set_context(
@@ -109,7 +112,7 @@ def set_context(
   if session_id is not None:
     token = session_id_var.set(session_id)
     tokens.append((session_id_var, token))
-    
+
   if cloud_trace_context is not None:
     token = cloud_trace_context_var.set(cloud_trace_context)
     tokens.append((cloud_trace_context_var, token))
@@ -176,9 +179,7 @@ def preserve_context(func):
     async def my_async_function():
       # Context variables will be restored even after awaits
   """
-  import functools
-  import inspect
-  
+
   @functools.wraps(func)
   def sync_wrapper(*args, **kwargs):
     """Wrapper for synchronous functions."""
@@ -189,12 +190,12 @@ def preserve_context(func):
     finally:
       # Restore context
       _ = set_context(
-        request_id=original_context.get('request_id'),
-        trace=original_context.get('trace'),
-        session_id=original_context.get('session_id'),
-        cloud_trace_context=original_context.get('cloud_trace_context')
+        request_id=original_context.get("request_id"),
+        trace=original_context.get("trace"),
+        session_id=original_context.get("session_id"),
+        cloud_trace_context=original_context.get("cloud_trace_context")
       )
-  
+
   @functools.wraps(func)
   async def async_wrapper(*args, **kwargs):
     """Wrapper for async functions."""
@@ -210,7 +211,7 @@ def preserve_context(func):
         session_id=original_context.get('session_id'),
         cloud_trace_context=original_context.get('cloud_trace_context')
       )
-  
+
   # Return appropriate wrapper based on whether func is async
   if inspect.iscoroutinefunction(func):
     return async_wrapper

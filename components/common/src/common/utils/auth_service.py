@@ -28,7 +28,6 @@ from common.utils.errors import TokenNotFoundError
 from common.utils.http_exceptions import (InternalServerError, Unauthenticated)
 from common.utils.logging_handler import Logger
 from common.utils.context_vars import (
-  get_context,
   get_trace_headers,
   preserve_context
 )
@@ -73,10 +72,11 @@ def validate_oauth_token(token: auth_scheme = Depends()):
   if token_dict["credentials"]:
     api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}/" \
         "api/v1/validate"
-    
+
     headers = get_trace_headers()
-    headers["Authorization"] = f"{token_dict['scheme']} {token_dict['credentials']}"
-    
+    headers["Authorization"] = f"{token_dict['scheme']} {token_dict[
+      'credentials']}"
+
     res = requests.get(
         url=api_endpoint,
         headers=headers,
@@ -125,11 +125,11 @@ def validate_user_type_and_token(accepted_user_types: list,
     if token_dict["credentials"]:
       api_endpoint = f"http://{AUTH_SERVICE_NAME}/{AUTH_SERVICE_NAME}" \
           "/api/v1/validate_token"
-      
+
       # Get trace headers and add authorization
       headers = get_trace_headers()
       headers["Authorization"] = f"{token_dict['scheme']} {token_dict['credentials']}"
-      
+
       res = requests.get(
           url=api_endpoint,
           headers=headers,
@@ -161,11 +161,11 @@ def user_verification(token: str) -> json:
   host = SERVICES["authentication"]["host"]
   port = SERVICES["authentication"]["port"]
   api_endpoint = f"http://{host}:{port}/authentication/api/v1/validate"
-  
+
   # Get trace headers and add authorization
   headers = get_trace_headers()
   headers["Authorization"] = token
-  
+
   response = requests.get(
       url=api_endpoint,
       headers=headers,

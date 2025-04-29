@@ -17,7 +17,7 @@ Utilities for calling other platform microservices
 """
 import json
 import requests
-from common.utils.context_vars import get_context, get_trace_headers
+from common.utils.context_vars import get_trace_headers
 
 DEFAULT_TIMEOUT = 300
 
@@ -43,7 +43,7 @@ def get_method(url: str,
     token = auth_client.get_id_token()
 
   headers = get_trace_headers()
-  
+
   if token:
     headers["Authorization"] = f"Bearer {token}"
 
@@ -74,7 +74,7 @@ def post_method(url: str,
     token = auth_client.get_id_token()
 
   headers = get_trace_headers()
-  
+
   if token:
     headers["Authorization"] = f"Bearer {token}"
 
@@ -106,7 +106,7 @@ def put_method(url: str,
 
   # Get trace headers
   headers = get_trace_headers()
-  
+
   if token:
     headers["Authorization"] = f"Bearer {token}"
 
@@ -138,7 +138,7 @@ def delete_method(url: str,
 
   # Get trace headers
   headers = get_trace_headers()
-  
+
   if token:
     headers["Authorization"] = f"Bearer {token}"
 

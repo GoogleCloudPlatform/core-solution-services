@@ -229,7 +229,7 @@ def get_chat(chat_id: str,
     user = User.find_by_email(user_data.get("email"))
     if user.user_id != user_chat.user_id:
       raise UnauthorizedUserError("User is not allowed to access this chat.")
-    
+
     Logger.info(
       "User chat retrieval successful",
       extra={

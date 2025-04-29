@@ -31,7 +31,8 @@ except ImportError:
     )
     print("*** STARTUP: Successfully imported from logging_handler ***")
 
-    cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context", default="-")
+    cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context",
+                                                      default="-")
 
     # Define missing functions if not available from logging_handler
     def get_context() -> Dict[str, str]:
@@ -63,7 +64,7 @@ except ImportError:
       if session_id is not None:
         token = session_id_var.set(session_id)
         tokens.append((session_id_var, token))
-        
+
       if cloud_trace_context is not None:
         token = cloud_trace_context_var.set(cloud_trace_context)
         tokens.append((cloud_trace_context_var, token))
@@ -94,7 +95,8 @@ except ImportError:
             request_id=self.preserved_context.get("request_id"),
             trace=self.preserved_context.get("trace"),
             session_id=self.preserved_context.get("session_id"),
-            cloud_trace_context=self.preserved_context.get("cloud_trace_context")
+            cloud_trace_context=self.preserved_context.get(
+              "cloud_trace_context")
           )
   except ImportError as e:
     # Define context vars locally if all imports fail
@@ -104,7 +106,8 @@ except ImportError:
     request_id_var = contextvars.ContextVar("request_id", default="-")
     trace_var = contextvars.ContextVar("trace", default="-")
     session_id_var = contextvars.ContextVar("session_id", default="-")
-    cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context", default="-")
+    cloud_trace_context_var = contextvars.ContextVar("cloud_trace_context",
+                                                      default="-")
 
     def get_context() -> Dict[str, str]:
       """Get all context variables as a dictionary."""
@@ -135,7 +138,7 @@ except ImportError:
       if session_id is not None:
         token = session_id_var.set(session_id)
         tokens.append((session_id_var, token))
-        
+
       if cloud_trace_context is not None:
         token = cloud_trace_context_var.set(cloud_trace_context)
         tokens.append((cloud_trace_context_var, token))
@@ -166,7 +169,8 @@ except ImportError:
             request_id=self.preserved_context.get("request_id"),
             trace=self.preserved_context.get("trace"),
             session_id=self.preserved_context.get("session_id"),
-            cloud_trace_context=self.preserved_context.get("cloud_trace_context")
+            cloud_trace_context=self.preserved_context.get(
+              "cloud_trace_context")
           )
 
 try:
@@ -275,7 +279,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
 
     request_id = request.headers.get("X-Request-ID")
     cloud_trace_context = request.headers.get("X-Cloud-Trace-Context")
-    
+
     # Store the raw cloud trace context
     request.state.cloud_trace_context = cloud_trace_context
 
@@ -321,7 +325,7 @@ class RequestTrackingMiddleware(BaseHTTPMiddleware):
       # Add request ID to response headers
       if request_id:
         response.headers["X-Request-ID"] = request_id
-      
+
       # Add cloud trace context to response headers if present
       if cloud_trace_context:
         response.headers["X-Cloud-Trace-Context"] = cloud_trace_context
@@ -468,7 +472,8 @@ def get_request_context(args) -> Dict[str, str]:
       request_id = getattr(arg.state, "request_id", request_id)
       trace = getattr(arg.state, "trace", trace)
       session_id = getattr(arg.state, "session_id", session_id)
-      cloud_trace_context = getattr(arg.state, "cloud_trace_context", cloud_trace_context)
+      cloud_trace_context = getattr(arg.state, "cloud_trace_context",
+                                     cloud_trace_context)
       break
 
   return {
