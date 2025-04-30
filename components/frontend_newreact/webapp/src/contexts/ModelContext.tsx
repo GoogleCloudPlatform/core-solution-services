@@ -44,7 +44,6 @@ export function ModelProvider({ children }: { children: ReactNode }) {
                         initialModel = models.find(m => m.id === DEFAULT_MODEL_ID) || models[0];
                     }
 
-                    if (initialModel) {
                         if (storedTemperature !== null && !isNaN(Number(storedTemperature))) {
                             initialModel = {
                                 ...initialModel,
@@ -55,7 +54,7 @@ export function ModelProvider({ children }: { children: ReactNode }) {
                             };
                         }
                         setSelectedModel(initialModel);
-                    }
+                    
                 } else {
                     setSelectedModel(DEFAULT_CHAT_MODEL);
                 }

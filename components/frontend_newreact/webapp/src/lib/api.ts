@@ -203,7 +203,7 @@ export const generateChatResponse = (token: string, chatId: string) => async ({
     stream,
     ...(file_base64 && { chat_file_b64: file_base64 }),
     ...(uploadFile?.name && { chat_file_b64_name: uploadFile.name }),
-    ...(fileUrl && { chat_file_b64_url: fileUrl }),
+    ...(fileUrl && { chat_file_url: fileUrl }),
     ...(toolNames?.length && { tool_names: JSON.stringify(toolNames) }),
     ...(history && { history: JSON.stringify(history) }),
     ...(temperature !== undefined && { temperature }),

@@ -2,6 +2,7 @@ import { SourceSelector } from './SourceSelector'; // Import the component
 import { QueryEngine } from '../lib/types'; // Import the type
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Box, Typography, IconButton, Paper, InputBase, Avatar, Modal, Chip, Button, Snackbar, Tooltip } from '@mui/material';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -78,7 +79,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const chatMessagesRef = useRef<HTMLDivElement | null>(null);
   // Ref for the last rendered message element
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64String = (reader.result as string).split(',')[1]; // remove data:...;base64,
+        resolve(base64String);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
   const handleCopyClick = (text: string, index: number) => {
     navigator.clipboard.writeText(text)
       .then(() => {
@@ -156,7 +167,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       text: currentPrompt.trim(),
       isUser: true,
       uploadedFile: currentSelectedFile?.name || '', // Include the uploaded file name
-      fileUrl: currentImportUrl || '' // Include the file URL
+      fileUrl: currentImportUrl || ''  // Include the file URL
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -187,10 +198,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
       if (chatId) {
         // Continue existing chat
-        const chatResponse = await resumeChat(user.token)({
-          chatId,
+        const chatResponse = await generateChatResponse(user.token, chatId)({
           ...chatParams,
-          queryEngineId: selectedSource?.id || undefined
+          uploadFile: currentSelectedFile || undefined,
+          fileUrl: currentImportUrl,
         });
 
         if (chatResponse instanceof ReadableStream) {
@@ -202,22 +213,34 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         }
       } else if (selectedSource && selectedSource.id !== "default-chat") {
         // Create new chat via query endpoint
-        const queryResponse = await createQuery(user.token)({
-          engine: selectedSource.id,
+        const emptyChat = await createEmptyChat(user.token);
+        let newChatId;
+        if (emptyChat && emptyChat.id) {
+          newChatId = emptyChat.id;
+          //setChatId(newChatId); // Update the state
+
+        } else {
+          console.error("Error creating new chat or missing chat ID:", emptyChat);
+          newChatId = 'garbage'; // Or handle the error in another way
+        }
+
+        const queryResponse = await generateChatResponse(user.token, newChatId)({
+          queryEngineId: selectedSource.id,
           userInput: currentPrompt.trim(),
-          llmType: selectedModel.id,
-          chatMode: true  // Always true - we always want a Chat back
-        });
-        // Only assign to response if it's a Chat object
-        if (queryResponse && !(queryResponse instanceof ReadableStream)) {
+          llmType: selectedModel.id,   
+	      fileUrl: currentImportUrl,
+          stream: false      
+      });
+        if (queryResponse instanceof ReadableStream) {
+          // Handle the streaming response separately
+          await handleStream(queryResponse);
+        } else {
+          // Only assign to response if it's a Chat object
           response = queryResponse;
         }
       } else {
 
-
         // Create new regular chat
-
-
         const emptyChat = await createEmptyChat(user.token);
         let newChatId;
         if (emptyChat && emptyChat.id) {
@@ -543,16 +566,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                   >
                     {message.isUser ? (
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: '#fff' }}>
-                        {/* Render the image if it exists in the userMessage */}
-                        {/* {message.uploadedFile && message.fileUrl && ( */}
-                        <Box sx={{ mb: 2 }}> {/* Add margin below the image */}
-                          <img
-                            src={message.fileUrl} // Use fileUrl to display the image
-                            alt={message.uploadedFile}
-                            style={{ width: '100%', maxHeight: '300px', objectFit: 'contain' }} // Adjust styles as needed
-                          />
-                        </Box>
-                        {/* )} */}
+                        {message.uploadedFile !== undefined && message.uploadedFile !== '' && (
+                          /* Render the image if it exists in the userMessage */
+                          <Box sx= {{ mb: 2, display: 'flex', alignItems: 'center' }}> {/* Add margin below the image */}
+                            <Typography variant="body2" style={{ marginRight: '8px' }}>
+                              {message.uploadedFile}
+                            </Typography>
+                            <AttachFileIcon
+                              color="primary" // You can change this to 'secondary' or any other theme color
+                              fontSize="small"
+                              style={{
+                                margin: '0px',
+                                transform: 'rotate(90deg)',
+                                color: 'white', // Overrides the color prop
+                              }}
+                            />
+                          </Box>
+                        )}
                         <Typography sx={{ textAlign: 'left' }}>
                           {message.text}
                         </Typography>
