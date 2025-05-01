@@ -27,6 +27,7 @@ import '@/styles/ChatScreen.css';
 interface ChatMessage {
   text: string;
   isUser: boolean;
+  title?: string;
   uploadedFile?: string;
   references?: QueryReference[];
   fileUrl?: string; // Add fileUrl property
@@ -137,6 +138,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([]);
   const [importUrl, setImportUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFileDisplay, setSelectedFileDisplay] = useState<File | null>(null);
   const [showError, setShowError] = useState<Record<string, boolean>>({}); // State to track error visibility for each file
 
   const handleSelectSource = (source: QueryEngine) => {
@@ -153,6 +155,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     // Capture current state values for submission
     const currentPrompt = prompt.trim();
     const currentSelectedFile = selectedFile;
+    setSelectedFileDisplay(selectedFile);
     const currentImportUrl = importUrl;
 
     let uploadedFileName = currentSelectedFile?.name;
@@ -402,6 +405,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         newMessages.push({
           text: historyItem.HumanInput,
           isUser: true,
+          title: historyItem.Title,
           uploadedFile: uploadedFile,
           fileUrl: fileUrl
         });
@@ -436,6 +440,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     }
   };
 
+  const handleAttachClick = (file: File) => {
+    console.log("handleAttachClick called with file:", file);
+    //setSelectedFile(file);
+    setShowDocumentViewer(true);
+    console.log("showDocumentViewer after click:", showDocumentViewer);
+    console.log("selectedFile after click:", file);
+  }
   const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false);
     setUploadedFiles([]);
@@ -568,19 +579,35 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: '#fff' }}>
                         {message.uploadedFile !== undefined && message.uploadedFile !== '' && (
                           /* Render the image if it exists in the userMessage */
-                          <Box sx= {{ mb: 2, display: 'flex', alignItems: 'center' }}> {/* Add margin below the image */}
+                          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}> {/* Add margin below the image */}
                             <Typography variant="body2" style={{ marginRight: '8px' }}>
                               {message.uploadedFile}
                             </Typography>
                             <AttachFileIcon
-                              color="primary" // You can change this to 'secondary' or any other theme color
+                              color="primary"
                               fontSize="small"
                               style={{
                                 margin: '0px',
                                 transform: 'rotate(90deg)',
-                                color: 'white', // Overrides the color prop
+                                color: 'white',
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => {
+                                if (selectedFileDisplay) {
+                                  handleAttachClick(selectedFileDisplay);
+                                } else {
+                                  console.warn("No file selected to attach.");
+                                  // Optionally, you could also set an error state or display a message to the user.
+                                }
                               }}
                             />
+                            {showDocumentViewer && (
+                              <DocumentModal
+                                open={showDocumentViewer} // This is the vital connection
+                                onClose={() => setShowDocumentViewer(false)}
+                                selectedFile={selectedFileDisplay}
+                              />
+                            )}
                           </Box>
                         )}
                         <Typography sx={{ textAlign: 'left' }}>
