@@ -7,7 +7,6 @@
     ]
   },
   "hosting": {
-    "target": "new-genie-ui",
     "public": "dist",
     "ignore": [
       "firebase.json",

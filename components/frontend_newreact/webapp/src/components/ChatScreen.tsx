@@ -2,6 +2,7 @@ import { SourceSelector } from './SourceSelector'; // Import the component
 import { QueryEngine } from '../lib/types'; // Import the type
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Box, Typography, IconButton, Paper, InputBase, Avatar, Modal, Chip, Button, Snackbar, Tooltip } from '@mui/material';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -9,7 +10,7 @@ import UploadIcon from '@mui/icons-material/Upload';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import BarChartIcon from '@mui/icons-material/BarChart'; // Icon for the "Create a graph" toggle
 import { useAuth } from '../contexts/AuthContext';
-import { createChat, resumeChat, fetchChat, createQuery } from '../lib/api';
+import { generateChatResponse, createEmptyChat, createChat, resumeChat, fetchChat, createQuery } from '../lib/api';
 import { Chat, QueryReference } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
 import UploadModal from './UploadModal';
@@ -26,6 +27,7 @@ import '@/styles/ChatScreen.css';
 interface ChatMessage {
   text: string;
   isUser: boolean;
+  title?: string;
   uploadedFile?: string;
   references?: QueryReference[];
   fileUrl?: string; // Add fileUrl property
@@ -76,9 +78,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   // Ref for the scrollable container
   const chatMessagesRef = useRef<HTMLDivElement | null>(null);
-   // Ref for the last rendered message element
+  // Ref for the last rendered message element
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64String = (reader.result as string).split(',')[1]; // remove data:...;base64,
+        resolve(base64String);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
   const handleCopyClick = (text: string, index: number) => {
     navigator.clipboard.writeText(text)
       .then(() => {
@@ -126,23 +138,26 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [uploadedFiles, setUploadedFiles] = useState<FileUpload[]>([]);
   const [importUrl, setImportUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFileDisplay, setSelectedFileDisplay] = useState<File | null>(null);
   const [showError, setShowError] = useState<Record<string, boolean>>({}); // State to track error visibility for each file
 
   const handleSelectSource = (source: QueryEngine) => {
     setSelectedSource(source);
   };
+
   const handleSubmit = async () => {
     if (!prompt.trim() || !user) return;
-  
+
     if (onChatStart) {
       onChatStart();
     }
-  
+
     // Capture current state values for submission
-    const currentPrompt = prompt;
+    const currentPrompt = prompt.trim();
     const currentSelectedFile = selectedFile;
+    setSelectedFileDisplay(selectedFile);
     const currentImportUrl = importUrl;
-  
+
     let uploadedFileName = currentSelectedFile?.name;
     if (currentImportUrl) {
       uploadedFileName = currentImportUrl.split('/').pop();
@@ -150,31 +165,31 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         uploadedFileName = currentImportUrl.replace("gs://", "").split("/").pop();
       }
     }
-  
+
     const userMessage: ChatMessage = {
-      text: currentPrompt,
+      text: currentPrompt.trim(),
       isUser: true,
       uploadedFile: currentSelectedFile?.name || '', // Include the uploaded file name
-      fileUrl: currentImportUrl || '' // Include the file URL
+      fileUrl: currentImportUrl || ''  // Include the file URL
     };
     setMessages(prev => [...prev, userMessage]);
-  
+
     // Immediately clear prompt and attachment inputs so URL disappears from input box
     setPrompt('');
     setSelectedFile(null);
     setImportUrl('');
-  
+
     setIsLoading(true);
-  
+
     // Determine if this is a new chat (i.e. no existing chatId)
     const wasNewChat = !chatId;
-  
+
     try {
       let response: Chat | null | undefined;
-  
+
       // Common parameters
       const chatParams = {
-        userInput: currentPrompt,
+        userInput: currentPrompt.trim(),
         llmType: selectedModel.id,
         stream: true,  // Set stream to true for streaming output
         temperature: temperature,
@@ -183,15 +198,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         // Pass toolNames if "Create a graph" is enabled
         toolNames: graphEnabled ? ["vertex_code_interpreter_tool"] : []
       };
-  
+
       if (chatId) {
         // Continue existing chat
-        const chatResponse = await resumeChat(user.token)({
-          chatId,
+        const chatResponse = await generateChatResponse(user.token, chatId)({
           ...chatParams,
-          queryEngineId: selectedSource?.id || undefined
+          uploadFile: currentSelectedFile || undefined,
+          fileUrl: currentImportUrl,
         });
-  
+
         if (chatResponse instanceof ReadableStream) {
           // Handle the streaming response separately
           await handleStream(chatResponse);
@@ -201,25 +216,62 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         }
       } else if (selectedSource && selectedSource.id !== "default-chat") {
         // Create new chat via query endpoint
-        const queryResponse = await createQuery(user.token)({
-          engine: selectedSource.id,
-          userInput: currentPrompt,
-          llmType: selectedModel.id,
-          chatMode: true  // Always true - we always want a Chat back
-        });
-  
-        // Only assign to response if it's a Chat object
-        if (queryResponse && !(queryResponse instanceof ReadableStream)) {
+        const emptyChat = await createEmptyChat(user.token);
+        let newChatId;
+        if (emptyChat && emptyChat.id) {
+          newChatId = emptyChat.id;
+          //setChatId(newChatId); // Update the state
+
+        } else {
+          console.error("Error creating new chat or missing chat ID:", emptyChat);
+          newChatId = 'garbage'; // Or handle the error in another way
+        }
+
+        const queryResponse = await generateChatResponse(user.token, newChatId)({
+          queryEngineId: selectedSource.id,
+          userInput: currentPrompt.trim(),
+          llmType: selectedModel.id,   
+	      fileUrl: currentImportUrl,
+          stream: false      
+      });
+        if (queryResponse instanceof ReadableStream) {
+          // Handle the streaming response separately
+          await handleStream(queryResponse);
+        } else {
+          // Only assign to response if it's a Chat object
           response = queryResponse;
         }
       } else {
+
         // Create new regular chat
-        const chatResponse = await createChat(user.token)({
+        const emptyChat = await createEmptyChat(user.token);
+        let newChatId;
+        if (emptyChat && emptyChat.id) {
+          newChatId = emptyChat.id;
+          setChatId(newChatId); // Update the state
+
+          // If this was a new chat, dispatch an event to update the chat history
+          if (wasNewChat) {
+            window.dispatchEvent(new Event("chatHistoryUpdated"));
+          }
+        } else {
+          console.error("Error creating new chat or missing chat ID:", emptyChat);
+          newChatId = 'garbage'; // Or handle the error in another way
+        }
+
+        const chatResponse = await generateChatResponse(user.token, newChatId)({
           ...chatParams,
           uploadFile: currentSelectedFile || undefined,
           fileUrl: currentImportUrl,
         });
-  
+        if (chatResponse instanceof ReadableStream) {
+          // Handle the streaming response separately
+          await handleStream(chatResponse);
+        } else {
+          // Only assign to response if it's a Chat object
+          response = chatResponse;
+        }
+
         if (chatResponse instanceof ReadableStream) {
           // Handle the streaming response separately
           await handleStream(chatResponse);
@@ -228,7 +280,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           response = chatResponse;
         }
       }
-  
+
       // Only proceed if we got a valid Chat object
       if (response && 'id' in response) {
         setChatId(response.id);
@@ -237,7 +289,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           window.dispatchEvent(new Event("chatHistoryUpdated"));
         }
       }
-  
+      if (response?.history) {
+        let history = response.history;
+        let newMessages = messagesFromHistory(history);
+        setMessages(newMessages);
+      } else {
+        console.error("API response does not contain 'history' property:", response);
+      }
     } catch (error) {
       console.error('Error in chat:', error);
       const errorMessage: ChatMessage = {
@@ -253,56 +311,68 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       setImportUrl('');
     }
   };
-  
+  const handleChatResponse = async (chatResponse: Chat) => {
+    if (chatResponse?.history) {
+      let history = chatResponse.history;
+      let newMessages = messagesFromHistory(history);
+      setMessages(newMessages);
+    } else {
+      console.error("Chat response does not contain 'history' property:", chatResponse);
+    }
+  };
   // Helper function to handle streaming response
-  const handleStream = async (stream: ReadableStream) => {
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
+  const handleStream = async (streamOrString: ReadableStream | string) => {
     let accumulatedResponse = "";
-  
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-  
-        const chunk = decoder.decode(value);
-        accumulatedResponse += chunk;
-  
-        // Update the message in the state
-        setMessages(prev => {
-          const updatedMessages = [...prev];
-          const lastMessage = updatedMessages[updatedMessages.length - 1];
-          
-          if (lastMessage && !lastMessage.isUser) {
-            // Add the streamed content to the last AI message
-            updatedMessages[updatedMessages.length - 1] = {
-              ...lastMessage,
-              text: accumulatedResponse
-            };
-          } else {
-            // Create a new message for streaming content
-            updatedMessages.push({ text: accumulatedResponse, isUser: false });
-          }
-  
-          return updatedMessages;
-        });
-      }
-  
-      // ✅ Handle Create a Graph case
-      let parsed: any;
+
+    if (typeof streamOrString === "string") {
+      // Static response
+      accumulatedResponse = streamOrString;
+    } else {
+      // Streamed response
+      const reader = streamOrString.getReader();
+      const decoder = new TextDecoder();
+
       try {
-        parsed = JSON.parse(accumulatedResponse);
-      } catch {
-        parsed = null;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          accumulatedResponse += chunk;
+
+          setMessages(prev => {
+            const updatedMessages = [...prev];
+            const lastMessage = updatedMessages[updatedMessages.length - 1];
+
+            if (lastMessage && !lastMessage.isUser) {
+              updatedMessages[updatedMessages.length - 1] = {
+                ...lastMessage,
+                text: accumulatedResponse
+              };
+            } else {
+              updatedMessages.push({ text: accumulatedResponse, isUser: false });
+            }
+
+            return updatedMessages;
+          });
+        }
+
+
+        // ✅ Handle Create a Graph case or any static post-processing
+        let parsed: any;
+        try {
+          parsed = JSON.parse(accumulatedResponse);
+        } catch {
+          parsed = null;
+        }
+
+        if (parsed?.data?.history) {
+          const newMessages = messagesFromHistory(parsed.data.history);
+          setMessages(newMessages);
+        }
+      } finally {
+        reader.releaseLock();
       }
-  
-      if (parsed?.data?.history) {
-        const newMessages = messagesFromHistory(parsed.data.history);
-        setMessages(newMessages);
-      }
-  
-    } finally {
-      reader.releaseLock();
     }
   };
   // useLayoutEffect to scroll the container so that the last message aligns with the top
@@ -335,6 +405,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         newMessages.push({
           text: historyItem.HumanInput,
           isUser: true,
+          title: historyItem.Title,
           uploadedFile: uploadedFile,
           fileUrl: fileUrl
         });
@@ -346,7 +417,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           isUser: false,
           imageBase64: historyItem.FileContentsBase64 || ""
         });
-      } 
+      }
       else if (historyItem.QueryReferences) {
         newMessages.push({
           text: "",
@@ -369,6 +440,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     }
   };
 
+  const handleAttachClick = (file: File) => {
+    console.log("handleAttachClick called with file:", file);
+    //setSelectedFile(file);
+    setShowDocumentViewer(true);
+    console.log("showDocumentViewer after click:", showDocumentViewer);
+    console.log("selectedFile after click:", file);
+  }
   const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false);
     setUploadedFiles([]);
@@ -412,11 +490,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     setGraphEnabled(prevState => !prevState);
     //window.location.reload();
     const resetChat = () => {
-      //setMessages([]); // Clear chat history
       setPrompt(''); // Clear the input prompt
       setSelectedFile(null); // Clear the selected file
       setImportUrl(''); // Clear the import URL
-      setChatId(undefined); // Reset chat ID if necessary
       // Reset any other state variables as needed
     };
     resetChat();
@@ -499,22 +575,45 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                     }}
                     ref={isLastItem ? messagesEndRef : null}
                   >
-                      {message.isUser ? (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: '#fff' }}>
-                          {/* Render the image if it exists in the userMessage */}
-                          {/* {message.uploadedFile && message.fileUrl && ( */}
-                          <Box sx={{ mb: 2 }}> {/* Add margin below the image */}
-                            <img
-                              src={message.fileUrl} // Use fileUrl to display the image
-                              alt={message.uploadedFile}
-                              style={{ width: '100%', maxHeight: '300px', objectFit: 'contain' }} // Adjust styles as needed
+                    {message.isUser ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', color: '#fff' }}>
+                        {message.uploadedFile !== undefined && message.uploadedFile !== '' && (
+                          /* Render the image if it exists in the userMessage */
+                          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}> {/* Add margin below the image */}
+                            <Typography variant="body2" style={{ marginRight: '8px' }}>
+                              {message.uploadedFile}
+                            </Typography>
+                            <AttachFileIcon
+                              color="primary"
+                              fontSize="small"
+                              style={{
+                                margin: '0px',
+                                transform: 'rotate(90deg)',
+                                color: 'white',
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => {
+                                if (selectedFileDisplay) {
+                                  handleAttachClick(selectedFileDisplay);
+                                } else {
+                                  console.warn("No file selected to attach.");
+                                  // Optionally, you could also set an error state or display a message to the user.
+                                }
+                              }}
                             />
+                            {showDocumentViewer && (
+                              <DocumentModal
+                                open={showDocumentViewer} // This is the vital connection
+                                onClose={() => setShowDocumentViewer(false)}
+                                selectedFile={selectedFileDisplay}
+                              />
+                            )}
                           </Box>
-                          {/* )} */}
-                          <Typography sx={{ textAlign: 'left' }}>
-                            {message.text}
-                          </Typography>
-                        </Box>
+                        )}
+                        <Typography sx={{ textAlign: 'left' }}>
+                          {message.text}
+                        </Typography>
+                      </Box>
                     ) : (
                       <>
                         <Avatar src="/assets/images/gemini-icon.png" className="message-avatar" />
@@ -666,20 +765,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         )}
 
         {/* Chat input container */}
-        <Box 
+        <Box
           className={`chat-input-container ${showWelcome ? 'welcome-mode' : ''}`}
           sx={{
             p: 2,
             flexShrink: 0,
             position: 'sticky',
             bottom: 0,
-            zIndex: 0
+            zIndex: 99
           }}
         >
-           {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
+          {/* Render the "Create a graph" button only if no source is selected or the selected source is "default-chat" */}
           {(!selectedSource || selectedSource.id === "default-chat") && (
-            <Box 
-              onClick={toggleGraph} 
+            <Box
+              onClick={toggleGraph}
               sx={{
                 display: 'flex',
                 height: '32px',
@@ -695,28 +794,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                 width: 'fit-content',
                 userSelect: 'none',
                 ...(graphEnabled
-                  ? { 
-                      backgroundColor: '#004A77', 
-                      color: '#C2E7FF',
-                    }
-                  : { 
-                      backgroundColor: 'transparent', 
-                      color: '#cccccc',
-                    }
+                  ? {
+                    backgroundColor: '#004A77',
+                    color: '#C2E7FF',
+                  }
+                  : {
+                    backgroundColor: 'transparent',
+                    color: '#cccccc',
+                  }
                 ),
               }}
             >
-              <BarChartIcon 
-                sx={{ 
-                  ...(graphEnabled 
-                    ? { color: '#A8C7FA' } 
+              <BarChartIcon
+                sx={{
+                  ...(graphEnabled
+                    ? { color: '#A8C7FA' }
                     : { color: '#cccccc' }
-                  )    
-                }} 
+                  )
+                }}
               />
-              <Typography 
-                sx={{ 
-                  fontWeight: 500, 
+              <Typography
+                sx={{
+                  fontWeight: 500,
                 }}
               >
                 {graphEnabled ? 'Create a graph ✓' : 'Create a graph'}
@@ -728,11 +827,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
               <>
                 <Box className="file-chip-container">
                   <Button onClick={() => setShowDocumentViewer(true)}>
-                    <Chip 
-                      label={selectedFile ? selectedFile.name : importUrl} 
-                      onDelete={handleRemoveSelectedFile} 
-                      size="small" 
-                      variant="outlined" 
+                    <Chip
+                      label={selectedFile ? selectedFile.name : importUrl}
+                      onDelete={handleRemoveSelectedFile}
+                      size="small"
+                      variant="outlined"
                     />
                   </Button>
                 </Box>
@@ -753,10 +852,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           </Paper>
         </Box>
       </Box>
-      
-      <Modal 
-        open={isUploadModalOpen} 
-        onClose={handleCloseUploadModal} 
+
+      <Modal
+        open={isUploadModalOpen}
+        onClose={handleCloseUploadModal}
         aria-labelledby="upload-modal-title"
       >
         <Box>

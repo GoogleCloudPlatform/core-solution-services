@@ -14,8 +14,8 @@ const ModelContext = createContext<ModelContextType | undefined>(undefined);
 const DEFAULT_MODEL_ID = 'VertexAI-Chat';
 
 export const DEFAULT_CHAT_MODEL: ChatModel = {
-  id: DEFAULT_MODEL_ID,
-  name: "Default Vertex Model"
+    id: DEFAULT_MODEL_ID,
+    name: "Default Vertex Model"
 }
 
 export function ModelProvider({ children }: { children: ReactNode }) {
@@ -33,6 +33,7 @@ export function ModelProvider({ children }: { children: ReactNode }) {
                 const models = await fetchAllChatModels(user.token)();
                 if (models && models.length > 0) {
                     const storedModelId = localStorage.getItem('selectedModelId');
+                    const storedTemperature = localStorage.getItem('selectedModelTemperature');
                     let initialModel = null;
 
                     if (storedModelId) {
@@ -42,7 +43,18 @@ export function ModelProvider({ children }: { children: ReactNode }) {
                     if (!initialModel) {
                         initialModel = models.find(m => m.id === DEFAULT_MODEL_ID) || models[0];
                     }
-                    setSelectedModel(initialModel);
+
+                        if (storedTemperature !== null && !isNaN(Number(storedTemperature))) {
+                            initialModel = {
+                                ...initialModel,
+                                modelParams: {
+                                    ...initialModel.modelParams,
+                                    temperature: Number(storedTemperature),
+                                }
+                            };
+                        }
+                        setSelectedModel(initialModel);
+                    
                 } else {
                     setSelectedModel(DEFAULT_CHAT_MODEL);
                 }
@@ -60,6 +72,12 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     const handleSetSelectedModel = (model: ChatModel) => {
         setSelectedModel(model);
         localStorage.setItem('selectedModelId', model.id);
+
+        if (model.modelParams?.temperature !== undefined) {
+            localStorage.setItem('selectedModelTemperature', String(model.modelParams.temperature));
+        } else {
+            localStorage.removeItem('selectedModelTemperature');
+        }
     };
 
     return (

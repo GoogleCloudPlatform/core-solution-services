@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, IconButton, CircularProgress, ListItemButton } from '@mui/material';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Box, Typography, CircularProgress, ListItemButton } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchChatHistory } from '../lib/api';
 import { Chat } from '../lib/types';
@@ -17,7 +17,6 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
   const { user } = useAuth();
   const chatRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  
   const loadHistory = async () => {
     if (!user) return;
     setLoading(true);
@@ -33,19 +32,17 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
     }
   };
 
-  // Initial load when the history drawer is opened
   useEffect(() => {
     if (!isOpen || !user) return;
     loadHistory();
   }, [user, isOpen]);
 
-  // Listen for the custom "chatHistoryUpdated" event to reload history when a new chat is created
   useEffect(() => {
     const handleHistoryUpdate = () => {
       loadHistory();
     };
-    window.addEventListener("chatHistoryUpdated", handleHistoryUpdate);
-    return () => window.removeEventListener("chatHistoryUpdated", handleHistoryUpdate);
+    window.addEventListener('chatHistoryUpdated', handleHistoryUpdate);
+    return () => window.removeEventListener('chatHistoryUpdated', handleHistoryUpdate);
   }, [user, isOpen]);
 
   const formatTimestamp = (timestamp: string) => {
@@ -65,10 +62,32 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
     onSelectChat(chat);
   };
 
-  useEffect(() => {
-    // Initialize chatRefs to an array of nulls with the correct length
-    chatRefs.current = Array(chats.length).fill(null);
+  // Group chats by id (with fallback to previous id if missing)
+  const groupedChats = useMemo(() => {
+    const groups: { [chatId: string]: Chat[] } = {};
+    let lastValidId: string | undefined;
+
+    chats.forEach(chat => {
+      const currentId = chat.id ?? lastValidId;
+      if (!currentId) return; // If even fallback is missing, skip
+      lastValidId = currentId;
+
+      if (!groups[currentId]) {
+        groups[currentId] = [];
+      }
+      groups[currentId].push(chat);
+    });
+
+    return Object.entries(groups).map(([chatId, chats]) => ({
+      chatId,
+      chats,
+      latestChat: chats.sort((a, b) => new Date(b.created_time).getTime() - new Date(a.created_time).getTime())[0]
+    }));
   }, [chats]);
+
+  useEffect(() => {
+    chatRefs.current = Array(groupedChats.length).fill(null);
+  }, [groupedChats]);
 
   return (
     <Box className="history-drawer">
@@ -82,16 +101,16 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
           </Box>
         ) : (
           <>
-            {chats.map((chat, index) => (
+            {groupedChats.map((group, index) => (
               <ListItemButton
-                key={chat.id}
-                onClick={() => handleChatClick(chat)}
-                ref={ref => chatRefs.current[index] = ref} // Corrected type here
+                key={group.chatId}
+                onClick={() => handleChatClick(group.latestChat)}
+                ref={ref => chatRefs.current[index] = ref}
                 sx={{
                   padding: '16px',
                   cursor: 'pointer',
                   borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                  backgroundColor: chat.id === selectedChatId ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                  backgroundColor: group.latestChat.id === selectedChatId ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.05)'
                   },
@@ -100,7 +119,7 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
                     border: '1px solid #4a90e2',
                     borderRadius: '4px'
                   },
-                  display: 'block'//Added to make the tabbing visible
+                  display: 'block'
                 }}
               >
                 <Box sx={{ display: 'flex', flexDirection: 'column', textAlign: 'left', width: '100%' }}>
@@ -112,7 +131,7 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
                       mb: '8px'
                     }}
                   >
-                    {formatTimestamp(chat.created_time)}
+                    {formatTimestamp(group.latestChat.created_time)}
                   </Typography>
                   <Typography
                     variant="body1"
@@ -122,7 +141,7 @@ const ChatHistory = ({ onClose, onSelectChat, selectedChatId, isOpen }: ChatHist
                       lineHeight: '20px'
                     }}
                   >
-                    {chat.title || 'Untitled Chat'}
+                    {group.latestChat.title || 'Untitled Chat'}
                   </Typography>
                 </Box>
               </ListItemButton>
