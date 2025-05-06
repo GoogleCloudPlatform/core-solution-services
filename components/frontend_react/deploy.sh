@@ -12,7 +12,7 @@ DOMAIN_NAME=$3
 CONTACT_EMAIL=$4
 
 # Determine the base directory of the repository
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+export BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 # Navigate to the webapp directory
 WEBAPP_DIR="$BASE_DIR/components/frontend_react/webapp"
@@ -21,6 +21,8 @@ echo "Changing directory to $WEBAPP_DIR..."
 cd "$WEBAPP_DIR" || { echo "Failed to change directory to $WEBAPP_DIR. Please run this script from the components/frontend_react directory."; exit 1; }
 
 echo "Deployment script directory is $DEPLOYMENT_SCRIPT_DIR..."
+
+export GOOGLE_APPLICATION_CREDENTIALS=~/.config/gcloud/application_default_credentials.json
 
 # Call sub-scripts
 echo "Installing dependencies..."
