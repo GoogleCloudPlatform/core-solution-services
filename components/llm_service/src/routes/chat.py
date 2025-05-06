@@ -221,6 +221,7 @@ def get_chat(chat_id: str,
   Returns:
       LLMUserChatResponse
   """
+  context = get_context()
   try:
     user_chat = UserChat.find_by_id(chat_id)
     chat_data = user_chat.get_fields(reformat_datetime=True)
@@ -228,6 +229,19 @@ def get_chat(chat_id: str,
     user = User.find_by_email(user_data.get("email"))
     if user.user_id != user_chat.user_id:
       raise UnauthorizedUserError("User is not allowed to access this chat.")
+
+    Logger.info(
+      "User chat retrieval successful",
+      extra={
+        "operation": "get_chat",
+        "chat_id": chat_id,
+        "user_id": user.user_id,
+        "status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
     return {
       "success": True,
@@ -266,6 +280,7 @@ def update_chat(chat_id: str,
     NotFoundErrorResponseModel if the chat not found,
     InternalServerErrorResponseModel if the chat update raises an exception
   """
+  context = get_context()
   try:
     input_chat_dict = {**input_chat.dict()}
 
@@ -282,6 +297,19 @@ def update_chat(chat_id: str,
     if not existing_chat.prompt and len(existing_chat.history) > 1:
       existing_chat.prompt = UserChat.entry_content(existing_chat.history[1])
     existing_chat.update()
+
+    Logger.info(
+      "User chat update successful",
+      extra={
+        "operation": "update_chat",
+        "chat_id": chat_id,
+        "user_id": user.user_id,
+        "status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
     return {
       "success": True,

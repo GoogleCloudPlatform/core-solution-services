@@ -17,6 +17,7 @@ Utilities for calling other platform microservices
 """
 import json
 import requests
+from common.utils.context_vars import get_trace_headers
 
 DEFAULT_TIMEOUT = 300
 
@@ -41,10 +42,10 @@ def get_method(url: str,
   if auth_client is not None:
     token = auth_client.get_id_token()
 
+  headers = get_trace_headers()
+
   if token:
-    headers = {"Authorization": f"Bearer {token}"}
-  else:
-    headers = {}
+    headers["Authorization"] = f"Bearer {token}"
 
   return requests.get(
       url=f"{url}", params=query_params,
@@ -72,10 +73,10 @@ def post_method(url: str,
   if auth_client is not None:
     token = auth_client.get_id_token()
 
+  headers = get_trace_headers()
+
   if token:
-    headers = {"Authorization": f"Bearer {token}"}
-  else:
-    headers = {}
+    headers["Authorization"] = f"Bearer {token}"
 
   return requests.post(
       url=f"{url}", json=request_body, headers=headers,
@@ -103,10 +104,11 @@ def put_method(url: str,
   if auth_client is not None:
     token = auth_client.get_id_token()
 
+  # Get trace headers
+  headers = get_trace_headers()
+
   if token:
-    headers = {"Authorization": f"Bearer {token}"}
-  else:
-    headers = {}
+    headers["Authorization"] = f"Bearer {token}"
 
   return requests.put(
       url=f"{url}", json=request_body, headers=headers,
@@ -134,10 +136,11 @@ def delete_method(url: str,
   if auth_client is not None:
     token = auth_client.get_id_token()
 
+  # Get trace headers
+  headers = get_trace_headers()
+
   if token:
-    headers = {"Authorization": f"Bearer {token}"}
-  else:
-    headers = {}
+    headers["Authorization"] = f"Bearer {token}"
 
   return requests.delete(
       url=f"{url}", json=request_body, headers=headers,
