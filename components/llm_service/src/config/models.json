@@ -134,7 +134,7 @@
       "description": "A powerful and versatile Gemini 1.5 Pro model from Vertex AI.",
       "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone."
     },
-    "VertexAI-Gemini-2.0-flash-Pro": {
+    "VertexAI-Gemini-2.0-Flash": {
       "name": "Gemini 2.0 Flash Pro",
       "is_chat": true,
       "is_multi": true,
@@ -143,7 +143,7 @@
       "description": "A powerful and versatile Gemini 1.5 Pro model from Vertex AI.",
       "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone."
     },
-    "VertexAI-Gemini-2.0-flash-Lite": {
+    "VertexAI-Gemini-2.0-Flash-Lite": {
       "name": "Gemini 2.0 Flash Light",
       "is_chat": true,
       "is_multi": true,
