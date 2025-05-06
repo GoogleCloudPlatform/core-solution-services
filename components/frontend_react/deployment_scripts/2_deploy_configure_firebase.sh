@@ -106,7 +106,7 @@ EOL
 
 else
   echo "Firebase app '$FIREBASE_APP_NAME' already exists. Skipping creation."
-  app_id=$(firebase apps:list | grep "$FIREBASE_APP_NAME" | awk '{print $4}' | tr -d '│ ')
+  app_id=$(firebase apps:list --project=$PROJECT_ID | grep "$FIREBASE_APP_NAME" | awk '{print $4}' | tr -d '│ ')
 
   if [ -z "$app_id" ]; then
     echo "Error: failed to retrieve app id from firebase apps:list"
