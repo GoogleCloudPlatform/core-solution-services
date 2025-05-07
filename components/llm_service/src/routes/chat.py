@@ -600,7 +600,6 @@ async def user_chat_generate(chat_id: str,
       chat_files = await process_chat_file(chat_file, chat_file_url)
 
     genconfig_dict = {**gen_config.model_dump()}
-    Logger.info("Chat response generation initiated")
 
     prompt = genconfig_dict.get("prompt")
     if prompt is None or prompt == "":
@@ -633,8 +632,13 @@ async def user_chat_generate(chat_id: str,
 
     # set llm type for chat
     llm_type = genconfig_dict.get("llm_type", None)
+
+    #debug
+    print (f"llm_type at genconfig_dict call: {llm_type}")
     if llm_type is None:
       llm_type = user_chat.llm_type or DEFAULT_CHAT_LLM_TYPE
+       #debug
+    print (f"llm_type after genconfig_dict call: {llm_type}")
 
     # get streaming mode
     stream = genconfig_dict.get("stream", False)
@@ -675,6 +679,8 @@ async def user_chat_generate(chat_id: str,
           )
 
         if stream:
+          #debug
+          print (f"llm_type at in streaming generator: {llm_type}")
           # Get the streaming generator
           generator = await llm_chat(prompt,
                               llm_type,
