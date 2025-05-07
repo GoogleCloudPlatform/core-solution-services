@@ -12,9 +12,9 @@ import {
   Typography,
   styled
 } from '@mui/material';
-import { 
-  EditNote, 
-  Info, 
+import {
+  EditNote,
+  Info,
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
@@ -91,15 +91,15 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
   };
 
   // Filter sources based on type and status filters
-  const filteredSources = sources.filter(source => 
+  const filteredSources = sources.filter(source =>
     (typeFilter === 'all' || source.query_engine_type === typeFilter) &&
     (jobStatusFilter === 'all' || source.status === jobStatusFilter)
   );
 
   // Sort sources by name
   const sortedSources = [...filteredSources].sort((a, b) => {
-    return sortOrder === 'asc' 
-      ? a.name.localeCompare(b.name) 
+    return sortOrder === 'asc'
+      ? a.name.localeCompare(b.name)
       : b.name.localeCompare(a.name);
   });
 
@@ -108,7 +108,41 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
+  // Utility function to get relative time string
 
+  function timeAgo(date: Date) {
+    const now = new Date();
+    const secondsPast = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (secondsPast < 60) {
+      return secondsPast === 1 ? '1 second ago' : `${ secondsPast } seconds ago`;
+    }
+    const minutesPast = Math.floor(secondsPast / 60);
+    if (minutesPast < 60) {
+      return minutesPast === 1 ? '1 minute ago' : `${ minutesPast } minutes ago`;
+    }
+    const hoursPast = Math.floor(minutesPast / 60);
+    if (hoursPast < 24) {
+      return hoursPast === 1 ? '1 hour ago' : `${ hoursPast } hours ago`;
+    }
+    const daysPast = Math.floor(hoursPast / 24);
+    if (daysPast < 7) {
+      return daysPast === 1 ? '1 day ago' : `${ daysPast } days ago`;
+    }
+    const weeksPast = Math.floor(daysPast / 7);
+    if (weeksPast < 4) {
+      return weeksPast === 1 ? '1 week ago' : `${ weeksPast } weeks ago`;
+    }
+    const monthsPast = Math.floor(daysPast / 30);
+    if (monthsPast < 12) {
+      return monthsPast === 1 ? '1 month ago' : `${ monthsPast } months ago`;
+    }
+    const yearsPast = Math.floor(daysPast / 365);
+    if (yearsPast === 1) {
+      return '1 year ago';
+    } else {
+      return `${ yearsPast } years ago`;
+    }
+  }
   return (
     <TableContainer sx={{ backgroundColor: 'transparent' }}>
       <Table>
@@ -131,7 +165,7 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
             <StyledTableCell>Description</StyledTableCell>
             <StyledTableCell>Job Status</StyledTableCell>
             <StyledTableCell>Type</StyledTableCell>
-            <StyledTableCell>Created</StyledTableCell>
+            <StyledTableCell>Updated</StyledTableCell>
             <StyledTableCell align="right"></StyledTableCell>
           </TableRow>
         </TableHead>
@@ -157,10 +191,10 @@ const SourcesTable: React.FC<SourcesTableProps> = ({
                 {QUERY_ENGINE_TYPES[source.query_engine_type as keyof typeof QUERY_ENGINE_TYPES] ||
                   source.query_engine_type}
               </StyledTableCell>
-              <StyledTableCell>{new Date(source.created_time).toLocaleDateString()}</StyledTableCell>
+              <StyledTableCell>{timeAgo(new Date(source.created_time))}</StyledTableCell>
               <StyledTableCell align="left">
                 <Tooltip title="Edit Source">
-                  <IconButton 
+                  <IconButton
                     onClick={() => onEditClick(source.id)}
                     disabled={source.status === "active"}
                     sx={{ opacity: source.status === "active" ? 0.4 : 1 }}

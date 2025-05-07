@@ -388,6 +388,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   }, [messages]);
 
   const messagesFromHistory = (history: any[]) => {
+    if (!history || history.length === 0) {
+      return [{
+        text: 'Generating code...',
+        isUser: false
+      }];
+    }
     let newMessages: ChatMessage[] = [];
     for (let i = 0; i < history.length; i++) {
       const historyItem = history[i];

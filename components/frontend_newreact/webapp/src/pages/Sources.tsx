@@ -905,6 +905,9 @@ const Sources = ({ onAddSourceClick, onEditClick }: SourcesProps) => {
               <ListItemText primary="Name:" secondary={sourceToView?.name} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
             </ListItem>
             <ListItem sx={{ borderBottom: '1px solid #888' }}>
+              <ListItemText primary="Created:" secondary={sourceToView?.created_time} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
+            </ListItem>
+            <ListItem sx={{ borderBottom: '1px solid #888' }}>
               <ListItemText primary="Data URL:" secondary={sourceToView?.doc_url} sx={{ color: STYLED_WHITE, '& .MuiListItemText-secondary': { color: STYLED_WHITE } }} />
               <IconButton onClick={() => navigator.clipboard.writeText(sourceToView?.doc_url || '')}><ContentCopyIcon sx={{ color: STYLED_WHITE }} /></IconButton>
             </ListItem>
