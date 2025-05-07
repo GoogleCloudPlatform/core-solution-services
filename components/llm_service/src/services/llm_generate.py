@@ -853,7 +853,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
                                if isinstance(entry, str))
 
   # Get model params at the model level else use global vertex params.
-  parameters = get_provider_value(PROVIDER_VERTEX, KEY_MODEL_PARAMS)
+  parameters = get_provider_value(PROVIDER_VERTEX, KEY_MODEL_PARAMS, llm_type=google_llm)
   provider_config = get_provider_model_config(PROVIDER_VERTEX)
   for _, model_config in provider_config.items():
     model_name = model_config.get(KEY_MODEL_NAME)
