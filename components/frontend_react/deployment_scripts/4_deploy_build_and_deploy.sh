@@ -6,4 +6,4 @@ npm run build
 
 # Deploy the app with Firebase
 echo "Deploying the app to Firebase..."
-firebase deploy --only hosting
+firebase deploy --only hosting --project $PROJECT_ID
