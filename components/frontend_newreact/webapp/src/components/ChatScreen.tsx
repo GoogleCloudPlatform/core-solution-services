@@ -19,9 +19,9 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter';
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { LoadingSpinner } from "../../src/components/LoadingSpinner";
 import DocumentModal from './DocumentModal';
-import ReferenceChip from "@/components/ReferenceChip";
+import ReferenceChip from "../../src/components/ReferenceChip";
 import '@/styles/ChatScreen.css';
 
 interface ChatMessage {
@@ -46,6 +46,7 @@ interface ChatScreenProps {
   onChatStart?: () => void;
   isNewChat?: boolean;
   showWelcome: boolean;
+  isTest?: boolean;
 }
 
 const ChatScreen: React.FC<ChatScreenProps> = ({
@@ -53,7 +54,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   hideHeader = false,
   onChatStart,
   isNewChat = false,
-  showWelcome = true
+  showWelcome = true,
+  isTest = false,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
@@ -73,7 +75,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [hoveredMessageIndex, setHoveredMessageIndex] = useState<number | null>(null); // New state for tracking hovered message index
   const [tooltipOpen, setTooltipOpen] = useState(false);   // State for tooltip
   const [iconClicked, setIconClicked] = useState(false);   // State for click effect
-  const [graphEnabled, setGraphEnabled] = useState(false);
+  const [graphEnabled, setGraphEnabled] = useState<boolean>(isTest ? true : false);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
 
   // Ref for the scrollable container
@@ -811,7 +813,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                 ),
               }}
             >
-              <BarChartIcon
+              <BarChartIcon 
+              data-testid={isTest ? "bar-chart-icon" : undefined}  // Conditionally add data-testid
                 sx={{
                   ...(graphEnabled
                     ? { color: '#A8C7FA' }
@@ -852,9 +855,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
               fullWidth
               multiline
             />
-            <IconButton onClick={() => setIsUploadModalOpen(true)}>
-              <AddIcon />
-            </IconButton>
+            <IconButton onClick={() => setIsUploadModalOpen(true)} aria-label="add">
+           <AddIcon />
+             </IconButton>
           </Paper>
         </Box>
       </Box>
