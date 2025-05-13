@@ -21,7 +21,7 @@
       "@/": [""] // Corrected paths alias to match standard practice
     },
   },
-  "include": ["src"], // Only include the source code directory for building
+  "include": ["src", "custom.d.ts"], // Only include the source code directory for building
   "exclude": ["node_modules", "tests"], // Exclude node_modules and the tests directory
   "references": [{ "path": "./tsconfig.node.json" }]
 }

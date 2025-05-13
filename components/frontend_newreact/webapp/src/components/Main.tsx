@@ -9,8 +9,8 @@ import Sources from '../pages/Sources';
 import { CustomHeader } from "./Header";
 import { WelcomeFeatures } from './WelcomeFeatures';
 import { Sidebar } from './Sidebar';
-import { fetchLatestChat, resumeChat } from '@/lib/api';
-import AddSource from '@/pages/AddSource';
+import { fetchLatestChat, resumeChat } from '../../src/lib/api';
+import AddSource from '../../src/pages/AddSource';
 import UpdateSource from '../pages/UpdateSource';
 
 const MainContainer = styled(Box)(({ theme }) => ({

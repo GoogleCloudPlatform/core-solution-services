@@ -6,7 +6,7 @@ import SignIn from './pages/SignIn';
 import { useAuth } from './contexts/AuthContext';
 import { ModelProvider } from './contexts/ModelContext';
 import AddSource from './pages/AddSource';
-import PasswordReset from '@/pages/PasswordReset';
+import PasswordReset from './pages/PasswordReset';
 import { MainApp } from './components/Main';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {

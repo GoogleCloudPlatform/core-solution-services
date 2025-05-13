@@ -2,7 +2,7 @@ import { Avatar, Menu, Box, IconButton, ListItemButton, ListItemIcon, ListItemTe
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../../src/contexts/AuthContext';
 import { getAuth } from "firebase/auth";
 
 interface ProfileMenuProps {

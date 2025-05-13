@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { IAppConfig } from "@/lib/types"
+import { IAppConfig } from "../../src/lib/types"
 
 export const AppConfig: IAppConfig = {
   siteName: "GenAI for Public Sector",

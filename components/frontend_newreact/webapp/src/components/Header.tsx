@@ -1,5 +1,5 @@
 import { Box, styled } from "@mui/material";
-import { ProfileMenu } from "@/components/ProfileMenu";
+import { ProfileMenu } from "../../src/components/ProfileMenu";
 import * as React from 'react';
 import { useNavigate } from "react-router-dom";
 import { useSidebarStore } from '../lib/sidebarStore';
