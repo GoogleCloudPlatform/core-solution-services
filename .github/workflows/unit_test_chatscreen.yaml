@@ -1,0 +1,39 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ "NewFEUnitTest" ]
+  pull_request:
+    branches: [ "NewFEUnitTest" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install Dev Dependencies
+        run: |
+          npm install --save-dev jest @testing-library/react @testing-library/jest-dom
+          npm install --save-dev babel-jest @babel/core @babel/preset-env @babel/preset-react @babel/preset-typescript
+          npm install --save-dev jest-environment-jsdom ts-jest @jest/globals
+          npm install --save-dev vite react-markdown dotenv cross-env
+          npm install @svg-inline-loader
+
+      - name: Run Tests
+        run: npm test
+        env:
+          VITE_PUBLIC_API_ENDPOINT: ${{ env.VITE_PUBLIC_API_ENDPOINT }}
