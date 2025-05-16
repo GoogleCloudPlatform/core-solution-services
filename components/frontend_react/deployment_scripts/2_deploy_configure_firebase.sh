@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+# PROJECT_ID and FIREBASE_APP_NAME are passed as arguments from the main script
 PROJECT_ID="$1"
 FIREBASE_APP_NAME="$2"
 
@@ -64,14 +65,36 @@ fetch_sdk_config() {
 
 # Check if Firebase is already enabled for this project
 echo "Checking if Firebase is already enabled for project $PROJECT_ID..."
+firebase_enabled=false
 if firebase projects:list | grep -q "$PROJECT_ID"; then
   echo "Firebase is already enabled for project $PROJECT_ID"
+  firebase_enabled=true
 else
   echo "Adding Firebase to GCP project..."
   firebase projects:addfirebase "$PROJECT_ID"
   
   echo "Waiting for Firebase provisioning..."
-  sleep 10
+  max_attempts=12
+  attempt=1
+  wait_time=10
+  
+  while [ $attempt -le $max_attempts ]; do
+    echo "Checking Firebase provisioning status (attempt $attempt/$max_attempts)..."
+    if firebase projects:list | grep -q "$PROJECT_ID"; then
+      firebase_enabled=true
+      echo "Firebase successfully provisioned for project $PROJECT_ID"
+      break
+    fi
+    
+    echo "Firebase still provisioning. Waiting $wait_time seconds..."
+    sleep $wait_time
+    attempt=$((attempt + 1))
+  done
+  
+  if [ "$firebase_enabled" = false ]; then
+    echo "ERROR: Firebase provisioning timed out after $((max_attempts * wait_time)) seconds."
+    exit 1
+  fi
 fi
 
 # Check if Firebase app matching the app name already exists
