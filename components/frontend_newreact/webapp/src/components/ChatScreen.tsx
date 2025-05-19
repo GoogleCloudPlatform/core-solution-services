@@ -10,7 +10,7 @@ import UploadIcon from '@mui/icons-material/Upload';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import BarChartIcon from '@mui/icons-material/BarChart'; // Icon for the "Create a graph" toggle
 import { useAuth } from '../contexts/AuthContext';
-import { generateChatResponse, createEmptyChat, createChat, resumeChat, fetchChat, createQuery } from '../lib/api';
+import { generateChatResponse, createEmptyChat, createChat, resumeChat, fetchChat, createQuery, generateChatSummary } from '../lib/api';
 import { Chat, QueryReference } from '../lib/types';
 import { useModel } from '../contexts/ModelContext';
 import UploadModal from './UploadModal';
@@ -23,6 +23,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import DocumentModal from './DocumentModal';
 import ReferenceChip from "@/components/ReferenceChip";
 import '@/styles/ChatScreen.css';
+import { getStorage, ref, getDownloadURL } from "firebase/storage";
 
 interface ChatMessage {
   text: string;
@@ -31,7 +32,10 @@ interface ChatMessage {
   uploadedFile?: string;
   references?: QueryReference[];
   fileUrl?: string; // Add fileUrl property
+  fileType?: string // Add fileType Property
   imageBase64?: string; // To store the base64-encoded image
+  showFile?: File;
+  attachId?: string;
 }
 
 interface FileUpload {
@@ -46,6 +50,7 @@ interface ChatScreenProps {
   onChatStart?: () => void;
   isNewChat?: boolean;
   showWelcome: boolean;
+  isTest?: boolean;
 }
 
 const ChatScreen: React.FC<ChatScreenProps> = ({
@@ -53,7 +58,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   hideHeader = false,
   onChatStart,
   isNewChat = false,
-  showWelcome = true
+  showWelcome = true,
+  isTest = false,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [chatId, setChatId] = useState<string | undefined>(currentChat?.id);
@@ -73,7 +79,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [hoveredMessageIndex, setHoveredMessageIndex] = useState<number | null>(null); // New state for tracking hovered message index
   const [tooltipOpen, setTooltipOpen] = useState(false);   // State for tooltip
   const [iconClicked, setIconClicked] = useState(false);   // State for click effect
-  const [graphEnabled, setGraphEnabled] = useState(false);
+  const [graphEnabled, setGraphEnabled] = useState<boolean>(isTest ? true : false);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
 
   // Ref for the scrollable container
@@ -139,6 +145,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [importUrl, setImportUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileDisplay, setSelectedFileDisplay] = useState<File | null>(null);
+  const [openModalId, setOpenModalId] = useState<string | null>(null);
   const [showError, setShowError] = useState<Record<string, boolean>>({}); // State to track error visibility for each file
 
   const handleSelectSource = (source: QueryEngine) => {
@@ -169,8 +176,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     const userMessage: ChatMessage = {
       text: currentPrompt.trim(),
       isUser: true,
-      uploadedFile: currentSelectedFile?.name || '', // Include the uploaded file name
-      fileUrl: currentImportUrl || ''  // Include the file URL
+      uploadedFile: currentSelectedFile?.name || '',
+      fileUrl: currentImportUrl || '',
+      showFile: currentSelectedFile ?? undefined
     };
     setMessages(prev => [...prev, userMessage]);
 
@@ -230,10 +238,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         const queryResponse = await generateChatResponse(user.token, newChatId)({
           queryEngineId: selectedSource.id,
           userInput: currentPrompt.trim(),
-          llmType: selectedModel.id,   
-	      fileUrl: currentImportUrl,
-          stream: false      
-      });
+          llmType: selectedModel.id,
+          fileUrl: currentImportUrl,
+          stream: false
+        });
         if (queryResponse instanceof ReadableStream) {
           // Handle the streaming response separately
           await handleStream(queryResponse);
@@ -279,6 +287,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           // Only assign to response if it's a Chat object
           response = chatResponse;
         }
+        const updatedChat = await generateChatSummary(newChatId, user.token);
+        window.dispatchEvent(new Event("chatHistoryUpdated"));
       }
 
       // Only proceed if we got a valid Chat object
@@ -395,36 +405,35 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       }];
     }
     let newMessages: ChatMessage[] = [];
+    let pendingFileUrl: string | undefined = undefined;
     for (let i = 0; i < history.length; i++) {
       const historyItem = history[i];
       if (historyItem.HumanInput) {
-        let uploadedFile: string | undefined;
-        let fileUrl: string | undefined;
-        // If there's a file reference in subsequent items
-        if (i + 2 < history.length) {
-          if (history[i + 2].UploadedFile) {
-            uploadedFile = history[i + 2].UploadedFile;
-          } else if (history[i + 2].FileURL) {
-            fileUrl = history[i + 2].FileURL;
-          }
+        let uploadedFile: string | undefined = undefined;
+        let fileUrl: string | undefined = undefined;
+
+        // Attach the pending fileUrl only to the next HumanInput
+        if (pendingFileUrl) {
+          fileUrl = pendingFileUrl;
+          uploadedFile = fileUrl?.split('/').pop() || undefined;
+          pendingFileUrl = undefined;
+
         }
         newMessages.push({
           text: historyItem.HumanInput,
           isUser: true,
-          title: historyItem.Title,
+          //title: historyItem.Title,
           uploadedFile: uploadedFile,
-          fileUrl: fileUrl
+          fileUrl: fileUrl,
+          attachId: ("" + i + chatId)
         });
-      }
-      // Combine AIOutput and FileContentsBase64 in the same message so the image is below the text 
-      else if (historyItem.AIOutput || historyItem.FileContentsBase64) {
+      } else if (historyItem.AIOutput || historyItem.FileContentsBase64) {
         newMessages.push({
           text: historyItem.AIOutput || "",
           isUser: false,
           imageBase64: historyItem.FileContentsBase64 || ""
         });
-      }
-      else if (historyItem.QueryReferences) {
+      } else if (historyItem.QueryReferences) {
         newMessages.push({
           text: "",
           isUser: false,
@@ -433,6 +442,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       } else if (historyItem.UploadedFile) {
         continue;
       } else if (historyItem.FileURL) {
+        //Store the file URL to attach to the next HumanInput
+        pendingFileUrl = historyItem.FileURL;
         continue;
       }
     }
@@ -446,13 +457,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     }
   };
 
-  const handleAttachClick = (file: File) => {
-    console.log("handleAttachClick called with file:", file);
-    //setSelectedFile(file);
-    setShowDocumentViewer(true);
-    console.log("showDocumentViewer after click:", showDocumentViewer);
-    console.log("selectedFile after click:", file);
-  }
+  const handleAttachClick = (fileOrPath: File | string, attachId: string, chatId: string) => {
+    const modalId = fileOrPath instanceof File
+      ? `${fileOrPath.name}-${chatId}`
+      : `${attachId}-${chatId}`;
+
+    setOpenModalId(modalId);
+    console.log("Modal ID set to:", modalId);
+  };
   const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false);
     setUploadedFiles([]);
@@ -599,21 +611,31 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                                 cursor: 'pointer',
                               }}
                               onClick={() => {
-                                if (selectedFileDisplay) {
-                                  handleAttachClick(selectedFileDisplay);
+                                const fileToShow = message.showFile || message.fileUrl;
+                                if (fileToShow) {
+                                  const attachId = message.attachId ?? '';
+                                  handleAttachClick(fileToShow, attachId, chatId ?? ''); // pass chatId here
                                 } else {
-                                  console.warn("No file selected to attach.");
-                                  // Optionally, you could also set an error state or display a message to the user.
+                                  console.warn("No file to show.");
                                 }
                               }}
                             />
-                            {showDocumentViewer && (
-                              <DocumentModal
-                                open={showDocumentViewer} // This is the vital connection
-                                onClose={() => setShowDocumentViewer(false)}
-                                selectedFile={selectedFileDisplay}
-                              />
-                            )}
+                            {/* Conditionally render the DocumentModal */}
+                            {(() => {
+                              const modalId = message.showFile instanceof File
+                                ? `${message.showFile.name}-${chatId}`
+                                : `${message.attachId ?? ''}-${chatId}`;
+
+                              return (
+                                <DocumentModal
+                                  open={openModalId === modalId}
+                                  onClose={() => setOpenModalId(null)}
+                                  selectedFile={message.showFile ?? null}
+                                  fileURL={message.fileUrl ?? null}
+                                />
+                              );
+                            })()}
+
                           </Box>
                         )}
                         <Typography sx={{ textAlign: 'left' }}>
@@ -717,7 +739,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                       alignItems: 'flex-start',
                     }}>
                     {/* Conditionally render the chip ONLY if message.uploadedFile exists */}
-                    {(message.isUser && message.fileUrl) && (
+                    {(message.isUser && message.fileUrl && !message.fileUrl.startsWith('gs://')) && (
                       <Box className="file-chip-container" sx={{
                         alignSelf: 'flex-end',
                         display: 'flex',
@@ -812,6 +834,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
               }}
             >
               <BarChartIcon
+                data-testid={isTest ? "bar-chart-icon" : undefined}  // Conditionally add data-testid
                 sx={{
                   ...(graphEnabled
                     ? { color: '#A8C7FA' }
@@ -852,7 +875,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
               fullWidth
               multiline
             />
-            <IconButton onClick={() => setIsUploadModalOpen(true)}>
+            <IconButton onClick={() => setIsUploadModalOpen(true)} aria-label="add">
               <AddIcon />
             </IconButton>
           </Paper>
