@@ -79,7 +79,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [hoveredMessageIndex, setHoveredMessageIndex] = useState<number | null>(null); // New state for tracking hovered message index
   const [tooltipOpen, setTooltipOpen] = useState(false);   // State for tooltip
   const [iconClicked, setIconClicked] = useState(false);   // State for click effect
-  const [graphEnabled, setGraphEnabled] = useState<boolean>(isTest ? true : false);
+  const [graphEnabled, setGraphEnabled] = useState(false);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
 
   // Ref for the scrollable container
@@ -463,7 +463,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       : `${attachId}-${chatId}`;
 
     setOpenModalId(modalId);
-    console.log("Modal ID set to:", modalId);
   };
   const handleCloseUploadModal = () => {
     setIsUploadModalOpen(false);
