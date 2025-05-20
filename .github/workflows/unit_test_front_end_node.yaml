@@ -1,0 +1,68 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ "NewFEUnitTest" ]
+  pull_request:
+    branches: [ "NewFEUnitTest" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: List files recursively
+        run: ls -R
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ./components/frontend_newreact/webapp/package-lock.json
+
+      - name: Install dependencies
+        run: npm install --loglevel verbose
+        working-directory: ./components/frontend_newreact/webapp
+
+      - name: Install Dev Dependencies
+        run: |
+          npm install --save-dev jest @testing-library/react @testing-library/jest-dom
+          npm install --save-dev babel-jest @babel/core @babel/preset-env @babel/preset-react @babel/preset-typescript
+          npm install --save-dev jest-environment-jsdom ts-jest @jest/globals
+          npm install --save-dev vite react-markdown dotenv cross-env
+        working-directory: ./components/frontend_newreact/webapp
+
+      - name: Show npm version
+        run: npm -v
+        working-directory: ./components/frontend_newreact/webapp
+
+      - name: Show node version
+        run: node -v
+        working-directory: ./components/frontend_newreact/webapp
+
+      - name: Display the contents of package.json
+        run: cat ./components/frontend_newreact/webapp/package.json
+
+      - name: Run Tests with Env Defaults
+        run: |
+          export VITE_PUBLIC_API_ENDPOINT=${{ secrets.VITE_PUBLIC_API_ENDPOINT }}
+          export VITE_PUBLIC_API_JOBS_ENDPOINT=${{ secrets.VITE_PUBLIC_API_JOBS_ENDPOINT }}
+
+          # Fallbacks if secrets are not set
+          if [ -z "$VITE_PUBLIC_API_ENDPOINT" ]; then
+            export VITE_PUBLIC_API_ENDPOINT="https://your-domain-name/llm-service/api/v1"
+          fi
+
+          if [ -z "$VITE_PUBLIC_API_JOBS_ENDPOINT" ]; then
+            export VITE_PUBLIC_API_JOBS_ENDPOINT="https://your-domain-name/jobs-service/api/v1"
+          fi
+
+          npm test
+        working-directory: ./components/frontend_newreact/webapp
