@@ -669,6 +669,9 @@ async def user_chat_generate(chat_id: str,
 
     try:
       context_files = chat_files or []  # Initialize with any uploaded files
+      query_references = None
+      query_engine = None
+      query_refs_str = ""
 
       if tool_names:
         response, response_files = run_chat_tools(prompt)
@@ -694,13 +697,6 @@ async def user_chat_generate(chat_id: str,
 
           # Add reference text to prompt
           query_refs_str = QueryReference.reference_list_str(query_references)
-          # New: Add query results to history if present
-          # It will be communicated to the LLM as part of chat history
-          user_chat.update_history(
-            query_engine=query_engine,
-            query_references=query_references,
-            query_refs_str=query_refs_str
-          )
 
         if stream:
           # Get the streaming generator
@@ -710,6 +706,8 @@ async def user_chat_generate(chat_id: str,
                               user_data=user_data,
                               chat_files=chat_files,
                               chat_file_bytes=chat_file_bytes,
+                              query_refs_str=query_refs_str if \
+                                query_references else None,
                               stream=stream)
 
           # Wrap the generator to track response size
@@ -742,6 +740,13 @@ async def user_chat_generate(chat_id: str,
               LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
               # Save response to history after streaming completes
               user_chat.update_history(prompt, response_content)
+              # If there were query references add these to chat history
+              if query_references:
+                user_chat.update_history(
+                  query_engine=query_engine,
+                  query_references=query_references,
+                  query_refs_str=query_refs_str
+                )
 
           # Return streaming response with tracking wrapper
           return StreamingResponse(
@@ -756,6 +761,8 @@ async def user_chat_generate(chat_id: str,
                                 user_data=user_data,
                                 chat_files=chat_files,
                                 chat_file_bytes=chat_file_bytes,
+                                query_refs_str=query_refs_str \
+                                  if query_references else None,
                                 stream=stream)
 
       # Track response size for non-streaming responses
@@ -788,6 +795,13 @@ async def user_chat_generate(chat_id: str,
             CHAT_FILE_TYPE: "image/png"
           })
 
+      # If there were query references add these to chat history
+      if query_references:
+        user_chat.update_history(
+          query_engine=query_engine,
+          query_references=query_references,
+          query_refs_str=query_refs_str
+        )
       chat_data = user_chat.get_fields(reformat_datetime=True)
       chat_data["id"] = user_chat.id
 
