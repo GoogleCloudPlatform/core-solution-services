@@ -180,7 +180,7 @@ async def anthropic_predict(prompt:str, llm_type: str, parameters: dict = None) 
     }
   )
 
-  client = AnthropicVertex(project_id=PROJECT_ID, region=REGION)
+  client = AnthropicVertex(project_id=PROJECT_ID, region="us-east5")
   model_name=get_provider_value(PROVIDER_ANTHROPIC,KEY_MODEL_ENDPOINT,llm_type)
   token_limit=get_provider_value(PROVIDER_ANTHROPIC,KEY_MODEL_TOKEN_LIMIT,llm_type)
 
