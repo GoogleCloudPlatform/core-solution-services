@@ -128,6 +128,7 @@ from config.model_config import (
     PROVIDER_TRUSS,
     PROVIDER_VLLM,
     PROVIDER_LLM_SERVICE,
+    PROVIDER_ANTHROPIC,
 
     # model vendors
     VENDOR_OPENAI,

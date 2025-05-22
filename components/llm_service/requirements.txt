@@ -1,3 +1,4 @@
+anthropic==0.51.0
 cohere==5.14.0
 docx2txt==0.8
 google-cloud-discoveryengine==0.13.6

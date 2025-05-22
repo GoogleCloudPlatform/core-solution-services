@@ -41,6 +41,11 @@
       "enabled": true,
       "env_flag": "ENABLE_VLLM_GEMMA",
       "description": "Provides access to vLLM's Gemma models."
+    },
+    "Anthropic": {
+      "enabled": true,
+      "env_flag": "ENABLE_ANTHROPIC",
+      "description": "Provides access to Anthropic's Claude model."
     }
   },
   "vendors": {
@@ -232,6 +237,16 @@
       "enabled": true,
       "model_class": "ChatCohere",
       "description": "A chat model from Cohere."
+    },
+    "Claude-3.7-Sonnet": {
+      "name": "Claude 3.7 Sonnet",
+      "vendor": "Anthropic",
+      "is_chat": true,
+      "provider": "Anthropic",
+      "enabled": true,
+      "context_length": 128000,
+      "model_endpoint": "claude-3-7-sonnet-20250219",
+      "description": "A multimodal model from Anthropic."
     }
   },
   "embeddings": {

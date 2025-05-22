@@ -41,7 +41,9 @@ from config import (get_model_config, get_provider_models,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN, PROVIDER_VLLM,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
+                    PROVIDER_ANTHROPIC,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
+                    KEY_MODEL_TOKEN_LIMIT,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
                     DEFAULT_LLM_TYPE, DEFAULT_MULTIMODAL_LLM_TYPE,
                     KEY_SUB_PROVIDER, SUB_PROVIDER_OPENAPI,
@@ -49,6 +51,7 @@ from config import (get_model_config, get_provider_models,
 from services.langchain_service import langchain_llm_generate
 from services.query.data_source import DataSourceFile
 from utils.errors import ContextWindowExceededException
+from anthropic import AnthropicVertex
 
 Logger = Logger.get_logger(__file__)
 
@@ -117,6 +120,8 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
           llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
+    elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
+      response = await anthropic_predict(prompt, llm_type)
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
@@ -148,6 +153,50 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
     return response
   except Exception as e:
     raise InternalServerError(str(e)) from e
+
+
+async def anthropic_predict(prompt:str, llm_type: str, parameters: dict = None) ->str:
+  """
+  Generate text with anthropic claude sonnet.
+  Args:
+    prompt: the text prompt to pass to the LLM
+    llm_type: the type of LLM to use (anthropic claude sonnet)
+    parameters: dict of parameters
+  Returns:
+    the text response: str
+  """
+  context = get_context()
+  Logger.info(
+    "Anthropic predict initiated",
+    extra={
+      "operation": "anthropic_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
+
+  client = AnthropicVertex(PROJECT_ID, REGION)
+  model_name=get_provider_value(PROVIDER_ANTHROPIC,KEY_MODEL_ENDPOINT,llm_type)
+  token_limit=get_provider_value(PROVIDER_ANTHROPIC,KEY_MODEL_TOKEN_LIMIT,llm_type)
+
+  predictions_text = client.messages.create(
+    model=model_name,
+    max_tokens=token_limit,
+    messages=[
+        {
+            "role": "user",
+            "content": f"{prompt}",
+        }
+    ],
+  )
+
+  return predictions_text.content[0].text
+
 
 async def llm_generate_multimodal(prompt: str, llm_type: str,
                              user_file_bytes: bytes = None,
@@ -202,6 +251,8 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                             google_llm, None, None, user_file_bytes,
                             user_files)
+    elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
+      response = await anthropic_predict(prompt, llm_type)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
