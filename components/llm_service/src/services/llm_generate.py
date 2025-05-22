@@ -85,7 +85,8 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
       "metric_type": "llm_generation",
       "llm_type": llm_type,
       "prompt_length": len(prompt) if prompt else 0,
-      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50\
+          else prompt if prompt else "",
       "stream": stream,
       "request_id": context["request_id"],
       "trace": context["trace"],
@@ -121,7 +122,7 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
     elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
-      response = await anthropic_predict(prompt, llm_type)
+      response = await anthropic_predict(prompt, llm_type, stream=stream)
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
@@ -155,15 +156,21 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
     raise InternalServerError(str(e)) from e
 
 
-async def anthropic_predict(prompt:str, llm_type: str, parameters: dict = None) ->str:
+async def anthropic_predict(prompt: str,
+                            llm_type: str,
+                            parameters: dict = None,
+                            stream: bool = False)\
+                              -> Union[str, AsyncGenerator[str, None]]:
   """
   Generate text with anthropic claude sonnet.
   Args:
     prompt: the text prompt to pass to the LLM
     llm_type: the type of LLM to use (anthropic claude sonnet)
     parameters: dict of parameters
+    stream: whether to stream the response
   Returns:
-    the text response: str
+    Either the full text response as str,
+    or an AsyncGenerator yielding response chunks
   """
   context = get_context()
   Logger.info(
@@ -173,30 +180,65 @@ async def anthropic_predict(prompt:str, llm_type: str, parameters: dict = None) 
       "metric_type": "llm_generation",
       "llm_type": llm_type,
       "prompt_length": len(prompt) if prompt else 0,
-      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50\
+          else prompt if prompt else "",
+      "stream": stream,
       "request_id": context["request_id"],
       "trace": context["trace"],
       "session_id": context["session_id"]
     }
   )
 
-  client = AnthropicVertex(project_id=PROJECT_ID, region="us-east5")
-  model_name=get_provider_value(PROVIDER_ANTHROPIC,KEY_MODEL_ENDPOINT,llm_type)
-  token_limit=get_provider_value(PROVIDER_ANTHROPIC,KEY_MODEL_TOKEN_LIMIT,llm_type)
+  try:
+    client = AnthropicVertex(project_id=PROJECT_ID, region="us-east5")
+    model_name = get_provider_value(PROVIDER_ANTHROPIC,
+                                    KEY_MODEL_ENDPOINT,
+                                    llm_type)
+    token_limit = get_provider_value(PROVIDER_ANTHROPIC,
+                                     KEY_MODEL_TOKEN_LIMIT,
+                                     llm_type)
 
-  predictions_text = client.messages.create(
-    model=model_name,
-    max_tokens=token_limit,
-    messages=[
-        {
+    if token_limit is None:
+      token_limit = 4096
+
+    if stream:
+      # Return an async generator for streaming
+      async def stream_response():
+        try:
+          with client.messages.stream(
+            model=model_name,
+            max_tokens=token_limit,
+            messages=[
+              {
+                "role": "user",
+                "content": prompt,
+              }
+            ]
+          ) as stream:
+            for text in stream.text_stream:
+              yield text
+        except Exception as e:
+          Logger.error(f"Anthropic streaming error: {e}")
+          raise e
+
+      return stream_response()
+    else:
+      # Non-streaming response
+      predictions_text = client.messages.create(
+        model=model_name,
+        max_tokens=token_limit,
+        messages=[
+          {
             "role": "user",
-            "content": f"{prompt}",
-        }
-    ],
-    stream=False
-  )
+            "content": prompt,
+          }
+        ],
+      )
+      return predictions_text.content[0].text
 
-  return predictions_text.content[0].text
+  except Exception as e:
+    Logger.error(f"Anthropic predict error: {e}")
+    raise e
 
 
 async def llm_generate_multimodal(prompt: str, llm_type: str,
@@ -220,7 +262,8 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
       "metric_type": "llm_generation",
       "llm_type": llm_type,
       "prompt_length": len(prompt) if prompt else 0,
-      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50\
+          else prompt if prompt else "",
       "has_file_bytes": user_file_bytes is not None,
       "has_files": user_files is not None and len(user_files) > 0,
       "request_id": context["request_id"],
@@ -253,7 +296,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
                             google_llm, None, None, user_file_bytes,
                             user_files)
     elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
-      response = await anthropic_predict(prompt, llm_type)
+      response = await anthropic_predict(prompt, llm_type, stream=False)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -374,11 +417,7 @@ async def llm_chat(prompt: str, llm_type: str,
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
     elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
-      response = await anthropic_predict(prompt, llm_type)
-      if stream:
-        async def simple_stream():
-          yield response
-        response = simple_stream()
+      response = await anthropic_predict(prompt, llm_type, stream)
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
