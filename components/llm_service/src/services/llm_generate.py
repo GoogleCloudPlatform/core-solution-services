@@ -193,6 +193,7 @@ async def anthropic_predict(prompt:str, llm_type: str, parameters: dict = None) 
             "content": f"{prompt}",
         }
     ],
+    stream=False
   )
 
   return predictions_text.content[0].text
@@ -374,6 +375,10 @@ async def llm_chat(prompt: str, llm_type: str,
       response = await model_garden_predict(prompt, llm_type)
     elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
       response = await anthropic_predict(prompt, llm_type)
+      if stream:
+        async def simple_stream():
+          yield response
+        response = simple_stream()
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
