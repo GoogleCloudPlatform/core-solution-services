@@ -246,6 +246,7 @@
       "enabled": true,
       "context_length": 128000,
       "model_endpoint": "claude-3-7-sonnet-20250219",
+      "token_limit": 1024,
       "description": "A multimodal model from Anthropic."
     }
   },
