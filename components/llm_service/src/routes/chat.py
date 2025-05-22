@@ -573,30 +573,6 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
     raise InternalServerError(str(e)) from e
 
 
-def _if_existent_update_chat_history_with_query_references(user_chat,
-                                                    query_engine,
-                                                    query_references,
-                                                    query_refs_str):
-
-  """
-  Helper function. If query references exist, add them
-  to the user chat history
-
-  Args:
-    user_chat: Chat id
-    query_engine: Query engine id
-    query_references: Query references
-    query_refs_string: Query
-  """
-
-  if query_references:
-    user_chat.update_history(
-      query_engine=query_engine,
-      query_references=query_references,
-      query_refs_str=query_refs_str
-    )
-
-
 @router.post("/{chat_id}/generate")
 @track_chat_generate
 async def user_chat_generate(chat_id: str,
@@ -764,10 +740,11 @@ async def user_chat_generate(chat_id: str,
               LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
               # Save response to history after streaming completes
               user_chat.update_history(prompt, response_content)
-              _if_existent_update_chat_history_with_query_references(user_chat,
-                                                         query_engine,
-                                                         query_references,
-                                                         query_refs_str)
+              user_chat.update_history(
+                  query_engine=query_engine,
+                  query_references=query_references,
+                  query_refs_str=query_refs_str
+              )
 
           # Return streaming response with tracking wrapper
           return StreamingResponse(
@@ -816,10 +793,11 @@ async def user_chat_generate(chat_id: str,
             CHAT_FILE_TYPE: "image/png"
           })
 
-      _if_existent_update_chat_history_with_query_references(user_chat,
-                                                query_engine,
-                                                query_references,
-                                                query_refs_str)
+      user_chat.update_history(
+          query_engine=query_engine,
+          query_references=query_references,
+          query_refs_str=query_refs_str
+      )
       chat_data = user_chat.get_fields(reformat_datetime=True)
       chat_data["id"] = user_chat.id
 
