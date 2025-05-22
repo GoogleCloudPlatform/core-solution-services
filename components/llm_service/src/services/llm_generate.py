@@ -372,6 +372,8 @@ async def llm_chat(prompt: str, llm_type: str,
           llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
+    elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
+      response = await anthropic_predict(prompt, llm_type)
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
