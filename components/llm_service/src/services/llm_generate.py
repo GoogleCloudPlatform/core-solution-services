@@ -228,6 +228,7 @@ async def llm_chat(prompt: str, llm_type: str,
                    user_data: Optional[dict] = None,
                    chat_files: Optional[List[DataSourceFile]] = None,
                    chat_file_bytes: Optional[bytes] = None,
+                   query_refs_str: Optional[str] = None,
                    stream: bool = False) -> \
                        Union[str, AsyncGenerator[str, None]]:
   """
@@ -242,6 +243,7 @@ async def llm_chat(prompt: str, llm_type: str,
     user_query (optional): a user query to use for context
     chat_files (optional) (List[DataSourceFile]): files to include in chat context
     chat_file_bytes (optional) (bytes): bytes of file to include in chat context
+    query_refs_str: (optional): references for rag sources to include in prompt
     stream: whether to stream the response
   Returns:
     Either the full text response as str, or an AsyncGenerator
@@ -293,6 +295,11 @@ async def llm_chat(prompt: str, llm_type: str,
       # context_prompt includes only text (no images/video) from
       # user_chat.history and user_query.history
       prompt = context_prompt + "\n" + prompt
+
+    # Add query references to the prompt if provided
+    if query_refs_str:
+      prompt += "\n\nReference information for retrieved information:"\
+        + f" {query_refs_str}"
 
     # check whether the context length exceeds the limit for the model
     check_context_length(prompt, llm_type)
