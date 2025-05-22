@@ -706,8 +706,7 @@ async def user_chat_generate(chat_id: str,
                               user_data=user_data,
                               chat_files=chat_files,
                               chat_file_bytes=chat_file_bytes,
-                              query_refs_str=query_refs_str if \
-                                query_references else None,
+                              query_refs_str=query_refs_str,
                               stream=stream)
 
           # Wrap the generator to track response size
@@ -759,8 +758,7 @@ async def user_chat_generate(chat_id: str,
                                 user_data=user_data,
                                 chat_files=chat_files,
                                 chat_file_bytes=chat_file_bytes,
-                                query_refs_str=query_refs_str \
-                                  if query_references else None,
+                                query_refs_str=query_refs_str,
                                 stream=stream)
 
       # Track response size for non-streaming responses
