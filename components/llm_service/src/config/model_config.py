@@ -537,9 +537,12 @@ class ModelConfig():
                          model_id: str = None, default=None) -> Any:
     """ get config value from provider model config """
 
-    Logger.info("Get provider value:")
-    Logger.info(f"provider_id={provider_id}")
-    Logger.info(f"model_id={model_id}")
+    Logger.info("Provider value retrieval initiated")
+    Logger.info("Provider details",
+        extra={
+          "provider_id": provider_id,
+          "model_id": model_id
+        })
 
     if model_id is None:
       # get global provider value

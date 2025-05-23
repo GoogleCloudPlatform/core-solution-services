@@ -177,6 +177,27 @@ export const createEmptyChat =
       });
   };
 
+  export const generateChatSummary = (
+    chatId: string,
+    token: string
+  ): Promise<Chat | undefined> => {
+    const url = `${endpoint}/chat/${chatId}/generate_summary`;
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  
+    return axios.post(url, {}, { headers })
+      .then(response => {
+        const chatData = response.data.data; // assuming response matches LLMUserChatResponse
+        return chatData as Chat;
+      })
+      .catch(error => {
+        console.error('Error generating chat summary:', error);
+        throw error;
+      });
+  };
+
 export const generateChatResponse = (token: string, chatId: string) => async ({
   userInput,
   llmType,

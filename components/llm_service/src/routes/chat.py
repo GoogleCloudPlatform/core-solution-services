@@ -77,7 +77,7 @@ def get_chat_llm_list(user_data: dict = Depends(validate_token),
   Returns:
       LLMGetTypesResponse with basic model information
   """
-  Logger.info("Entering chat/chat_types")
+  Logger.info("Chat LLM types query initiated")
   try:
     user_enabled_llms = get_models_for_user(user_data, is_multimodal)
     return {
@@ -109,7 +109,7 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
   Returns:
       LLMGetDetailsResponse with detailed model information
   """
-  Logger.info("Entering chat/chat_types/details")
+  Logger.info("Chat LLM details operation initiated")
   try:
     model_config = get_model_config()
     llm_types = get_models_for_user(user_data, is_multimodal)
@@ -138,10 +138,10 @@ def get_chat_llm_details(user_data: dict = Depends(validate_token),
         "model_params": model_params
       })
 
-    Logger.info(f"Chat LLM models for user {model_details}")
+    Logger.info("Chat LLM details operation initiated")
     return {
       "success": True,
-      "message": "Successfully retrieved chat llm details",
+      "message": "Chat LLM details successfully retrieved",
       "data": model_details
     }
   except Exception as e:
@@ -221,6 +221,7 @@ def get_chat(chat_id: str,
   Returns:
       LLMUserChatResponse
   """
+  context = get_context()
   try:
     user_chat = UserChat.find_by_id(chat_id)
     chat_data = user_chat.get_fields(reformat_datetime=True)
@@ -228,6 +229,19 @@ def get_chat(chat_id: str,
     user = User.find_by_email(user_data.get("email"))
     if user.user_id != user_chat.user_id:
       raise UnauthorizedUserError("User is not allowed to access this chat.")
+
+    Logger.info(
+      "User chat retrieval successful",
+      extra={
+        "operation": "get_chat",
+        "chat_id": chat_id,
+        "user_id": user.user_id,
+        "status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
     return {
       "success": True,
@@ -266,6 +280,7 @@ def update_chat(chat_id: str,
     NotFoundErrorResponseModel if the chat not found,
     InternalServerErrorResponseModel if the chat update raises an exception
   """
+  context = get_context()
   try:
     input_chat_dict = {**input_chat.dict()}
 
@@ -282,6 +297,19 @@ def update_chat(chat_id: str,
     if not existing_chat.prompt and len(existing_chat.history) > 1:
       existing_chat.prompt = UserChat.entry_content(existing_chat.history[1])
     existing_chat.update()
+
+    Logger.info(
+      "User chat update successful",
+      extra={
+        "operation": "update_chat",
+        "chat_id": chat_id,
+        "user_id": user.user_id,
+        "status": "success",
+        "request_id": context["request_id"],
+        "trace": context["trace"],
+        "session_id": context["session_id"]
+      }
+    )
 
     return {
       "success": True,
@@ -385,7 +413,7 @@ async def create_user_chat(
   """
   context = get_context()
   Logger.info(
-    "Creating new chat",
+    "New chat creation initiated",
     extra={
       "operation": "create_user_chat",
       "llm_type": llm_type,
@@ -514,7 +542,7 @@ async def create_empty_chat(user_data: dict = Depends(validate_token)):
   """
   context = get_context()
   Logger.info(
-    "Creating empty chat", 
+    "Empty chat creation initiated", 
     extra={
       "operation": "create_empty_chat",
       "user_id": user_data.get("email", "unknown"),
@@ -560,7 +588,7 @@ async def user_chat_generate(chat_id: str,
   Returns:
     LLMUserChatResponse or StreamingResponse
   """
-  Logger.info(f"generating chat response for {chat_id}")
+  Logger.info("Chat response generation initiated")
   tool_names = gen_config.tool_names
   validate_tool_names(tool_names)
   query_engine_id = gen_config.query_engine_id
@@ -569,7 +597,7 @@ async def user_chat_generate(chat_id: str,
 
   genconfig_dict = {**gen_config.model_dump()}
   Logger.info(
-    "Processing chat request",
+    "Chat request processing initiated",
     extra={
       "operation": "chat_generate",
       "chat_id": chat_id,
@@ -600,8 +628,7 @@ async def user_chat_generate(chat_id: str,
       chat_files = await process_chat_file(chat_file, chat_file_url)
 
     genconfig_dict = {**gen_config.model_dump()}
-    Logger.info(f"Generating new chat response for chat_id={chat_id},"
-                f"genconfig_dict={genconfig_dict}")
+    Logger.info("Chat response generation initiated")
 
     prompt = genconfig_dict.get("prompt")
     if prompt is None or prompt == "":
@@ -642,6 +669,9 @@ async def user_chat_generate(chat_id: str,
 
     try:
       context_files = chat_files or []  # Initialize with any uploaded files
+      query_references = None
+      query_engine = None
+      query_refs_str = ""
 
       if tool_names:
         response, response_files = run_chat_tools(prompt)
@@ -667,13 +697,6 @@ async def user_chat_generate(chat_id: str,
 
           # Add reference text to prompt
           query_refs_str = QueryReference.reference_list_str(query_references)
-          # New: Add query results to history if present
-          # It will be communicated to the LLM as part of chat history
-          user_chat.update_history(
-            query_engine=query_engine,
-            query_references=query_references,
-            query_refs_str=query_refs_str
-          )
 
         if stream:
           # Get the streaming generator
@@ -683,6 +706,7 @@ async def user_chat_generate(chat_id: str,
                               user_data=user_data,
                               chat_files=chat_files,
                               chat_file_bytes=chat_file_bytes,
+                              query_refs_str=query_refs_str,
                               stream=stream)
 
           # Wrap the generator to track response size
@@ -715,6 +739,11 @@ async def user_chat_generate(chat_id: str,
               LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
               # Save response to history after streaming completes
               user_chat.update_history(prompt, response_content)
+              user_chat.update_history(
+                  query_engine=query_engine,
+                  query_references=query_references,
+                  query_refs_str=query_refs_str
+              )
 
           # Return streaming response with tracking wrapper
           return StreamingResponse(
@@ -729,6 +758,7 @@ async def user_chat_generate(chat_id: str,
                                 user_data=user_data,
                                 chat_files=chat_files,
                                 chat_file_bytes=chat_file_bytes,
+                                query_refs_str=query_refs_str,
                                 stream=stream)
 
       # Track response size for non-streaming responses
@@ -761,21 +791,11 @@ async def user_chat_generate(chat_id: str,
             CHAT_FILE_TYPE: "image/png"
           })
 
-      chat_data = user_chat.get_fields(reformat_datetime=True)
-      chat_data["id"] = user_chat.id
-
-      # save chat history
-      user_chat.update_history(prompt=prompt, response=response)
-      if response_files:
-        for file in response_files:
-          user_chat.update_history(custom_entry={
-            CHAT_FILE: file["name"]
-          })
-          user_chat.update_history(custom_entry={
-            CHAT_FILE_BASE64: file["contents"],
-            CHAT_FILE_TYPE: "image/png"
-          })
-
+      user_chat.update_history(
+          query_engine=query_engine,
+          query_references=query_references,
+          query_refs_str=query_refs_str
+      )
       chat_data = user_chat.get_fields(reformat_datetime=True)
       chat_data["id"] = user_chat.id
 

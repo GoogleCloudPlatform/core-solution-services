@@ -76,7 +76,7 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
   """
   context = get_context()
   Logger.info(
-    "Generating text with an LLM",
+    "LLM text generation initiated",
     extra={
       "operation": "llm_generate",
       "metric_type": "llm_generation",
@@ -164,7 +164,7 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
   """
   context = get_context()
   Logger.info(
-    "Generating multimodal text with an LLM",
+    "LLM multimodal text generation initiated",
     extra={
       "operation": "llm_generate_multimodal",
       "metric_type": "llm_generation",
@@ -228,6 +228,7 @@ async def llm_chat(prompt: str, llm_type: str,
                    user_data: Optional[dict] = None,
                    chat_files: Optional[List[DataSourceFile]] = None,
                    chat_file_bytes: Optional[bytes] = None,
+                   query_refs_str: Optional[str] = None,
                    stream: bool = False) -> \
                        Union[str, AsyncGenerator[str, None]]:
   """
@@ -242,6 +243,7 @@ async def llm_chat(prompt: str, llm_type: str,
     user_query (optional): a user query to use for context
     chat_files (optional) (List[DataSourceFile]): files to include in chat context
     chat_file_bytes (optional) (bytes): bytes of file to include in chat context
+    query_refs_str: (optional): references for rag sources to include in prompt
     stream: whether to stream the response
   Returns:
     Either the full text response as str, or an AsyncGenerator
@@ -249,7 +251,7 @@ async def llm_chat(prompt: str, llm_type: str,
   """
   context = get_context()
   Logger.info(
-    "Generating chat with an LLM",
+    "LLM chat generation initiated",
     extra={
       "operation": "llm_chat",
       "metric_type": "chat_generation",
@@ -293,6 +295,11 @@ async def llm_chat(prompt: str, llm_type: str,
       # context_prompt includes only text (no images/video) from
       # user_chat.history and user_query.history
       prompt = context_prompt + "\n" + prompt
+
+    # Add query references to the prompt if provided
+    if query_refs_str:
+      prompt += "\n\nReference information for retrieved information:"\
+        + f" {query_refs_str}"
 
     # check whether the context length exceeds the limit for the model
     check_context_length(prompt, llm_type)
@@ -416,7 +423,7 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
   api_url = f"http://{model_endpoint}/v1/models/model:predict"
   context = get_context()
   Logger.info(
-    "Generating text using Truss Hosted Model",
+    "Text generation using Truss Hosted Model initiated",
     extra={
       "operation": "llm_truss_service_predict",
       "metric_type": "llm_generation",
@@ -440,7 +447,7 @@ async def llm_truss_service_predict(llm_type: str, prompt: str,
   json_response = resp.json()
 
   Logger.info(
-    "Received Truss service response",
+    "Truss service response received",
     extra={
       "operation": "llm_truss_service_predict",
       "metric_type": "llm_generation",
@@ -502,7 +509,7 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
     model = models.data[0].id
 
     Logger.info(
-      "Generating text using vLLM Hosted Model",
+      "Text generation with vLLM hosted model initiated",
       extra={
         "operation": "llm_vllm_service_predict",
         "metric_type": "llm_generation",
@@ -527,7 +534,7 @@ async def llm_vllm_service_predict(llm_type: str, prompt: str,
     )
     output = response.choices[0].message.content
     Logger.info(
-      "Received vLLM service response",
+      "Response from vLLM service received",
       extra={
         "operation": "llm_vllm_service_predict",
         "metric_type": "llm_generation",
@@ -587,7 +594,7 @@ async def llm_service_predict(prompt: str, is_chat: bool,
   }
 
   Logger.info(
-    "Sending LLM service request",
+    "LLM service request initiated",
     extra={
       "operation": "llm_service_predict",
       "metric_type": "llm_generation",
@@ -612,7 +619,7 @@ async def llm_service_predict(prompt: str, is_chat: bool,
   json_response = resp.json()
 
   Logger.info(
-    "Received LLM service response",
+    "LLM service response received",
     extra={
       "operation": "llm_service_predict",
       "metric_type": "llm_generation",
@@ -661,7 +668,7 @@ async def model_garden_predict(prompt: str,
                 "messages":[{"role": "user",
                              "content": f"{prompt}"}]}
     Logger.info(
-      "Generating text using OpenAPI for Model Garden",
+      "Text generation using OpenAPI for Model Garden initiated",
       extra={
         "operation": "model_garden_predict",
         "metric_type": "llm_generation",
@@ -685,7 +692,7 @@ async def model_garden_predict(prompt: str,
 
     json_response = resp.json()
     Logger.info(
-      "Received Model Garden OpenAPI response",
+      "Model Garden OpenAPI response received",
       extra={
         "operation": "model_garden_predict",
         "metric_type": "llm_generation",
@@ -702,7 +709,7 @@ async def model_garden_predict(prompt: str,
   aip_endpoint = f"projects/{PROJECT_ID}/locations/" \
                  f"{REGION}/endpoints/{aip_endpoint_name}"
   Logger.info(
-    "Generating text using Model Garden",
+    "Text generation with Model Garden initiated",
     extra={
       "operation": "model_garden_predict",
       "metric_type": "llm_generation",
@@ -730,7 +737,7 @@ async def model_garden_predict(prompt: str,
 
   predictions_text = "\n".join(response.predictions)
   Logger.info(
-    "Received Model Garden response",
+    "Model Garden response received",
     extra={
       "operation": "model_garden_predict",
       "metric_type": "llm_generation",
@@ -806,7 +813,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
   """
   context = get_context()
   Logger.info(
-    "Generating text with a Google multimodal LLM",
+    "Text generation with Google multimodal LLM initiated",
     extra={
       "operation": "google_llm_predict",
       "metric_type": "llm_generation",
@@ -933,7 +940,7 @@ async def google_llm_predict(prompt: str, is_chat: bool, is_multimodal: bool,
     raise InternalServerError(str(e)) from e
 
   Logger.info(
-    "Received response from Google LLM",
+    "Google LLM response received",
     extra={
       "operation": "google_llm_predict",
       "metric_type": "llm_generation",

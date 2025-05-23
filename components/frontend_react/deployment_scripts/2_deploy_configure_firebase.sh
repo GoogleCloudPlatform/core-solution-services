@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+# PROJECT_ID and FIREBASE_APP_NAME are passed as arguments from the main script
 PROJECT_ID="$1"
 FIREBASE_APP_NAME="$2"
 
@@ -19,7 +20,22 @@ fetch_sdk_config() {
   delay=5
   for i in $(seq 1 $retries); do
     echo "Attempting to fetch Firebase SDK config (attempt $i)..."
-    firebase apps:sdkconfig WEB "$app_id" --project "$PROJECT_ID" | awk 'BEGIN {print "{"} /^\s*"projectId":/ || /^\s*"appId":/ || /^\s*"storageBucket":/ || /^\s*"apiKey":/ || /^\s*"authDomain":/ || /^\s*"messagingSenderId":/ {print $0} END {print "}"}' > sdkconfig.json
+    firebase apps:sdkconfig WEB "$app_id" --project "$PROJECT_ID" | awk '
+      BEGIN {print "{"}
+      /^\s*"projectId":/ || /^\s*"appId":/ || /^\s*"storageBucket":/ || /^\s*"apiKey":/ || /^\s*"authDomain":/ || /^\s*"messagingSenderId":/ {
+        line = $0;
+        # Remove trailing comma if present
+        gsub(/,\s*$/, "", line);
+        # Store the line
+        lines[count++] = line;
+      }
+      END {
+        # Print all lines with appropriate commas
+        for (i = 0; i < count; i++) {
+          print lines[i] (i < count-1 ? "," : "");
+        }
+        print "}";
+      }' > sdkconfig.json
     if [ -s sdkconfig.json ] && is_valid_json; then
       if [ $? -eq 0 ]; then
         echo "Firebase SDK config fetched successfully."
@@ -47,8 +63,42 @@ fetch_sdk_config() {
   done
 }
 
+# Check if Firebase is already enabled for this project
+echo "Checking if Firebase is already enabled for project $PROJECT_ID..."
+firebase_enabled=false
+if firebase projects:list | grep -q "$PROJECT_ID"; then
+  echo "Firebase is already enabled for project $PROJECT_ID"
+  firebase_enabled=true
+else
+  echo "Adding Firebase to GCP project..."
+  firebase projects:addfirebase "$PROJECT_ID"
+  
+  echo "Waiting for Firebase provisioning..."
+  max_attempts=12
+  attempt=1
+  wait_time=10
+  
+  while [ $attempt -le $max_attempts ]; do
+    echo "Checking Firebase provisioning status (attempt $attempt/$max_attempts)..."
+    if firebase projects:list | grep -q "$PROJECT_ID"; then
+      firebase_enabled=true
+      echo "Firebase successfully provisioned for project $PROJECT_ID"
+      break
+    fi
+    
+    echo "Firebase still provisioning. Waiting $wait_time seconds..."
+    sleep $wait_time
+    attempt=$((attempt + 1))
+  done
+  
+  if [ "$firebase_enabled" = false ]; then
+    echo "ERROR: Firebase provisioning timed out after $((max_attempts * wait_time)) seconds."
+    exit 1
+  fi
+fi
+
 # Check if Firebase app matching the app name already exists
-existing_app=$(firebase apps:list | grep "$FIREBASE_APP_NAME" | awk '{print $4}' | tr -d '│ ')
+existing_app=$(firebase apps:list --project=$PROJECT_ID | grep "$FIREBASE_APP_NAME" | awk '{print $4}' | tr -d '│ ')
 
 if [ -z "$existing_app" ]; then
   echo "Updating .firebaserc with project ID..."
@@ -61,7 +111,7 @@ if [ -z "$existing_app" ]; then
 EOL
 
   echo "Creating Firebase app..."
-  app_create_output=$(firebase apps:create web "$FIREBASE_APP_NAME")
+  app_create_output=$(firebase apps:create web "$FIREBASE_APP_NAME" --project=$PROJECT_ID)
 
   app_id=$(echo "$app_create_output" | grep "App ID:" | awk '{print $4}')
 
@@ -79,7 +129,7 @@ EOL
 
 else
   echo "Firebase app '$FIREBASE_APP_NAME' already exists. Skipping creation."
-  app_id=$(firebase apps:list | grep "$FIREBASE_APP_NAME" | awk '{print $4}' | tr -d '│ ')
+  app_id=$(firebase apps:list --project=$PROJECT_ID | grep "$FIREBASE_APP_NAME" | awk '{print $4}' | tr -d '│ ')
 
   if [ -z "$app_id" ]; then
     echo "Error: failed to retrieve app id from firebase apps:list"
