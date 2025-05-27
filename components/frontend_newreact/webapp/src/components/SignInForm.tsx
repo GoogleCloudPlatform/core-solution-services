@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Loading from "@/components/Loading"
-import { AppConfig, isEmailAuthorized } from "@/lib/auth"
-import { classNames } from "@/lib/dom"
-import { auth, googleProvider, logEvent } from "@/lib/firebase"
-import { IAuthProvider } from "@/lib/types"
+import Loading from "../../src/components/Loading"
+import { AppConfig, isEmailAuthorized } from "../../src/lib/auth"
+import { classNames } from "../../src/lib/dom"
+import { auth, googleProvider, logEvent } from "../../src/lib/firebase"
+import { IAuthProvider } from "../../src/lib/types"
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,

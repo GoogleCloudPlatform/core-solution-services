@@ -1,8 +1,8 @@
-import SignInForm from '@/components/SignInForm';
-import { AppConfig } from '@/lib/auth';
+import SignInForm from '../../src/components/SignInForm';
+import { AppConfig } from '../../src/lib/auth';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from "react-i18next"
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../../src/contexts/AuthContext';
 import { useEffect } from 'react';
 
 const SignIn = () => {

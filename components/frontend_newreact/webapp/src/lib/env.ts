@@ -22,10 +22,15 @@ export const envOrFail = (
   // https://nextjs.org/docs/basic-features/environment-variables
   if (typeof value === "undefined" || value === "") {
     if (fallback) {
-      console.warn(`${name} was not set. Defaulting to ${fallback}`)
-      return fallback
+      console.warn(`${name} was not set. Defaulting to ${fallback}`);
+      return fallback;
     }
-    throw new Error(`${name} is not set`)
+    throw new Error(`${name} is not set`);
   }
-  return value
-}
+  return value;
+};
+
+export const getEnvVars = () => ({
+  VITE_PUBLIC_API_ENDPOINT: 'https://your-domain-name/llm-service/api/v1',
+  VITE_PUBLIC_API_JOBS_ENDPOINT: 'https://your-domain-name/jobs-service/api/v1',
+});

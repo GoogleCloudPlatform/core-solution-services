@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { AppConfig } from "@/lib/auth"
-import { envOrFail } from "@/lib/env"
+import { AppConfig } from "../../src/lib/auth"
+import { envOrFail } from "../../src/lib/env"
 import {
   logEvent as fbLogEvent,
   getAnalytics as getFirebaseAnalytics,
@@ -27,32 +27,32 @@ import { connectStorageEmulator, getStorage } from "firebase/storage"
 
 const apiKey = envOrFail(
   "VITE_FIREBASE_PUBLIC_API_KEY",
-  import.meta.env.VITE_FIREBASE_PUBLIC_API_KEY,
+  process.env.VITE_FIREBASE_PUBLIC_API_KEY,
 )
 
 const authDomain = envOrFail(
   "VITE_FIREBASE_AUTH_DOMAIN",
-  import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  process.env.VITE_FIREBASE_AUTH_DOMAIN,
 )
 
 const projectId = envOrFail(
   "VITE_FIREBASE_PROJECT_ID",
-  import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  process.env.VITE_FIREBASE_PROJECT_ID,
 )
 
 const storageBucket = envOrFail(
   "VITE_FIREBASE_STORAGE_BUCKET",
-  import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  process.env.VITE_FIREBASE_STORAGE_BUCKET,
 )
 
 const messagingSenderId = envOrFail(
   "VITE_FIREBASE_MESSAGING_SENDER_ID",
-  import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
 )
 
 const appId = envOrFail(
   "VITE_FIREBASE_APP_ID",
-  import.meta.env.VITE_FIREBASE_APP_ID,
+  process.env.VITE_FIREBASE_APP_ID,
 )
 
 // const measurementId = envOrFail(
@@ -81,7 +81,7 @@ const getAnalytics = () => {
 }
 
 const logEvent = (eventName: string, eventParams?: { [key: string]: any }) => {
-  import.meta.env.DEV
+  process.env.DEV
     ? console.debug("Dev logging event:", eventName, eventParams)
     : fbLogEvent(getAnalytics(), eventName, eventParams)
 }
@@ -96,7 +96,7 @@ const storage = getStorage(app)
 const googleProvider = new GoogleAuthProvider()
 AppConfig.oAuthScopes.forEach((scope) => googleProvider.addScope(scope))
 
-if (import.meta.env.DEV) {
+if (process.env.DEV) {
   try {
     console.debug("Connecting Firebase Emulators")
     connectStorageEmulator(storage, "localhost", 9199)

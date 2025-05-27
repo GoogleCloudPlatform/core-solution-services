@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { auth } from '@/lib/firebase';
+import { auth } from '../../src/lib/firebase';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { AppConfig } from '@/lib/auth';
+import { AppConfig } from '../../src/lib/auth';
 import { useTranslation } from "react-i18next";
 import { Link } from 'react-router-dom';
 

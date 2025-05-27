@@ -18,8 +18,8 @@ import styled from '@emotion/styled';
 import InfoIcon from '@mui/icons-material/Info';
 import { NavigateNext as NavigateNextIcon } from '@mui/icons-material'; // Import the icon
 import { QUERY_ENGINE_TYPES, QUERY_ENGINE_DEFAULT_TYPE, QueryEngine } from '../lib/types';
-import { fetchEngine, updateQueryEngine } from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
+import { fetchEngine, updateQueryEngine } from '../../src/lib/api';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 
 const StyledSelect = styled(Select)({
