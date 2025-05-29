@@ -69,6 +69,7 @@ firebase_enabled=false
 if firebase projects:list | grep -q "$PROJECT_ID"; then
   echo "Firebase is already enabled for project $PROJECT_ID"
   firebase_enabled=true
+
 else
   echo "Adding Firebase to GCP project..."
   firebase projects:addfirebase "$PROJECT_ID"
