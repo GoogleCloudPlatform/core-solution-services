@@ -45,7 +45,8 @@
     "Anthropic": {
       "enabled": true,
       "env_flag": "ENABLE_ANTHROPIC",
-      "description": "Provides access to Anthropic's Claude model."
+      "description": "Provides access to Anthropic's Claude model.",
+      "region": "us-east5"
     }
   },
   "vendors": {
@@ -242,12 +243,26 @@
       "name": "Claude 3.7 Sonnet",
       "vendor": "Anthropic",
       "is_chat": true,
+      "is_multi": true,
       "provider": "Anthropic",
       "enabled": true,
-      "context_length": 128000,
+      "context_length": 200000,
       "model_endpoint": "claude-3-7-sonnet@20250219",
-      "token_limit": 1024,
-      "description": "A multimodal model from Anthropic."
+      "token_limit": 4096,
+      "description": "A multimodal model from Anthropic.",
+      "capabilities": [
+        "Chat",
+        "Text Generation",
+        "Image Analysis",
+        "Visual Understanding",
+        "Code Generation"
+      ],
+      "date_added": "2025-02-19",
+      "model_params": {
+        "temperature": 0.7,
+        "max_tokens": 4096,
+        "top_p": 0.9
+      }
     }
   },
   "embeddings": {

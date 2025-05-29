@@ -190,7 +190,10 @@ async def anthropic_predict(prompt: str,
   )
 
   try:
-    client = AnthropicVertex(project_id=PROJECT_ID, region="us-east5")
+    region = get_model_config_value(llm_type, "region", None)
+    if region is None:
+      region = get_provider_value(PROVIDER_ANTHROPIC, "region", "us-east5")
+    client = AnthropicVertex(project_id=PROJECT_ID, region=region)
     model_name = get_provider_value(PROVIDER_ANTHROPIC,
                                     KEY_MODEL_ENDPOINT,
                                     llm_type)
