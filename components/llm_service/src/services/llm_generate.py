@@ -201,17 +201,22 @@ async def anthropic_predict(prompt: str,
 
   try:
     # Get region from provider default
-    region = get_provider_value(PROVIDER_ANTHROPIC, KEY_MODEL_REGION, "us-east5")
+    region = get_provider_value(PROVIDER_ANTHROPIC,
+                                KEY_MODEL_REGION,
+                                model_id=None,
+                                default="us-east5")
 
     Logger.info(f"Using Anthropic region: {region} for model: {llm_type}")
     client = AnthropicVertex(project_id=PROJECT_ID, region=region)
 
     model_name = get_provider_value(PROVIDER_ANTHROPIC,
                                     KEY_MODEL_ENDPOINT,
-                                    llm_type)
+                                    model_id=llm_type)
+
     token_limit = get_provider_value(PROVIDER_ANTHROPIC,
                                      KEY_MODEL_TOKEN_LIMIT,
-                                     llm_type)
+                                     model_id=llm_type)
+
 
     if token_limit is None:
       token_limit = 4096
