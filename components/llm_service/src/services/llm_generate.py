@@ -200,10 +200,8 @@ async def anthropic_predict(prompt: str,
   )
 
   try:
-    # Get region from model config - try model-specific first, then provider default
-    region = get_model_config_value(llm_type, KEY_MODEL_REGION, None)
-    if region is None:
-      region = get_provider_value(PROVIDER_ANTHROPIC, KEY_MODEL_REGION, "us-east5")
+    # Get region from provider default
+    region = get_provider_value(PROVIDER_ANTHROPIC, KEY_MODEL_REGION, "us-east5")
 
     Logger.info(f"Using Anthropic region: {region} for model: {llm_type}")
     client = AnthropicVertex(project_id=PROJECT_ID, region=region)
