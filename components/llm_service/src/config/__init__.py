@@ -117,6 +117,7 @@ from config.model_config import (
     KEY_SUB_PROVIDER,
     KEY_NAME,
     KEY_DEFAULT_SYSTEM_PROMPT,
+    KEY_MODEL_REGION,
 
     # model types
     MODEL_TYPES,
