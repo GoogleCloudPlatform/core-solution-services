@@ -23,7 +23,7 @@
       }
     },
     "Langchain": {
-      "enabled": false,
+      "enabled": true,
       "env_flag": "ENABLE_LANGCHAIN_LLM",
       "description": "Provides integration with various language models through the Langchain framework."
     },
