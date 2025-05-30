@@ -66,6 +66,7 @@ KEY_CAPABILITIES = "capabilities"
 KEY_DATE_ADDED = "date_added"
 KEY_NAME = "name"
 KEY_DEFAULT_SYSTEM_PROMPT = "default_system_prompt"
+KEY_REGION = "region"
 
 MODEL_CONFIG_KEYS = [
   KEY_ENABLED,
@@ -93,7 +94,8 @@ MODEL_CONFIG_KEYS = [
   KEY_CAPABILITIES,
   KEY_DATE_ADDED,
   KEY_NAME,
-  KEY_DEFAULT_SYSTEM_PROMPT
+  KEY_DEFAULT_SYSTEM_PROMPT,
+  KEY_REGION
 ]
 
 # model providers
