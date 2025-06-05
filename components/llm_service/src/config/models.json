@@ -85,7 +85,7 @@
         "top_k": 40
       },
       "context_length": 1000000,
-      "enabled": true
+      "enabled": false
     },
     "VertexAI-Gemini-Flash": {
       "name": "Gemini 1.5 Flash",
