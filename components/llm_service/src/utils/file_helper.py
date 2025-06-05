@@ -19,6 +19,7 @@ File processing helper functions.
 
 import os
 import tempfile
+import base64
 from typing import List, Union
 from urllib.parse import urlparse
 from base64 import b64decode
@@ -219,3 +220,40 @@ def validate_multimodal_file_type(file_name, file_b64=None) -> Union[str, None]:
       return None
 
   return mime_type
+
+async def read_gcs_file_as_base64(gcs_path: str) -> str:
+  """
+  Read file from Google Cloud Storage and return as base64-encoded string.
+  Added to support Anthropic models which require base64 encoded
+  treatment of file attachments
+  
+  Args:
+    gcs_path: GCS path to the file (e.g., 'gs://bucket/path/file.jpg')
+    
+  Returns:
+    str: File content as base64-encoded string
+    
+  Raises:
+    ValidationError: If the GCS path is invalid
+    UnsupportedError: If the file cannot be read from GCS
+  """
+  try:
+    if not gcs_path.startswith("gs://"):
+      raise ValidationError(f"Invalid GCS path: {gcs_path}")
+
+    path_parts = gcs_path[5:].split("/", 1)  # Remove 'gs://' prefix
+    bucket_name = path_parts[0]
+    blob_name = path_parts[1] if len(path_parts) > 1 else ""
+
+    storage_client = storage.Client(project=PROJECT_ID)
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+
+    file_bytes = blob.download_as_bytes()
+    return base64.b64encode(file_bytes).decode("utf-8")
+
+  except ValidationError:
+    raise
+  except Exception as e:
+    Logger.error(f"Failed to read file from GCS {gcs_path}: {e}")
+    raise UnsupportedError(f"Cannot read file from GCS: {e}") from e

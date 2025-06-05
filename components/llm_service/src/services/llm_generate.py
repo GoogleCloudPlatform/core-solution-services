@@ -28,6 +28,7 @@ from vertexai.generative_models import (
     GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold, Content)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
+from utils.file_helper import read_gcs_file_as_base64
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
@@ -265,8 +266,7 @@ async def anthropic_predict(prompt: str,
           if user_file.gcs_path:
             # Read file from GCS path and convert to base64
             try:
-              file_bytes = await _read_file_from_gcs(user_file.gcs_path)
-              encoded_data = base64.b64encode(file_bytes).decode("utf-8")
+              encoded_data = await read_gcs_file_as_base64(user_file.gcs_path)
               current_message_content.append({
                 "type": "image",
                 "source": {
@@ -416,39 +416,6 @@ def _is_anthropic_supported_image(mime_type: str) -> bool:
     "image/webp"
   ]
   return mime_type.lower() in supported_types
-
-
-async def _read_file_from_gcs(gcs_path: str) -> bytes:
-  """
-  Read file bytes from Google Cloud Storage.
-  
-  Args:
-    gcs_path: GCS path to the file (e.g., 'gs://bucket/path/file.jpg')
-    
-  Returns:
-    bytes: File content as bytes
-  """
-  try:
-    from google.cloud import storage
-
-    # Parse GCS path
-    if not gcs_path.startswith("gs://"):
-      raise ValueError(f"Invalid GCS path: {gcs_path}")
-
-    path_parts = gcs_path[5:].split("/", 1)  # Remove 'gs://' prefix
-    bucket_name = path_parts[0]
-    blob_name = path_parts[1] if len(path_parts) > 1 else ""
-
-    # Create storage client and download file
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(blob_name)
-
-    return blob.download_as_bytes()
-
-  except Exception as e:
-    Logger.error(f"Failed to read file from GCS {gcs_path}: {e}")
-    raise InternalServerError(f"Cannot read file from GCS: {e}") from e
 
 
 async def llm_generate_multimodal(prompt: str, llm_type: str,
