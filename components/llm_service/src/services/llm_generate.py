@@ -227,7 +227,7 @@ async def anthropic_predict(prompt: str,
 
     # Add chat history if provided
     if user_chat is not None:
-      messages.extend(convert_history_to_anthropic_messages(user_chat.history))
+      messages.extend(await convert_history_to_anthropic_messages(user_chat.history))
 
     # Build current message content
     current_message_content = []
