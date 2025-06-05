@@ -324,10 +324,10 @@ async def anthropic_predict(prompt: str,
     raise e
 
 
-def convert_history_to_anthropic_messages(history: list) -> list:
+async def convert_history_to_anthropic_messages(history: list) -> list:
   """
   Convert UserChat history to Anthropic messages format.
-  Includes Anthropic-specific file validation.
+  Includes Anthropic-specific file validation and GCS file handling.
   
   Args:
     history: A history entry from a UserChat object
@@ -382,12 +382,26 @@ def convert_history_to_anthropic_messages(history: list) -> list:
             Logger.info(f"Added history image to Anthropic: {file_type}")
           else:
             Logger.warning(f"Skipping unsupported history file for Anthropic: {file_type}")
+
         elif UserChat.is_file_uri(entry):
           file_uri = UserChat.get_file_uri(entry)
           file_type = UserChat.get_file_type(entry)
           if _is_anthropic_supported_image(file_type):
-            Logger.warning(f"File URI in history needs GCS reading for Anthropic: {file_uri}")
-            # Could implement GCS reading here if needed
+            try:
+              encoded_data = await read_gcs_file_as_base64(file_uri)
+              messages[-1]["content"].append({
+                "type": "image",
+                "source": {
+                  "type": "base64",
+                  "media_type": file_type,
+                  "data": encoded_data
+                }
+              })
+              Logger.info(f"Added GCS history image to Anthropic: {file_uri}")
+            except Exception as e:
+              Logger.error(f"Failed to read GCS file from history {file_uri}: {e}")
+              # Continue processing without failing the entire conversion
+              Logger.warning(f"Skipping GCS file due to read error: {file_uri}")
           else:
             Logger.warning(f"Skipping unsupported history file for Anthropic: {file_type}")
       else:

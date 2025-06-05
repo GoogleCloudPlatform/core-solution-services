@@ -77,7 +77,7 @@
         "Text Generation",
         "Code Generation"
       ],
-      "date_added": "2025-06-05",
+      "date_added": "2025-02-05",
       "model_params": {
         "temperature": 0.2,
         "max_output_tokens": 8192,

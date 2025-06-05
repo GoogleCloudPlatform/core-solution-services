@@ -661,13 +661,6 @@ async def user_chat_generate(chat_id: str,
     # set llm type for chat
     llm_type = genconfig_dict.get("llm_type", None)
 
-    #debug
-    Logger.info(f"llm_type at genconfig_dict call: {llm_type}")
-    if llm_type is None:
-      llm_type = user_chat.llm_type or DEFAULT_CHAT_LLM_TYPE
-    #debug
-    Logger.info(f"llm_type after genconfig_dict call: {llm_type}")
-
     # get streaming mode
     stream = genconfig_dict.get("stream", False)
 
