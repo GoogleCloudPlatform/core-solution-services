@@ -66,18 +66,18 @@
   "default_system_prompt": "You are a helpful AI assistant.",
   "models": {
     "VertexAI-Chat": {
-      "name": "Gemini 1.5 Flash",
+      "name": "Gemini 2.0 Flash Pro",
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
-      "model_name": "gemini-1.5-flash",
+      "model_name": "gemini-2.0-flash-001",
       "description": "Latest Gemini model optimized for fast responses while maintaining high quality output",
       "capabilities": [
         "Chat",
         "Text Generation",
         "Code Generation"
       ],
-      "date_added": "2024-03-15",
+      "date_added": "2025-06-05",
       "model_params": {
         "temperature": 0.2,
         "max_output_tokens": 8192,
@@ -85,7 +85,7 @@
         "top_k": 40
       },
       "context_length": 1000000,
-      "enabled": false
+      "enabled": true
     },
     "VertexAI-Gemini-Flash": {
       "name": "Gemini 1.5 Flash",
