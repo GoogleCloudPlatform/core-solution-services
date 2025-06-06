@@ -85,7 +85,7 @@ QUERY_ENGINE_EXAMPLE = {
   "description": "sample description",
   "doc_url": "https://example.com",
   "query_engine_type": "qe_llm_service",
-  "embedding_type": "VertexAI-Embedding",
+  "embedding_type": "VertexAI-Gemini-2.0-Flash",
   "read_access_group": "2023:7:50:080:101:A1",
   "vector_store": "langchain_pgvector",
   "created_by": "fake-user-id",
