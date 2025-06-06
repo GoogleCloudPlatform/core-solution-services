@@ -28,7 +28,6 @@ from vertexai.generative_models import (
     GenerativeModel, Part, GenerationConfig, HarmCategory, HarmBlockThreshold, Content)
 from common.config import PROJECT_ID, REGION
 from common.models import UserChat, UserQuery
-from utils.file_helper import read_gcs_file_as_base64
 from common.utils.errors import ResourceNotFoundException
 from common.utils.http_exceptions import InternalServerError
 from common.utils.logging_handler import Logger
@@ -52,6 +51,7 @@ from config import (get_model_config, get_provider_models,
 from services.langchain_service import langchain_llm_generate
 from services.query.data_source import DataSourceFile
 from utils.errors import ContextWindowExceededException
+from utils.file_helper import read_gcs_file_as_base64
 from anthropic import AnthropicVertex
 
 Logger = Logger.get_logger(__file__)
@@ -170,7 +170,7 @@ async def anthropic_predict(prompt: str,
   Args:
     prompt: the text prompt to pass to the LLM
     llm_type: the type of LLM to use (anthropic claude sonnet)
-    parameters: dict of parameters
+    parameters: dict of parameters for the model (temperature, top_p, etc.)
     stream: whether to stream the response
     user_file_bytes: bytes of the file provided by the user
     user_files: list of DataSourceFiles for files provided by the user
@@ -201,7 +201,6 @@ async def anthropic_predict(prompt: str,
   )
 
   try:
-    # Get region from provider default
     region = get_provider_value(PROVIDER_ANTHROPIC,
                                 KEY_MODEL_REGION,
                                 model_id=None,
@@ -218,9 +217,21 @@ async def anthropic_predict(prompt: str,
                                      KEY_MODEL_TOKEN_LIMIT,
                                      model_id=llm_type)
 
-
     if token_limit is None:
       token_limit = 4096
+
+    # Prepare API call parameters
+    api_params = {
+      "model": model_name,
+      "max_tokens": token_limit
+    }
+
+    # Add custom parameters if provided
+    if parameters:
+      allowed_params = ["temperature", "top_p", "top_k", "stop_sequences"]
+      for param, value in parameters.items():
+        if param in allowed_params:
+          api_params[param] = value
 
     # Build messages array with chat history and current prompt
     messages = []
@@ -294,15 +305,14 @@ async def anthropic_predict(prompt: str,
       "content": current_message_content
     })
 
+    # Add messages to API parameters
+    api_params["messages"] = messages
+
     if stream:
       # Return an async generator for streaming
       async def stream_response():
         try:
-          with client.messages.stream(
-            model=model_name,
-            max_tokens=token_limit,
-            messages=messages
-          ) as stream:
+          with client.messages.stream(**api_params) as stream:
             for text in stream.text_stream:
               yield text
         except Exception as e:
@@ -312,11 +322,7 @@ async def anthropic_predict(prompt: str,
       return stream_response()
     else:
       # Non-streaming response
-      predictions_text = client.messages.create(
-        model=model_name,
-        max_tokens=token_limit,
-        messages=messages
-      )
+      predictions_text = client.messages.create(**api_params)
       return predictions_text.content[0].text
 
   except Exception as e:
@@ -402,6 +408,7 @@ async def convert_history_to_anthropic_messages(history: list) -> list:
               Logger.error(f"Failed to read GCS file from history {file_uri}: {e}")
               # Continue processing without failing the entire conversion
               Logger.warning(f"Skipping GCS file due to read error: {file_uri}")
+              raise
           else:
             Logger.warning(f"Skipping unsupported history file for Anthropic: {file_type}")
       else:
