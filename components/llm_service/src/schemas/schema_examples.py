@@ -22,7 +22,7 @@ LLM_GENERATE_EXAMPLE = {
 
 LLM_MULTIMODAL_GENERATE_EXAMPLE = {
   "prompt": "what is this image about?",
-  "llm_type": "gemini-1.5-flash",
+  "llm_type": "gemini-2.0-flash-001",
   "user_file_b64": "",
   "user_file_name": "",
 }
@@ -41,7 +41,7 @@ LLM_MULTIMODAL_EMBEDDINGS_EXAMPLE = {
 
 QUERY_EXAMPLE = {
   "prompt": "test prompt",
-  "llm_type": "VertexAI-Chat",
+  "llm_type": "gemini-2.0-flash-001",
   "query_filter": "{\"Title\":\"Document Title\"}"
 }
 
@@ -85,7 +85,7 @@ QUERY_ENGINE_EXAMPLE = {
   "description": "sample description",
   "doc_url": "https://example.com",
   "query_engine_type": "qe_llm_service",
-  "embedding_type": "VertexAI-Chat",
+  "embedding_type": "VertexAI-Embedding",
   "read_access_group": "2023:7:50:080:101:A1",
   "vector_store": "langchain_pgvector",
   "created_by": "fake-user-id",
