@@ -3,7 +3,7 @@
  * 
  * A Material UI based sidebar navigation component.
  */
-
+/// <reference path="../../custom.d.ts" />
 import { useState } from 'react';
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
@@ -24,7 +24,7 @@ import StorageIcon from '@mui/icons-material/Storage';
 import Divider from '@mui/material/Divider';
 import ChatHistory from './ChatHistory';
 import ChatScreen from './ChatScreen';
-import { useSidebarStore } from '@/lib/sidebarStore';
+import { useSidebarStore } from '../../src/lib/sidebarStore';
 import { Chat } from '../lib/types';
 import SettingsDrawer from './SettingsDrawer';
 import CloudIcon from '../assets/cloud.svg'; // Import your SVG

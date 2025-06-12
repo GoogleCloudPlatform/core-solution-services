@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { envOrFail } from "@/lib/env"
-import { Chat, ChatModel, Query, QueryEngine, QueryEngineBuildJob } from "@/lib/types"
+import { envOrFail } from "../../src/lib/env"
+import { Chat, ChatModel, Query, QueryEngine, QueryEngineBuildJob } from "../../src/lib/types"
 import axios from "axios"
 import { path } from "ramda"
 
@@ -91,12 +91,12 @@ interface ModelResponse {
 
 const endpoint = envOrFail(
   "VITE_PUBLIC_API_ENDPOINT",
-  import.meta.env.VITE_PUBLIC_API_ENDPOINT,
+  process.env.VITE_PUBLIC_API_ENDPOINT,  // Use process.env instead of import.meta.env
 )
 
 export const jobsEndpoint = envOrFail(
   "VITE_PUBLIC_API_JOBS_ENDPOINT",
-  import.meta.env.VITE_PUBLIC_API_JOBS_ENDPOINT,
+  process.env.VITE_PUBLIC_API_JOBS_ENDPOINT,  // Use process.env here as well
 )
 
 export const fetchAllChatModels =

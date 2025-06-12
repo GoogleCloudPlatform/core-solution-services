@@ -46,7 +46,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
     <Box className="upload-modal">
       <Box className="upload-modal-header">
         <Typography variant="h6" id="upload-modal-title">Add Files</Typography>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onClose} size="small" aria-label="close">
           <CloseIcon />
         </IconButton>
       </Box>
