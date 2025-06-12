@@ -224,9 +224,7 @@ def validate_multimodal_file_type(file_name, file_b64=None) -> Union[str, None]:
 async def read_gcs_file_as_base64(gcs_path: str) -> str:
   """
   Read file from Google Cloud Storage and return as base64-encoded string.
-  Added to support Anthropic models which require base64 encoded
-  treatment of file attachments
-  
+
   Args:
     gcs_path: GCS path to the file (e.g., 'gs://bucket/path/file.jpg')
     
@@ -252,8 +250,6 @@ async def read_gcs_file_as_base64(gcs_path: str) -> str:
     file_bytes = blob.download_as_bytes()
     return base64.b64encode(file_bytes).decode("utf-8")
 
-  except ValidationError:
-    raise
   except Exception as e:
     Logger.error(f"Failed to read file from GCS {gcs_path}: {e}")
     raise UnsupportedError(f"Cannot read file from GCS: {e}") from e

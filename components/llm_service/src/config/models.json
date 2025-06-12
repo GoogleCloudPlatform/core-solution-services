@@ -66,7 +66,7 @@
   "default_system_prompt": "You are a helpful AI assistant.",
   "models": {
     "VertexAI-Chat": {
-      "name": "Gemini 2.0 Flash Pro",
+      "name": "Gemini 2.0 Flash",
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
@@ -139,11 +139,11 @@
       "enabled": false
     },
     "VertexAI-Gemini-2.0-Flash": {
-      "name": "Gemini 2.0 Flash Pro",
+      "name": "Gemini 2.0 Flash",
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
-      "model_name": "gemini-2.0-flash-001",
+      "model_name": "gemini-2.0-flash",
       "model_params": {
         "temperature": 0.2,
         "max_output_tokens": 8192,
@@ -155,11 +155,11 @@
       "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone."
     },
     "VertexAI-Gemini-2.0-Flash-Lite": {
-      "name": "Gemini 2.0 Flash Light",
+      "name": "Gemini 2.0 Flash Lite",
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
-      "model_name": "gemini-2.0-flash-lite-001",
+      "model_name": "gemini-2.0-flash-lite",
       "model_params": {
         "temperature": 0.2,
         "max_output_tokens": 8192,
@@ -275,7 +275,7 @@
       "is_chat": true,
       "is_multi": true,
       "provider": "Anthropic",
-      "enabled": true,
+      "enabled": false,
       "context_length": 200000,
       "model_endpoint": "claude-3-7-sonnet@20250219",
       "token_limit": 4096,

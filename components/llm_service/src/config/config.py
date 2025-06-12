@@ -38,7 +38,7 @@ from config.model_config import (ModelConfig, VENDOR_OPENAI,
                                 VERTEX_LLM_TYPE_GECKO_EMBEDDING_VISION,
                                 VERTEX_LLM_TYPE_GEMINI_FLASH,
                                 VERTEX_LLM_TYPE_GEMINI_2_0_FLASH,
-                                VERTEX_LLM_TYPE_GEMINI_2_0_FLASH_LIGHT)
+                                VERTEX_LLM_TYPE_GEMINI_2_0_FLASH_LITE)
 
 Logger = Logger.get_logger(__file__)
 secrets = secretmanager.SecretManagerServiceClient()

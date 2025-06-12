@@ -273,28 +273,30 @@ async def anthropic_predict(prompt: str,
       # Handle multiple files or files with URIs
       supported_files_count = 0
       for user_file in user_files:
-        if _is_anthropic_supported_image(user_file.mime_type):
-          if user_file.gcs_path:
-            # Read file from GCS path and convert to base64
-            try:
-              encoded_data = await read_gcs_file_as_base64(user_file.gcs_path)
-              current_message_content.append({
-                "type": "image",
-                "source": {
-                  "type": "base64",
-                  "media_type": user_file.mime_type,
-                  "data": encoded_data
-                }
-              })
-              supported_files_count += 1
-              Logger.info(f"Added GCS image to Anthropic request: {user_file.gcs_path}")
-            except Exception as e:
-              Logger.error(f"Failed to read file from GCS: {e}")
-              raise
-          else:
-            Logger.warning(f"No file content available for: {user_file}")
-        else:
+        if not _is_anthropic_supported_image(user_file.mime_type):
           Logger.warning(f"Skipping unsupported file type for Anthropic: {user_file.mime_type}")
+          continue
+
+        if not user_file.gcs_path:
+          Logger.warning(f"No file content available for: {user_file}")
+          continue
+
+        # Read file from GCS path and convert to base64
+        try:
+          encoded_data = await read_gcs_file_as_base64(user_file.gcs_path)
+          current_message_content.append({
+            "type": "image",
+            "source": {
+              "type": "base64",
+              "media_type": user_file.mime_type,
+              "data": encoded_data
+            }
+          })
+          supported_files_count += 1
+          Logger.info(f"Added GCS image to Anthropic request: {user_file.gcs_path}")
+        except Exception as e:
+          Logger.error(f"Failed to read file from GCS: {e}")
+          raise
 
       if user_files and supported_files_count == 0:
         Logger.warning("No supported image files found for Anthropic model")
@@ -430,12 +432,12 @@ def _is_anthropic_supported_image(mime_type: str) -> bool:
   if not mime_type:
     return False
 
-  supported_types = [
+  supported_types = {
     "image/jpeg",
     "image/png", 
     "image/gif",
     "image/webp"
-  ]
+  }
   return mime_type.lower() in supported_types
 
 
@@ -600,8 +602,8 @@ async def llm_chat(prompt: str, llm_type: str,
 
     # Add query references to the prompt if provided
     if query_refs_str:
-      prompt += "\n\nReference information for retrieved information:"\
-        + f" {query_refs_str}"
+      prompt += ("\n\nReference information for retrieved information:"
+        f" {query_refs_str}")
 
     # check whether the context length exceeds the limit for the model
     check_context_length(prompt, llm_type)

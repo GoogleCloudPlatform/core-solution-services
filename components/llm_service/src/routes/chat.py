@@ -737,8 +737,9 @@ async def user_chat_generate(chat_id: str,
               # Record metrics
               LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
               # Save response to history after streaming completes
-              user_chat.update_history(prompt, response_content)
               user_chat.update_history(
+                  prompt=prompt,
+                  response_content=response_content,
                   query_engine=query_engine,
                   query_references=query_references,
                   query_refs_str=query_refs_str
