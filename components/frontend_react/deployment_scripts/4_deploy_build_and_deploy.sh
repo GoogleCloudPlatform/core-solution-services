@@ -28,5 +28,4 @@ if ! firebase deploy --only hosting --project $PROJECT_ID; then
   echo "Error: Firebase deployment failed"
   exit 1
 fi
-
 echo "Deployment completed successfully."

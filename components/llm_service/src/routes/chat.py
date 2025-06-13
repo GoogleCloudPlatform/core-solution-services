@@ -37,7 +37,7 @@ from common.utils.errors import (ResourceNotFoundException,
 from common.utils.http_exceptions import (InternalServerError, BadRequest,
                                           ResourceNotFound)
 from common.utils.logging_handler import Logger
-from config import ERROR_RESPONSES, DEFAULT_CHAT_LLM_TYPE, get_model_config
+from config import ERROR_RESPONSES, get_model_config
 from schemas.llm_schema import (ChatUpdateModel,
                                 LLMGenerateModel,
                                 LLMUserChatResponse,
@@ -628,7 +628,6 @@ async def user_chat_generate(chat_id: str,
       chat_files = await process_chat_file(chat_file, chat_file_url)
 
     genconfig_dict = {**gen_config.model_dump()}
-    Logger.info("Chat response generation initiated")
 
     prompt = genconfig_dict.get("prompt")
     if prompt is None or prompt == "":
@@ -661,8 +660,6 @@ async def user_chat_generate(chat_id: str,
 
     # set llm type for chat
     llm_type = genconfig_dict.get("llm_type", None)
-    if llm_type is None:
-      llm_type = user_chat.llm_type or DEFAULT_CHAT_LLM_TYPE
 
     # get streaming mode
     stream = genconfig_dict.get("stream", False)
@@ -699,6 +696,8 @@ async def user_chat_generate(chat_id: str,
           query_refs_str = QueryReference.reference_list_str(query_references)
 
         if stream:
+          #debug
+          Logger.info(f"llm_type at in streaming generator: {llm_type}")
           # Get the streaming generator
           generator = await llm_chat(prompt,
                               llm_type,
@@ -738,8 +737,9 @@ async def user_chat_generate(chat_id: str,
               # Record metrics
               LLM_RESPONSE_SIZE.labels(llm_type=llm_type).observe(total_chars)
               # Save response to history after streaming completes
-              user_chat.update_history(prompt, response_content)
               user_chat.update_history(
+                  prompt=prompt,
+                  response=response_content,
                   query_engine=query_engine,
                   query_references=query_references,
                   query_refs_str=query_refs_str

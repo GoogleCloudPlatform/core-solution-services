@@ -22,7 +22,7 @@ LLM_GENERATE_EXAMPLE = {
 
 LLM_MULTIMODAL_GENERATE_EXAMPLE = {
   "prompt": "what is this image about?",
-  "llm_type": "gemini-1.5-flash",
+  "llm_type": "gemini-2.0-flash-001",
   "user_file_b64": "",
   "user_file_name": "",
 }
@@ -41,7 +41,7 @@ LLM_MULTIMODAL_EMBEDDINGS_EXAMPLE = {
 
 QUERY_EXAMPLE = {
   "prompt": "test prompt",
-  "llm_type": "VertexAI-Chat",
+  "llm_type": "gemini-2.0-flash-001",
   "query_filter": "{\"Title\":\"Document Title\"}"
 }
 

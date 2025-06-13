@@ -41,7 +41,9 @@ from config import (get_model_config, get_provider_models,
                     PROVIDER_VERTEX, PROVIDER_TRUSS,
                     PROVIDER_MODEL_GARDEN, PROVIDER_VLLM,
                     PROVIDER_LANGCHAIN, PROVIDER_LLM_SERVICE,
+                    PROVIDER_ANTHROPIC, KEY_MODEL_REGION,
                     KEY_MODEL_ENDPOINT, KEY_MODEL_NAME,
+                    KEY_MODEL_TOKEN_LIMIT,
                     KEY_MODEL_PARAMS, KEY_MODEL_CONTEXT_LENGTH,
                     DEFAULT_LLM_TYPE, DEFAULT_MULTIMODAL_LLM_TYPE,
                     KEY_SUB_PROVIDER, SUB_PROVIDER_OPENAPI,
@@ -49,6 +51,8 @@ from config import (get_model_config, get_provider_models,
 from services.langchain_service import langchain_llm_generate
 from services.query.data_source import DataSourceFile
 from utils.errors import ContextWindowExceededException
+from utils.file_helper import read_gcs_file_as_base64
+from anthropic import AnthropicVertex
 
 Logger = Logger.get_logger(__file__)
 
@@ -82,7 +86,8 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
       "metric_type": "llm_generation",
       "llm_type": llm_type,
       "prompt_length": len(prompt) if prompt else 0,
-      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50\
+          else prompt if prompt else "",
       "stream": stream,
       "request_id": context["request_id"],
       "trace": context["trace"],
@@ -117,6 +122,8 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
           llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
+    elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
+      response = await anthropic_predict(prompt, llm_type, stream=stream)
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)
@@ -149,6 +156,291 @@ async def llm_generate(prompt: str, llm_type: str, stream: bool = False) -> \
   except Exception as e:
     raise InternalServerError(str(e)) from e
 
+
+async def anthropic_predict(prompt: str,
+                            llm_type: str,
+                            parameters: dict = None,
+                            stream: bool = False,
+                            user_file_bytes: bytes = None,
+                            user_files: List[DataSourceFile] = None,
+                            user_chat: Optional[UserChat] = None)\
+                              -> Union[str, AsyncGenerator[str, None]]:
+  """
+  Generate text with anthropic claude sonnet.
+  Args:
+    prompt: the text prompt to pass to the LLM
+    llm_type: the type of LLM to use (anthropic claude sonnet)
+    parameters: dict of parameters for the model (temperature, top_p, etc.)
+    stream: whether to stream the response
+    user_file_bytes: bytes of the file provided by the user
+    user_files: list of DataSourceFiles for files provided by the user
+    user_chat: chat history for context
+  Returns:
+    Either the full text response as str,
+    or an AsyncGenerator yielding response chunks
+  """
+  context = get_context()
+  Logger.info(
+    "Anthropic predict initiated",
+    extra={
+      "operation": "anthropic_predict",
+      "metric_type": "llm_generation",
+      "llm_type": llm_type,
+      "prompt_length": len(prompt) if prompt else 0,
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50\
+          else prompt if prompt else "",
+      "stream": stream,
+      "has_user_file_bytes": user_file_bytes is not None,
+      "has_user_files": user_files is not None and len(user_files) > 0,
+      "with_file": user_file_bytes is not None or (user_files is not None and len(user_files) > 0),
+      "chat_id": user_chat.id if user_chat else None,
+      "request_id": context["request_id"],
+      "trace": context["trace"],
+      "session_id": context["session_id"]
+    }
+  )
+
+  try:
+    region = get_provider_value(PROVIDER_ANTHROPIC,
+                                KEY_MODEL_REGION,
+                                model_id=None,
+                                default="us-east5")
+
+    Logger.info(f"Using Anthropic region: {region} for model: {llm_type}")
+    client = AnthropicVertex(project_id=PROJECT_ID, region=region)
+
+    model_name = get_provider_value(PROVIDER_ANTHROPIC,
+                                    KEY_MODEL_ENDPOINT,
+                                    model_id=llm_type)
+
+    token_limit = get_provider_value(PROVIDER_ANTHROPIC,
+                                     KEY_MODEL_TOKEN_LIMIT,
+                                     model_id=llm_type)
+
+    if token_limit is None:
+      token_limit = 4096
+
+    # Prepare API call parameters
+    api_params = {
+      "model": model_name,
+      "max_tokens": token_limit
+    }
+
+    # Add custom parameters if provided
+    if parameters:
+      allowed_params = ["temperature", "top_p", "top_k", "stop_sequences"]
+      for param, value in parameters.items():
+        if param in allowed_params:
+          api_params[param] = value
+
+    # Build messages array with chat history and current prompt
+    messages = []
+
+    # Add chat history if provided
+    if user_chat is not None:
+      messages.extend(await convert_history_to_anthropic_messages(user_chat.history))
+
+    # Build current message content
+    current_message_content = []
+
+    # Add text content
+    current_message_content.append({
+      "type": "text",
+      "text": prompt
+    })
+
+    # Handle file attachments with Anthropic-specific validation
+    if user_file_bytes is not None and user_files is not None:
+      # Handle single file with bytes
+      file_info = user_files[0]  # Assuming single file when bytes provided
+      if _is_anthropic_supported_image(file_info.mime_type):
+        # For Anthropic, we need base64 encoded data
+        encoded_data = base64.b64encode(user_file_bytes).decode("utf-8")
+        current_message_content.append({
+          "type": "image",
+          "source": {
+            "type": "base64",
+            "media_type": file_info.mime_type,
+            "data": encoded_data
+          }
+        })
+        Logger.info(f"Added image to Anthropic request: {file_info.mime_type}")
+      else:
+        Logger.warning(f"Skipping unsupported file\
+                        type for Anthropic: {file_info.mime_type}")
+
+    elif user_files is not None:
+      # Handle multiple files or files with URIs
+      supported_files_count = 0
+      for user_file in user_files:
+        if not _is_anthropic_supported_image(user_file.mime_type):
+          Logger.warning(f"Skipping unsupported file type for Anthropic: {user_file.mime_type}")
+          continue
+
+        if not user_file.gcs_path:
+          Logger.warning(f"No file content available for: {user_file}")
+          continue
+
+        # Read file from GCS path and convert to base64
+        try:
+          encoded_data = await read_gcs_file_as_base64(user_file.gcs_path)
+          current_message_content.append({
+            "type": "image",
+            "source": {
+              "type": "base64",
+              "media_type": user_file.mime_type,
+              "data": encoded_data
+            }
+          })
+          supported_files_count += 1
+          Logger.info(f"Added GCS image to Anthropic request: {user_file.gcs_path}")
+        except Exception as e:
+          Logger.error(f"Failed to read file from GCS: {e}")
+          raise
+
+      if user_files and supported_files_count == 0:
+        Logger.warning("No supported image files found for Anthropic model")
+
+    # Add current message to messages array
+    messages.append({
+      "role": "user",
+      "content": current_message_content
+    })
+
+    # Add messages to API parameters
+    api_params["messages"] = messages
+
+    if stream:
+      # Return an async generator for streaming
+      async def stream_response():
+        try:
+          with client.messages.stream(**api_params) as stream:
+            for text in stream.text_stream:
+              yield text
+        except Exception as e:
+          Logger.error(f"Anthropic streaming error: {e}")
+          raise e
+
+      return stream_response()
+    else:
+      # Non-streaming response
+      predictions_text = client.messages.create(**api_params)
+      return predictions_text.content[0].text
+
+  except Exception as e:
+    Logger.error(f"Anthropic predict error: {e}")
+    raise e
+
+
+async def convert_history_to_anthropic_messages(history: list) -> list:
+  """
+  Convert UserChat history to Anthropic messages format.
+  Includes Anthropic-specific file validation and GCS file handling.
+  
+  Args:
+    history: A history entry from a UserChat object
+    
+  Returns:
+    List of properly formatted Anthropic messages
+  """
+  messages = []
+
+  for entry in history:
+    content = UserChat.entry_content(entry)
+
+    if UserChat.is_human(entry):
+      # Handle human messages
+      message_content = [{"type": "text", "text": content}]
+      messages.append({
+        "role": "user", 
+        "content": message_content
+      })
+
+    elif UserChat.is_ai(entry):
+      # Handle AI messages
+      messages.append({
+        "role": "assistant",
+        "content": content
+      })
+
+    elif UserChat.is_full_query_response(entry):
+      # Handle query responses
+      converted_content = UserChat.convert_query_response_to_chat_entry(entry)
+      messages.append({
+        "role": "assistant",
+        "content": converted_content
+      })
+
+    elif UserChat.is_file_bytes(entry) or UserChat.is_file_uri(entry):
+      # Handle file attachments with Anthropic validation
+      if messages and messages[-1]["role"] == "user":
+        # Add file to existing user message if supported
+        if UserChat.is_file_bytes(entry):
+          file_b64 = UserChat.get_file_b64(entry)
+          file_type = UserChat.get_file_type(entry)
+          if _is_anthropic_supported_image(file_type):
+            messages[-1]["content"].append({
+              "type": "image",
+              "source": {
+                "type": "base64",
+                "media_type": file_type,
+                "data": file_b64
+              }
+            })
+            Logger.info(f"Added history image to Anthropic: {file_type}")
+          else:
+            Logger.warning(f"Skipping unsupported history file for Anthropic: {file_type}")
+
+        elif UserChat.is_file_uri(entry):
+          file_uri = UserChat.get_file_uri(entry)
+          file_type = UserChat.get_file_type(entry)
+          if _is_anthropic_supported_image(file_type):
+            try:
+              encoded_data = await read_gcs_file_as_base64(file_uri)
+              messages[-1]["content"].append({
+                "type": "image",
+                "source": {
+                  "type": "base64",
+                  "media_type": file_type,
+                  "data": encoded_data
+                }
+              })
+              Logger.info(f"Added GCS history image to Anthropic: {file_uri}")
+            except Exception as e:
+              Logger.error(f"Failed to read GCS file from history {file_uri}: {e}")
+              # Continue processing without failing the entire conversion
+              Logger.warning(f"Skipping GCS file due to read error: {file_uri}")
+              raise
+          else:
+            Logger.warning(f"Skipping unsupported history file for Anthropic: {file_type}")
+      else:
+        Logger.warning("File entry found without corresponding user message in history")
+
+  return messages
+
+
+def _is_anthropic_supported_image(mime_type: str) -> bool:
+  """
+  Check if the mime type is supported by Anthropic's vision capabilities.
+  
+  Args:
+    mime_type: The MIME type of the file
+    
+  Returns:
+    bool: True if the file type is supported for vision
+  """
+  if not mime_type:
+    return False
+
+  supported_types = {
+    "image/jpeg",
+    "image/png", 
+    "image/gif",
+    "image/webp"
+  }
+  return mime_type.lower() in supported_types
+
+
 async def llm_generate_multimodal(prompt: str, llm_type: str,
                              user_file_bytes: bytes = None,
                              user_files: List[DataSourceFile] = None) -> str:
@@ -170,7 +462,8 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
       "metric_type": "llm_generation",
       "llm_type": llm_type,
       "prompt_length": len(prompt) if prompt else 0,
-      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50 else prompt if prompt else "",
+      "prompt_preview": prompt[:50] + "..." if len(prompt) > 50\
+          else prompt if prompt else "",
       "has_file_bytes": user_file_bytes is not None,
       "has_files": user_files is not None and len(user_files) > 0,
       "request_id": context["request_id"],
@@ -202,6 +495,14 @@ async def llm_generate_multimodal(prompt: str, llm_type: str,
       response = await google_llm_predict(prompt, is_chat, is_multimodal,
                             google_llm, None, None, user_file_bytes,
                             user_files)
+    elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
+      multimodal_llm_types = get_model_config().get_multimodal_llm_types()
+      if llm_type not in multimodal_llm_types:
+        raise RuntimeError(
+            f"Anthropic model {llm_type} should be designated multimodal")
+      response = await anthropic_predict(prompt, llm_type, stream=False,
+                                       user_file_bytes=user_file_bytes,
+                                       user_files=user_files)
     else:
       raise ResourceNotFoundException(f"Cannot find llm type '{llm_type}'")
 
@@ -275,13 +576,16 @@ async def llm_chat(prompt: str, llm_type: str,
     raise ResourceNotFoundException(f"Cannot find chat llm type '{llm_type}'")
 
   # validate chat file params and model for them
-  is_multimodal = llm_type in get_provider_models(PROVIDER_VERTEX)
+  is_multimodal = (llm_type in get_provider_models(PROVIDER_VERTEX) or
+                   llm_type in get_provider_models(PROVIDER_ANTHROPIC))
+
   if chat_file_bytes is not None or chat_files:
     if chat_file_bytes is not None and chat_files:
       raise InternalServerError(
           "Must set only one of chat_file_bytes/chat_files")
     if not is_multimodal:
-      raise InternalServerError("Chat files only supported for Vertex")
+      raise InternalServerError("Chat files only supported for Vertex"
+      " and Anthropic models")
 
   try:
     response = None
@@ -298,8 +602,8 @@ async def llm_chat(prompt: str, llm_type: str,
 
     # Add query references to the prompt if provided
     if query_refs_str:
-      prompt += "\n\nReference information for retrieved information:"\
-        + f" {query_refs_str}"
+      prompt += ("\n\nReference information for retrieved information:"
+        f" {query_refs_str}")
 
     # check whether the context length exceeds the limit for the model
     check_context_length(prompt, llm_type)
@@ -321,6 +625,11 @@ async def llm_chat(prompt: str, llm_type: str,
           llm_type, prompt, model_endpoint)
     elif llm_type in get_provider_models(PROVIDER_MODEL_GARDEN):
       response = await model_garden_predict(prompt, llm_type)
+    elif llm_type in get_provider_models(PROVIDER_ANTHROPIC):
+      response = await anthropic_predict(prompt, llm_type, stream=stream,
+                                  user_file_bytes=chat_file_bytes,
+                                  user_files=chat_files,
+                                  user_chat=user_chat)
     elif llm_type in get_provider_models(PROVIDER_VERTEX):
       google_llm = get_provider_value(
           PROVIDER_VERTEX, KEY_MODEL_NAME, llm_type)

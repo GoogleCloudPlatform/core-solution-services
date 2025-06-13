@@ -41,6 +41,12 @@
       "enabled": true,
       "env_flag": "ENABLE_VLLM_GEMMA",
       "description": "Provides access to vLLM's Gemma models."
+    },
+    "Anthropic": {
+      "enabled": true,
+      "env_flag": "ENABLE_ANTHROPIC",
+      "description": "Provides access to Anthropic's Claude model.",
+      "region": "us-east5"
     }
   },
   "vendors": {
@@ -59,33 +65,27 @@
   },
   "default_system_prompt": "You are a helpful AI assistant.",
   "models": {
-    "VertexAI-Text": {
-      "name": "Vertex AI Text",
-      "is_chat": false,
-      "provider": "Vertex",
-      "model_name": "text-bison@002",
-      "description": "A powerful text generation model from Vertex AI."
-    },
     "VertexAI-Chat": {
-      "name": "Gemini 1.5 Flash",
+      "name": "Gemini 2.0 Flash",
       "is_chat": true,
       "is_multi": true,
       "provider": "Vertex",
-      "model_name": "gemini-1.5-flash",
+      "model_name": "gemini-2.0-flash-001",
       "description": "Latest Gemini model optimized for fast responses while maintaining high quality output",
       "capabilities": [
         "Chat",
         "Text Generation",
         "Code Generation"
       ],
-      "date_added": "2024-03-15",
+      "date_added": "2025-02-05",
       "model_params": {
         "temperature": 0.2,
         "max_output_tokens": 8192,
         "top_p": 0.95,
         "top_k": 40
       },
-      "context_length": 1000000
+      "context_length": 1000000,
+      "enabled": false
     },
     "VertexAI-Gemini-Flash": {
       "name": "Gemini 1.5 Flash",
@@ -94,7 +94,8 @@
       "provider": "Vertex",
       "model_name": "gemini-1.5-flash",
       "context_length": 1000000,
-      "description": "A fast and versatile Gemini model from Vertex AI."
+      "description": "A fast and versatile Gemini model from Vertex AI.",
+      "enabled": false
     },
     "VertexAI-Gemini-Pro": {
       "name": "Gemini Pro",
@@ -109,7 +110,8 @@
         "Analysis"
       ],
       "date_added": "2024-01-10",
-      "context_length": 128000
+      "context_length": 128000,
+      "enabled": false
     },
     "VertexAI-Gemini-Pro-Vision": {
       "name": "Gemini Pro Vision",
@@ -123,7 +125,8 @@
         "Image Analysis",
         "Visual Understanding"
       ],
-      "date_added": "2024-02-01"
+      "date_added": "2024-02-01",
+      "enabled": false
     },
     "VertexAI-Gemini-1.5-Pro": {
       "name": "Gemini 1.5 Pro",
@@ -132,6 +135,39 @@
       "provider": "Vertex",
       "model_name": "gemini-1.5-pro-002",
       "description": "A powerful and versatile Gemini 1.5 Pro model from Vertex AI.",
+      "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone.",
+      "enabled": false
+    },
+    "VertexAI-Gemini-2.0-Flash": {
+      "name": "Gemini 2.0 Flash",
+      "is_chat": true,
+      "is_multi": true,
+      "provider": "Vertex",
+      "model_name": "gemini-2.0-flash",
+      "model_params": {
+        "temperature": 0.2,
+        "max_output_tokens": 8192,
+        "top_p": 0.95,
+        "top_k": 40
+      },
+      "context_length": 1000000,
+      "description": "A powerful and versatile Gemini 2.0 Flash model from Vertex AI.",
+      "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone."
+    },
+    "VertexAI-Gemini-2.0-Flash-Lite": {
+      "name": "Gemini 2.0 Flash Lite",
+      "is_chat": true,
+      "is_multi": true,
+      "provider": "Vertex",
+      "model_name": "gemini-2.0-flash-lite",
+      "model_params": {
+        "temperature": 0.2,
+        "max_output_tokens": 8192,
+        "top_p": 0.95,
+        "top_k": 40
+      },
+      "context_length": 1000000,
+      "description": "A powerful and versatile Gemini 2.0 Flash Lite model from Vertex AI.",
       "default_system_prompt": "You are a helpful AI assistant that answers questions in a formal tone."
     },
     "VertexAI-Chat-Gemini-Pro-Langchain": {
@@ -232,6 +268,31 @@
       "enabled": true,
       "model_class": "ChatCohere",
       "description": "A chat model from Cohere."
+    },
+    "Claude-3.7-Sonnet": {
+      "name": "Claude 3.7 Sonnet",
+      "vendor": "Anthropic",
+      "is_chat": true,
+      "is_multi": true,
+      "provider": "Anthropic",
+      "enabled": false,
+      "context_length": 200000,
+      "model_endpoint": "claude-3-7-sonnet@20250219",
+      "token_limit": 4096,
+      "description": "A multimodal model from Anthropic.",
+      "capabilities": [
+        "Chat",
+        "Text Generation",
+        "Image Analysis",
+        "Visual Understanding",
+        "Code Generation"
+      ],
+      "date_added": "2025-02-19",
+      "model_params": {
+        "temperature": 0.7,
+        "max_tokens": 4096,
+        "top_p": 0.9
+      }
     }
   },
   "embeddings": {

@@ -488,10 +488,6 @@ async def query_engine_create(gen_config: LLMQueryEngineModel,
           "doc_url must start with gs://, http:// or https://, bq://, shpt://"
           f" instead got {doc_url}")
 
-    if doc_url.endswith(".pdf"):
-      return BadRequest(
-        "doc_url must point to a GCS bucket/folder or website, not a document")
-
   query_engine = genconfig_dict.get("query_engine")
   if query_engine is None or query_engine == "":
     return BadRequest("Missing or invalid payload parameters: query_engine")
