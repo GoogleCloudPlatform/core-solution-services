@@ -3,6 +3,6 @@ langchain==0.3.20
 langchain-community==0.3.19
 langchain-core==0.3.45
 llama-index==0.12.23
-transformers==4.50.3
+transformers==4.52.1
 sentence-transformers==4.0.2
 rerankers==0.8.0
