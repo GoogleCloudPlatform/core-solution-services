@@ -43,7 +43,7 @@ source .venv/bin/activate
 3. Install python requirements
 
 ```
-pip install -r ../common/src/requirements.txt
+pip install -r ../common/requirements.txt
 pip install -r requirements.txt
 pip install jupyter
 ```
