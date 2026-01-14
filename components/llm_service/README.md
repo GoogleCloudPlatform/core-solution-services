@@ -282,7 +282,7 @@ gcloud storage cp /path/to/agent_config.json gs://${PROJECT_ID}-config
 
 Verify if the file has uploaded correctly to the bucket.
 ```
-gsutil list gs://${PROJECT_ID}-config/agent_config.json
+gcloud storage ls gs://${PROJECT_ID}-config/agent_config.json
 ```
 
 Set up the environment variable `AGENT_CONFIG_PATH` accordingly:

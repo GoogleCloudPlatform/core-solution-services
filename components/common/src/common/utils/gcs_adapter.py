@@ -383,7 +383,7 @@ def move_file_within_bucket(bucket_name, src_path, dest_path):
       blob_name `str`: Final path of the file on the bucket
     -------------------------------------------------------
     Note:
-      if gsutil URI is
+      if object URI is
         `gs://<bucket_name>/path/to/file/abc.txt`
       then src_path and dest_path should be
         `path/to/file/abc.txt`
@@ -415,7 +415,7 @@ def delete_file_from_gcs(bucket_name, src_path):
       File will be deleted
     -------------------------------------------------------
     Note:
-      if gsutil URI is
+      if object URI is
         `gs://<bucket_name>/path/to/file/abc.txt`
       then src_path should be
         `path/to/file/abc.txt`
