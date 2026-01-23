@@ -1,5 +1,5 @@
 typing==3.7.4.3
-protobuf==5.29.3
+protobuf==7.34.0rc1
 iteration_utilities==0.13.0
 regex==2024.11.6
 google-cloud-secret-manager==2.23.1
