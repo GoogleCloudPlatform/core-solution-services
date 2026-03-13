@@ -1,4 +1,4 @@
-PyJWT==2.10.1
+PyJWT==2.12.0
 firebase-admin==6.7.0
 google-cloud-logging==3.11.4
 google-cloud-secret-manager==2.23.1
