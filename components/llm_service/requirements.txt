@@ -5,7 +5,7 @@ google-cloud-discoveryengine==0.13.6
 google-cloud-bigquery-storage==2.29.1
 invoke==2.2.0
 langchain-google-vertexai==2.0.15
-langchain-openai==0.3.8
+langchain-openai==1.1.14
 llama-index-readers-microsoft-onedrive==0.3.0
 llamaindex-py-client==0.1.19
 numpy==2.0.2
